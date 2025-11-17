@@ -5429,6 +5429,20 @@
     t)
    (t (in-encapsulatep (cdr embedded-event-lst) non-trivp))))
 
+(defun in-nested-encapsulatep1 (embedded-event-lst)
+  (cond
+   ((endp embedded-event-lst) nil)
+   ((eq (car (car embedded-event-lst)) 'encapsulate)
+    (in-encapsulatep (cdr embedded-event-lst) nil))
+   (t (in-nested-encapsulatep1 (cdr embedded-event-lst)))))
+
+(defun in-nested-encapsulatep (state)
+
+; Return true when the current world lies within nested encapsulate calls, else
+; nil.
+
+  (in-nested-encapsulatep1 (global-val 'embedded-event-lst (w state))))
+
 (defun store-cltl-command-for-redundant-def (state)
 
 ; See the Essay on Fast-cert.

@@ -4155,7 +4155,8 @@
 ; Part 1: A more detailed introduction
 ; Part 2: Including a certified book
 ; Part 3: Writing an expansion file for compilation
-; Appendix: Saving space by eliding certain defconst forms
+; Appendix 1: Saving Space by Eliding Certain Defconst Forms
+; Appendix 2: Extension for Encapsulate
 
 ; Part 0: High-level summary
 
@@ -4183,16 +4184,18 @@
 ; and SBCL whenever a definition is evaluated) when a definition is encountered
 ; by include-book, by instead using existing code previously compiled by
 ; certify-book, which is loaded before processing of events by include-book.
-; Thus, the main efficiency gains from this change are expected to be for ACL2
-; built on CCL or SBCL, as these are the Lisps hosting ACL2 that compile all
-; definitions at submission time and therefore had been compiling on behalf of
-; add-trip.  However, this approach may also boost efficiency in some cases
-; even for Lisps other than CCL and SBCL.  For one thing, include-book will now
-; install a compiled symbol-function for each defun, even for those other
-; Lisps, which can speed up computations in ensuing defconst forms and defmacro
-; forms of the book.  Moreover, compiled code will be installed for defmacro
-; and defconst forms, which can avoid the need for redoing macroexpansion of
-; the bodies of such forms during add-trip.
+; (We defer to Appendix 2 a discussion of how this approach extends to the
+; second pass of encapsulate forms.)  Thus, the main efficiency gains from this
+; change are expected to be for ACL2 built on CCL or SBCL, as these are the
+; Lisps hosting ACL2 that compile all definitions at submission time and
+; therefore had been compiling on behalf of add-trip.  However, this approach
+; may also boost efficiency in some cases even for Lisps other than CCL and
+; SBCL.  For one thing, include-book will now install a compiled
+; symbol-function for each defun, even for those other Lisps, which can speed
+; up computations in ensuing defconst forms and defmacro forms of the book.
+; Moreover, compiled code will be installed for defmacro and defconst forms,
+; which can avoid the need for redoing macroexpansion of the bodies of such
+; forms during add-trip.
 
 ; A simple-minded approach is simply to load the compiled file for a book
 ; *before* processing events in the book.  The obvious problem is that ACL2
@@ -4353,7 +4356,7 @@
 
 ; Not discussed above is an optimization that avoids duplicating quoted bodies
 ; of generated defconst forms.  We defer all discussion of that optimization to
-; the Appendix.
+; Appendix 1.
 
 ; Part 1: A more detailed introduction
 
@@ -4948,7 +4951,7 @@
 ; Note that some of these are wrapped together in a progn to maximize sharing
 ; using #n# syntax.
 
-; Appendix: Saving space by eliding certain defconst forms
+; Appendix 1: Saving Space by Eliding Certain Defconst Forms
 
 ; ACL2 provides the opportunity to use make-event to create very large defconst
 ; forms, for example, (make-event `(defconst *c* ',(make-list 1000000))).
@@ -5006,6 +5009,625 @@
 ; variable is set to a non-nil value in chk-certificate-file when the caller is
 ; 'include-book-raw.  That check is done later; see the call of
 ; chk-bad-lisp-object in chk-certificate-file.
+
+; Appendix 2: Extension for Encapsulate
+
+; The main idea of this essay is to avoid performing compilation more than once
+; for a given definition.  Specifically, the discussion above explains how ACL2
+; avoids compilation when including a certified book.  Here we discuss our
+; extension of this idea to avoid compilation when evaluating the second pass
+; of an encapsulate form, by saving results from the first pass.
+
+; When making this extension in October-November 2025, we decided early on to
+; take advantage of the work already done for books.  As noted in earlier
+; sections of this Essay, that work dealt with some rather tricky issues, and
+; of course it is reasonable to take advantage of work already completed
+; (mostly in 2009!) that addressed those issues.
+
+; We break this Appendix into three parts as follows.
+
+; Appendix 2 Part 1: Basic design considerations
+; Appendix 2 Part 2: Key aspects of the implementation
+; Appendix 2 Part 3: Some tricky issues
+
+; Let's begin.
+
+; Appendix 2 Part 1: Basic design considerations
+
+; The basic idea is straightforward: save definitions from pass 1 of the
+; encapsulate into hash tables to use when evaluating pass 2.  This is
+; analogous to the process, when including a book, of saving definitions into
+; hash tables from the book's compiled file for use when evaluating events from
+; the book.  Here are some basic design considerations.
+
+; * We don't want to reinvent the wheel, especially giving the subtleties
+;   involved with reclassifying, inlining, and extended generics ("ext-gen")
+;   considerations.
+
+; * The use of hash tables with encapsulate is only for when two passes are
+;   made for the encapsulate.  Thus, hash tables are not used when the
+;   encapsulate is entered with ld-skip-proofsp not t or nil.
+
+; * Aborts are cleaned up automatically, as they were before, because the
+;   relevant variables (hash tables etc.) are let-bound to fresh hash tables at
+;   the top level of an encapsulate.
+
+; * Some special variables, including *hcomp-fn-macro-restore-ht* and
+;   *hcomp-const-restore-ht* and the related alist variables, are not used in
+;   our treatment of hash tables for encapsulate events.  The reason we need
+;   restoring for include-book is to support early loading of compiled files.
+;   Here, we only make a definition when we are processing the event.
+
+; * We are content for the new implementation to be incomplete, that is,
+;   occasionally allowing re-evaluation of definitions in the second pass of an
+;   encapsulate -- especially if that incompleteness supports a comprehensible
+;   and maintainable implementation.
+
+; * Although we have tried to support a "comprehensible and maintainable
+;   implementation" (as suggested above), it's a bit tricky, with some issues
+;   discussed further below.  We therefore added a debugging capability that
+;   also applies to the use of hash tables with books.  To use it, evaluate the
+;   form
+
+;   (setq *debug-on* t)
+
+;   in raw Lisp before proceeding, and then look for "; DEBUG:" in the output.
+
+; * In spite of the incompleteness mentioned above, the use of hash tables with
+;   encapsulate can have an advantage over their use for books in the case of
+;   defconst.  Consider the following example.
+
+;   (defun fib (n)
+;     (declare (xargs :guard (natp n)))
+;     (if (zp n)
+;         0
+;       (if (eql n 1)
+;           1
+;         (+ (fib (- n 1))
+;            (fib (- n 2))))))
+;
+;   (encapsulate ()
+;     (defconst *c* (fib 40)))
+
+;   The use of hash tables cuts the time nearly in half, because the value of
+;   *c* is saved into a hash table during the first pass of the encapsulate,
+;   and then retrieved in the second pass.  Thus, (fib 40) is evaluated only
+;   during the first pass.  If the events above are in a book and a local event
+;   precedes them, thus causing rollback of the world during certification,
+;   then (fib 40) is unfortunately evaluated twice.
+
+; Appendix 2 Part 2: Key aspects of the implementation
+
+; Here is an outline of key aspects of the implementation.  We wrap
+; with-hcomp-bindings-encapsulate around encapsulate pass 1, which binds
+; *hcomp-status* to 'encapsulate-pass-1, with some exceptions (discussed
+; further below).  When that is done (i.e., in cases other than the
+; exceptions), we set *hcomp-status* to 'include-book when entering pass 2.
+
+; Consider for example the following when ld-skip-proofsp is nil or t.
+
+;   (encapsulate () ; [a]
+;     (encapsulate () ; [b]
+;       (defun f (x) (cons x x))))
+
+; The flow is as follows.
+
+; - Enter encapsulate-fn for [a]; binds hash tables, *hcomp-status*.
+
+; - Enter encapsulate-fn for [b]; binds hash tables, *hcomp-status*.  Conclude
+;   with *hcomp-fn-ht* entry added for f.
+
+; - Enter encapsulate-pass-2 for [b], assigning *hcomp-status* to
+;   'include-book.  So we get the ht entry for f before popping the binding of
+;   *hcomp-status* to its binding from the first step.
+
+; - Enter encapsulate-pass-2 for [a], which assigns *hcomp-status* to
+;   'include-book.
+
+; - Enter encapsulate-fn for [b] with ld-skip-proofsp = 'include-book.  So
+;   there is no call of with-hcomp-bindings-encapsulate, and therefore
+;   *hcomp-status* remains 'include-book from the preceding step and the
+;   hash-tables remain in place.  Get the ht entry for f.
+
+; Appendix 2 Part 3: Some tricky issues
+
+; There are some rather tricky issues in the design of the use of hash tables
+; for encapsulate.  Here is a summary of many of them.
+
+; - None of these hash-table reads or write are performed during make-event
+;   expansion.  This restriction is enforced by the use of
+;   with-hcomp-bindings-protected-eval.
+
+; - We don't rebind to fresh hash tables for inner encapsulates.  Instead,the
+;   binding of *hcomp-fn-ht* (as with the other two hash-tables) is to itself,
+;   so that destructive modifications persist after the binding is popped.
+;   Thus, the inner encapsulate from pass 2 of each encapsulate will have a
+;   hash table entry available, as illustrated by the following example.
+
+;   (encapsulate () ; [a]
+;     (encapsulate () ; [b]
+;       (encapsulate () ; [c]
+;         (defun g (x)
+;           (declare (xargs :mode :program))
+;           (cons x x)))
+;       ...))
+
+;   The symbol-functions for g and its *1* function are stored when the defun
+;   is first encountered, which is during pass 1 of all three encapsulates.
+;   Then hash-table retrieval avoids evaluating that defun in all three of the
+;   subsequent encounters, as follows, where "single pass" means that the
+;   indicated encapsulate is encountered when 'ld-skip-proofsp has value
+;   'include-book.
+
+;   - [a] pass 1, [b] pass 1, [c] pass 2;
+;   - [a] pass 1, [b] pass 2, [c] single pass; and
+;   - [a] pass 2, [b] single pass, [c] single pass.
+
+; - Memoization is never applied to a function symbol that has just been
+;   defined, so symbol-functions that are saved to, and restored from, hash
+;   tables are not memoized.  The only concern we might have about memoization
+;   is for *1* functions when reclassifying from program mode to logic mode.
+;   But memoization is not applied to *1* functions, so that is not a concern
+;   after all.
+
+; - Could there be a problem with inlining?  The following suggests that there
+;   could be.  Note that ACL2 inlines calls of f$inline and, indeed, of any
+;   function symbol whose symbol-name ends in "$INLINE".
+
+;   (encapsulate
+;     ()
+;     (defun f$inline (x)
+;       (declare (xargs :guard t))
+;       (prog2$ (cw "@@@ HI! @@@~%") x))
+;     (local (memoize 'f$inline))
+;     ;; Pass 1 stores the compiled defun of g with the call of f$inline
+;     ;; inlined, and then pass 2 retrieves that compiled defun.
+;     (defun g (x)
+;       (declare (xargs :guard t))
+;       (f$inline x)))
+
+;   After evaluating that event, we can produce the following log, which shows
+;   that g behaves as though f$inline is memoized, even though it should not be
+;   -- and was not in Version 8.6, before the extension to encapsulate
+;   discussed in this Appendix.
+
+;   ACL2 !>(g 3)
+;   @@@ HI! @@@
+;   3
+;   ACL2 !>(g 3)
+;   3
+;   ACL2 !>
+
+;   This misbehavior is due to retrieval of the symbol-function for g during
+;   pass 2 that was stored in pass 1.  Do we need to deal with this issue?
+
+;   We don't think so.  There is a broader issue with inlined functions and
+;   memoization that has probably been around since the time that ACL2
+;   supported both inlining and memoization.  Consider the following example
+;   (which does not involve encapsulate).
+
+;   (defun f$inline (x)
+;     (declare (xargs :guard t))
+;     (prog2$ (cw "@@@ HI! @@@~%") x))
+;   (memoize 'f$inline)
+;   (unmemoize 'f$inline)
+;   (defun g (x)
+;     (declare (xargs :guard t))
+;     (f$inline x))
+
+;   Then we get the following log in ACL2 Version 8.6 built on CCL and probably
+;   all older versions supporting inlining and memoization.  It shows that g
+;   behaves as though f$inline is memoized (even though it was supposedly
+;   unmemoized) -- and this misbehavior occurs even in raw Lisp, so it cannot
+;   be blamed somehow on *1* functions.
+
+;   ACL2 !>(g 3)
+;   @@@ HI! @@@
+;   3
+;   ACL2 !>(g 3)
+;   3
+;   ACL2 !>:q
+;
+;   Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
+;   ? (g 4)
+;   @@@ HI! @@@
+;   4
+;   ? (g 4)
+;   4
+;   ? (f$inline 5)
+
+;   Yet, f$inline itself is, as can be expected, not memoized.
+
+;   ? (f$inline 5)
+;   @@@ HI! @@@
+;   5
+;   ? (f$inline 5)
+;   @@@ HI! @@@
+;   5
+;   ?
+
+;   We believe that the explanation is based on how inlining works in CCL, and
+;   probably in some other Lisp implementations.  When f$inline is defined, its
+;   source definition is saved (because ACL2 has first told Lisp that f$inline
+;   is to be inlined, using a declaim form). Then when f$inline is called in
+;   the body of a defun form, in particular in the body of the definition of g,
+;   the call is replaced using that source definition of f$inline.  When
+;   f$inline is memoized, a suitable new source defun of f$inline is evaluated
+;   that implements memoization of f$inline.  But when f$inline is unmemoized,
+;   there is no saving of yet another source defun; rather,the pre-memoization
+;   symbol-function for f$inline is installed as the symbol-function of
+;   f$inline.  Since unmemoizing f$inline does not affect the source defun
+;   saved for f$inline, the memoized source defun for f$inline is used above
+;   when defining g.
+
+;   The behavior just described could quite possibly be solved if unmemoize
+;   would re-evaluate the original source definition in addition to installing
+;   the old compiled symbol-function.  If we explore that possibility then we
+;   may also revisit the issue with encapsulate illustrated above.  Otherwise,
+;   we may add a warning to be issued when memoizing an inlined function.
+
+;   But for now, inlining and memoization already have interactions that an
+;   ACL2 user might not expect, independent of how we treat encapsulates.  And
+;   note that inlining can occur more often than we might expect, as there
+;   doesn't seem to be any prohibition in the Common Lisp HyperSpec against
+;   inlining in the absence of a notinline declaration; so replacing f$inline
+;   by f (or any function not ending in *inline-suffix*) could conceivably
+;   result in another such example.
+
+;   So we will, at least for now, ignore unfortunate interactions of
+;   memoization with inlining.  After all, it doesn't seem unreasonable for
+;   users to expect surprises when the memoization status is changed for
+;   inlined functions.  And it's probably pretty rare for a call of a function
+;   to be inlined when the function isn't explicitly declaimed to be an inlined
+;   function (by virtue of ending in *inline-suffix*), even though the CL
+;   HyperSpec seems to allow this.  In particular, inlining didn't occur in raw
+;   Lisp for ACL2 built on any of its six host Lisps, for the following example
+;   as indicated.
+
+;   (defun f (x) x)
+;   (compile 'f)
+;   (defun g (x) (f x))
+;   (compile 'g)
+;   (g 3) ; returns 3
+;   (defun f (x) (cons x x))
+;   (g 3) ; returns (3 . 3)
+
+;   As noted above, it might be good to warn when an explicitly inlined
+;   function is memoized or unmemoized.  To see another reason to warn on
+;   memoizing inlined functions (alternatively, another issue to address if we
+;   don't warn), suppose that in a fresh session we evaluate the following.
+
+;   (defun f$inline (x)
+;     (declare (xargs :guard t))
+;     (prog2$ (cw "@@@ HI! @@@~%") x))
+;   (memoize 'f$inline)
+
+;   Then the following log shows memoization failing to work.
+
+;   ACL2 !>(f$inline 3)
+;   @@@ HI! @@@
+;   3
+;   ACL2 !>(f$inline 3)
+;   @@@ HI! @@@
+;   3
+;   ACL2 !>
+
+;   But memoization does work if instead we first either drop into raw Lisp or
+;   evaluate (set-raw-mode-on!).
+
+;   ? (f$inline 3)
+;   @@@ HI! @@@
+;   3
+;   ? (f$inline 3)
+;   3
+;   ?
+
+;   We can see what's going on by evaluating
+
+;   (trace! (oneify-cltl-code :native t))
+
+;   before the defun of f$inline.  That shows us that the *1* function is
+;   defined as follows.
+
+;   (defun ACL2_*1*_ACL2::F$INLINE (X) (F$INLINE X))
+
+;   But this call of (F$INLINE X) is inlined by the compiler, so memoization of
+;   f$inline, which replaces the existing definition of f$inline, has no effect
+;   on the symbol-function for *1*_acl2::f$inline.  As of 2025, we are unaware
+;   of any complaints about this behavior even though memoization has been
+;   supported in ACL2 since 2007.  We take this as evidence that we needn't
+;   worry about the examples like the encapsulate example displayed above that
+;   initiated this discussion.  If complaints arise then this issue can then be
+;   considered.
+
+; - We deal suitably with local events in encapsulates, as follows.
+
+;   + Associate the *1* function for any local defun in logic mode with
+;     *hcomp-fake-value*, as suggested by the following example, since the *1*
+;     function for the logic-mode version isn't suitable for the program-mode
+;     version.  This special treatment is only for the *1* function, since the
+;     CL defun is the same regardless of the mode.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x)
+;                (declare (xargs :mode :logic))
+;                (cons x x)))
+;       ;; redundant on first pass:
+;       (defun foo (x)
+;         (declare (xargs :mode :program))
+;         (cons x x)))
+
+;     If this approach causes unpleasant inefficiency for users, we could
+;     consider storing the mode of the function with the *1* function.  But
+;     that is necessary only for encapsulates, not books, and we prefer not to
+;     re-think how we handle books and to minimize discrepancies between our
+;     handling of books and encapsulates with respect to hash tables.  So for
+;     now at least, we avoid storing *1* symbol-functions into hash tables for
+;     local logic-mode defuns.
+
+;     From the example above, it might seem sufficient to avoid storing *1*
+;     symbol-functions for any local logic-mode defun, rather than associating
+;     the *1* symbol with *hcomp-fake-value*.  But consider the following
+;     example.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x)
+;                (declare (xargs :mode :program))
+;                (cons x x)))
+;       (local (defun foo (x)
+;                (declare (xargs :mode :logic))
+;                (cons x x)))
+;       ;; redundant on first pass:
+;       (defun foo (x)
+;         (declare (xargs :mode :logic))
+;         (cons x x)))
+
+;     As noted in an item below, we do store *1* functions for local
+;     program-mode defuns.  With that in mind, note that on pass 1 in the
+;     encapsulate event displayed just above, only the *1* symbol-function from
+;     the local program-mode defun is stored: the *1* symbol-function from the
+;     local logic-mode defun is not stored, and the final (and non-local) defun
+;     is redundant.  If we were simply to skip storing the *1* symbol-function
+;     for the local logic-mode defun, then on pass 2, we would retrieve the
+;     program-mode *1* symbol-function and store it for the (non-local)
+;     logic-mode defun, which would be a mistake.  But by storing
+;     *hcomp-fake-value* upon encountering the local program-mode defun in pass
+;     1, we avoid making that mistake.
+
+;     Here is one more example of why we don't store in the hash table for
+;     local logic-mode defuns.  Suppose we stored the *1* symbol-function for
+;     foo for the first (i.e., local) defun below.  Its code would assume that
+;     foo is guard-verified.  But in the second pass foo is not guard-verified.
+;     That's not unsound, because foo *could* be considered to be
+;     guard-verified.  But the behavior might be surprising.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x)
+;                (declare (xargs :guard (consp x)))
+;                (cons x x)))
+;       (defun foo (x)
+;         (declare (xargs :guard (consp x) :verify-guards nil))
+;         (cons x x)))
+
+;   + Do not store in hash table for local events in inner encapsulates, as
+;     illustrated by the following example.
+
+;     (encapsulate ()
+;       (encapsulate ()
+;         (local (defun g (x)
+;                  (declare (xargs :mode :program))
+;                  x)))
+;       ;; This is a different definition for g than the one above:
+;       (defun g (x)
+;         (declare (xargs :mode :program))
+;         (cons x x)))
+
+;     Alternatively we could store *hcomp-fake-value* for one of the defuns of
+;     g and its *1* function.  But by instead storing symbol-functions in pass
+;     1 only for the non-local defun, we get a hash table hit in pass 2 for
+;     that non-local defun.
+
+;     This decision (to skip storing for local events in the hash tables within
+;     inner encapsulates) has a downside, though.  Consider instead the
+;     following encapsulate.
+
+;     (encapsulate ()
+;       (local (encapsulate ()
+;                (local (defun g (x)
+;                         (declare (xargs :mode :program))
+;                         (cons x x)))
+;                ;; redundant on pass 1 of inner encapsulate
+;                (defun g (x)
+;                  (declare (xargs :mode :program))
+;                  (cons x x))))
+      ;; redundant on pass 1 of inner encapsulate
+;       (defun g (x)
+;         (declare (xargs :mode :program))
+;         (cons x x)))
+
+;     We don't store into a hash table during pass 1 of the inner encapsulate,
+;     because we don't store for the first defun as noted above and we skip the
+;     other defuns on pass 1 because they are redundant.  But then we don't get
+;     a hit during pass 2 of the inner encapsulate nor do we get a hit for the
+;     defun in pass 2 of the outer encapsulate.
+
+;     We could perhaps address this downside, of missing opportunities to
+;     retrieve from hash tables.  But that would likely complicate the
+;     algorithm, compared to the simple rule of ignoring local events in inner
+;     encapsulates when storing into hash tables.  Since this extra storage
+;     would only make a difference when we have redundancy with local events,
+;     the benefit does not seem justified by the extra complexity.
+
+;     Another possibility is to use a fresh hash table for the inner
+;     encapsulate and transfer only what's around after pass 2 to the outer
+;     encapsulate's hash table.  But again, this extra complexity doesn't seem
+;     justifiable.  Of course, if users point out natural conditions that seem
+;     to justify reconsideration of this decision, it can be reconsidered.
+
+;   + Although we skip storing *1* symbol-functions for local logic-mode defuns
+;     as well as all local events in inner encapsulates (see above), we don't
+;     skip storing *1* symbol-functions for local program-mode defuns in an
+;     outermost encapsulate.  (Similarly, in an outermost encapsulate we don't
+;     skip storing Common Lisp (CL) symbol-functions for local program-mode
+;     defuns or definitions for local defconst or defmacro events.)  Here's a
+;     relevant example.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x)
+;                (declare (xargs :mode :program))
+;                (cons x x)))
+;       ;; redundant:
+;       (defun foo (x)
+;         (declare (xargs :mode :program))
+;         (cons x x)))
+
+;     If we skip storing a *1* (or CL) symbol-function for the local defun,
+;     then we don't get the benefit of hash-table retrieval when considering
+;     the non-local defun pass 2.
+
+;     (Well, unless we store upon encountering the redundant defun in pass 1.
+;     But then we would need to be careful about memoization for the CL defun,
+;     since the function symbol isn't new.  In general, it's best to avoid
+;     storing more than necessary for a redundant defun, as doing so can be
+;     error-prone.)
+
+;     But consider the following example.
+
+;     (encapsulate
+;       ()
+;       (local (defun foo (x)
+;                (declare (xargs :mode :program))
+;                (cons x x)))
+;       (local (defun foo (x)
+;                (declare (xargs :mode :logic))
+;                (cons x x)))
+;       (defun foo (x)
+;         (declare (xargs :mode :logic))
+;         (cons x x)))
+
+;   The first pass will treat foo as semi-qualified.  Then the second pass will
+;   see foo as semi-qualified and therefore skip the lookup for the *1*
+;   symbol-function of the non-local defun.  This is unfortunate, but it is
+;   probably not a common situation.  So it seems reasonable to live with this
+;   minor inefficiency, rather than to redesign how we deal with handling
+;   program-mode and logic-mode functions using the notion of semi-qualified.
+
+; - We exclude the use of hash tables inside non-trivial encapsulates, i.e.,
+;   encapsulates with non-empty signatures, when making two passes of the
+;   encapsulate -- that is, when (ld-skip-proofsp state) is t or nil (rather
+;   than include-book or related values).  This exclusion doesn't interfere
+;   with the use of hash tables by include-book or certify-book because
+;   ld-skip-proofsp is 'include-book when dealing with hash tables in those
+;   cases, so we are in the branch of encapsulate-fn that doesn't use
+;   with-hcomp-bindings-encapsulate.
+
+;   But if we are within a superior encapsulate that has empty signature list,
+;   will this throw things off regarding potentially semi-qualified symbols?
+;   Consider the following example.
+
+;   (encapsulate
+;     ()
+;     (encapsulate
+;       ((h (x) t))
+;       (local (defun h (x) x))
+;       (defun foo (x) (declare (xargs :mode :program)) x))
+;     (defun foo (x) x))
+
+;   There are two cases to consider when evaluating the outer encapsulate.
+
+;   Case 1: Ld-skip-proofsp is t or nil, i.e., not 'include-book (or the other
+;   two values that are similar to it) when entering the outer encapsulate.  So
+;   we are not inside include-book (whether or not on behalf of certify-book).
+;   Then foo is considered to be qualified at the end of pass 1 of the outer
+;   encapsulate, by virtue of not storing into a hash table for the first defun
+;   of foo (because it's under a non-trivial encapsulate) and storing the
+;   second defun of foo.  And in pass 2 of that outer encapsulate, the first
+;   defun of foo doesn't get its value from the hash table, but the second
+;   defun of foo does, since install-for-add-trip-include-book uses a qualified
+;   value without worrying about whether or not the defun is reclassifying.
+
+;   Case 2: Ld-skip-proofsp is not t or nil, i.e., it is 'include-book when
+;   entering the outer encapsulate.  Then neither encapsulate hits the
+;   with-hcomp-bindings-encapsulate call in encapsulate-fn, so this issue
+;   disappears.
+
+; - For storing and retrieving to *hcomp-fn-ht* on behalf of encapsulate, it is
+;   tempting to restrict to the case that the host Lisp compiles on the fly,
+;   hence is either CCL or SBCL.  However, we do not make that restriction,
+;   both for simplicity and so that we get the appropriate efficiency benefit
+;   when (set-compile-fns t) has been evaluated before entering an encapsulate.
+
+;   We acknowledge here the downside.  Consider the following example.
+
+;   (encapsulate
+;     ()
+;     (local (defun foo (x) (declare (xargs :mode :program)) <body>))
+;     (set-compile-fns t)
+;     ;; Redundant only on pass 1.
+;     (defun foo (x) (declare (xargs :mode :program)) <body>))
+
+;   Then in Lisps other than CCL and SBCL, foo would get a non-compiled
+;   symbol-function on pass 2.  However, the situation described by that
+;   example seems rather pathological, so we opt for simplicity, treating all
+;   Lisps the same here.  That can be reconsidered if it causes problems in
+;   practice.
+
+; - We modified defconst-val-raw so that it no longer assumes that the hash
+;   tables are associated with books.
+
+; - We considered, when entering include-book even when not using hash tables
+;   (presumably because no compiled file is used), setting *hcomp-status* to
+;   nil so that encapsulate-based hash tables aren't even considered.  But this
+;   isn't necessary: if we're in a local include-book, then there cannot be any
+;   enclosing encapsulate in pass 2, since otherwise ld-skip-proofsp would be
+;   'include-book and hence local events would be skipped.  So there cannot be
+;   any retrieval from the hash tables.
+
+; - We disallow the use of hash tables (both populating them and looking up in
+;   them) when redefinition is on.  That was not an issue when dealing with
+;   certified books, since redefinition is off during certification (see the
+;   state global bindings of 'ld-redefinition-action in certify-book-step-2 and
+;   certify-book-step-3+).  Note that make-event expansion reverts the state
+;   global, 'ld-redefinition-action.  As with certify-book and include-book,
+;   this guarantees that redefinition won't be turned on during processing an
+;   encapsulate.
+
+; - We claim that the hash tables used by encapsulate never provide an
+;   incorrect value.  A bit of argument is required for *1* functions, but for
+;   the other cases it's clear since if it were false, the events that store
+;   and retrieve would be in conflict, but neither is local to an inner
+;   encapsulate (since we don't store or retrieve in those cases), so the
+;   conflict would also be present in pass 1, which would have caused an error.
+
+;   For *1* functions the error would be if we store a logic-mode version but
+;   retrieve a program-mode version, or vice-versa.  Let's consider those in
+;   turn.
+
+;   + Suppose we store the *1* function into *hcomp-fn-ht* for a logic-mode
+;     defun of f.  That defun must be non-local, since we don't store for local
+;     logic-mode *1* functions.  It can't be before retrieving a *1*
+;     symbol-function from *hcomp-fn-ht* for a program-mode defun of f, because
+;     then the program-mode defun would be redundant so there would be no
+;     retrieval.  So that logic-mode defun is after the program-mode defun,
+;     hence is reclassifying.  So the logic-mode function is semi-qualified,
+;     and a reclassifying value is stored into *hcomp-fn-ht* for the *1* symbol
+;     for f (let's call it *1*f).  Then the program-mode defun will not receive
+;     a stored value for *1*f, since no program-mode defun gets a value from
+;     *hcomp-fn-ht* when it is associated there with a reclassifying value.
+
+;   + Assume that we store the *1* symbol-function for a program-mode defun D_P
+;     of f, and then erroneously retrieve that in pass 2 as the *1* function
+;     for a logic-mode defun D_L of f.  So D_L is non-local (since we're in
+;     pass 2 of some superior encapsulate when retrieving from *hcomp-fn-ht*
+;     for encapsulate).  So D_L was encountered in pass 1 after D_P, else D_P
+;     would have been redundant.  But then *1*f was associated with a
+;     reclassifying value in *hcomp-fn-ht* upon evaluating D_L, so
+;     *hcomp-fn-ht* does not contain the program-mode *1* symbol-function when
+;     D_L is encountered in pass 2, a contradiction of our assumption.
 
 ; End of Essay on Hash Table Support for Compilation
 
@@ -5686,7 +6308,6 @@
                (t status))))
       (t ; not raw-mode, and load-compiled-file is non-nil
        (with-hcomp-bindings
-        t
         (let ((status
                (let ((*user-stobj-alist*
 
@@ -5802,12 +6423,19 @@
                     "Implementation error: Unknown case, ~x0."
                     ,type))))
 
-(defmacro hcomp-build-p ()
-  '(and (eq *inside-include-book-fn* 'hcomp-build) ; under certify-book-fn
-        *hcomp-fn-ht*                              ; compile-flg is true
-        ))
+(defun hcomp-build-p ()
+
+; See the Essay on Hash Table Support for Compilation.  This function returns
+; the *hcomp-status* when we are storing into hash tables.
+
+  (let ((s *hcomp-status*))
+    (cond ((eq s 'certify-book) 'certify-book)
+          ((eq s 'encapsulate-pass-1) 'encapsulate-pass-1)
+          (t nil))))
 
 (defun install-for-add-trip-hcomp-build (def reclassifyingp evalp)
+
+; See the Essay on Hash Table Support for Compilation.
 
 ; Def is a definition starting with defun, defconst, defmacro, or defabbrev.
 
@@ -5815,13 +6443,22 @@
          (name (cadr def))
          (ht (hcomp-ht-from-type type 'install-for-add-trip-hcomp-build)))
     (when evalp
-      (eval def))
+      (with-debug (eval def)
+                  "[~s] Eval def for ~s.~%"
+                  'idfathb-1 name)
+      #-(or ccl sbcl)
+      (when (and (eq (car def) 'defun)
+                 (default-compile-fns (w *the-live-state*)))
+        (with-debug (compile name)
+                    "[~s] Compile def for ~s.~%"
+                    'idfathb-2 name)))
     (assert ht)
-    (multiple-value-bind (old present-p)
-        (gethash name ht)
-      (cond ((eq old *hcomp-fake-value*)) ; then we keep the fake value
-            ((and (consp (car (last def)))
-                  (eq (car (car (last def))) 'quote))
+    (multiple-value-bind
+     (old present-p)
+     (gethash name ht)
+     (cond ((eq old *hcomp-fake-value*)) ; then we keep the fake value
+           ((and (consp (car (last def)))
+                 (eq (car (car (last def))) 'quote))
 
 ; See the defconst case in add-trip, with a comment there explaining that the
 ; defparameter is generated with a quoted body when the original defconst has a
@@ -5838,10 +6475,13 @@
 ; with potentially more than one attachment it is important to treat the
 ; attachment-symbol as unqualified.
 
-             (setf (gethash name ht)
-                   *hcomp-fake-value*))
-            (present-p (cond ((and reclassifyingp
-                                   (not (reclassifying-value-p old)))
+            (with-debug (setf (gethash name ht)
+                              *hcomp-fake-value*)
+                        "[~s] Set hash table to *hcomp-fake-value* for ~s.~%"
+                        'idfathb-3 name))
+           (present-p (cond ((and reclassifyingp
+                                  (not (reclassifying-value-p old)))
+                             (with-debug
                               (assert$ (eq type 'defun)
 
 ; We expect a *1* function here.  If that is not the case (for some odd reason
@@ -5850,31 +6490,42 @@
 
                                        (setf (gethash name ht)
                                              (make-reclassifying-value
-                                              (symbol-function name)))))
-                             (t
+                                              (symbol-function name))))
+                              "[~s] Set hash table to reclassifying value for ~
+                               ~s.~%"
+                              'idfathb-4 name))
+                            (t
 
 ; This case is presumably impossible unless raw mode is used somehow to allow
 ; redefinition.  But we are conservative here.
 
-                              (setf (gethash name ht)
-                                    *hcomp-fake-value*))))
-            (t
-             (setf (gethash name ht)
-                   (case type
-                     (defun        (symbol-function name))
-                     (defparameter (symbol-value name))
-                     (otherwise    (macro-function name)))))))))
+                             (with-debug (setf (gethash name ht)
+                                               *hcomp-fake-value*)
+                                         "[~s] Set hash table to ~
+                                          *hcomp-fake-value* for ~s.~%"
+                                         'idfathb-5 name))))
+           (t
+            (with-debug (setf (gethash name ht)
+                              (case type
+                                (defun        (symbol-function name))
+                                (defparameter (symbol-value name))
+                                (otherwise    (macro-function name))))
+                        "[~s] Set hash table for ~s.~%"
+                        'idfathb-6 name))))))
 
 (defun install-for-add-trip-include-book (type name name0 def reclassifyingp
                                                wrld)
 
-; This function is called only when *inside-include-book-fn* is t, i.e., a book
-; is being included and that is not happening simply as the include-book phase
-; near the end of certify-book.
+; See the Essay on Hash Table Support for Compilation.
 
-; Name is the name of a symbol being defined.  Normally name0 is name, but
-; if name is a *1* function symbol then name0 is the corresponding function
-; symbol of the Common Lisp definition to be installed.
+; This function is called only when *hcomp-status* is 'include-book. So, either
+; a book is being included and that is not happening simply as the include-book
+; phase near the end of certify-book; or we are in pass 2 of an encapsulate
+; (hence ld-skip-proofsp is 'include-book).
+
+; Name is the name of a symbol being defined.  Normally name0 is name, but if
+; name is a *1* function symbol then name0 is the corresponding ACL2 function
+; symbol.
 
 ; An attempt is made to install a definition for name from the suitable
 ; hash table, but only when that is appropriate as explained below.
@@ -5897,31 +6548,39 @@
         (return-val nil))
     (when (null ht) ; e.g., including uncertified book
       (return-from install-for-add-trip-include-book
-        (and def (eval def))))
+                   (and def (with-debug (eval def)
+                                        "[~s] Eval def for ~s.~%"
+                                        'ifatib-1 name))))
     (multiple-value-bind
      (val present-p)
      (gethash name ht)
      (when present-p
 
-; Convert present-p to t, nil, or one of the other possible return values as
-; commented above.  Ultimately we return that value of present-p.
+; The following sets return-val to t, nil, or 'to-compile as commented above.
+; Ultimately we return that value of return-val.
 
        (setq return-val
-             (let ((ext-gens (and wrld
-                                  (global-val 'ext-gens wrld)))
-                   ext-gen-barriers)
-               (cond ((not (or (eq type 'defun)
-                               (and (eq type 'defmacro)
+             (cond
+              ((eq val *hcomp-fake-value*)
+               nil)
+              ((not (or (eq type 'defun)
+                        (and (eq type 'defmacro)
 
 ; We are only concerned here about defmacro when it is generated for
 ; defabsstobj.
 
-                                    wrld)))
-                      t)
-                     ((and ext-gens
-                           (member-eq name0 ext-gens))
-                      (cond ((and (eq type 'defun)
-                                  (compiled-function-p val))
+                             wrld)))
+               t)
+              (t
+               (let ((ext-gens (and wrld
+                                    (global-val 'ext-gens wrld)))
+                     ext-gen-barriers)
+                 (cond
+                  ((null ext-gens) t) ; optimization
+                  ((and ext-gens
+                        (member-eq name0 ext-gens))
+                   (cond ((and (eq type 'defun)
+                               (compiled-function-p val))
 
 ; We want to compile the function definition if its hash-table value is
 ; compiled (hence, it came from loading compiled file rather than from loading
@@ -5930,28 +6589,32 @@
 ; Stobjs.)  There seems to be no way to check whether a macro's code is
 ; compiled.
 
-                             'to-compile)
-                            (t nil)))
-                     ((and (setq ext-gen-barriers
-                                 (and ext-gens ; note: otherwise wrld is nil
-                                      (global-val 'ext-gen-barriers wrld)))
-                           (member-eq name0 ext-gen-barriers))
-                      (assert (eq type 'defun))
-                      (if (compiled-function-p val)
-                          'to-compile
-                        nil))
-                     (t t)))))
+                          'to-compile)
+                         (t nil)))
+                  ((and (setq ext-gen-barriers
+                              (and ext-gens ; note: otherwise wrld is nil
+                                   (global-val 'ext-gen-barriers wrld)))
+                        (member-eq name0 ext-gen-barriers))
+                   (assert (eq type 'defun))
+                   (if (compiled-function-p val)
+                       'to-compile
+                     nil))
+                  (t t)))))))
      (cond
-      ((eq return-val t) ; could be replaced below
+      ((eq return-val t) ; But note that return-val could be modified below.
        (assert$
         (not (eq val *hcomp-fake-value*))
         (cond
-         ((reclassifying-value-p val)
+         ((reclassifying-value-p val) ; may set return-val again
           (assert$
            (eq type 'defun) ; presumably a *1* symbol
            (let ((fixed-val (unmake-reclassifying-value val)))
-             (setf (gethash name ht) fixed-val)
+             (setf (gethash name ht) fixed-val) ; see comment below
              (cond (reclassifyingp
+
+; We do not see how this situation can occur in the second pass of an
+; encapsulate, but if it does, then it still seems fine to use fixed-val for
+; the *1* symbol-function of name in logic mode.
 
 ; We are converting the definition of some function, F, from :program mode to
 ; :logic mode.  Since reclassifying-value-p holds of val, the book (including
@@ -5967,22 +6630,38 @@
 ; don't need to modify the hash table in this case (as we did above); but this
 ; case is probably unusual so the potential efficiency hit seems trivial, and
 ; it seems safest to go ahead and keep only the true value in the hash table
-; henceforth.
+; henceforth (as assigned by the setf form above).
 
-                    (setf (symbol-function name) fixed-val))
-                   (t (cond (def (eval def))
+                    (with-debug
+                     (setf (symbol-function name) fixed-val)
+                     "[~s] Set (symbol-function ~s) with fixed-val.~%"
+                     'ifatib-2 name))
+                   (t (cond (def (with-debug (eval def)
+                                             "[~s] Eval def for ~s.~%"
+                                             'ifatib-3 name))
                             (t (setq return-val nil))))))))
          (t (case type
               (defun
-                  (setf (symbol-function name) val))
+                  (with-debug (setf (symbol-function name) val)
+                              "[~s] Set (symbol-function ~s), mode ~s.~%"
+                              'ifatib-4
+                              name
+                              (fdefun-mode name0 wrld)))
               (defparameter
-                (setf (symbol-value name) val))
+                (with-debug (setf (symbol-value name) val)
+                            "[~s] Set (symbol-value ~s).~%"
+                            'ifatib-5 name))
               (otherwise
                (assert$ (member-eq type '(defabbrev defmacro))
-                        (setf (macro-function name) val))))
+                        (with-debug (setf (macro-function name) val)
+                                    "[~s] Set (macro-function ~s).~%"
+                                    'ifatib-6 name))))
             t))))
       (t ; Hash-table lookup either fails or is not used.
-       (when def (eval def))))
+       (when def
+         (with-debug (eval def)
+                     "[~s] Eval def for ~s.~%"
+                     'ifatib-7 def))))
      return-val)))
 
 (defun install-for-add-trip (def reclassifyingp evalp)
@@ -5998,7 +6677,7 @@
 ; install-for-add-trip-hcomp-build.
 
   (cond
-   ((eq *inside-include-book-fn* t) ; in include-book-fn, not certify-book-fn
+   ((eq *hcomp-status* 'include-book) ; in include-book-fn, not certify-book-fn
     (install-for-add-trip-include-book (car def) (cadr def) (cadr def) def
                                        reclassifyingp
 
@@ -6008,7 +6687,9 @@
                                        nil))
    ((hcomp-build-p)
     (install-for-add-trip-hcomp-build def reclassifyingp evalp))
-   (t (eval def))))
+   (t (with-debug (eval def)
+                  "[~s] Eval def for ~s.~%"
+                  'ifat-1 (cadr def)))))
 
 (defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp
                                    &aux (hcomp-build-p (hcomp-build-p)))
@@ -6016,6 +6697,10 @@
 ; Defs is a list of definitions, each of which is a call of defun, defabbrev,
 ; or defmacro, or else of the form (ONEIFY-CLTL-CODE defun-mode def
 ; stobj-name), where def is the cdr of a call of defun.
+
+; Evalp determines whether we evaluate definitions.  It can be true or false
+; when hcomp-build-p is true; otherwise evalp is true and we evaluate
+; definitions.
 
 ; This function, which may destructively modify defs, is responsible for
 ; declaiming and submitting every definition in defs, while avoiding such
@@ -6025,11 +6710,19 @@
 ; compiled version of it) that populated that hash table with its definition.
 
 ; The only time we retrieve an existing definition from *hcomp-fn-ht* is during
-; include-book-fn but not during certify-book-fn, i.e., when
-; *inside-include-book-fn* is t.
+; include-book-fn but not during certify-book-fn, i.e., when *hcomp-status* is
+; 'include-book.
+
+; See the Essay on Hash Table Support for Compilation for background on the use
+; of hash tables to avoid some evaluation of definitions.
 
 ; See the Essay on Attachable Stobjs for discussion relevant to the use of
 ; world global 'ext-gen-barriers for declaiming functions notinline.
+
+; The code below starts with two loops that can destructively modify defs, for
+; example by replacing a definition with nil when the corresponding
+; symbol-function is retrieved from *hcomp-fn-ht*, and can also deal with
+; proclaiming.  Then we perform pending evaluation.
 
   (loop for tail on defs
         do
@@ -6054,17 +6747,26 @@
                                    (if oneify-p
                                        (*1*-symbol name)
                                      name))))
-                   (proclaim form)
-                   (push (list 'declaim form) *declaim-list*)))
+                   (with-debug (proclaim form)
+                               "[~s] (proclaim ~s)~%"
+                               'idfat-1 form)
+                   (when hcomp-build-p
+                     (push (list 'declaim form) *declaim-list*))))
                 (oneify-p nil)
                 ((inline-namep sname)
                  (let ((form (list 'inline name)))
-                   (proclaim form)
-                   (push (list 'declaim form) *declaim-list*)))
+                   (with-debug (proclaim form)
+                               "[~s] (proclaim ~s)~%"
+                               'idfat-2 form)
+                   (when hcomp-build-p
+                     (push (list 'declaim form) *declaim-list*))))
                 ((notinline-namep sname)
                  (let ((form (list 'notinline name)))
-                   (proclaim form)
-                   (push (list 'declaim form) *declaim-list*))))))
+                   (with-debug (proclaim form)
+                               "[~s] (proclaim ~s)~%"
+                               'idfat-3 form)
+                   (when hcomp-build-p
+                     (push (list 'declaim form) *declaim-list*)))))))
   (loop with ext-gen-barriers = (and evalp
                                      (global-val 'ext-gen-barriers wrld))
         for tail on defs
@@ -6074,7 +6776,14 @@
                (def0 (if oneify-p (caddr def) (cdr def)))
                (name (car def0))
                (flg nil))
-          (cond ((and (eq *inside-include-book-fn* t)
+          (cond ((and (eq *hcomp-status* 'include-book)
+
+; It is tempting perhaps to assert here that *hcomp-fn-ht* is non-nil
+; (similarly for *hcomp-const-ht* and *hcomp-macro-ht*), expecting it to be
+; bound to a hash table when *hcomp-status* is 'include-book.  However,
+; inspection of with-hcomp-ht-bindings shows that *hcomp-fn-ht* can be nil when
+; including a book without loading its compiled file.
+
                       (cond
                        (oneify-p
                         (setq flg
@@ -6151,7 +6860,8 @@
                       ((and declaim-p
                             (not (member-eq (car def)
                                             '(defmacro defabbrev))))
-                       (setq form (make-defun-declare-form (cadr def) def))))
+                       (setq form ; type declaration (not inline or notinline)
+                             (make-defun-declare-form (cadr def) def))))
                      #-(or ccl sbcl)
                      (when (eq flg 'to-compile)
                        (setf (car tail)
@@ -6166,22 +6876,65 @@
                                 (or oneify-p
                                     (eq (car def) 'defun))
                                 (member-eq name ext-gen-barriers))
-                       (proclaim `(notinline ,(if oneify-p
-                                                  (*1*-symbol name)
-                                                name))))
-                     (when evalp
-                       (eval form)))))))
-  (cond ((eq *inside-include-book-fn* t)
-         (loop for tail on defs
-               when (car tail)
-               do (eval (car tail))))
+                       (let ((tmp `(notinline ,(if oneify-p
+                                                   (*1*-symbol name)
+                                                 name))))
+                         (with-debug (proclaim tmp)
+                                     "[~s] (proclaim ~s)~%"
+                                     'idfat-4 tmp)))
+                     (when form ; optimization
+
+; At one time we evaluated form only when evalp is true.  Perhaps that would
+; still be a good restriction, though this confused us when trying to explain
+; (in October 2025) the meaning of the evalp argument.  Except in old versions
+; of GCL (before 2.7.0), form is nil anyhow, so it's not worth spending a lot
+; of time on this issue or having it affect how we specify evalp.
+
+                       (with-debug (eval form)
+                                   "[~s] (eval ~s)~%"
+                                   'idfat-5 form))
+                     (let ((skip-reason
+                            (and (eq hcomp-build-p 'encapsulate-pass-1)
+                                 (let ((state *the-live-state*))
+                                   (and (f-get-global 'in-local-flg state)
+                                        (cond ((and oneify-p
+                                                    (eq (cadr def) :logic))
+                                               'logic)
+                                              ((in-nested-encapsulatep state)
+                                               'nested-encapsulate)
+                                              (t nil)))))))
+                       (when skip-reason
+                         (when (eq skip-reason 'logic)
+                           (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
+                           (with-debug (eval (car tail))
+                                       "[~s] Storing *hcomp-fake-value* for ~
+                                        ~s.~%"
+                                       'idfat-6 (*1*-symbol name))
+                           (setf (gethash (*1*-symbol name) *hcomp-fn-ht*)
+                                 *hcomp-fake-value*))
+                         (when evalp
+                           (with-debug (eval (car tail))
+                                       "[~s] Eval def for ~s.~%"
+                                       'idfat-7 (cadr (car tail))))
+                         (setf (car tail) nil))))))))
+  (cond ((eq *hcomp-status* 'include-book)
+         (assert evalp)
+         (loop for def in defs
+               when def
+               do (with-debug (eval def)
+                              "[~s] Eval def for ~s.~%"
+                              'idfat-8 (cadr def))))
         (hcomp-build-p
          (loop for def in defs
+               when def
                do
                (install-for-add-trip-hcomp-build def reclassifying-p evalp)))
         (t
+         (assert evalp)
          (loop for def in defs
-               do (eval def)))))
+               do (with-debug (eval def)
+                              "[~s] Eval def for ~s.~%"
+                              'idfat-9 (cadr def))))))
 
 (defun ifat-defparameter (name val form)
 
@@ -6203,6 +6956,10 @@
 
 (defun hcomp-build-from-state-raw (cltl-cmds state)
 
+; See the Essay on Hash Table Support for Compilation.
+
+; This should only be called under a call of with-hcomp-bindings.
+
 ; Warning: If you change this function, consider making corresponding changes
 ; to add-trip.  We wrote the present function primarily by eliminating extra
 ; code from the definition of add-trip, to satisfy the following spec.  We also
@@ -6215,7 +6972,7 @@
 ; world, much as we do when processing events in the book after the rollback
 ; (if there is a rollback).
 
-  (let ((*inside-include-book-fn* 'hcomp-build))
+  (let ((*hcomp-status* 'certify-book))
     (dolist (cltl-cmd cltl-cmds)
       (let* ((wrld (w state)))
         (case (car cltl-cmd)
@@ -6665,25 +7422,23 @@
 
                     (and #+gcl (not user::*fast-acl2-gcl-build*)
                          boot-strap-flg) ; delete for build speedup (see above)
+                    #-(or ccl sbcl) ; else not necessary
                     (and
-                     (not *inside-include-book-fn*)
+                     (not ; allow *hcomp-status* = 'encapsulate-pass-1
+                      (member-eq *hcomp-status*
+                                 '(include-book certify-book)))
                      (default-compile-fns wrld)))
                    (dolist (def new-defs)
-                     (assert$
-                      def
-
-; Install-defs-for-add-trip can't make def nil, since either we are in the
-; boot-strap or else the value of 'ld-skip-proofsp is not 'include-book.
-
-                      (let ((name (cond ((eq (car def) 'defun)
-                                         (cadr def))
-                                        ((eq (car def) 'oneify-cltl-code)
-                                         (car (caddr def)))
-                                        (t (error "Implementation error: ~
-                                                   unexpected form in ~
-                                                   add-trip, ~x0"
-                                                  def)))))
-                        (eval `(compile ',name)))))))))
+                     (when def
+                       (let ((name (cond ((eq (car def) 'defun)
+                                          (cadr def))
+                                         ((eq (car def) 'oneify-cltl-code)
+                                          (car (caddr def)))
+                                         (t (error "Implementation error: ~
+                                                    unexpected form in ~
+                                                    add-trip, ~x0"
+                                                   def)))))
+                         (eval `(compile ',name)))))))))
         ((defstobj defabsstobj)
 
 ; Cltl-cmd is of the form
@@ -6822,24 +7577,22 @@
                                       t)
            (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
                           t)
-                      (not *inside-include-book-fn*)
+                      #-(or ccl sbcl) ; else not necessary
+                      (not ; allow *hcomp-status* = 'encapsulate-pass-1
+                       (member-eq *hcomp-status*
+                                  '(include-book certify-book)))
                       (default-compile-fns wrld))
              (dolist (def new-defs)
-               (assert$
-
-; Install-defs-for-add-trip can't make def nil, since the value of
-; 'ld-skip-proofsp is not 'include-book.
-
-                def
-                (let ((name (cond ((or (eq (car def) 'defun)
-                                       (eq (car def) 'defabbrev)
-                                       (eq (car def) 'defmacro))
-                                   (cadr def))
-                                  ((eq (car def) 'oneify-cltl-code)
-                                   (car (caddr def)))
-                                  (t (error "Implementation error: ~
-                                             unexpected form in add-trip, ~x0"
-                                            def)))))
+               (when def
+                 (let ((name (cond ((or (eq (car def) 'defun)
+                                        (eq (car def) 'defabbrev)
+                                        (eq (car def) 'defmacro))
+                                    (cadr def))
+                                   ((eq (car def) 'oneify-cltl-code)
+                                    (car (caddr def)))
+                                   (t (error "Implementation error: ~
+                                              unexpected form in add-trip, ~x0"
+                                             def)))))
 
 ; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
 ; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
@@ -6847,12 +7600,12 @@
 ; version 18 or 19 of CMUCL, but we'll avoid that for CMUCL version 20, since
 ; 20D at least can compile macros.
 
-                  #+(and cmu (or cmu18 cmu19))
-                  (cond ((and (not (eq (car def) 'defabbrev))
-                              (not (eq (car def) 'defmacro)))
-                         (eval `(compile ',name))))
-                  #-(and cmu (or cmu18 cmu19))
-                  (eval `(compile ',name))))))))
+                   #+(and cmu (or cmu18 cmu19))
+                   (cond ((and (not (eq (car def) 'defabbrev))
+                               (not (eq (car def) 'defmacro)))
+                          (eval `(compile ',name))))
+                   #-(and cmu (or cmu18 cmu19))
+                   (eval `(compile ',name))))))))
         (defpkg
           (without-interrupts
            (maybe-push-undo-stack 'defpkg (cadr cltl-cmd))

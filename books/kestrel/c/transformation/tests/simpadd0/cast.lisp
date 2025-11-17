@@ -1,0 +1,47 @@
+; C Library
+;
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C2C")
+
+(include-book "../../simpadd0")
+
+(include-book "../../../syntax/input-files")
+(include-book "../../../syntax/output-files")
+
+(include-book "../utilities")
+
+; (depends-on "old/cast.c")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(c$::input-files :files '("cast.c")
+                 :path "old"
+                 :const *old-code*)
+
+(simpadd0 :const-old *old-code*
+          :const-new *new-code*)
+
+(c$::output-files :const *new-code*
+                  :path "new")
+
+(assert-file-contents
+ :file "new/cast.c"
+ :content "int cast_long_to_int(long x) {
+  return (int) x;
+}
+long cast_int_to_long(int x) {
+  return (long) x;
+}
+short cast_nonpure(int x) {
+  return (short) (x = 5);
+}
+")
+
+(assert-highest-thm-has-exec-fun *new-code*)
