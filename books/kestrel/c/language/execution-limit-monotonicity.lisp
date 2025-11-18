@@ -133,6 +133,13 @@
                (if val?
                    (mv (make-expr-value :value val? :object nil) compst)
                  (mv nil compst)))
+       :member (b* (((mv str compst)
+                     (exec-expr-2limits
+                      e.target compst fenv (1- limit) (1- limit1)))
+                    ((when (errorp str)) (mv str compst))
+                    ((unless str)
+                     (mv (error (list :member-void-expr (expr-fix e))) compst)))
+                 (mv (exec-member str e.name) compst))
        :unary (b* (((mv arg compst)
                     (exec-expr-2limits
                      e.arg compst fenv (1- limit) (1- limit1)))

@@ -1011,7 +1011,7 @@
        if they were not, they might modify the function-valued expression.
        We execute the arguments and then the function.")
      (xdoc::p
-      "A unary expression is always deterministic,
+      "A member or unary expression is always deterministic,
        because it has a single sub-expression.")
      (xdoc::p
       "A cast expression is always deterministic in our current C subset,
@@ -1088,6 +1088,12 @@
                (if val?
                    (mv (make-expr-value :value val? :object nil) compst)
                  (mv nil compst)))
+       :member (b* (((mv str compst)
+                     (exec-expr e.target compst fenv (1- limit)))
+                    ((when (errorp str)) (mv str compst))
+                    ((unless str)
+                     (mv (error (list :member-void-expr (expr-fix e))) compst)))
+                 (mv (exec-member str e.name) compst))
        :unary (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
                    ((when (errorp arg)) (mv arg compst))
                    ((unless arg)
