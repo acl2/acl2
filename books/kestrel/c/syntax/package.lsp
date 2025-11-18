@@ -21,6 +21,7 @@
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
                                  '(block
+                                   newline
                                    position
                                    read-char
                                    read-files
