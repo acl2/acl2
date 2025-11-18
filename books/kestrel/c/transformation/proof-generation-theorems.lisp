@@ -385,6 +385,73 @@
   (defruled expr-binary-pure-strict-congruence
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
+         ((mv old-arg1-eval old-arg1-compst)
+          (c::exec-expr old-arg1 compst old-fenv (1- limit)))
+         ((mv old-arg2-eval old-arg2-compst)
+          (c::exec-expr old-arg2 old-arg1-compst old-fenv (1- limit)))
+         ((mv new-arg1-eval new-arg1-compst)
+          (c::exec-expr new-arg1 compst new-fenv (1- limit)))
+         ((mv new-arg2-eval new-arg2-compst)
+          (c::exec-expr new-arg2 new-arg1-compst new-fenv (1- limit)))
+         (old-arg1-val (c::expr-value->value old-arg1-eval))
+         (old-arg2-val (c::expr-value->value old-arg2-eval))
+         (new-arg1-val (c::expr-value->value new-arg1-eval))
+         (new-arg2-val (c::expr-value->value new-arg2-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type1 (c::type-of-value old-arg1-val))
+         (type2 (c::type-of-value old-arg2-val)))
+      (implies (and (c::binop-purep op)
+                    (c::binop-strictp op)
+                    (c::expr-purep new-arg1)
+                    (c::expr-purep new-arg2)
+                    (not (c::errorp old-eval))
+                    (not (c::errorp new-arg1-eval))
+                    (not (c::errorp new-arg2-eval))
+                    (iff old-arg1-eval new-arg1-eval)
+                    (iff old-arg2-eval new-arg2-eval)
+                    (equal old-arg1-val new-arg1-val)
+                    (equal old-arg2-val new-arg2-val)
+                    (equal old-arg1-compst new-arg1-compst)
+                    (equal old-arg2-compst new-arg2-compst)
+                    (c::type-nonchar-integerp type1)
+                    (c::type-nonchar-integerp type2))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    old-eval
+                    (equal (c::type-of-value old-val)
+                           (cond ((member-equal (c::binop-kind op)
+                                                '(:mul :div :rem :add :sub
+                                                  :bitand :bitxor :bitior))
+                                  (c::uaconvert-types type1 type2))
+                                 ((member-equal (c::binop-kind op)
+                                                '(:shl :shr))
+                                  (c::promote-type type1))
+                                 (t (c::type-sint)))))))
+    :expand ((c::exec-expr
+              (c::expr-binary op old-arg1 old-arg2) compst old-fenv limit)
+             (c::exec-expr
+              (c::expr-binary op new-arg1 new-arg2) compst new-fenv limit))
+    :disable ((:e c::type-sint))
+    :enable (c::binop-purep
+             c::binop-strictp
+             c::exec-binary-strict-pure
+             c::eval-binary-strict-pure
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-binary-pure-strict-congruence-pure
+    (b* ((old (c::expr-binary op old-arg1 old-arg2))
+         (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
          (old-arg2-result (c::exec-expr-pure old-arg2 compst))
          (new-arg1-result (c::exec-expr-pure new-arg1 compst))
@@ -1192,7 +1259,30 @@
    (xdoc::p
     "Transformations use these theorems in proof generation
      to actually show that if the super-construct does not yield an error,
-     neither do its sub-constructs."))
+     neither do its sub-constructs.")
+   (xdoc::p
+    "The theorem @('expr-pure-errors') is a little different,
+     because it relates pure expression execution
+     and general expression execution
+     applied to the same expressions.
+     But it has a similar flavor and structure as the other theorems."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-pure-errors
+    (implies (and (c::expr-purep expr)
+                  (c::errorp (c::exec-expr-pure expr compst)))
+             (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
+    :use ((:instance c::exec-expr-to-exec-expr-pure
+                     (expr expr)
+                     (compst compst)
+                     (fenv fenv)
+                     (limit limit))
+          (:instance c::pure-limit-bound-when-exec-expr-not-error
+                     (expr expr)
+                     (compst compst)
+                     (fenv fenv)
+                     (limit limit))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1233,6 +1323,21 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-pure-strict-errors
+    (b* (((mv eval1 compst1) (c::exec-expr arg1 compst fenv (1- limit)))
+         ((mv eval2 &) (c::exec-expr arg2 compst1 fenv (1- limit))))
+      (implies (and (c::binop-strictp op)
+                    (c::binop-purep op)
+                    (or (c::errorp eval1)
+                        (c::errorp eval2)))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-binary op arg1 arg2) compst fenv limit)))))
+    :expand (c::exec-expr (c::expr-binary op arg1 arg2) compst fenv limit))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-binary-pure-strict-errors-pure
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))

@@ -51,15 +51,6 @@
      for execution to terminate.
      Here we define such calculation.")
    (xdoc::p
-    "For now the definition is relatively simple,
-     because @(tsee exec-expr) only handles a few expressions directly
-     (i.e. via the cases of the fixtype of expressions),
-     and more expressions indirectly
-     (i.e. in the @(':otherwise') case.
-     However, as we extend @(tsee exec-expr) with more explicit cases
-     (as part of our moving away from @(tsee exec-expr-pure)),
-     this calculation will become correspondingly richer.")
-   (xdoc::p
     "The execution of the expression may terminate with an error,
      depending on the computation state and possibly function environment.
      However, here we are solely concerned with @(tsee exec-expr)
@@ -75,31 +66,33 @@
      Note that currently type names do not undergo execution
      in our formal dynamic semantics.")
    (xdoc::p
-    "Call expressions currently need just 1,
-     because, for the arguments, we use @(tsee exec-expr-pure-list);
-     but eventually we will extend this case
-     to recursively call @(tsee exec-expr),
-     and we will update the calculation of the limit.")
+    "For binary pure expressions, we add 1 to
+     the maximum of the limits for the sub-expressions.")
    (xdoc::p
-    "Most other kinds of expressions also just need 1 currently,
-     because after passing the initial test,
-     we call @(tsee exec-expr-pure) and not @(tsee exec-expr);
-     this will also change as we extend @(tsee exec-expr)."))
+    "For all the other kinds of expressions we just need 1 currently,
+     because we delegate to @(tsee exec-expr-pure)."))
   (expr-case
    expr
    :ident 1
    :const 1
-   :arrsub 1
+   :arrsub (1+ (max (expr-pure-limit expr.arr)
+                    (expr-pure-limit expr.sub)))
    :member 1
    :memberp 1
    :unary (1+ (expr-pure-limit expr.arg))
    :cast (1+ (expr-pure-limit expr.arg))
-   :binary 1
+   :binary (if (binop-strictp expr.op)
+               (1+ (max (expr-pure-limit expr.arg1)
+                        (expr-pure-limit expr.arg2)))
+             1)
    :cond 1
    :otherwise (prog2$ (impossible) 0))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o-finp o<)))
-  :guard-hints (("Goal" :expand (expr-purep expr))))
+  :verify-guards :after-returns
+  :guard-hints (("Goal"
+                 :in-theory (enable binop-strictp)
+                 :expand (expr-purep expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,13 +105,19 @@
   (expr-case expr
              :ident nil
              :const nil
-             :call nil
+             :arrsub (list (induct-exec-expr-of-pure expr.arr (1- limit))
+                           (induct-exec-expr-of-pure expr.sub (1- limit)))
              :unary (induct-exec-expr-of-pure expr.arg (1- limit))
              :cast (induct-exec-expr-of-pure expr.arg (1- limit))
+             :binary (if (binop-strictp expr.op)
+                         (list (induct-exec-expr-of-pure expr.arg1 (1- limit))
+                               (induct-exec-expr-of-pure expr.arg2 (1- limit)))
+                       nil)
              :otherwise nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-  :verify-guards nil)
+  :verify-guards nil
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,12 +138,14 @@
                   (mv (exec-expr-pure expr compst)
                       (compustate-fix compst))))
   :induct (induct-exec-expr-of-pure expr limit)
-  :expand (exec-expr-pure expr compst)
+  :expand ((exec-expr-pure expr compst)
+           (expr-purep expr))
   :enable (induct-exec-expr-of-pure
            exec-expr
            expr-pure-limit
-           expr-purep
-           nfix))
+           binop-strictp
+           nfix
+           max))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,14 +159,17 @@
      does not return an error,
      the limit must be at least the minimum one for the expression.
      Otherwise execution would yield a (limit) error."))
-  (b* (((mv eval &) (c::exec-expr expr compst fenv limit)))
-    (implies (and (c::expr-purep expr)
-                  (not (c::errorp eval)))
-             (>= (nfix limit) (c::expr-pure-limit expr))))
-  :rule-classes ((:linear :trigger-terms ((c::expr-pure-limit expr))))
-  :induct (c::induct-exec-expr-of-pure expr limit)
-  :enable (c::induct-exec-expr-of-pure
-           c::exec-expr
-           c::expr-pure-limit
-           c::expr-purep
-           nfix))
+  (b* (((mv eval &) (exec-expr expr compst fenv limit)))
+    (implies (and (expr-purep expr)
+                  (not (errorp eval)))
+             (>= (nfix limit) (expr-pure-limit expr))))
+  :rule-classes ((:linear :trigger-terms ((expr-pure-limit expr))))
+  :induct (induct-exec-expr-of-pure expr limit)
+  :expand (exec-expr expr compst fenv limit)
+  :enable (induct-exec-expr-of-pure
+           exec-expr-to-exec-expr-pure
+           expr-pure-limit
+           expr-purep
+           binop-strictp
+           nfix
+           max))
