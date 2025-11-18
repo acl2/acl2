@@ -1350,3 +1350,31 @@
  :cond (equal ast
               (plexeme-line-comment
                (acl2::string=>nats "/* no special significance */"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-spaces
+
+(test-lex
+ plex-spaces
+ nil
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 1)))
+
+(test-lex
+ plex-spaces
+ "a"
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 1)))
+
+(test-lex
+ plex-spaces
+ "    "
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 5)))
+
+(test-lex
+ plex-spaces
+ "   a"
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 4)))
