@@ -1,1 +1,1 @@
-Notes: The file add.elf32 was called add-32im-ilp32.
+add - simple example program that adds 2 numbers
