@@ -240,6 +240,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption plexeme-option
+  plexeme
+  :short "Fixtype of optional preprocessing lexemes."
+  :pred plexeme-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod plexeme+span
   :short "Fixtype of pairs consisting of a lexeme and a span."
   ((lexeme plexeme)
@@ -2648,6 +2655,67 @@
     (implies (not erp)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-spaces ((first-pos positionp) (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme plexemep)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex consecutive spaces during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after a space character (code 32) has been read;
+     the position of that space character is passed as input here.")
+   (xdoc::p
+    "We read zero or more additional spaces,
+     and we return a lexeme for spaces,
+     with the count incremented by one to account for the first space."))
+  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+       ((erp nspaces last-pos ppstate) (plex-spaces-loop first-pos ppstate)))
+    (retok (plexeme-spaces (1+ nspaces))
+           (make-span :start first-pos :end last-pos)
+           ppstate))
+
+  :prepwork
+
+  ((define plex-spaces-loop ((prev-pos positionp) (ppstate ppstatep))
+     :returns (mv erp
+                  (nspaces natp :rule-classes (:rewrite :type-prescription))
+                  (last-pos positionp)
+                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+     :parents nil
+     (b* (((reterr) 0 (irr-position) ppstate)
+          ((erp char pos ppstate) (pread-char ppstate)))
+       (cond
+        ((not char) ; end of file
+         (retok 0 (position-fix prev-pos) ppstate))
+        ((utf8-= char 32) ; SP
+         (b* (((erp nspaces last-pos ppstate)
+               (plex-spaces-loop pos ppstate)))
+           (retok (1+ nspaces) last-pos ppstate)))
+        (t ; other
+         (b* ((ppstate (punread-char ppstate)))
+           (retok 0 (position-fix prev-pos) ppstate)))))
+     :measure (ppstate->size ppstate)
+     :verify-guards :after-returns
+
+     ///
+
+     (defret ppstate->size-of-plex-spaces-loop-uncond
+       (<= (ppstate->size new-ppstate)
+           (ppstate->size ppstate))
+       :rule-classes :linear
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret ppstate->size-of-plex-spaces-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
