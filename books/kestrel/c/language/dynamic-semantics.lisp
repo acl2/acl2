@@ -987,6 +987,17 @@
       "Variables and constants are always deterministic,
        so they are supported in all cases.")
      (xdoc::p
+      "In a function call,
+       the order of evaluation of the function and arguments is not specified.
+       In our current abstract syntax,
+       the function sub-expression is always pure;
+       we require all the argument expressions to be pure.
+       Thus the order of evaluation of function and arguments does not matter.
+       We use @(tsee exec-expr-pure-list) for the arguments
+       (but we plan to use a new function @('exec-expr-list') at some point),
+       and we delegate to @(tsee exec-fun)
+       the evaluation of the function sub-expression itself.")
+     (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions;
        if they were not, they might modify the function-valued expression.
@@ -998,7 +1009,7 @@
       "A cast expression is always deterministic in our current C subset,
        because the type name does not undergo any execution currently.")
      (xdoc::p
-      "For a binary expression with a strict pure operator
+      "For a binary expression with a strict pure operator,
        we require the two sub-expressions to be pure,
        because the order of evaluation is not specified;
        we evaluate the left one before the right one,
