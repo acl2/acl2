@@ -14,6 +14,7 @@
 
 (include-book "bv-array-read")
 (include-book "map-bvsx")
+(include-book "map-bvplus-val")
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
@@ -30,6 +31,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -337,6 +339,113 @@
   :hints (("Goal" :in-theory (e/d (bvlt <=-of-bvchop-same-linear)
                                   (bv-array-read-of-cons-both)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm <-when-power-of-2p-and-unsigned-byte-p
+   (implies (and (power-of-2p len)
+                 (unsigned-byte-p (ceiling-of-lg len)
+                                  index))
+            (< index len))
+   :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
+
+(defthmd bv-array-read-shorten-when-not-bvlt-gen
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvle size2 k index) ; index > k, k is a free var
+                (or (power-of-2p len) ; in this case, the index is in bounds because it is an unsigned-byte
+                    (bvlt (ceiling-of-lg len) index len))
+                (equal size2 (ceiling-of-lg len)) ; gen?
+                (syntaxp (quotep k))
+                (unsigned-byte-p size2 k)     ; gen?
+                (unsigned-byte-p size2 index) ; gen?
+                ;;(<= 1 k) ; prevents loops
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (- len k) (- index k) (nthcdr k data))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvlt bvchop-of-sum-cases))))
+
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+
+(local
+ (defthm unsigned-byte-p-of-ceiling-of-lg-and-ceiling-of-2
+   (implies (and (< 1 i)
+                 (integerp i))
+            (unsigned-byte-p (ceiling-of-lg i) (ceiling i 2)))
+   :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
+
+(local
+ (defthm +-of---of-ceiling-of-2-same
+   (implies (and (power-of-2p i)
+                 (< 1 i))
+            (equal (+ i (- (ceiling i 2)))
+                   (ceiling i 2)))
+   :hints (("Goal" :in-theory (enable power-of-2p)))))
+
+;; todo:  (<= (floor i 2) 1)
+
+;; (thm
+;;  (implies (and (posp i)
+;;                (< 1 i))
+;;           (equal (integer-length (ceiling i 2))
+;;                  (+ -1 (integer-length i))))
+;;  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(local
+ (defthm integer-length-of-ceiling-of-2-when-power-of-2p
+   (implies (and (power-of-2p i) ; drop?
+                 (integerp i))
+            (equal (integer-length (ceiling i 2))
+                   (if (< 1 i)
+                       (+ -1 (integer-length i))
+                     1)))
+   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases
+                                      floor-when-evenp)))))
+
+(local
+ (defthm power-of-2p-of-ceiling-of-2
+   (implies (power-of-2p i)
+            (power-of-2p (ceiling i 2)))
+   :hints (("Goal" :in-theory (enable power-of-2p expt-of-+)))))
+
+(local
+ (defthm hhelper
+   (equal (+ len (- (* 1/2 len)))
+          (* 1/2 len))))
+
+;; This discards the first ~half of the array values, but it does complicate
+;; the index term by subtracting a constant from it.
+(defthmd bv-array-read-shorten-when-in-second-half
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (integerp len) ; prevent loops, because (ceiling-of-lg len) is at least 1, so the length decreases
+                (< 1 len)  ; seems needed
+                (bvle (ceiling-of-lg len) (ceiling len 2) index) ; index in second half
+                ;; index in bounds:
+                (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                    (bvlt (ceiling-of-lg len) index len))
+                (integerp index))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (- len (ceiling len 2)) ; gets computed
+                                 (bvminus (ceiling-of-lg len) index (ceiling len 2))
+                                 (nthcdr (ceiling len 2) data))))
+  :hints (("Goal" :expand ((bvplus (ceiling-of-lg len)
+                                   index
+                                   (bvuminus (ceiling-of-lg len)
+                                             (ceiling len 2)))
+                           (bvuminus (ceiling-of-lg len)
+                                     (ceiling len 2)))
+                   :in-theory (e/d (bvuminus bvplus) (;ceiling-when-multiple
+                                                     ))
+                  :use (:instance bv-array-read-shorten-when-not-bvlt-gen
+                                  (k (ceiling len 2))
+                                  (size2 (ceiling-of-lg len))
+                                  (index (bvchop (ceiling-of-lg len) index))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm bvsx-of-bv-array-read-constant-array
   (implies (and (syntaxp (quotep data))
                 (equal len (len data))
@@ -345,6 +454,20 @@
            (equal (bvsx new-size old-size (bv-array-read old-size len index data))
                   (bv-array-read new-size len index (map-bvsx new-size old-size data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvsx-of-nth))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-bv-array-read-constant-array
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep val)
+                              (quotep size)))
+                (natp size)
+                (or (power-of-2p len)
+                    (bvlt (ceiling-of-lg len) index (len data)))
+                (equal len (len data)))
+           (equal (bvplus size val (bv-array-read size len index data))
+                  (bv-array-read size len index (map-bvplus-val size val data))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,12 +522,11 @@
 ;; restrict to constant array?
 (defthmd bv-array-read-becomes-bv-array-read-cases
   (implies (and (posp len)
-                (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
-                (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
-                )
+                (natp index))
            (equal (bv-array-read size len index data)
-                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len))
-                                       size len index data)))
+                  (if (bvle (ceiling-of-lg len) index (+ -1 len))
+                      (bv-array-read-cases (+ -1 len) size len index data)
+                    ;; out-of-bounds read:
+                    0)))
   :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
                                   (i (+ -1 len))))))

@@ -14,6 +14,7 @@
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "unsigned-byte-listp-def")
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -336,3 +337,44 @@
          (bv-array-read element-size array-len 0 array))
   :hints (("Goal" :use (:instance bv-array-read-of-expt2-of-+-of-ceiling-of-lg (i 0))
                   :in-theory (disable bv-array-read-of-expt2-of-+-of-ceiling-of-lg))))
+
+(defthm bv-array-read-of-+-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (integerp j)
+                (natp size))
+           (equal (bv-array-read element-size len (+ i (bvchop size j)) data)
+                  (bv-array-read element-size len (+ i j) data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (natp size))
+           (equal (bv-array-read element-size len (bvchop size i) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-+-len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (+ i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthm bv-array-read-of---len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (- i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthmd bv-array-read-out-of-bounds
+  (implies (bvlt (ceiling-of-lg len) (+ -1 len) index) ; can only happen is len is not a power of 2
+           (equal (bv-array-read size len index data)
+                  0))
+  :hints (("Goal" :in-theory (enable bv-array-read bvlt))))

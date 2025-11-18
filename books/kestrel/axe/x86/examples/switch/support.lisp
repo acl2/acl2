@@ -1,6 +1,7 @@
 (in-package "X")
 
 (include-book "kestrel/axe/x86/unroller" :dir :system) ; todo: reduce, or file all these rules
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
 
 (in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
 
@@ -229,68 +230,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; One value is fixed, the other is a list
-(defund map-bvplus-val (size val lst)
-  (if (endp lst)
-      nil
-    (cons (bvplus size val (first lst))
-          (map-bvplus-val size val (rest lst)))))
-
-(defthm unsigned-byte-listp-of-map-bvplus-val
-  (implies (natp size)
-           (unsigned-byte-listp size (map-bvplus-val size val data)))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
-
-(defthm len-of-map-bvplus-val
-  (equal (len (map-bvplus-val high low data))
-         (len data))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
-
-(def-constant-opener map-bvplus-val)
-
-(defthmd bvplus-of-nth
-  (implies (and (natp n)
-                (< n (len data)))
-           (equal (bvplus size val (nth n data))
-                  (nth n (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable map-bvplus-val (:I nth)))))
-
-(defthm bvplus-of-bv-array-read-constant-array
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (or (power-of-2p len)
-                    (bvlt (ceiling-of-lg len) index (len data)))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
-
-(defthm bvplus-of-bv-array-read-constant-array-smt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (axe-smt (or (power-of-2p len)
-                             (bvlt (ceiling-of-lg len) index (len data))))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
-
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
 (defthm set-rip-of-bv-array-read-split-cases
   (implies (and (syntaxp (quotep data))
-                (< len 20) ; todo: how many cases do we want to handle?
-                (posp len)
-                (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
+                (< len 20) ; todo: how many cases do we want to allow?
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
                 (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
-                )
+                (posp len)
+                (natp index))
            (equal (set-rip (bv-array-read size len index data) x86)
-                  (set-rip (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len)) size len index data) x86)))
+                  ;; bv-array-read-cases here will then get unrolled:
+                  (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
+  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
+
+(defthm set-rip-of-bv-array-read-split-cases-smt
+  (implies (and (syntaxp (quotep data))
+                (< len 20) ; todo: how many cases do we want to allow?
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
+                (axe-smt (bvle (ceiling-of-lg len) index (+ -1 len))) ; todo?
+                (posp len)
+                (natp index))
+           (equal (set-rip (bv-array-read size len index data) x86)
+                  ;; bv-array-read-cases here will then get unrolled:
+                  (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
   :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
 
 (defthm set-rip-of-bvif-split
@@ -298,11 +261,3 @@
          (if test
              (set-rip (bvchop size tp) x86)
            (set-rip (bvchop size ep) x86))))
-
-(defthm bv-array-read-chunk-little-of-bvchop-arg4
-  (implies (and (equal len (len array))
-                (natp index)
-                (natp size))
-           (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
-                  (bv-array-read-chunk-little count size len index array)))
-  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))

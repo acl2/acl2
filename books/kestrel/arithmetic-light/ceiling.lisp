@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -338,3 +338,18 @@
                     (and (< j 0)
                          (<= (- j) i)))))
   :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-ceiling-of-2-same ; gen the 2
+  (implies (natp n)
+           (equal (< (ceiling n 2) n)
+                  (< 1 n)))
+  :hints (("Goal" :cases ((< (+ 1 (floor n 2)) n))
+                  :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(defthm ceiling-of-expt2-and-2
+  (implies (integerp i)
+           (equal (ceiling (expt 2 i) 2)
+                  (if (<= i 0)
+                      1
+                    (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor))))
