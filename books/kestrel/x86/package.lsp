@@ -141,7 +141,9 @@
     bv-array-read-chunk-little
     bv-arrayp
     array-of-zeros
-    bv-array-read-cases))
+    bv-array-read-cases
+    map-bvplus-val
+    map-bvsx))
 
 ;; Symbols that appear in terms that Axe "knows" about.
 ;; BV, boolean, and array symbols

@@ -902,6 +902,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund add-offsets-to-base-address (offsets base-address-var)
+  (declare (xargs :guard (and (nat-listp offsets)
+                              (symbolp base-address-var))))
+  (if (endp offsets)
+      nil
+    (let* ((offset (first offsets)))
+      (cons `(bvplus '64 ',offset ,base-address-var)
+            (add-offsets-to-base-address (rest offsets) base-address-var)))))
+
 ;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
@@ -1054,13 +1063,16 @@
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
-       (- (and stop-pcs
-               position-independentp ; todo: make this work!
-               (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
        (term-to-simulate (if stop-pcs
-                             (if 64-bitp
-                                 `(run-until-return-or-reach-pc3 ',stop-pcs x86)
-                               `(run-until-return-or-reach-pc4 ',stop-pcs x86))
+                             (let ((stop-pcs-term (if position-independentp
+                                                      (if 64-bitp
+                                                          (make-cons-nest (add-offsets-to-base-address stop-pcs 'base-address))
+                                                        (er hard? 'unroll-x86-code-core ":stop-pcs are not supported for position-independent 32-bit lifting."))
+                                                    ;; the stop-pcs are just numbers (addresses):
+                                                    `',stop-pcs)))
+                               (if 64-bitp
+                                   `(run-until-return-or-reach-pc3 ,stop-pcs-term x86)
+                                 `(run-until-return-or-reach-pc4 ,stop-pcs-term x86)))
                            (if 64-bitp
                                '(run-until-return3 x86)
                              '(run-until-return4 x86))))

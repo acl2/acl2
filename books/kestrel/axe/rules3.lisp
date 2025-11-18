@@ -10744,7 +10744,8 @@
            (UNSIGNED-BYTE-P XSIZE Y))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
 
-(defthm bv-array-read-of-+
+;; todo: compare to bv-array-read-of-+-arg3
+(defthmd bv-array-read-of-+
   (implies (and (power-of-2p len) ;require syntaxp?
                 (integerp x)
                 (integerp y))
