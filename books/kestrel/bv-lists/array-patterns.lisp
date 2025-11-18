@@ -523,11 +523,10 @@
 (defthmd bv-array-read-becomes-bv-array-read-cases
   (implies (and (posp len)
                 (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
                 (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
                 )
            (equal (bv-array-read size len index data)
-                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len))
+                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len)) ; simplify?
                                        size len index data)))
   :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
                                   (i (+ -1 len))))))

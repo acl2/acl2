@@ -237,7 +237,7 @@
                 (< len 20) ; todo: how many cases do we want to handle?
                 (posp len)
                 (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
                 (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
                 )
            (equal (set-rip (bv-array-read size len index data) x86)
