@@ -337,9 +337,8 @@
     read-of-set-undef
     read-of-set-mxcsr
 
-    ;; read-when-program-at ; trying just this one
+    ;; read-when-program-at ; drop
     ;; since read-when-program-at / read-when-equal-of-read-bytes-and-subregion48p can introduce bv-array-read-chunk-little
-    ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     acl2::bv-array-read-chunk-little-trim-index-axe
@@ -1941,6 +1940,10 @@
     run-until-return-or-reach-pc3
     run-until-rsp-is-above-or-reach-pc-opener-axe
     run-until-rsp-is-above-or-reach-pc-base-axe
+    acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check
+    acl2::memberp-of-cons-same ; for resolving the stop-pcs check
+    acl2::memberp-of-nil ; for resolving the stop-pcs check
+    acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
     run-until-rsp-is-above-or-reach-pc-of-if-arg2
     rsp-is-abovep
     acl2::bvminus-of-bvplus-same-arg2
