@@ -1059,6 +1059,8 @@
        These are the compound assignments.
        We plan to add support eventually.")
      (xdoc::p
+      "For now we do not support pre/post-increment/decrement expressions.")
+     (xdoc::p
       "For the remaining kinds of expressions,
        for now we require them to be pure,
        and we delegate execution to @(tsee exec-expr-pure)."))
@@ -1102,6 +1104,14 @@
                       (mv (error (list :memberp-void-expr (expr-fix e)))
                           compst)))
                   (mv (exec-memberp str e.name compst) compst))
+       :postinc (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :postdec (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :preinc (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
+       :predec (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
        :unary (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
                    ((when (errorp arg)) (mv arg compst))
                    ((unless arg)
