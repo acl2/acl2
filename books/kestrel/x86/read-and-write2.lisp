@@ -342,7 +342,70 @@
                                  (* 8 diff)
                                  freeval))))
   :hints (("Goal" :use (read-when-equal-of-read-and-subregion48p)
-           :in-theory (disable read-when-equal-of-read-and-subregion48p))))
+                  :in-theory (disable read-when-equal-of-read-and-subregion48p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm not-equal-of-read-bytes
+   (implies (and (not (acl2::byte-listp val))
+                 (posp n))
+            (not (equal (read-bytes n ad1 x86) val)))
+   :hints (("Goal" :in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p)))))
+
+(local
+ (defthm not-equal-of-read-bytes-2
+   (implies (not (acl2::byte-listp val))
+            (equal (equal (read-bytes n ad1 x86) val)
+                   (and (zp n)
+                        (equal val nil))))
+   :hints (("Goal" :in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p)))))
+
+(local
+ (defthm byte-listp-of-repeat
+  (equal (acl2::byte-listp (acl2::repeat n x))
+         (or (acl2::bytep x)
+             (zp n)))
+  :hints (("Goal" :in-theory (e/d (acl2::repeat byte-listp) (x86isa::byte-listp-becomes-all-unsigned-byte-p))))))
+
+(local
+ (defthm equal-of-read-bytes-and-repeat
+   (equal (equal (read-bytes n ad1 x86) (acl2::repeat m nil))
+          (and (zp n)
+               (zp m)))
+   :hints (("Goal" :cases ((and (posp n) (posp m))
+                           (and (posp n) (not (posp m)))
+                           (and (not (posp n)) (posp m)))
+                   :in-theory (e/d (zp ;read-bytes
+                                    ) (x86isa::byte-listp-becomes-all-unsigned-byte-p))))))
+
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
+
+(defthm read-bytes-when-equal-of-read-bytes-and-subregion48p
+  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (subregion48p n1 ad1 n2 ad2)
+                ;; (syntaxp (quotep freeval)) ; maybe uncomment
+;                (unsigned-byte-p 48 n1)
+                (natp n1)
+                (< n1 (expt 2 48))      ; allow equal?
+                (unsigned-byte-p 48 n2) ; allow 2^48?
+                (integerp ad1)
+                (integerp ad2) ; todo
+                )
+           (equal (read-bytes n1 ad1 x86)
+                  (take n1 (nthcdr (bvminus 48 ad1 ad2) bytes))))
+  :hints (("subgoal *1/2" ;:cases ((equal n1 1))
+           :expand ((bvlt 48 (+ -1 n2) ad1)))
+          ("Goal" ;:expand (read-bytes n1 ad2 x86)
+           :induct t
+           :in-theory (e/d (read-bytes nfix subregion48p in-region48p
+                                       ;;read-bytes-of-+--arg2
+                                       bvplus acl2::bvchop-of-sum-cases
+                                       bvlt)
+                           (acl2::bvplus-trim-leading-constant ;looped
+                            acl2::+-of-minus-constant-version  ; looped
+                            )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
