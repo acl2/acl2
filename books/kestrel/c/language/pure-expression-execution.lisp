@@ -75,7 +75,8 @@
    expr
    :ident 1
    :const 1
-   :arrsub 1
+   :arrsub (1+ (max (expr-pure-limit expr.arr)
+                    (expr-pure-limit expr.sub)))
    :member 1
    :memberp 1
    :unary (1+ (expr-pure-limit expr.arg))
@@ -104,6 +105,8 @@
   (expr-case expr
              :ident nil
              :const nil
+             :arrsub (list (induct-exec-expr-of-pure expr.arr (1- limit))
+                           (induct-exec-expr-of-pure expr.sub (1- limit)))
              :unary (induct-exec-expr-of-pure expr.arg (1- limit))
              :cast (induct-exec-expr-of-pure expr.arg (1- limit))
              :binary (if (binop-strictp expr.op)

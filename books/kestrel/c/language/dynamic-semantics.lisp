@@ -987,6 +987,14 @@
       "Variables and constants are always deterministic,
        so they are supported in all cases.")
      (xdoc::p
+      "An array subscript expression involves two sub-expressions,
+       whose order of evaluation is unspecified.
+       So we require both of them to be pure,
+       so that the order of evaluation does not matter.
+       We execute the first one before the second one,
+       but we could as well do the opposite,
+       since the computations state does not change.")
+     (xdoc::p
       "In a function call,
        the order of evaluation of the function and arguments is not specified.
        In our current abstract syntax,
@@ -1059,6 +1067,19 @@
        e
        :ident (mv (exec-ident e.get compst) (compustate-fix compst))
        :const (mv (exec-const e.get) (compustate-fix compst))
+       :arrsub (b* (((unless (and (expr-purep e.arr)
+                                  (expr-purep e.sub)))
+                     (mv (error (list :arrsub-nonpure-arg (expr-fix e)))
+                         (compustate-fix compst)))
+                    ((mv arr compst) (exec-expr e.arr compst fenv (1- limit)))
+                    ((when (errorp arr)) (mv arr compst))
+                    ((unless arr)
+                     (mv (error (list :arrsub-void-expr e.arr)) compst))
+                    ((mv sub compst) (exec-expr e.sub compst fenv (1- limit)))
+                    ((when (errorp sub)) (mv sub compst))
+                    ((unless sub)
+                     (mv (error (list :arrsub-void-expr e.sub)) compst)))
+                 (mv (exec-arrsub arr sub compst) compst))
        :call (b* ((vals (exec-expr-pure-list e.args compst))
                   ((when (errorp vals)) (mv vals (compustate-fix compst)))
                   ((mv val? compst)
@@ -1082,7 +1103,8 @@
                       (binop-purep e.op))
                  (b* (((unless (and (expr-purep e.arg1)
                                     (expr-purep e.arg2)))
-                       (mv (error (list :nonpure-strict-binary (expr-fix e)))
+                       (mv (error (list :pure-strict-binary-nonpure-args
+                                        (expr-fix e)))
                            (compustate-fix compst)))
                       ((mv arg1-eval compst)
                        (c::exec-expr e.arg1 compst fenv (1- limit)))
