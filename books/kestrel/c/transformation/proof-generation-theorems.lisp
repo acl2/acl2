@@ -1269,23 +1269,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled expr-pure-errors
-    (implies (and (c::expr-purep expr)
-                  (c::errorp (c::exec-expr-pure expr compst)))
-             (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
-    :use ((:instance c::exec-expr-to-exec-expr-pure
-                     (expr expr)
-                     (compst compst)
-                     (fenv fenv)
-                     (limit limit))
-          (:instance c::pure-limit-bound-when-exec-expr-not-error
-                     (expr expr)
-                     (compst compst)
-                     (fenv fenv)
-                     (limit limit))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (defruled expr-unary-errors
     (implies (c::errorp
               (mv-nth 0 (c::exec-expr arg compst fenv (1- limit))))
