@@ -250,11 +250,3 @@
          (if test
              (set-rip (bvchop size tp) x86)
            (set-rip (bvchop size ep) x86))))
-
-(defthm bv-array-read-chunk-little-of-bvchop-arg4
-  (implies (and (equal len (len array))
-                (natp index)
-                (natp size))
-           (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
-                  (bv-array-read-chunk-little count size len index array)))
-  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))
