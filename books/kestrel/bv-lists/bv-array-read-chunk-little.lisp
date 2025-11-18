@@ -183,3 +183,35 @@
          (bv-array-read-chunk-little element-count element-size array-len 0 array))
   :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg (i 0))
                   :in-theory (disable bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg))))
+
+(defthm bv-array-read-chunk-little-of-0-arg3
+  (equal (bv-array-read-chunk-little element-count element-size 0 index array)
+         0)
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
+
+(defthm bv-array-read-chunk-little-of-+-of-len
+  (implies (and (power-of-2p len) ; note this
+                (equal len (len array))
+                (integerp index)
+                (natp len))
+           (equal (bv-array-read-chunk-little element-count element-size len (+ len index) array)
+                  (bv-array-read-chunk-little element-count element-size len index array)))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little bv-array-read-of-1-arg2-better))))
+
+(defthm bv-array-read-chunk-little-of-1-1
+  (implies (and (equal 1 (len array))
+                (integerp index))
+           (equal (bv-array-read-chunk-little element-count element-size 1 1 array)
+                  (bv-array-read-chunk-little element-count element-size 1 0 array)))
+  :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-len (len 1)
+                                  (index 0))
+           :in-theory (disable bv-array-read-chunk-little-of-+-of-len))))
+
+(defthm bv-array-read-chunk-little-of-bvchop-arg4
+  (implies (and (equal len (len array))
+                (natp index)
+                (natp size))
+           (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
+                  (bv-array-read-chunk-little count size len index array)))
+  :hints (("subgoal *1/4" :cases ((equal 0 (len array))))
+          ("Goal" :in-theory (enable bv-array-read-chunk-little bvchop-of-sum-cases))))

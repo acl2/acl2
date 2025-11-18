@@ -581,11 +581,11 @@
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
-       ;; Decide where to start lifting:
+       ;; Decide where to start lifting (if position-independentp, this offset will later be made relative to 'base-address):
        (target-offset (if (eq :entry-point target)
                           (acl2::parsed-elf-entry-point parsed-elf)
                         (if (natp target)
-                            target ; explicit address given (relative iff position-independentp)
+                            target ; explicit address given
                           ;; target is the name of a function:
                           (acl2::subroutine-address-elf target parsed-elf))))
        ((when (not (natp target-offset)))
@@ -678,6 +678,8 @@
   (b* ((base-address-var 'base-address) ; arbitrary base address, only used if position-independentp
        ;; Decide where to start lifting:
        (target-offset (if (eq :entry-point target)
+                          ;; TODO: Look for a load command of type :lc_main, get its :entryoff value and add that to the base address of the  "__TEXT" segment.
+                          ;; If no :lc_main load command is present, it must be an old-style mach-o (look for an LC_UNIXTHREAD or LC_THREAD load command?).
                           (er hard? 'assumptions-macho64-new ":entry-point is not yet supported for MACH-O files.") ;; (acl2::parsed-elf-entry-point parsed-elf) ; todo
                         (if (natp target)
                             target ; explicit address given (relative iff position-independentp)

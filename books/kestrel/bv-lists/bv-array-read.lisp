@@ -14,6 +14,7 @@
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "unsigned-byte-listp-def")
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -371,3 +372,9 @@
            (equal (bv-array-read element-size len (- i len) data)
                   (bv-array-read element-size len i data)))
   :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthmd bv-array-read-out-of-bounds
+  (implies (bvlt (ceiling-of-lg len) (+ -1 len) index) ; can only happen is len is not a power of 2
+           (equal (bv-array-read size len index data)
+                  0))
+  :hints (("Goal" :in-theory (enable bv-array-read bvlt))))

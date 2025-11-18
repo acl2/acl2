@@ -522,12 +522,11 @@
 ;; restrict to constant array?
 (defthmd bv-array-read-becomes-bv-array-read-cases
   (implies (and (posp len)
-                (natp index)
-                (unsigned-byte-p (ceiling-of-lg len) index)
-                (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
-                )
+                (natp index))
            (equal (bv-array-read size len index data)
-                  (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len))
-                                       size len index data)))
+                  (if (bvle (ceiling-of-lg len) index (+ -1 len))
+                      (bv-array-read-cases (+ -1 len) size len index data)
+                    ;; out-of-bounds read:
+                    0)))
   :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
                                   (i (+ -1 len))))))
