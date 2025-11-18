@@ -747,6 +747,15 @@
            (,subregionp-name len ad len ad)
            :hints (("Goal" :in-theory (enable ,subregionp-name))))
 
+         (defthm ,(acl2::pack-in-package pkg subregionp-name '-forward-to-<=)
+           (implies (and (,subregionp-name n1 ad1 n2 ad2)
+                         (< n2 ,(expt 2 num-address-bits))
+                         (natp n1)
+                         (natp n2))
+                    (<= n1 n2))
+           :rule-classes :forward-chaining
+           :hints (("Goal" :in-theory (enable ,subregionp-name bvlt))))
+
          ;; A region of size 0 is a subregion of any region
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-of-0-arg1)
            (,subregionp-name 0 ad len2 ad2)

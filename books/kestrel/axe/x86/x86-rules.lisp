@@ -484,7 +484,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (stack-shorter-thanp old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-base))))
@@ -495,7 +495,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-opener))))
@@ -530,7 +530,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (equal rsp (xr :rgf *rsp* x86))
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-base))))
@@ -541,7 +541,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (equal rsp (xr :rgf *rsp* x86)))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
                   (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-opener))))
@@ -576,7 +576,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (rsp-is-abovep old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-base))))
@@ -587,7 +587,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (rsp-is-abovep old-rsp x86))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-opener))))
@@ -620,7 +620,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (esp-is-abovep old-esp x86)
-                    (member-equal (eip x86) stop-pcs)))
+                    (memberp (eip x86) stop-pcs)))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-base))))
@@ -631,7 +631,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (esp-is-abovep old-esp x86))
-                (not (member-equal (eip x86) stop-pcs)))
+                (not (memberp (eip x86) stop-pcs)))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-opener))))

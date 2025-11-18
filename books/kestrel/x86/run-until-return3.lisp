@@ -17,6 +17,7 @@
 (include-book "register-readers-and-writers64") ; for RSP
 (include-book "misc/defpun" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
 
 ;; Tests whether the stack pointer is "above" OLD-RSP.  For now, we define
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
@@ -71,21 +72,21 @@
 (defpun run-until-rsp-is-above-or-reach-pc (old-rsp stop-pcs x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
   (if (or (rsp-is-abovep old-rsp x86)
-          (member-equal (rip x86) stop-pcs))
+          (memberp (rip x86) stop-pcs))
       x86
     (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-or-reach-pc-base
   (implies (or (rsp-is-abovep old-rsp x86)
-               (member-equal (rip x86) stop-pcs))
+               (memberp (rip x86) stop-pcs))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-or-reach-pc-opener
   (implies (not (or (rsp-is-abovep old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86)))))
 
