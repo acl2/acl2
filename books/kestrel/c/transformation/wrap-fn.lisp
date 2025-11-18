@@ -83,7 +83,8 @@
                    (param-declon-fix (first params))
                    (declor->ident param-declor.declor))
             :abstract
-            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+            (b* ((ident
+                   (fresh-ident fresh-ident-base blacklist :force-suffix t)))
               (retok (insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
@@ -93,7 +94,8 @@
                                            ident)))
                      ident))
             :none
-            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+            (b* ((ident
+                   (fresh-ident fresh-ident-base blacklist :force-suffix t)))
               (retok (insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
@@ -301,14 +303,15 @@
                             target-name-str
                           ""))))))
        (wrapper-name (fresh-ident wrapper-base-name blacklist))
-       (arg-base-name
-         (ident (concatenate
-                  'string
-                  (let ((wrapper-name-str (ident->unwrap wrapper-name)))
-                    (if (stringp wrapper-name-str)
-                        wrapper-name-str
-                      ""))
-                  "_arg")))
+       ;; (arg-base-name
+       ;;   (ident (concatenate
+       ;;            'string
+       ;;            (let ((wrapper-name-str (ident->unwrap wrapper-name)))
+       ;;              (if (stringp wrapper-name-str)
+       ;;                  wrapper-name-str
+       ;;                ""))
+       ;;            "_arg")))
+       (arg-base-name (ident "arg"))
        ((mv - found-paramsp can-create-wrapperp wrapper-declor idents)
         (declor-wrap-fn-make-wrapper
           declor wrapper-name arg-base-name blacklist))
