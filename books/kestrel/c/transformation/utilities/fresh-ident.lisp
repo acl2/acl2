@@ -117,12 +117,16 @@
 
 (define fresh-string-wrt
   ((base stringp)
+   (force-suffix booleanp)
    (number-prefix stringp)
    (number-suffix stringp)
    (blacklist acl2::string-setp))
   :returns (string stringp)
-  (let ((base (mbe :logic (acl2::str-fix base) :exec base))
-        (blacklist (acl2::string-sfix blacklist)))
+  (let* ((base (mbe :logic (acl2::str-fix base) :exec base))
+         (blacklist (acl2::string-sfix blacklist))
+         (blacklist (if force-suffix
+                        (insert base blacklist)
+                      blacklist)))
     (if (in base blacklist)
         (fresh-numbered-string-wrt base number-prefix 0 number-suffix blacklist)
       base)))
@@ -147,6 +151,7 @@
   ((ident identp)
    (blacklist ident-setp)
    &key
+   ((force-suffix booleanp) 'nil)
    ((number-prefix stringp) '"_")
    ((number-suffix stringp) '""))
   :returns (ident$ identp)
@@ -158,6 +163,7 @@
        (string-blacklist (map-ident->unwrap blacklist)))
     (ident
       (fresh-string-wrt ident-string
+                        force-suffix
                         number-prefix
                         number-suffix
                         string-blacklist)))
@@ -167,11 +173,14 @@
   ((idents ident-listp)
    (blacklist ident-setp)
    &key
+   ((force-suffix booleanp) 'nil)
    ((number-prefix stringp) '"_")
    ((number-suffix stringp) '""))
   :returns (idents$ ident-listp)
   (b* ((idents (c$::ident-list-fix idents))
        (blacklist (ident-set-fix blacklist))
+       (force-suffix (mbe :logic (acl2::bool-fix force-suffix)
+                           :exec force-suffix))
        (number-prefix (mbe :logic (acl2::str-fix number-prefix)
                            :exec number-prefix))
        (number-suffix (mbe :logic (acl2::str-fix number-suffix)
@@ -180,11 +189,13 @@
         nil)
        (ident$ (fresh-ident (first idents)
                             blacklist
+                            :force-suffix force-suffix
                             :number-prefix number-prefix
                             :number-suffix number-suffix)))
     (cons ident$
           (fresh-idents (rest idents)
                         (insert ident$ blacklist)
+                        :force-suffix force-suffix
                         :number-prefix number-prefix
                         :number-suffix number-suffix)))
   :measure (acl2-count (c$::ident-list-fix idents))
@@ -192,9 +203,15 @@
   :hooks ((:fix
            :hints (("Goal"
                      :expand ((fresh-idents idents blacklist
+                                            :force-suffix force-suffix
+                                            :number-prefix (acl2::str-fix number-prefix)
+                                            :number-suffix number-suffix)
+                              (fresh-idents idents blacklist
+                                            :force-suffix force-suffix
                                             :number-prefix number-prefix
                                             :number-suffix (acl2::str-fix number-suffix))
                               (fresh-idents idents blacklist
+                                            :force-suffix force-suffix
                                             :number-prefix number-prefix
                                             :number-suffix number-suffix)))))))
 
