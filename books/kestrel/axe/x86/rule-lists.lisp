@@ -6498,3 +6498,6 @@
 (set-axe-rule-priority read-of-write-becomes-read-of-write-of-clear-flags-extend-axe 1)
 ;; Remove the clear-flags-retract before we try to resolve the read-of-write
 (set-axe-rule-priority read-of-write-of-clear-flags-retract -1)
+
+;; Only unroll if nothing else works
+(set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
