@@ -1,7 +1,7 @@
 ; A proof of a very simple x86 binary function that adds 2 numbers
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,20 +14,19 @@
 ;; STATUS: COMPLETE
 
 ;; Lifts the functionality of add.elf64 into logic using the Axe-based x86
-;; lifter and prove equivalent to spec.
+;; lifter and proves that the value returned by the (lifted) code is correct.
 
+;; (depends-on "add.elf64")
 ;; cert_param: (uses-stp)
 
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 
-;; Lift the subroutine into logic:
+;; Lift the subroutine into logic: Creates the function add-elf64, which
+;; represents the effect of the program on the x86 state.
 (def-unrolled add-elf64
   :executable "add.elf64"
   :target "add"
   :stack-slots 2)
-
-;; The above command created the function add-elf64, which represents the
-;; effect of the program on the x86 state.
 
 ;; Shows that the program stores in RAX the sum of the initial values of RDI
 ;; and RSI.
