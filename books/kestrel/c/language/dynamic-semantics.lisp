@@ -1014,6 +1014,8 @@
       "A member or unary expression is always deterministic,
        because it has a single sub-expression.")
      (xdoc::p
+      "For now we do not support pre/post-increment/decrement expressions.")
+     (xdoc::p
       "A cast expression is always deterministic in our current C subset,
        because the type name does not undergo any execution currently.")
      (xdoc::p
@@ -1055,15 +1057,8 @@
        Note that the assignment itself is not an lvalue;
        its result is the value assigned by the assignment.")
      (xdoc::p
-      "The remaining (strict, non-pure) binary expressions are not supported.
-       These are the compound assignments.
-       We plan to add support eventually.")
-     (xdoc::p
-      "For now we do not support pre/post-increment/decrement expressions.")
-     (xdoc::p
-      "For the remaining kinds of expressions,
-       for now we require them to be pure,
-       and we delegate execution to @(tsee exec-expr-pure)."))
+      "The remaining binary expressions are compound assignments.
+       They are not supported for now."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (expr-case
        e
