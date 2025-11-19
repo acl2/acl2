@@ -14,6 +14,7 @@
 (include-book "proof-generation-theorems")
 (include-book "input-processing")
 
+(include-book "../language/execution-limit-monotonicity")
 (include-book "../representation/shallow-deep-relation")
 (include-book "../atc/symbolic-execution-rules/top")
 
@@ -128,12 +129,24 @@
      to discharge that theorem's hypothesis that @('E') does not error,
      we also need an instance of @('expr-binary-pure-strict-errors')
      (of which we only really need the part for the first argument).
+     To apply @('simpadd0-expr+zero-to-expr'),
+     which includes the hypothesis that
+     @('E') does not yield an error with @('limit'),
+     we use @('c::exec-expr-limit-monotone') from @(tsee c::exec-monotone)
+     to derive that hypothesis from
+     the fact that @('E') does not yield an error with @('(1- limit)'),
+     which in turn is obtained from the hypothesis that
+     @('E + 0') does not yield an error with @('limit').
      We also need the theorem for the lifted equality,
      i.e. @('gout.thm-name').
      We enable the executable counterparts of various functions
      so that things match up in the proof;
      in particular, we need to reduce the @('(c::expr-const ...)')
-     in the theorem @('simpadd0-expr+zero-to-expr') to a quoted constant."))
+     in the theorem @('simpadd0-expr+zero-to-expr') to a quoted constant.")
+   (xdoc::p
+    "We temporarily also use @('simpadd0-expr+zero-to-expr-pure')
+     to prove the verion of the theorem for pure expression execution.
+     We will eventually remove this part, as explained elsewhere."))
   (b* (((mv expr-new (gout gout))
         (xeq-expr-binary op
                          arg1 arg1-new arg1-thm-name
@@ -159,22 +172,40 @@
                               (:e c::binop-add)
                               (:e c::expr-binary)
                               (:e c::type-sint)
-                              (:e c::binop-strictp))
+                              (:e c::binop-strictp)
+                              (:e c::expr-purep)
+                              (:e c::binop-purep)
+                              expr-compustate-vars
+                              nfix)
                  :use (,gout.thm-name
                        (:instance simpadd0-expr+zero-to-expr
+                                  (expr ',cexpr-new-simp)
+                                  (fenv old-fenv))
+                       (:instance simpadd0-expr+zero-to-expr-pure
                                   (expr ',cexpr-new-simp))
                        ,arg1-thm-name
                        (:instance expr-binary-pure-strict-errors
                                   (op ',(c::binop-add))
                                   (arg1 ',cexpr-new-simp)
-                                  (arg2 ',czero))))))
+                                  (arg2 ',czero)
+                                  (fenv old-fenv))
+                       (:instance expr-binary-pure-strict-errors-pure
+                                  (op ',(c::binop-add))
+                                  (arg1 ',cexpr-new-simp)
+                                  (arg2 ',czero))
+                       (:instance c::exec-expr-limit-monotone
+                                  (e ',cexpr-new-simp)
+                                  (compst compst)
+                                  (fenv old-fenv)
+                                  (limit (1- limit))
+                                  (limit1 limit))))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr-new-simp
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr-new-simp
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
     (mv expr-new-simp
         (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
@@ -219,6 +250,44 @@
              ifix))
 
   (defruled simpadd0-expr+zero-to-expr
+    (b* ((zero (c::expr-const
+                (c::const-int
+                 (c::make-iconst
+                  :value 0
+                  :base (c::iconst-base-oct)
+                  :unsignedp nil
+                  :length (c::iconst-length-none)))))
+         (expr+zero (c::expr-binary (c::binop-add) expr zero))
+         ((mv expr-eval expr-compst)
+          (c::exec-expr expr compst fenv (1- limit)))
+         (expr-val (c::expr-value->value expr-eval))
+         ((mv expr+zero-eval expr+zero-compst)
+          (c::exec-expr expr+zero compst fenv limit))
+         (expr+zero-val (c::expr-value->value expr+zero-eval)))
+      (implies (and (c::expr-purep expr)
+                    (not (c::errorp expr-eval))
+                    expr-eval
+                    (equal (c::type-of-value expr-val) (c::type-sint)))
+               (and (not (c::errorp expr+zero-eval))
+                    expr+zero-eval
+                    (equal expr+zero-val expr-val)
+                    (equal expr+zero-compst expr-compst))))
+    :expand (c::exec-expr
+             (c::expr-binary '(:add)
+                             expr
+                             '(:const (:int (:iconst (c::value . 0)
+                                             (c::base :oct)
+                                             (c::unsignedp)
+                                             (length :none)))))
+             compst fenv limit)
+    :enable (c::exec-expr
+             c::exec-binary-strict-pure
+             c::eval-binary-strict-pure
+             c::apconvert-expr-value-when-not-array
+             c::add-values-of-sint-and-sint0
+             c::type-of-value))
+
+  (defruled simpadd0-expr+zero-to-expr-pure
     (b* ((zero (c::expr-const
                 (c::const-int
                  (c::make-iconst

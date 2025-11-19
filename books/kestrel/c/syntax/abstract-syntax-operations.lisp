@@ -352,6 +352,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define binop-strictp ((op binopp))
+  :returns (yes/no booleanp)
+  :short "Check if a binary operator is strict."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the binary operators
+     except logical conjunction and disjunction."))
+  (and (member-eq (binop-kind op)
+                  (list :mul
+                        :div
+                        :rem
+                        :add
+                        :sub
+                        :shl
+                        :shr
+                        :lt
+                        :gt
+                        :le
+                        :ge
+                        :eq
+                        :ne
+                        :bitand
+                        :bitxor
+                        :bitior
+                        :asg
+                        :asg-mul
+                        :asg-div
+                        :asg-rem
+                        :asg-add
+                        :asg-sub
+                        :asg-shl
+                        :asg-shr
+                        :asg-and
+                        :asg-xor
+                        :asg-ior))
+       t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-zerop ((expr exprp))
   :returns (yes/no booleanp)
   :short "Check if an expression is zero."

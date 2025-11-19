@@ -3065,7 +3065,8 @@
           (retok (lexeme-token (token-punctuator "."))
                  (make-span :start first-pos :end first-pos)
                  parstate))
-         ((and (utf8-<= (char-code #\0) char2) (utf8-<= char2 (char-code #\9))) ; . 0-9
+         ((and (utf8-<= (char-code #\0) char2)
+               (utf8-<= char2 (char-code #\9))) ; . 0-9
           (b* (((erp const last-pos parstate)
                 (lex-dec-fconst (code-char char2) pos2 parstate)))
             (retok (lexeme-token (token-const const))
