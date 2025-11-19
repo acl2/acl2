@@ -1181,11 +1181,10 @@
                    (mv (make-expr-value :value val :object nil) compst)))
                 (t (mv (error (list :expression-not-supported (expr-fix e)))
                        (compustate-fix compst))))
-       :otherwise
-       (b* (((when (expr-purep e))
-             (mv (exec-expr-pure e compst) (compustate-fix compst))))
-         (mv (error (list :expression-not-supported (expr-fix e)))
-             (compustate-fix compst)))))
+       :cond (if (expr-purep e)
+                 (mv (exec-expr-pure e compst) (compustate-fix compst))
+               (mv (error (list :cond-nonpure-args (expr-fix e)))
+                   (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
