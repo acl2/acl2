@@ -193,6 +193,13 @@
                        (mv (error (list :binary-void-expr e.arg2)) compst)))
                    (mv (exec-binary-strict-pure e.op arg1-eval arg2-eval)
                        compst)))
+                ((or (binop-case e.op :logand)
+                     (binop-case e.op :logor))
+                 (if (expr-purep e)
+                     (mv (exec-expr-pure e compst) (compustate-fix compst))
+                   (mv (error (list :nonstrict-binary-nonpure-args
+                                    (expr-fix e)))
+                       (compustate-fix compst))))
                 ((binop-case e.op :asg)
                  (b* ((left (expr-binary->arg1 e))
                       (right (expr-binary->arg2 e))
@@ -224,8 +231,6 @@
                        (mv compst/error compst))
                       (compst compst/error))
                    (mv (make-expr-value :value val :object nil) compst)))
-                ((expr-purep e)
-                 (mv (exec-expr-pure e compst) (compustate-fix compst)))
                 (t (mv (error (list :expression-not-supported (expr-fix e)))
                        (compustate-fix compst))))
        :otherwise
