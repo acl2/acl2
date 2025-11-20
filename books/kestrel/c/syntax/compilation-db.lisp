@@ -31,15 +31,8 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "system/extend-pathname" :dir :system)
 
-(include-book "external-preprocessing")
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
-
-(local (in-theory (enable acons)))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration :hooks nil)
 
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
@@ -47,8 +40,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::make-define-config
-  :no-function t)
+(local (in-theory (e/d (acons)
+                       ;; This slows down a couple of proofs with excessive
+                       ;; case splitting.
+                       (acl2::member-of-cons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
