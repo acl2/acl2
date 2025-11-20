@@ -2231,7 +2231,7 @@
        so it is available for the body of the function;
        otherwise, we pop that scope.")
      (xdoc::p
-      "The reason for the @(tsee dirdeclor-has-paramsp)
+      "The reason for the @(tsee dirdeclor-has-params-p)
        can be seen from the example function definition")
      (xdoc::codeblock
       "void (*f(float x, double y))(int z) {"
@@ -2241,7 +2241,7 @@
       "The parameters of the function are @('x') and @('y'), not @('z').
        But when we disambiguate the declarator,
        we first encounter the @(':function-params') with @('z').
-       But the inner declarator satisfies @(tsee dirdeclor-has-paramsp),
+       But the inner declarator satisfies @(tsee dirdeclor-has-params-p),
        which means that the @(':function-params') with @('z')
        does not form the parameters of the function being defined;
        thus, we pop the function prototype scope [C17:6.2.1/4]
@@ -2307,14 +2307,14 @@
                                                    :names names)
                     ident
                     (if (and fundefp
-                             (not (dirdeclor-has-paramsp dirdeclor.declor)))
+                             (not (dirdeclor-has-params-p dirdeclor.declor)))
                         (dimb-push-scope table)
                       table)))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-param-declon-list dirdeclor.params table))
             (table (if (and fundefp
-                            (not (dirdeclor-has-paramsp dirdeclor.declor)))
+                            (not (dirdeclor-has-params-p dirdeclor.declor)))
                        table
                      (dimb-pop-scope table))))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor

@@ -529,32 +529,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines declor/dirdeclor-has-paramsp
-  (define declor-has-paramsp ((declor declorp))
+(defines declor/dirdeclor-has-params-p
+  (define declor-has-params-p ((declor declorp))
     :returns (yes/no booleanp)
     :short "Check if a declarator contains function parameters/names."
     (b* (((declor declor) declor))
-      (dirdeclor-has-paramsp declor.direct))
+      (dirdeclor-has-params-p declor.direct))
     :measure (declor-count declor))
 
-  (define dirdeclor-has-paramsp ((dirdeclor dirdeclorp))
+  (define dirdeclor-has-params-p ((dirdeclor dirdeclorp))
     :returns (yes/no booleanp)
     :short "Check if a direct declarator contains function parameters/names."
     (dirdeclor-case
       dirdeclor
       :ident nil
-      :paren (declor-has-paramsp dirdeclor.inner)
-      :array (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-static1 (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-static2 (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-star (dirdeclor-has-paramsp dirdeclor.declor)
+      :paren (declor-has-params-p dirdeclor.inner)
+      :array (dirdeclor-has-params-p dirdeclor.declor)
+      :array-static1 (dirdeclor-has-params-p dirdeclor.declor)
+      :array-static2 (dirdeclor-has-params-p dirdeclor.declor)
+      :array-star (dirdeclor-has-params-p dirdeclor.declor)
       :function-params t
       :function-names t)
     :measure (dirdeclor-count dirdeclor))
 
   ///
 
-  (fty::deffixequiv-mutual declor/dirdeclor-has-paramsp))
+  (fty::deffixequiv-mutual declor/dirdeclor-has-params-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

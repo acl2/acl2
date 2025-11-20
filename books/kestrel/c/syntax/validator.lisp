@@ -4467,7 +4467,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor.declor))))
+                   (not (dirdeclor-has-params-p dirdeclor.declor))))
             (table (valid-push-scope table))
             ((erp new-params type-params return-types0 table)
              (b* (((reterr) nil (irr-type-params) nil table)
@@ -4514,7 +4514,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor))))
+                   (not (dirdeclor-has-params-p dirdeclor))))
             ((erp type table)
              (b* (((reterr) (irr-type) table))
                (if fundef-params-p
