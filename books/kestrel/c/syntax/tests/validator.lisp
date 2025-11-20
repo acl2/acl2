@@ -1143,3 +1143,38 @@ int bar(void) {
   return foo(1, 2, 3);
 }
 ")
+
+(test-valid-fail
+ "typedef union
+{
+  int *x;
+  double y;
+} my_union_t;
+
+int foo(my_union_t);
+
+void bar() {
+  int x;
+  double y;
+  foo(&x);
+  foo(y);
+}
+")
+
+(test-valid
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+  double y;
+} my_union_t;
+
+int foo(my_union_t);
+
+void bar() {
+  int x;
+  double y;
+  foo(&x);
+  foo(y);
+}
+"
+ :gcc t)
