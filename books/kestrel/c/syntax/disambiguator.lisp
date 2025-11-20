@@ -2492,9 +2492,6 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The @('fundef-params-p') input is @('t') iff
-       we are disambiguating the parameter of a function definition.")
-     (xdoc::p
       "We start by disambiguating the declaration specifiers,
        which may result in extending the disambiguation table.
        In valid code, the @('typedef') storage class specifier
