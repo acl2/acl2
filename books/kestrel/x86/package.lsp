@@ -341,7 +341,10 @@
     get-conjuncts-of-terms2
     parsed-executablep
 
-    maybe-remove-temp-dir))
+    maybe-remove-temp-dir
+
+    untranslate$
+    untranslate$-list))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
