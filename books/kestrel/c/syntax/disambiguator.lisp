@@ -2097,11 +2097,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-declor ((declor declorp)
-                       (fundef-params-p booleanp)
+                       (fundefp booleanp)
                        (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
                  (new-declor declorp)
-                 (new-fundef-params-p booleanp)
                  (ident identp)
                  (table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2122,35 +2121,21 @@
        which also gives us the identifier,
        and then we re-add the pointer part.")
      (xdoc::p
-      "The @('fundef-params-p') flag is @('t')
+      "The @('fundefp') flag is @('t')
        when this function is called
-       to disambiguate the declarator of a function definition,
-       and only when the parameters of the function
-       have not been disambiguated yet.
-       Its new value @('new-fundef-params-p'), returned as result,
-       stays @('t') if the parameters of the function
-       have still not been disambiguated yet,
-       because they are not found in this declarator;
-       otherwise, its new value is @('nil').
-       If the input @('fundef-params-p') is @('nil'),
-       then @('new-fundef-params-p') is @('nil') as well.
-       The exact handling of this flag,
-       and the exact treatment of the parameters of function declarations,
-       are explained in @(tsee dimb-dirdeclor).")
+       to disambiguate the declarator of a function definition.")
      (xdoc::p
-      "We also pass the @('fundef-params-p') flag to @(tsee dimb-dirdeclor),
-       and relay the @('new-fundef-params-p') output.
+      "We also pass the @('fundefp') flag to @(tsee dimb-dirdeclor).
        The reason is that, after peeling off the pointers,
        which refine the return result of the function,
        the direct declarator is still expected to be for a function,
        and we have not disambiguated the parameters yet."))
-    (b* (((reterr) (irr-declor) nil (irr-ident) (irr-dimb-table))
+    (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
          ((declor declor) declor)
-         ((erp new-dirdeclor fundef-params-p ident table)
-          (dimb-dirdeclor declor.direct fundef-params-p table)))
+         ((erp new-dirdeclor ident table)
+          (dimb-dirdeclor declor.direct fundefp table)))
       (retok (make-declor :pointers declor.pointers
                           :direct new-dirdeclor)
-             fundef-params-p
              ident
              table))
     :measure (declor-count declor))
@@ -2172,12 +2157,12 @@
        Since the declarator may be absent,
        we also generalize the returned identifier to be an optional one.")
      (xdoc::p
-      "This function does not take or return a @('fundef-params-p') flag
+      "This function does not take a @('fundefp') flag
        because optional declarators are not used in function parameters."))
     (b* (((reterr) nil nil (irr-dimb-table)))
       (declor-option-case
        declor?
-       :some (b* (((erp new-declor? & ident table)
+       :some (b* (((erp new-declor? ident table)
                    (dimb-declor declor?.val nil table)))
                (retok new-declor? ident table))
        :none (retok nil nil (dimb-table-fix table))))
@@ -2186,11 +2171,10 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
-                          (fundef-params-p booleanp)
+                          (fundefp booleanp)
                           (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
                  (new-dirdeclor dirdeclorp)
-                 (new-fundef-params-p booleanp)
                  (ident identp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2205,7 +2189,7 @@
        The actual addition to the disambiguation table
        is performed outside this function.")
      (xdoc::p
-      "The meaning of the @('fundef-params-p') flag passed as input is
+      "The meaning of the @('fundefp') flag passed as input is
        the same as in @(tsee dimb-declor): see that function's documentation.")
      (xdoc::p
       "We recursively disambiguate the inner declarator and direct declarator,
@@ -2222,8 +2206,7 @@
      (xdoc::p
       "For a @(':function-params'),
        first we attempt to turn it into a @(':function-names'), if applicable.
-       We pass @('fundef-params-p') as the @('fundefp') flag
-       to @(tsee dimb-params-to-names),
+       We pass @('fundefp') to @(tsee dimb-params-to-names),
        which indicates whether the parameters in question
        are for a function definition or not.
        If this flag is @('t'),
@@ -2240,10 +2223,8 @@
      (xdoc::p
       "If we cannot turn the @(':function-params') into a @(':function-names'),
        we push a new scope for the parameters,
-       and we disambiguate the parameters (which adds them to the new scope),
-       passing the @('fundef-params-p') resulting from
-       the recursive validation of the enclosed direct declarator.
-       Then, if @('fundef-params-p') is @('t')
+       and we disambiguate the parameters (which adds them to the new scope).
+       Then, if @('fundefp') is @('t')
        and this is the innermost @(':function-params')
        (see explanation later),
        we leave the previously pushed scope in the disambiguation table,
@@ -2269,94 +2250,85 @@
        i.e. the one with @('x') and @('y'),
        we leave the scope on the table,
        because that forms the parameters of the function definition."))
-    (b* (((reterr) (irr-dirdeclor) nil (irr-ident) (irr-dimb-table)))
+    (b* (((reterr) (irr-dirdeclor) (irr-ident) (irr-dimb-table)))
       (dirdeclor-case
        dirdeclor
        :ident
        (retok (dirdeclor-fix dirdeclor)
-              (bool-fix fundef-params-p)
               dirdeclor.ident
               (dimb-table-fix table))
        :paren
-       (b* (((erp new-declor fundef-params-p ident table)
-             (dimb-declor dirdeclor.inner fundef-params-p table)))
+       (b* (((erp new-declor ident table)
+             (dimb-declor dirdeclor.inner fundefp table)))
          (retok (dirdeclor-paren new-declor)
-                fundef-params-p
                 ident
                 table))
        :array
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr? table) (dimb-expr-option dirdeclor.size? table)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
                                       :size? new-expr?)
-                fundef-params-p
                 ident
                 table))
        :array-static1
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
-                fundef-params-p
                 ident
                 table))
        :array-static2
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
-                fundef-params-p
                 ident
                 table))
        :array-star
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table)))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
-                fundef-params-p
                 ident
                 table))
        :function-params
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((mv yes/no names)
-             (dimb-params-to-names dirdeclor.params fundef-params-p table))
+             (dimb-params-to-names dirdeclor.params fundefp table))
             ((when yes/no)
              (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names names)
-                    fundef-params-p
                     ident
-                    (if (and fundef-params-p
+                    (if (and fundefp
                              (not (dirdeclor-has-paramsp dirdeclor.declor)))
                         (dimb-push-scope table)
                       table)))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-param-declon-list dirdeclor.params table))
-            (table (if (and fundef-params-p
+            (table (if (and fundefp
                             (not (dirdeclor-has-paramsp dirdeclor.declor)))
                        table
                      (dimb-pop-scope table))))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
-                fundef-params-p
                 ident
                 table))
        :function-names
-       (b* (((erp new-dirdeclor fundef-params-p ident table)
-             (dimb-dirdeclor dirdeclor.declor fundef-params-p table)))
+       (b* (((erp new-dirdeclor ident table)
+             (dimb-dirdeclor dirdeclor.declor fundefp table)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
-                fundef-params-p
                 ident
-                (if fundef-params-p
+                (if fundefp
                     (dimb-push-scope table)
                   table)))))
     :measure (dirdeclor-count dirdeclor))
@@ -2573,14 +2545,14 @@
        the identifier is also added to the disambiguation table.")
      (xdoc::p
       "Note that we call @(tsee dimb-declor)
-       with @('nil') as the @('fundef-params-p') flag,
+       with @('nil') as the @('fundefp') flag,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
     (b* (((reterr) (irr-param-declor) (irr-dimb-table)))
       (param-declor-case
        paramdeclor
        :nonabstract
-       (b* (((erp new-declor & ident table)
+       (b* (((erp new-declor ident table)
              (dimb-declor paramdeclor.declor nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
          (retok (make-param-declor-nonabstract :declor new-declor :info nil)
@@ -2842,13 +2814,13 @@
        The kind comes from the preceding declaration specifiers,
        and is passed to this function.")
      (xdoc::p
-      "We pass @('nil') as the @('fundef-params-p') flag
+      "We pass @('nil') as the @('fundefp') flag
        to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
     (b* (((reterr) (irr-initdeclor) (irr-dimb-table))
          ((initdeclor ideclor) ideclor)
-         ((erp new-declor & ident table) (dimb-declor ideclor.declor nil table))
+         ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
          (table (dimb-add-ident ident kind table))
          ((erp new-init? table) (dimb-initer-option ideclor.init? table)))
       (retok (make-initdeclor :declor new-declor
@@ -3320,13 +3292,13 @@
        besides the disambiguated declarator or abstract declarator.")
      (xdoc::p
       "In the call of @(tsee dimb-declor)
-       we pass @('nil') as the @('fundef-params-p') flag,
+       we pass @('nil') as the @('fundefp') flag,
        because if we are disambiguating a declarator or abstract declarator,
        it means that we are disambiguating a parameter declarator,
        and not the declarator of a defined function."))
     (b* (((reterr) (irr-declor/absdeclor) nil (irr-dimb-table))
          ((amb-declor/absdeclor declor/absdeclor) declor/absdeclor)
-         ((mv erp-declor new-declor & ident table-declor)
+         ((mv erp-declor new-declor ident table-declor)
           (dimb-declor declor/absdeclor.declor nil table))
          ((mv erp-absdeclor new-absdeclor table-absdeclor)
           (dimb-absdeclor declor/absdeclor.absdeclor table)))
@@ -3667,12 +3639,12 @@
      but we do not check this explicitly.")
    (xdoc::p
     "Then we process the declarator,
-     passing @('t') as the @('fundef-params-p') flag,
+     passing @('t') as the @('fundefp') flag,
      because we are processing the declarator of a defined function.
      In valid code, this declarator will include a function declarator
      with either parameter declarations or identifiers,
      after it has been processed.
-     Because of the @('fundef-params-p') flag set to @('t'),
+     Because of the @('fundefp') flag set to @('t'),
      the disambiguation table returned from @(tsee dimb-declor)
      should contain a newly pushed scope for the function definition.
      But this may not be the case in invalid code,
@@ -3682,7 +3654,7 @@
      (we observed this in an example of invalid code,
      which motivated the addition of the check just described).")
    (xdoc::p
-    "So with the check on the @('fundef-params-p') described above,
+    "So with the check on the the validation tables described above,
      we know that we have added a scope to the disambiguation table.
      If the (disambiguated) declarator has parameter declarations,
      those will have added the formal parameters of the function to that scope.
@@ -3726,8 +3698,8 @@
        ((fundef fundef) fundef)
        ((erp new-spec & table)
         (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
-       (nscopes (len table))
-       ((erp new-declor & ident table)
+       (nscopes (len table)) ; for checking it below
+       ((erp new-declor ident table)
         (dimb-declor fundef.declor t table))
        ((unless (= (len table) (1+ nscopes)))
         (retmsg$ "The function definition ~x0 is invalid, ~
