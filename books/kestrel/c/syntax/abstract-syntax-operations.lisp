@@ -467,48 +467,58 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor-rename
+  :short "Change the identifier of a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As noted in @(tsee declor/dirdeclor->ident),
+     a (direct) declarator always contains one identifier.
+     These two mutually recursive companions change it."))
+
   (define declor-rename
     ((declor declorp)
      (ident identp))
     :returns (declor$ declorp)
+    :parents (declor/dirdeclor-rename abstract-syntax-operations)
     :short "Change the identifier of the declarator."
     (b* (((declor declor) declor))
       (change-declor
-        declor
-        :direct (dirdeclor-rename declor.direct ident)))
+       declor
+       :direct (dirdeclor-rename declor.direct ident)))
     :measure (declor-count declor))
 
   (define dirdeclor-rename
     ((dirdeclor dirdeclorp)
      (ident identp))
     :returns (dirdeclor$ dirdeclorp)
+    :parents (declor/dirdeclor-rename abstract-syntax-operations)
     :short "Change the identifier of the direct declarator."
     (dirdeclor-case
-      dirdeclor
-      :ident (change-dirdeclor-ident
-               dirdeclor
-               :ident ident)
-      :paren (change-dirdeclor-paren
-               dirdeclor
-               :inner (declor-rename dirdeclor.inner ident))
-      :array (change-dirdeclor-array
-               dirdeclor
-               :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-static1 (change-dirdeclor-array-static1
+     dirdeclor
+     :ident (change-dirdeclor-ident
+             dirdeclor
+             :ident ident)
+     :paren (change-dirdeclor-paren
+             dirdeclor
+             :inner (declor-rename dirdeclor.inner ident))
+     :array (change-dirdeclor-array
+             dirdeclor
+             :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-static1 (change-dirdeclor-array-static1
+                     dirdeclor
+                     :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-static2 (change-dirdeclor-array-static2
+                     dirdeclor
+                     :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-star (change-dirdeclor-array-star
+                  dirdeclor
+                  :declor (dirdeclor-rename dirdeclor.declor ident))
+     :function-params (change-dirdeclor-function-params
                        dirdeclor
                        :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-static2 (change-dirdeclor-array-static2
-                       dirdeclor
-                       :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-star (change-dirdeclor-array-star
-                    dirdeclor
-                    :declor (dirdeclor-rename dirdeclor.declor ident))
-      :function-params (change-dirdeclor-function-params
-                         dirdeclor
-                         :declor (dirdeclor-rename dirdeclor.declor ident))
-      :function-names (change-dirdeclor-function-names
-                         dirdeclor
-                         :declor (dirdeclor-rename dirdeclor.declor ident)))
+     :function-names (change-dirdeclor-function-names
+                      dirdeclor
+                      :declor (dirdeclor-rename dirdeclor.declor ident)))
     :measure (dirdeclor-count dirdeclor))
 
   :verify-guards :after-returns
