@@ -419,11 +419,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor->ident
-  :short "Identifier of a declarator."
+  :short "Identifier of a declarator or direct declarator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A declarator always contains an identifier at its core.
+    "A (direct) declarator always contains an identifier at its core.
      This function returns it,
      together with a companion function that operates on direct declarators,
      which is mutually recursive with the one for declarators."))
