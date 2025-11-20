@@ -530,8 +530,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor-has-params-p
+  :short "Check if a declarator or direct declarator
+          contains function parameters or names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names of these two mutually recursive functions
+     only mention @('params') (instead of something like @('params/names'))
+     for brevity, also since names are also function parameters."))
+
   (define declor-has-params-p ((declor declorp))
     :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-has-params-p abstract-syntax-operations)
     :short "Check if a declarator contains function parameters/names."
     (b* (((declor declor) declor))
       (dirdeclor-has-params-p declor.direct))
@@ -539,17 +549,18 @@
 
   (define dirdeclor-has-params-p ((dirdeclor dirdeclorp))
     :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-has-params-p abstract-syntax-operations)
     :short "Check if a direct declarator contains function parameters/names."
     (dirdeclor-case
-      dirdeclor
-      :ident nil
-      :paren (declor-has-params-p dirdeclor.inner)
-      :array (dirdeclor-has-params-p dirdeclor.declor)
-      :array-static1 (dirdeclor-has-params-p dirdeclor.declor)
-      :array-static2 (dirdeclor-has-params-p dirdeclor.declor)
-      :array-star (dirdeclor-has-params-p dirdeclor.declor)
-      :function-params t
-      :function-names t)
+     dirdeclor
+     :ident nil
+     :paren (declor-has-params-p dirdeclor.inner)
+     :array (dirdeclor-has-params-p dirdeclor.declor)
+     :array-static1 (dirdeclor-has-params-p dirdeclor.declor)
+     :array-static2 (dirdeclor-has-params-p dirdeclor.declor)
+     :array-star (dirdeclor-has-params-p dirdeclor.declor)
+     :function-params t
+     :function-names t)
     :measure (dirdeclor-count dirdeclor))
 
   ///
