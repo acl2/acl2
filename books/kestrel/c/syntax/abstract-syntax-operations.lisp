@@ -430,11 +430,15 @@
 
   (define declor->ident ((declor declorp))
     :returns (ident identp)
+    :parents (declor/dirdeclor->ident abstract-syntax-operations)
+    :short "Identifier of a declarator."
     (dirdeclor->ident (declor->direct declor))
     :measure (declor-count declor))
 
   (define dirdeclor->ident ((dirdeclor dirdeclorp))
     :returns (ident identp)
+    :parents (declor/dirdeclor->ident abstract-syntax-operations)
+    :short "Identifier of a direct declarator."
     (dirdeclor-case
      dirdeclor
      :ident dirdeclor.ident
@@ -448,6 +452,7 @@
     :measure (dirdeclor-count dirdeclor))
 
   ///
+
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -507,7 +512,9 @@
     :measure (dirdeclor-count dirdeclor))
 
   :verify-guards :after-returns
+
   ///
+
   (fty::deffixequiv-mutual declor/dirdeclor-rename))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -536,6 +543,7 @@
     :measure (dirdeclor-count dirdeclor))
 
   ///
+
   (fty::deffixequiv-mutual declor/dirdeclor-has-paramsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
