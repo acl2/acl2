@@ -2227,6 +2227,8 @@
        which indicates whether the parameters in question
        are for a function definition or not.
        If this flag is @('t'),
+       and this is the innermost @(':function-params')
+       (see explanation later),
        we push a new scope for the function parameters and body,
        but it will be the declarations between the parameter names and the body
        that will populate the newly pushed scope.
@@ -2241,28 +2243,32 @@
        and we disambiguate the parameters (which adds them to the new scope),
        passing the @('fundef-params-p') resulting from
        the recursive validation of the enclosed direct declarator.
-       This resulting flag is @('t') if
-       the parameters of the function being defined
-       have not been disambiguated yet,
-       which means that the parameters of the current direct declarator
-       are in fact the ones of the function.
-       So we return @('nil') as the @('new-fundef-params-p') result,
-       so that any outer function declarator
-       is not treated as the one
-       whose parameters are for the function definition,
-       if we are validating one.
-       See the example in @(tsee valid-dirdeclor) for clarification;
-       validation and disambiguation follow the same pattern.
-       In any case, when the current function declarator
-       is the one whose parameters are for the function definition,
-       i.e. when @('fundef-params-p') is @('t'),
-       after disambiguating the parameters, which pushes a new scope with them,
-       we return the validation table as such,
-       so that when we later disambiguate the function body,
-       we already have the top-level scope for the body.
-       If instead @('fundef-params-p') is @('nil'),
-       the parameters form a function prototype scope [C17:6.2.1/4],
-       which is therefore popped."))
+       Then, if @('fundef-params-p') is @('t')
+       and this is the innermost @(':function-params')
+       (see explanation later),
+       we leave the previously pushed scope in the disambiguation table,
+       so it is available for the body of the function;
+       otherwise, we pop that scope.")
+     (xdoc::p
+      "The reason for the @(tsee dirdeclor-has-paramsp)
+       can be seen from the example function definition")
+     (xdoc::codeblock
+      "void (*f(float x, double y))(int z) {"
+      "  ..."
+      "}")
+     (xdoc::p
+      "The parameters of the function are @('x') and @('y'), not @('z').
+       But when we disambiguate the declarator,
+       we first encounter the @(':function-params') with @('z').
+       But the inner declarator satisfies @(tsee dirdeclor-has-paramsp),
+       which means that the @(':function-params') with @('z')
+       does not form the parameters of the function being defined;
+       thus, we pop the function prototype scope [C17:6.2.1/4]
+       from the table in this case.
+       When instead we reach the inner @(':function-params'),
+       i.e. the one with @('x') and @('y'),
+       we leave the scope on the table,
+       because that forms the parameters of the function definition."))
     (b* (((reterr) (irr-dirdeclor) nil (irr-ident) (irr-dimb-table)))
       (dirdeclor-case
        dirdeclor
@@ -2326,13 +2332,15 @@
                                                    :names names)
                     fundef-params-p
                     ident
-                    (if fundef-params-p
+                    (if (and fundef-params-p
+                             (not (dirdeclor-has-paramsp dirdeclor.declor)))
                         (dimb-push-scope table)
                       table)))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-param-declon-list dirdeclor.params table))
-            (table (if fundef-params-p
+            (table (if (and fundef-params-p
+                            (not (dirdeclor-has-paramsp dirdeclor.declor)))
                        table
                      (dimb-pop-scope table))))
          (retok (make-dirdeclor-function-params :declor new-dirdeclor
@@ -3666,7 +3674,16 @@
      after it has been processed.
      Because of the @('fundef-params-p') flag set to @('t'),
      the disambiguation table returned from @(tsee dimb-declor)
-     will contain a newly pushed scope for the function definition.
+     should contain a newly pushed scope for the function definition.
+     But this may not be the case in invalid code,
+     so we check that this is the case explicitly here;
+     without this check, the disambiguator may throw hard errors
+     due to a violated expectation that the disambiguator table is not empty
+     (we observed this in an example of invalid code,
+     which motivated the addition of the check just described).")
+   (xdoc::p
+    "So with the check on the @('fundef-params-p') described above,
+     we know that we have added a scope to the disambiguation table.
      If the (disambiguated) declarator has parameter declarations,
      those will have added the formal parameters of the function to that scope.
      If instead the (disambiguated) declarator has just identifiers,
@@ -3709,7 +3726,15 @@
        ((fundef fundef) fundef)
        ((erp new-spec & table)
         (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
-       ((erp new-declor & ident table) (dimb-declor fundef.declor t table))
+       (nscopes (len table))
+       ((erp new-declor & ident table)
+        (dimb-declor fundef.declor t table))
+       ((unless (= (len table) (1+ nscopes)))
+        (retmsg$ "The function definition ~x0 is invalid, ~
+                  because the disambiguation table after the declarator ~
+                  does not have one scope more than before the declarator. ~
+                  This is indicative of invalid code."
+                 (fundef-fix fundef)))
        (table (dimb-add-ident-objfun-file-scope ident table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
