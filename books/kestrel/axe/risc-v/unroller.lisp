@@ -57,6 +57,7 @@
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -653,11 +654,12 @@
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
-       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (print-level-at-least-tp print)
-                                 (acl2::print-list assumptions)
-                               (acl2::print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
-                                                                 (equal t nil))))
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
+                             (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
+                               (if (print-level-at-least-tp print)
+                                   (acl2::print-list assumptions)
+                                 (acl2::print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
+                                                                         (equal t nil)))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
