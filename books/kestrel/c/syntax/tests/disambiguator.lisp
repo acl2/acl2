@@ -34,6 +34,23 @@
             (t (and ,(or cond t)
                     (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
 
+(defmacro test-dimb-fail (input &key std gcc)
+  ;; INPUT is an ACL2 string with the text to parse and disambiguate.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  `(assert-event
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         ((mv erp1 ast) (parse-file (filepath "test")
+                                    (acl2::string=>nats ,input)
+                                    version))
+         (- (cw "~%Input:~%~x0~|" ast))
+         ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
+      (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
+            (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
+            (t nil)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-dimb
@@ -425,3 +442,10 @@
 }
 "
  :gcc t)
+
+(test-dimb-fail
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+} my_union_t;
+")

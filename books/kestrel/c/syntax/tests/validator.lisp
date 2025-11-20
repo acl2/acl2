@@ -1178,3 +1178,10 @@ void bar() {
 }
 "
  :gcc t)
+
+(test-valid-fail
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+} my_union_t;
+")
