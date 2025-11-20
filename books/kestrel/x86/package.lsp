@@ -344,7 +344,9 @@
     maybe-remove-temp-dir
 
     untranslate$
-    untranslate$-list))
+    untranslate$-list
+
+    parse-executable))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
