@@ -682,6 +682,15 @@
 (defconst *error-fns*
   '(set-ms set-fault))
 
+(defund add-offsets-to-base-address (offsets base-address-var)
+  (declare (xargs :guard (and (nat-listp offsets)
+                              (symbolp base-address-var))))
+  (if (endp offsets)
+      nil
+    (let* ((offset (first offsets)))
+      (cons `(bvplus '64 ',offset ,base-address-var)
+            (add-offsets-to-base-address (rest offsets) base-address-var)))))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -876,7 +885,7 @@
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
                (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
+               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -902,15 +911,6 @@
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund add-offsets-to-base-address (offsets base-address-var)
-  (declare (xargs :guard (and (nat-listp offsets)
-                              (symbolp base-address-var))))
-  (if (endp offsets)
-      nil
-    (let* ((offset (first offsets)))
-      (cons `(bvplus '64 ',offset ,base-address-var)
-            (add-offsets-to-base-address (rest offsets) base-address-var)))))
 
 ;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
