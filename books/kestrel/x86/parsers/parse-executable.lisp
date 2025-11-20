@@ -21,25 +21,23 @@
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).
 (defund parse-executable-bytes (bytes
-                               filename ; only used in error messages
-                               )
+                                filename ; only used in error messages
+                                )
   (declare (xargs :guard (and (byte-listp bytes)
                               (stringp filename))))
   (b* (((mv erp magic-number)
         (parse-executable-magic-number bytes filename))
        ((when erp) (mv erp nil)))
     (if (= magic-number *elf-magic-number*)
-        (prog2$ (cw "ELF file detected.~%")
+        (progn$ (cw "ELF file detected.~%")
                 (parse-elf-file-bytes bytes))
       (if (member magic-number (strip-cars *mach-o-magic-numbers*))
-          (prog2$ (cw "Mach-O file detected.~%")
+          (progn$ (cw "Mach-O file detected.~%")
                   (parse-mach-o-file-bytes bytes))
         (let ((sig (pe-file-signature bytes)))
           (if (eql sig *pe-signature*)
-              (prog2$ (cw "PE file detected.~%")
-                      (parse-pe-file-bytes bytes
-                                           nil ; suppress-errorsp ; todo: pass in
-                                           ))
+              (progn$ (cw "PE file detected.~%")
+                      (parse-pe-file-bytes bytes))
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
