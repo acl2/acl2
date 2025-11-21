@@ -37,7 +37,7 @@
 
 (define expr-pure-limit ((expr exprp))
   :guard (expr-purep expr)
-  :returns (limit natp)
+  :returns (limit posp :rule-classes (:rewrite :type-prescription))
   :short "Minimum limit to pass to @(tsee exec-expr)
           for the execution of the given pure expression to terminate."
   :long
@@ -86,7 +86,7 @@
                         (expr-pure-limit expr.arg2)))
              1)
    :cond 1
-   :otherwise (prog2$ (impossible) 0))
+   :otherwise (prog2$ (impossible) 1))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o-finp o<)))
   :verify-guards :after-returns
