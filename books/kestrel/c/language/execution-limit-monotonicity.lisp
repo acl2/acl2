@@ -206,6 +206,10 @@
                       ((unless (expr-purep left))
                        (mv (error (list :asg-left-nonpure (expr-fix e)))
                            (compustate-fix compst)))
+                      ((unless (or (expr-case left :ident)
+                                   (expr-purep right)))
+                       (mv (error (list :asg-right-nonpure (expr-fix e)))
+                           (compustate-fix compst)))
                       ((mv left-eval compst)
                        (exec-expr-2limits
                         left compst fenv (1- limit) (1- limit1)))
@@ -216,7 +220,7 @@
                       ((when (errorp left-eval)) (mv left-eval compst))
                       (objdes (expr-value->object left-eval))
                       ((unless objdes)
-                       (mv (error (list :not-lvalue left)) compst))
+                       (mv (error (list :asg-not-lvalue left)) compst))
                       ((mv right-eval? compst)
                        (if (expr-case left :ident)
                            (exec-expr-2limits
@@ -224,7 +228,7 @@
                          (mv (exec-expr-pure right compst) compst)))
                       ((when (errorp right-eval?)) (mv right-eval? compst))
                       ((when (not right-eval?))
-                       (mv (error (list :asg-void-expr right)) compst))
+                       (mv (error (list :asg-right-void right)) compst))
                       (right-eval right-eval?)
                       (right-eval (apconvert-expr-value right-eval))
                       ((when (errorp right-eval)) (mv right-eval compst))
@@ -448,7 +452,8 @@
                (equal (exec-expr-2limits e compst fenv limit limit1)
                       (exec-expr e compst fenv limit)))
       :flag exec-expr-2limits
-      :hints ('(:expand (exec-expr e compst fenv limit))))
+      :hints ('(:expand ((exec-expr-2limits e compst fenv limit limit1)
+                         (exec-expr e compst fenv limit)))))
     (defthm exec-stmt-2limits-to-exec-stmt
       (implies (>= (nfix limit1) (nfix limit))
                (equal (exec-stmt-2limits s compst fenv limit limit1)

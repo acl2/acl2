@@ -1150,6 +1150,10 @@
                       ((unless (expr-purep left))
                        (mv (error (list :asg-left-nonpure (expr-fix e)))
                            (compustate-fix compst)))
+                      ((unless (or (expr-case left :ident)
+                                   (expr-purep right)))
+                       (mv (error (list :asg-right-nonpure (expr-fix e)))
+                           (compustate-fix compst)))
                       ((mv left-eval compst)
                        (exec-expr left compst fenv (1- limit)))
                       ((when (errorp left-eval)) (mv left-eval compst))
@@ -1159,14 +1163,14 @@
                       ((when (errorp left-eval)) (mv left-eval compst))
                       (objdes (expr-value->object left-eval))
                       ((unless objdes)
-                       (mv (error (list :not-lvalue left)) compst))
+                       (mv (error (list :asg-not-lvalue left)) compst))
                       ((mv right-eval? compst)
                        (if (expr-case left :ident)
                            (exec-expr right compst fenv (1- limit))
                          (mv (exec-expr-pure right compst) compst)))
                       ((when (errorp right-eval?)) (mv right-eval? compst))
                       ((when (not right-eval?))
-                       (mv (error (list :asg-void-expr right)) compst))
+                       (mv (error (list :asg-right-void right)) compst))
                       (right-eval right-eval?)
                       (right-eval (apconvert-expr-value right-eval))
                       ((when (errorp right-eval)) (mv right-eval compst))
@@ -1507,11 +1511,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :returns-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :returns-hints (("Goal"
+                   :expand (exec-expr e compst fenv limit)
+                   :in-theory (enable (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards nil ; done below
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1645,6 +1654,8 @@
 
   (fty::deffixequiv-mutual exec
     :hints (("Goal"
-             :expand ((exec-expr e (compustate-fix compst) fenv limit)
+             :expand ((exec-expr e compst fenv limit)
+                      (exec-expr (expr-fix e) compst fenv limit)
+                      (exec-expr e (compustate-fix compst) fenv limit)
                       (exec-expr e compst (fun-env-fix fenv) limit))
              :in-theory (enable nfix)))))

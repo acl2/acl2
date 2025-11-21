@@ -601,7 +601,8 @@
       (b* (((mv result compst1) (exec-expr e compst fenv limit)))
         (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
-      :flag exec-expr)
+      :flag exec-expr
+      :hints ('(:expand (exec-expr e compst fenv limit))))
     (defthm var-resolve-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
