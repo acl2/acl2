@@ -37,7 +37,7 @@
 
 (define expr-pure-limit ((expr exprp))
   :guard (expr-purep expr)
-  :returns (limit natp)
+  :returns (limit posp :rule-classes (:rewrite :type-prescription))
   :short "Minimum limit to pass to @(tsee exec-expr)
           for the execution of the given pure expression to terminate."
   :long
@@ -77,8 +77,8 @@
    :const 1
    :arrsub (1+ (max (expr-pure-limit expr.arr)
                     (expr-pure-limit expr.sub)))
-   :member 1
-   :memberp 1
+   :member (1+ (expr-pure-limit expr.target))
+   :memberp (1+ (expr-pure-limit expr.target))
    :unary (1+ (expr-pure-limit expr.arg))
    :cast (1+ (expr-pure-limit expr.arg))
    :binary (if (binop-strictp expr.op)
@@ -86,7 +86,7 @@
                         (expr-pure-limit expr.arg2)))
              1)
    :cond 1
-   :otherwise (prog2$ (impossible) 0))
+   :otherwise (prog2$ (impossible) 1))
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o-finp o<)))
   :verify-guards :after-returns
@@ -107,6 +107,8 @@
              :const nil
              :arrsub (list (induct-exec-expr-of-pure expr.arr (1- limit))
                            (induct-exec-expr-of-pure expr.sub (1- limit)))
+             :member (induct-exec-expr-of-pure expr.target (1- limit))
+             :memberp (induct-exec-expr-of-pure expr.target (1- limit))
              :unary (induct-exec-expr-of-pure expr.arg (1- limit))
              :cast (induct-exec-expr-of-pure expr.arg (1- limit))
              :binary (if (binop-strictp expr.op)

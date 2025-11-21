@@ -419,22 +419,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor->ident
-  :short "Identifier of a declarator."
+  :short "Identifier of a declarator or direct declarator."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A declarator always contains an identifier at its core.
+    "A (direct) declarator always contains an identifier at its core.
      This function returns it,
      together with a companion function that operates on direct declarators,
      which is mutually recursive with the one for declarators."))
 
   (define declor->ident ((declor declorp))
     :returns (ident identp)
+    :parents (declor/dirdeclor->ident abstract-syntax-operations)
+    :short "Identifier of a declarator."
     (dirdeclor->ident (declor->direct declor))
     :measure (declor-count declor))
 
   (define dirdeclor->ident ((dirdeclor dirdeclorp))
     :returns (ident identp)
+    :parents (declor/dirdeclor->ident abstract-syntax-operations)
+    :short "Identifier of a direct declarator."
     (dirdeclor-case
      dirdeclor
      :ident dirdeclor.ident
@@ -448,6 +452,7 @@
     :measure (dirdeclor-count dirdeclor))
 
   ///
+
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -462,81 +467,105 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines declor/dirdeclor-rename
+  :short "Change the identifier of a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As noted in @(tsee declor/dirdeclor->ident),
+     a (direct) declarator always contains one identifier.
+     These two mutually recursive companions change it."))
+
   (define declor-rename
     ((declor declorp)
      (ident identp))
     :returns (declor$ declorp)
+    :parents (declor/dirdeclor-rename abstract-syntax-operations)
     :short "Change the identifier of the declarator."
     (b* (((declor declor) declor))
       (change-declor
-        declor
-        :direct (dirdeclor-rename declor.direct ident)))
+       declor
+       :direct (dirdeclor-rename declor.direct ident)))
     :measure (declor-count declor))
 
   (define dirdeclor-rename
     ((dirdeclor dirdeclorp)
      (ident identp))
     :returns (dirdeclor$ dirdeclorp)
+    :parents (declor/dirdeclor-rename abstract-syntax-operations)
     :short "Change the identifier of the direct declarator."
     (dirdeclor-case
-      dirdeclor
-      :ident (change-dirdeclor-ident
-               dirdeclor
-               :ident ident)
-      :paren (change-dirdeclor-paren
-               dirdeclor
-               :inner (declor-rename dirdeclor.inner ident))
-      :array (change-dirdeclor-array
-               dirdeclor
-               :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-static1 (change-dirdeclor-array-static1
+     dirdeclor
+     :ident (change-dirdeclor-ident
+             dirdeclor
+             :ident ident)
+     :paren (change-dirdeclor-paren
+             dirdeclor
+             :inner (declor-rename dirdeclor.inner ident))
+     :array (change-dirdeclor-array
+             dirdeclor
+             :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-static1 (change-dirdeclor-array-static1
+                     dirdeclor
+                     :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-static2 (change-dirdeclor-array-static2
+                     dirdeclor
+                     :declor (dirdeclor-rename dirdeclor.declor ident))
+     :array-star (change-dirdeclor-array-star
+                  dirdeclor
+                  :declor (dirdeclor-rename dirdeclor.declor ident))
+     :function-params (change-dirdeclor-function-params
                        dirdeclor
                        :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-static2 (change-dirdeclor-array-static2
-                       dirdeclor
-                       :declor (dirdeclor-rename dirdeclor.declor ident))
-      :array-star (change-dirdeclor-array-star
-                    dirdeclor
-                    :declor (dirdeclor-rename dirdeclor.declor ident))
-      :function-params (change-dirdeclor-function-params
-                         dirdeclor
-                         :declor (dirdeclor-rename dirdeclor.declor ident))
-      :function-names (change-dirdeclor-function-names
-                         dirdeclor
-                         :declor (dirdeclor-rename dirdeclor.declor ident)))
+     :function-names (change-dirdeclor-function-names
+                      dirdeclor
+                      :declor (dirdeclor-rename dirdeclor.declor ident)))
     :measure (dirdeclor-count dirdeclor))
 
   :verify-guards :after-returns
+
   ///
+
   (fty::deffixequiv-mutual declor/dirdeclor-rename))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines declor/dirdeclor-has-paramsp
-  (define declor-has-paramsp ((declor declorp))
+(defines declor/dirdeclor-has-params-p
+  :short "Check if a declarator or direct declarator
+          contains function parameters or names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names of these two mutually recursive functions
+     only mention @('params') (instead of something like @('params/names'))
+     for brevity, also since names are also function parameters."))
+
+  (define declor-has-params-p ((declor declorp))
     :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-has-params-p abstract-syntax-operations)
     :short "Check if a declarator contains function parameters/names."
     (b* (((declor declor) declor))
-      (dirdeclor-has-paramsp declor.direct))
+      (dirdeclor-has-params-p declor.direct))
     :measure (declor-count declor))
 
-  (define dirdeclor-has-paramsp ((dirdeclor dirdeclorp))
+  (define dirdeclor-has-params-p ((dirdeclor dirdeclorp))
     :returns (yes/no booleanp)
+    :parents (declor/dirdeclor-has-params-p abstract-syntax-operations)
     :short "Check if a direct declarator contains function parameters/names."
     (dirdeclor-case
-      dirdeclor
-      :ident nil
-      :paren (declor-has-paramsp dirdeclor.inner)
-      :array (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-static1 (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-static2 (dirdeclor-has-paramsp dirdeclor.declor)
-      :array-star (dirdeclor-has-paramsp dirdeclor.declor)
-      :function-params t
-      :function-names t)
+     dirdeclor
+     :ident nil
+     :paren (declor-has-params-p dirdeclor.inner)
+     :array (dirdeclor-has-params-p dirdeclor.declor)
+     :array-static1 (dirdeclor-has-params-p dirdeclor.declor)
+     :array-static2 (dirdeclor-has-params-p dirdeclor.declor)
+     :array-star (dirdeclor-has-params-p dirdeclor.declor)
+     :function-params t
+     :function-names t)
     :measure (dirdeclor-count dirdeclor))
 
   ///
-  (fty::deffixequiv-mutual declor/dirdeclor-has-paramsp))
+
+  (fty::deffixequiv-mutual declor/dirdeclor-has-params-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
