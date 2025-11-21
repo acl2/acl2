@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "../../language/dynamic-semantics")
+(include-book "../../language/pure-expression-execution")
 (include-book "../pointed-integers")
 (include-book "../read-write-variables")
 
@@ -69,6 +70,7 @@
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
                     (mv (expr-value newval nil) compst2)))
+    :expand (exec-expr expr compst fenv limit)
     :use (:instance write-object-of-objdesign-of-var-to-write-var
                     (var (expr-ident->get (expr-binary->arg1 expr)))
                     (val (expr-value->value
@@ -79,7 +81,6 @@
                                                  compst fenv (+ -1 limit)))))
     :disable cons-equal
     :enable (exec-expr
-             exec-expr-pure
              exec-ident
              expr-purep
              binop-purep
@@ -112,8 +113,8 @@
                   (compustatep compst2))
              (equal (exec-expr expr compst fenv limit)
                     (mv (expr-value val nil) compst2)))
+    :expand (exec-expr expr compst fenv limit)
     :enable (exec-expr
-             exec-expr-pure
              exec-ident
              expr-purep
              binop-purep
@@ -160,7 +161,8 @@
                  (equal arg (expr-unary->arg left))
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
-                 (not (zp limit))
+                 (integerp limit)
+                 (>= limit 3)
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -195,7 +197,8 @@
                  (equal arg (expr-unary->arg left))
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
-                 (not (zp limit))
+                 (integerp limit)
+                 (>= limit 3)
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -220,10 +223,9 @@
                    (mv (expr-value val nil) compst1))))
          (events `((defruled ,name
                      ,formula
-                     :expand ((exec-expr-pure (expr-binary->arg1 expr) compst)
-                              (exec-expr-pure
-                               (expr-unary->arg (expr-binary->arg1 expr))
-                               compst))
+                     :expand ((exec-expr expr compst fenv limit)
+                              (exec-expr (expr-binary->arg1 expr)
+                                         compst fenv (1- limit)))
                      :enable (exec-expr
                               exec-unary
                               exec-indir
@@ -328,7 +330,9 @@
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
                  (equal var (expr-ident->get arr))
-                 (not (zp limit))
+                 (integerp limit)
+                 (>= limit (+ 2 (expr-pure-limit sub)))
+                 (expr-purep sub)
                  (equal arr-val (read-var var compst))
                  (valuep arr-val)
                  (equal eptr
@@ -366,10 +370,9 @@
          (event
           `(defruled ,name
              ,formula
-             :expand ((exec-expr-pure (expr-binary->arg1 expr) compst)
-                      (exec-expr-pure
-                       (expr-arrsub->arr (expr-binary->arg1 expr))
-                       compst))
+             :expand ((exec-expr expr compst fenv limit)
+                      (exec-expr (expr-binary->arg1 expr)
+                                 compst fenv (1- limit)))
              :enable (exec-expr
                       exec-ident
                       exec-arrsub
@@ -384,10 +387,13 @@
                       ,value-array-write-when-apred
                       write-object
                       expr-purep
-                      binop-purep)
+                      binop-purep
+                      exec-expr-to-exec-expr-pure
+                      nfix)
              :disable (equal-of-error
                        equal-of-expr-value
-                       equal-of-objdesign-element)
+                       equal-of-objdesign-element
+                       cons-equal)
              :prep-lemmas
              ((defrule lemma
                 (implies (and (expr-valuep (apconvert-expr-value eval))
@@ -406,7 +412,9 @@
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
-                 (not (zp limit))
+                 (integerp limit)
+                 (>= limit (+ 2 (expr-pure-limit sub)))
+                 (expr-purep sub)
                  (equal arr-eval (exec-expr-pure arr compst))
                  (expr-valuep arr-eval)
                  (equal ptr-eval (apconvert-expr-value arr-eval))
