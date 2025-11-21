@@ -2095,7 +2095,7 @@
              (bounded-stp-resultp (mv-nth 0 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
                                   dag-len))
     :otf-flg t
-    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
+    :hints (("Goal" :in-theory (e/d (prove-disjunction-with-stp-at-depth) (bounded-possibly-negated-nodenumsp-when-bounded-contextp))))))
 
 (local
   (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp-at-depth
@@ -2225,6 +2225,7 @@
                                                          myquotep-when-axe-disjunctionp
                                                          quotep-when-axe-disjunctionp)
                                                         (myquotep
+                                                         bounded-possibly-negated-nodenumsp-when-bounded-contextp
                                                          quotep))))))
   (b* (;; ((when (not (consp disjuncts))) ; not possible?
        ;;  (cw "(No disjuncts, so no point in calling STP.)~%")
@@ -2328,7 +2329,7 @@
                            (disjuncts (get-axe-disjunction-from-dag-items disjuncts 'dag-array
                                                                           dag-array dag-len))
                            (depth-limit nil))
-           :in-theory (e/d (prove-disjunction-with-stp stp-resultp) (stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
+           :in-theory (e/d (prove-disjunction-with-stp stp-resultp) (stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp
   (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -2345,14 +2346,14 @@
                            (disjuncts (get-axe-disjunction-from-dag-items disjuncts 'dag-array
                                                                           dag-array dag-len))
                            (depth-limit nil))
-           :in-theory (e/d (prove-disjunction-with-stp bounded-stp-resultp) (bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
+           :in-theory (e/d (prove-disjunction-with-stp bounded-stp-resultp) (bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm counterexamplep-of-cadr-of-mv-nth-0-of-prove-disjunction-with-stp
   (implies (and (equal :counterexample (car (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))))
                 (bounded-possibly-negated-nodenumsp disjuncts dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (counterexamplep (cadr (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))))
-  :hints (("Goal" :in-theory (enable prove-disjunction-with-stp))))
+  :hints (("Goal" :in-theory (e/d (prove-disjunction-with-stp) (bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp
   (equal (w (mv-nth 1 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))

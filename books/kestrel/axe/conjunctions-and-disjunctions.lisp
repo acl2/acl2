@@ -80,7 +80,6 @@
 
 ;items is a list of nodenums and negated nodenums
 ;only preserves iff?
-;todo: rename
 (defun negate-possibly-negated-nodenums (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
@@ -106,6 +105,47 @@
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
 
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+;; (local
+;;   (defthmd equal-of-cadr-and-cadr-when-possibly-negated-nodenump-and-possibly-negated-nodenump
+;;     (implies (and (possibly-negated-nodenump a)
+;;                   (possibly-negated-nodenump b)
+;;                   (equal 'not (car a))
+;;                   (equal 'not (car b)))
+;;              (equal (equal (cadr a) (cadr b))
+;;                     (equal a b)))
+;;     :hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
+
+(local
+  (defthm not-member-equal-of-cadr-and-negate-possibly-negated-nodenums
+    (implies (and (consp a)
+                  (not (member-equal a x))
+                  (possibly-negated-nodenump a)
+                  (possibly-negated-nodenumsp x))
+             (not (member-equal (cadr a) (negate-possibly-negated-nodenums x))))
+    :hints (("Goal" :expand (possibly-negated-nodenumsp x)
+             :in-theory (e/d (possibly-negated-nodenump
+                              possibly-negated-nodenumsp)
+                             (possibly-negated-nodenump-of-car))))))
+
+(local
+  (defthm not-member-equal-of-list-not-and-negate-possibly-negated-nodenums
+    (implies (and (not (consp a))
+                  (not (member-equal a x))
+                  (possibly-negated-nodenump a)
+                  (possibly-negated-nodenumsp x))
+             (not (member-equal (list 'not a) (negate-possibly-negated-nodenums x))))
+    :hints (("Goal" :expand (possibly-negated-nodenumsp x)
+             :in-theory (e/d (possibly-negated-nodenump
+                              possibly-negated-nodenumsp)
+                             (possibly-negated-nodenump-of-car))))))
+
+(defthm no-duplicatesp-equal-of-negate-possibly-negated-nodenums
+  (implies (and (no-duplicatesp-equal items)
+                (possibly-negated-nodenumsp items))
+           (no-duplicatesp-equal (negate-possibly-negated-nodenums items)))
+  :hints (("Goal" :in-theory (enable negate-possibly-negated-nodenums))))
+
 ;; (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-of-negate-possibly-negated-nodenums
 ;;   (implies (and (possibly-negated-nodenumsp items)
 ;;                 (all-< (strip-nots-from-possibly-negated-nodenums items) dag-len)
@@ -124,7 +164,8 @@
   (or (and (myquotep item)
            (booleanp (unquote item)))
       (and (possibly-negated-nodenumsp item)
-           (consp item))))
+           (consp item)
+           (no-duplicatesp-equal item))))
 
 (defthm axe-conjunctionp-of-singleton
   (implies (natp nodenum)
@@ -145,6 +186,12 @@
                   (booleanp (unquote x))))
   :hints (("Goal" :in-theory (enable axe-conjunctionp))))
 
+(defthm axe-conjunctionp-forward-to-consp
+  (implies (axe-conjunctionp item)
+           (consp item))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-conjunctionp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Either a quoted boolean constant or a non-empty list of possibly-negated-nodenums.
@@ -154,7 +201,8 @@
   (or (and (myquotep item)
            (booleanp (unquote item)))
       (and (possibly-negated-nodenumsp item)
-           (consp item))))
+           (consp item)
+           (no-duplicatesp-equal item))))
 
 (defthm axe-disjunctionp-of-singleton
   (implies (natp nodenum)
@@ -407,7 +455,9 @@
 ;y is a list of nodenums and negated nodenums
 (defun combine-axe-disjunctions-aux (x y)
   (declare (xargs :guard (and (possibly-negated-nodenumsp x)
+                              (no-duplicatesp-equal x)
                               (possibly-negated-nodenumsp y)
+                              (no-duplicatesp-equal y)
                               (consp y) ;prevents an empty result
                               )
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
@@ -416,26 +466,28 @@
       y
     (let ((item (first x)))
       (if (consp item)
-          ;;item is (not <nodenum>):
+          ;; item is (not <nodenum>):
           (if (member (farg1 item) y)
               *t*
-            (combine-axe-disjunctions-aux (rest x) (cons item y)))
-        ;;item is <nodenum>
+            (combine-axe-disjunctions-aux (rest x) (add-to-set-equal item y)))
+        ;; item is <nodenum>:
         (if (member-equal `(not ,item) ;don't build this?
                           y)
             *t*
-          (combine-axe-disjunctions-aux (rest x) (cons item y)))))))
+          (combine-axe-disjunctions-aux (rest x) (add-to-set-equal item y)))))))
 
 (defthm axe-disjunctionp-of-combine-axe-disjunctions-aux
   (implies (and (possibly-negated-nodenumsp x)
+                (no-duplicatesp-equal x)
                 (possibly-negated-nodenumsp y)
+                (no-duplicatesp-equal y)
                 (consp y))
            (axe-disjunctionp (combine-axe-disjunctions-aux x y)))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp axe-disjunctionp))))
 
 (defthm bounded-axe-disjunctionp-of-combine-axe-disjunctions-aux
-  (implies (and (possibly-negated-nodenumsp x)
-                (possibly-negated-nodenumsp y)
+  (implies (and (possibly-negated-nodenumsp x) ; weaken to not quote?
+                (possibly-negated-nodenumsp y) ; weaken to not quote?
                 (bounded-axe-disjunctionp x bound)
                 (bounded-axe-disjunctionp y bound))
            (bounded-axe-disjunctionp (combine-axe-disjunctions-aux x y) bound))
@@ -484,7 +536,9 @@
 ;y is a list of nodenums and negated nodenums
 (defun combine-axe-conjunctions-aux (x y)
   (declare (xargs :guard (and (possibly-negated-nodenumsp x)
+                              (no-duplicatesp-equal x)
                               (possibly-negated-nodenumsp y)
+                              (no-duplicatesp-equal y)
                               (consp y) ;prevents an empty result
                               )
                   :guard-hints (("Goal" :in-theory (enable axe-conjunctionp
@@ -494,15 +548,15 @@
       y
     (let ((item (first x)))
       (if (consp item)
-          ;;item is (not <nodenum>):
+          ;; item is (not <nodenum>):
           (if (member (farg1 item) y)
               *nil*
-            (combine-axe-conjunctions-aux (rest x) (cons item y)))
-        ;;item is <nodenum>
+            (combine-axe-conjunctions-aux (rest x) (add-to-set-equal item y)))
+        ;; item is <nodenum>:
         (if (member-equal `(not ,item) ;don't build this?
                           y)
             *nil*
-          (combine-axe-conjunctions-aux (rest x) (cons item y)))))))
+          (combine-axe-conjunctions-aux (rest x) (add-to-set-equal item y)))))))
 
 ;; (defthm axe-conjunctionp-when-possibly-negated-nodenumsp
 ;;   (implies (possibly-negated-nodenumsp y)
@@ -511,14 +565,16 @@
 
 (defthm axe-conjunctionp-of-combine-axe-conjunctions-aux
   (implies (and (possibly-negated-nodenumsp x)
+                (no-duplicatesp-equal x)
                 (possibly-negated-nodenumsp y)
+                (no-duplicatesp-equal y)
                 (consp y))
            (axe-conjunctionp (combine-axe-conjunctions-aux x y)))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp axe-conjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-combine-axe-conjunctions-aux
-  (implies (and (possibly-negated-nodenumsp x)
-                (possibly-negated-nodenumsp y)
+  (implies (and (possibly-negated-nodenumsp x) ; weaken?
+                (possibly-negated-nodenumsp y) ; weaken?
                 (bounded-axe-conjunctionp x bound)
                 (bounded-axe-conjunctionp y bound))
            (bounded-axe-conjunctionp (combine-axe-conjunctions-aux x y)
@@ -783,6 +839,10 @@
  (defthm bounded-axe-conjunctionp-of-bool-fix-constant
    (bounded-axe-conjunctionp (bool-fix-constant x) bound)
    :hints (("Goal" :in-theory (enable bool-fix-constant)))))
+
+;; Do not remove these (they help justify the correctness of the code below):
+(thm (iff (if x t y) (boolor x y)))
+(thm (iff (if x y t) (boolor (not x) y)))
 
 ;; These only preserve boolean-equivalence (that is, equivalence under iff).
 ;; TODO: Can we avoid checking the arities?
