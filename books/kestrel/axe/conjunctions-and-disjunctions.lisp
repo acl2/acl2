@@ -786,6 +786,8 @@
 ;; These only preserve boolean-equivalence (that is, equivalence under iff).
 ;; TODO: Can we avoid checking the arities?
 ;; TODO: Handle (if x x y).
+;; TODO: For (equal <x> t), just return <x> if <x> is boolean.  Same for the commuted form.
+;; TODO: For (equal <x> nil), just return (not <x>).  Same for the commuted form.
 (mutual-recursion
  ;; Returns an axe-disjunctionp that is boolean-equivalent to NODENUM-OR-QUOTEP.
  (defun get-axe-disjunction-from-dag-item (nodenum-or-quotep dag-array-name dag-array dag-len)
