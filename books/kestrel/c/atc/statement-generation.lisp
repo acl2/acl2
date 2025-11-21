@@ -2690,7 +2690,8 @@
                  compustatep-of-update-object
                  expr-valuep-of-expr-value
                  expr-value->value-of-expr-value
-                 value-fix-when-valuep)))
+                 value-fix-when-valuep
+                 (:e expr-purep))))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -2733,7 +2734,8 @@
                compustatep-of-update-var
                expr-valuep-of-expr-value
                expr-value->value-of-expr-value
-               value-fix-when-valuep)))))
+               value-fix-when-valuep
+               (:e expr-purep))))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3579,7 +3581,8 @@
                         compustatep-of-update-object
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        (:e expr-purep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
