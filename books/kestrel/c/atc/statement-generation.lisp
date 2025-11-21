@@ -1759,7 +1759,7 @@
     "We increase the limit by 1
      for the theorem about @(tsee exec-expr),
      because that is what it takes, in @(tsee exec-expr),
-     to go to @(tsee exec-expr) for the right-hand side.")
+     to go to @(tsee exec-expr) for both left and right side.")
    (xdoc::p
     "We further increase the limit by 1
      for the theorem about @(tsee exec-stmt),
@@ -2023,7 +2023,8 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (symbolp array-write-fn))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2037,10 +2038,17 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 4 more than
+     the limit needed to execute the index expression:
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left side
+     as well as to @(tsee exec-expr-pure) on the right side;
+     the left side is an array subscript expression,
+     so we need 1 more to go to @(tsee exec-expr) on the sub-expressions;
+     the array sub-expression is always a variable so it needs 1 more,
+     which is covered by the limit for the index sub-expression,
+     which is always at least 1, and suffices for the index sub-expression."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2131,7 +2139,11 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep sub.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." sub.expr)))
+       (sub-limit `(quote ,(expr-pure-limit sub.expr)))
+       (left-limit `(binary-+ '1 ,sub-limit))
+       (expr-limit `(binary-+ '1 ,left-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
@@ -2315,7 +2327,9 @@
              compustatep-of-update-static-var
              expr-valuep-of-expr-value
              expr-value->value-of-expr-value
-             value-fix-when-valuep))))
+             value-fix-when-valuep
+             (:e expr-pure-limit)
+             (:e expr-purep)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2479,10 +2493,14 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 5:
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left side
+     as well as to @(tsee exec-expr-pure) on the right side;
+     the left side is a struct member expression,
+     so we need 1 more to go to @(tsee exec-expr) on the sub-expression;
+     the (struct) sub-expression is always a variable so it needs 1 more."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -2561,7 +2579,9 @@
                               :arg2 member.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       (struct-limit ''1)
+       (member/memberp-limit `(binary-+ '1 ,struct-limit))
+       (expr-limit `(binary-+ '1 ,member/memberp-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -2868,7 +2888,8 @@
                                                  (pseudo-termp index-term)
                                                  (pseudo-termp elem-term)
                                                  (symbolp var)))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2882,10 +2903,20 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 6 more than
+     the limit needed to execute the index expression:
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left side
+     as well as to @(tsee exec-expr-pure) on the right side;
+     the left side is an array subscript expression,
+     so we need 1 more to go to @(tsee exec-expr) on the sub-expressions;
+     the array sub-expression is a struct member expression so it needs 1 more;
+     the struct sub-expression is always a variable so it needs 1 more;
+     the we add the limit needed for the index sub-expression.
+     We could make the limit a bit tighter,
+     given the limit for the index sub-expression is always at least 1
+     but the exact number does not matter so long as it suffices."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2988,7 +3019,11 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep index.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." index.expr)))
+       (index-limit `(quote ,(expr-pure-limit index.expr)))
+       (left-limit `(binary-+ '3 ,index-limit))
+       (expr-limit `(binary-+ '1 ,left-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -3148,7 +3183,9 @@
                  compustatep-of-update-object
                  expr-valuep-of-expr-value
                  expr-value->value-of-expr-value
-                 value-fix-when-valuep)))
+                 value-fix-when-valuep
+                 (:e expr-pure-limit)
+                 (:e expr-purep))))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -3199,7 +3236,9 @@
                compustatep-of-update-var
                expr-valuep-of-expr-value
                expr-value->value-of-expr-value
-               value-fix-when-valuep)))))
+               value-fix-when-valuep
+               (:e expr-pure-limit)
+               (:e expr-purep))))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3363,10 +3402,15 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 5:
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
      1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the left side
+     as well as to @(tsee exec-expr-pure) on the right side;
+     the left side is a unary expression with the indirection operator,
+     so we need 1 more to go to the operand expression;
+     the latter is always a variable,
+     so we need 1 more to execute it."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -3432,7 +3476,9 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       (var-limit ''1)
+       (left-limit `(binary-+ '1 ,var-limit))
+       (expr-limit `(binary-+ '1 ,left-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
