@@ -1203,10 +1203,34 @@
     (xdoc::li
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
-      See @(tsee valid-binary) for details on these restrictions.")))
+      See @(tsee valid-binary) for details on these restrictions.
+      When validating with GCC extensions enabled,
+      these restrictions are slightly weakened.
+      See the following section."))
+   (xdoc::section
+    "GCC Extensions"
+    (xdoc::p
+     "GCC has a type attribute @('transparent_union')
+      which affects type-checking of arguments against
+      some parameters with union type.
+      The attribute may be attached a union type definition.
+      When a function parameter has such a type,
+      the constraints on the corresponding argument are weakened.
+      In particular, the type of the argument
+      is allowed to be any of the member types of the union,
+      and a null pointer expression or void pointer type is allowed
+      if any of the union members are a pointer.
+      For now, we approximate this by allowing any argument type
+      when the parameter type is a union and GCC extensions are enabled.
+      See "
+     (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
+       "the GCC manual")
+     " for more information on the @('transparent_union') attribute.")))
   (b* (((reterr))
        (types-param (type-list-fix types-param))
        (args (expr-list-fix args))
+       ((ienv ienv) ienv)
        ((when (endp types-param))
         (if (or (endp types-arg) ellipsis)
             nil
@@ -1215,8 +1239,10 @@
         (retmsg$ "Too few arguments."))
        (type-param (first types-param))
        (arg (first args))
-       (type-arg (type-fpconvert (type-apconvert (first types-arg)))))
+       (type-arg (type-fpconvert (type-apconvert (first types-arg))))
+       (gcc (ienv->gcc ienv)))
     (if (or (type-case type-param :unknown)
+            (and gcc (type-case type-param :union))
             (type-case type-arg :unknown)
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
@@ -4441,7 +4467,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor.declor))))
+                   (not (dirdeclor-has-params-p dirdeclor.declor))))
             (table (valid-push-scope table))
             ((erp new-params type-params return-types0 table)
              (b* (((reterr) nil (irr-type-params) nil table)
@@ -4488,7 +4514,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor))))
+                   (not (dirdeclor-has-params-p dirdeclor))))
             ((erp type table)
              (b* (((reterr) (irr-type) table))
                (if fundef-params-p
