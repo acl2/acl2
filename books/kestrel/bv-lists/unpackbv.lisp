@@ -27,6 +27,10 @@
   (all-integerp (unpackbv num size bv))
   :hints (("Goal" :in-theory (enable unpackbv))))
 
+(defthm integer-listp-of-unpackbv
+  (integer-listp (unpackbv num size bv))
+  :hints (("Goal" :in-theory (enable unpackbv))))
+
 (defthm consp-of-unpackbv
   (equal (consp (unpackbv num size bv))
          (posp num))

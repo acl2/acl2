@@ -1,7 +1,7 @@
 ; BV Lists Library: byte-to-bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,6 +38,10 @@
 
 (defthm all-integerp-of-byte-to-bits
   (all-integerp (byte-to-bits byte))
+  :hints (("Goal" :in-theory (enable byte-to-bits))))
+
+(defthm integer-listp-of-byte-to-bits
+  (integer-listp (byte-to-bits byte))
   :hints (("Goal" :in-theory (enable byte-to-bits))))
 
 (defthm len-of-byte-to-bits
