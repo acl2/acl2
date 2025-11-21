@@ -2120,6 +2120,25 @@
         (mv initer-new (gout-no-thm gin)))
        ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
+       ((mv lifted-thm-name thm-index events)
+        (if (and (expr-purep expr)
+                 (not (expr-case expr :ident))
+                 (not (expr-case expr :const))
+                 (not (expr-case expr :unary))
+                 (not (expr-case expr :cast))
+                 (not (and (expr-case expr :binary)
+                           (b* ((op (expr-binary->op expr)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm expr
+                                      expr-new
+                                      expr-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        (hints
         `(("Goal"
            :in-theory '((:e c::initer-kind)
@@ -2132,11 +2151,12 @@
                         (:e c::type-nonchar-integerp)
                         (:e c::expr-pure-limit)
                         initer-compustate-vars)
-           :use ((:instance ,expr-thm-name)
-                 (:instance initer-single-pure-congruence
+           :use ((:instance ,(or lifted-thm-name expr-thm-name)
+                            (limit (1- limit)))
+                 (:instance initer-single-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
-                 (:instance initer-single-pure-errors
+                 (:instance initer-single-errors
                             (expr ',old-expr)
                             (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2144,10 +2164,10 @@
                                initer-new
                                gin.vartys
                                gin.const-new
-                               gin.thm-index
+                               thm-index
                                hints)))
     (mv initer-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
