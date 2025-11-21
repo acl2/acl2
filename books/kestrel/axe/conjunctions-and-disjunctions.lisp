@@ -408,7 +408,7 @@
 (defun combine-axe-disjunctions-aux (x y)
   (declare (xargs :guard (and (possibly-negated-nodenumsp x)
                               (possibly-negated-nodenumsp y)
-                              (consp y) ;prevents and empty result
+                              (consp y) ;prevents an empty result
                               )
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
                                                            possibly-negated-nodenump)))))
@@ -443,6 +443,7 @@
 
 ;x is a quotep or a list of nodenums and negated nodenums
 ;y is a quotep or a list of nodenums and negated nodenums
+;; Returns an axe-disjunction that is boolean-equivalent to the disjunction of X and Y.
 (defund combine-axe-disjunctions (x y)
   (declare (xargs :guard (and (axe-disjunctionp x)
                               (axe-disjunctionp y))
