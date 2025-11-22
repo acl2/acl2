@@ -1402,7 +1402,7 @@
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
-                                  (assume-bytes ':all) ; todo: change the default to :non-write
+                                  (assume-bytes ':non-write)
                                   (stack-slots '100)
                                   (existing-stack-slots ':auto)
                                   (position-independent ':auto)
