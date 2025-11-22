@@ -50,6 +50,7 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "support")
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
