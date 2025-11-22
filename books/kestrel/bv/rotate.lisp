@@ -21,6 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

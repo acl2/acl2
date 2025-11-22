@@ -23,6 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; (local
 ;;  (defthm <-of-+-of-unary-

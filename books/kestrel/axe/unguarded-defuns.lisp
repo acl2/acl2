@@ -60,6 +60,8 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 

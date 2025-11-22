@@ -28,6 +28,7 @@
 (include-book "bvxor")
 (include-book "bvlt")
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
+(local (include-book "slice"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 

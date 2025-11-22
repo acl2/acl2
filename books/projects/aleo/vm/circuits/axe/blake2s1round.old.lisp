@@ -35,6 +35,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (local (in-theory (disable len true-listp nth update-nth expt))) ;; prevent inductions
 

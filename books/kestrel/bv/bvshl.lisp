@@ -14,6 +14,7 @@
 (include-book "slice-def")
 (include-book "bvshl-def")
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 

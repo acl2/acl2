@@ -19,6 +19,7 @@
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 
 ;; Rotate VAL to the right by AMT positions within a field of width WIDTH.  We
