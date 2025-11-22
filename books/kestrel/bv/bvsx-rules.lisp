@@ -18,6 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm bvand-of-bvsx-low-arg2

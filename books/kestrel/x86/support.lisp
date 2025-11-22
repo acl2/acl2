@@ -31,6 +31,7 @@
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/slice" :dir :system) ; todo: because of the disables below
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;to normalize more
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
@@ -59,6 +60,7 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
+;; todo: localize
 (in-theory (disable ACL2::ZP-WHEN-GT-0   ;slow
                     ACL2::ZP-WHEN-INTEGERP ;slow
                     ACL2::SLICE-TOO-HIGH-IS-0 ;slow

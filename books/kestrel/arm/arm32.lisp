@@ -31,6 +31,7 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (in-theory (disable mv-nth))
 

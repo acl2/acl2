@@ -25,6 +25,7 @@
 (include-book "bvplus")
 (include-book "repeatbit")
 (local (include-book "unsigned-byte-p"))
+(include-book "slice") ; todo, for disables below
 (local (include-book "logxor-b"))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
