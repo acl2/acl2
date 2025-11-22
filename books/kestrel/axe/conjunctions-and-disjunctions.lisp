@@ -672,19 +672,18 @@
 ;;        (boolor x y)))
 
 ;; Constants are the smallest, followed by nodenums in order
-(defund dag-item-measure (item)
-  (declare (xargs :guard (or (myquotep item)
-                             (natp item))))
+(defund darg-measure (item)
+  (declare (xargs :guard (dargp item)))
   (if (consp item)
       0
     (+ 1 (nfix item))))
 
-(defthm o-p-of-dag-item-measure
-  (o-p (dag-item-measure item))
-  :hints (("Goal" :in-theory (enable dag-item-measure))))
+(defthm o-p-of-darg-measure
+  (o-p (darg-measure item))
+  :hints (("Goal" :in-theory (enable darg-measure))))
 
 ;move
-(defthm <-of-dag-item-measure-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-aux
+(defthm <-of-darg-measure-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-aux
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
                 (< n
                    (len (dargs (aref1 dag-array-name dag-array nodenum))))
@@ -692,13 +691,13 @@
                 (natp n)
                 (not (equal 'quote
                             (car (aref1 dag-array-name dag-array nodenum)))))
-           (< (dag-item-measure (nth n (dargs (aref1 dag-array-name dag-array nodenum))))
-              (dag-item-measure nodenum)))
+           (< (darg-measure (nth n (dargs (aref1 dag-array-name dag-array nodenum))))
+              (darg-measure nodenum)))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable dag-item-measure car-becomes-nth-of-0)
+  :hints (("Goal" :in-theory (enable darg-measure car-becomes-nth-of-0)
            :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)))))
 
-(defthm <-of-dag-item-measure-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
+(defthm <-of-darg-measure-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (< n
                    (len (dargs (aref1 dag-array-name dag-array nodenum))))
@@ -706,8 +705,8 @@
                 (natp n)
                 (not (equal 'quote
                             (car (aref1 dag-array-name dag-array nodenum)))))
-           (< (dag-item-measure (nth n (dargs (aref1 dag-array-name dag-array nodenum))))
-              (dag-item-measure nodenum)))
+           (< (darg-measure (nth n (dargs (aref1 dag-array-name dag-array nodenum))))
+              (darg-measure nodenum)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
@@ -856,7 +855,7 @@
                                (dargp-less-than nodenum-or-quotep dag-len))
                    :ruler-extenders :all
                    :verify-guards nil ;done below
-                   :measure (dag-item-measure nodenum-or-quotep)))
+                   :measure (darg-measure nodenum-or-quotep)))
    (if (consp nodenum-or-quotep) ;checks for quotep
        (bool-fix-constant nodenum-or-quotep)
      ;;it's a nodenum:
@@ -869,8 +868,8 @@
              (if (and (eq 'boolor fn)
                       (= 2 (len (dargs expr))) ;(consp (cdr (dargs expr))) ;todo: here and elsewhere, put back these potentially faster tests
                       )
-                 (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                      (mbt (< (dag-item-measure (darg2 expr)) (dag-item-measure nodenum-or-quotep)))
+                 (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                      (mbt (< (darg-measure (darg2 expr)) (darg-measure nodenum-or-quotep)))
                       (combine-axe-disjunctions (get-axe-disjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)
                                                 (get-axe-disjunction-from-dag-item (darg2 expr) dag-array-name dag-array dag-len)))
                (if (and (or (eq 'boolif fn)
@@ -880,20 +879,20 @@
                         )
                    ;; (if <x> 't <y>) is like (or <x> <y>)
                    (if (equal *t* (darg2 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
-                       (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                            (mbt (< (dag-item-measure (darg3 expr)) (dag-item-measure nodenum-or-quotep)))
+                       (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                            (mbt (< (darg-measure (darg3 expr)) (darg-measure nodenum-or-quotep)))
                             (combine-axe-disjunctions (get-axe-disjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)
                                                       (get-axe-disjunction-from-dag-item (darg3 expr) dag-array-name dag-array dag-len)))
                      ;; (if <x> <y> 't) is like (or (not <x>) <y>)
                      (if (equal *t* (darg3 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
-                         (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                              (mbt (< (dag-item-measure (darg2 expr)) (dag-item-measure nodenum-or-quotep)))
+                         (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                              (mbt (< (darg-measure (darg2 expr)) (darg-measure nodenum-or-quotep)))
                               (combine-axe-disjunctions (negate-axe-conjunction (get-axe-conjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len))
                                                         (get-axe-disjunction-from-dag-item (darg2 expr) dag-array-name dag-array dag-len)))
                        (list nodenum-or-quotep)))
                  (if (and (eq 'not fn)
                           (= 1 (len (dargs expr))))
-                     (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
+                     (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
                           (negate-axe-conjunction (get-axe-conjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)))
                    (list nodenum-or-quotep))))))))))
 
@@ -902,7 +901,7 @@
    (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                                (dargp-less-than nodenum-or-quotep dag-len))
                    :ruler-extenders :all
-                   :measure (dag-item-measure nodenum-or-quotep)))
+                   :measure (darg-measure nodenum-or-quotep)))
    (if (consp nodenum-or-quotep) ;checks for quotep
        (bool-fix-constant nodenum-or-quotep)
      ;;it's a nodenum:
@@ -915,8 +914,8 @@
              (if (and (eq 'booland fn)
                       (equal 2 (len (dargs expr))) ;(consp (cdr (dargs expr)))
                       )
-                 (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                      (mbt (< (dag-item-measure (darg2 expr)) (dag-item-measure nodenum-or-quotep)))
+                 (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                      (mbt (< (darg-measure (darg2 expr)) (darg-measure nodenum-or-quotep)))
                       (combine-axe-conjunctions (get-axe-conjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)
                                                 (get-axe-conjunction-from-dag-item (darg2 expr) dag-array-name dag-array dag-len)))
                (if (and (or (eq 'boolif fn)
@@ -926,20 +925,20 @@
                         )
                    ;; (if <x> <y> 'nil) is like (and <x> <y>)
                    (if (equal *nil* (darg3 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
-                       (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                            (mbt (< (dag-item-measure (darg2 expr)) (dag-item-measure nodenum-or-quotep)))
+                       (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                            (mbt (< (darg-measure (darg2 expr)) (darg-measure nodenum-or-quotep)))
                             (combine-axe-conjunctions (get-axe-conjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)
                                                       (get-axe-conjunction-from-dag-item (darg2 expr) dag-array-name dag-array dag-len)))
                      ;; (if <x> 'nil <y>) is like (and (not <x>) <y>)
                      (if (equal *nil* (darg2 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
-                         (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
-                              (mbt (< (dag-item-measure (darg3 expr)) (dag-item-measure nodenum-or-quotep)))
+                         (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
+                              (mbt (< (darg-measure (darg3 expr)) (darg-measure nodenum-or-quotep)))
                               (combine-axe-conjunctions (negate-axe-disjunction (get-axe-disjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len))
                                                         (get-axe-conjunction-from-dag-item (darg3 expr) dag-array-name dag-array dag-len)))
                        (list nodenum-or-quotep)))
                  (if (and (eq 'not fn)
                           (= 1 (len (dargs expr))))
-                     (and (mbt (< (dag-item-measure (darg1 expr)) (dag-item-measure nodenum-or-quotep)))
+                     (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
                           (negate-axe-disjunction (get-axe-disjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)))
                    (list nodenum-or-quotep)))))))))))
 
