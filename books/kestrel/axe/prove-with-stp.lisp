@@ -1875,7 +1875,7 @@
                                            handled-node-array ; tells us whether we've already processed (decided whether to cut or translate) each node
                                            dag-array dag-len dag-parent-array
                                            known-nodenum-type-alist
-                                           ;;these are accumulators:
+                                           ;; these are accumulators:
                                            disjuncts-to-include-in-query
                                            nodenums-to-translate
                                            cut-nodenum-type-alist)
@@ -1883,20 +1883,18 @@
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len)
                               (or (natp depth-limit)
                                   (null depth-limit))
+                              (if depth-limit (array1p 'depth-array depth-array) t)
+                              (if depth-limit (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'depth-array depth-array)) t)
+                              (array1p 'handled-node-array handled-node-array)
+                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'handled-node-array handled-node-array))
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
                               (nodenum-type-alistp known-nodenum-type-alist)
                               (possibly-negated-nodenumsp disjuncts-to-include-in-query)
                               (all-natp nodenums-to-translate)
-                              (nodenum-type-alistp cut-nodenum-type-alist)
-                              (array1p 'handled-node-array handled-node-array)
-                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'handled-node-array handled-node-array))
-                              (implies depth-limit (array1p 'depth-array depth-array))
-                              (if depth-limit (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'depth-array depth-array)) t)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     (alen1 'dag-array dag-array))
-                              ;;todo: more?
-                              )
-                  :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                              (nodenum-type-alistp cut-nodenum-type-alist))
+                  :guard-hints (("Goal"; :do-not '(generalize eliminate-destructors)
                                  :expand (;(possibly-negated-nodenumsp disjuncts)
                                           (strip-nots-from-possibly-negated-nodenums disjuncts)
                                           )))))

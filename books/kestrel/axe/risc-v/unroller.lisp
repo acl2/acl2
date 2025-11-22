@@ -57,6 +57,7 @@
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -450,7 +451,7 @@
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
                (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
+               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -653,11 +654,12 @@
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
-       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (print-level-at-least-tp print)
-                                 (acl2::print-list assumptions)
-                               (acl2::print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
-                                                                 (equal t nil))))
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
+                             (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
+                               (if (print-level-at-least-tp print)
+                                   (acl2::print-list assumptions)
+                                 (acl2::print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
+                                                                         (equal t nil)))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
@@ -842,7 +844,7 @@
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
