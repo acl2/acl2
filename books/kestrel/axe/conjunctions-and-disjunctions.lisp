@@ -1,7 +1,7 @@
 ; Conjunctions and disjunctions in Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -841,7 +841,12 @@
 
 ;; Do not remove these (they help justify the correctness of the code below):
 (thm (iff (if x t y) (boolor x y)))
+(thm (iff (if x x y) (boolor x y)))
 (thm (iff (if x y t) (boolor (not x) y)))
+
+(thm (iff (if x y nil) (booland x y)))
+(thm (iff (if x y x) (booland x y)))
+(thm (iff (if x nil y) (booland (not x) y)))
 
 ;; These only preserve boolean-equivalence (that is, equivalence under iff).
 ;; TODO: Can we avoid checking the arities?
@@ -878,7 +883,9 @@
                         (= 3 (len (dargs expr))) ;(consp (cdr (cdr (dargs expr))))
                         )
                    ;; (if <x> 't <y>) is like (or <x> <y>)
-                   (if (equal *t* (darg2 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
+                   ;; (if <x> <x> <y>) is like (or <x> <y>)
+                   (if (or (equal *t* (darg2 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite.. ; todo: other non-nil constant
+                           (equal (darg1 expr) (darg2 expr)))
                        (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
                             (mbt (< (darg-measure (darg3 expr)) (darg-measure nodenum-or-quotep)))
                             (combine-axe-disjunctions (get-axe-disjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)
@@ -924,7 +931,9 @@
                         (equal 3 (len (dargs expr))) ;(consp (cdr (cdr (dargs expr))))
                         )
                    ;; (if <x> <y> 'nil) is like (and <x> <y>)
-                   (if (equal *nil* (darg3 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
+                   ;; (if <x> <y> <x>) is like (and <x> <y>)
+                   (if (or (equal *nil* (darg3 expr)) ;can it ever be the nodenum of a constant?  maybe not if this is all done on the second rewrite..
+                           (equal (darg1 expr) (darg3 expr)))
                        (and (mbt (< (darg-measure (darg1 expr)) (darg-measure nodenum-or-quotep)))
                             (mbt (< (darg-measure (darg2 expr)) (darg-measure nodenum-or-quotep)))
                             (combine-axe-conjunctions (get-axe-conjunction-from-dag-item (darg1 expr) dag-array-name dag-array dag-len)

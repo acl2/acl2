@@ -391,8 +391,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: doesn't handle the IF that comes from the OR:
-;;(must-prove-with-stp known-boolean-1 '(or (equal t (bvlt 8 x y)) (equal nil (bvlt 8 x y))))
+(must-prove-with-stp known-boolean-1 '(or (equal t (bvlt 8 x y)) (equal nil (bvlt 8 x y))))
 
 ;; the bvlt is either T or NIL:
 (must-prove-with-stp known-boolean-2 '(boolor (equal t (bvlt 8 x y)) (equal nil (bvlt 8 x y))))
