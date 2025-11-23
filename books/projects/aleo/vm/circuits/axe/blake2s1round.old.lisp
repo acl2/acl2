@@ -14,6 +14,10 @@
 
 ;; TODO: Add more tests
 
+;; Work around GCL issue where this book gets the same temp file name as
+;; blake2s1round.lisp when GCL compiles it:
+; cert_param: (non-gcl)
+
 (include-book "kestrel/crypto/blake/blake-common-32" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
