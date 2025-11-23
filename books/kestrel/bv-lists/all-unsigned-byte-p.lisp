@@ -230,3 +230,9 @@
                   (endp data)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm integer-listp-when-all-unsigned-byte-p
+  (implies (all-unsigned-byte-p width x) ; width is a free var
+           (equal (integer-listp x)
+                  (true-listp x)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
