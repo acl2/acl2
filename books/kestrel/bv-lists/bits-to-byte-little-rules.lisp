@@ -1,6 +1,6 @@
 ; BV Lists Library: Rules about bits-to-byte-little
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "kestrel/bv/getbit" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (defthm getbit-of-bits-to-byte-little
   (equal (getbit n (bits-to-byte-little bits))

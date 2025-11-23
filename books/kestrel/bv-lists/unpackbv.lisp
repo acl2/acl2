@@ -16,6 +16,7 @@
 (include-book "unsigned-byte-listp-def")
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (local (include-book "../bv/bvcat"))
+(local (include-book "../bv/slice"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why?
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/cons"))

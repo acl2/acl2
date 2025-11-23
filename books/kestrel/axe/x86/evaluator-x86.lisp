@@ -22,6 +22,7 @@
 (local (include-book "kestrel/bv/bitops" :dir :system))
 ;(local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
+(local (include-book "kestrel/bv/slice" :dir :system)) ; for slice-of-bvchop-low-gen
 
 ;; We avoid evaluating the undef-XXX functions, which have raw lisp code, since
 ;; that might defeat the purpose of having their values be undefined.
