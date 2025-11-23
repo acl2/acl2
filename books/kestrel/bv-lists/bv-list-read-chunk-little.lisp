@@ -24,6 +24,7 @@
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
 (local (in-theory (disable len true-listp))) ; prevent induction
 

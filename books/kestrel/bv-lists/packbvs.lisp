@@ -1,6 +1,6 @@
 ; Packing a list of BVs to create a shorter list of larger BVs
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
 ;; TODO: Prove this is the same as map-packbv of group.
 
