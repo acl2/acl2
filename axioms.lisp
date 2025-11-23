@@ -11931,6 +11931,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun translate-declaration-to-guard-gen (x var tflg wrld)
 
+; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
+
 ; This function is typically called on the sort of x you might write in a TYPE
 ; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
 ; something like '(or symbol cons (integer 0 128)) meaning that var is either a

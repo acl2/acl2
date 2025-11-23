@@ -31,6 +31,7 @@
 (local (include-book "bvcat-rules"))
 (local (include-book "repeatbit2"))
 (local (include-book "getbit"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (defthm trim-of-bvchop

@@ -415,7 +415,10 @@
                  :use (,expr-pure-thm
                        (:instance expr-pure-congruence
                                   (old ',old-expr)
-                                  (new ',new-expr)))
+                                  (new ',new-expr))
+                       (:instance expr-pure-errors
+                                  (expr ',old-expr)
+                                  (fenv old-fenv)))
                  :in-theory '(c::exec-expr
                               c::exec-expr-pure-when-const
                               c::errorp-of-error
@@ -1417,7 +1420,11 @@
                  (not (expr-case arg :ident))
                  (not (expr-case arg :const))
                  (not (expr-case arg :unary))
-                 (not (expr-case arg :cast)))
+                 (not (expr-case arg :cast))
+                 (not (and (expr-case arg :binary)
+                           (b* ((op (expr-binary->op arg)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm arg
                                       arg-new
@@ -1568,7 +1575,11 @@
                  (not (expr-case arg :ident))
                  (not (expr-case arg :const))
                  (not (expr-case arg :unary))
-                 (not (expr-case arg :cast)))
+                 (not (expr-case arg :cast))
+                 (not (and (expr-case arg :binary)
+                           (b* ((op (expr-binary->op arg)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm arg
                                       arg-new
@@ -1697,10 +1708,8 @@
                      arg2-thm-name))
         (mv expr-new gout-no-thm)))
     (cond
-     ((member-eq (binop-kind op)
-                 '(:mul :div :rem :add :sub :shl :shr
-                   :lt :gt :le :ge :eq :ne
-                   :bitand :bitxor :bitior))
+     ((and (c$::binop-purep op)
+           (c$::binop-strictp op))
       (b* (((unless (and (expr-purep arg1)
                          (expr-purep arg2)))
             (mv expr-new gout-no-thm))
@@ -1709,6 +1718,56 @@
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
+           ((mv lifted-thm-name1 thm-index events)
+            (if (and (expr-purep arg1)
+                     (not (expr-case arg1 :ident))
+                     (not (expr-case arg1 :const))
+                     (not (expr-case arg1 :unary))
+                     (not (expr-case arg1 :cast))
+                     (not (and (expr-case arg1 :binary)
+                               (b* ((op (expr-binary->op arg1)))
+                                 (and (c$::binop-purep op)
+                                      (c$::binop-strictp op)))))
+                     (not (and (expr-case arg1 :paren)
+                               (b* ((inner (c$::expr-paren->inner arg1)))
+                                 (and (expr-case inner :binary)
+                                      (b* ((op (expr-binary->op inner)))
+                                        (and (c$::binop-purep op)
+                                             (c$::binop-strictp op))))))))
+                (b* (((mv thm-event thm-name thm-index)
+                      (lift-expr-pure-thm arg1
+                                          arg1-new
+                                          arg1-thm-name
+                                          gin.vartys
+                                          gin.const-new
+                                          gin.thm-index)))
+                  (mv thm-name thm-index (cons thm-event gin.events)))
+              (mv nil gin.thm-index gin.events)))
+           ((mv lifted-thm-name2 thm-index events)
+            (if (and (expr-purep arg2)
+                     (not (expr-case arg2 :ident))
+                     (not (expr-case arg2 :const))
+                     (not (expr-case arg2 :unary))
+                     (not (expr-case arg2 :cast))
+                     (not (and (expr-case arg2 :binary)
+                               (b* ((op (expr-binary->op arg2)))
+                                 (and (c$::binop-purep op)
+                                      (c$::binop-strictp op)))))
+                     (not (and (expr-case arg2 :paren)
+                               (b* ((inner (c$::expr-paren->inner arg2)))
+                                 (and (expr-case inner :binary)
+                                      (b* ((op (expr-binary->op inner)))
+                                        (and (c$::binop-purep op)
+                                             (c$::binop-strictp op))))))))
+                (b* (((mv thm-event thm-name thm-index)
+                      (lift-expr-pure-thm arg2
+                                          arg2-new
+                                          arg2-thm-name
+                                          gin.vartys
+                                          gin.const-new
+                                          thm-index)))
+                  (mv thm-name thm-index (cons thm-event events)))
+              (mv nil thm-index events)))
            (hints `(("Goal"
                      :in-theory '((:e c::binop-kind)
                                   (:e c::binop-purep)
@@ -1718,30 +1777,50 @@
                                   (:e c::promote-type)
                                   (:e c::uaconvert-types)
                                   (:e c::type-sint)
-                                  (:e member-equal))
-                     :use (,arg1-thm-name
-                           ,arg2-thm-name
-                           (:instance
-                            expr-binary-pure-strict-congruence
-                            (op ',cop)
-                            (old-arg1 ',old-arg1)
-                            (old-arg2 ',old-arg2)
-                            (new-arg1 ',new-arg1)
-                            (new-arg2 ',new-arg2))
-                           (:instance
-                            expr-binary-pure-strict-errors
-                            (op ',cop)
-                            (arg1 ',old-arg1)
-                            (arg2 ',old-arg2))))))
+                                  (:e member-equal)
+                                  (:e c::expr-purep)
+                                  expr-compustate-vars)
+                     :use ((:instance ,(or lifted-thm-name1 arg1-thm-name)
+                                      (limit (1- limit)))
+                           (:instance ,(or lifted-thm-name2 arg2-thm-name)
+                                      (compst (mv-nth 1 (c::exec-expr
+                                                         ',old-arg1
+                                                         compst
+                                                         old-fenv
+                                                         (1- limit))))
+                                      (limit (1- limit)))
+                           (:instance ,(or lifted-thm-name2 arg2-thm-name)
+                                      (limit (1- limit)))
+                           (:instance expr-binary-pure-strict-congruence
+                                      (op ',cop)
+                                      (old-arg1 ',old-arg1)
+                                      (old-arg2 ',old-arg2)
+                                      (new-arg1 ',new-arg1)
+                                      (new-arg2 ',new-arg2))
+                           (:instance expr-binary-pure-strict-congruence-pure
+                                      (op ',cop)
+                                      (old-arg1 ',old-arg1)
+                                      (old-arg2 ',old-arg2)
+                                      (new-arg1 ',new-arg1)
+                                      (new-arg2 ',new-arg2))
+                           (:instance expr-binary-pure-strict-errors
+                                      (op ',cop)
+                                      (arg1 ',old-arg1)
+                                      (arg2 ',old-arg2)
+                                      (fenv old-fenv))
+                           (:instance expr-binary-pure-strict-errors-pure
+                                      (op ',cop)
+                                      (arg1 ',old-arg1)
+                                      (arg2 ',old-arg2))))))
            ((mv thm-event thm-name thm-index)
-            (gen-expr-pure-thm expr
-                               expr-new
-                               gin.vartys
-                               gin.const-new
-                               gin.thm-index
-                               hints)))
+            (gen-expr-thm expr
+                          expr-new
+                          gin.vartys
+                          gin.const-new
+                          thm-index
+                          hints)))
         (mv expr-new
-            (make-gout :events (cons thm-event gin.events)
+            (make-gout :events (cons thm-event events)
                        :thm-index thm-index
                        :thm-name thm-name
                        :vartys gin.vartys))))
@@ -1817,7 +1896,11 @@
                      (not (expr-case arg2 :ident))
                      (not (expr-case arg2 :const))
                      (not (expr-case arg2 :unary))
-                     (not (expr-case arg2 :cast)))
+                     (not (expr-case arg2 :cast))
+                     (not (and (expr-case arg2 :binary)
+                               (b* ((op (expr-binary->op arg2)))
+                                 (and (c$::binop-purep op)
+                                      (c$::binop-strictp op))))))
                 (b* (((mv thm-event thm-name thm-index)
                       (lift-expr-pure-thm arg2
                                           arg2-new
@@ -2037,6 +2120,25 @@
         (mv initer-new (gout-no-thm gin)))
        ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
+       ((mv lifted-thm-name thm-index events)
+        (if (and (expr-purep expr)
+                 (not (expr-case expr :ident))
+                 (not (expr-case expr :const))
+                 (not (expr-case expr :unary))
+                 (not (expr-case expr :cast))
+                 (not (and (expr-case expr :binary)
+                           (b* ((op (expr-binary->op expr)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm expr
+                                      expr-new
+                                      expr-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        (hints
         `(("Goal"
            :in-theory '((:e c::initer-kind)
@@ -2049,11 +2151,12 @@
                         (:e c::type-nonchar-integerp)
                         (:e c::expr-pure-limit)
                         initer-compustate-vars)
-           :use ((:instance ,expr-thm-name)
-                 (:instance initer-single-pure-congruence
+           :use ((:instance ,(or lifted-thm-name expr-thm-name)
+                            (limit (1- limit)))
+                 (:instance initer-single-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
-                 (:instance initer-single-pure-errors
+                 (:instance initer-single-errors
                             (expr ',old-expr)
                             (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2061,10 +2164,10 @@
                                initer-new
                                gin.vartys
                                gin.const-new
-                               gin.thm-index
+                               thm-index
                                hints)))
     (mv initer-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -2129,7 +2232,11 @@
                  (not (expr-case expr? :ident))
                  (not (expr-case expr? :const))
                  (not (expr-case expr? :unary))
-                 (not (expr-case expr? :cast)))
+                 (not (expr-case expr? :cast))
+                 (not (and (expr-case expr? :binary)
+                           (b* ((op (expr-binary->op expr?)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new
@@ -2245,7 +2352,11 @@
                  (not (expr-case expr? :ident))
                  (not (expr-case expr? :const))
                  (not (expr-case expr? :unary))
-                 (not (expr-case expr? :cast)))
+                 (not (expr-case expr? :cast))
+                 (not (and (expr-case expr? :binary)
+                           (b* ((op (expr-binary->op expr?)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
             (b* (((mv thm-event thm-name thm-index)
                   (lift-expr-pure-thm expr?
                                       expr?-new

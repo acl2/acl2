@@ -984,26 +984,52 @@
        namely ones that are not pure but have
        a deterministic order of evaluation.")
      (xdoc::p
-      "The code of this function starts by cases on expressions,
-       but only covers some of the cases;
-       the rest of the cases contain (some of) the old code of this function,
-       which handles certain kinds of expressions.")
-     (xdoc::p
       "Variables and constants are always deterministic,
        so they are supported in all cases.")
+     (xdoc::p
+      "An array subscript expression involves two sub-expressions,
+       whose order of evaluation is unspecified.
+       So we require both of them to be pure,
+       so that the order of evaluation does not matter.
+       We execute the first one before the second one,
+       but we could as well do the opposite,
+       since the computations state does not change.")
+     (xdoc::p
+      "In a function call,
+       the order of evaluation of the function and arguments is not specified.
+       In our current abstract syntax,
+       the function sub-expression is always pure;
+       we require all the argument expressions to be pure.
+       Thus the order of evaluation of function and arguments does not matter.
+       We use @(tsee exec-expr-pure-list) for the arguments
+       (but we plan to use a new function @('exec-expr-list') at some point),
+       and we delegate to @(tsee exec-fun)
+       the evaluation of the function sub-expression itself.")
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions;
        if they were not, they might modify the function-valued expression.
        We execute the arguments and then the function.")
      (xdoc::p
-      "A unary expression is always deterministic,
+      "A member or unary expression is always deterministic,
        because it has a single sub-expression.")
+     (xdoc::p
+      "For now we do not support pre/post-increment/decrement expressions.")
      (xdoc::p
       "A cast expression is always deterministic in our current C subset,
        because the type name does not undergo any execution currently.")
      (xdoc::p
-      "If the expression is an assignment,
+      "For a binary expression with a strict pure operator,
+       we require the two sub-expressions to be pure,
+       because the order of evaluation is not specified;
+       we evaluate the left one before the right one,
+       but it makes no difference because the computation state does not change.")
+     (xdoc::p
+      "Non-strict binary expressions must be pure for now,
+       but we plan to relax this, since the order of evaluation is determined.
+       We delegate their execution to @(tsee exec-expr-pure) for now.")
+     (xdoc::p
+      "If the binary expression is a (simple, not compound) assignment,
        the left-hand side must be a pure lvalue expression;
        if it were not pure,
        it could potentially change the value of the right-hand side,
@@ -1029,12 +1055,28 @@
        to the result of evaluating the right-hand side,
        which must return an expression value (not @('nil')).
        Note that the assignment itself is not an lvalue;
-       its result is the value assigned by the assignment."))
+       its result is the value assigned by the assignment.")
+     (xdoc::p
+      "The remaining binary expressions are compound assignments.
+       They are not supported for now."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (expr-case
        e
        :ident (mv (exec-ident e.get compst) (compustate-fix compst))
        :const (mv (exec-const e.get) (compustate-fix compst))
+       :arrsub (b* (((unless (and (expr-purep e.arr)
+                                  (expr-purep e.sub)))
+                     (mv (error (list :arrsub-nonpure-arg (expr-fix e)))
+                         (compustate-fix compst)))
+                    ((mv arr compst) (exec-expr e.arr compst fenv (1- limit)))
+                    ((when (errorp arr)) (mv arr compst))
+                    ((unless arr)
+                     (mv (error (list :arrsub-void-expr e.arr)) compst))
+                    ((mv sub compst) (exec-expr e.sub compst fenv (1- limit)))
+                    ((when (errorp sub)) (mv sub compst))
+                    ((unless sub)
+                     (mv (error (list :arrsub-void-expr e.sub)) compst)))
+                 (mv (exec-arrsub arr sub compst) compst))
        :call (b* ((vals (exec-expr-pure-list e.args compst))
                   ((when (errorp vals)) (mv vals (compustate-fix compst)))
                   ((mv val? compst)
@@ -1043,6 +1085,28 @@
                (if val?
                    (mv (make-expr-value :value val? :object nil) compst)
                  (mv nil compst)))
+       :member (b* (((mv str compst)
+                     (exec-expr e.target compst fenv (1- limit)))
+                    ((when (errorp str)) (mv str compst))
+                    ((unless str)
+                     (mv (error (list :member-void-expr (expr-fix e)))
+                         compst)))
+                 (mv (exec-member str e.name) compst))
+       :memberp (b* (((mv str compst)
+                      (exec-expr e.target compst fenv (1- limit)))
+                     ((when (errorp str)) (mv str compst))
+                     ((unless str)
+                      (mv (error (list :memberp-void-expr (expr-fix e)))
+                          compst)))
+                  (mv (exec-memberp str e.name compst) compst))
+       :postinc (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :postdec (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :preinc (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
+       :predec (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
        :unary (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
                    ((when (errorp arg)) (mv arg compst))
                    ((unless arg)
@@ -1053,46 +1117,71 @@
                   ((unless arg)
                    (mv (error (list :cast-void-expr e.arg)) compst)))
                (mv (exec-cast e.type arg) compst))
-       :binary (b* (((when (expr-purep e))
-                     (mv (exec-expr-pure e compst) (compustate-fix compst)))
-                    ((when (and (expr-case e :binary)
-                                (binop-case (expr-binary->op e) :asg)))
-                     (b* ((left (expr-binary->arg1 e))
-                          (right (expr-binary->arg2 e))
-                          (left-eval (exec-expr-pure left compst))
-                          ((when (errorp left-eval))
-                           (mv left-eval (compustate-fix compst)))
-                          (left-eval (apconvert-expr-value left-eval))
-                          ((when (errorp left-eval))
-                           (mv left-eval (compustate-fix compst)))
-                          (objdes (expr-value->object left-eval))
-                          ((unless objdes)
-                           (mv (error (list :not-lvalue left))
-                               (compustate-fix compst)))
-                          ((mv right-eval? compst)
-                           (if (expr-case left :ident)
-                               (exec-expr right compst fenv (1- limit))
-                             (mv (exec-expr-pure right compst)
-                                 (compustate-fix compst))))
-                          ((when (errorp right-eval?)) (mv right-eval? compst))
-                          ((when (not right-eval?))
-                           (mv (error (list :asg-void-expr right)) compst))
-                          (right-eval right-eval?)
-                          (right-eval (apconvert-expr-value right-eval))
-                          ((when (errorp right-eval)) (mv right-eval compst))
-                          (val (expr-value->value right-eval))
-                          (compst/error (write-object objdes val compst))
-                          ((when (errorp compst/error))
-                           (mv compst/error compst))
-                          (compst compst/error))
-                       (mv (make-expr-value :value val :object nil) compst))))
-                 (mv (error (list :expression-not-supported (expr-fix e)))
-                     (compustate-fix compst)))
-       :otherwise
-       (b* (((when (expr-purep e))
-             (mv (exec-expr-pure e compst) (compustate-fix compst))))
-         (mv (error (list :expression-not-supported (expr-fix e)))
-             (compustate-fix compst)))))
+       :binary (cond
+                ((and (binop-strictp e.op)
+                      (binop-purep e.op))
+                 (b* (((unless (and (expr-purep e.arg1)
+                                    (expr-purep e.arg2)))
+                       (mv (error (list :pure-strict-binary-nonpure-args
+                                        (expr-fix e)))
+                           (compustate-fix compst)))
+                      ((mv arg1-eval compst)
+                       (c::exec-expr e.arg1 compst fenv (1- limit)))
+                      ((when (errorp arg1-eval)) (mv arg1-eval compst))
+                      ((unless arg1-eval)
+                       (mv (error (list :binary-void-expr e.arg1)) compst))
+                      ((mv arg2-eval compst)
+                       (c::exec-expr e.arg2 compst fenv (1- limit)))
+                      ((when (errorp arg2-eval)) (mv arg2-eval compst))
+                      ((unless arg2-eval)
+                       (mv (error (list :binary-void-expr e.arg2)) compst)))
+                   (mv (exec-binary-strict-pure e.op arg1-eval arg2-eval)
+                       compst)))
+                ((or (binop-case e.op :logand)
+                     (binop-case e.op :logor))
+                 (if (expr-purep e)
+                     (mv (exec-expr-pure e compst) (compustate-fix compst))
+                   (mv (error (list :nonstrict-binary-nonpure-args
+                                    (expr-fix e)))
+                       (compustate-fix compst))))
+                ((binop-case e.op :asg)
+                 (b* ((left (expr-binary->arg1 e))
+                      (right (expr-binary->arg2 e))
+                      ((unless (expr-purep left))
+                       (mv (error (list :asg-left-nonpure (expr-fix e)))
+                           (compustate-fix compst)))
+                      ((mv left-eval compst)
+                       (exec-expr left compst fenv (1- limit)))
+                      ((when (errorp left-eval)) (mv left-eval compst))
+                      ((unless left-eval)
+                       (mv (error (list :asg-left-void (expr-fix e))) compst))
+                      (left-eval (apconvert-expr-value left-eval))
+                      ((when (errorp left-eval)) (mv left-eval compst))
+                      (objdes (expr-value->object left-eval))
+                      ((unless objdes)
+                       (mv (error (list :not-lvalue left)) compst))
+                      ((mv right-eval? compst)
+                       (if (expr-case left :ident)
+                           (exec-expr right compst fenv (1- limit))
+                         (mv (exec-expr-pure right compst) compst)))
+                      ((when (errorp right-eval?)) (mv right-eval? compst))
+                      ((when (not right-eval?))
+                       (mv (error (list :asg-void-expr right)) compst))
+                      (right-eval right-eval?)
+                      (right-eval (apconvert-expr-value right-eval))
+                      ((when (errorp right-eval)) (mv right-eval compst))
+                      (val (expr-value->value right-eval))
+                      (compst/error (write-object objdes val compst))
+                      ((when (errorp compst/error))
+                       (mv compst/error compst))
+                      (compst compst/error))
+                   (mv (make-expr-value :value val :object nil) compst)))
+                (t (mv (error (list :expression-not-supported (expr-fix e)))
+                       (compustate-fix compst))))
+       :cond (if (expr-purep e)
+                 (mv (exec-expr-pure e compst) (compustate-fix compst))
+               (mv (error (list :cond-nonpure-args (expr-fix e)))
+                   (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1555,4 +1644,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual exec
-    :hints (("Goal" :in-theory (enable nfix)))))
+    :hints (("Goal"
+             :expand ((exec-expr e (compustate-fix compst) fenv limit)
+                      (exec-expr e compst (fun-env-fix fenv) limit))
+             :in-theory (enable nfix)))))

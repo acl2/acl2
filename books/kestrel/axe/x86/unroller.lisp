@@ -91,6 +91,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
@@ -681,6 +682,15 @@
 (defconst *error-fns*
   '(set-ms set-fault))
 
+(defund add-offsets-to-base-address (offsets base-address-var)
+  (declare (xargs :guard (and (nat-listp offsets)
+                              (symbolp base-address-var))))
+  (if (endp offsets)
+      nil
+    (let* ((offset (first offsets)))
+      (cons `(bvplus '64 ',offset ,base-address-var)
+            (add-offsets-to-base-address (rest offsets) base-address-var)))))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -875,7 +885,7 @@
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
                (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
+               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -901,15 +911,6 @@
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund add-offsets-to-base-address (offsets base-address-var)
-  (declare (xargs :guard (and (nat-listp offsets)
-                              (symbolp base-address-var))))
-  (if (endp offsets)
-      nil
-    (let* ((offset (first offsets)))
-      (cons `(bvplus '64 ',offset ,base-address-var)
-            (add-offsets-to-base-address (rest offsets) base-address-var)))))
 
 ;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
@@ -1055,11 +1056,12 @@
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil nil nil state))
-       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (print-level-at-least-tp print)
-                                 (print-list assumptions)
-                               (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
-                                                                 (equal t nil))))
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
+                             (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
+                               (if (print-level-at-least-tp print)
+                                   (print-list assumptions)
+                                 (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
+                                                                   (equal t nil)))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
@@ -1402,7 +1404,7 @@
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
-                                  (assume-bytes ':all) ; todo: change the default to :non-write
+                                  (assume-bytes ':non-write)
                                   (stack-slots '100)
                                   (existing-stack-slots ':auto)
                                   (position-independent ':auto)
