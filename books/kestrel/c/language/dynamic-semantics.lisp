@@ -1040,8 +1040,7 @@
        this must yield an expression value with an object designator.
        The right-hand side must be a pure expression (lvalue or not),
        but if the left-hand side is just an identifier,
-       then we allow the right-hand side to be any supported expression
-       (we recursively call @(tsee exec-expr) on it).
+       then we allow the right-hand side to be any supported expression.
        The latter relaxation is justified by the fact that,
        if the left-hand side is a variable,
        it the object that it designates is not affected
@@ -1164,14 +1163,11 @@
                       (objdes (expr-value->object left-eval))
                       ((unless objdes)
                        (mv (error (list :asg-not-lvalue left)) compst))
-                      ((mv right-eval? compst)
-                       (if (expr-case left :ident)
-                           (exec-expr right compst fenv (1- limit))
-                         (mv (exec-expr-pure right compst) compst)))
-                      ((when (errorp right-eval?)) (mv right-eval? compst))
-                      ((when (not right-eval?))
+                      ((mv right-eval compst)
+                       (exec-expr right compst fenv (1- limit)))
+                      ((when (errorp right-eval)) (mv right-eval compst))
+                      ((when (not right-eval))
                        (mv (error (list :asg-right-void right)) compst))
-                      (right-eval right-eval?)
                       (right-eval (apconvert-expr-value right-eval))
                       ((when (errorp right-eval)) (mv right-eval compst))
                       (val (expr-value->value right-eval))
