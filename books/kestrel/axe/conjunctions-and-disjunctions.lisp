@@ -848,9 +848,8 @@
 (thm (iff (if x y x) (booland x y)))
 (thm (iff (if x nil y) (booland (not x) y)))
 
-;; These only preserve boolean-equivalence (that is, equivalence under iff).
+;; These functions only preserve boolean-equivalence (that is, equivalence under iff).
 ;; TODO: Can we avoid checking the arities?
-;; TODO: Handle (if x x y).
 ;; TODO: For (equal <x> t), just return <x> if <x> is boolean.  Same for the commuted form.
 ;; TODO: For (equal <x> nil), just return (not <x>).  Same for the commuted form.
 (mutual-recursion
