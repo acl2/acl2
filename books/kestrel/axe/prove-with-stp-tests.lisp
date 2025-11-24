@@ -403,3 +403,13 @@
 
 ;; todo: for 3 boolean terms, 2 must be equal (but not true if not known boolean)
 ;; todo: known boolean by the term or by an assumption
+
+(must-prove-with-stp or-of-t-1 '(boolor t x))
+(must-prove-with-stp or-of-t-2 '(boolor x t))
+
+(must-fail (must-prove-with-stp or-of-nil-1 '(boolor nil x)))
+(must-fail (must-prove-with-stp or-of-nil-2 '(boolor x nil)))
+
+(must-prove-with-stp or-test-1 '(boolor x (not x)))
+;; currently fails, due to a disjunct of just x, and due to a disjunct that is an IF:
+(must-fail (must-prove-with-stp or-test-2 '(boolor x (if x (equal x y) (equal y y)))))
