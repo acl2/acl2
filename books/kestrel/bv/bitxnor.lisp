@@ -14,6 +14,7 @@
 
 (include-book "getbit")
 (include-book "bitnot")
+(local (include-book "unsigned-byte-p"))
 
 ;; Computes the XNOR (complement of XOR) of the bits X and Y.
 ;x and y should be single bits

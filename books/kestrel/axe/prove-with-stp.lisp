@@ -47,6 +47,7 @@
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 

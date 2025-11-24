@@ -17,6 +17,7 @@
 (include-book "bitnot")
 (include-book "bitand")
 (include-book "kestrel/booleans/booland" :dir :system)
+(local (include-book "unsigned-byte-p"))
 
 ;; The BITNOT is turned into a NOT.
 (defthm bit-to-bool-of-bitnot

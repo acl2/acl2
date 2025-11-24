@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvnot")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
 
 (defund bitnot (x)
