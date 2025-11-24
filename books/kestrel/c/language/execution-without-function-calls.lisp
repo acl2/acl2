@@ -55,7 +55,8 @@
                       (exec-expr e compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr
-      :hints ('(:expand (exec-expr e compst fenv1 limit))))
+      :hints ('(:expand ((exec-expr e compst fenv limit)
+                         (exec-expr e compst fenv1 limit)))))
     (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)

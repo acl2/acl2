@@ -601,7 +601,35 @@
       (b* (((mv result compst1) (exec-expr e compst fenv limit)))
         (implies (not (errorp result))
                  (var-resolve-preservep compst compst1)))
-      :flag exec-expr)
+      :flag exec-expr
+      :hints ('(:expand (exec-expr e compst fenv limit)
+                :use (:instance
+                      var-resolve-preservep-transitive
+                      (compst compst)
+                      (compst1
+                       (mv-nth 1 (exec-expr (expr-binary->arg1 e)
+                                            compst fenv (+ -1 limit))))
+                      (compst2
+                       (write-object
+                        (expr-value->object
+                         (apconvert-expr-value
+                          (mv-nth 0 (exec-expr
+                                     (expr-binary->arg1 e)
+                                     compst fenv (+ -1 limit)))))
+                        (expr-value->value
+                         (apconvert-expr-value
+                          (mv-nth 0 (exec-expr
+                                     (expr-binary->arg2 e)
+                                     (mv-nth 1 (exec-expr
+                                                (expr-binary->arg1 e)
+                                                compst fenv (+ -1 limit)))
+                                     fenv (+ -1 limit)))))
+                        (mv-nth 1 (exec-expr
+                                   (expr-binary->arg2 e)
+                                   (mv-nth 1 (exec-expr
+                                              (expr-binary->arg1 e)
+                                              compst fenv (+ -1 limit)))
+                                   fenv (+ -1 limit)))))))))
     (defthm var-resolve-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)

@@ -525,8 +525,9 @@
                              (equal member (expr-member->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
+                             (expr-purep right)
                              (integerp limit)
-                             (> limit 2)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal var (expr-ident->get target))
                              (equal struct (read-var var compst))
                              (,recognizer struct)
@@ -553,8 +554,9 @@
                              (equal member (expr-memberp->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
+                             (expr-purep right)
                              (integerp limit)
-                             (> limit 2)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal ptr (read-var (expr-ident->get target)
                                                   compst))
                              (valuep ptr)
@@ -585,7 +587,10 @@
              (hints-member
               `(("Goal"
                  :in-theory
-                 '(exec-expr
+                 '(exec-expr-to-exec-expr-pure
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-member-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -651,7 +656,10 @@
              (hints-memberp
               `(("Goal"
                  :in-theory
-                 '(exec-expr
+                 '(exec-expr-to-exec-expr-pure
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-memberp-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -806,8 +814,10 @@
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
                (expr-purep index)
+               (expr-purep right)
                (integerp limit)
-               (> limit (1+ (expr-pure-limit left)))
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal var (expr-ident->get target))
                (equal struct (read-var var compst))
                (,recognizer struct)
@@ -845,8 +855,10 @@
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
                (expr-purep index)
+               (expr-purep right)
                (integerp limit)
-               (> limit (1+ (expr-pure-limit left)))
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal ptr (read-var (expr-ident->get target)
                                     compst))
                (valuep ptr)

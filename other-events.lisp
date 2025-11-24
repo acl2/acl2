@@ -12934,21 +12934,11 @@
               (f-get-global 'acl2-version state))
                           ch state)
            (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-           (print-objects
-
-; We could apply hons-copy to (car portcullis) here, but we don't.  See the
-; Remark on Fast-alists in install-for-add-trip-include-book.
-
-            (car portcullis) ch state)
+           (print-objects (car portcullis) ch state)
            (print-object$ :END-PORTCULLIS-CMDS ch state)
            (cond (expansion-alist
                   (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                          (print-object$
-
-; We could apply hons-copy to expansion-alist here, but we don't.  See the
-; Remark on Fast-alists in install-for-add-trip-include-book.
-
-                           expansion-alist ch state)))
+                          (print-object$ expansion-alist ch state)))
                  (t state))
            (cond (cert-data
                   (pprogn (print-object$ :cert-data ch state)
@@ -12967,13 +12957,7 @@
             ch state)
            (cond (pcert-info
                   (pprogn (print-object$ :PCERT-INFO ch state)
-                          (print-object$
-
-; We could apply hons-copy to pcert-info (as it may be an expansion-alist
-; without local elision), but we don't.  See the Remark on Fast-alists in
-; install-for-add-trip-include-book.
-
-                           pcert-info ch state)))
+                          (print-object$ pcert-info ch state)))
                  (t state))
            (close-output-channel ch state)
            (value certification-file)))))))))
@@ -15696,11 +15680,8 @@
   x)
 
 (defattach (acl2x-expansion-alist
-; User-modifiable; see comment in the defstub just above.
 
-; At one time we used hons-copy-with-state here, but we are concerned that this
-; will interfere with fast-alists.  See the Remark on Fast-alists in
-; install-for-add-trip-include-book.
+; User-modifiable; see comment in the defstub just above.
 
             identity-with-state)
   :skip-checks t)
@@ -15834,12 +15815,7 @@
             (print-readably t))
            (pprogn
             (print-object$ '(in-package "ACL2") ch state)
-            (print-objects
-
-; We could apply hons-copy to cmds here, but we don't.  See the
-; Remark on Fast-alists in install-for-add-trip-include-book.
-
-             cmds ch state)
+            (print-objects cmds ch state)
             (close-output-channel ch state)
             (value port-file)))))))))
 
@@ -19446,8 +19422,53 @@
           (car names)
           (untranslate (guard (car names) nil wrld) t wrld)))))
 
-(defun chk-stobj-field-type-term (term type init field name type-string str
+(mutual-recursion
+
+(defun non-common-lisp-compliants-in-satisfies (type wrld)
+
+; Warning: Keep this in sync with translate-declaration-to-guard-gen and
+; appropriate subfunctions.
+
+; Type is a valid type-spec, one that is successfully translated by
+; translate-declaration-to-guard.  Thus we know that for every subform
+; (SATIFIES pred) of type, pred is a unary function symbol.  We return (mv flg
+; prog-fns) where flg is nil if there are no (SATIFIES pred) subforms of type,
+; and otherwise flg is t and prog-fns is the list of all such pred that are in
+; program mode.
+
+  (cond ((atom type) (mv nil nil))
+        ((or (eq (car type) 'not)
+             (eq (car type) 'complex))
+         (non-common-lisp-compliants-in-satisfies (cadr type) wrld))
+        ((or (eq (car type) 'and)
+             (eq (car type) 'or))
+         (non-common-lisp-compliants-in-satisfies-lst (cdr type) wrld))
+        ((consp type)
+         (if (eq (car type) 'satisfies)
+             (mv t
+                 (if (eq (symbol-class (cadr type) wrld)
+                         :common-lisp-compliant)
+                     nil
+                   (list (cadr type))))
+           (mv nil nil)))
+        (t (mv nil nil))))
+
+(defun non-common-lisp-compliants-in-satisfies-lst (lst wrld)
+  (cond ((endp lst) (mv nil nil))
+        (t (mv-let (flg1 fns1)
+             (non-common-lisp-compliants-in-satisfies (car lst) wrld)
+             (mv-let (flg2 fns2)
+               (non-common-lisp-compliants-in-satisfies-lst (cdr lst) wrld)
+               (mv (or flg1 flg2)
+                   (union-eq fns1 fns2)))))))
+)
+
+(defun chk-stobj-field-type-term (term type init field name type-string
                                        ctx wrld state)
+
+; This function checks the legality of type specs in defstobj forms.  Here,
+; term is the result of running translate-declaration-to-guard on type.
+
   (er-let* ((pair (simple-translate-and-eval term
                                              (list (cons 'x init))
                                              nil
@@ -19457,23 +19478,49 @@
                                              state
                                              nil)))
 
-; pair is (tterm . val), where tterm is a term and val is its value
-; under x<-init.
+; Pair is (tterm . val), where tterm is a term and val is its value under
+; x<-init.
 
-    (er-progn
-     (chk-common-lisp-compliant-subfunctions
-      nil (list field) (list (car pair))
-      wrld str ctx state)
-     (chk-unrestricted-guards-for-type-spec-term
-      (all-fnnames (car pair))
-      wrld ctx state)
-     (cond
-      ((not (cdr pair))
-       (er soft ctx
-           "The value specified by the :initially keyword, namely ~x0, fails ~
-            to satisfy the declared type ~x1~@2 for the ~x3 field of ~x4."
-           init type type-string field name))
-      (t (value nil))))))
+    (mv-let
+      (flg bad-fns)
+      (non-common-lisp-compliants-in-satisfies type wrld)
+      (cond
+       (bad-fns ; hence flg is non-nil, but we don't rely on that
+        (er soft ctx
+            "The type specifier for the ~x0 field of the proposed stobj, ~x1, ~
+             applies SATISFIES to the function symbol~#2~[ ~&2, the guard of ~
+             which has~/s ~&2, the guards of which have~] not yet been ~
+             verified.  See :DOC defstobj."
+            field name bad-fns))
+       ((not (cdr pair))
+        (er soft ctx
+            "The value specified by the :initially keyword, namely ~x0, fails ~
+             to satisfy the declared type ~x1~@2 for the ~x3 field of ~x4."
+            init type type-string field name))
+       ((null flg)
+        (value nil))
+       (t
+
+; The following code is adapted from :term case of guard-obligation-clauses
+; using ens = :do-not-simplify.
+
+        (mv-let (cl-set ttree)
+          (guard-clauses+ (car pair) nil t nil :do-not-simplify wrld nil nil
+                          nil nil)
+          (assert$
+           (eq ttree nil)
+           (mv-let (cl-set ttree) ; assumption-free
+             (clean-up-clause-set cl-set nil wrld nil state)
+             (declare ; ignore runes used (from *initial-built-in-clauses*)
+              (ignore ttree))
+             (cond
+              ((null cl-set) (value nil))
+              (t
+               (er soft ctx
+                   "The type specifier for the ~x0 field of the proposed ~
+                      stobj, ~x1, produces the term, ~x2, which ACL2 is ~
+                      unable to check is guard-verified.  See :DOC defstobj."
+                   field name term)))))))))))
 
 (defun chk-stobj-field-etype (etype type field name initp init arrayp
                                     non-memoizable
@@ -19517,7 +19564,6 @@
       (chk-stobj-field-type-term etype-term etype init field name
                                  (msg " in the ~@0 specification"
                                       (if arrayp "array" "hash-table"))
-                                 "auxiliary function"
                                  ctx wrld state)))))
 
 (defun chk-stobj-field-descriptor (name field-descriptor non-memoizable
@@ -19725,7 +19771,7 @@
                    field name type))
               (t
                (chk-stobj-field-type-term type-term type init field name ""
-                                          "body" ctx wrld state)))))))))))
+                                          ctx wrld state)))))))))))
 
 (defun chk-acceptable-defstobj-renaming
   (name field-descriptors renaming ctx state default-names)

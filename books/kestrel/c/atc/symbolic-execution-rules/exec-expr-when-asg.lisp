@@ -161,8 +161,9 @@
                  (equal arg (expr-unary->arg left))
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
+                 (expr-purep right)
                  (integerp limit)
-                 (>= limit 3)
+                 (>= limit (1+ (max 2 (expr-pure-limit right))))
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -197,8 +198,9 @@
                  (equal arg (expr-unary->arg left))
                  (equal (expr-kind arg) :ident)
                  (equal var (expr-ident->get arg))
+                 (expr-purep right)
                  (integerp limit)
-                 (>= limit 3)
+                 (>= limit (1+ (max 2 (expr-pure-limit right))))
                  (equal ptr (read-var var compst))
                  (valuep ptr)
                  (value-case ptr :pointer)
@@ -226,7 +228,10 @@
                      :expand ((exec-expr expr compst fenv limit)
                               (exec-expr (expr-binary->arg1 expr)
                                          compst fenv (1- limit)))
-                     :enable (exec-expr
+                     :enable (exec-expr-to-exec-expr-pure
+                              max
+                              nfix
+                              exec-expr
                               exec-unary
                               exec-indir
                               exec-ident
@@ -330,8 +335,10 @@
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
                  (equal var (expr-ident->get arr))
+                 (expr-purep right)
                  (integerp limit)
-                 (>= limit (+ 2 (expr-pure-limit sub)))
+                 (>= limit (1+ (max (1+ (expr-pure-limit sub))
+                                    (expr-pure-limit right))))
                  (expr-purep sub)
                  (equal arr-val (read-var var compst))
                  (valuep arr-val)
@@ -373,7 +380,10 @@
              :expand ((exec-expr expr compst fenv limit)
                       (exec-expr (expr-binary->arg1 expr)
                                  compst fenv (1- limit)))
-             :enable (exec-expr
+             :enable (exec-expr-to-exec-expr-pure
+                      max
+                      nfix
+                      exec-expr
                       exec-ident
                       exec-arrsub
                       apconvert-expr-value-when-not-value-array-alt
@@ -387,13 +397,12 @@
                       ,value-array-write-when-apred
                       write-object
                       expr-purep
-                      binop-purep
-                      exec-expr-to-exec-expr-pure
-                      nfix)
+                      binop-purep)
              :disable (equal-of-error
                        equal-of-expr-value
                        equal-of-objdesign-element
-                       cons-equal)
+                       cons-equal
+                       acl2::subsetp-member)
              :prep-lemmas
              ((defrule lemma
                 (implies (and (expr-valuep (apconvert-expr-value eval))
@@ -412,8 +421,10 @@
                  (equal arr (expr-arrsub->arr left))
                  (equal sub (expr-arrsub->sub left))
                  (equal (expr-kind arr) :ident)
+                 (expr-purep right)
                  (integerp limit)
-                 (>= limit (+ 2 (expr-pure-limit sub)))
+                 (>= limit (1+ (max (1+ (expr-pure-limit sub))
+                                    (expr-pure-limit right))))
                  (expr-purep sub)
                  (equal arr-eval (exec-expr-pure arr compst))
                  (expr-valuep arr-eval)

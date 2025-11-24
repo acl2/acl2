@@ -4261,7 +4261,9 @@
                                ,@result-thms
                                ,@correct-thms
                                ,@measure-thms
-                               expr-value-optionp-when-expr-valuep))
+                               expr-value-optionp-when-expr-valuep
+                               expr-pure-limit
+                               max))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))
