@@ -8,9 +8,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-package "ACL2") ; to support LDing this book, since in this dir, ACL2 starts in the "R" package
+
+(include-book "kestrel/axe/imported-symbols" :dir :system)
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/risc-v/specialized/rv32im-le/portcullis" :dir :system)
-(include-book "kestrel/x86/portcullis" :dir :system)
 
 ;; Users of the RISC-V variant of Axe can use this "R" package for their books
 ;; that use Axe to lift/verify RISC-V code.
