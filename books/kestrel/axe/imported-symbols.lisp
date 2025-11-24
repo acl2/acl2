@@ -68,6 +68,15 @@
     ensure-rules-known
     widen-margins
     unwiden-margins
+
+    ;; Testing utilities:
+    assert-equal
+    deftest
+    must-be-redundant ; move
+    must-fail ; move
+
+    elf-info
+
     ))
 
 (defconst *bv-symbols-to-import*
@@ -141,6 +150,14 @@
     bv-array-read-cases
     map-bvplus-val
     map-bvsx))
+
+(defconst *memory-region-symbols*
+  '(in-region32p ; todo: move to mem package?
+    subregion32p
+    disjoint-regions32p
+    memory-regionp
+    memory-regionsp
+    memory-region-addresses-and-lens))
 
 ;; Symbols that appear in terms that Axe "knows" about.
 ;; BV, boolean, and array symbols
@@ -343,7 +360,10 @@
     untranslate$
     untranslate$-list
 
-    parse-executable))
+    parse-executable
+    parse-elf-file-bytes ; helpful for tracing ; todo: more
+    parsed-elfp
+    ))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -364,12 +384,18 @@
     def ; handy APT utility
     ))
 
+;; Names of Axe rule-lists
 (defconst *axe-rule-lists*
   '(lookup-rules
     list-rules
     core-rules-bv
     amazing-rules-bv
     trim-rules))
+
+(defconst *bv-list-symbols*
+  '(packbv-little
+    packbvs-little ; todo: more?
+    ))
 
 ;; todo: classify
 (defconst *symbols-from-acl2-package*
@@ -405,27 +431,12 @@
 
     ;; utilities:
 
-    ;; x86 stuff:
-    elf-info
-    parse-elf-file-bytes ; helpful for tracing ; todo: more
-    parsed-elfp
-
-    ;; Testing utilities:
-    assert-equal
-    deftest
-    must-be-redundant ; move
-    must-fail ; move
-
     ruleset
     e/d*
 
     memory-regionp
     memory-regionsp
     memory-region-addresses-and-lens
-
-    packbv-little
-    packbvs-little ; todo: more?
-
     ))
 
 ;; Ideally, these would all be rewritten to BV ops

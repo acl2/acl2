@@ -1382,14 +1382,14 @@
     x86isa::low-nibble
 
     x86isa::cs.limit
-    x86isa::*ip+delta
-))
+    x86isa::*ip+delta))
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
                     *axe-rule-lists*
                     *apt-symbols*
                     *axe-term-symbols*
+                    *bv-list-symbols*
                     *axe-implementation-symbols*
                     *axe-rule-symbols*
                     *arithmetic-symbols*
