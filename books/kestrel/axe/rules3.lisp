@@ -4195,6 +4195,7 @@
                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;add other cases?
+;; could restrict (e.g., to require x to be a constant and/or y to be a bvcat with low zeros)
 (defthm slice-of-bvplus-cases-no-split-case-no-carry
   (implies (and (equal size (+ 1 high))
                 (equal 0 (bvchop low x))
