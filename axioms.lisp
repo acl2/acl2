@@ -12362,8 +12362,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     array-total-size-limit))
 
 #-acl2-loop-only
-(defun-one-output chk-make-array$ (dimensions form)
-  (or (let* ((dimensions
+(defun chk-make-array$ (dimensions form &optional quietp)
+
+; If quietp is true, then dimensions and form are not quoted and we return a
+; form to be evaluated.  But if quietp is false (i.e., nil) then we evaluate
+; such a form.
+
+  (if (let* ((dimensions
               (if (integerp dimensions) (list dimensions) dimensions)))
         (and (true-listp dimensions)
              (do ((tl dimensions (cdr tl)))
@@ -12379,20 +12384,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (setq prod (* prod (car dimensions))))
                   prod)
                 *our-array-total-size-limit*)))
-      (illegal 'make-array$
-               "The dimensions of an array must obey restrictions of ~
-                the underlying Common Lisp:  each must be a ~
-                non-negative integer less than the value of ~
-                array-dimension-limit (here, ~x0) and their product ~
-                must be less than the value of array-total-size-limit ~
-                (here, ~x1).  The call ~x2, which has dimensions ~x3, ~
-                is thus illegal."
-               (list (cons #\0
-                           array-dimension-limit)
-                     (cons #\1
-                           array-total-size-limit)
-                     (cons #\2 form)
-                     (cons #\3 dimensions)))))
+      t
+    (let ((str "The dimensions of an array must obey restrictions of the ~
+                underlying Common Lisp:  each must be a non-negative integer ~
+                less than the value of array-dimension-limit (here, ~x0) and ~
+                their product must be less than the value of ~
+                array-total-size-limit (here, ~x1).  The call ~x2, which has ~
+                dimensions ~x3, is thus illegal."))
+      (if quietp
+          `(illegal 'make-array$
+                    ,str
+                    (list (cons #\0
+                                array-dimension-limit)
+                          (cons #\1
+                                array-total-size-limit)
+                          (cons #\2 ',form)
+                          (cons #\3 ',dimensions)))
+        (illegal 'make-array$
+                 str
+                 (list (cons #\0
+                             array-dimension-limit)
+                       (cons #\1
+                             array-total-size-limit)
+                       (cons #\2 form)
+                       (cons #\3 dimensions)))))))
 
 #-acl2-loop-only
 (defmacro make-array$ (&whole form dimensions &rest args)
@@ -12422,13 +12437,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (ignore args))
   (cond ((integerp dimensions)
-         (prog2$ (chk-make-array$ dimensions (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ dimensions form t)
+                  (make-array ,@(cdr form))))
         ((and (true-listp dimensions) ; (quote dims)
               (equal (length dimensions) 2)
               (eq (car dimensions) 'quote))
-         (prog2$ (chk-make-array$ (cadr dimensions) (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ (cadr dimensions) form t)
+                  (make-array ,@(cdr form))))
         (t `(prog2$ (chk-make-array$ ,dimensions ',form)
                     (make-array ,@(cdr form))))))
 
