@@ -5291,6 +5291,7 @@
                                    bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;; 0=y-x  --> x=y
+;; todo: move, and compare to EQUAL-OF-BVPLUS-OF-BVUMINUS-AND-0
 (defthm equal-of-0-and-bvplus-of-bvuminus
   (equal (equal 0 (bvplus size (bvuminus size x) y))
          (equal (bvchop size x)
@@ -5304,12 +5305,14 @@
                                   (;trim-to-n-bits-meta-rule-for-slice ;looped!
                                    bvminus-becomes-bvplus-of-bvuminus)))))
 
+;todo: move
 (defthm equal-of-0-and-bvplus-of-bvuminus-alt
   (equal (equal 0 (bvplus size y (bvuminus size x)))
          (equal (bvchop size x)
                 (bvchop size y)))
   :hints (("Goal" :use (:instance equal-of-0-and-bvplus-of-bvuminus)
-           :in-theory (disable equal-of-0-and-bvplus-of-bvuminus))))
+                  :in-theory (disable equal-of-0-and-bvplus-of-bvuminus
+                                      equal-of-bvplus-of-bvuminus-and-0))))
 
 ;gen the k (i.e., the -1)?
 (defthm bvplus-of-minus-1-tighten
