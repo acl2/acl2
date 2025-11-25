@@ -8,9 +8,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-package "ACL2") ; to support LDing this book, since in this dir, ACL2 starts in the "R" package
+
+(include-book "kestrel/axe/imported-symbols" :dir :system)
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/risc-v/specialized/rv32im-le/portcullis" :dir :system)
-(include-book "kestrel/x86/portcullis" :dir :system)
 
 ;; Users of the RISC-V variant of Axe can use this "R" package for their books
 ;; that use Axe to lift/verify RISC-V code.
@@ -136,9 +138,7 @@
   '(ubyte32-list-fix))
 
 (defpkg "R"
-  (append '(packbv-little
-
-            bv-list-read-chunk-little
+  (append '(bv-list-read-chunk-little ; needed? note that we have bv-array-read-chunk-little
 
             repeat
 
@@ -147,19 +147,14 @@
             unsigned-byte-listp
 
             defpun
-
-            in-region32p ; todo: move to mem package?
-            subregion32p
-            disjoint-regions32p
-            memory-regionp
-            memory-regionsp
-            memory-region-addresses-and-lens
             )
           *arithmetic-symbols*
+          *memory-region-symbols*
           *risc-v-symbols*
           *risc-v-symbols-in-acl2-package*
           *logops-symbols*
           *axe-term-symbols*
+          *bv-list-symbols*
           *axe-tools*
           *axe-implementation-symbols*
           *axe-rule-symbols*

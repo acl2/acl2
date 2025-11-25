@@ -59,6 +59,7 @@
           (:r15 `(r15 ,term))
           (:rsp `(rsp ,term))
           (:rbp `(rbp ,term))
+          (:rip `(rip ,term))
           ;; Extract a 32-bit register:
           (:eax (if 64-bitp
                     `(bvchop '32 (rax ,term))
