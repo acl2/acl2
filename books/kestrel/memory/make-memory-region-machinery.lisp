@@ -58,9 +58,16 @@
          (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)) ; may be droppable with more bvminus rules
          (local (include-book "kestrel/bv/bvlt" :dir :system))
          (local (include-book "kestrel/bv/bvplus" :dir :system))
+         (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+         (local (include-book "kestrel/bv/bvuminus" :dir :system))
          (local (include-book "kestrel/bv/logext" :dir :system))
          (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvplus-of-logext rules
          (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
+         (local (in-theory (e/d (bvplus-commutative-smart
+                                 bvplus-commutative-2-smart)
+                                (bvplus-commutative
+                                 bvplus-commutative-2))))
 
          ;; Defines what it means for AD to be in the region of size LEN starting at
          ;; START-AD.  Note that the region may wrap around the end of the address
