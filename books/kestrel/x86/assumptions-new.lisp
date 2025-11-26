@@ -60,12 +60,21 @@
 ;;       term
 ;;     `(+ ,constant ,term)))
 
-;; Result is untranslated
-(defund symbolic-bvplus-constant (size constant term)
-  (declare (xargs :guard (integerp constant)))
-  (if (= 0 constant)
+;; Returns a translated term.
+(defund symbolic-bvplus-constant (size-term constant term)
+  (declare (xargs :guard (and (pseudo-termp size-term)
+                              (integerp constant)
+                              (pseudo-termp term))))
+  (if (= 0 constant) ; could chop the constant
       term ; could chop
-    `(bvplus ,size ,constant ,term)))
+    `(bvplus ,size-term ',constant ,term)))
+
+(defthm pseudo-termp-of-symbolic-bvplus-constant
+  (implies (and (pseudo-termp size-term)
+                (integerp constant)
+                (pseudo-termp term))
+           (pseudo-termp (symbolic-bvplus-constant size-term constant term)))
+  :hints (("Goal" :in-theory (enable symbolic-bvplus-constant))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +109,7 @@
 ;;           (mv :too-many-bytes-in-file nil)
 ;;         (b* ((address-term (if relp
 ;;                                (if bvp
-;;                                    (symbolic-bvplus-constant 48 vaddr base-var)
+;;                                    (symbolic-bvplus-constant ''48 vaddr base-var)
 ;;                                  (symbolic-add-constant vaddr base-var))
 ;;                              vaddr)))
 ;;           (mv nil
@@ -155,9 +164,9 @@
 ;;   (let ((numbytes (len bytes)))
 ;;     (if relp
 ;;         ;; Relative addresses make everything relative to the base-var:
-;;         (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 offset base-var) (symbolic-add-constant offset base-var)))
+;;         (let* ((first-addr-term (if bvp (symbolic-bvplus-constant ''48 offset base-var) (symbolic-add-constant offset base-var)))
 ;;                (last-addr-term (if bvp
-;;                                    (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+;;                                    (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
 ;;                                                                    (+ -1 offset numbytes))
 ;;                                                              base-var)
 ;;                                  (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
@@ -480,8 +489,8 @@
                    ;; Ensures that the canonical assumptions are satisfiable:
                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
                     (mv :bad-address nil))
-                   (first-addr-term (symbolic-bvplus-constant 64 addr base-address-var))
-                   ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   (first-addr-term (symbolic-bvplus-constant ''64 addr base-address-var))
+                   ;; (last-addr-term (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                                                 (+ -1 addr length))
                    ;;                                           base-address-var)
                    ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
@@ -619,7 +628,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
+                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
@@ -716,7 +725,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
+                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
                                      code-address)))
               ; todo: could there be extra zeros?:
               (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
@@ -814,7 +823,7 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
+                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
                                      code-address))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
