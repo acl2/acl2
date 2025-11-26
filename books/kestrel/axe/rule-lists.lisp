@@ -1107,6 +1107,7 @@
      bvsx-of-bvsx
      bvsx-of-bvchop
      bvsx-when-equal-of-getbit-and-0
+     equal-of-bvsx-and-constant
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
