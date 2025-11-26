@@ -530,3 +530,103 @@
                     0)))
   :hints (("Goal" :use (:instance bv-array-read-becomes-bv-array-read-cases-helper
                                   (i (+ -1 len))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; When the index can't be the max index, drop the last element of the array.
+(local
+ (defthmd bv-array-read-shorten-when-not-max-helper
+   (implies (and (syntaxp (and (quotep data)
+                               (quotep len)))
+                 (bvlt (ceiling-of-lg len) index (+ -1 len))
+                 ;; ;; index in bounds:
+                 ;; (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                 ;;     (bvlt (ceiling-of-lg len) index len))
+                 (unsigned-byte-p (ceiling-of-lg len) index)
+                 (equal len (len data))
+                 (posp len))
+            (equal (bv-array-read element-size len index data)
+                   (bv-array-read element-size (+ -1 len) index (take (+ -1 len) data))))
+   :hints (("Goal" :in-theory (enable bv-array-read bvplus bvchop-of-sum-cases bvlt)))))
+
+(defthmd bv-array-read-shorten-when-not-max
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt (ceiling-of-lg len) index (+ -1 len))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (+ -1 len) index (take (+ -1 len) data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-when-not-max-helper
+                                  (index (bvchop (ceiling-of-lg len) index))))))
+
+
+;move
+(local
+ (defthm evenp-of-+-of-1-and-expt2
+   (implies (natp i)
+            (equal (evenp (+ 1 (expt 2 i)))
+                   (equal i 0)))))
+
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+
+;slow proof?
+(local
+ (defthm power-of-2p-of-one-less-when-power-of-2p
+   (implies (and (power-of-2p x)
+                 (natp x))
+            (equal (power-of-2p (+ -1 x))
+                   (if (equal x 2)
+                       t
+                     nil)))
+   :hints (("Goal" :cases ((evenp x))
+                   :in-theory (e/d (power-of-2p) (evenp))))))
+
+(local
+ (defthmd bv-array-read-shorten-when-not-zero-helper
+   (implies (and (syntaxp (and (quotep data)
+                               (quotep len)))
+                 (bvlt (ceiling-of-lg len) 0 index) ; index is not 0
+                 (unsigned-byte-p (ceiling-of-lg len) index)
+                 (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                     (bvlt (ceiling-of-lg len) index len))
+                 (equal len (len data))
+                 (posp len))
+            (equal (bv-array-read element-size len index data)
+                   (bv-array-read element-size
+                                  (+ -1 len)
+                                  ;;(bvplus (ceiling-of-lg len) (- (expt 2 (ceiling-of-lg len)) 1) index)
+                                  (+ -1 index)
+                                  (rest data))))
+   :hints (("Goal" :in-theory (enable bv-array-read)))))
+
+;move
+(local
+ (defthm bvplus-of-+-of-expt-arg2-arg2
+   (implies (integerp y)
+            (equal (bvplus size x (+ y (expt 2 size)))
+                   (bvplus size x y)))))
+
+(local (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system))
+
+(defthmd bv-array-read-shorten-when-not-zero
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (bvlt (ceiling-of-lg len) 0 index) ; index is not 0
+                ;; (chopped) index is in bounds:
+                (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                    (bvlt (ceiling-of-lg len) index len))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (+ -1 len)
+                                 ;; this decrements the index (gets simplified a lot since len is constant):
+                                 (bvplus (ceiling-of-lg (+ -1 len))
+                                         (- (expt 2 (ceiling-of-lg (+ -1 len))) 1)
+                                         index)
+                                 (rest data))))
+  :hints (("Goal" :use (:instance bv-array-read-shorten-when-not-zero-helper
+                                  (index (bvchop (ceiling-of-lg len) index)))
+                  :cases ((equal 0 (len data)))
+                  :in-theory (enable bv-array-read-of-+-arg3 bvplus))))

@@ -348,6 +348,8 @@
     acl2::map-bvplus-val-constant-opener
     acl2::bv-array-read-shorten-when-in-first-half-smt
     acl2::bv-array-read-shorten-when-in-second-half-smt
+    acl2::bv-array-read-shorten-when-not-max-smt
+    acl2::bv-array-read-shorten-when-not-zero-smt
 
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
@@ -6508,3 +6510,7 @@
 
 ;; Only unroll if nothing else works
 (set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
+
+;; so these are tried after the rules that discard entire halves of the array:
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-max-smt 1)
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-zero-smt 1)
