@@ -396,39 +396,39 @@
                                      ;;`(logext 64 ,base-address-var) ; avoids adding 0
                                      ;; The RIP (in the X package, not the X86ISA package) is a u64 that satisfies unsigned-canonical-address-p:
                                      ;;`(bvsx 64 48 (bvplus 48 ',target-offset ,base-address-var))
-                                     `(bvplus 64 ',target-offset ,base-address-var))
+                                     `(bvplus '64 ',target-offset ,base-address-var))
                                  ;; Not position-independent, so the target is a concrete address:
                                  (acl2::enquote target-offset))))
-      (append (make-standard-state-assumptions-fn state-var)
+      (append (make-standard-state-assumptions-fn state-var) ; todo: these are untranslated
               ;; Assumptions about the BASE-ADDRESS-VAR:
               (if position-independentp
                   `((integerp ,base-address-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
                     ;; (unsigned-byte-p 64 ,base-address-var) ; uncomment?
                     (unsigned-canonical-address-p ,base-address-var)
-                    (equal (bvchop 6 ,base-address-var) 0) ; the BASE-ADDRESS-VAR is 64-byte aligned
+                    (equal (bvchop '6 ,base-address-var) '0) ; the BASE-ADDRESS-VAR is 64-byte aligned
                     )
                 nil)
-              `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
+              `((64-bit-modep ,state-var) ; can we call make-standard-state-assumptions-64-fn?
                 ;; Alignment checking is turned off:
                 (not (alignment-checking-enabled-p ,state-var))
                 ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
                 ;; This may not be respected by malware.
                 ;; TODO: Try without this
-                (equal 0 (bvchop 3 (rsp ,state-var)))
+                (equal '0 (bvchop '3 (rsp ,state-var)))
                 ;; The program counter is at the start of the code to lift:
                 (equal (rip ,state-var) ,target-address-term)
                 )
               ;; The return address must be canonical because we will transfer
               ;; control to that address when doing the return:
-              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+              `((unsigned-canonical-address-p (read '8 (rsp ,state-var) ,state-var)))
               ;; The stack must be canonical:
               ;; todo: think about this:
-              `((canonical-regionp ,(+ 8 ; or 7 ? but see below...
-                                       (* 8 existing-stack-slots)
-                                       (* 8 stack-slots-needed))
+              `((canonical-regionp ',(+ 8 ; or 7 ? but see below...
+                                        (* 8 existing-stack-slots)
+                                        (* 8 stack-slots-needed))
                                    ,(if (= 0 stack-slots-needed)
                                         `(rsp ,state-var)
-                                      `(bvplus 64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
+                                      `(bvplus '64 ',(bvchop 64 (* -8 stack-slots-needed)) (rsp ,state-var)))))
               ;; ;; old-style:
               ;; (append `(;; The stack slot contaning the return address must be canonical
               ;;           ;; because the stack pointer returns here when we pop the saved
