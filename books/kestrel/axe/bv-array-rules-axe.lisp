@@ -547,3 +547,33 @@
            (equal (bvplus size val (bv-array-read size len index data))
                   (bv-array-read size len index (map-bvplus-val size val data))))
   :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+
+(defthmd bv-array-read-shorten-when-not-max-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (+ -1 len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (+ -1 len) index (take (+ -1 len) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-max
+                  :in-theory (disable bv-array-read-shorten-when-not-max))))
+
+(defthmd bv-array-read-shorten-when-not-zero-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) 0 index)) ; index is not 0
+                ;; (chopped) index is in bounds:
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (+ -1 len)
+                                 ;; this decrements the index (gets simplified a lot since len is constant):
+                                 (bvplus (ceiling-of-lg (+ -1 len))
+                                         (- (expt 2 (ceiling-of-lg (+ -1 len))) 1)
+                                         index)
+                                 (rest data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-zero)))
