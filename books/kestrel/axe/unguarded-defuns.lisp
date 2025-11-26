@@ -15,7 +15,7 @@
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
@@ -47,7 +47,7 @@
 (include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
