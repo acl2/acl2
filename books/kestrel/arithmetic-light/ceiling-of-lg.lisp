@@ -202,3 +202,14 @@
            (equal (unsigned-byte-p (ceiling-of-lg x) x)
                   (not (power-of-2p x))))
   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthmd ceiling-of-lg-of-+-of--1
+  (implies (posp x) ; gen?
+           (equal (ceiling-of-lg (+ -1 x))
+                  (if (power-of-2p (+ -1 x))
+                      (+ -1 (ceiling-of-lg x))
+                    (ceiling-of-lg x))))
+  :hints (("Goal"
+           :use ((:instance integer-length-of-+-of--1-alt (i x))
+                 (:instance integer-length-of-+-of--1-alt (i (+ -1 x))))
+           :in-theory (enable ceiling-of-lg))))
