@@ -233,7 +233,8 @@
 ;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
 ;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
 (defthm set-rip-of-bv-array-read-split-cases
-  (implies (and (syntaxp (quotep data))
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
                 (< len 20) ; todo: how many cases do we want to allow?
                 ;; (unsigned-byte-p (ceiling-of-lg len) index)
                 (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
@@ -245,7 +246,8 @@
   :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
 
 (defthm set-rip-of-bv-array-read-split-cases-smt
-  (implies (and (syntaxp (quotep data))
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
                 (< len 20) ; todo: how many cases do we want to allow?
                 ;; (unsigned-byte-p (ceiling-of-lg len) index)
                 (axe-smt (bvle (ceiling-of-lg len) index (+ -1 len))) ; todo?
