@@ -16,6 +16,7 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
+(include-book "power-of-2p-def") ; only the def, to avoid circular includes
 (local (include-book "floor")) ; reduce?
 (local (include-book "expt"))
 ;(local (include-book "expt2"))
@@ -331,6 +332,17 @@
                         (integer-length i))
                     0)))
   :hints (("Goal" :cases ((acl2-numberp i)))))
+
+(defthmd integer-length-of-+-of--1-alt
+  (implies (<= 0 i)
+           (equal (integer-length (+ -1 i))
+                  (if (integerp i)
+                      (if (power-of-2p i)
+                          (+ -1 (integer-length i))
+                        (integer-length i))
+                    0)))
+  :hints (("Goal" :use integer-length-of-+-of--1
+                  :in-theory (enable power-of-2p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

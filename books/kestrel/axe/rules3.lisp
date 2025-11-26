@@ -790,6 +790,7 @@
                                         BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
+;todo: gen!
 (defthm bvlt-of-bvchop-tighten
   (implies (and (unsigned-byte-p 31 y)
                 (< 31 size) ;<= would loop
