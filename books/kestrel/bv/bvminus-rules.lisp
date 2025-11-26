@@ -1,7 +1,7 @@
 ; Mixed theorems about bvminus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "getbit")
 (include-book "bitnot")
 (local (include-book "slice"))
+(local (include-book "bvplus"))
 
 (defthm bvminus-of-1-and-getbit-of-0-arg2
   (equal (bvminus 1 (getbit 0 x) y)

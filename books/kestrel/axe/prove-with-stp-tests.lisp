@@ -1,7 +1,7 @@
 ; Tests of prove-with-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -388,3 +388,28 @@
 
 ;; still works, even though we have z
 (must-prove-with-stp type-test1 '(implies (and (unsigned-byte-p 1 (bvplus 32 x y)) (equal z (bvplus 32 x y)) (not (equal 0 z))) (equal 1 z)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-prove-with-stp known-boolean-1 '(or (equal t (bvlt 8 x y)) (equal nil (bvlt 8 x y))))
+
+;; the bvlt is either T or NIL:
+(must-prove-with-stp known-boolean-2 '(boolor (equal t (bvlt 8 x y)) (equal nil (bvlt 8 x y))))
+
+(defstub bar (x) t)
+;; these must fail, since BAR is not necessarily boolean:
+(must-fail (must-prove-with-stp known-boolean-3 '(boolor (equal t (bar x)) (equal nil (bar x)))))
+(must-fail (must-prove-with-stp known-boolean-4 '(if (bar x) (equal t (bar x)) t)))
+
+;; todo: for 3 boolean terms, 2 must be equal (but not true if not known boolean)
+;; todo: known boolean by the term or by an assumption
+
+(must-prove-with-stp or-of-t-1 '(boolor t x))
+(must-prove-with-stp or-of-t-2 '(boolor x t))
+
+(must-fail (must-prove-with-stp or-of-nil-1 '(boolor nil x)))
+(must-fail (must-prove-with-stp or-of-nil-2 '(boolor x nil)))
+
+(must-prove-with-stp or-test-1 '(boolor x (not x)))
+;; currently fails, due to a disjunct of just x, and due to a disjunct that is an IF:
+(must-fail (must-prove-with-stp or-test-2 '(boolor x (if x (equal x y) (equal y y)))))

@@ -16,6 +16,7 @@
 (include-book "bitor")
 (include-book "bvif")
 (include-book "bool-to-bit")
+(local (include-book "unsigned-byte-p"))
 
 ;; single bit IF, where the test is a bit, not a boolean
 ;fixme do we use this?

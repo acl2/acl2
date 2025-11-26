@@ -23,6 +23,7 @@
 (include-book "bvif")
 (include-book "bv-syntax")
 (include-book "unsigned-byte-p-forced")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
