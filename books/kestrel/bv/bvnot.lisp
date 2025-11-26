@@ -13,7 +13,7 @@
 
 (include-book "getbit")
 (include-book "lognot")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

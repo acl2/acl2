@@ -29,7 +29,7 @@
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))

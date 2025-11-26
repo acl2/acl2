@@ -16,6 +16,7 @@
 (include-book "bool-to-bit-def")
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "bitnot")
+(local (include-book "unsigned-byte-p"))
 
 (defthm equal-of-0-and-bool-to-bit
   (equal (equal 0 (bool-to-bit x))
