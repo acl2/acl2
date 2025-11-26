@@ -5470,7 +5470,7 @@
    '(standard-state-assumption
      standard-state-assumption-32
      ;standard-assumptions-core-64 ; only needed by loop lifter?
-     standard-state-assumption-64
+     ;standard-state-assumption-64
      ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
      ;standard-assumptions-elf-64 ; only needed by loop lifter?
      ;standard-assumptions-pe-64 ; only needed by loop lifter?
