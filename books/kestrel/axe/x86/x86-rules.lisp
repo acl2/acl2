@@ -28,6 +28,7 @@
 (include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/read-and-write2" :dir :system)
+(include-book "kestrel/x86/support64" :dir :system)
 (include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
@@ -1185,3 +1186,16 @@
                                               bytes)))
   :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion48p
                   :in-theory (e/d (subregion48p in-region48p) (read-when-equal-of-read-bytes-and-subregion48p)))))
+
+(defthm set-rip-of-bv-array-read-split-cases-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (< len 20) ; todo: how many cases do we want to allow?
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
+                (axe-smt (bvle (ceiling-of-lg len) index (+ -1 len))) ; todo?
+                (posp len)
+                (natp index))
+           (equal (set-rip (bv-array-read size len index data) x86)
+                  ;; bv-array-read-cases here will then get unrolled:
+                  (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
+  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
