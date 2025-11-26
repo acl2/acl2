@@ -408,11 +408,15 @@
     all-unsigned-byte-p
     unsigned-byte-listp
     ;; byte-listp ; todo: clash!
+    repeat
+    bv-list-read-chunk-little ; needed? note that we have bv-array-read-chunk-little
 
     keyword-listp
 
     check-arities
 
+    ;; Stuff that can appear in ACL2 rules (but not Axe rules):
+    smaller-termp
     want-to-weaken ; for polarity-based reasoning
     want-to-strengthen ; for polarity-based reasoning
 

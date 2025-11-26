@@ -137,17 +137,9 @@
 (defconst *risc-v-symbols-in-acl2-package*
   '(ubyte32-list-fix))
 
+;; todo: make consistent with X package
 (defpkg "R"
-  (append '(bv-list-read-chunk-little ; needed? note that we have bv-array-read-chunk-little
-
-            repeat
-
-            smaller-termp
-
-            unsigned-byte-listp
-
-            defpun
-            )
+  (append *symbols-from-acl2-package*
           *arithmetic-symbols*
           *memory-region-symbols*
           *risc-v-symbols*
