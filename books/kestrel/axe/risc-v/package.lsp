@@ -139,17 +139,23 @@
 
 ;; todo: make consistent with X package
 (defpkg "R"
-  (append *symbols-from-acl2-package*
-          *arithmetic-symbols*
-          *memory-region-symbols*
-          *risc-v-symbols*
-          *risc-v-symbols-in-acl2-package*
-          *logops-symbols*
-          *axe-term-symbols*
-          *bv-list-symbols*
-          *axe-tools*
-          *axe-implementation-symbols*
-          *axe-rule-symbols*
-          (set-difference-eq *acl2-exports*
-                             '(pc ; we need this name for accessing the program counter
-                               ))))
+    (append *symbols-from-acl2-package*
+            *axe-rule-lists*
+            *apt-symbols*
+            *axe-term-symbols*
+            *bv-list-symbols*
+            *axe-implementation-symbols*
+            *axe-rule-symbols*
+            *arithmetic-symbols*
+            *logops-symbols*
+            *axe-tools*
+            *common-acl2-formals*
+            *memory-region-symbols*
+
+            ;; RISC-V-specific stuff:
+            *risc-v-symbols*
+            *risc-v-symbols-in-acl2-package*
+
+            (set-difference-eq *acl2-exports*
+                               '(pc ; we need this name for accessing the program counter
+                                 ))))
