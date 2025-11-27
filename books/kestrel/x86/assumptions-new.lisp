@@ -53,22 +53,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; ;; Result is untranslated
-;; (defund symbolic-add-constant (constant term)
-;;   (declare (xargs :guard (integerp constant)))
-;;   (if (= 0 constant)
-;;       term
-;;     `(+ ,constant ,term)))
-
-;; Result is untranslated
-(defund symbolic-bvplus-constant (size constant term)
-  (declare (xargs :guard (integerp constant)))
-  (if (= 0 constant)
-      term ; could chop
-    `(bvplus ,size ,constant ,term)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;move this stuff?
 
 ;; ;; Usually extends ACC with a pair (cons <address-term> <size>) for the memory that will be occupied by the segment.
@@ -100,7 +84,7 @@
 ;;           (mv :too-many-bytes-in-file nil)
 ;;         (b* ((address-term (if relp
 ;;                                (if bvp
-;;                                    (symbolic-bvplus-constant 48 vaddr base-var)
+;;                                    (symbolic-bvplus-constant ''48 vaddr base-var)
 ;;                                  (symbolic-add-constant vaddr base-var))
 ;;                              vaddr)))
 ;;           (mv nil
@@ -155,9 +139,9 @@
 ;;   (let ((numbytes (len bytes)))
 ;;     (if relp
 ;;         ;; Relative addresses make everything relative to the base-var:
-;;         (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 offset base-var) (symbolic-add-constant offset base-var)))
+;;         (let* ((first-addr-term (if bvp (symbolic-bvplus-constant ''48 offset base-var) (symbolic-add-constant offset base-var)))
 ;;                (last-addr-term (if bvp
-;;                                    (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+;;                                    (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
 ;;                                                                    (+ -1 offset numbytes))
 ;;                                                              base-var)
 ;;                                  (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
@@ -480,8 +464,8 @@
                    ;; Ensures that the canonical assumptions are satisfiable:
                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
                     (mv :bad-address nil))
-                   (first-addr-term (symbolic-bvplus-constant 64 addr base-address-var))
-                   ;; (last-addr-term (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                   (first-addr-term (symbolic-bvplus-constant ''64 addr base-address-var))
+                   ;; (last-addr-term (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                                                 (+ -1 addr length))
                    ;;                                           base-address-var)
                    ;;                 ;;   (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
@@ -617,12 +601,9 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-elf-text-section-address parsed-elf))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
-                                     code-address)))
+                  (mv :bad-code-address nil)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
+              (mv nil (acons code-address (len (acl2::get-elf-code parsed-elf)) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)
@@ -635,7 +616,7 @@
                                            '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                            stack-slots-needed
                                            existing-stack-slots
-                                           addresses-and-lens-of-chunks-disjoint-from-inputs
+                                           addresses-and-lens-of-chunks-disjoint-from-inputs position-independentp base-address-var
                                            type-assumptions-for-array-varsp
                                            nil nil))))
     (mv nil ; no error
@@ -714,12 +695,9 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-mach-o-code-address parsed-macho))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
-                                     code-address)))
+                  (mv :bad-code-address nil)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len (acl2::get-mach-o-code parsed-macho)) nil))))))
+              (mv nil (acons code-address (len (acl2::get-mach-o-code parsed-macho)) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future and existing stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)
@@ -732,7 +710,7 @@
                                            '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                            stack-slots-needed
                                            existing-stack-slots
-                                           addresses-and-lens-of-chunks-disjoint-from-inputs
+                                           addresses-and-lens-of-chunks-disjoint-from-inputs position-independentp base-address-var
                                            type-assumptions-for-array-varsp
                                            nil nil))))
     (mv nil ; no error
@@ -812,14 +790,11 @@
             (b* (((mv erp code-address) (acl2::get-pe-section-rva ".text" parsed-pe))
                  ((when erp) (mv erp nil))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant 48 code-address base-address-var)
-                                     code-address))
+                  (mv :bad-code-address nil))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
               ; todo: could there be extra zeros?:
-              (mv nil (acons text-offset-term (len text-section-bytes) nil))))))
+              (mv nil (acons code-address (len text-section-bytes) nil))))))
        ((when erp) (mv erp nil nil))
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future and existing stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)
@@ -834,7 +809,7 @@
                   ;;                          ;; See the System V AMD64 ABI
                   ;;                          '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                   ;;                          stack-slots-needed existing-stack-slots
-                  ;;                          addresses-and-lens-of-chunks-disjoint-from-inputs
+                  ;;                          addresses-and-lens-of-chunks-disjoint-from-inputs position-independentp base-address-var
                   ;;                          type-assumptions-for-array-varsp
                   ;;                          nil nil
                   ;;                          )

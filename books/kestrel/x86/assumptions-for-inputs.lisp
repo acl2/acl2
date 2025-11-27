@@ -28,6 +28,33 @@
 
 (in-theory (disable mv-nth))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; Result is untranslated
+;; (defund symbolic-add-constant (constant term)
+;;   (declare (xargs :guard (integerp constant)))
+;;   (if (= 0 constant)
+;;       term
+;;     `(+ ,constant ,term)))
+
+;; Returns a translated term.
+(defund symbolic-bvplus-constant (size-term constant term)
+  (declare (xargs :guard (and (pseudo-termp size-term)
+                              (integerp constant)
+                              (pseudo-termp term))))
+  (if (= 0 constant) ; could chop the constant
+      term ; could chop
+    `(bvplus ,size-term ',constant ,term)))
+
+(defthm pseudo-termp-of-symbolic-bvplus-constant
+  (implies (and (pseudo-termp size-term)
+                (integerp constant)
+                (pseudo-termp term))
+           (pseudo-termp (symbolic-bvplus-constant size-term constant term)))
+  :hints (("Goal" :in-theory (enable symbolic-bvplus-constant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv assumptions input-assumption-vars-rev) where the input-assumption-vars-rev are in reverse order.
 ;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
 ;; TODO: Support expressing bytes in terms of single bit-vars
@@ -86,24 +113,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Make assertions that the region at ADDRESS with length LEN is separate from all the
+;; Make assertions that the region at ADDRESS-TERM with length LEN is separate from all the
 ;; regions represented by ADDRESSES-AND-LENS.
 ;; Not sure what order is better for the args in disjoint-regions48p
-(defund make-disjoint-claims (address len addresses-and-lens)
-  (declare (xargs :guard (alistp addresses-and-lens)
+(defund make-disjoint-claims-for-sections (address-term len addresses-and-lens position-independentp
+                                                        base-address-var ; only used if position-independentp
+                                                        )
+  (declare (xargs :guard (and (pseudo-termp address-term)
+                              (natp len)
+                              (alistp addresses-and-lens)
+                              (nat-listp (strip-cars addresses-and-lens))
+                              (nat-listp (strip-cdrs addresses-and-lens))
+                              (booleanp position-independentp)
+                              (if position-independentp (symbolp base-address-var) t))
                   :guard-hints (("Goal" :in-theory (enable alistp)))))
   (if (endp addresses-and-lens)
       nil
     (let* ((pair (first addresses-and-lens))
            (this-address (car pair))
+           (this-address-term (if position-independentp
+                                  (symbolic-bvplus-constant ''48 this-address base-address-var)
+                                `',this-address))
            (this-len (cdr pair)))
-      ;; (cons `(separate :r ,len ,address
-      ;;                  :r ,this-len ,this-address)
-      (cons `(disjoint-regions48p ,len ,address
-                                  ,this-len ,this-address)
-            (make-disjoint-claims address len (rest addresses-and-lens)))
-      ;)
-      )))
+      (cons `(disjoint-regions48p ',len ,address-term
+                                  ',this-len ,this-address-term)
+            (make-disjoint-claims-for-sections address-term len (rest addresses-and-lens) position-independentp base-address-var)))))
+
+(defthm pseudo-term-listp-of-make-disjoint-claims-for-sections
+  (implies (and (pseudo-termp address-term)
+                ;(natp len)
+                (alistp addresses-and-lens)
+                (nat-listp (strip-cars addresses-and-lens))
+                (nat-listp (strip-cdrs addresses-and-lens))
+                (if position-independentp (symbolp base-address-var) t))
+           (pseudo-term-listp (make-disjoint-claims-for-sections address-term len addresses-and-lens position-independentp base-address-var)))
+  :hints (("Goal" :in-theory (enable make-disjoint-claims-for-sections))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; todo: think about signed (i) vs unsigned (u)
@@ -211,15 +256,18 @@
                                         state-component
                                         stack-slots
                                         existing-stack-slots
-                                        disjoint-chunk-addresses-and-lens
+                                        disjoint-chunk-addresses-and-lens position-independentp base-address-var
                                         type-assumptions-for-array-varsp)
   (declare (xargs :guard (and (symbolp input-name)
                               (symbolp input-type)
                               ;;state-component might be rdi or (rdi x86)
                               (natp stack-slots)
                               (natp existing-stack-slots)
-                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (alistp disjoint-chunk-addresses-and-lens)
+                              (nat-listp (strip-cars disjoint-chunk-addresses-and-lens))
                               (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (booleanp position-independentp)
+                              (if position-independentp (symbolp base-address-var) t)
                               (booleanp type-assumptions-for-array-varsp))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
@@ -254,7 +302,7 @@
                                              ,stack-byte-count
                                              (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
                         ;; The input is disjoint from the code:
-                        ,@(make-disjoint-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
+                        ,@(make-disjoint-claims-for-sections pointer-name numbytes disjoint-chunk-addresses-and-lens position-independentp base-address-var)
                         ;; The input is disjoint from the saved return address:
                         (disjoint-regions48p ,existing-stack-byte-count (rsp x86)
                                              ,numbytes ,pointer-name))
@@ -288,7 +336,7 @@
                                                    ,stack-byte-count
                                                    (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
                               ;; The input is disjoint from the code:
-                              ,@(make-disjoint-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
+                              ,@(make-disjoint-claims-for-sections pointer-name numbytes disjoint-chunk-addresses-and-lens position-independentp base-address-var)
                               ;; The input is disjoint from the saved return address:
                               ;; todo: reorder args?
                               ;; (separate :r ,existing-stack-byte-count (rsp x86)
@@ -303,27 +351,30 @@
 (local
   (defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
     (implies (true-listp assumptions-acc)
-             (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp))))
+             (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 (local
   (defthm symbol-listp-of-mv-nth-1-of-assumptions-and-vars-for-input
     (implies (and (symbol-listp vars-acc)
                   (symbolp input-name))
-             (symbol-listp (mv-nth 1 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp))))
+             (symbol-listp (mv-nth 1 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv assumptions input-assumption-vars).
 ;; might have extra, unneeded items in state-components
-(defund assumptions-and-vars-for-inputs (input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc)
+(defund assumptions-and-vars-for-inputs (input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
                               (natp existing-stack-slots)
-                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (alistp disjoint-chunk-addresses-and-lens)
+                              (nat-listp (strip-cars disjoint-chunk-addresses-and-lens))
                               (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (booleanp position-independentp)
+                              (if position-independentp (symbolp base-address-var) t)
                               (booleanp type-assumptions-for-array-varsp)
                               (true-listp assumptions-acc)
                               (symbol-listp vars-acc))
@@ -336,9 +387,9 @@
          (input-type (second name-and-type))
          (state-component (first state-components))
          ((mv assumptions-for-first vars-for-first-rev)
-          (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp)))
+          (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp)))
       (assumptions-and-vars-for-inputs (rest input-names-and-types)
-                                       (rest state-components) stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens
+                                       (rest state-components) stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var
                                        type-assumptions-for-array-varsp
                                        (append assumptions-for-first assumptions-acc)
                                        (append vars-for-first-rev vars-acc) ; todo: check for dups
@@ -348,12 +399,12 @@
 
 (defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-inputs-type
   (implies (true-listp assumptions-acc)
-           (true-listp (mv-nth 0 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+           (true-listp (mv-nth 0 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-and-vars-for-inputs-type
   (implies (true-listp vars-acc)
-           (true-listp (mv-nth 1 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+           (true-listp (mv-nth 1 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs))))
