@@ -1687,7 +1687,7 @@
      which would involve different computation states.
      Intuitively, the issue is that we want to show that
      the executions of the two loops remain ``synchronized''
-     for a variable number of iterations,
+     for a varying number of iterations,
      i.e. not just starting from the @('compst') computation state
      at the beginning of the loop.
      What we need is the fact that the executions of the tests and bodies
@@ -1702,11 +1702,11 @@
     "This justifies the universally quantified predicates
      @('while-test-hyp') and @('while-body-hyp') defined below,
      whose names indicate that they are used as hypotheses,
-     in the theorem we want to prove about loops.
-     The predicate for the test states,
-     for all possibly computation states,
+     in the theorem we prove about loops.
+     The predicate for the test asserts,
+     for all possible computation states,
      the equivalence of the tests;
-     the predicate for the body states,
+     the predicate for the body asserts,
      for all possible computation states and limits,
      the equivalence of the bodies.
      Since, in general, our generated theorems include hypotheses
@@ -1724,7 +1724,7 @@
      the set of optional types that can be returned by the loop bodies.")
    (xdoc::p
     "With @('while-test-hyp') and @('while-body-hyp') as hypotheses,
-     we can prove, by induction,
+     we prove, by induction,
      the desired theorem about @(tsee c::exec-stmt-while).
      We need a few rules to handle the array-to-pointer conversion,
      but the proof hints are otherwise unremarkable.
@@ -1919,10 +1919,16 @@
          ((unless (equal old-compst new-compst)) nil)
          (compst old-compst)
          (compst (c::exit-scope compst))
-         (old-test-eval (c::exec-expr-pure old-test compst))
+         ((mv old-test-eval old-compst)
+          (c::exec-expr old-test compst old-fenv (1- limit)))
          ((when (c::errorp old-test-eval)) nil)
-         (new-test-eval (c::exec-expr-pure new-test compst))
+         ((unless old-test-eval) nil)
+         ((mv new-test-eval new-compst)
+          (c::exec-expr new-test compst new-fenv (1- limit)))
          ((when (c::errorp new-test-eval)) nil)
+         ((unless new-test-eval) nil)
+         ((unless (equal old-compst new-compst)) nil)
+         (compst old-compst)
          (old-test-val (c::expr-value->value old-test-eval))
          ((unless (c::type-nonchar-integerp (c::type-of-value old-test-val)))
           nil)
@@ -1963,16 +1969,22 @@
                             (c::compustate-has-vars-with-types-p
                              vartys old-body-compst))))))
 
-  (defund-sk dowhile-test-hyp (old-test new-test vartys)
-    (forall (compst)
-            (b* ((old-test-result (c::exec-expr-pure old-test compst))
-                 (new-test-result (c::exec-expr-pure new-test compst))
+  (defund-sk dowhile-test-hyp (old-test new-test old-fenv new-fenv vartys)
+    (forall (compst limit)
+            (b* (((mv old-test-result old-test-compst)
+                  (c::exec-expr old-test compst old-fenv limit))
+                 ((mv new-test-result new-test-compst)
+                  (c::exec-expr new-test compst new-fenv limit))
                  (old-test-value (c::expr-value->value old-test-result))
                  (new-test-value (c::expr-value->value new-test-result)))
-              (implies (and (c::compustate-has-vars-with-types-p vartys compst)
-                            (not (c::errorp old-test-result)))
+              (implies (and (> (c::compustate-frames-number compst) 0)
+                            (c::compustate-has-vars-with-types-p vartys compst)
+                            (not (c::errorp old-test-result))
+                            old-test-result)
                        (and (not (c::errorp new-test-result))
+                            new-test-result
                             (equal old-test-value new-test-value)
+                            (equal old-test-compst new-test-compst)
                             (c::type-nonchar-integerp
                              (c::type-of-value old-test-value)))))))
 
@@ -1985,7 +1997,8 @@
                     (c::compustate-has-vars-with-types-p vartys compst)
                     (dowhile-body-hyp
                      old-body new-body old-fenv new-fenv types vartys)
-                    (dowhile-test-hyp old-test new-test vartys)
+                    (dowhile-test-hyp
+                     old-test new-test old-fenv new-fenv vartys)
                     (not (c::errorp old-result)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
@@ -2006,7 +2019,8 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp
              c::compustate-has-vars-with-types-p-of-enter-scope
-             c::compustate-has-vars-with-types-p-of-exit-exec-enter)
+             c::compustate-has-vars-with-types-p-of-exit-exec-enter
+             expr-compustate-vars-multi)
     :hints ('(:use ((:instance dowhile-body-hyp-necc
                                (compst (c::enter-scope compst))
                                (limit (1- limit)))
@@ -2016,7 +2030,8 @@
                                  (mv-nth 1 (c::exec-stmt old-body
                                                          (c::enter-scope compst)
                                                          old-fenv
-                                                         (1- limit))))))))))
+                                                         (1- limit)))))
+                               (limit (1- limit)))))))
 
   (defruled stmt-dowhile-theorem
     (b* ((old (c::stmt-dowhile old-body old-test))
@@ -2027,7 +2042,8 @@
                     (c::compustate-has-vars-with-types-p vartys compst)
                     (dowhile-body-hyp
                      old-body new-body old-fenv new-fenv types vartys)
-                    (dowhile-test-hyp old-test new-test vartys)
+                    (dowhile-test-hyp
+                     old-test new-test old-fenv new-fenv vartys)
                     (not (c::errorp old-result)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
