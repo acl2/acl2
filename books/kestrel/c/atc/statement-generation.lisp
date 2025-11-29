@@ -4727,6 +4727,7 @@
                                 (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
+                                (test-limit pseudo-termp)
                                 (then-limit pseudo-termp)
                                 (else-limit pseudo-termp)
                                 (test-thm symbolp)
@@ -4773,9 +4774,9 @@
      to prevent unwanted case splits in larger terms that may contain this term
      (as we generate C code from those larger terms).
      We use proof builder commands to split on this @(tsee if*).
-     The limit for the conditional statement is
-     one more than the sum of the ones for the branches;
-     we could take one plus the maximum,
+     The limit for the conditional statement is one more than
+     the sum of the ones for the branches and of the one for the test;
+     we could take the maximum instead of the sum,
      but the sum avoids case splits.
      We include the compound recognizer @('booleanp-compound-recognizer')
      for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
@@ -4811,6 +4812,14 @@
                (make-stmt-if :test test-expr
                              :then then-stmt)))
        (term `(if* ,test-term ,then-term ,else-term))
+       (then-stmt-limit `(binary-+ '1 ,then-limit))
+       (else-stmt-limit `(binary-+ '1 ,else-limit))
+       (if-stmt-limit `(binary-+ '1
+                                 (binary-+ ,test-limit
+                                           (binary-+ ,then-stmt-limit
+                                                     ,else-stmt-limit))))
+       (item-limit `(binary-+ '1 ,if-stmt-limit))
+       (items-limit `(binary-+ '1 ,item-limit))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
@@ -4819,13 +4828,7 @@
           :term term
           :context gin.context
           :inscope gin.inscope
-          :limit (pseudo-term-fncall
-                  'binary-+
-                  (list
-                   (pseudo-term-quote 5)
-                   (pseudo-term-fncall
-                    'binary-+
-                    (list then-limit else-limit))))
+          :limit items-limit
           :events (append test-events then-events else-events)
           :thm-name nil
           :thm-index gin.thm-index
@@ -4844,8 +4847,6 @@
          else-stmt-thm nil names-to-avoid wrld))
        (valuep-when-type-pred (and (not voidp)
                                    (atc-type-to-valuep-thm type gin.prec-tags)))
-       (then-stmt-limit `(binary-+ '1 ,then-limit))
-       (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
        ((mv then-stmt-value then-stmt-type-formula &)
@@ -5004,8 +5005,6 @@
        (thm-index (1+ thm-index))
        ((mv if-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
-       (if-stmt-limit
-        `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
        ((mv if-stmt-value if-stmt-type-formula if-stmt-type-thms)
         (atc-gen-stmt-value-term-and-type-formula uterm
@@ -5076,7 +5075,9 @@
                                    ullong-array-length-of-ullong-array-write
                                    sllong-array-length-of-sllong-array-write
                                    mv-nth-of-cons
-                                   (:e zp))))
+                                   (:e zp)
+                                   (:e c::expr-purep)
+                                   (:e c::expr-pure-limit))))
           `(("Goal" :in-theory '(exec-stmt-when-if-and-true
                                  exec-stmt-when-if-and-false
                                  (:e stmt-kind)
@@ -5110,7 +5111,9 @@
                                  ullong-array-length-of-ullong-array-write
                                  sllong-array-length-of-sllong-array-write
                                  mv-nth-of-cons
-                                 (:e zp))))))
+                                 (:e zp)
+                                 (:e c::expr-purep)
+                                 (:e c::expr-pure-limit))))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
@@ -6057,11 +6060,15 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context-start
-                 else-context-end))))
+                 else-context-end)))
+             ((unless (expr-purep test.expr))
+              (reterr
+               (raise "Internal error: non-pure expression ~x0." test.expr)))
+             (test.limit `(quote ,(expr-pure-limit test.expr))))
           (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
-                                  then.limit else.limit
+                                  test.limit then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
                                   then-context-start else-context-start
                                   then-context-end else-context-end
