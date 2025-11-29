@@ -131,7 +131,9 @@
   (defruled exec-stmt-when-ifelse
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :ifelse)
-                  (not (zp limit))
+                  (expr-purep (stmt-ifelse->test s))
+                  (integerp limit)
+                  (>= limit (1+ (expr-pure-limit (stmt-ifelse->test s))))
                   (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
                   (expr-valuep arg1)
                   (equal carg1 (apconvert-expr-value arg1))
@@ -140,14 +142,20 @@
                   (booleanp test))
              (equal (exec-stmt s compst fenv limit)
                     (if test
-                        (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))
-                      (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit)))))
-    :enable exec-stmt)
+                        (exec-stmt
+                         (stmt-ifelse->then s) compst fenv (1- limit))
+                      (exec-stmt
+                       (stmt-ifelse->else s) compst fenv (1- limit)))))
+    :expand (exec-stmt s compst fenv limit)
+    :enable (exec-expr-to-exec-expr-pure
+             nfix))
 
   (defruled exec-stmt-when-ifelse-and-true
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :ifelse)
-                  (not (zp limit))
+                  (expr-purep (stmt-ifelse->test s))
+                  (integerp limit)
+                  (>= limit (1+ (expr-pure-limit (stmt-ifelse->test s))))
                   (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
                   (expr-valuep arg1)
                   (equal carg1 (apconvert-expr-value arg1))
@@ -157,12 +165,17 @@
                   (test* test))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))))
-    :enable (exec-stmt test*))
+    :expand (exec-stmt s compst fenv limit)
+    :enable (exec-expr-to-exec-expr-pure
+             nfix
+             test*))
 
   (defruled exec-stmt-when-ifelse-and-false
     (implies (and (syntaxp (quotep s))
                   (equal (stmt-kind s) :ifelse)
-                  (not (zp limit))
+                  (expr-purep (stmt-ifelse->test s))
+                  (integerp limit)
+                  (>= limit (1+ (expr-pure-limit (stmt-ifelse->test s))))
                   (equal arg1 (exec-expr-pure (stmt-ifelse->test s) compst))
                   (expr-valuep arg1)
                   (equal carg1 (apconvert-expr-value arg1))
@@ -172,7 +185,11 @@
                   (test* (not test)))
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit))))
-    :enable (exec-stmt test*))
+    :expand (exec-stmt s compst fenv limit)
+    :enable (exec-stmt
+             exec-expr-to-exec-expr-pure
+             nfix
+             test*))
 
   (defruled exec-stmt-when-while
     (implies (and (syntaxp (quotep s))
