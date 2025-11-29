@@ -272,13 +272,17 @@
              (if test
                  (exec-stmt-2limits s.then compst fenv (1- limit) (1- limit1))
                (mv (stmt-value-none) compst)))
-       :ifelse (b* ((test (exec-expr-pure s.test compst))
-                    ((when (errorp test)) (mv test (compustate-fix compst)))
+       :ifelse (b* (((mv test compst)
+                     (exec-expr-2limits
+                      s.test compst fenv (1- limit) (1- limit1)))
+                    ((when (errorp test)) (mv test compst))
+                    ((unless test)
+                     (mv (error (list :void-ifelse-test s.test)) compst))
                     (test (apconvert-expr-value test))
-                    ((when (errorp test)) (mv test (compustate-fix compst)))
+                    ((when (errorp test)) (mv test compst))
                     (test (expr-value->value test))
                     (test (test-value test))
-                    ((when (errorp test)) (mv test (compustate-fix compst))))
+                    ((when (errorp test)) (mv test compst)))
                  (if test
                      (exec-stmt-2limits
                       s.then compst fenv (1- limit) (1- limit1))
