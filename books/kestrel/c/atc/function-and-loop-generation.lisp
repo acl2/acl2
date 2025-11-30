@@ -3709,15 +3709,18 @@
        (exec-stmt-while-for-fn-body
         `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              (test-eval (exec-expr-pure ',loop-test compst))
-              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              ((mv test-eval compst)
+               (exec-expr ',loop-test compst fenv (1- limit)))
+              ((when (errorp test-eval)) (mv test-eval compst))
+              ((unless test-eval)
+               (mv (error (list :void-while-test (expr-fix ',loop-test)))
+                   compst))
               (test-eval (apconvert-expr-value test-eval))
-              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              ((when (errorp test-eval)) (mv test-eval compst))
               (test-val (expr-value->value test-eval))
               (continuep (test-value test-val))
-              ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-              ((when (not continuep))
-               (mv (stmt-value-none) (compustate-fix compst)))
+              ((when (errorp continuep)) (mv continuep compst))
+              ((when (not continuep)) (mv (stmt-value-none) compst))
               ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
               ((when (errorp sval)) (mv sval compst))
               ((when (stmt-value-case sval :return)) (mv sval compst)))
@@ -3763,7 +3766,9 @@
                                 exec-stmt-while
                                 valuep-when-value-optionp
                                 value-optionp-of-stmt-value-return->value?
-                                (:e valuep)))))))
+                                (:e valuep)
+                                exec-expr-to-exec-expr-pure
+                                nfix))))))
     (mv (list exec-stmt-while-for-fn-event
               exec-stmt-while-for-fn-thm-event)
         exec-stmt-while-for-fn
@@ -4575,7 +4580,12 @@
                                 value-kind-when-slongp
                                 value-kind-when-ullongp
                                 value-kind-when-sllongp
-                                expr-value-fix-when-expr-valuep))
+                                expr-value-fix-when-expr-valuep
+                                c::exec-expr-to-exec-expr-pure
+                                (:e expr-purep)
+                                (:e expr-pure-limit)
+                                nfix
+                                (:t exec-expr-pure)))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation

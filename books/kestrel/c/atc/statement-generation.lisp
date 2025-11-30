@@ -7060,8 +7060,8 @@
     "We return a limit that suffices
      to execute @(tsee exec-stmt-while) on (the test and body of)
      the loop statement, as follows.
-     We need 1 to get to executing the test,
-     which is pure and so does not contribute to the overall limit.
+     We need 1 to get to executing the test.
+     The test is pure and so its limit is obtained via @(tsee expr-pure-limit).
      If the test is true, we need to add the limit to execute the body.
      After that, @(tsee exec-stmt-while) is called recursively,
      decrementing the limit:
@@ -7153,9 +7153,12 @@
        ((when (eq gin.measure-for-fn 'quote))
         (reterr
          (raise "Internal error: the measure function is QUOTE.")))
-       (measure-call (pseudo-term-fncall gin.measure-for-fn
-                                         gin.measure-formals))
-       (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
+       (measure-call `(,gin.measure-for-fn ,@gin.measure-formals))
+       ((unless (expr-purep test.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." test.expr)))
+       (limit `(binary-+ '1
+                         (binary-+ ,`(quote ,(expr-pure-limit test.expr))
+                                   (binary-+ ,body.limit ,measure-call)))))
     (retok (make-lstmt-gout :stmt stmt
                             :test-term test-term
                             :body-term then-term
@@ -7167,7 +7170,8 @@
                             :names-to-avoid body.names-to-avoid)))
   :measure (pseudo-term-count term)
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p
+                                           pseudo-termp)))
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
