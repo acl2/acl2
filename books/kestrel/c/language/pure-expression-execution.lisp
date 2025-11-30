@@ -124,7 +124,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-expr-to-exec-expr-pure
-  :short "Reductio of @(tsee exec-expr) to @(tsee exec-expr-pure)."
+  :short "Reduction of @(tsee exec-expr) to @(tsee exec-expr-pure)."
   :long
   (xdoc::topstring
    (xdoc::p
