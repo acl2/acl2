@@ -150,6 +150,30 @@
            nfix
            max))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-expr-to-exec-expr-pure-when-not-errorp
+  :short "Reduction of @(tsee exec-expr) to @(tsee exec-expr-pure),
+          under a hypothesis about the absence of errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee exec-expr) on a pure expression does not return an error,
+     then it returns the same result as @(tsee exec-expr-pure),
+     and the computation state is unchanged."))
+  (implies (and (expr-purep expr)
+                (not (errorp
+                      (mv-nth 0 (exec-expr expr compst fenv limit)))))
+           (equal (exec-expr expr compst fenv limit)
+                  (mv (exec-expr-pure expr compst)
+                      (compustate-fix compst))))
+  :induct (induct-exec-expr-of-pure expr limit)
+  :expand ((exec-expr-pure expr compst)
+           (expr-purep expr))
+  :enable (induct-exec-expr-of-pure
+           exec-expr
+           binop-strictp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled pure-limit-bound-when-exec-expr-not-error
