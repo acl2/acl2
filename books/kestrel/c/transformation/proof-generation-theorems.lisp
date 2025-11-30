@@ -1795,10 +1795,16 @@
     (declare (xargs :measure (nfix limit)
                     :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
     (b* (((when (zp limit)) nil)
-         (old-test-eval (c::exec-expr-pure old-test compst))
+         ((mv old-test-eval old-compst)
+          (c::exec-expr old-test compst old-fenv (1- limit)))
          ((when (c::errorp old-test-eval)) nil)
-         (new-test-eval (c::exec-expr-pure new-test compst))
+         ((unless old-test-eval) nil)
+         ((mv new-test-eval new-compst)
+          (c::exec-expr new-test compst new-fenv (1- limit)))
          ((when (c::errorp new-test-eval)) nil)
+         ((unless new-test-eval) nil)
+         ((unless (equal old-compst new-compst)) nil)
+         (compst old-compst)
          (old-test-val (c::expr-value->value old-test-eval))
          ((unless (c::type-nonchar-integerp (c::type-of-value old-test-val)))
           nil)
@@ -1830,16 +1836,22 @@
                     old-compst
                     (1- limit))))
 
-  (defund-sk while-test-hyp (old-test new-test vartys)
-    (forall (compst)
-            (b* ((old-test-result (c::exec-expr-pure old-test compst))
-                 (new-test-result (c::exec-expr-pure new-test compst))
+  (defund-sk while-test-hyp (old-test new-test old-fenv new-fenv vartys)
+    (forall (compst limit)
+            (b* (((mv old-test-result old-test-compst)
+                  (c::exec-expr old-test compst old-fenv limit))
+                 ((mv new-test-result new-test-compst)
+                  (c::exec-expr new-test compst new-fenv limit))
                  (old-test-value (c::expr-value->value old-test-result))
                  (new-test-value (c::expr-value->value new-test-result)))
-              (implies (and (c::compustate-has-vars-with-types-p vartys compst)
-                            (not (c::errorp old-test-result)))
+              (implies (and (> (c::compustate-frames-number compst) 0)
+                            (c::compustate-has-vars-with-types-p vartys compst)
+                            (not (c::errorp old-test-result))
+                            old-test-result)
                        (and (not (c::errorp new-test-result))
+                            new-test-result
                             (equal old-test-value new-test-value)
+                            (equal old-test-compst new-test-compst)
                             (c::type-nonchar-integerp
                              (c::type-of-value old-test-value)))))))
 
@@ -1868,7 +1880,8 @@
           (c::exec-stmt-while new-test new-body compst new-fenv limit)))
       (implies (and (> (c::compustate-frames-number compst) 0)
                     (c::compustate-has-vars-with-types-p vartys compst)
-                    (while-test-hyp old-test new-test vartys)
+                    (while-test-hyp
+                     old-test new-test old-fenv new-fenv vartys)
                     (while-body-hyp
                      old-body new-body old-fenv new-fenv types vartys)
                     (not (c::errorp old-result)))
@@ -1889,9 +1902,17 @@
     :enable (while-induct
              c::exec-stmt-while
              c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp)
-    :hints ('(:use (while-test-hyp-necc
-                    (:instance while-body-hyp-necc (limit (1- limit)))))))
+             c::value-kind-not-array-when-value-integerp
+             expr-compustate-vars-multi)
+    :hints ('(:use ((:instance while-test-hyp-necc
+                               (limit (1- limit)))
+                    (:instance while-body-hyp-necc
+                               (compst
+                                (mv-nth 1 (c::exec-expr old-test
+                                                        compst
+                                                        old-fenv
+                                                        (1- limit))))
+                               (limit (1- limit)))))))
 
   (defruled stmt-while-theorem
     (b* ((old (c::stmt-while old-test old-body))
@@ -1900,7 +1921,8 @@
          ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
       (implies (and (> (c::compustate-frames-number compst) 0)
                     (c::compustate-has-vars-with-types-p vartys compst)
-                    (while-test-hyp old-test new-test vartys)
+                    (while-test-hyp
+                     old-test new-test old-fenv new-fenv vartys)
                     (while-body-hyp
                      old-body new-body old-fenv new-fenv types vartys)
                     (not (c::errorp old-result)))

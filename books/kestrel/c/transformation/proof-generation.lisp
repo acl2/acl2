@@ -2793,6 +2793,25 @@
        ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
        ((mv & old-body) (ldm-stmt body)) ; ERP must be NIL
        ((mv & new-body) (ldm-stmt body-new)) ; ERP must be NIL
+       ((mv lifted-thm-name thm-index events)
+        (if (and (expr-purep test)
+                 (not (expr-case test :ident))
+                 (not (expr-case test :const))
+                 (not (expr-case test :unary))
+                 (not (expr-case test :cast))
+                 (not (and (expr-case test :binary)
+                           (b* ((op (expr-binary->op test)))
+                             (and (c$::binop-purep op)
+                                  (c$::binop-strictp op))))))
+            (b* (((mv thm-event thm-name thm-index)
+                  (lift-expr-pure-thm test
+                                      test-new
+                                      test-thm-name
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index)))
+              (mv thm-name thm-index (cons thm-event gin.events)))
+          (mv nil gin.thm-index gin.events)))
        (hints
         `(("Goal"
            :in-theory '((:e c::stmt-while)
@@ -2807,10 +2826,17 @@
                         c::compustate-has-vars-with-types-p
                         stmt-compustate-vars)
            :use ((:instance
-                  ,test-thm-name
-                  (compst (while-test-hyp-witness ',old-test
-                                                  ',new-test
-                                                  ',gin.vartys)))
+                  ,(or lifted-thm-name test-thm-name)
+                  (compst (mv-nth 0 (while-test-hyp-witness ',old-test
+                                                            ',new-test
+                                                            old-fenv
+                                                            new-fenv
+                                                            ',gin.vartys)))
+                  (limit (mv-nth 1 (while-test-hyp-witness ',old-test
+                                                           ',new-test
+                                                           old-fenv
+                                                           new-fenv
+                                                           ',gin.vartys))))
                  (:instance
                   ,body-thm-name
                   (compst (mv-nth 0 (while-body-hyp-witness ',old-body
@@ -2825,23 +2851,22 @@
                                                            new-fenv
                                                            ',types
                                                            ',gin.vartys))))
-                 (:instance
-                  stmt-while-theorem
-                  (old-test ',old-test)
-                  (new-test ',new-test)
-                  (old-body ',old-body)
-                  (new-body ',new-body)
-                  (types ',types)
-                  (vartys ',gin.vartys))))))
+                 (:instance stmt-while-theorem
+                            (old-test ',old-test)
+                            (new-test ',new-test)
+                            (old-body ',old-body)
+                            (new-body ',new-body)
+                            (types ',types)
+                            (vartys ',gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      gin.thm-index
+                      thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event gin.events)
+        (make-gout :events (cons thm-event events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -2953,14 +2978,13 @@
                                                              old-fenv
                                                              new-fenv
                                                              ',gin.vartys))))
-                 (:instance
-                  stmt-dowhile-theorem
-                  (old-body ',old-body)
-                  (new-body ',new-body)
-                  (old-test ',old-test)
-                  (new-test ',new-test)
-                  (types ',types)
-                  (vartys ',gin.vartys))))))
+                 (:instance stmt-dowhile-theorem
+                            (old-body ',old-body)
+                            (new-body ',new-body)
+                            (old-test ',old-test)
+                            (new-test ',new-test)
+                            (types ',types)
+                            (vartys ',gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
