@@ -1023,7 +1023,8 @@
        we require the two sub-expressions to be pure,
        because the order of evaluation is not specified;
        we evaluate the left one before the right one,
-       but it makes no difference because the computation state does not change.")
+       but it makes no difference because
+       the computation state does not change.")
      (xdoc::p
       "Non-strict binary expressions must be pure for now,
        but we plan to relax this, since the order of evaluation is determined.
@@ -1309,14 +1310,16 @@
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (test-eval (exec-expr-pure test compst))
-         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         ((mv test-eval compst) (exec-expr test compst fenv (1- limit)))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         ((unless test-eval)
+          (mv (error (list :void-while-test (expr-fix test))) compst))
          (test-eval (apconvert-expr-value test-eval))
-         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         ((when (errorp test-eval)) (mv test-eval compst))
          (test-val (expr-value->value test-eval))
          (continuep (test-value test-val))
-         ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-         ((when (not continuep)) (mv (stmt-value-none) (compustate-fix compst)))
+         ((when (errorp continuep)) (mv continuep compst))
+         ((when (not continuep)) (mv (stmt-value-none) compst))
          ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
          ((when (errorp sval)) (mv sval compst))
          ((when (stmt-value-case sval :return)) (mv sval compst)))
