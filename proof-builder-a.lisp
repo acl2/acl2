@@ -772,7 +772,13 @@
                               :hyps
                               (append (access goal (car remaining-goals) :hyps)
                                       known-assumptions)))
-                  (car remaining-goals))
+                  (if forced-goals
+                      (change goal (car remaining-goals)
+                              :depends-on (+ (access goal
+                                                     (car remaining-goals)
+                                                     :depends-on)
+                                             (length forced-goals)))
+                    (car remaining-goals)))
                 (append forced-goals (cdr remaining-goals)))
         (append forced-goals remaining-goals))
 
