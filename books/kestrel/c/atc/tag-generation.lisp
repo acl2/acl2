@@ -587,7 +587,7 @@
              (hints-member
               `(("Goal"
                  :in-theory
-                 '(exec-expr-to-exec-expr-pure
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
                    max
                    nfix
                    exec-expr
@@ -656,7 +656,7 @@
              (hints-memberp
               `(("Goal"
                  :in-theory
-                 '(exec-expr-to-exec-expr-pure
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
                    max
                    nfix
                    exec-expr
@@ -891,7 +891,7 @@
           (equal (exec-expr expr compst fenv limit)
                  (mv (expr-value val nil) compst1))))
        (theory-member
-        `(exec-expr-to-exec-expr-pure
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
           expr-pure-limit
           zp
           max
@@ -1008,7 +1008,7 @@
                       compst))))
            :in-theory ',theory-member)))
        (theory-memberp
-        `(exec-expr-to-exec-expr-pure
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
           expr-pure-limit
           zp
           max

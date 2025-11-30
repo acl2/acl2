@@ -123,8 +123,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled exec-expr-to-exec-expr-pure
-  :short "Reduction of @(tsee exec-expr) to @(tsee exec-expr-pure)."
+(defruled exec-expr-to-exec-expr-pure-when-expr-pure-limit
+  :short "Reduction of @(tsee exec-expr) to @(tsee exec-expr-pure),
+          under a hypothesis about the limit."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -169,7 +170,7 @@
   :induct (induct-exec-expr-of-pure expr limit)
   :expand (exec-expr expr compst fenv limit)
   :enable (induct-exec-expr-of-pure
-           exec-expr-to-exec-expr-pure
+           exec-expr-to-exec-expr-pure-when-expr-pure-limit
            expr-pure-limit
            expr-purep
            binop-strictp

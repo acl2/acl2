@@ -83,7 +83,7 @@
                         (exec-stmt (stmt-if->then s) compst fenv (1- limit))
                       (mv (stmt-value-none) compst))))
     :enable (exec-stmt
-             exec-expr-to-exec-expr-pure
+             exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix))
 
   (defruled exec-stmt-when-if-and-true
@@ -103,7 +103,7 @@
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-if->then s) compst fenv (1- limit))))
     :enable (exec-stmt
-             exec-expr-to-exec-expr-pure
+             exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix
              test*))
 
@@ -124,7 +124,7 @@
              (equal (exec-stmt s compst fenv limit)
                     (mv (stmt-value-none) compst)))
     :enable (exec-stmt
-             exec-expr-to-exec-expr-pure
+             exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix
              test*))
 
@@ -147,7 +147,7 @@
                       (exec-stmt
                        (stmt-ifelse->else s) compst fenv (1- limit)))))
     :expand (exec-stmt s compst fenv limit)
-    :enable (exec-expr-to-exec-expr-pure
+    :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix))
 
   (defruled exec-stmt-when-ifelse-and-true
@@ -166,7 +166,7 @@
              (equal (exec-stmt s compst fenv limit)
                     (exec-stmt (stmt-ifelse->then s) compst fenv (1- limit))))
     :expand (exec-stmt s compst fenv limit)
-    :enable (exec-expr-to-exec-expr-pure
+    :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix
              test*))
 
@@ -187,7 +187,7 @@
                     (exec-stmt (stmt-ifelse->else s) compst fenv (1- limit))))
     :expand (exec-stmt s compst fenv limit)
     :enable (exec-stmt
-             exec-expr-to-exec-expr-pure
+             exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix
              test*))
 

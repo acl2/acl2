@@ -3767,7 +3767,7 @@
                                 valuep-when-value-optionp
                                 value-optionp-of-stmt-value-return->value?
                                 (:e valuep)
-                                exec-expr-to-exec-expr-pure
+                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
                                 nfix))))))
     (mv (list exec-stmt-while-for-fn-event
               exec-stmt-while-for-fn-thm-event)
@@ -4581,7 +4581,7 @@
                                 value-kind-when-ullongp
                                 value-kind-when-sllongp
                                 expr-value-fix-when-expr-valuep
-                                c::exec-expr-to-exec-expr-pure
+                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
                                 (:e expr-purep)
                                 (:e expr-pure-limit)
                                 nfix

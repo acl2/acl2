@@ -760,12 +760,12 @@
                     (equal old-compst new-compst)
                     (equal (c::type-of-value old-val)
                            (c::type-of-value old-val-pure)))))
-    :use ((:instance c::exec-expr-to-exec-expr-pure
+    :use ((:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
                      (expr old)
                      (compst compst)
                      (fenv old-fenv)
                      (limit limit))
-          (:instance c::exec-expr-to-exec-expr-pure
+          (:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
                      (expr new)
                      (compst compst)
                      (fenv new-fenv)
@@ -1457,7 +1457,7 @@
     (implies (and (c::expr-purep expr)
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
-    :use (:instance c::exec-expr-to-exec-expr-pure
+    :use (:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
                     (expr expr)
                     (compst compst)
                     (fenv fenv)
