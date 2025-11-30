@@ -1457,12 +1457,11 @@
     (implies (and (c::expr-purep expr)
                   (c::errorp (c::exec-expr-pure expr compst)))
              (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
-    :use (:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
+    :use (:instance c::exec-expr-to-exec-expr-pure-when-not-errorp
                     (expr expr)
                     (compst compst)
                     (fenv fenv)
-                    (limit limit))
-    :enable c::pure-limit-bound-when-exec-expr-not-error)
+                    (limit limit)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
