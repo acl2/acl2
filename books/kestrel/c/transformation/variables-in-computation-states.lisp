@@ -262,6 +262,18 @@
              c::valuep-of-read-object-of-objdesign-of-var
              c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
 
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-compustate-vars-multi
+    (b* (((mv eval compst1) (c::exec-expr expr compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp eval))
+                    (c::compustate-has-vars-with-types-p vartys compst))
+               (c::compustate-has-vars-with-types-p vartys compst1)))
+    :induct (c::compustate-has-vars-with-types-p vartys compst)
+    :enable (c::compustate-has-vars-with-types-p
+             expr-compustate-vars))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled stmt-compustate-vars

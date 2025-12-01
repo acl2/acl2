@@ -10969,9 +10969,15 @@
               (value :invisible)))
             (t (let* ((numes (strip-cars
                               (getpropc name 'runic-mapping-pairs nil wrld)))
-                      (wrld-segment (world-to-next-event
-                                     (cdr (decode-logical-name name wrld)))))
-                 (pr-body wrld-segment numes wrld state))))))
+                      (wrld2 (decode-logical-name name wrld)))
+                 (cond ((null wrld2) (value nil))
+                       (t (assert$ (and (eq (caar wrld2) 'event-landmark)
+                                        (eq (cadar wrld2) 'global-value))
+                                   (pr-body (world-to-next-non-deeper-event
+                                             (access-event-tuple-depth
+                                              (cddr (car wrld2)))
+                                             (cdr wrld2))
+                                            numes wrld state)))))))))
         (t (er soft 'pr
                "The argument to PR must be a non-keyword symbol.  Perhaps you ~
                 should use PR! instead."))))

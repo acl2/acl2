@@ -35,7 +35,7 @@
                   (expr-valuep eval))
              (equal (exec-expr e compst fenv limit)
                     (mv eval compst)))
-    :enable (exec-expr-to-exec-expr-pure
+    :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
              nfix))
 
   (defval *atc-exec-expr-when-pure-rules*

@@ -228,7 +228,7 @@
                      :expand ((exec-expr expr compst fenv limit)
                               (exec-expr (expr-binary->arg1 expr)
                                          compst fenv (1- limit)))
-                     :enable (exec-expr-to-exec-expr-pure
+                     :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
                               max
                               nfix
                               exec-expr
@@ -380,7 +380,7 @@
              :expand ((exec-expr expr compst fenv limit)
                       (exec-expr (expr-binary->arg1 expr)
                                  compst fenv (1- limit)))
-             :enable (exec-expr-to-exec-expr-pure
+             :enable (exec-expr-to-exec-expr-pure-when-expr-pure-limit
                       max
                       nfix
                       exec-expr
