@@ -42,6 +42,7 @@
     (equal (feature-flag ':bmi2) '1)
     (equal (feature-flag ':sse) '1)
     (equal (feature-flag ':sse2) '1)
+    (equal (feature-flag ':sse3) '1)
     (equal (feature-flag ':lahf-sahf) '1)
 
     ;; Instead of the assumptions below about the MXCSR, we could just assume

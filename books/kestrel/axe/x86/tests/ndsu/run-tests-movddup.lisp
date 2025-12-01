@@ -20,4 +20,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (depends-on "movddup.elf64")
-;;(test-file "movddup.elf64")
+(test-file "movddup.elf64")
