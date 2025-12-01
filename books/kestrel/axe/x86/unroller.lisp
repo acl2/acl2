@@ -1079,6 +1079,9 @@
                                '(run-until-return3 x86)
                              '(run-until-return4 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
+       ((when (not (termp term-to-simulate (w state))))
+        (er hard? 'unroll-x86-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
+        (mv :error-wrapping-in-output-extractor nil nil nil nil nil nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-simulate nil))
