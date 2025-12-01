@@ -172,8 +172,8 @@
 ;; Returns (mv replacement-assumptions type-assumptions).
 ;; TODO: How do these interact with the input-assumptions?
 (defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
-  (declare (xargs :guard (and (symbol-listp vars)
-                              (symbol-listp register-functions))))
+  (declare (xargs :guard (and (symbol-listp register-functions)
+                              (symbol-listp vars))))
   (if (or (endp register-functions) ; additional params will be on the stack
           (endp vars))
       (mv replacement-assumptions-acc type-assumptions-acc)
@@ -183,6 +183,16 @@
                                                (rest vars)
                                                (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
                                                (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
+
+(local
+  (defthm make-register-replacement-assumptions64-return-type
+    (implies (and (symbol-listp register-functions)
+                  (symbol-listp vars)
+                  (pseudo-term-listp replacement-assumptions-acc)
+                  (pseudo-term-listp type-assumptions-acc))
+             (and (pseudo-term-listp (mv-nth 0 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
+                  (pseudo-term-listp (mv-nth 1 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
+    :hints (("Goal" :induct t :in-theory (enable make-register-replacement-assumptions64)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
