@@ -639,10 +639,7 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-elf-text-section-address parsed-elf))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
-                                     code-address)))
+                  (mv :bad-code-addres nil)))
               ; todo: could there be extra zeros?:
               (mv nil (acons code-address (len (acl2::get-elf-code parsed-elf)) nil))))))
        ((when erp) (mv erp nil nil))
@@ -743,10 +740,7 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-mach-o-code-address parsed-macho))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
-                                     code-address)))
+                  (mv :bad-code-addres nil)))
               ; todo: could there be extra zeros?:
               (mv nil (acons code-address (len (acl2::get-mach-o-code parsed-macho)) nil))))))
        ((when erp) (mv erp nil nil))
@@ -856,9 +850,6 @@
                  ((when erp) (mv erp nil))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
-                 (text-offset-term (if position-independentp
-                                       (symbolic-bvplus-constant ''48 code-address base-address-var)
-                                     code-address))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
               ; todo: could there be extra zeros?:
