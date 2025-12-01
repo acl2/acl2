@@ -58,6 +58,7 @@
 
 ;; A stobj that gathers the 5 components of the DAG and the xor-signature information.
 (defstobj+ rewrite-stobj2
+  ;; TODO: Make this (and the dag-parent-array) into true stobj arrays (but that will be a lot of work):
   (dag-array :type t :initially nil) ; todo: strengthen pred? will always be named 'dag-array
   (dag-len :type (satisfies natp) ; using (integer 0 *) led to guards and theorems that didn't mention natp
            :initially 0)
@@ -75,6 +76,7 @@
   (xor-signature-to-nodenums-map :type (hash-table hons-equal 1000 (satisfies nat-listp))) ; the size of 1000 is just a hint
   (negated-assumptions :type (satisfies possibly-negated-nodenumsp) :initially nil)
   :inline t
+  ;; We use get-XXX and put-XXX names for everything except the hash-table fields (which have a more complex interface):
   :renaming ((dag-array get-dag-array)
              (update-dag-array put-dag-array)
 
@@ -89,6 +91,13 @@
 
              (the-dag-variable-alist get-dag-variable-alist)
              (update-the-dag-variable-alist put-dag-variable-alist)
+
+             ;; These are hash-tables, so the naming is different:
+             ;; (nodenum-to-xor-signature-map get-nodenum-to-xor-signature-map)
+             ;; (update-nodenum-to-xor-signature-map put-nodenum-to-xor-signature-map)
+
+             ;; (xor-signature-to-nodenums-map get-xor-signature-to-nodenums-map)
+             ;; (update-xor-signature-to-nodenums-map put-xor-signature-to-nodenums-map)
 
              (negated-assumptions get-negated-assumptions)
              (update-negated-assumptions put-negated-assumptions)))
