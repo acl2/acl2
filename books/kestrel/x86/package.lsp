@@ -1384,19 +1384,24 @@
     x86isa::cs.limit
     x86isa::*ip+delta))
 
-(defpkg "X" (append *acl2-exports*
-                    *symbols-from-acl2-package*
-                    *axe-rule-lists*
-                    *apt-symbols*
-                    *axe-term-symbols*
-                    *bv-list-symbols*
-                    *axe-implementation-symbols*
-                    *axe-rule-symbols*
-                    *arithmetic-symbols*
-                    *logops-symbols*
-                    *axe-tools*
-                    *symbols-from-x86isa*
-                    *symbols-from-bitops*
-                    *symbols-from-rtl*
-                    *common-acl2-formals*
-                    *common-x86isa-formals*))
+(defpkg "X"
+    (append *symbols-from-acl2-package*
+            *axe-rule-lists*
+            *apt-symbols*
+            *axe-term-symbols*
+            *bv-list-symbols*
+            *axe-implementation-symbols*
+            *axe-rule-symbols*
+            *arithmetic-symbols*
+            *logops-symbols*
+            *axe-tools*
+            *common-acl2-formals*
+            ;; *memory-region-symbols*
+
+            ;; x86-specific stuff:
+            *symbols-from-x86isa*
+            *common-x86isa-formals*
+            *symbols-from-bitops*
+            *symbols-from-rtl*
+
+            *acl2-exports*))

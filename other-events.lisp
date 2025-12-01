@@ -26402,7 +26402,8 @@
                                                 fn))))
                                 trace-options-1)))
                   (if new-trace-options
-                      (eval `(trace (,fn ,@new-trace-options)))
+                      (eval `(trace #-sbcl (,fn ,@new-trace-options)
+                                    #+sbcl ,@new-trace-options ,fn))
                     (eval `(trace ,fn))))
                 (value trace-spec))
                (t

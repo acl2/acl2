@@ -17,19 +17,22 @@
  (er-soft+ ctx erp val fmt-string arg1 arg2 ... argk)
  })
 
- <p>The form above has the same effect as</p>
+ <p>The form above has essentially the same effect as the following.</p>
 
  @({
  (er soft ctx fmt-string arg1 arg2 ... argk)
  })
 
- <p>but unlike the latter call, the call of @('er-soft+') generates
- @(':')@(tsee logic) mode code and returns the @(see error-triple) @('(mv erp
- val state)') instead of always returning @('(mv t nil state)').  Note that if
- @('erp') is @('nil') then this error-triple does not signify an error.</p>
+ <p>Both expressions generate @(see logic)-mode code, though the latter
+ generates a stronger @(see guard) proof obligation.  (At one time, the latter
+ generated @(see program)-mode code, which likely was why @('er-soft+') was
+ introduced.)  Unlike calls @('(er soft ...)'),, the call of @('er-soft+')
+ returns the @(see error-triple) @('(mv erp val state)') instead of always
+ returning @('(mv t nil state)').  Note that if @('erp') is @('nil') then this
+ error-triple does not signify an error.</p>
 
- <p>For a simpler utility that also produces @(':logic') mode code but always
- returns @('(mv t nil state)'), see @(see er-soft-logic).</p>")
+ <p>A related utility that always returns @('(mv t nil state)') is @(tsee
+ er-soft-logic).</p>")
 
 (defun error1+ (ctx erp val str alist state)
 
