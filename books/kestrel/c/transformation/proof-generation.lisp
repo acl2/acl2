@@ -1248,6 +1248,9 @@
                  :use ((:instance expr-ident-compustate-vars
                                   (var ',cvar)
                                   (type ',ctype))
+                       (:instance expr-ident-compustate-vars-pure
+                                  (var ',cvar)
+                                  (type ',ctype))
                        (:instance expr-ident-congruence
                                   (var ',cvar)
                                   (type ',ctype))))))

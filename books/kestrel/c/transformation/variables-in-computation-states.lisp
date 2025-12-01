@@ -240,6 +240,20 @@
 
   (defruled expr-ident-compustate-vars
     (b* ((expr (c::expr-ident var))
+         ((mv eval &) (c::exec-expr expr compst fenv limit))
+         (val (c::expr-value->value eval)))
+      (implies (and (not (c::errorp eval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (equal (c::type-of-value val) (c::type-fix type))))
+    :enable (c::exec-expr
+             c::exec-ident
+             c::compustate-has-var-with-type-p))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  ;; temporary variant for pure expression execution
+  (defruled expr-ident-compustate-vars-pure
+    (b* ((expr (c::expr-ident var))
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
       (implies (c::compustate-has-var-with-type-p var type compst)
