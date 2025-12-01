@@ -667,8 +667,8 @@
     run-until-stack-shorter-than-or-reach-pc
     run-until-return-or-reach-pc ; drop?
     ;; new scheme:
-    run-until-rsp-is
-    run-until-rsp-is-or-reach-pc
+    ;; run-until-rsp-is
+    ;; run-until-rsp-is-or-reach-pc
     ;; newer scheme:
     run-until-rsp-is-above
     run-until-rsp-is-above-or-reach-pc
