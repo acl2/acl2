@@ -71,6 +71,15 @@
            (alistp (memory-region-addresses-and-lens regions acc)))
   :hints (("Goal" :in-theory (enable memory-region-addresses-and-lens))))
 
+(defthm nat-listp-of-strip-cars-of-memory-region-addresses-and-lens
+  (implies (and (memory-regionsp regions)
+;                  (true-listp acc)
+                (nat-listp (strip-cars acc)))
+           (nat-listp (strip-cars (memory-region-addresses-and-lens regions acc))))
+  :hints (("Goal" :in-theory (enable memory-region-addresses-and-lens
+                                     memory-regionsp
+                                     memory-regionp))))
+
 (defthm nat-listp-of-strip-cdrs-of-memory-region-addresses-and-lens
   (implies (and (memory-regionsp regions)
 ;                  (true-listp acc)

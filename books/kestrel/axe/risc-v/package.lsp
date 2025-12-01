@@ -137,27 +137,25 @@
 (defconst *risc-v-symbols-in-acl2-package*
   '(ubyte32-list-fix))
 
+;; todo: make consistent with X package
 (defpkg "R"
-  (append '(bv-list-read-chunk-little ; needed? note that we have bv-array-read-chunk-little
+    (append *symbols-from-acl2-package*
+            *axe-rule-lists*
+            *apt-symbols*
+            *axe-term-symbols*
+            *bv-list-symbols*
+            *axe-implementation-symbols*
+            *axe-rule-symbols*
+            *arithmetic-symbols*
+            *logops-symbols*
+            *axe-tools*
+            *common-acl2-formals*
+            *memory-region-symbols*
 
-            repeat
+            ;; RISC-V-specific stuff:
+            *risc-v-symbols*
+            *risc-v-symbols-in-acl2-package*
 
-            smaller-termp
-
-            unsigned-byte-listp
-
-            defpun
-            )
-          *arithmetic-symbols*
-          *memory-region-symbols*
-          *risc-v-symbols*
-          *risc-v-symbols-in-acl2-package*
-          *logops-symbols*
-          *axe-term-symbols*
-          *bv-list-symbols*
-          *axe-tools*
-          *axe-implementation-symbols*
-          *axe-rule-symbols*
-          (set-difference-eq *acl2-exports*
-                             '(pc ; we need this name for accessing the program counter
-                               ))))
+            (set-difference-eq *acl2-exports*
+                               '(pc ; we need this name for accessing the program counter
+                                 ))))
