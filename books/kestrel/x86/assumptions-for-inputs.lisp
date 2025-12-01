@@ -24,7 +24,9 @@
 (include-book "kestrel/strings-light/parse-decimal-digits" :dir :system)
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -79,10 +81,10 @@
           (element-offset (* index bytes-per-element))
           )
       (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp
-                                             (cons `(equal (read ,bytes-per-element
+                                             (cons `(equal (read ',bytes-per-element
                                                                  ,(if (= 0 index)
                                                                       pointer-name ; special case (offset of 0)
-                                                                    `(+ ,element-offset ,pointer-name) ; todo: option to use bvplus here?
+                                                                    `(+ ',element-offset ,pointer-name) ; todo: option to use bvplus here?
                                                                     )
                                                                  x86)
                                                            ,var)
@@ -101,6 +103,13 @@
   (defthm true-listp-of-mv-nth-0-of-var-intro-assumptions-for-array-input
     (implies (true-listp assumptions-acc)
              (true-listp (mv-nth 0 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+    :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
+
+(local
+  (defthm pseudo-term-listp-of-mv-nth-0-of-var-intro-assumptions-for-array-input
+    (implies (and (pseudo-term-listp assumptions-acc)
+                  (symbolp pointer-name))
+             (pseudo-term-listp (mv-nth 0 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc))))
     :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
 
 (local
@@ -234,7 +243,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: strengthen: what are the allowed types?  todo: Allow float types?
-(defun names-and-typesp (names-and-types)
+(defund names-and-typesp (names-and-types)
   (declare (xargs :guard t))
   (and (doublet-listp names-and-types)
        (let ((names (strip-cars names-and-types))
@@ -246,6 +255,13 @@
               (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with wrap-in-normal-output-extractor
               ;; Types are symbols, e.g., u8[64]:
               (symbol-listp types)))))
+
+;; so we can call strip-cars
+(defthm names-and-typesp-forward-to-alistp
+  (implies (names-and-typesp x)
+           (alistp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable names-and-typesp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -260,7 +276,7 @@
                                         type-assumptions-for-array-varsp)
   (declare (xargs :guard (and (symbolp input-name)
                               (symbolp input-type)
-                              ;;state-component might be rdi or (rdi x86)
+                              (pseudo-termp state-component) ; might be rdi or (rdi x86)
                               (natp stack-slots)
                               (natp existing-stack-slots)
                               (alistp disjoint-chunk-addresses-and-lens)
@@ -293,19 +309,19 @@
                   (mv `(;; Rewriting will replace the state component with the pointer's name:
                         (equal ,state-component ,pointer-name)
                         ;; todo: what about reading individual bytes?:  don't trim down reads?
-                        (equal (read ,numbytes ,pointer-name x86) ,input-name)
+                        (equal (read ',numbytes ,pointer-name x86) ,input-name)
                         ;; The pointer, and subsequent bytes, are canonical:
-                        (canonical-regionp ,numbytes ,pointer-name)
+                        (canonical-regionp ',numbytes ,pointer-name)
                         (integerp ,pointer-name)
                         ;; The input is disjoint from the space into which the stack will grow:
-                        (disjoint-regions48p ,numbytes ,pointer-name
-                                             ,stack-byte-count
-                                             (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
+                        (disjoint-regions48p ',numbytes ,pointer-name
+                                             ',stack-byte-count
+                                             (bvplus '48 ',(bvchop 48 (- stack-byte-count)) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-disjoint-claims-for-sections pointer-name numbytes disjoint-chunk-addresses-and-lens position-independentp base-address-var)
                         ;; The input is disjoint from the saved return address:
-                        (disjoint-regions48p ,existing-stack-byte-count (rsp x86)
-                                             ,numbytes ,pointer-name))
+                        (disjoint-regions48p ',existing-stack-byte-count (rsp x86)
+                                             ',numbytes ,pointer-name))
                       ;; will be reversed later:
                       (list input-name pointer-name))))
             (if (and (call-of :array type) ; (:array <base-type> <element-count>)
@@ -326,23 +342,23 @@
                             `(;; Rewriting will replace the state component with the pointer's name:
                               (equal ,state-component ,pointer-name)
                               ;; The base adddress of the array, and subsequent bytes, are canonical:
-                              (canonical-regionp ,numbytes ,pointer-name)
+                              (canonical-regionp ',numbytes ,pointer-name)
                               (integerp ,pointer-name)
                               ;; The input is disjoint from the space into which the stack will grow:
                               ;; (separate :r ,numbytes ,pointer-name
                               ;;           :r ,stack-byte-count
                               ;;           (+ ,(- stack-byte-count) (rsp x86)))
-                              (disjoint-regions48p ,numbytes ,pointer-name
-                                                   ,stack-byte-count
-                                                   (bvplus 48 ,(bvchop 48 (- stack-byte-count)) (rsp x86)))
+                              (disjoint-regions48p ',numbytes ,pointer-name
+                                                   ',stack-byte-count
+                                                   (bvplus '48 ',(bvchop 48 (- stack-byte-count)) (rsp x86)))
                               ;; The input is disjoint from the code:
                               ,@(make-disjoint-claims-for-sections pointer-name numbytes disjoint-chunk-addresses-and-lens position-independentp base-address-var)
                               ;; The input is disjoint from the saved return address:
                               ;; todo: reorder args?
                               ;; (separate :r ,existing-stack-byte-count (rsp x86)
                               ;;           :r ,numbytes ,pointer-name)
-                              (disjoint-regions48p ,existing-stack-byte-count (rsp x86)
-                                                   ,numbytes ,pointer-name)))
+                              (disjoint-regions48p ',existing-stack-byte-count (rsp x86)
+                                                   ',numbytes ,pointer-name)))
                     ;; will be reversed later:
                     (append input-assumption-vars-rev (list pointer-name))))
               (prog2$ (er hard? 'assumptions-and-vars-for-input "Bad type: ~x0." type)
@@ -353,6 +369,19 @@
     (implies (true-listp assumptions-acc)
              (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
+
+(local
+ (defthm pseudo-term-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
+   (implies (and (symbolp input-name)
+                 ;; (symbolp input-type)
+                 (pseudo-termp state-component)
+                 (pseudo-term-listp assumptions-acc)
+                 (alistp disjoint-chunk-addresses-and-lens)
+                 (nat-listp (strip-cars disjoint-chunk-addresses-and-lens))
+                 (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                 (if position-independentp (symbolp base-address-var) 't))
+            (pseudo-term-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp))))
+   :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 (local
   (defthm symbol-listp-of-mv-nth-1-of-assumptions-and-vars-for-input
@@ -367,7 +396,7 @@
 ;; might have extra, unneeded items in state-components
 (defund assumptions-and-vars-for-inputs (input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
-                              (true-listp state-components)
+                              (pseudo-term-listp state-components)
                               (natp stack-slots)
                               (natp existing-stack-slots)
                               (alistp disjoint-chunk-addresses-and-lens)
@@ -378,7 +407,7 @@
                               (booleanp type-assumptions-for-array-varsp)
                               (true-listp assumptions-acc)
                               (symbol-listp vars-acc))
-                  :guard-hints (("Goal" :in-theory (enable acl2::true-listp-when-symbol-listp-rewrite-unlimited)))))
+                  :guard-hints (("Goal" :in-theory (enable acl2::true-listp-when-symbol-listp-rewrite-unlimited names-and-typesp)))))
   (if (endp input-names-and-types)
       (mv (reverse assumptions-acc)
           (reverse vars-acc))
@@ -402,6 +431,17 @@
            (true-listp (mv-nth 0 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs))))
+
+(defthm pseudo-term-listp-of-mv-nth-0-of-assumptions-and-vars-for-inputs
+  (implies (and (names-and-typesp input-names-and-types)
+                (pseudo-term-listp state-components)
+                (alistp disjoint-chunk-addresses-and-lens)
+                (nat-listp (strip-cars disjoint-chunk-addresses-and-lens))
+                (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                (if position-independentp (symbolp base-address-var) 't)
+                (pseudo-term-listp assumptions-acc))
+           (pseudo-term-listp (mv-nth 0 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots existing-stack-slots disjoint-chunk-addresses-and-lens position-independentp base-address-var type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+  :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs names-and-typesp))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-and-vars-for-inputs-type
   (implies (true-listp vars-acc)
