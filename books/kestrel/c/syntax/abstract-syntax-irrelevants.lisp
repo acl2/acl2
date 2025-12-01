@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "std/util/defirrelevant" :dir :system)
 
@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-irrelevants
-  :parents (abstract-syntax-operations)
+  :parents (abstract-syntax)
   :short "Irrelevant values of the abstract syntax fixtypes."
   :long
   (xdoc::topstring
@@ -130,6 +130,13 @@
   :short "An irrelevant string literal."
   :type stringlitp
   :body (make-stringlit :prefix? nil :schars nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-header-name
+  :short "An irrelevant header name."
+  :type header-namep
+  :body (header-name-angles nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,7 +311,9 @@
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
-  :body (make-param-declon :specs nil :declor (param-declor-none)))
+  :body (make-param-declon :specs nil
+                           :declor (param-declor-none)
+                           :attribs nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,28 +334,28 @@
 (defirrelevant irr-struni-spec
   :short "An irrelevant structure or union specifier."
   :type struni-specp
-  :body (make-struni-spec :name? nil :members nil))
+  :body (make-struni-spec :attribs nil :name? nil :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdecl
+(defirrelevant irr-struct-declon
   :short "An irrelevant structure declaration."
-  :type structdeclp
-  :body (make-structdecl-empty))
+  :type struct-declonp
+  :body (make-struct-declon-empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-structdeclor
+(defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
-  :type structdeclorp
-  :body (make-structdeclor :declor? nil :expr? nil))
+  :type struct-declorp
+  :body (make-struct-declor :declor? nil :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-enumspec
+(defirrelevant irr-enum-spec
   :short "An irrelevant enumeration specifier."
-  :type enumspecp
-  :body (make-enumspec :name nil :list nil :final-comma nil))
+  :type enum-specp
+  :body (make-enum-spec :name nil :list nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -440,17 +449,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-comp-stmt
+  :short "An irrelevant compound statement."
+  :type comp-stmtp
+  :body (make-comp-stmt :labels nil :items nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-stmt
   :short "An irrelevant statement."
   :type stmtp
-  :body (stmt-compound nil))
+  :body (stmt-compound (irr-comp-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
-  :body (block-item-stmt (irr-stmt)))
+  :body (block-item-stmt (irr-stmt) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -505,7 +521,8 @@
                      :asm? nil
                      :attribs nil
                      :decls nil
-                     :body (irr-stmt)))
+                     :body (irr-comp-stmt)
+                     :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

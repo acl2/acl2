@@ -158,7 +158,7 @@
 
      "<p>Theorem @('fundamental-theorem-of-calculus').</p>"
 
-     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp#L136\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
 
      "<p>Note: This theorem requires <see topic=\"@(url real)\">ACL2(r)</see>.</p>"
 
@@ -237,7 +237,7 @@
 
      "<p>An alternate formulation in pure set theory by Matt Kaufmann, derived
      from Grant Jurgensen's proof and statement, in <a
-     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
+     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp#L28\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,7 +410,7 @@
 
      "@(def zf::cantor)"
 
-     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp\">books/projects/set-theory/cantor.lisp</a>.</p>"
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp#L79\">books/projects/set-theory/cantor.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -467,10 +467,10 @@
 
      "<h3 id=\"72\">72. Sylow's Theorem</h3>"
 
-     "(def sylow-1)"
-     "(def sylow-2)"
-     "(def sylow-3)"
-     "(def sylow-4)"
+     "@(def dm::sylow-1)"
+     "@(def dm::sylow-2)"
+     "@(def dm::sylow-3)"
+     "@(def dm::sylow-4)"
 
      "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/groups/sylow.lisp\">books/projects/groups/sylow.lisp</a>.</p>"
 

@@ -20,7 +20,7 @@
 (defconst *abstract-syntax-symbols*
   '(
 
-    ;; fixtypes operations:
+    ;; code representation:
 
     identp
     ident
@@ -28,6 +28,8 @@
     ident->unwrap
 
     ident-listp
+
+    ident-list-listp
 
     ident-set
     ident-setp
@@ -61,6 +63,8 @@
     binop-case
     binop-kind
 
+    asm-name-spec-optionp
+
     exprp
     expr-fix
     expr-count
@@ -68,7 +72,10 @@
     expr-ident
     make-expr-ident
     expr-ident->ident
+    expr-string
+    make-expr-string
     expr-const
+    make-expr-const
     expr-const->const
     expr-paren
     make-expr-gensel
@@ -144,6 +151,8 @@
 
     type-spec-optionp
 
+    type-spec-listp
+
     spec/qual-p
     spec/qual-fix
     spec/qual-count
@@ -201,7 +210,7 @@
     designor-fix
     designor-count
     designor-case
-    designor-sub
+    make-designor-sub
 
     designor-listp
     designor-list-fix
@@ -212,7 +221,6 @@
     declor-count
     declor
     make-declor
-    declor->ident
     declor->direct
 
     declor-optionp
@@ -280,7 +288,8 @@
     param-declor-fix
     param-declor-count
     param-declor-case
-    param-declor-nonabstract
+    make-param-declor-nonabstract
+    param-declor-nonabstract->declor
     param-declor-abstract
     param-declor-none
 
@@ -289,6 +298,7 @@
     tyname-count
     tyname
     make-tyname
+    tyname->info
 
     struni-specp
     struni-spec-fix
@@ -296,33 +306,33 @@
     struni-spec
     make-struni-spec
 
-    structdeclp
-    structdecl-fix
-    structdecl-count
-    structdecl-case
-    make-structdecl-member
-    structdecl-statassert
-    structdecl-empty
+    struct-declonp
+    struct-declon-fix
+    struct-declon-count
+    struct-declon-case
+    make-struct-declon-member
+    struct-declon-statassert
+    struct-declon-empty
 
-    structdecl-listp
-    structdecl-list-fix
-    structdecl-list-count
+    struct-declon-listp
+    struct-declon-list-fix
+    struct-declon-list-count
 
-    structdeclorp
-    structdeclor-fix
-    structdeclor-count
-    structdeclor
-    make-structdeclor
+    struct-declorp
+    struct-declor-fix
+    struct-declor-count
+    struct-declor
+    make-struct-declor
 
-    structdeclor-listp
-    structdeclor-list-fix
-    structdeclor-list-count
+    struct-declor-listp
+    struct-declor-list-fix
+    struct-declor-list-count
 
-    enumspecp
-    enumspec-fix
-    enumspec-count
-    enumspec
-    make-enumspec
+    enum-specp
+    enum-spec-fix
+    enum-spec-count
+    enum-spec
+    make-enum-spec
 
     enumerp
     enumer-fix
@@ -340,11 +350,15 @@
     statassert
     make-statassert
 
+    attrib-spec-listp
+
     initdeclorp
     initdeclor-fix
     initdeclor-count
     initdeclor
     make-initdeclor
+    initdeclor->declor
+    initdeclor->init?
 
     initdeclor-listp
     initdeclor-list-fix
@@ -356,6 +370,9 @@
     decl-count
     decl-case
     make-decl-decl
+    decl-decl->extension
+    decl-decl->specs
+    decl-decl->init
     decl-statassert
 
     decl-listp
@@ -365,6 +382,7 @@
     label-fix
     label-count
     label-case
+    make-label-name
     make-label-casexpr
 
     stmtp
@@ -373,8 +391,10 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->stmt
+    make-stmt-compound
     stmt-compound->items
-    stmt-expr
+    make-stmt-expr
     make-stmt-if
     make-stmt-ifelse
     make-stmt-switch
@@ -382,18 +402,26 @@
     make-stmt-dowhile
     make-stmt-for-expr
     make-stmt-for-decl
-    stmt-return
+    make-stmt-return
+    stmt-gotoe
 
     block-itemp
     block-item-fix
     block-item-count
     block-item-case
-    block-item-decl
-    block-item-stmt
+    make-block-item-decl
+    make-block-item-stmt
 
     block-item-listp
     block-item-list-fix
     block-item-list-count
+
+    comp-stmt
+    make-comp-stmt
+    comp-stmtp
+    comp-stmt-count
+    comp-stmt->labels
+    comp-stmt->items
 
     fundefp
     fundef
@@ -438,6 +466,15 @@
     fileset
     fileset->unwrap
 
+    code-ensemble
+    code-ensemblep
+    code-ensemble->transunits
+    code-ensemble->ienv
+    make-code-ensemble
+    change-code-ensemble
+
+    ienv
+
     ;; irrelevants:
 
     irr-expr
@@ -451,9 +488,11 @@
     irr-param-declor
     irr-decl
     irr-stmt
+    irr-comp-stmt
     irr-block-item
     irr-fundef
     irr-transunit-ensemble
+    irr-code-ensemble
 
     ;; unambiguity:
 
@@ -490,11 +529,11 @@
     param-declor-unambp
     tyname-unambp
     struni-spec-unambp
-    structdecl-unambp
-    structdecl-list-unambp
-    structdeclor-unambp
-    structdeclor-list-unambp
-    enumspec-unambp
+    struct-declon-unambp
+    struct-declon-list-unambp
+    struct-declor-unambp
+    struct-declor-list-unambp
+    enum-spec-unambp
     enumer-unambp
     enumer-list-unambp
     statassert-unambp
@@ -504,6 +543,7 @@
     decl-list-unambp
     label-unambp
     stmt-unambp
+    comp-stmt-unambp
     block-item-unambp
     block-item-list-unambp
     fundef-unambp
@@ -512,14 +552,87 @@
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
+    code-ensemble-unambp
 
     ;; purity:
+
     expr-purep
+    expr-option-purep
 
-    ;; formalized:
+    ;; ASCII identifiers:
 
+    ident-aidentp
+    ident-list-list-aidentp
+    const-aidentp
+    expr-aidentp
+    expr-list-aidentp
+    expr-option-aidentp
+    const-expr-aidentp
+    const-expr-option-aidentp
+    genassoc-aidentp
+    genassoc-list-aidentp
+    member-designor-aidentp
+    type-spec-aidentp
+    spec/qual-aidentp
+    spec/qual-list-aidentp
+    align-spec-aidentp
+    decl-spec-aidentp
+    decl-spec-list-aidentp
+    initer-aidentp
+    initer-option-aidentp
+    desiniter-aidentp
+    desiniter-list-aidentp
+    designor-aidentp
+    designor-list-aidentp
+    declor-aidentp
+    declor-option-aidentp
+    dirdeclor-aidentp
+    absdeclor-aidentp
+    absdeclor-option-aidentp
+    dirabsdeclor-aidentp
+    dirabsdeclor-option-aidentp
+    param-declon-aidentp
+    param-declon-list-aidentp
+    param-declor-aidentp
+    tyname-aidentp
+    struni-spec-aidentp
+    struct-declon-aidentp
+    struct-declon-list-aidentp
+    struct-declor-aidentp
+    struct-declor-list-aidentp
+    enum-spec-aidentp
+    enumer-aidentp
+    enumer-list-aidentp
+    statassert-aidentp
+    attrib-spec-list-aidentp
+    initdeclor-aidentp
+    initdeclor-list-aidentp
+    decl-aidentp
+    decl-list-aidentp
+    label-aidentp
+    stmt-aidentp
+    comp-stmt-aidentp
+    block-item-aidentp
+    block-item-list-aidentp
+    fundef-aidentp
+    extdecl-aidentp
+    extdecl-list-aidentp
+    transunit-aidentp
+    filepath-transunit-map-aidentp
+    transunit-ensemble-aidentp
+    code-ensemble-aidentp
+
+    ;; formalized subset:
+
+    ident-formalp
     expr-pure-formalp
     expr-asg-formalp
+    expr-formalp
+    initer-formalp
+    dirdeclor-block-formalp
+    declor-block-formalp
+    initdeclor-block-formalp
+    decl-block-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
@@ -531,16 +644,27 @@
     ldm-tyname
     ldm-binop
     ldm-expr
+    ldm-expr-option
+    ldm-initer
+    ldm-type-spec-list
+    ldm-decl-obj
     ldm-stmt
+    ldm-comp-stmt
     ldm-block-item
     ldm-block-item-list
     ldm-param-declon-list
     ldm-fundef
+    ldm-type
+    ldm-type-set
+    ldm-type-option-set
+
+    ildm-type
 
     ;; validation information:
 
     type-case
     type-kind
+    type-void
     type-sint
 
     ident-type-map
@@ -548,36 +672,128 @@
     ident-type-map-fix
 
     type-formalp
-    ldm-type
     type-to-value-kind
     type-integerp
 
     iconst-info
-    coerce-iconst-info
 
     var-info
     var-infop
     var-info-fix
     coerce-var-info
 
-    unary-infop
-    coerce-unary-info
+    expr-const-infop
+    expr-const-info-fix
 
-    binary-infop
-    coerce-binary-info
+    expr-string-infop
 
+    expr-arrsub-infop
+
+    expr-funcall-infop
+
+    expr-unary-infop
+
+    expr-binary-infop
+
+    tyname-info
     tyname-infop
-    coerce-tyname-info
+
+    param-declor-nonabstract-info
+    param-declor-nonabstract-info->type
+
+    initdeclor-info
+    initdeclor-info->type
+    initdeclor-info->typedefp
+
+    fundef-info
+    fundef-infop
+    fundef-info->type
+    fundef-info->table-body-start
 
     expr-type
-    stmt-type
-    block-item-type
-    block-item-list-type
+    initer-type
+    stmt-types
+    comp-stmt-types
+    block-item-types
+    block-item-list-types
+    fundef-types
 
+    valid-ord-info-case
+    valid-ord-info-objfun->type
+
+    valid-ord-scopep
+
+    valid-scopep
+    valid-scope->ord
+
+    valid-scope-listp
+
+    valid-tablep
+    valid-table->scopes
+
+    iconst-annop
+    const-annop
+    expr-annop
+    expr-list-annop
+    expr-option-annop
+    const-expr-annop
+    const-expr-option-annop
+    genassoc-annop
+    genassoc-list-annop
+    member-designor-annop
+    type-spec-annop
+    spec/qual-annop
+    spec/qual-list-annop
+    align-spec-annop
+    decl-spec-annop
+    decl-spec-list-annop
+    initer-annop
+    initer-option-annop
+    desiniter-annop
+    desiniter-list-annop
+    designor-annop
+    designor-list-annop
+    declor-annop
+    declor-option-annop
+    dirdeclor-annop
+    absdeclor-annop
+    absdeclor-option-annop
+    dirabsdeclor-annop
+    dirabsdeclor-option-annop
+    param-declon-annop
+    param-declon-list-annop
+    param-declor-annop
+    tyname-annop
+    struni-spec-annop
+    struct-declon-annop
+    struct-declon-list-annop
+    struct-declor-annop
+    struct-declor-list-annop
+    enum-spec-annop
+    enumer-annop
+    enumer-list-annop
+    statassert-annop
+    initdeclor-annop
+    initdeclor-list-annop
+    decl-annop
+    decl-list-annop
+    label-annop
+    stmt-annop
+    comp-stmt-annop
+    block-item-annop
+    block-item-list-annop
+    fundef-annop
+    extdecl-annop
+    extdecl-list-annop
+    transunit-annop
+    filepath-transunit-map-annop
     transunit-ensemble-annop
+    code-ensemble-annop
 
     ;; other operations:
 
     expr-zerop
+    check-decl-spec-list-all-typespec
+    declor->ident
 
    ))

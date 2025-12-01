@@ -1,7 +1,7 @@
 ; Rules that deal with both bvsx and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,12 +18,14 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm bvand-of-bvsx-low-arg2
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvand size (bvsx new-size old-size x) y)
                   (bvand size x y)))
@@ -33,6 +35,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvand size x (bvsx new-size old-size y))
                   (bvand size x y)))
@@ -44,6 +47,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvor size (bvsx new-size old-size x) y)
                   (bvor size x y)))
@@ -53,6 +57,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvor size x (bvsx new-size old-size y))
                   (bvor size x y)))
@@ -64,6 +69,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvxor size (bvsx new-size old-size x) y)
                   (bvxor size x y)))
@@ -73,6 +79,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvxor size x (bvsx new-size old-size y))
                   (bvxor size x y)))
@@ -144,6 +151,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvplus size (bvsx new-size old-size x) y)
                   (bvplus size x y)))
@@ -153,6 +161,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvplus size x (bvsx new-size old-size y))
                   (bvplus size x y)))
@@ -164,6 +173,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvminus size (bvsx new-size old-size x) y)
                   (bvminus size x y)))
@@ -173,6 +183,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvminus size x (bvsx new-size old-size y))
                   (bvminus size x y)))
@@ -206,6 +217,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvuminus size (bvsx new-size old-size x))
                   (bvuminus size x)))
@@ -217,6 +229,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvif size test (bvsx new-size old-size x) y)
                   (bvif size test x y)))
@@ -226,6 +239,7 @@
   (implies (and (<= size old-size)
                 (<= old-size new-size)
                 (natp size)
+                (integerp new-size)
                 (natp old-size))
            (equal (bvif size test x (bvsx new-size old-size y))
                   (bvif size test x y)))

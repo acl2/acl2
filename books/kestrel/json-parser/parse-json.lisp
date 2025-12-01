@@ -44,6 +44,7 @@
 (include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -75,7 +76,7 @@
   :hints (("Goal" :in-theory (enable skip-json-whitespace))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the true literal
-;; true as the symbol :TRUE.
+;; as the symbol :TRUE.
 (defund parse-json-true-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\t #\r #\u #\e) chars) ; todo: consider a variant of prefixp that uses eql as the test
@@ -95,7 +96,7 @@
   :hints (("Goal" :in-theory (enable parse-json-true-literal))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the false literal
-;; true as the symbol :FALSE.
+;; as the symbol :FALSE.
 (defund parse-json-false-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\f #\a #\l #\s #\e) chars)
@@ -115,7 +116,7 @@
   :hints (("Goal" :in-theory (enable parse-json-false-literal))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the null literal
-;; true as the symbol :NULL.
+;; as the symbol :NULL.
 (defund parse-json-null-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\n #\u #\l #\l) chars)
@@ -812,34 +813,9 @@
    (not (o< fco1 fco1))
    :hints (("Goal" :in-theory (enable o<)))))
 
-(local
- (defthm not-<-self
-   (not (< fco1 fco1))))
-
-(local
- (defthm o<-of-make-ord-and-make-ord-same-fe-and-rst
-   (equal (o< (make-ord fe fco1 rst)
-              (make-ord fe fco2 rst))
-          (< fco1 fco2))
-   :hints (("Goal" :in-theory (enable o< make-ord)))))
-
-(local
- (defthm o<-of-make-ord-and-make-ord-same-fe
-  (equal (o< (make-ord fe fco1 rst1)
-             (make-ord fe fco2 rst2))
-         (if (equal fco1 fco2)
-             (o< rst1 rst2)
-           (< fco1 fco2)))
-  :hints (("Goal" :in-theory (enable o< make-ord)))))
-
-(local
- (defthm o-p-of-make-ord-suff
-   (implies (and (posp fco)
-                 (posp fe)
-                 (natp rst))
-            (o-p (make-ord fe fco rst)))
-   :hints (("Goal" :in-theory (enable make-ord o-p o<)))))
-
+;; (local
+;;  (defthm not-<-self
+;;    (not (< fco1 fco1))))
 
 (mutual-recursion
 

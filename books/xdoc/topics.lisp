@@ -1834,9 +1834,9 @@ manual.</p>")
 
 (defxdoc entities
 
-; Warning: Keep this in sync with *entity-strings* and
-; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
-; fancy/xslt.js, *xml-entity-stuff*in prepare-topic.lisp, and
+; Warning: Keep this in sync with *entity-info*
+; in parse-xml.lisp, wrapXdocFragment in
+; fancy/xslt.js, and
 ; wrap_xdoc_fragment in fancy/xdata2html.pl
 
   :parents (xdoc xdoc-tests)
@@ -1934,6 +1934,76 @@ manual.</p>")
 <li>@('&chi;') becomes &chi;</li>
 <li>@('&psi;') becomes &psi;</li>
 <li>@('&omega;') becomes &omega;</li>
+</ul>
+
+<p>Capitalized letters with diacritics:</p>
+
+<ul>
+<li>@('&Ccedil;') becomes &Ccedil;</li>
+<li>@('&Aacute;') becomes &Aacute;</li>
+<li>@('&Agrave;') becomes &Agrave;</li>
+<li>@('&Acirc;') becomes &Acirc;</li>
+<li>@('&Atilde;') becomes &Atilde;</li>
+<li>@('&Auml;') becomes &Auml;</li>
+<li>@('&Aring;') becomes &Aring;</li>
+<li>@('&Egrave;') becomes &Egrave;</li>
+<li>@('&Eacute;') becomes &Eacute;</li>
+<li>@('&Ecirc;') becomes &Ecirc;</li>
+<li>@('&Euml;') becomes &Euml;</li>
+<li>@('&Igrave;') becomes &Igrave;</li>
+<li>@('&Iacute;') becomes &Iacute;</li>
+<li>@('&Icirc;') becomes &Icirc;</li>
+<li>@('&Iuml;') becomes &Iuml;</li>
+<li>@('&Ntilde;') becomes &Ntilde;</li>
+<li>@('&Ograve;') becomes &Ograve;</li>
+<li>@('&Oacute;') becomes &Oacute;</li>
+<li>@('&Ocirc;') becomes &Ocirc;</li>
+<li>@('&Otilde;') becomes &Otilde;</li>
+<li>@('&Ouml;') becomes &Ouml;</li>
+<li>@('&Ugrave;') becomes &Ugrave;</li>
+<li>@('&Uacute;') becomes &Uacute;</li>
+<li>@('&Ucirc;') becomes &Ucirc;</li>
+<li>@('&Uuml;') becomes &Uuml;</li>
+<li>@('&Aogon;') becomes &Aogon;</li>
+<li>@('&Eogon;') becomes &Eogon;</li>
+<li>@('&Iogon;') becomes &Iogon;</li>
+<li>@('&Uogon;') becomes &Uogon;</li>
+<li>@('&Nacute;') becomes &Nacute;</li>
+</ul>
+
+<p>Lower case letters with diacritics:</p>
+
+<ul>
+<li>@('&ccedil;') becomes &ccedil;</li>
+<li>@('&aacute;') becomes &aacute;</li>
+<li>@('&agrave;') becomes &agrave;</li>
+<li>@('&acirc;') becomes &acirc;</li>
+<li>@('&atilde;') becomes &atilde;</li>
+<li>@('&auml;') becomes &auml;</li>
+<li>@('&aring;') becomes &aring;</li>
+<li>@('&egrave;') becomes &egrave;</li>
+<li>@('&eacute;') becomes &eacute;</li>
+<li>@('&ecirc;') becomes &ecirc;</li>
+<li>@('&euml;') becomes &euml;</li>
+<li>@('&igrave;') becomes &igrave;</li>
+<li>@('&iacute;') becomes &iacute;</li>
+<li>@('&icirc;') becomes &icirc;</li>
+<li>@('&iuml;') becomes &iuml;</li>
+<li>@('&ntilde;') becomes &ntilde;</li>
+<li>@('&ograve;') becomes &ograve;</li>
+<li>@('&oacute;') becomes &oacute;</li>
+<li>@('&ocirc;') becomes &ocirc;</li>
+<li>@('&otilde;') becomes &otilde;</li>
+<li>@('&ouml;') becomes &ouml;</li>
+<li>@('&ugrave;') becomes &ugrave;</li>
+<li>@('&uacute;') becomes &uacute;</li>
+<li>@('&ucirc;') becomes &ucirc;</li>
+<li>@('&uuml;') becomes &uuml;</li>
+<li>@('&aogon;') becomes &aogon;</li>
+<li>@('&eogon;') becomes &eogon;</li>
+<li>@('&iogon;') becomes &iogon;</li>
+<li>@('&uogon;') becomes &uogon;</li>
+<li>@('&nacute;') becomes &nacute;</li>
 </ul>
 
 <p>Mathematical symbols:</p>

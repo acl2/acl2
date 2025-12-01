@@ -23,6 +23,8 @@
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 ;(include-book "kestrel/bv/bvplus" :dir :system)
 ;(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
@@ -38,6 +40,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/bv-lists/array-patterns" :dir :system)) ; reduce?
 
 (add-known-boolean bv-arrayp)
 
@@ -66,9 +69,8 @@
 ;;   :hints (("Goal" :in-theory (enable BV-ARRAY-WRITE update-nth2)
 ;;            :cases ((integerp size)))))
 
-;move
 (defthmd bv-array-write-trim-value-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val 'all dag-array))
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :all dag-array))
                 (natp len)
                 (natp index)
                 (< index len))
@@ -79,9 +81,8 @@
                                   (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                    )))))
 
-;move
 (defthmd bv-array-write-trim-value
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val 'non-arithmetic dag-array))
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :non-arithmetic dag-array))
                 (natp len)
                 (natp index)
 ;                (integerp size) ;new
@@ -271,7 +272,7 @@
 (defthmd bv-array-read-trim-index-axe
   (implies (and (syntaxp (quotep len))
                 (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; binding hyp, desired-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'non-arithmetic dag-array)))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index :non-arithmetic dag-array)))
            (equal (bv-array-read element-width len index data)
                   (bv-array-read element-width len (trim desired-size index) data)))
   :hints (("Goal" :in-theory (enable trim))))
@@ -279,7 +280,7 @@
 (defthmd bv-array-read-trim-index-axe-all
   (implies (and (syntaxp (quotep len))
                 (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; desired-size should be a quoted constant
-                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'all dag-array)))
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index :all dag-array)))
            (equal (bv-array-read element-width len index data)
                   (bv-array-read element-width len (trim desired-size index) data)))
   :hints (("Goal" :use bv-array-read-trim-index-axe
@@ -453,7 +454,7 @@
                 (<= len (len array)))
            (equal (bv-array-read elem-size len index (take len array))
                   (bv-array-read elem-size (len array) index array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
 
 (defthmd bv-array-read-when-all-same-axe
   (implies (and (syntaxp (and (quotep data)
@@ -471,3 +472,108 @@
                   val))
   :hints (("Goal" :use bv-array-read-when-all-same
            :in-theory (disable bv-array-read-when-all-same))))
+
+;; Here we guess that the index may be < ~half the array size.  if so, we can
+;; discard the latter ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-first-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (ceiling len 2)))
+                (< (ceiling len 2) len) ; avoid loops (gets evaluated) ; todo: simplify
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-first-half)))
+
+;; Here we guess that the index may be > ~half the array size.  if so, we can
+;; discard the first ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-second-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (integerp len) ; prevent loops, because (ceiling-of-lg len) is at least 1, so the length decreases
+                (< 1 len)  ; seems needed
+                (axe-smt (bvle (ceiling-of-lg len) (ceiling len 2) index)) ; index in second half
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (integerp index))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (- len (ceiling len 2)) ; gets computed
+                                 (bvminus (ceiling-of-lg len) index (ceiling len 2))
+                                 (nthcdr (ceiling len 2) data) ; gets computed
+                                 )))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-second-half)))
+
+(defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep data)
+                              (quotep index-width)
+                              (quotep len)))
+                (equal index-width (ceiling-of-lg len)) ; gen?
+                (axe-smt (bvlt index-width index (bvplus index-width index k))) ; no wrap around
+                (axe-smt (or (power-of-2p len)
+                             (bvlt index-width (bvplus index-width index k) len))) ; in bounds
+                ;; (natp index-width)
+                ;;  (natp k)
+                (natp len)
+                ;; (natp index)
+                )
+           (equal (bv-array-read element-size len (bvplus index-width k index) data)
+                  ;; The nthcdr here gets computed to give a smaller array:
+                  (bv-array-read element-size (bvminus index-width len k) (bvchop index-width index) (nthcdr (bvchop index-width k) data))))
+  :hints (("Goal" :use bv-array-read-of-bvplus-of-constant-no-wrap-bv
+                  :in-theory (disable bv-array-read-of-bvplus-of-constant-no-wrap-bv))))
+
+; make non-axe version
+(defthm bv-array-read-chunk-little-trim-index-axe
+  (implies (and (syntaxp (quotep array-len))
+                (axe-binding-hyp (equal desired-index-size (ceiling-of-lg array-len))) ; binding hyp, desired-index-size should be a quoted constant
+                (axe-syntaxp (term-should-be-trimmed-axe desired-index-size index :all dag-array))
+                (natp index))
+           (equal (bv-array-read-chunk-little element-count element-size array-len index array)
+                  (bv-array-read-chunk-little element-count element-size array-len (trim desired-index-size index) array)))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little bvchop-of-sum-cases trim))))
+
+(defthm bvplus-of-bv-array-read-constant-array-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep val)
+                              (quotep size)))
+                (natp size)
+                (axe-smt (or (power-of-2p len)
+                             (bvlt (ceiling-of-lg len) index (len data))))
+                (equal len (len data)))
+           (equal (bvplus size val (bv-array-read size len index data))
+                  (bv-array-read size len index (map-bvplus-val size val data))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+
+(defthmd bv-array-read-shorten-when-not-max-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (+ -1 len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (+ -1 len) index (take (+ -1 len) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-max
+                  :in-theory (disable bv-array-read-shorten-when-not-max))))
+
+(defthmd bv-array-read-shorten-when-not-zero-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) 0 index)) ; index is not 0
+                ;; (chopped) index is in bounds:
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (+ -1 len)
+                                 ;; this decrements the index (gets simplified a lot since len is constant):
+                                 (bvplus (ceiling-of-lg (+ -1 len))
+                                         (- (expt 2 (ceiling-of-lg (+ -1 len))) 1)
+                                         index)
+                                 (rest data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-zero)))

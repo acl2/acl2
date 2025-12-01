@@ -181,12 +181,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: inline?
-(defund term-should-be-trimmed-axe-helper (width darg operators dag-array)
+(defund-inline term-should-be-trimmed-axe-helper (width darg operators dag-array)
   (declare (xargs :guard (and (natp width)
-                              ;; (member-eq operators '(all non-arithmetic)) ; todo: make these keywords
+                              ;; (member-equal operators '(':all ':non-arithmetic))
                               (or (myquotep darg)
                                   (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))
+                  :split-types t)
            (type (integer 0 *) width))
   (if (consp darg) ; checks for quotep
       (let ((val (unquote darg)))
@@ -199,7 +200,7 @@
       (and (consp expr) ; we don't trim a var
            (let ((fn (ffn-symb expr)))
              (and ;; The operator is one that we can trim:
-               (or (member-eq fn (if (equal ''all operators) ;TODO: Use :all instead? ;; todo: combine this member-eq check with the call of maybe-get-type-of-bv-function-call below
+               (or (member-eq fn (if (equal '':all operators) ; todo: combine this member-eq check with the call of maybe-get-type-of-bv-function-call below
                                      *trimmable-operators*
                                    *trimmable-non-arithmetic-operators*))
 ;trimming a read from a constant array can turn a single read operation into many (one for each bit)
@@ -218,20 +219,20 @@
 ;; Decides whether the term indicated by DARG can be trimmed down (by wrapping it with a call of
 ;; trim) to be a bit-vector of the given WIDTH.
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
-;; todo: warn if size-darg is not a quoted natural
 (defund term-should-be-trimmed-axe (size-darg
                                     darg
-                                    operators ;expected to be a quoted constant in every call, either 'all or 'non-arithmetic
+                                    operators ;expected to be a quoted constant in every call, either ':all or ':non-arithmetic
                                     dag-array)
-  (declare (xargs :guard (and (or (myquotep size-darg)
-                                  (and (natp size-darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 size-darg))))
-                              (or (myquotep darg)
-                                  (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
-                              ;; (member-equal operators '('all 'non-arithmetic))
-                              )))
-  (b* (;; ((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
+  (declare (xargs :guard (and
+                           ;; For the guard, we can only assume things that will always be true when the rewriter calls this function
+                           ;; on behalf of axe-syntaxp:
+                           (or (myquotep size-darg)
+                               (and (natp size-darg)
+                                    (pseudo-dag-arrayp 'dag-array dag-array (+ 1 size-darg))))
+                           (or (myquotep darg)
+                               (and (natp darg)
+                                    (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (b* (;; ((when (not (member-equal operators '(':all ':non-arithmetic)))) ;; todo: can we avoid this?  use one as the default?
        ;;  (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
        ((when (not (consp size-darg))) ; checks for non-constant size
         ;; can probably happen, if non-constant sizes are around:
@@ -267,10 +268,10 @@
                               (or (myquotep darg)
                                   (and (natp darg)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
-                              ;; (member-equal operators '('all 'non-arithmetic))
+                              ;; (member-equal operators '(:all :non-arithmetic))
                               )))
-  (b* (;; ((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
-       ;;  (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
+  (b* (;; ((when (not (member-equal operators '(':all ':non-arithmetic)))) ;; todo: can we avoid this?  use one as the default?
+       ;;  (er hard? 'term-should-be-trimmed-axe-plus-one "Unexpected operators argument: ~x0.)~%" operators))
        ((when (not (consp top-bit-darg))) ; checks for quotep
         nil)
        (top-bit (unquote top-bit-darg))
@@ -378,31 +379,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund unquote-if-possible (x)
-  (declare (xargs :guard t))
-  (if (and (quotep x)
-           (consp (cdr x)))
-      (unquote x)
-    nil))
+(defconst *functions-convertible-to-bv-axe*
+  ;; Axe does not split IFs, unlike ACL2:
+  ;; todo: now get rid of the rules that introduce BVIF
+  (cons 'if *functions-convertible-to-bv*))
 
 ;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
-;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
-;; cannot easily establish it.  TODO: Add a darg guard for the exclude-fns and
-;; it to be a quoted constant, like quoted-varname in other functions?
+;; but not one of the EXCLUDE-FNS.
 (defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
   (declare (xargs :guard (and (or (myquotep darg)
                                   (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep exclude-fns) ; should always be true
+                                  (and (natp exclude-fns)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 exclude-fns)))))))
   (and (not (consp darg)) ; test for nodenum
        (let ((expr (aref1 'dag-array dag-array darg)))
          (and (consp expr)
               (let ((fn (ffn-symb expr)))
                 (and (member-eq fn *functions-convertible-to-bv*)
-                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
-                       (if exclude-fns
-                           (and (true-listp exclude-fns) ; for guards
-                                (not (member-eq fn exclude-fns)))
-                         t))))))))
+                     (if (and (quotep exclude-fns)
+                              (symbol-listp (unquote exclude-fns)))
+                         (not (member-eq fn (unquote exclude-fns)))
+                       (er hard? 'term-should-be-converted-to-bvp "Bad exclude-fns: ~x0." exclude-fns))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

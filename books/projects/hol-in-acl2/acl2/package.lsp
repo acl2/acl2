@@ -7,9 +7,9 @@
 (in-package "ZF")
 
 (defconst *hol-symbols*
-  '(include-book
-    open-theory close-theory
-    defhol hpp hap* type-match hol-typep typ hol-type-lookup hp-type
+  '(open-theory
+    close-theory
+    defhol hpp hap* type-match hol-typep typ hol-type-lookup hp-type hp-value
 ; From *hol-arities* in terms.lisp:
     equal hp-comma hp-none hp-some hp-nil
     hp-cons hp+ hp* hp-implies hp-and hp-or
@@ -22,6 +22,7 @@
     alist-subsetp
 ; Other basic ACL2 symbols etc.:
     defthm defthmd defconst defgoal set-enforce-redundancy
+    include-book local
     implies not and or
     force type in-theory enable disable e/d
     let let* mv-let

@@ -14,9 +14,7 @@
 (include-book "values")
 (include-book "flexible-array-member-removal")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +31,6 @@
   :returns (length posp :hints (("Goal" :in-theory (enable posp))))
   :short "Length of an array."
   (len (value-array->elements array))
-  :hooks (:fix)
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,8 +47,7 @@
   (b* ((index (nfix index))
        ((unless (< index (value-array->length array)))
         (error (list :array-read-index index (value-fix array)))))
-    (nth index (value-array->elements array)))
-  :hooks (:fix))
+    (nth index (value-array->elements array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,10 +78,18 @@
                                  (value-array->elements array))))
     (change-value-array array :elements new-elements))
   :guard-hints (("Goal" :in-theory (enable value-array->length)))
-  :hooks (:fix)
+
   ///
 
   (defret value-kind-of-value-array-write
     (implies (not (errorp new-array))
              (equal (value-kind new-array)
-                    :array))))
+                    :array)))
+
+  (defruled not-errorp-of-value-array-read-when-not-write-error
+    (implies (not (errorp (value-array-write index elem array)))
+             (not (errorp (value-array-read index array))))
+    :enable (value-array-read
+             nfix
+             value-array->length
+             not-errorp-when-valuep)))

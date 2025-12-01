@@ -1918,20 +1918,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              signatures)
           ,@lst))
 
-(defparameter *inside-include-book-fn*
+(defparameter *hcomp-status*
 
-; The value of this variable is t when we are inside an include-book that is
-; not being performed by the local compatibility check of certify-book.
-; Otherwise the value is nil unless we are inside certify-book in either of two
-; cases: inside hcomp-build-from-state, or inside a call of include-book made
-; by the local compatibility check.
+; See the Essay on Hash Table Support for Compilation for relevant background.
 
-; We trust include-book-fn and certify-book-fn to take care of all include-book
-; processing without any need to call the raw Lisp include-book.  It seems that
-; the only way this could be a bad idea is if include-book or certify-book
-; could be called from a user utility, rather than at the top level, while
-; inside a call of include-book-fn or certify-book-fn.  We disallow this in
-; translate11.
+; This variable takes on the following values, all symbols.
+
+; - include-book: when inside an include-book that is not being performed by
+;   the local-incompatibility check of certify-book
+
+; - certify-book: when inside an include-book that is being performed by
+;   the local-incompatibility check of certify-book, and also inside a call of
+;   hcomp-build-from-state (which is also performed by certify-book)
+
+; - encapsulate-pass-1: when inside the first of two passes of evaluation of an
+;   encapsulate event, with certain exceptions
+
+; - nil: otherwise.
 
   nil)
 
@@ -11928,6 +11931,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun translate-declaration-to-guard-gen (x var tflg wrld)
 
+; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
+
 ; This function is typically called on the sort of x you might write in a TYPE
 ; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
 ; something like '(or symbol cons (integer 0 128)) meaning that var is either a
@@ -12357,8 +12362,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     array-total-size-limit))
 
 #-acl2-loop-only
-(defun-one-output chk-make-array$ (dimensions form)
-  (or (let* ((dimensions
+(defun chk-make-array$ (dimensions form &optional quietp)
+
+; If quietp is true, then dimensions and form are not quoted and we return a
+; form to be evaluated.  But if quietp is false (i.e., nil) then we evaluate
+; such a form.
+
+  (if (let* ((dimensions
               (if (integerp dimensions) (list dimensions) dimensions)))
         (and (true-listp dimensions)
              (do ((tl dimensions (cdr tl)))
@@ -12374,20 +12384,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (setq prod (* prod (car dimensions))))
                   prod)
                 *our-array-total-size-limit*)))
-      (illegal 'make-array$
-               "The dimensions of an array must obey restrictions of ~
-                the underlying Common Lisp:  each must be a ~
-                non-negative integer less than the value of ~
-                array-dimension-limit (here, ~x0) and their product ~
-                must be less than the value of array-total-size-limit ~
-                (here, ~x1).  The call ~x2, which has dimensions ~x3, ~
-                is thus illegal."
-               (list (cons #\0
-                           array-dimension-limit)
-                     (cons #\1
-                           array-total-size-limit)
-                     (cons #\2 form)
-                     (cons #\3 dimensions)))))
+      t
+    (let ((str "The dimensions of an array must obey restrictions of the ~
+                underlying Common Lisp:  each must be a non-negative integer ~
+                less than the value of array-dimension-limit (here, ~x0) and ~
+                their product must be less than the value of ~
+                array-total-size-limit (here, ~x1).  The call ~x2, which has ~
+                dimensions ~x3, is thus illegal."))
+      (if quietp
+          `(illegal 'make-array$
+                    ,str
+                    (list (cons #\0
+                                array-dimension-limit)
+                          (cons #\1
+                                array-total-size-limit)
+                          (cons #\2 ',form)
+                          (cons #\3 ',dimensions)))
+        (illegal 'make-array$
+                 str
+                 (list (cons #\0
+                             array-dimension-limit)
+                       (cons #\1
+                             array-total-size-limit)
+                       (cons #\2 form)
+                       (cons #\3 dimensions)))))))
 
 #-acl2-loop-only
 (defmacro make-array$ (&whole form dimensions &rest args)
@@ -12417,13 +12437,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (ignore args))
   (cond ((integerp dimensions)
-         (prog2$ (chk-make-array$ dimensions (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ dimensions form t)
+                  (make-array ,@(cdr form))))
         ((and (true-listp dimensions) ; (quote dims)
               (equal (length dimensions) 2)
               (eq (car dimensions) 'quote))
-         (prog2$ (chk-make-array$ (cadr dimensions) (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ (cadr dimensions) form t)
+                  (make-array ,@(cdr form))))
         (t `(prog2$ (chk-make-array$ ,dimensions ',form)
                     (make-array ,@(cdr form))))))
 
@@ -14561,7 +14581,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-rw-cache-state! set-induction-depth-limit!
     attach-stobj set-override-hints-macro
     deftheory pstk verify-guards defchoose
-    set-default-backchain-limit set-state-ok
+    set-constraint-tracking
+    set-default-backchain-limit set-state-ok set-subgoal-loop-limits
     set-ignore-ok set-non-linearp set-tau-auto-mode with-output
     set-compile-fns add-include-book-dir add-include-book-dir!
     clear-pstk add-custom-keyword-hint
@@ -14611,6 +14632,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-output-object-channel-sharing
     with-hcomp-bindings
     with-hcomp-ht-bindings
+    with-hcomp-bindings-encapsulate
+    switch-hcomp-status-encapsulate
+    with-hcomp-bindings-protected-eval
     redef+
     redef-
     bind-acl2-time-limit
@@ -17716,6 +17740,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
    (alistp val))
   ((eq key :in-theory-redundant-okp)
+   (booleanp val))
+  ((eq key :subgoal-loop-limits)
+; See waterfall-loop-detector and its call in waterfall-step.
+   (and (consp val)
+        (or (null (car val))
+            (natp (car val)))
+        (or (null (cdr val))
+            (and (natp (cdr val))
+                 (< 0 (cdr val))))))
+  ((eq key :constraint-tracking)
    (booleanp val))
   (t nil))
  :coda (and (member-eq key '(:check-invariant-risk
@@ -23073,7 +23107,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; on a large book we found a 2.8% time savings by redefining this function
 ; simply to return nil.
 
-  (when (not (or *inside-include-book-fn*
+  (when (not (or (eq *hcomp-status* 'include-book)
                  *bad-lisp-object-ok*
 
 ; We avoid the bad-lisp-objectp check during the Convert procedure of
@@ -24122,7 +24156,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `((:DEFUN-MODE . :LOGIC)
     (:INCLUDE-BOOK-DIR-ALIST . NIL)
     (:CASE-SPLIT-LIMITATIONS . (500 100))
-    (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)))) ; (2.b)
+    (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)) ; (2.b)
+    (:SUBGOAL-LOOP-LIMITS . (1000 . 2))
+    ))
 
 (defun untrans-table (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
@@ -24466,6 +24502,55 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro set-tau-auto-mode (toggle)
   (declare (ignore toggle))
+  nil)
+
+(defun subgoal-loop-limits (wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :subgoal-loop-limits
+                 (table-alist 'acl2-defaults-table wrld))))
+
+#+acl2-loop-only
+(defmacro set-subgoal-loop-limits (val)
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :subgoal-loop-limits
+                   (let ((val ,val))
+                     (cond ((eq val nil) '(nil . nil))
+                           ((eq val t)   '(nil . 2))
+                           ((natp val)   (cons val 2))
+                           ((eq val :default) '(1000 . 2))
+                           (t
+; If val is not a consp whose car is nil or a nat and whose cdr is a nil or a
+; positive nat then the table guard for :subgoal-loop-limits will complain.
+
+                            val))))
+            (table acl2-defaults-table :subgoal-loop-limits))))
+
+#-acl2-loop-only
+(defmacro set-subgoal-loop-limits (val)
+  (declare (ignore val))
+  nil)
+
+(defun constraint-tracking (wrld)
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (cdr (assoc-eq :constraint-tracking
+                 (table-alist 'acl2-defaults-table wrld))))
+
+#+acl2-loop-only
+(defmacro set-constraint-tracking (val)
+  `(with-output
+     :off (event summary)
+     (progn (table acl2-defaults-table :constraint-tracking
+                   ,val)
+            (table acl2-defaults-table :constraint-tracking))))
+
+#-acl2-loop-only
+(defmacro set-constraint-tracking (val)
+  (declare (ignore val))
   nil)
 
 (defun get-in-theory-redundant-okp (state)
@@ -28119,7 +28204,7 @@ Lisp definition."
 
     #-(or ccl cmu gcl)
     (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
-               ACL2 developers if you would like to help add such support.")
+               ACL2 developers if you would like to help add such support.~&")
     nil))
 
 #+acl2-loop-only

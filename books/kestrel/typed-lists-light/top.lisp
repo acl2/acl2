@@ -15,6 +15,8 @@
 (include-book "nat-listp")
 (include-book "nat-list-listp")
 (include-book "integer-listp")
+(include-book "integer-listp2")
+(include-book "integer-list-listp")
 (include-book "pseudo-term-listp")
 (include-book "pseudo-term-list-listp")
 (include-book "string-listp")

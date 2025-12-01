@@ -980,7 +980,18 @@
 (defstobj hyp$c
   (hyp-calist :type t)
   (calist-len :type (integer 0 *) :initially 0)
-  (calist-nkeys :type (integer 0 *) :initially 0))
+  (calist-nkeys :type (integer 0 *) :initially 0)
+  (hyp-bfr-mode :type t)
+  :renaming ((calist-len calist-len1)
+             (calist-nkeys calist-nkeys1)))
+
+(define calist-len (hyp$c)
+  :enabled t
+  (lnfix (calist-len1 hyp$c)))
+
+(define calist-nkeys (hyp$c)
+  :enabled t
+  (lnfix (calist-nkeys1 hyp$c)))
 
 (define maybe-shrink-hyp$c (hyp$c)
   (if (< (* 2 (calist-nkeys hyp$c)) (calist-len hyp$c))
@@ -992,40 +1003,123 @@
     (calist-equiv (nth 0 (maybe-shrink-hyp$c hyp$c))
                   (nth 0 hyp$c))))
 
-(define bfr-hyp-equiv (hyp1 hyp2)
+
+(define bfr-hyp-mode-equiv (hyp1 hyp2)
   :verify-guards nil
   (bfr-case
    :bdd (equal hyp1 hyp2)
    :aig (calist-equiv hyp1 hyp2))
   ///
-  (defequiv bfr-hyp-equiv))
+  (defequiv bfr-hyp-mode-equiv))
 
-(define bfr-hyp-fix (hyp)
+(define bfr-hyp-mode-fix (hyp)
   (bfr-case
    :bdd hyp
    :aig (shrink-constraint-alist hyp))
   ///
-  (defcong bfr-hyp-equiv equal (bfr-hyp-fix hyp) 1
+  (defcong bfr-hyp-mode-equiv equal (bfr-hyp-mode-fix hyp) 1
     :package :legacy
-    :hints(("Goal" :in-theory (enable bfr-hyp-equiv))))
-  (defthm bfr-hyp-equiv-of-bfr-hyp-fix
-    (bfr-hyp-equiv (bfr-hyp-fix hyp) hyp)
-    :hints(("Goal" :in-theory (enable bfr-hyp-equiv))))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-equiv))))
+  (defthm bfr-hyp-mode-equiv-of-bfr-hyp-mode-fix
+    (bfr-hyp-mode-equiv (bfr-hyp-mode-fix hyp) hyp)
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-equiv))))
 
-  (defthmd bfr-hyp-equiv-in-terms-of-bfr-hyp-fix
-    (equal (bfr-hyp-equiv hyp1 hyp2)
-           (equal (bfr-hyp-fix hyp1) (bfr-hyp-fix hyp2)))
-    :hints(("Goal" :in-theory (enable bfr-hyp-equiv))))
+  (defthmd bfr-hyp-mode-equiv-in-terms-of-bfr-hyp-mode-fix
+    (equal (bfr-hyp-mode-equiv hyp1 hyp2)
+           (equal (bfr-hyp-mode-fix hyp1) (bfr-hyp-mode-fix hyp2)))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-equiv))))
+
+  (defthm bfr-hyp-mode-fix-idempotent
+    (equal (bfr-hyp-mode-fix (bfr-hyp-mode-fix x))
+           (bfr-hyp-mode-fix x))))
+
+
+
+
+;; (define bfr-hyp-mode-eval$c (hyp$c env)
+;;   (bfr-case
+;;    :bdd (acl2::eval-bdd (hyp-calist hyp$c) env)
+;;    :aig (eval-constraint-alist (hyp-calist hyp$c) env)))
+
+(define bfr-hyp-mode-eval (hyp env)
+  (bfr-case
+   :bdd (bfr-eval hyp env)
+   :aig (eval-constraint-alist hyp env))
+  ///
+  (defthm bfr-hyp-mode-eval-of-bfr-hyp-mode-fix
+    (equal (bfr-hyp-mode-eval (bfr-hyp-mode-fix hyp) env)
+           (bfr-hyp-mode-eval hyp env))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-fix))))
+  
+  (defcong bfr-hyp-mode-equiv equal (bfr-hyp-mode-eval hyp env) 1
+    :hints(("Goal" :in-theory (e/d (bfr-hyp-mode-equiv-in-terms-of-bfr-hyp-mode-fix)
+                                   (bfr-hyp-mode-eval-of-bfr-hyp-mode-fix))
+            :use ((:instance bfr-hyp-mode-eval-of-bfr-hyp-mode-fix)
+                  (:instance bfr-hyp-mode-eval-of-bfr-hyp-mode-fix (hyp hyp-equiv)))))))
+;;   ///
+;;   (def-hyp-congruence bfr-hyp-mode-eval
+;;     :hints(("Goal" :in-theory (e/d (bfr-hyp-mode-equiv bfr-hyp-mode-fix) (calist-equiv))))))
+
+(define bfr-hyp-init$c (hyp$c)
+  (bfr-case
+    :bdd (b* ((hyp$c (update-hyp-bfr-mode nil hyp$c)))
+           (update-hyp-calist t hyp$c))
+    :aig (b* ((hyp$c (update-hyp-bfr-mode t hyp$c))
+              (hyp$c (update-hyp-calist nil hyp$c))
+              (hyp$c (update-calist-len 0 hyp$c)))
+           (update-calist-nkeys 0 hyp$c))))
+
+(define maybe-bfr-hyp-init$c (hyp$c)
+  (bfr-case
+    :bdd (if (hyp-bfr-mode hyp$c)
+             (bfr-hyp-init$c hyp$c)
+           hyp$c)
+    :aig (if (hyp-bfr-mode hyp$c)
+             hyp$c
+           (bfr-hyp-init$c hyp$c))))
+
+
+(define bfr-constr-init ()
+  (bfr-case :bdd t :aig nil)
+  ///
+  (in-theory (disable (bfr-constr-init)))
+  (defthm eval-of-bfr-constr-init
+    (equal (bfr-hyp-mode-eval (bfr-constr-init) env) t)
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval)))))
+
+(std::defaggregate hyppair
+  ((bfr-mode)
+   (hyp))
+  :layout :list)
+
+
+(define bfr-hyp-fix ((h hyppair-p))
+  :returns (new-hyp hyppair-p :hyp :guard)
+  (b* (((hyppair h)))
+    (hyppair (and (bfr-mode) t)
+             (bfr-case
+               :bdd (if h.bfr-mode t h.hyp)
+               :aig (if h.bfr-mode (shrink-constraint-alist h.hyp) nil))))
+  ///
 
   (defthm bfr-hyp-fix-idempotent
     (equal (bfr-hyp-fix (bfr-hyp-fix x))
            (bfr-hyp-fix x))))
 
+(define bfr-hyp-equiv ((h1 hyppair-p) (h2 hyppair-p))
+  (equal (bfr-hyp-fix h1) (bfr-hyp-fix h2))
+  ///
+  (defequiv bfr-hyp-equiv)
+  (defcong bfr-hyp-equiv equal (bfr-hyp-fix h) 1)
+
+  (defthm bfr-hyp-fix-under-bfr-hyp-equiv
+    (bfr-hyp-equiv (bfr-hyp-fix h) h)))
+
 
 
 
 ;; Make-event to automatically introduce the events for the bfr-hyp-fix congruence
-(defun hyp-congruences-fn (fn hints pres-hints hyp-fix-hints retval world)
+(defun hyp-congruences-fn (fn hints pres-hints hyp-fix-hints retval curr-pkg world)
   (declare (xargs :mode :program))
   (b* ((formals (formals fn world))
        (stobjs-out (stobjs-out fn world))
@@ -1041,10 +1135,9 @@
                       ((member 'pathcond formals) 'pathcond)
                       ((member 'hyp$a formals) 'hyp$a)
                       ((member 'constr formals) 'constr)
+                      ((member 'h formals) 'h)
                       (t (er hard? 'hyp-congruences "~x0 does not appear to take a hyp as an argument~%" fn))))
-       (hyp-var-equiv (intern-in-package-of-symbol
-                       (concatenate 'string (symbol-name hyp-var) "-EQUIV")
-                       hyp-var))
+       (hyp-var-equiv (acl2::gen-sym-sym (list hyp-var '-equiv) (pkg-witness curr-pkg)))
        (out-idx (or retval (acl2::index-of hyp-var stobjs-out))))
     `(progn
        ,@(and out-idx
@@ -1059,78 +1152,156 @@
          :hints ,(or hyp-fix-hints hints))
 
        (defcong bfr-hyp-equiv equal (,fn . ,formals) ,(+ 1 (acl2::index-of hyp-var formals))
-         :package :legacy
-         :hints (("goal" :in-theory '(bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
+         ;; :package :legacy
+         :hints (("goal" :in-theory '(bfr-hyp-equiv)
                   :use ((:instance ,hyp-fix-thm)
                         (:instance ,hyp-fix-thm (,hyp-var ,hyp-var-equiv)))))))))
 
 
 (defmacro def-hyp-congruence (fn &key hints pres-hints hyp-fix-hints retval)
   `(make-event
-    (hyp-congruences-fn ',fn ',hints ',pres-hints ',hyp-fix-hints ',retval (w state))))
+    (hyp-congruences-fn ',fn ',hints ',pres-hints ',hyp-fix-hints ',retval
+                        (current-package state) (w state))))
 
 
 
-;; (define bfr-hyp-eval$c (hyp$c env)
-;;   (bfr-case
-;;    :bdd (acl2::eval-bdd (hyp-calist hyp$c) env)
-;;    :aig (eval-constraint-alist (hyp-calist hyp$c) env)))
 
-(define bfr-hyp-eval (hyp env)
-  (bfr-case
-   :bdd (bfr-eval hyp env)
-   :aig (eval-constraint-alist hyp env))
+
+(define bfr-hyp-eval ((h hyppair-p) env)
+  (b* (((hyppair h)))
+    (bfr-case :bdd (if h.bfr-mode t (bfr-eval h.hyp env))
+      :aig (if h.bfr-mode (eval-constraint-alist h.hyp env) t)))
   ///
   (def-hyp-congruence bfr-hyp-eval
-    :hints(("Goal" :in-theory (e/d (bfr-hyp-equiv bfr-hyp-fix) (calist-equiv))))))
+    :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
+  
+  (defthm bfr-hyp-eval-in-terms-of-bfr-hyp-mode-eval
+    (implies (iff (bfr-mode) (hyppair->bfr-mode h))
+             (equal (bfr-hyp-eval h env)
+                    (bfr-hyp-mode-eval (hyppair->hyp h) env)))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval))))
 
-(define bfr-hyp-init$c (hyp$c)
-  (bfr-case
-   :bdd (update-hyp-calist t hyp$c)
-   :aig (b* ((hyp$c (update-hyp-calist nil hyp$c))
-             (hyp$c (update-calist-len 0 hyp$c)))
-          (update-calist-nkeys 0 hyp$c))))
+  (defthm bfr-hyp-eval-when-bad-mode
+    (implies (xor (bfr-mode) (hyppair->bfr-mode h))
+             (equal (bfr-hyp-eval h env) t))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval))))
+  
+  (defthm bfr-hyp-eval-of-bfr-hyp-fix
+    (equal (bfr-hyp-eval (bfr-hyp-fix h) env)
+           (bfr-hyp-eval h env))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable bfr-hyp-eval
+                                     bfr-hyp-mode-eval
+                                     bfr-hyp-fix)))))
 
-(define bfr-constr-init ()
-  (bfr-case :bdd t :aig nil)
-  ///
-  (in-theory (disable (bfr-constr-init)))
-  (defthm eval-of-bfr-constr-init
-    (equal (bfr-hyp-eval (bfr-constr-init) env) t)
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval)))))
+  (defcong bfr-hyp-equiv equal (bfr-hyp-eval h env) 1
+    :hints(("Goal" :in-theory (e/d (bfr-hyp-equiv)
+                                   (bfr-hyp-eval
+                                    bfr-hyp-eval-of-bfr-hyp-fix))
+            :use ((:instance bfr-hyp-eval-of-bfr-hyp-fix (h h))
+                  (:instance bfr-hyp-eval-of-bfr-hyp-fix (h h-equiv))))))
+  
+  (defthm bfr-hyp-mode-eval-of-bfr-hyp-fix
+    (equal (bfr-hyp-mode-eval (hyppair->hyp (bfr-hyp-fix h)) env)
+           (bfr-hyp-eval h env))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (e/d (bfr-hyp-eval
+                                   bfr-hyp-mode-eval
+                                   bfr-hyp-fix
+                                   eval-constraint-alist)
+                                  (eval-constraint-alist-in-terms-of-witness)))))))
+     
 
 (define bfr-hyp-init$a (hyp$a)
   (declare (ignore hyp$a))
+  :returns (new-hyp hyppair-p)
   (bfr-case
-   :bdd t
-   :aig (shrink-constraint-alist nil))
+    :bdd (hyppair nil t)
+    :aig (hyppair t (shrink-constraint-alist nil)))
   ///
+  (def-hyp-congruence bfr-hyp-init$a
+    :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
+  
   (defthm bfr-hyp-init-norm
     (implies (syntaxp (not (Equal hyp$a ''nil)))
              (equal (bfr-hyp-init$a hyp$a)
                     (bfr-hyp-init$a nil))))
 
   (defthm eval-of-bfr-hyp-init$a
-    (equal (bfr-hyp-eval (bfr-hyp-init$a hyp$a) env) t)
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval)))))
+    (equal (bfr-hyp-eval (bfr-hyp-init$a hyp$a) env)
+           t)
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
+                                      bfr-hyp-eval))))
+
+  (defthm bfr-hyp-mode-fix-of-bfr-hyp-init$a
+    (equal (bfr-hyp-fix (bfr-hyp-init$a hyp$a))
+           (bfr-hyp-init$a hyp$a))
+    :hints(("Goal" :in-theory (e/d (bfr-hyp-fix) ((bfr-hyp-fix)))))))
+
+(define hyp$ap (hyp$a)
+  :enabled t
+  (hyppair-p hyp$a)
+  ;; ///
+  ;; (defthm bfr-hyp-mode-fix-when-hyp$ap
+  ;;   (implies (hyp$ap hyp)
+  ;;            (equal (bfr-hyp-mode-fix hyp) hyp))
+  ;;   :rule-classes ((:rewrite :backchain-limit-lst 0)))
+  )
+
+
+
+
+       ;; (b* (((hyppair hyp$a)))
+       ;;   (implies hyp$a.bfr-mode
+       ;;            (equal hyp$a.hyp (shrink-constraint-alist hyp$a.hyp))))
+
+
+
+
+;; (define maybe-bfr-hyp-init$a (hyp$a)
+;;   (declare (xargs :guard (hyp$ap hyp$a)))
+;;   :returns (new-hyp hyppair-p :hyp :guard)
+;;   (b* (((hyppair hyp$a)))
+;;     (bfr-case
+;;       :bdd (if hyp$a.bfr-mode (bfr-hyp-init$a hyp$a) hyp$a)
+;;       :aig (if hyp$a.bfr-mode hyp$a (bfr-hyp-init$a hyp$a))))
+;;   ///
+;;   (local (in-theory (disable (bfr-hyp-init$a))))
+;;   (defthm bfr-hyp-eval-of-maybe-bfr-hyp-init
+;;     (equal (bfr-hyp-eval (maybe-bfr-hyp-init$a hyp$a) env)
+;;            (bfr-hyp-eval hyp$a env))
+;;     :hints((and stable-under-simplificationp
+;;                 '(:in-theory (enable bfr-hyp-eval)))))
+
+;;   (defthm bfr-hyp-mode-eval-of-maybe-bfr-hyp-init
+;;     (equal (bfr-hyp-mode-eval (hyppair->hyp (maybe-bfr-hyp-init$a hyp$a)) env)
+;;            (bfr-hyp-eval hyp$a env))
+;;     :hints((and stable-under-simplificationp
+;;                 '(:in-theory (e/d (bfr-hyp-eval
+;;                                    bfr-hyp-mode-eval
+;;                                    bfr-hyp-init$a
+;;                                    eval-constraint-alist)
+;;                                   (eval-constraint-alist-in-terms-of-witness)))))))
+
 
 
 
 (define bfr-assume$c (x hyp$c)
   :returns (mv contradictionp new-hyp undo-info)
-  (bfr-case
-   :bdd (b* ((orig (hyp-calist hyp$c))
-             (and (acl2::q-and x orig))
-             (hyp$c (update-hyp-calist and hyp$c)))
-          (mv (not and) hyp$c orig))
-   :aig (b* (((mv contra hyp keys)
-              (constraint-alist-assume-aig x (hyp-calist hyp$c) nil))
-             (hyp$c (update-hyp-calist hyp hyp$c))
-             (nkeys (len keys))
-             (hyp$c (update-calist-len (+ nkeys (calist-len hyp$c)) hyp$c))
-             (hyp$c (update-calist-nkeys (+ nkeys (calist-nkeys hyp$c)) hyp$c))
-             (hyp$c (maybe-shrink-hyp$c hyp$c)))
-          (mv contra hyp$c keys))))
+  (b* ((hyp$c (maybe-bfr-hyp-init$c hyp$c)))
+    (bfr-case
+      :bdd (b* ((orig (hyp-calist hyp$c))
+                (and (acl2::q-and x orig))
+                (hyp$c (update-hyp-calist and hyp$c)))
+             (mv (not and) hyp$c orig))
+      :aig (b* (((mv contra hyp keys)
+                 (constraint-alist-assume-aig x (hyp-calist hyp$c) nil))
+                (hyp$c (update-hyp-calist hyp hyp$c))
+                (nkeys (len keys))
+                (hyp$c (update-calist-len (+ nkeys (calist-len hyp$c)) hyp$c))
+                (hyp$c (update-calist-nkeys (+ nkeys (calist-nkeys hyp$c)) hyp$c))
+                (hyp$c (maybe-shrink-hyp$c hyp$c)))
+             (mv contra hyp$c keys)))))
 
 (define bfr-constr-assume (x constr)
   :guard-hints (("goal" :in-theory (enable bfr-binary-and)))
@@ -1148,11 +1319,11 @@
           (bfr-constr-assume x hyp)))
       (implies (and (acl2::rewriting-negative-literal
                      `(mv-nth '0 (bfr-constr-assume ,x ,hyp)))
-                    (bfr-hyp-eval hyp env))
+                    (bfr-hyp-mode-eval hyp env))
                (iff contradictionp
                     (and (not (bfr-eval x env))
                          (hide contradictionp)))))
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
                                       bfr-eval
                                       bfr-binary-and))
            (and stable-under-simplificationp
@@ -1164,14 +1335,14 @@
   (defthm bfr-constr-assume->hyp-correct
     (b* (((mv ?contradictionp ?new-hyp ?undo-info)
           (bfr-constr-assume x hyp)))
-      (implies (and (bfr-hyp-eval hyp env)
+      (implies (and (bfr-hyp-mode-eval hyp env)
                     (not contradictionp))
-               (equal (bfr-hyp-eval new-hyp env)
+               (equal (bfr-hyp-mode-eval new-hyp env)
                       (bfr-eval x env))))
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
                                       bfr-eval))))
 
-    ;; :hints(("Goal" :in-theory (enable bfr-hyp-eval
+    ;; :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
     ;;                                   bfr-eval))
     ;;        (and stable-under-simplificationp
     ;;             '(:use ((:instance acl2::eval-bdd-of-q-and
@@ -1183,20 +1354,26 @@
     (b* (((mv ?contradictionp ?new-hyp ?undo-info)
           (bfr-constr-assume x hyp)))
       (implies (and (acl2::rewriting-positive-literal
-                     `(bfr-hyp-eval (mv-nth '1 (bfr-constr-assume ,x ,hyp)) ,env))
-                    (bfr-hyp-eval hyp env))
-               (equal (bfr-hyp-eval new-hyp env)
+                     `(bfr-hyp-mode-eval (mv-nth '1 (bfr-constr-assume ,x ,hyp)) ,env))
+                    (bfr-hyp-mode-eval hyp env))
+               (equal (bfr-hyp-mode-eval new-hyp env)
                       (or (bfr-eval x env)
-                          (hide (bfr-hyp-eval new-hyp env))))))
+                          (hide (bfr-hyp-mode-eval new-hyp env))))))
     :hints (("goal" :expand ((:free (x) (hide x)))
              :in-theory (disable bfr-constr-assume))
             (and stable-under-simplificationp
                  '(:expand nil
                    :cases ((mv-nth 0 (bfr-constr-assume x hyp))))))))
 
+  
+
 (define bfr-assume$a (x hyp$a)
-  (b* (((mv contra constr undo) (bfr-constr-assume x hyp$a)))
-    (mv contra (bfr-hyp-fix constr) undo))
+  :guard (hyp$ap hyp$a)
+  ;; :guard-hints (("goal" :in-theory (enable bfr-hyp-init$a)))
+  (b* ((hyp$a (bfr-hyp-fix hyp$a))
+       ((hyppair hyp$a))
+       ((mv contra constr undo) (bfr-constr-assume x hyp$a.hyp)))
+    (mv contra (hyppair (and (bfr-mode) t) (bfr-hyp-mode-fix constr)) undo))
   ;; (bfr-case
   ;;  :bdd (b* ((and (acl2::q-and x hyp$a)))
   ;;         (mv (not and) and hyp$a))
@@ -1205,9 +1382,24 @@
   ;;         (mv contra (shrink-constraint-alist hyp$a) keys)))
   ///
   (def-hyp-congruence bfr-assume$a
-    :hints(("Goal" :in-theory (enable bfr-hyp-fix
-                                      bfr-constr-assume))))
+    :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
 
+  ;; (local (in-theory (enable maybe-bfr-hyp-init$a bfr-hyp-eval)))
+
+  (local
+   (defthm bfr-constr-assume-correct-bind ;; contradictionp
+     (b* (((mv ?contradictionp ?new-hyp ?undo-info)
+           (bfr-constr-assume x hyp)))
+       (implies (and (acl2::rewriting-negative-literal
+                      `(mv-nth '0 (bfr-constr-assume ,x ,hyp)))
+                     (bind-free '((env . env)) (env))
+                     (bfr-hyp-mode-eval hyp env))
+                (iff contradictionp
+                     (and (not (bfr-eval x env))
+                          (hide contradictionp)))))
+     :hints (("goal" :use bfr-constr-assume-correct
+              :expand ((:free (x) (hide x)))))))
+  
   (defthm bfr-assume-correct ;; contradictionp
     (b* (((mv ?contradictionp ?new-hyp ?undo-info)
           (bfr-assume$a x hyp)))
@@ -1227,7 +1419,7 @@
                (equal (bfr-hyp-eval new-hyp env)
                       (bfr-eval x env)))))
 
-    ;; :hints(("Goal" :in-theory (enable bfr-hyp-eval
+    ;; :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
     ;;                                   bfr-eval))
     ;;        (and stable-under-simplificationp
     ;;             '(:use ((:instance acl2::eval-bdd-of-q-and
@@ -1248,28 +1440,32 @@
 
 
 (define bfr-unassume$c (hyp$c undo-info)
-  (bfr-case
-   :bdd (update-hyp-calist undo-info hyp$c) ;; old hyp
-   :aig (b* ((hyp (hyp-calist hyp$c))
-             (new-hyp (constraint-alist-delete-keys undo-info ;; added keys
-                                                    hyp))
-             (hyp$c (update-hyp-calist new-hyp hyp$c))
-             (nkeys (len undo-info))
-             (hyp$c (update-calist-len (+ nkeys (calist-len hyp$c)) hyp$c))
-             (hyp$c (update-calist-nkeys (max 0 (- (calist-nkeys hyp$c) nkeys)) hyp$c)))
-          (maybe-shrink-hyp$c hyp$c))))
+  (b* ((hyp$c (maybe-bfr-hyp-init$c hyp$c)))
+    (bfr-case
+      :bdd (update-hyp-calist undo-info hyp$c) ;; old hyp
+      :aig (b* ((hyp (hyp-calist hyp$c))
+                (new-hyp (constraint-alist-delete-keys undo-info ;; added keys
+                                                       hyp))
+                (hyp$c (update-hyp-calist new-hyp hyp$c))
+                (nkeys (len undo-info))
+                (hyp$c (update-calist-len (+ nkeys (calist-len hyp$c)) hyp$c))
+                (hyp$c (update-calist-nkeys (max 0 (- (calist-nkeys hyp$c) nkeys)) hyp$c)))
+             (maybe-shrink-hyp$c hyp$c)))))
 
 (define bfr-unassume$a (hyp$a undo-info)
-  (bfr-case
-   :bdd undo-info ;; old hyp
-   :aig (shrink-constraint-alist
-         (constraint-alist-delete-keys undo-info
-                                       hyp$a)))
+  :guard (hyp$ap hyp$a)
+  (b* ((hyp$a (bfr-hyp-fix hyp$a)))
+    (bfr-case
+      :bdd (hyppair nil undo-info) ;; old hyp
+      :aig (hyppair t
+                    (shrink-constraint-alist
+                     (constraint-alist-delete-keys undo-info
+                                                   (hyppair->hyp hyp$a))))))
 
   ///
   (def-hyp-congruence bfr-unassume$a
     :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
-
+  
   (local (defthm calist-remassocs-nil-of-true-list
            (implies (alistp x)
                     (equal (calist-remassocs x nil) x))
@@ -1296,44 +1492,98 @@
              (bfr-hyp-fix hyp)))
     :hints(("Goal" :in-theory (enable bfr-assume$a
                                       bfr-constr-assume
-                                      bfr-hyp-fix)))))
+                                      bfr-hyp-fix
+                                      bfr-hyp-mode-fix)))))
+
+(define hyp-calist-corrected$c (hyp$c)
+  (bfr-case
+    :bdd (if (hyp-bfr-mode hyp$c) t (hyp-calist hyp$c))
+    :aig (if (hyp-bfr-mode hyp$c) (hyp-calist hyp$c) nil)))
+
 
 (define hyp-fix$c (x hyp$c)
+  (b* ((calist (hyp-calist-corrected$c hyp$c)))
+    (bfr-case
+      :bdd (if (not calist)
+               (and x t)
+             (let ((and (acl2::q-and x calist)))
+               (if and
+                   (if (hqual and calist)
+                       t
+                     x)
+                 nil)))
+      :aig (aig-under-constraint-alist x calist))))
+
+
+(define bfr-constr-mode-fix (x h)
   (bfr-case
-   :bdd (if (not (hyp-calist hyp$c))
-            (and x t)
-          (let ((and (acl2::q-and x (hyp-calist hyp$c))))
-            (if and
-                (if (hqual and (hyp-calist hyp$c))
-                    t
-                  x)
-              nil)))
-   :aig (aig-under-constraint-alist x (hyp-calist hyp$c))))
+    :bdd (if (not h)
+             (and x t)
+           (let ((and (acl2::q-and x h)))
+             (if and
+                 (if (hqual and h)
+                     t
+                   x)
+               nil)))
+    :aig (aig-under-constraint-alist x h))
+  ///
+  
+  (defthm bfr-constr-mode-fix-correct
+    (implies (bfr-hyp-mode-eval hyp env)
+             (equal (bfr-eval (bfr-constr-mode-fix x hyp) env)
+                    (bfr-eval x env)))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-fix bfr-hyp-mode-eval bfr-eval)
+            :expand ((eval-constraint-alist nil env)))
+           (and stable-under-simplificationp
+                '(:use ((:instance acl2::eval-bdd-of-q-and
+                         (x (bfr-hyp-mode-fix hyp)) (y x) (values env)))
+                  :in-theory (e/d (bfr-hyp-mode-fix)
+                                  (acl2::eval-bdd-of-q-and))))))
+
+  (defthm bfr-depends-on-of-bfr-constr-mode-fix
+    (implies (not (bfr-depends-on k x))
+             (not (bfr-depends-on k (bfr-constr-mode-fix x hyp$a)))))
+
+  (defthm pbfr-depends-on-of-bfr-constr-mode-fix
+    (implies (not (pbfr-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-constr-mode-fix x hyp$a)))))
+
+  (defthm bfr-constr-mode-fix-idempotent
+    (equal (bfr-constr-mode-fix (bfr-constr-mode-fix x hyp) hyp)
+           (bfr-constr-mode-fix x hyp)))
+
+  (defthm bfr-constr-mode-fix-of-t-and-nil
+    (and (equal (bfr-constr-mode-fix t hyp) t)
+         (equal (bfr-constr-mode-fix nil hyp) nil))))
+
 
 (define bfr-constr-fix (x hyp$a)
-  (bfr-case
-   :bdd (if (not hyp$a)
-            (and x t)
-          (let ((and (acl2::q-and x hyp$a)))
-            (if and
-                (if (hqual and hyp$a)
-                    t
-                  x)
-              nil)))
-   :aig (aig-under-constraint-alist x hyp$a))
+  :guard (hyp$ap hyp$a)
+  (b* ((h (hyppair->hyp (bfr-hyp-fix hyp$a))))
+    (bfr-case
+      :bdd (if (not h)
+               (and x t)
+             (let ((and (acl2::q-and x h)))
+               (if and
+                   (if (hqual and h)
+                       t
+                     x)
+                 nil)))
+      :aig (aig-under-constraint-alist x h)))
   ///
-  (def-hyp-congruence bfr-constr-fix
-    :hints(("Goal" :in-theory (e/d (bfr-hyp-equiv bfr-hyp-fix) (calist-equiv)))))
-
+  (def-hyp-congruence bfr-constr-fix)
+  
   (defthm bfr-constr-fix-correct
     (implies (bfr-hyp-eval hyp env)
              (equal (bfr-eval (bfr-constr-fix x hyp) env)
                     (bfr-eval x env)))
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval bfr-eval))
+    :hints(("Goal" :in-theory (enable bfr-hyp-fix bfr-hyp-eval bfr-eval)
+            :expand ((eval-constraint-alist nil env)))
            (and stable-under-simplificationp
                 '(:use ((:instance acl2::eval-bdd-of-q-and
-                         (x hyp) (y x) (values env)))
-                  :in-theory (disable acl2::eval-bdd-of-q-and)))))
+                         (x (hyppair->hyp (bfr-hyp-fix hyp))) (y x) (values env)))
+                  :in-theory (e/d (bfr-hyp-fix)
+                                  (acl2::eval-bdd-of-q-and))))))
 
   (defthm bfr-depends-on-of-bfr-constr-fix
     (implies (not (bfr-depends-on k x))
@@ -1352,32 +1602,110 @@
          (equal (bfr-constr-fix nil hyp) nil))))
 
 (define bfr-hyp->bfr$c (hyp$c)
+  (b* ((h (hyp-calist-corrected$c hyp$c)))
+    (bfr-case
+      :bdd h
+      :aig (constraint-alist->aig h))))
+
+
+
+(define bfr-constr-mode->bfr (h)
   (bfr-case
-   :bdd (hyp-calist hyp$c)
-   :aig (constraint-alist->aig (hyp-calist hyp$c))))
+    :bdd h
+    :aig (constraint-alist->aig h))
+  ///
+
+  (defthm bfr-eval-of-bfr-constr-mode->bfr
+    (equal (bfr-eval (bfr-constr-mode->bfr hyp) env)
+           (bfr-hyp-mode-eval hyp env))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable bfr-eval bfr-hyp-mode-eval bfr-hyp-mode-fix))))))
 
 (define bfr-constr->bfr (hyp$a)
-  (bfr-case
-   :bdd hyp$a
-   :aig (constraint-alist->aig hyp$a))
+  :guard (hyp$ap hyp$a)
+  (b* ((h (hyppair->hyp (bfr-hyp-fix hyp$a))))
+    (bfr-case
+      :bdd h
+      :aig (constraint-alist->aig h)))
   ///
-  (def-hyp-congruence bfr-constr->bfr
-    :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
+  (def-hyp-congruence bfr-constr->bfr)
 
   (defthm bfr-eval-of-bfr-constr->bfr
     (equal (bfr-eval (bfr-constr->bfr hyp) env)
            (bfr-hyp-eval hyp env))
     :hints((and stable-under-simplificationp
-                '(:in-theory (enable bfr-eval bfr-hyp-eval))))))
+                '(:in-theory (enable bfr-eval bfr-hyp-eval bfr-hyp-fix))))))
 
-(define bfr-constr-depends-on (k p hyp$a)
+
+
+(define bfr-constr-mode-depends-on (k p h)
   :verify-guards nil
   (bfr-case
-   :bdd (pbfr-depends-on k p hyp$a)
-   :aig (constr-alist-depends-on k hyp$a))
+    :bdd (pbfr-depends-on k p h)
+    :aig (constr-alist-depends-on k h))
   ///
-  (def-hyp-congruence bfr-constr-depends-on
-    :hints(("Goal" :in-theory (enable bfr-hyp-fix))))
+
+  (defthm bfr-constr-mode-depends-on-correct
+    (implies (and (not (bfr-constr-mode-depends-on k p x))
+                  (bfr-eval p env)
+                  (bfr-eval p (bfr-set-var k v env)))
+             (equal (bfr-hyp-mode-eval x (bfr-param-env p (bfr-set-var k v env)))
+                    (bfr-hyp-mode-eval x (bfr-param-env p env))))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-eval
+                                      bfr-hyp-mode-fix))
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (bfr-eval bfr-set-var
+                                            bfr-param-env
+                                            bfr-varname-fix
+                                            bfr-hyp-mode-fix)
+                                  (nfix))))))
+
+  (defthm bfr-constr-mode-depends-on-of-bfr-constr-assume
+    (implies (and (not (bfr-constr-mode-depends-on k p x))
+                  (not (pbfr-depends-on k p a)))
+             (not (bfr-constr-mode-depends-on
+                   k p (mv-nth 1 (bfr-constr-assume a x)))))
+    :hints(("Goal" :in-theory (enable bfr-constr-assume
+                                      bfr-hyp-mode-fix
+                                      bfr-constr-assume))
+           (and stable-under-simplificationp
+                '(:in-theory (enable pbfr-depends-on
+                                     bfr-depends-on
+                                     bfr-from-param-space
+                                     bfr-varname-fix)))))
+
+  (defthm pbfr-depends-on-of-bfr-constr-mode->bfr
+    (implies (not (bfr-constr-mode-depends-on k p x))
+             (not (pbfr-depends-on k p (bfr-constr-mode->bfr x))))
+    :hints(("Goal" :in-theory (enable bfr-constr-mode->bfr))
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (pbfr-depends-on
+                                   bfr-depends-on
+                                   bfr-from-param-space
+                                   bfr-varname-fix)
+                                  (nfix))))))
+
+
+  (defthm bfr-constr-mode-depends-on-of-bfr-hyp-mode-fix
+    (equal (bfr-constr-mode-depends-on k p (bfr-hyp-mode-fix x))
+           (bfr-constr-mode-depends-on k p x))
+    :hints(("Goal" :in-theory (enable bfr-hyp-mode-fix))))
+  
+  ;; (defthm bfr-constr-mode-depends-on-of-bfr-constr-init
+  ;;   (not (bfr-constr-mode-depends-on k p (bfr-constr-init)))
+  ;;   :hints(("Goal" :in-theory (enable bfr-constr-init
+  ;;                                     constr-alist-depends-on))))
+  )
+
+
+(define bfr-constr-depends-on (k p (hyp$a hyp$ap))
+  :verify-guards nil
+  (b* ((h (hyppair->hyp (bfr-hyp-fix hyp$a))))
+    (bfr-case
+      :bdd (pbfr-depends-on k p h)
+      :aig (constr-alist-depends-on k h)))
+  ///
+  (def-hyp-congruence bfr-constr-depends-on)
 
   (defthm bfr-constr-depends-on-correct
     (implies (and (not (bfr-constr-depends-on k p x))
@@ -1385,20 +1713,24 @@
                   (bfr-eval p (bfr-set-var k v env)))
              (equal (bfr-hyp-eval x (bfr-param-env p (bfr-set-var k v env)))
                     (bfr-hyp-eval x (bfr-param-env p env))))
-    :hints(("Goal" :in-theory (enable bfr-hyp-eval))
+    :hints(("Goal" :in-theory (enable bfr-hyp-eval
+                                      bfr-hyp-fix))
            (and stable-under-simplificationp
                 '(:in-theory (e/d (bfr-eval bfr-set-var
                                             bfr-param-env
-                                            bfr-varname-fix)
+                                            bfr-varname-fix
+                                            bfr-hyp-fix)
                                   (nfix))))))
 
   (defthm bfr-constr-depends-on-of-bfr-constr-assume
     (implies (and (not (bfr-constr-depends-on k p x))
                   (not (pbfr-depends-on k p a)))
              (not (bfr-constr-depends-on
-                   k p (mv-nth 1 (bfr-constr-assume a x)))))
-    :hints(("Goal" :in-theory (enable bfr-constr-assume
-                                      bfr-hyp-fix))
+                   k p (mv-nth 1 (bfr-assume$a a x)))))
+    :hints(("Goal" :in-theory (enable bfr-assume$a
+                                      bfr-hyp-fix
+                                      bfr-hyp-mode-fix
+                                      bfr-constr-assume))
            (and stable-under-simplificationp
                 '(:in-theory (enable pbfr-depends-on
                                      bfr-depends-on
@@ -1416,31 +1748,38 @@
                                    bfr-varname-fix)
                                   (nfix))))))
 
-  (defthm bfr-constr-depends-on-of-bfr-constr-init
-    (not (bfr-constr-depends-on k p (bfr-constr-init)))
-    :hints(("Goal" :in-theory (enable bfr-constr-init
-                                      constr-alist-depends-on)))))
+  ;; (defthm bfr-constr-depends-on-of-bfr-constr-init
+  ;;   (not (bfr-constr-depends-on k p (bfr-constr-init)))
+  ;;   :hints(("Goal" :in-theory (enable bfr-constr-init
+  ;;                                     constr-alist-depends-on))))
+  )
+
+
+
+(define hyp-norm$a ((hyp$a hyp$ap))
+  :enabled t
+  (bfr-hyp-fix hyp$a))
+
 
 
 (define create-hyp$a ()
   :enabled t
-  (bfr-case
-   :bdd nil
-   :aig (shrink-constraint-alist nil)))
+  (hyppair nil nil))
 
-(define hyp$ap (hyp$a)
-  (equal hyp$a (bfr-hyp-fix hyp$a))
-  ///
-  (defthm bfr-hyp-fix-when-hyp$ap
-    (implies (hyp$ap hyp)
-             (equal (bfr-hyp-fix hyp) hyp))
-    :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+
+
 
 (defun-nx hyp-corr (hyp$c hyp$a)
-  (equal (bfr-hyp-fix (hyp-calist hyp$c)) hyp$a))
+  (and (iff (hyp-bfr-mode hyp$c) (hyppair->bfr-mode hyp$a))
+       (if (hyp-bfr-mode hyp$c)
+           (equal (shrink-constraint-alist (hyp-calist hyp$c))
+                  (hyppair->hyp hyp$a))
+         (equal (hyp-calist hyp$c)
+                (hyppair->hyp hyp$a)))))
 
 (encapsulate nil
-  (local (in-theory (e/d (bfr-hyp-fix
+  (local (in-theory (e/d (bfr-hyp-mode-fix
                           bfr-hyp-init$c
                           bfr-assume$c
                           bfr-assume$a
@@ -1453,26 +1792,30 @@
                           bfr-hyp-init$a
                           bfr-constr-fix
                           bfr-hyp->bfr$c
-                          bfr-constr->bfr)
-                         ((bfr-hyp-fix)
+                          bfr-constr->bfr
+                          bfr-hyp-fix
+                          maybe-bfr-hyp-init$c
+                          maybe-shrink-hyp$c
+                          hyp-calist-corrected$c)
+                         ((bfr-hyp-mode-fix)
                           ;;acl2::nth-when-zp
                           nth update-nth))))
   (acl2::defabsstobj-events hyp
     :foundation hyp$c
     :recognizer (hyp-p :logic hyp$ap :exec hyp$cp)
     :creator (create-hyp :logic create-hyp$a :exec create-hyp$c)
-    :corr-fn hyp-corr
+    :corr-fn hyp-corr :corr-fn-exists t
     :exports
     ((bfr-hyp-init :logic bfr-hyp-init$a :exec bfr-hyp-init$c :protect t)
      (bfr-assume :logic bfr-assume$a :exec bfr-assume$c :protect t)
      (bfr-unassume :logic bfr-unassume$a :exec bfr-unassume$c :protect t)
      (hyp-fix :logic bfr-constr-fix :exec hyp-fix$c)
+     (hyp-norm :logic hyp-norm$a :exec maybe-bfr-hyp-init$c :protect t)
      (bfr-hyp->bfr :logic bfr-constr->bfr :exec bfr-hyp->bfr$c))))
 
 
 (defmacro lbfr-hyp-fix (hyp)
-  `(let* ((,hyp (mbe :logic (non-exec (bfr-hyp-fix ,hyp)) :exec ,hyp)))
-     ,hyp))
+  `(hyp-norm ,hyp))
 
 
 
@@ -1481,7 +1824,7 @@
 (define hyp-fixedp (x hyp)
   (hqual (hyp-fix x hyp) x)
   ///
-  (def-hyp-congruence hyp-fixedp)
+  ;; (def-hyp-congruence hyp-fixedp)
 
   (defthm hyp-fixedp-of-hyp-fix
     (hyp-fixedp (bfr-constr-fix x hyp) hyp)

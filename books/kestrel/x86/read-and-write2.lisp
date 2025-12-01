@@ -10,12 +10,15 @@
 
 (in-package "X")
 
-;; The rules in this book use the functions in disjoint.lisp, which can be
-;; opened up to BV terms.
+;; The rules in this book use the functions in
+;; books/kestrel/memory/memory48.lisp, which can be opened up to BV terms.
 
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
 (include-book "kestrel/memory/memory48" :dir :system)
+(local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regions48p len1 start1 len2 start2)
@@ -76,22 +79,18 @@
   :hints (("Goal" :use (:instance read-byte-of-write-when-disjoint)
            :in-theory (disable read-byte-of-write-when-disjoint))))
 
-(DEFTHM READ-BYTE-OF-WRITE-BOTH-new
-  (IMPLIES (AND ;(<= N (EXPT 2 48))
-                (unsigned-byte-p 48 n)
-                (INTEGERP N)
-                ;; (INTEGERP AD1)
-                ;; (INTEGERP AD2)
-                )
-           (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL X86))
-                  (IF (in-region48p ad1 n ad2)
-                      (SLICE (+ 7 (* 8 (BVMINUS 48 AD1 AD2)))
-                             (* 8 (BVMINUS 48 AD1 AD2))
-                             VAL)
-                    (READ-BYTE AD1 X86))))
+(defthm read-byte-of-write-both-new
+  (implies (and (<= n (expt 2 48))
+                (integerp n))
+           (equal (read-byte ad1 (write n ad2 val x86))
+                  (if (in-region48p ad1 n ad2)
+                      (slice (+ 7 (* 8 (bvminus 48 ad1 ad2)))
+                             (* 8 (bvminus 48 ad1 ad2))
+                             val)
+                    (read-byte ad1 x86))))
   :hints (("Goal" :in-theory (enable in-region48p bvlt))))
 
-(in-theory (disable READ-BYTE-OF-WRITE-BOTH))
+(in-theory (disable read-byte-of-write-both))
 
 ;todo: in-region48p is subregion48p of size 1
 
@@ -129,6 +128,7 @@
                                      bvlt bvminus BVUMINUS bvplus
                                      acl2::bvchop-of-sum-cases))))
 
+;; Good for 2 sub-regions of the same region
 (defthm read-of-write-when-disjoint-regions48p
   (implies (and (disjoint-regions48p n1 ad1 n2 ad2)
                 (integerp ad1)
@@ -139,6 +139,7 @@
                   (read n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read write))))
 
+;move
 (defthm subregion48p-when-not-unsigned-byte-p
   (implies (and (not (unsigned-byte-p 48 len1))
                 (integerp len1))
@@ -163,6 +164,7 @@
 ;;                       t))))
 ;;   :hints (("Goal" :in-theory (enable subregion48p unsigned-byte-p))))
 
+;; Good for subregions of corresponding, larger disjoint regions.
 (defthm read-of-write-when-disjoint-regions48p-gen
   (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
                 (subregion48p n1 ad1 len1 start1)
@@ -174,8 +176,7 @@
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
            (equal (read n1 ad1 (write n2 ad2 val x86))
-                  (read n1 ad1 x86)))
-  :hints (("Goal" :in-theory (enable read write))))
+                  (read n1 ad1 x86))))
 
 (defthm read-of-write-when-disjoint-regions48p-gen-alt
   (implies (and (disjoint-regions48p len2 start2 len1 start1) ; todo: rename vars
@@ -341,7 +342,70 @@
                                  (* 8 diff)
                                  freeval))))
   :hints (("Goal" :use (read-when-equal-of-read-and-subregion48p)
-           :in-theory (disable read-when-equal-of-read-and-subregion48p))))
+                  :in-theory (disable read-when-equal-of-read-and-subregion48p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm not-equal-of-read-bytes
+   (implies (and (not (acl2::byte-listp val))
+                 (posp n))
+            (not (equal (read-bytes n ad1 x86) val)))
+   :hints (("Goal" :in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p)))))
+
+(local
+ (defthm not-equal-of-read-bytes-2
+   (implies (not (acl2::byte-listp val))
+            (equal (equal (read-bytes n ad1 x86) val)
+                   (and (zp n)
+                        (equal val nil))))
+   :hints (("Goal" :in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p)))))
+
+(local
+ (defthm byte-listp-of-repeat
+  (equal (acl2::byte-listp (acl2::repeat n x))
+         (or (acl2::bytep x)
+             (zp n)))
+  :hints (("Goal" :in-theory (e/d (acl2::repeat byte-listp) (x86isa::byte-listp-becomes-all-unsigned-byte-p))))))
+
+(local
+ (defthm equal-of-read-bytes-and-repeat
+   (equal (equal (read-bytes n ad1 x86) (acl2::repeat m nil))
+          (and (zp n)
+               (zp m)))
+   :hints (("Goal" :cases ((and (posp n) (posp m))
+                           (and (posp n) (not (posp m)))
+                           (and (not (posp n)) (posp m)))
+                   :in-theory (e/d (zp ;read-bytes
+                                    ) (x86isa::byte-listp-becomes-all-unsigned-byte-p))))))
+
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
+
+(defthm read-bytes-when-equal-of-read-bytes-and-subregion48p
+  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+                (subregion48p n1 ad1 n2 ad2)
+                ;; (syntaxp (quotep freeval)) ; maybe uncomment
+;                (unsigned-byte-p 48 n1)
+                (natp n1)
+                (< n1 (expt 2 48))      ; allow equal?
+                (unsigned-byte-p 48 n2) ; allow 2^48?
+                (integerp ad1)
+                (integerp ad2) ; todo
+                )
+           (equal (read-bytes n1 ad1 x86)
+                  (take n1 (nthcdr (bvminus 48 ad1 ad2) bytes))))
+  :hints (("subgoal *1/2" ;:cases ((equal n1 1))
+           :expand ((bvlt 48 (+ -1 n2) ad1)))
+          ("Goal" ;:expand (read-bytes n1 ad2 x86)
+           :induct t
+           :in-theory (e/d (read-bytes nfix subregion48p in-region48p
+                                       ;;read-bytes-of-+--arg2
+                                       bvplus acl2::bvchop-of-sum-cases
+                                       bvlt)
+                           (acl2::bvplus-trim-leading-constant ;looped
+                            acl2::+-of-minus-constant-version  ; looped
+                            )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -364,14 +428,14 @@
                 (natp ad1)
                 (natp len)
                 (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes ad2 len x86))
+           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 x86))
                   (read-byte (bvplus 48 ad1 ad2) x86)))
-  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes ad2 len x86)
+  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes len ad2 x86)
            ;(read-induct-two-sizes len ad1 ad2 x86)
            :in-theory (enable read-bytes))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion48p
-  (implies (and (equal bytes (read-bytes ad2 n2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
                 (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
@@ -427,8 +491,8 @@
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86)))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-alt
@@ -437,8 +501,8 @@
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86)))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-gen
@@ -453,8 +517,8 @@
                 (unsigned-byte-p '48 len2)
                 (unsigned-byte-p '48 n1)
                 (unsigned-byte-p '48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86))))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86))))
 
 (defthm read-bytes-of-write-when-disjoint-regions48p-gen-alt
   (implies (and (disjoint-regions48p len2 start2 len1 start1) ; free vars
@@ -468,11 +532,10 @@
                 (unsigned-byte-p '48 len2)
                 (unsigned-byte-p '48 n1)
                 (unsigned-byte-p '48 n2))
-           (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
-                  (read-bytes ad1 n1 x86))))
+           (equal (read-bytes n1 ad1 (write n2 ad2 val x86))
+                  (read-bytes n1 ad1 x86))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;; (defthm read-of-write-when-subregion48p
 ;;   (implies (and (subregion48p n1 ad1 n2 ad2)
@@ -535,41 +598,6 @@
                         (:instance set-rip-of-logext (rip (+ x y z))))
            :in-theory (disable set-rip-of-logext))))
 
-(include-book "canonical-unsigned")
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo: for acl2::getbit-when-<-of-constant-high
-(defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
-  (equal (equal (bvsx 64 48 x) x)
-         (and (unsigned-byte-p 64 x)
-              (unsigned-canonical-address-p x)))
-  :hints (("Goal"
-           :use (:instance acl2::split-bv
-                           (n 64)
-                           (m 48))
-           :in-theory (e/d (unsigned-canonical-address-p
-                            acl2::bvsx-alt-def-2
-                            bvlt)
-                           (acl2::bvcat-equal-rewrite-alt
-                            acl2::bvcat-equal-rewrite
-                            bvcat logapp
-                            acl2::bvcat-of-slice-and-x-adjacent
-                            acl2::bvcat-of-slice-and-slice-adjacent
-                            acl2::rewrite-unsigned-byte-p-when-term-size-is-larger)))))
-
-(defthm bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
-  (implies (and ;(canonical-regionp len base)
-                ;(in-region64p ad len base)
-                ;(in-region64p (bvplus 64 offset ad) len base)
-                (unsigned-canonical-address-p (bvplus 64 offset ad))
-                (integerp offset)
-                (integerp ad)
-                (integerp base)
-                )
-           (equal (bvsx 64 48 (bvplus 48 offset ad))
-                  (bvplus 64 offset ad)))
-  :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
-                                  (x (bvplus 64 offset ad)))
-           :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
-
 ;; can help clarify failures
 (defthm read-of-write-of-write-irrel-inner-bv
   (implies (and (disjoint-regions48p n1 addr1 n2 addr2)
@@ -585,18 +613,22 @@
            :in-theory (e/d (disjoint-regions48p bvlt)
                            (read-of-write-of-write-irrel-inner)))))
 
-;; can help clarify failures
+;; We don't know which whether the write to ad2 has an effect, but any writes
+;; inside the write to ad1 (of size n1) can't possibly affect the read to ad1
+;; (of size n1).  Can help clarify failures.
 (defthm read-of-write-of-write-of-write-same-middle-bv
-  (implies (and ;(disjoint-regions48p n1 addr1 n2 addr2)
-                (integerp ad1)
-                (integerp ad2)
-                (unsigned-byte-p 48 n1)
+  (implies (and (unsigned-byte-p 48 n1)
                 (unsigned-byte-p 48 n2)
-                (integerp n4))
+                ;; (integerp ad1)
+                ;; (integerp ad2)
+                ;; (integerp n4)
+                )
            (equal (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner (write n4 ad4 val4 x86))))
                   (read n1 ad1 (write n2 ad2 val2 (write n1 ad1 val1-inner x86)))
                   ))
-  :hints (("Goal" :in-theory (enable read write acl2::bvminus-of-+-arg2
-                                     in-region48p ; why?
-                                     bvlt
-                                     ))))
+  :hints (("subgoal *1/3" :cases ((integerp n4)))
+          ("Goal"
+           :in-theory (enable read write acl2::bvminus-of-+-arg2
+                              in-region48p ; why?
+                              bvlt
+                              ifix))))

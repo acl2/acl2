@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 (include-book "parser-utils")
-(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -584,12 +583,12 @@
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
-       (stabp (not (eql 0 (logand #xe0 n-type))))
+       (stabp (not (= 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
-                 (b* ((n-pext (not (eql 0 (logand #x10 n-type))))
+                 (b* ((n-pext (not (= 0 (logand #x10 n-type))))
                       (n-type (logand #x0e n-type))
-                      (n-ext (not (eql 0 (logand #x01 n-type)))))
+                      (n-ext (not (= 0 (logand #x01 n-type)))))
                      (list (cons :n-pext n-pext)
                            (cons :n-type (lookup-safe n-type *mach-o-symbol-n-types*))
                            (cons :n-ext n-ext))))))
@@ -619,6 +618,11 @@
     (#x2 . :SG_FVMLIB)
     (#x4 . :SG_NORELOC)
     (#x8 . :SG_PROTECTED_VERSION_1)))
+
+(defconst *mach-o-protection-flags*
+  '((#x1 . :VM_PROT_READ)
+    (#x2 . :VM_PROT_WRITE)
+    (#x4 . :VM_PROT_EXECUTE)))
 
 ; Returns (mv erp cmd-data).
 ;; Note that the caller adds the cmd itself to the alist returned.
@@ -665,8 +669,8 @@
                          (cons :vmsize vmsize)
                          (cons :fileoff fileoff)
                          (cons :filesize filesize)
-                         (cons :maxprot maxprot)
-                         (cons :initprot initprot)
+                         (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                         (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
                          (cons :nsects nsects)
                          (cons :flags (decode-flags flags *mach-o-segment-flags*))
                          (cons :sections sections)))))
@@ -698,8 +702,8 @@
                           (cons :vmsize vmsize)
                           (cons :fileoff fileoff)
                           (cons :filesize filesize)
-                          (cons :maxprot maxprot)
-                          (cons :initprot initprot)
+                          (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                          (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
                           (cons :nsects nsects)
                           (cons :flags (decode-flags flags *mach-o-segment-flags*))
                           (cons :sections sections)))))
@@ -808,7 +812,8 @@
        ((mv erp cmds) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
        ((when erp) (mv erp nil)))
     (mv nil
-        (list (cons :magic magic)
+        (list (cons :executable-type (if (eql architecture 32) :mach-o-32 :mach-o-64)) ; for use by parsed-executable-type
+              (cons :magic magic)
               (cons :header header)
               (cons :cmds cmds)
               (cons :bytes all-bytes) ; todo: some bytes are replicated in the :contents fields of sections!  avoid that.

@@ -75,6 +75,7 @@
      :memberp (free-vars-expr expr.arg bound-vars)
      :complit (free-vars-desiniter-list expr.elems bound-vars)
      :unary (free-vars-expr expr.arg bound-vars)
+     :label-addr nil
      :sizeof (free-vars-tyname expr.type bound-vars)
      :alignof (free-vars-tyname expr.type bound-vars)
      :cast (free-vars-expr expr.arg bound-vars)
@@ -86,7 +87,7 @@
      :comma (union (free-vars-expr expr.first bound-vars)
                    (free-vars-expr expr.next bound-vars))
      :stmt (b* (((mv free-vars -)
-                 (free-vars-block-item-list expr.items bound-vars)))
+                 (free-vars-comp-stmt expr.stmt bound-vars)))
              free-vars)
      :tycompat (union (free-vars-tyname expr.type1 bound-vars)
                       (free-vars-tyname expr.type2 bound-vars))
@@ -95,11 +96,13 @@
                     (free-vars-tyname expr.type bound-vars))
      :extension (free-vars-expr expr.expr bound-vars)
      :sizeof-ambig (raise "Unexpected ambiguous expression")
+     :alignof-ambig (raise "Unexpected ambiguous expression")
      :cast/call-ambig (raise "Unexpected ambiguous expression")
      :cast/mul-ambig (raise "Unexpected ambiguous expression")
      :cast/add-ambig (raise "Unexpected ambiguous expression")
      :cast/sub-ambig (raise "Unexpected ambiguous expression")
-     :cast/and-ambig (raise "Unexpected ambiguous expression"))
+     :cast/and-ambig (raise "Unexpected ambiguous expression")
+     :cast/logand-ambig (raise "Unexpected ambiguous expression"))
     :no-function nil
     :measure (expr-count expr))
 
@@ -187,11 +190,15 @@
      :atomic (free-vars-tyname type-spec.type bound-vars)
      :struct (free-vars-struni-spec type-spec.spec bound-vars)
      :union (free-vars-struni-spec type-spec.spec bound-vars)
-     :enum (free-vars-enumspec type-spec.spec bound-vars)
+     :enum (free-vars-enum-spec type-spec.spec bound-vars)
      :typedef (if (in type-spec.name bound-vars)
                 nil
               (insert type-spec.name nil))
      :int128 nil
+     :locase-float80 nil
+     :locase-float128 nil
+     :float16 nil
+     :float16x nil
      :float32 nil
      :float32x nil
      :float64 nil
@@ -363,7 +370,8 @@
     :returns (free-vars ident-setp)
     (designor-case
      designor
-     :sub (free-vars-const-expr designor.index bound-vars)
+     :sub (set::union (free-vars-const-expr designor.index bound-vars)
+                      (free-vars-const-expr-option designor.range? bound-vars))
      :dot nil)
     :measure (designor-count designor))
 
@@ -600,70 +608,70 @@
     :returns (free-vars ident-setp)
     (b* (((struni-spec struni-spec) struni-spec)
          ((mv free-vars -)
-          (free-vars-structdecl-list struni-spec.members bound-vars)))
+          (free-vars-struct-declon-list struni-spec.members bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   struct tag to the set of bound variables.
       free-vars)
     :measure (struni-spec-count struni-spec))
 
-  (define free-vars-structdecl
-    ((structdecl structdeclp)
+  (define free-vars-struct-declon
+    ((struct-declon struct-declonp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a structure declaration."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* ((bound-vars (ident-set-fix bound-vars)))
-      (structdecl-case
-        structdecl
+      (struct-declon-case
+        struct-declon
         :member
         (b* ((free-vars0
-               (free-vars-spec/qual-list structdecl.specqual bound-vars))
+               (free-vars-spec/qual-list struct-declon.specquals bound-vars))
              ((mv free-vars1 bound-vars)
-              (free-vars-structdeclor-list structdecl.declor bound-vars)))
+              (free-vars-struct-declor-list struct-declon.declors bound-vars)))
           (mv (union free-vars0
                      (union free-vars1
-                            (free-vars-attrib-spec-list structdecl.attrib
+                            (free-vars-attrib-spec-list struct-declon.attribs
                                                         bound-vars)))
               bound-vars))
-        :statassert (mv (free-vars-statassert structdecl.unwrap bound-vars)
+        :statassert (mv (free-vars-statassert struct-declon.unwrap bound-vars)
                         bound-vars)
         :empty (mv nil bound-vars)))
-    :measure (structdecl-count structdecl))
+    :measure (struct-declon-count struct-declon))
 
-  (define free-vars-structdecl-list
-    ((structdecls structdecl-listp)
+  (define free-vars-struct-declon-list
+    ((struct-declons struct-declon-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of structure
             declarations."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((when (endp structdecls))
+    (b* (((when (endp struct-declons))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-structdecl (first structdecls) bound-vars))
+          (free-vars-struct-declon (first struct-declons) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-structdecl-list (rest structdecls) bound-vars)))
+          (free-vars-struct-declon-list (rest struct-declons) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdecl-list-count structdecls))
+    :measure (struct-declon-list-count struct-declons))
 
-  (define free-vars-structdeclor
-    ((structdeclor structdeclorp)
+  (define free-vars-struct-declor
+    ((structdeclor struct-declorp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a structure declarator."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((structdeclor structdeclor) structdeclor)
+    (b* (((struct-declor structdeclor) structdeclor)
          (free-vars0
            (free-vars-const-expr-option structdeclor.expr? bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-declor-option structdeclor.declor? bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdeclor-count structdeclor))
+    :measure (struct-declor-count structdeclor))
 
-  (define free-vars-structdeclor-list
-    ((structdeclors structdeclor-listp)
+  (define free-vars-struct-declor-list
+    ((structdeclors struct-declor-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of structure
             declarators."
@@ -672,25 +680,25 @@
     (b* (((when (endp structdeclors))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-structdeclor (first structdeclors) bound-vars))
+          (free-vars-struct-declor (first structdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-structdeclor-list (rest structdeclors) bound-vars)))
+          (free-vars-struct-declor-list (rest structdeclors) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (structdeclor-list-count structdeclors))
+    :measure (struct-declor-list-count structdeclors))
 
-  (define free-vars-enumspec
-    ((enumspec enumspecp)
+  (define free-vars-enum-spec
+    ((enumspec enum-specp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a enumeration specifier."
     :returns (free-vars ident-setp)
-    (b* (((enumspec enumspec) enumspec)
+    (b* (((enum-spec enumspec) enumspec)
          ((mv free-vars -)
           (free-vars-enumer-list enumspec.list bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   enum tag to the set of bound variables.
       free-vars)
-    :measure (enumspec-count enumspec))
+    :measure (enum-spec-count enumspec))
 
   (define free-vars-enumer
     ((enumer enumerp)
@@ -908,7 +916,7 @@
      :labeled (union (free-vars-label stmt.label bound-vars)
                      (free-vars-stmt stmt.stmt bound-vars))
      :compound (b* (((mv free-vars -)
-                     (free-vars-block-item-list stmt.items bound-vars)))
+                     (free-vars-comp-stmt stmt.stmt bound-vars)))
                  free-vars)
      :expr (free-vars-expr-option stmt.expr? bound-vars)
      :if (union (free-vars-expr stmt.test bound-vars)
@@ -933,6 +941,7 @@
                                (union (free-vars-expr-option stmt.next for-bound-vars)
                                       (free-vars-stmt stmt.body for-bound-vars)))))
      :goto nil
+     :gotoe (free-vars-expr stmt.label bound-vars)
      :continue nil
      :break nil
      :return (free-vars-expr-option stmt.expr? bound-vars)
@@ -950,8 +959,8 @@
     (b* ((bound-vars (ident-set-fix bound-vars)))
       (block-item-case
         item
-        :decl (free-vars-decl item.unwrap bound-vars)
-        :stmt (mv (free-vars-stmt item.unwrap bound-vars)
+        :decl (free-vars-decl item.decl bound-vars)
+        :stmt (mv (free-vars-stmt item.stmt bound-vars)
                   bound-vars)
         :ambig (mv nil bound-vars)))
     :measure (block-item-count item))
@@ -972,6 +981,15 @@
           bound-vars))
     :measure (block-item-list-count items))
 
+  (define free-vars-comp-stmt
+    ((cstmt comp-stmtp)
+     (bound-vars ident-setp))
+    :short "Collect free variables appearing in a compound statement."
+    :returns (mv (free-vars ident-setp)
+                 (bound-vars ident-setp))
+    (free-vars-block-item-list (comp-stmt->items cstmt) bound-vars)
+    :measure (comp-stmt-count cstmt))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
@@ -990,7 +1008,7 @@
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
         (free-vars-decl-list fundef.decls bound-vars))
-       (free-vars5 (free-vars-stmt fundef.body bound-vars)))
+       ((mv free-vars5 &) (free-vars-comp-stmt fundef.body bound-vars)))
     (union free-vars1
            (union free-vars2
                   (union free-vars3 (union free-vars4 free-vars5))))))

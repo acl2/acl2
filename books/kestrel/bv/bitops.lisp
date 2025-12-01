@@ -26,6 +26,7 @@
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "intro"))
+(local (include-book "ash"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -38,7 +39,7 @@
 (in-theory (disable bitops::part-select-width-low
                     bitops::part-install-width-low))
 
-;move or make local
+;move?
 (local
   (defthm <=-of-*-same-linear-special
     (implies (and (<= 1 y)
@@ -69,44 +70,67 @@
 ;;            (equal (< (* a b) (* c a))
 ;;                   (< b c))))
 
+;move
 (local
+  ;; slicing a mask of all ones to extract the run of ones
   (defthm slice-mask
     (implies (and (natp low)
                   (natp width))
-             (equal (SLICE (+ -1 LOW WIDTH)
-                           LOW
-                           (+ (- (EXPT 2 LOW))
-                              (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
+             (equal (slice (+ -1 low width)
+                           low
+                           (+ (- (expt 2 low))
+                              (* (expt 2 low) (expt 2 width))))
                     (+ -1 (expt 2 width))))
-    :hints (("Goal" :in-theory (e/d (slice) ())))))
-
-;; ;;move
-;; (defthm <-of-expt-and-expt
-;;   (implies (and (natp i)
-;;                 (natp j))
-;;            (equal (< (EXPT '2 i) (EXPT '2 j))
-;;                   (< i j))))
+    :hints (("Goal" :in-theory (enable slice)))))
 
 (local
+  ;; slicing a mask of all ones above the run of ones
   (defthm slice-too-high-lemma-2
     (implies (and (natp low)
                   (natp width)
                   (natp size))
-             (equal (SLICE (+ -1 SIZE)
-                           (+ LOW WIDTH)
-                           (+ (- (EXPT 2 LOW))
-                              (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
+             (equal (slice (+ -1 size)
+                           (+ low width)
+                           (+ (- (expt 2 low))
+                              (* (expt 2 low) (expt 2 width))))
                     0))
-    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+ logtail-of-plus)
-                                    (<-OF-BVCHOP-HACK))))))
+    :hints (("Goal" :in-theory (e/d (slice getbit-of-+ logtail-of-plus)
+                                    (<-of-bvchop-hack))))))
 
-(defthm part-select-width-low-becomes-slice
+;move
+(local
+  (defthm bvnot-of-*-of-expt-same-arg2
+    (implies (and (natp i)
+                  (natp low))
+             (equal (bvnot low (* i (expt 2 low)))
+                    (+ -1 (expt 2 low))))
+    :hints (("Goal" :in-theory (enable bvnot lognot bvchop-of-sum-cases)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm part-select-width-low-becomes-slice-gen
   (implies (and (integerp low)
                 (integerp width))
            (equal (bitops::part-select-width-low x width low)
                   (slice (+ low width -1) low x)))
-  :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low slice)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bitops::part-select-width-low slice))))
+
+;; TODO: When low and width are not constants, can we go to a shift or something?
+;; Disabled since we have the -gen one.  This one will be used by Axe.
+(defthmd part-select-width-low-becomes-slice
+  (implies (and (syntaxp (and (quotep low)
+                              (quotep width)))
+                (integerp low)
+                (integerp width))
+           (equal (bitops::part-select-width-low x width low)
+                  (slice (+ low width -1) low x)))
+  :hints (("Goal" :use part-select-width-low-becomes-slice-gen
+           :in-theory (disable part-select-width-low-becomes-slice-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We want to replace calls of part-install-width-low with BV terms, but this
+;; is awkward in general, because we may not know the size of the "x" argument.
 
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)
@@ -126,15 +150,6 @@
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
            :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
                            (ash logmask)))))
-
-;move
-(local
-  (defthm bvnot-of-*-of-expt-same-arg2
-    (implies (and (natp i)
-                  (natp low))
-             (equal (BVNOT LOW (* i (EXPT 2 LOW)))
-                    (+ -1 (expt 2 low))))
-    :hints (("Goal" :in-theory (enable bvnot LOGNOT BVCHOP-OF-SUM-CASES)))))
 
 (defthm bvchop-of-part-install-width-low-same
   (implies (and (natp low)
@@ -156,16 +171,12 @@
                          (bvcat width val low x))))
   :hints (("Goal" :cases ((equal size (+ low width)))
            :in-theory (e/d (bitops::part-install-width-low
-                            REPEATBIT-OF-1-ARG2
                             BVNOT-OF-0
                             LOGAND-BECOMES-BVAND
                             BVCHOP-OF-LOGNOT-BECOMES-BVNOT
                             ash)
-                           (                  ;SLICE-OF-BVAND
-                                                        ;;BVCAT-OF-+-HIGH
-                            ;;EXPONENTS-ADD
-                            ;;BVCAT-OF-+-LOW         ;looped
-                            ;;BVAND-OF-+-ARG3        ;looped
+                           (;; SLICE-OF-BVAND
+                            ;; EXPONENTS-ADD
                             )))))
 
 ;replace part-install-width-low with bvcat when inside a slice
@@ -185,7 +196,6 @@
   :hints (("Goal" :in-theory (e/d (slice
                                    BVCHOP-OF-LOGTAIL)
                                   (SLICE-OF-BVAND
-
                                    ;;for speed:
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
@@ -301,12 +311,12 @@
            :in-theory (enable rotate-right
                               rightrotate
                               bvchop-of-logior-becomes-bvor
-                              ash-of-negative-becomes-logtail
+                              ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor
                               ifix
-                              logand-of-bvchop-becomes-bvand-alt))))
+                              ))))
 
 ;; Introduces the BV function
 (defthm rotate-left-becomes-leftrotate
@@ -318,12 +328,12 @@
            :in-theory (enable rotate-left
                               leftrotate
                               bvchop-of-logior-becomes-bvor
-                              ash-of-negative-becomes-logtail
+                              ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
                               bvchop-of-logior-becomes-bvor
                               ifix
-                              logand-of-bvchop-becomes-bvand-alt))))
+                              ))))
 
 ;; ;; todo: handle more specialized variants of rotate-left.  also handle the variants of rotate-right.
 ;; ;; or just open these to expose the non-specialized rotate ops!

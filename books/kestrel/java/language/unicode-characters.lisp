@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,11 +13,14 @@
 (include-book "kestrel/fty/defbytelist" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes-fty" :dir :system)
 
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unicode-characters
   :parents (syntax)
-  :short "Unicode characters in Java [JLS14:3.1]."
+  :short "Unicode characters in Java [JLS25:3.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -25,7 +28,7 @@
      `characters', `code points', and `code units'.
      In Java, characters are essentially Unicode UTF-16 code units,
      i.e. unsigned 16-bit values.
-     In our formalization, as in [JLS14],
+     In our formalization, as in [JLS25],
      we may use the terms `character', `code point', and `code unit'
      fairly interchangeably, when that causes no confusion."))
   :order-subtopics t
@@ -38,9 +41,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This type models Java characters in the context of modeling Java's syntax.
+    "This type models Java characters in the context of Java's syntax.
      This is isomorphic, but distinct from, the type @(tsee char-value)
-     that models Java characters in the context of modeling Java's semantics.
+     that models Java characters in the context of Java's semantics.
      The reason for having these two different types is that
      we want character values to be tagged when modeling semantics,
      while we want characters to be simple numbers when modeling syntax."))
@@ -80,7 +83,7 @@
   (defrule unicodep-when-asciip
     (implies (asciip x)
              (unicodep x))
-    :enable (asciip unicodep)))
+    :enable (asciip unicodep unsigned-byte-p integer-range-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,6 +105,7 @@
   (defrule unicode-listp-when-ascii-listp
     (implies (ascii-listp x)
              (unicode-listp x))
+    :induct t
     :enable (ascii-listp unicode-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,8 +137,10 @@
   :prepwork ((defruledl unsigned-byte-listp-16-when-8
                (implies (unsigned-byte-listp 8 x)
                         (unsigned-byte-listp 16 x))
-               :enable unsigned-byte-listp))
-  :hooks (:fix))
+               :induct t
+               :enable (unsigned-byte-listp
+                        unsigned-byte-p
+                        integer-range-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,8 +160,11 @@
   :prepwork ((defruledl unsigned-byte-listp-8-when-7
                (implies (unsigned-byte-listp 7 x)
                         (unsigned-byte-listp 8 x))
-               :enable unsigned-byte-listp))
-  :hooks (:fix)
+               :induct t
+               :enable (unsigned-byte-listp
+                        unsigned-byte-p
+                        integer-range-p)))
+
   ///
 
   (defrule ascii=>string-of-string=>unicode

@@ -16,12 +16,12 @@
 ;; May not be strictly needed for this example but will be in general:
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
+(include-book "kestrel/axe/x86/unroller" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 ;; (depends-on "add.elf64")
 ;; Lift the add function into logic by unrolling:
-(def-unrolled add "add.elf64" :target "add")
+(def-unrolled add :executable "add.elf64" :target "add")
 
 ;;expected result:
 (must-be-redundant
@@ -30,10 +30,10 @@
     (declare (xargs :stobjs x86 :verify-guards nil))
     (prog2$ (acl2::throw-nonexec-error 'add
                                        (list x86))
-            (set-rip (logext 64 (read 8 (rsp x86) x86))
+            (set-rip (read 8 (rsp x86) x86)
                      (set-rax (bvplus 32 (rsi x86) (rdi x86))
                               (set-rdx (bvchop 32 (rdi x86))
-                                       (set-rsp (+ 8 (rsp x86))
+                                       (set-rsp (bvplus 64 8 (rsp x86))
                                                 (write 4 (bvplus 48 281474976710640 (rsp x86))
                                                        (rsi x86)
                                                        (write 4 (bvplus 48 281474976710644 (rsp x86))

@@ -15,7 +15,7 @@
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
@@ -30,7 +30,7 @@
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
@@ -44,14 +44,14 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
+(include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
-(include-book "kestrel/lists-light/subrange" :dir :system)
+;(include-book "kestrel/lists-light/subrange-def" :dir :system) ; comes in via defforall
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -59,7 +59,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
@@ -218,7 +221,7 @@
   (declare (xargs :guard t))
   (let* ((len (nfix len))
          (index (ifix index))
-         (numbits (ceiling-of-lg len))
+         (numbits (if (equal 0 len) 0 (ceiling-of-lg len)))
          (index (bvchop numbits index)))
     (if (< index len)
         (bvchop (nfix element-size) (ifix (nth-unguarded-aux index data)))
@@ -242,11 +245,13 @@
            (natp element-size)
            (true-listp data))
       (bv-array-write element-size len index val data)
-    (bv-array-write (nfix element-size)
-                    (nfix len)
-                    (BVCHOP (CEILING-OF-LG (nfix LEN)) (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
-                    val
-                    (true-list-fix data))))
+    (let* ((len (nfix len))
+           (numbits (if (equal 0 len) 0 (ceiling-of-lg len))))
+      (bv-array-write (nfix element-size)
+                      len
+                      (BVCHOP numbits (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
+                      val
+                      (true-list-fix data)))))
 
 ;move
 (local
@@ -438,7 +443,7 @@
 (defthm getbit-unguarded-correct
   (equal (getbit-unguarded n x)
          (getbit n x))
-  :hints (("Goal" :in-theory (e/d (getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice) ()))))
+  :hints (("Goal" :in-theory (enable getbit-unguarded getbit bitand getbit-when-val-is-not-an-integer slice))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -559,7 +564,8 @@
 
 (defund bvsx-unguarded (new-size old-size val)
   (declare (xargs :guard t))
-  (if (not (posp old-size))
+  (if (not (and (posp old-size)
+                (natp new-size)))
       0
       (if (<-unguarded new-size old-size)
           (bvchop-unguarded new-size val)
@@ -615,9 +621,7 @@
 
 (defund ceiling-of-lg-unguarded (x)
   (declare (xargs :guard t))
-  (if (integerp x)
-      (ceiling-of-lg x)
-    0))
+  (integer-length-unguarded (binary-+-unguarded -1 x)))
 
 (defthm ceiling-of-lg-unguarded-correct
   (equal (ceiling-of-lg-unguarded x)
@@ -781,7 +785,7 @@
 (defthm bit-to-bool-unguarded-correct
   (equal (bit-to-bool-unguarded x)
          (bit-to-bool x))
-  :hints (("Goal" :in-theory (enable bit-to-bool-unguarded))))
+  :hints (("Goal" :in-theory (enable bit-to-bool bit-to-bool-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

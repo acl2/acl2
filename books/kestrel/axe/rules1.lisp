@@ -227,7 +227,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size x y)
 ;;                   (bvplus size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;; (defthmd bvminus-solve-for-dag2
 ;;   (implies (and (syntaxp (quotep k))
@@ -335,8 +335,7 @@
 ;;   :HINTS
 ;;   (("Goal"
 ;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-;;     :IN-THEORY (E/d (NTH2 BVNTH
-;;                           ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;;     :IN-THEORY (enable NTH2 BVNTH ALL-INTEGERP-WHEN-ALL-NATP))))
 
 ;Thu Mar  4 15:56:21 2010
 ;; (skip -proofs
@@ -379,8 +378,7 @@
 ;;   :HINTS
 ;;   (("Goal"
 ;;     :CASES ((<= (BVCHOP INDEXSIZE INDEX) INDEX))
-;;     :IN-THEORY (E/d (NTH2 BVNTH
-;;                        ALL-INTEGERP-WHEN-ALL-NATP) ()))))
+;;     :IN-THEORY (enable NTH2 BVNTH ALL-INTEGERP-WHEN-ALL-NATP))))
 
 ;; ;bbozo gross
 ;; (defthmd bvnth-tighten-32-8
@@ -1131,9 +1129,8 @@
                 (natp index))
            (equal (nth index vals)
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ ;bvnth
-                                   ceiling-of-lg)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-READ ;bvnth
+                                     ceiling-of-lg))))
 
 ;compare to nth-becomes-bv-array-read-strong
 (defthmd nth-becomes-bv-array-read-strong2
@@ -1160,8 +1157,7 @@
                   (bv-array-read n len (bvchop (integer-length (+ -1 len))
                                                 index)
                                  (bvchop-list n data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
 
 ;;from des encrypt sun:
 
@@ -1252,8 +1248,7 @@
                 )
            (equal (bv-array-read element-size len index (subrange start end lst))
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bvchop-when-i-is-not-an-integer subrange))))
 
 ;; (defthm logext-list-of-myif-of-logext-list-arg2
 ;;   (equal (logext-list 8 (myif test x (logext-list 8 y)))
@@ -1577,8 +1572,7 @@
 (defthm trim-of-bv-array-read
   (equal (trim n (bv-array-read element-size len index data))
          (bv-array-read (min (nfix n) (ifix element-size)) len index data))
-  :hints (("Goal" :in-theory (e/d (trim natp bvchop-of-bv-array-read)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable trim natp bvchop-of-bv-array-read))))
 
 ;; (thm
 ;;  (IMPLIES (and (EQUAL free (BVCHOP 5 X))
@@ -1609,9 +1603,7 @@
 ;;                   (bv-array-read size len index lst)))
 ;;   :hints
 ;;   (("Goal" :cases ((equal 0 (len lst))) ;yuck
-;;     :in-theory (e/d (bvchop-when-i-is-not-an-integer
-;;                        bv-array-read) ()))))
-
+;;     :in-theory (enable bvchop-when-i-is-not-an-integer bv-array-read))))
 
 ;move
 ;change for ACL2 4.3
@@ -1636,7 +1628,7 @@
                 (<= (integer-length (+ -1 len)) width2))
            (equal (bv-array-read width len (logext width2 index) data)
                   (bv-array-read width len index data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
 
 
 ;; (thm

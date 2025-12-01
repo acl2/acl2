@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ omaps
-  :parents (acl2::kestrel-utilities set::std/osets acl2::alists)
+  :parents (std::std)
   :short "A library of omaps (ordered maps),
           i.e. finite maps represented as strictly ordered alists."
   :long
@@ -1195,7 +1195,7 @@
                     (cons a b))
              (set::in b (values m))))
 
-  (defrule value-of-update-when-not-assoc
+  (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
                     (set::insert val (values map))))))
@@ -1381,6 +1381,21 @@
     :induct (acl2::cdr-cdr-induct keys1 vals1)
     :enable (list-lookup
              list-lookup-of-update-of-non-member)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define from-alist ((alist alistp))
+  :returns (map mapp)
+  :short "Build an omap from an alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are duplicate keys in the alist,
+     the leftmost one, with the corresponding value,
+     will be in the resulting omap.
+     This is consistent with the shadowing of alists."))
+  (cond ((endp alist) nil)
+        (t (update (caar alist) (cdar alist) (from-alist (cdr alist))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

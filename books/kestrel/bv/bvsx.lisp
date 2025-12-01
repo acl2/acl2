@@ -33,6 +33,12 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+(defthm bvsx-when-not-natp-arg1
+  (implies (not (natp new-size))
+           (equal (bvsx new-size old-size x)
+                  0))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
 (defthm bvsx-when-not-natp-arg2
   (implies (not (natp old-size))
            (equal (bvsx new-size old-size x)
@@ -126,12 +132,9 @@
                                          slice-alt-def         ;slice
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+                                         repeatbit
                                          )
                                    (; BVPLUS-OF-*-ARG2
-                                    ;;BVCAT-OF-+-HIGH ;looped
-
-
-
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
@@ -204,7 +207,8 @@
                            (+ -1 (expt 2 (- new-size old-size)))
                            old-size
                            val))))
-  :hints (("Goal" :in-theory (e/d (bvsx) (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
+  :hints (("Goal" :in-theory (e/d (bvsx repeatbit)
+                                  (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
 
 (defthmd equal-of-bvsx-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -247,7 +251,8 @@
 
 (defthm bvsx-too-high
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
-                (<= old-size new-size))
+                (<= old-size new-size)
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function character-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,3 +87,9 @@
 (defthmd true-listp-when-character-listp2
   (implies (character-listp x)
            (true-listp x)))
+
+;; Since member-equal returns the tail of the list
+(defthm character-listp-of-member-equal
+  (implies (character-listp x)
+           (character-listp (member-equal a x)))
+  :hints (("Goal" :in-theory (enable character-listp))))

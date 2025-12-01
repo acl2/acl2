@@ -28,8 +28,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-; cert_param: (non-acl2r)
-
 (in-package "FGL")
 
 (include-book "symbolic-arithmetic")

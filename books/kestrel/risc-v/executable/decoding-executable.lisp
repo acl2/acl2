@@ -18,17 +18,14 @@
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/ubyte5-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte6-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,6 +579,7 @@
              nil))
          (instr-jal rd imm)))
       (t nil)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :hooks (:fix)
 
   ///

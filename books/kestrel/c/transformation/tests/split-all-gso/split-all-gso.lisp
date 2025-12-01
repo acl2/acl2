@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (split-all-gso *old* *new*)
@@ -54,7 +54,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (split-all-gso *old* *new*)
@@ -86,7 +86,7 @@ int main(void) {
 ;; Test an ensemble
 
 (acl2::must-succeed*
-  (c$::input-files :files ("static-struct1.c"
+  (c$::input-files :files '("static-struct1.c"
                            "static-struct2.c"
                            "extern-struct.c")
                    :const *old*)
@@ -149,7 +149,7 @@ struct S_1 s_1 = {.x = 0};
 ;; Test typedefs
 
 (acl2::must-succeed*
-  (c$::input-files :files ("typedef1.c")
+  (c$::input-files :files '("typedef1.c")
                    :const *old*)
 
   (split-all-gso *old*
@@ -179,7 +179,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("typedef2.c")
+  (c$::input-files :files '("typedef2.c")
                    :const *old*)
 
   (split-all-gso *old*

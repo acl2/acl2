@@ -13,12 +13,11 @@
 
 (include-book "../specification/states")
 
+(include-book "kestrel/apt/isodata" :dir :system)
+(include-book "kestrel/apt/simplify" :dir :system)
 (include-book "std/util/defiso" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +52,7 @@
      from the @(tsee fty::defprod) that defines @(tsee stat).")
    (xdoc::p
     "The unconstrained @('xregs') and @('pc') of @('stat')
-     is turned into unconstrained scalar fields of the stobj.
+     are turned into unconstrained scalar fields of the stobj.
      The @('memory') list of bytes of @('stat')
      is turned into a resizable array of bytes in the stobj,
      initially of length 0 (the initial length does not matter here).
@@ -64,13 +63,11 @@
    (xdoc::p
     "We introduce a non-executable function
      to retrieve the whole memory array.
-     This cannot be executable, because it violates stobj usage rules;
-     however, it makes logical sense.")
+     This cannot be executable, because it violates stobj usage rules.")
    (xdoc::p
     "We introduce a function to build a stobj value
      from the values of its fields.
-     While this makes logical sense,
-     the values it returns are unrelated to the live stobj.")
+     The values it returns are unrelated to the live stobj.")
    (xdoc::p
     "We also introduce some equivalences between
      recognizers of stobj fields and recognizers of @(tsee stat) field types."))
@@ -166,7 +163,7 @@
   (theory-invariant (incompatible (:rewrite stat1-error-p-to-booleanp)
                                   (:rewrite booleanp-to-stat1-error-p))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stat1-from-stat ((stat statp))
   :returns (stat1 stat1p
@@ -187,8 +184,8 @@
               (stat->pc stat)
               (stat->memory stat)
               (stat->error stat))
-  :guard-hints (("Goal" :in-theory (enable stat1-memory-p-to-ubyte8-listp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable stat1-memory-p-to-ubyte8-listp
+                                           (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,7 +209,7 @@
                                            stat1p
                                            stat1->error))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection stat1-iso
   :short "Isomorphism between @(tsee stat) and @(tsee stat1)."
@@ -241,7 +238,7 @@
                    (equal a (car x))
                    (equal b (cdr x)))))))
 
-  (acl2::defiso stat-stat1-iso
+  (acl2::defiso stat1-iso
     statp
     stat1p
     stat1-from-stat
@@ -274,484 +271,286 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Given a DEFISO, we would like to use APT's ISODATA
-; to refine the operations on states to operate on the stobj.
-; But currently ISODATA does not support stobjs;
-; so for now we manually simulate the desired effect of ISODATA.
+(defsection stat1-validp{0}
+  :short "Refine @(tsee stat-validp) to use the stobj states."
 
-(define stat1-validp (stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (STATP STAT) (FEATP FEAT))))
-  (and (mbt (stat1p stat1))
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((STAT.XREGS (STAT->XREGS STAT))
-                (STAT.PC (STAT->PC STAT))
-                (STAT.MEMORY (STAT->MEMORY STAT))
-                (XLEN (FEAT->XLEN FEAT))
-                (XNUM (FEAT->XNUM FEAT)))
-               (AND (UNSIGNED-BYTE-LISTP XLEN STAT.XREGS)
-                    (EQUAL (LEN STAT.XREGS) (+ -1 XNUM))
-                    (UNSIGNED-BYTE-P XLEN STAT.PC)
-                    (EQUAL (LEN STAT.MEMORY)
-                           (EXPT 2 XLEN)))))))
+  (apt::isodata stat-validp
+                ((stat stat1-iso))
+                :undefined nil
+                :new-name stat1-validp{0}))
 
-(define read1-xreg-unsigned (reg stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((REG (LNFIX REG)))
-              (IF (= REG 0)
-                  0
-                  (UNSIGNED-BYTE-FIX (FEAT->XLEN FEAT)
-                                     (NTH (+ -1 REG)
-                                          (STAT->XREGS STAT))))))
-    0)
-  :guard-hints (("Goal" :in-theory (enable nfix))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read1-xreg-signed (reg stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LOGEXT (FEAT->XLEN FEAT)
-                (READ-XREG-UNSIGNED REG STAT FEAT)))
-    0))
+(defsection stat1-validp{1}
+  :short "Simplify @(tsee stat1-validp{0})
+          after the isomorphic state transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee stat1-validp{0}) includes term of the form
+     @('(stat->FIELD (stat-from-stat1 stat))').
+     By enabling @(tsee stat-from-stat1),
+     those turn into @('(stat->FIELD (stat ... (stat1->FIELD <field>) ...))'),
+     which reduces to @('(stat1->FIELD <field>)') as desired."))
 
-(define read1-xreg-unsigned32 (reg stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (FEAT-64P FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LOGHEAD 32 (READ-XREG-UNSIGNED REG STAT FEAT)))
-    0))
+  (apt::simplify stat1-validp{0}
+    :new-name stat1-validp{1}
+    :simplify-guard t
+    :enable (stat-from-stat1)))
 
-(define read1-xreg-signed32 (reg stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (FEAT-64P FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LOGEXT 32 (READ-XREG-UNSIGNED REG STAT FEAT)))
-    0))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write1-xreg (reg val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (INTEGERP VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((REG (LNFIX REG)))
-               (IF (= REG 0)
-                   (STAT-FIX STAT)
-                   (LET ((CHANGE-STAT STAT)
-                         (STAT->XREGS (UPDATE-NTH (+ -1 REG)
-                                                  (LOGHEAD (FEAT->XLEN FEAT) VAL)
-                                                  (STAT->XREGS STAT))))
-                        (STAT STAT->XREGS
-                              (STAT->PC CHANGE-STAT)
-                              (STAT->MEMORY CHANGE-STAT)
-                              (STAT->ERROR CHANGE-STAT)))))))
-    stat1)
-  :non-executable t)
+(defsection read1-xreg-unsigned{0}
+  :short "Refine @(tsee read-xreg-unsigned) to use the stobj states."
 
-(define write1-xreg-32 (reg val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP REG)
-                     (INTEGERP VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (FEAT-64P FEAT)
-                     (STAT-VALIDP STAT FEAT)
-                     (< (LNFIX REG) (FEAT->XNUM FEAT)))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (WRITE-XREG REG (LOGEXT 32 VAL)
-                     STAT FEAT)))
-    stat1)
-  :non-executable t
-  :guard-hints (("Goal" :in-theory (disable logext))))
+  (apt::isodata read-xreg-unsigned
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-xreg-unsigned{0}))
 
-(define read1-pc (stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (UNSIGNED-BYTE-FIX (FEAT->XLEN FEAT)
-                           (STAT->PC STAT)))
-    0))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write1-pc (pc stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (NATP PC)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET ((CHANGE-STAT STAT)
-               (STAT->PC (LOGHEAD (FEAT->XLEN FEAT) (LNFIX PC))))
-              (STAT (STAT->XREGS CHANGE-STAT)
-                    STAT->PC (STAT->MEMORY CHANGE-STAT)
-                    (STAT->ERROR CHANGE-STAT)))))
-    stat1)
-  :non-executable t)
+; this fails:
 
-(define inc1-4-pc (stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (WRITE-PC (+ (READ-PC STAT FEAT) 4)
-                   STAT FEAT)))
-    stat1)
-  :non-executable t)
+;; (apt::simplify read1-xreg-unsigned{0}
+;;   :new-name read1-xreg-unsigned{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
-(define read1-memory-unsigned8 (addr stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((ADDR (LOGHEAD (FEAT->XLEN FEAT) ADDR)))
-              (UBYTE8-FIX (NTH ADDR (STAT->MEMORY STAT)))))
-    0)
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem read-memory-unsigned8)
-                                 (stat (stat-from-stat1 stat1))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read1-memory-unsigned16 (addr stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((B0 (READ-MEMORY-UNSIGNED8 ADDR STAT FEAT))
-               (B1 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                          STAT FEAT)))
-              (COND ((FEAT-LITTLE-ENDIANP FEAT)
-                     (LOGAPP 8 B0 (LOGAPP 8 B1 0)))
-                    ((FEAT-BIG-ENDIANP FEAT)
-                     (LOGAPP 8 B1 (LOGAPP 8 B0 0)))
-                    (T (ACL2::IMPOSSIBLE-FN)))))
-    0)
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem read-memory-unsigned16)
-                                 (stat (stat-from-stat1 stat1))))))
+(defsection read1-xreg-signed{0}
+  :short "Refine @(tsee read-xreg-signed) to use the stobj states."
 
-(define read1-memory-unsigned32 (addr stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((B0 (READ-MEMORY-UNSIGNED8 ADDR STAT FEAT))
-               (B1 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                          STAT FEAT))
-               (B2 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 2)
-                                          STAT FEAT))
-               (B3 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 3)
-                                          STAT FEAT)))
-              (COND ((FEAT-LITTLE-ENDIANP FEAT)
-                     (LOGAPP 8 B0
-                             (LOGAPP 8 B1 (LOGAPP 8 B2 (LOGAPP 8 B3 0)))))
-                    ((FEAT-BIG-ENDIANP FEAT)
-                     (LOGAPP 8 B3
-                             (LOGAPP 8 B2 (LOGAPP 8 B1 (LOGAPP 8 B0 0)))))
-                    (T (ACL2::IMPOSSIBLE-FN)))))
-    0)
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem read-memory-unsigned32)
-                                 (stat (stat-from-stat1 stat1))))))
+  (apt::isodata read-xreg-signed
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-xreg-signed{0}))
 
-(define read1-memory-unsigned64 (addr stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((B0 (READ-MEMORY-UNSIGNED8 ADDR STAT FEAT))
-               (B1 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                          STAT FEAT))
-               (B2 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 2)
-                                          STAT FEAT))
-               (B3 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 3)
-                                          STAT FEAT))
-               (B4 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 4)
-                                          STAT FEAT))
-               (B5 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 5)
-                                          STAT FEAT))
-               (B6 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 6)
-                                          STAT FEAT))
-               (B7 (READ-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 7)
-                                          STAT FEAT)))
-              (COND
-               ((FEAT-LITTLE-ENDIANP FEAT)
-                (LOGAPP
-                 8 B0
-                 (LOGAPP
-                  8 B1
-                  (LOGAPP 8 B2
-                          (LOGAPP 8 B3
-                                  (LOGAPP 8 B4
-                                          (LOGAPP 8
-                                                  B5 (LOGAPP 8 B6
-                                                             (LOGAPP 8 B7 0)))))))))
-               ((FEAT-BIG-ENDIANP FEAT)
-                (LOGAPP
-                 8 B7
-                 (LOGAPP
-                  8 B6
-                  (LOGAPP 8 B5
-                          (LOGAPP 8 B4
-                                  (LOGAPP 8 B3
-                                          (LOGAPP 8
-                                                  B2 (LOGAPP 8 B1
-                                                             (LOGAPP 8 B0 0)))))))))
-               (T (ACL2::IMPOSSIBLE-FN)))))
-    0)
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem read-memory-unsigned64)
-                                 (stat (stat-from-stat1 stat1))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write1-memory-unsigned8 (addr val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (UBYTE8P VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((ADDR (LOGHEAD (FEAT->XLEN FEAT) ADDR)))
-               (LET ((CHANGE-STAT STAT)
-                     (STAT->MEMORY (UPDATE-NTH ADDR (UBYTE8-FIX VAL)
-                                               (STAT->MEMORY STAT))))
-                    (STAT (STAT->XREGS CHANGE-STAT)
-                          (STAT->PC CHANGE-STAT)
-                          STAT->MEMORY
-                          (STAT->ERROR CHANGE-STAT))))))
-    stat1)
-  :non-executable t
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem write-memory-unsigned8)
-                                 (stat (stat-from-stat1 stat1))))))
+; this fails:
 
-(define write1-memory-unsigned16 (addr val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (UBYTE16P VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((VAL (UBYTE16-FIX VAL))
-                (B0 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 0))
-                (B1 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 8)))
-               (MV-LET (1ST-BYTE 2ND-BYTE)
-                 (IF (FEAT-LITTLE-ENDIANP FEAT)
-                     (MV B0 B1)
-                     (MV B1 B0))
-                 (LET* ((STAT (WRITE-MEMORY-UNSIGNED8 ADDR 1ST-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                                      2ND-BYTE STAT FEAT)))
-                       STAT)))))
-    stat1)
-  :non-executable t
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem write-memory-unsigned16)
-                                 (stat (stat-from-stat1 stat1))))))
+;; (apt::simplify read1-xreg-signed{0}
+;;   :new-name read1-xreg-signed{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
 
-(define write1-memory-unsigned32 (addr val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (UBYTE32P VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((VAL (UBYTE32-FIX VAL))
-                (B0 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 0))
-                (B1 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 8))
-                (B2 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 16))
-                (B3 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 24)))
-               (MV-LET (1ST-BYTE 2ND-BYTE 3RD-BYTE 4TH-BYTE)
-                 (IF (FEAT-LITTLE-ENDIANP FEAT)
-                     (MV B0 B1 B2 B3)
-                     (MV B3 B2 B1 B0))
-                 (LET* ((STAT (WRITE-MEMORY-UNSIGNED8 ADDR 1ST-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                                      2ND-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 2)
-                                                      3RD-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 3)
-                                                      4TH-BYTE STAT FEAT)))
-                       STAT)))))
-    stat1)
-  :non-executable t
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem write-memory-unsigned32)
-                                 (stat (stat-from-stat1 stat1))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write1-memory-unsigned64 (addr val stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (UBYTE64P VAL)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET* ((VAL (UBYTE64-FIX VAL))
-                (B0 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 0))
-                (B1 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 8))
-                (B2 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 16))
-                (B3 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 24))
-                (B4 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 32))
-                (B5 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 40))
-                (B6 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 48))
-                (B7 (BITOPS::PART-SELECT-WIDTH-LOW VAL 8 56)))
-               (MV-LET (1ST-BYTE 2ND-BYTE 3RD-BYTE 4TH-BYTE
-                                 5TH-BYTE 6TH-BYTE 7TH-BYTE 8TH-BYTE)
-                 (IF (FEAT-LITTLE-ENDIANP FEAT)
-                     (MV B0 B1 B2 B3 B4 B5 B6 B7)
-                     (MV B7 B6 B5 B4 B3 B2 B1 B0))
-                 (LET* ((STAT (WRITE-MEMORY-UNSIGNED8 ADDR 1ST-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 1)
-                                                      2ND-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 2)
-                                                      3RD-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 3)
-                                                      4TH-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 4)
-                                                      5TH-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 5)
-                                                      6TH-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 6)
-                                                      7TH-BYTE STAT FEAT))
-                        (STAT (WRITE-MEMORY-UNSIGNED8 (+ (LIFIX ADDR) 7)
-                                                      8TH-BYTE STAT FEAT)))
-                       STAT)))))
-    stat1)
-  :non-executable t
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem write-memory-unsigned64)
-                                 (stat (stat-from-stat1 stat1))))))
+(defsection read1-xreg-unsigned32{0}
+  :short "Refine @(tsee read-xreg-unsigned32) to use the stobj states."
 
-(define read1-instruction (addr stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (INTEGERP ADDR)
-                     (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (LET* ((ADDR (LOGHEAD (FEAT->XLEN FEAT) ADDR)))
-              (AND (= (MOD ADDR 4) 0)
-                   (LET* ((B0 (READ-MEMORY-UNSIGNED8 ADDR STAT FEAT))
-                          (B1 (READ-MEMORY-UNSIGNED8 (+ ADDR 1)
-                                                     STAT FEAT))
-                          (B2 (READ-MEMORY-UNSIGNED8 (+ ADDR 2)
-                                                     STAT FEAT))
-                          (B3 (READ-MEMORY-UNSIGNED8 (+ ADDR 3)
-                                                     STAT FEAT)))
-                         (LOGAPP 8 B0
-                                 (LOGAPP 8 B1 (LOGAPP 8 B2 (LOGAPP 8 B3 0))))))))
-    0)
-  :guard-hints (("Goal"
-                 :use (:instance (:guard-theorem read-instruction)
-                                 (stat (stat-from-stat1 stat1))))))
+  (apt::isodata read-xreg-unsigned32
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-xreg-unsigned32{0}))
 
-(define errorp1 (stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (declare (ignore feat))
-  (if (mbt (stat1p stat1))
-      (b* ((STAT (stat-from-stat1 stat1)))
-        (STAT->ERROR STAT))
-    nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error1 (stat1 feat)
-  :guard (and (stat1p stat1)
-              (b* ((STAT (stat-from-stat1 stat1)))
-                (AND (STATP STAT)
-                     (FEATP FEAT)
-                     (STAT-VALIDP STAT FEAT))))
-  (if (mbt (stat1p stat1))
-      (stat1-from-stat
-       (b* ((STAT (stat-from-stat1 stat1)))
-         (LET ((CHANGE-STAT STAT) (STAT->ERROR T))
-              (STAT (STAT->XREGS CHANGE-STAT)
-                    (STAT->PC CHANGE-STAT)
-                    (STAT->MEMORY CHANGE-STAT)
-                    STAT->ERROR))))
-    stat1)
-  :non-executable t)
+; this fails:
+
+;; (apt::simplify read1-xreg-unsigned32{0}
+;;   :new-name read1-xreg-unsigned32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-xreg-signed32{0}
+  :short "Refine @(tsee read-xreg-signed32) to use the stobj states."
+
+  (apt::isodata read-xreg-signed32
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-xreg-signed32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify read1-xreg-signed32{0}
+;;   :new-name read1-xreg-signed32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-xreg{0}
+  :short "Refine @(tsee write-xreg) to use the stobj states."
+
+  (apt::isodata write-xreg
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-xreg{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg{0}
+;;   :new-name write1-xreg{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-xreg-32{0}
+  :short "Refine @(tsee write-xreg-32) to use the stobj states."
+
+  (apt::isodata write-xreg-32
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-xreg-32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; this fails:
+
+;; (apt::simplify write1-xreg-32{0}
+;;   :new-name write1-xreg-32{1}
+;;   :simplify-guard t
+;;   :enable (stat-from-stat1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-pc{0}
+  :short "Refine @(tsee read-pc) to use the stobj states."
+
+  (apt::isodata read-pc
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-pc{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-pc{0}
+  :short "Refine @(tsee write-pc) to use the stobj states."
+
+  (apt::isodata write-pc
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-pc{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection inc41-pc{0}
+  :short "Refine @(tsee inc4-pc) to use the stobj states."
+
+  (apt::isodata inc4-pc
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name inc41-pc{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-mem8{0}
+  :short "Refine @(tsee read-mem8) to use the stobj states."
+
+  (apt::isodata read-mem8
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-mem8{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-mem16{0}
+  :short "Refine @(tsee read-mem16) to use the stobj states."
+
+  (apt::isodata read-mem16
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-mem16{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-mem32{0}
+  :short "Refine @(tsee read-mem32) to use the stobj states."
+
+  (apt::isodata read-mem32
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-mem32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-mem64{0}
+  :short "Refine @(tsee read-mem64) to use the stobj states."
+
+  (apt::isodata read-mem64
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-mem64{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-mem8{0}
+  :short "Refine @(tsee write-mem8) to use the stobj states."
+
+  (apt::isodata write-mem8
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-mem8{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-mem16{0}
+  :short "Refine @(tsee write-mem16) to use the stobj states."
+
+  (apt::isodata write-mem16
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-mem16{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-mem32{0}
+  :short "Refine @(tsee write-mem32) to use the stobj states."
+
+  (apt::isodata write-mem32
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-mem32{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection write1-mem64{0}
+  :short "Refine @(tsee write-mem64) to use the stobj states."
+
+  (apt::isodata write-mem64
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name write1-mem64{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read1-instruction{0}
+  :short "Refine @(tsee read-instr) to use the stobj states."
+
+  (apt::isodata read-instr
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name read1-instruction{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection errorp1{0}
+  :short "Refine @(tsee errorp) to use the stobj states."
+
+  (apt::isodata errorp
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name errorp1{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection error1{0}
+  :short "Refine @(tsee error) to use the stobj states."
+
+  (apt::isodata error
+                ((stat stat1-iso))
+                :undefined 0
+                :new-name error1{0}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

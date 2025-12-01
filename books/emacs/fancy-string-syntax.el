@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; Copyright (C) 2018 Centaur Technology
 ;
 ; Contact:
@@ -76,7 +77,9 @@
 
 ; Change body to (cons 'message args) and resubmit the following
 ; functions to debug
-(defmacro fancystring-debug (&rest args) nil)
+(defmacro fancystring-debug (&rest args) 
+  (ignore args)
+  nil)
 
 ; From emacs manual 35.4 Syntax Properties, if the 'syntax-table
 ; property of a character is a cons (syntax-code . matching-char),
@@ -109,6 +112,7 @@
 ; fancystring is just fancystring -- we don't need emacs to parse the
 ; intervening stuff beforehand to know how to set the property
 ; correctly.
+  (ignore quotestart) ; avoid warning from byte compiler
   (when (search-forward "\"\"\"}" nil t)
     (let ((after-close-brace (point)))
       (fancystring-debug "Found close fancyquote at %d" after-close-brace quotestart)

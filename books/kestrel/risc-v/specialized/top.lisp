@@ -11,10 +11,8 @@
 
 (in-package "RISCV")
 
-(include-book "features")
-(include-book "states")
-(include-book "rv32im")
-(include-book "rv64im")
+(include-book "rv32im-le/top")
+(include-book "rv64im-le/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,13 +23,13 @@
   (xdoc::topstring
    (xdoc::p
     "RISC-V is a family of ISAs, parameterized over the @(see features).
-     We provide some specializations of the ISA,
-     currently one for RV32IM and one for RV64IM.
-     Those are currently both hand-written,
-     but we plan to re-obtain them, and possibly others, via "
+     We provide some specializations of the ISA.")
+   (xdoc::p
+    "This is work in progresss.
+     Currently most of these specializations are handwritten,
+     but we have started to use "
     (xdoc::seetopic "apt::apt" "APT")
-    " transformation applied to the general model."))
-  :order-subtopics (specialized-features
-                    specialized-states
-                    rv32im
-                    rv64im))
+    " transformation, applied to the general model,
+     to automate the generation of these specializations."))
+  :order-subtopics (riscv32im-le::specialized-rv32im-le
+                    riscv64im-le::specialized-rv64im-le))

@@ -3582,7 +3582,7 @@
     (unbound-tilde-arg
      "Unbound Fmt Variable.  The tilde directive at location ~x0 in the fmt ~
       string below uses the variable ~x1.  But this variable is not bound in ~
-      the association list, ~x2, supplied with the fmt string.")
+      the association list, ~x2, supplied with the fmt string.~|~%~x3")
     (unrecognized-tilde-arg
      "The tilde directive at position ~x0 of the string below is ~
       unrecognized.~|~%~x1")

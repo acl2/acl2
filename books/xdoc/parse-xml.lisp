@@ -28,6 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Updated 7/2022 for more entities: Matt Kaufmann <matthew.j.kaufmann@gmail.com>
+; Updated 7/2025 to simplify entity handling: Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "XDOC")
 (include-book "autolink")
@@ -287,130 +288,220 @@
                 (acl2::string-upcase s))))
     (intern name "KEYWORD")))
 
-(defun entity-strings-to-keywords-fal (strings fal)
-  (cond ((endp strings) fal)
-        (t (entity-strings-to-keywords-fal
-            (cdr strings)
-            (hons-acons (car strings)
-                        (list :ENTITY
-                              (keyword-from-entity-string (car strings)))
-                        fal)))))
+;; Example alist entry: ("Omega" :ENTITY :|Omega|)
+(defun entity-strings-to-tokens-fal (entity-info fal)
+  (cond ((endp entity-info) fal)
+        (t (entity-strings-to-tokens-fal
+            (cdr entity-info)
+            (let* ((entry (car entity-info))
+                   (string (car entry)))
+              (hons-acons string
+                          (list :ENTITY
+                                (keyword-from-entity-string string))
+                          fal))))))
 
-(defun entity-keywords-to-strings-fal (strings fal)
-  (cond ((endp strings) fal)
+;; Example alist entry: (:|Omega| . "&Omega;")
+(defun entity-keywords-to-strings-fal (entity-info fal)
+  (cond ((endp entity-info) fal)
         (t (entity-keywords-to-strings-fal
-            (cdr strings)
-            (hons-acons (keyword-from-entity-string (car strings))
-                        (concatenate 'string
-                                     "&"
-                                     (car strings)
-                                     ";")
-                        fal)))))
+            (cdr entity-info)
+            (let* ((entry (car entity-info))
+                   (string (car entry)))
+              (hons-acons (keyword-from-entity-string string)
+                          (concatenate 'string
+                                       "&"
+                                       string
+                                       ";")
+                          fal))))))
 
-(defconst *entity-strings*
+(defconst *entity-info*
 
-; Warning: Keep this in sync with *entitytok-as-plaintext-fal* below,
-; *xml-entity-stuff* in prepare-topic.lisp, wrapXdocFragment in
-; fancy/xslt.js, (defxdoc entities ...) in topics.lisp, and
-; wrap_xdoc_fragment in fancy/xdata2html.pl
+; Warning: Keep this in sync with:
+; - wrapXdocFragment in fancy/xslt.js,
+; - wrap_xdoc_fragment in fancy/xdata2html.pl
+; - (defxdoc entities ...) in topics.lisp
 
-  '("amp"
-    "lt"
-    "gt"
-    "quot"
-    "apos"
-    "nbsp"
-    "ndash"
-    "mdash"
-    "larr"
-    "rarr"
-    "harr"
-    "lang"
-    "rang"
-    "hellip"
-    "lsquo"
-    "rsquo"
-    "ldquo"
-    "rdquo"
-    "and"
-    "or"
-    "not"
-    "ne"
-    "le"
-    "ge"
-    "mid"
-    "times"
+; Each entry is of the form:
+;  (<entity> <plaintext> <decimal-number>)
+; or (for the 5 special values)
+;  (<entity> <plaintext> :built-in)
+
+; See https://www.w3schools.com/charsets/ref_html_entities_4.asp
+
+; The decimal values below for Greek letters were obtained from
+; https://www.htmlhelp.com/reference/html40/entities/symbols.html.
+
+; The additional symbols below are from
+; https://www.w3schools.com/html/html_symbols.asp.
+
+  '(;; These 5 are treated specially by make-xml-entity-stuff-items-aux as they
+    ;; not be declared (see https://www.w3.org/TR/xml/):
+    ("amp"  "&" :built-in)
+    ("lt"   "<" :built-in)
+    ("gt"   ">" :built-in)
+    ("quot" "\"" :built-in)
+    ("apos" "'" :built-in)
+
+    ("nbsp"   " " 160) ; wart: disappears when preceded only by spaces except in <code>..</code>
+    ("ndash"  "--" 8211)
+    ("mdash"  "---" 8212)
+    ("larr"   "<--" 8592)
+    ("rarr"   "-->" 8594)
+    ("harr"   "<->" 8596)
+    ("lang"   "<" 9001)
+    ("rang"   ">" 9002)
+    ("hellip" "..." 8230)
+    ("lsquo"  "`" 8216)
+    ("rsquo"  "'" 8217)
+    ("ldquo"  "``" 8220)
+    ("rdquo"  "''" 8221)
+    ("and"    "&" 8743)
+    ("or"     "\\/" 8744)
+    ("not"    "~" 172)
+    ("ne"     "!=" 8800)
+    ("le"     "<=" 8804)
+    ("ge"     ">=" 8805)
+    ("mid"    "|" 8739)
+    ("times"  "\\times" 215)
 
 ; capitalized Greek letters
 
-    "Alpha"
-    "Beta"
-    "Gamma"
-    "Delta"
-    "Epsilon"
-    "Zeta"
-    "Eta"
-    "Theta"
-    "Iota"
-    "Kappa"
-    "Lambda"
-    "Mu"
-    "Nu"
-    "Xi"
-    "Omicron"
-    "Pi"
-    "Rho"
-    "Sigma"
-    "Tau"
-    "Upsilon"
-    "Phi"
-    "Chi"
-    "Psi"
-    "Omega"
+    ("Alpha"   "\\Alpha" 913)
+    ("Beta"    "\\Beta" 914)
+    ("Gamma"   "\\Gamma" 915)
+    ("Delta"   "\\Delta" 916)
+    ("Epsilon" "\\Epsilon" 917)
+    ("Zeta"    "\\Zeta" 918)
+    ("Eta"     "\\Eta" 919)
+    ("Theta"   "\\Theta" 920)
+    ("Iota"    "\\Iota" 921)
+    ("Kappa"   "\\Kappa" 922)
+    ("Lambda"  "\\Lambda" 923)
+    ("Mu"      "\\Mu" 924)
+    ("Nu"      "\\Nu" 925)
+    ("Xi"      "\\Xi" 926)
+    ("Omicron" "\\Omicron" 927)
+    ("Pi"      "\\Pi" 928)
+    ("Rho"     "\\Rho" 929) ;; number 930 is not used
+    ("Sigma"   "\\Sigma" 931)
+    ("Tau"     "\\Tau" 932)
+    ("Upsilon" "\\Upsilon" 933)
+    ("Phi"     "\\Phi" 934)
+    ("Chi"     "\\Chi" 935)
+    ("Psi"     "\\Psi" 936)
+    ("Omega"   "\\Omega" 937)
 
 ; lower case Greek letters
 
-    "alpha"
-    "beta"
-    "gamma"
-    "delta"
-    "epsilon"
-    "zeta"
-    "eta"
-    "theta"
-    "iota"
-    "kappa"
-    "lambda"
-    "mu"
-    "nu"
-    "xi"
-    "omicron"
-    "pi"
-    "rho"
-    "sigma"
-    "tau"
-    "upsilon"
-    "phi"
-    "chi"
-    "psi"
-    "omega"
+    ("alpha"   "\\alpha" 945)
+    ("beta"    "\\beta" 946)
+    ("gamma"   "\\gamma" 947)
+    ("delta"   "\\delta" 948)
+    ("epsilon" "\\epsilon" 949)
+    ("zeta"    "\\zeta" 950)
+    ("eta"     "\\eta" 951)
+    ("theta"   "\\theta" 952)
+    ("iota"    "\\iota" 953)
+    ("kappa"   "\\kappa" 954)
+    ("lambda"  "\\lambda" 955)
+    ("mu"      "\\mu" 956)
+    ("nu"      "\\nu" 957)
+    ("xi"      "\\xi" 958)
+    ("omicron" "\\omicron" 959)
+    ("pi"      "\\pi" 960)
+    ("rho"     "\\rho" 961) ; could add sigmaf here (962)
+    ("sigma"   "\\sigma" 963)
+    ("tau"     "\\tau" 964)
+    ("upsilon" "\\upsilon" 965)
+    ("phi"     "\\phi" 966)
+    ("chi"     "\\chi" 967)
+    ("psi"     "\\psi" 968)
+    ("omega"   "\\omega" 969)
+
+; capitalized letters with diacritics
+
+    ("Ccedil" "\\Ccedil" 199)
+    ("Aacute" "\\Aacute" 193)
+    ("Agrave" "\\Agrave" 192)
+    ("Acirc" "\\Acirc" 194)
+    ("Atilde" "\\Atilde" 195)
+    ("Auml" "\\Auml" 196)
+    ("Aring" "\\Aring" 197)
+    ("Egrave" "\\Egrave" 200)
+    ("Eacute" "\\Eacute" 201)
+    ("Ecirc" "\\Ecirc" 202)
+    ("Euml" "\\Euml" 203)
+    ("Igrave" "\\Igrave" 204)
+    ("Iacute" "\\Iacute" 205)
+    ("Icirc" "\\Icirc" 206)
+    ("Iuml" "\\Iuml" 207)
+    ("Ntilde" "\\Ntilde" 209)
+    ("Ograve" "\\Ograve" 210)
+    ("Oacute" "\\Oacute" 211)
+    ("Ocirc" "\\Ocirc" 212)
+    ("Otilde" "\\Otilde" 213)
+    ("Ouml" "\\Ouml" 214)
+    ("Ugrave" "\\Ugrave" 217)
+    ("Uacute" "\\Uacute" 218)
+    ("Ucirc" "\\Ucirc" 219)
+    ("Uuml" "\\Uuml" 220)
+    ("Aogon" "\\Aogon" 260)
+    ("Eogon" "\\Eogon" 280)
+    ("Iogon" "\\Iogon" 302)
+    ("Uogon" "\\Uogon" 370)
+    ("Nacute" "\\Nacute" 323)
+
+; lower case letters with diacritics
+
+    ("ccedil" "\\ccedil" 231)
+    ("aacute" "\\aacute" 225)
+    ("agrave" "\\agrave" 224)
+    ("acirc" "\\acirc" 226)
+    ("atilde" "\\atilde" 227)
+    ("auml" "\\auml" 228)
+    ("aring" "\\aring" 229)
+    ("egrave" "\\egrave" 232)
+    ("eacute" "\\eacute" 233)
+    ("ecirc" "\\ecirc" 234)
+    ("euml" "\\euml" 235)
+    ("igrave" "\\igrave" 236)
+    ("iacute" "\\iacute" 237)
+    ("icirc" "\\icirc" 238)
+    ("iuml" "\\iuml" 239)
+    ("ntilde" "\\ntilde" 241)
+    ("ograve" "\\ograve" 242)
+    ("oacute" "\\oacute" 243)
+    ("ocirc" "\\ocirc" 244)
+    ("otilde" "\\otilde" 245)
+    ("ouml" "\\ouml" 246)
+    ("ugrave" "\\ugrave" 249)
+    ("uacute" "\\uacute" 250)
+    ("ucirc" "\\ucirc" 251)
+    ("uuml" "\\uuml" 252)
+    ("aogon" "\\aogon" 261)
+    ("eogon" "\\eogon" 281)
+    ("iogon" "\\iogon" 303)
+    ("uogon" "\\uogon" 371)
+    ("nacute" "\\nacute" 324)
 
 ; math symbols (ok to add more)
 
-    "forall"
-    "exist"
-    "empty"
-    "isin"
-    "notin"
-    "prod"
-    "sum"
+    ("forall" "\\forall" 8704)
+    ("exist"  "\\exist" 8707)
+    ("empty"  "\\empty" 8709)
+    ("isin"   "\\isin" 8712)
+    ("notin"  "\\notin" 8713)
+    ("prod"   "\\prod" 8719)
+    ("sum"    "\\sum" 8721)
     ))
 
-(defconst *entity-strings-to-keywords-fal*
-  (entity-strings-to-keywords-fal *entity-strings* nil))
+;; Example alist entry: ("Omega" :ENTITY :|Omega|)
+(defconst *entity-strings-to-tokens-fal*
+  (entity-strings-to-tokens-fal *entity-info* nil))
 
+;; Example alist entry: (:|Omega| . "&Omega;")
 (defconst *entity-keywords-to-strings-fal*
-  (let* ((fal (entity-keywords-to-strings-fal *entity-strings* nil))
+  (let* ((fal (entity-keywords-to-strings-fal *entity-info* nil))
          (dup (acl2::duplicate-keysp-eq fal)))
     (if dup
         (er hard 'top
@@ -432,7 +523,7 @@
             n nil))
        (n (+ 1 n)) ;; eat the ;
        (str (str::rchars-to-string rchars))
-       (doublet (cdr (hons-get str *entity-strings-to-keywords-fal*)))
+       (doublet (cdr (hons-get str *entity-strings-to-tokens-fal*)))
        ((when doublet) (mv nil n doublet)))
     (mv (str::cat "Unsupported entity: &" str ";" *nls*
                   "Nearby text: {" (error-context x saved-n xl) "}" *nls*)
@@ -473,98 +564,19 @@
   (cdr (hons-get (entitytok-type x)
                  *entity-keywords-to-strings-fal*)))
 
+(defun entitytok-as-plaintext-fal (entity-info fal)
+  (cond ((endp entity-info) fal) ; the reverse may not be needed
+        (t (entitytok-as-plaintext-fal
+            (cdr entity-info)
+            (let* ((entry (car entity-info))
+                   (string (car entry))
+                   (plaintext (second entry)))
+              (hons-acons (keyword-from-entity-string string)
+                          plaintext
+                          fal))))))
+
 (defconst *entitytok-as-plaintext-fal*
-
-; Warning: Keep this in sync with *entity-strings* above, *xml-entity-stuff* in
-; prepare-topic.lisp, and wrapXdocFragment in fancy/xslt.js, and (defxdoc
-; entities ...) in topics.lisp.
-
-  (make-fast-alist
-   '((:AMP   . "&")
-     (:LT    . "<")
-     (:GT    . ">")
-     (:QUOT  . "\"")
-     (:APOS  . "'")
-     (:NBSP  . " ") ; wart: disappears when preceded only by spaces except in <code>..</code>
-     (:NDASH . "--")
-     (:MDASH . "---")
-     (:LARR  . "<--")
-     (:RARR  . "-->")
-     (:HARR  . "<->")
-     (:LANG  . "<")
-     (:RANG  . ">")
-     (:HELLIP . "...")
-     (:LSQUO . "`")
-     (:RSQUO . "'")
-     (:LDQUO . "``")
-     (:RDQUO . "''")
-     (:AND   . "&")
-     (:OR    . "\\/")
-     (:NOT   . "~")
-     (:NE    . "!=")
-     (:LE    . "<=")
-     (:GE    . ">=")
-     (:MID   . "|")
-     (:TIMES . "\\times")
-
-     (:|Alpha|   . "\\Alpha")
-     (:|Beta|    . "\\Beta")
-     (:|Gamma|   . "\\Gamma")
-     (:|Delta|   . "\\Delta")
-     (:|Epsilon| . "\\Epsilon")
-     (:|Zeta|    . "\\Zeta")
-     (:|Eta|     . "\\Eta")
-     (:|Theta|   . "\\Theta")
-     (:|Iota|    . "\\Iota")
-     (:|Kappa|   . "\\Kappa")
-     (:|Lambda|  . "\\Lambda")
-     (:|Mu|      . "\\Mu")
-     (:|Nu|      . "\\Nu")
-     (:|Xi|      . "\\Xi")
-     (:|Omicron| . "\\Omicron")
-     (:|Pi|      . "\\Pi")
-     (:|Rho|     . "\\Rho")
-     (:|Sigma|   . "\\Sigma")
-     (:|Tau|     . "\\Tau")
-     (:|Upsilon| . "\\Upsilon")
-     (:|Phi|     . "\\Phi")
-     (:|Chi|     . "\\Chi")
-     (:|Psi|     . "\\Psi")
-     (:|Omega|   . "\\Omega")
-
-     (:ALPHA   . "\\alpha")
-     (:BETA    . "\\beta")
-     (:GAMMA   . "\\gamma")
-     (:DELTA   . "\\delta")
-     (:EPSILON . "\\epsilon")
-     (:ZETA    . "\\zeta")
-     (:ETA     . "\\eta")
-     (:THETA   . "\\theta")
-     (:IOTA    . "\\iota")
-     (:KAPPA   . "\\kappa")
-     (:LAMBDA  . "\\lambda")
-     (:MU      . "\\mu")
-     (:NU      . "\\nu")
-     (:XI      . "\\xi")
-     (:OMICRON . "\\omicron")
-     (:PI      . "\\pi")
-     (:RHO     . "\\rho")
-     (:SIGMA   . "\\sigma")
-     (:TAU     . "\\tau")
-     (:UPSILON . "\\upsilon")
-     (:PHI     . "\\phi")
-     (:CHI     . "\\chi")
-     (:PSI     . "\\psi")
-     (:OMEGA   . "\\omega")
-
-     (:FORALL  . "\\forall")
-     (:EXIST   . "\\exist")
-     (:EMPTY   . "\\empty")
-     (:ISIN    . "\\isin")
-     (:NOTIN   . "\\notin")
-     (:PROD    . "\\prod")
-     (:SUM     . "\\sum")
-     )))
+  (entitytok-as-plaintext-fal *entity-info* nil))
 
 (defun entitytok-as-plaintext (x)
   (cdr (hons-get (entitytok-type x)

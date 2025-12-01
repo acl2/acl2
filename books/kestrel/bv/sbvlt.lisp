@@ -438,3 +438,13 @@
 (defthm sbvlt-of-maxint-when-sbvlt
   (implies (sbvlt 32 n free)
            (sbvlt 32 n 2147483647)))
+
+(defthm sbvlt-of-ifix-arg2
+  (equal (sbvlt size (ifix x) y)
+         (sbvlt size x y))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm sbvlt-of-ifix-arg3
+  (equal (sbvlt size x (ifix y))
+         (sbvlt size x y))
+  :hints (("Goal" :in-theory (enable sbvlt))))

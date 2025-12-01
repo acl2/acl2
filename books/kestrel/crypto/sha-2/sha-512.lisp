@@ -32,6 +32,7 @@
 (local (include-book "../../lists-light/append"))
 (local (include-book "../../lists-light/len"))
 (local (include-book "../../bv/bvplus"))
+(local (include-book "../../typed-lists-light/integer-listp"))
 
 (local (in-theory (disable mv-nth)))
 

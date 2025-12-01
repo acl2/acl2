@@ -202,7 +202,7 @@
   (serialize-x86-body))
 
 (defund deserialize-x86 (obj x86)
-  (declare (xargs :stobjs (x86) :guard-debug t))
+  (declare (xargs :stobjs (x86)))
   (deserialize-x86-body))
 
 (local (defthm unsigned-byte-p-8-of-mem

@@ -23,6 +23,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 (include-book "utilities/free-vars")
 (include-book "utilities/subst-free")
 
@@ -161,7 +162,9 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (param-declor-nonabstract initdeclor.declor))
+           :declor (make-param-declor-nonabstract :declor initdeclor.declor
+                                                  :info nil)
+           :attribs nil)
          (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -235,13 +238,16 @@
       :specs param-declon.specs
       :declor (param-declor-case
                 param-declon.declor
-                :nonabstract (param-declor-nonabstract
-                               (add-pointer-declor param-declon.declor.declor))
+                :nonabstract (make-param-declor-nonabstract
+                              :declor (add-pointer-declor
+                                       param-declon.declor.declor)
+                              :info nil)
                 ;; TODO (not used here, but should be implemented for a general
                 ;; utility).
                 :abstract (param-declor-fix param-declon.declor)
                 :none (param-declor-fix param-declon.declor)
-                :ambig (param-declor-fix param-declon.declor)))))
+                :ambig (param-declor-fix param-declon.declor))
+      :attribs param-declon.attribs)))
 
 (define map-add-pointer-param-declon
   ((param-declons param-declon-listp))
@@ -313,7 +319,8 @@
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
                             :params (map-add-pointer-param-declon params)))
-        :body (stmt-compound items))))
+        :body (make-comp-stmt :labels nil :items items)
+        :info nil)))
   :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
   ((define ident-param-declon-map-filter
@@ -366,18 +373,22 @@
               (abstract-fn new-fn-name spec pointers items decls)))
           (retok new-fn
                  (list
-                   (block-item-stmt
-                     (stmt-return
+                   (make-block-item-stmt
+                    :stmt
+                     (make-stmt-return
+                      :expr?
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (map-address-ident-list idents))))))))
+                         :args (map-address-ident-list idents))
+                      :info nil)
+                    :info nil)))))
        ((when (endp items))
         (retmsg$ "Bad split point specifier"))
        (item (first items))
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
                                (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
@@ -407,41 +418,39 @@
                (fundef2 fundef-optionp))
   (b* (((reterr) (c$::irr-fundef) nil)
        ((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (b* (((mv well-formedp fundef-name params)
-             (dirdeclor-case
-               fundef.declor.direct
-               :function-params
-               (mv t
-                   (c$::dirdeclor->ident fundef.declor.direct.declor)
-                   fundef.declor.direct.params)
-               :function-names
-               (mv t
-                   (c$::dirdeclor->ident fundef.declor.direct.declor)
-                   nil)
-               :otherwise (mv nil nil nil)))
-           ((unless (and well-formedp
-                         (equal target-fn fundef-name)))
-            (retok (fundef-fix fundef) nil))
-           ((erp new-fn truncated-items)
-              (split-fn-block-item-list
-                new-fn-name
-                fundef.body.items
-                fundef.spec
-                fundef.declor.pointers
-                (param-declon-list-to-ident-param-declon-map params)
-                split-point)))
-        (retok new-fn
-                 (make-fundef
-                   :extension fundef.extension
-                   :spec fundef.spec
-                   :declor fundef.declor
-                   :decls fundef.decls
-                   :body (stmt-compound truncated-items))))
-      :otherwise (retok (fundef-fix fundef) nil))))
+       ((declor fundef.declor) fundef.declor)
+       ((mv well-formedp fundef-name params)
+        (dirdeclor-case
+         fundef.declor.direct
+         :function-params
+         (mv t
+             (c$::dirdeclor->ident fundef.declor.direct.declor)
+             fundef.declor.direct.params)
+         :function-names
+         (mv t
+             (c$::dirdeclor->ident fundef.declor.direct.declor)
+             nil)
+         :otherwise (mv nil nil nil)))
+       ((unless (and well-formedp
+                     (equal target-fn fundef-name)))
+        (retok (fundef-fix fundef) nil))
+       ((erp new-fn truncated-items)
+        (split-fn-block-item-list
+         new-fn-name
+         (comp-stmt->items fundef.body)
+         fundef.spec
+         fundef.declor.pointers
+         (param-declon-list-to-ident-param-declon-map params)
+         split-point)))
+    (retok new-fn
+           (make-fundef
+            :extension fundef.extension
+            :spec fundef.spec
+            :declor fundef.declor
+            :decls fundef.decls
+            :body (make-comp-stmt :labels (comp-stmt->labels fundef.body)
+                                  :items truncated-items)
+            :info fundef.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,6 +561,24 @@
                                          split-point)))
     (mv er (transunit-ensemble map))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-code-ensemble
+  ((target-fn identp)
+   (new-fn-name identp)
+   (code code-ensemblep)
+   (split-point natp))
+  :returns (mv (er? maybe-msgp)
+               (new-code code-ensemblep))
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code)
+       ((reterr) (irr-code-ensemble))
+       ((erp tunits) (split-fn-transunit-ensemble target-fn
+                                                  new-fn-name
+                                                  code.transunits
+                                                  split-point)))
+    (retok (change-code-ensemble code :transunits tunits))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing split-fn)
@@ -566,19 +593,19 @@
    split-point
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (transunit-ensemblep tunits))
+               (code (code-ensemblep code))
                (const-new$ symbolp)
                (target$ identp)
                (new-fn$ identp)
                (split-point natp))
   :short "Process the inputs."
   (b* (((reterr)
-        (c$::irr-transunit-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
+        (irr-code-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
@@ -589,7 +616,7 @@
        (new-fn (ident new-fn))
        ((unless (natp split-point))
         (retmsg$ "~x0 must be a natural number." split-point)))
-    (retok tunits const-new target new-fn split-point)))
+    (retok code const-new target new-fn split-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,7 +625,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-fn-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (const-new symbolp)
    (target identp)
    (new-fn identp)
@@ -607,15 +634,15 @@
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp tunits)
-        (split-fn-transunit-ensemble
+       ((erp code)
+        (split-fn-code-ensemble
           target
           new-fn
-          tunits
+          code
           split-point))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -631,11 +658,11 @@
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits const-new target new-fn split-point)
+       ((erp code const-new target new-fn split-point)
         (split-fn-process-inputs
           const-old const-new target new-fn split-point wrld))
        ((erp event)
-        (split-fn-gen-everything tunits const-new target new-fn split-point)))
+        (split-fn-gen-everything code const-new target new-fn split-point)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

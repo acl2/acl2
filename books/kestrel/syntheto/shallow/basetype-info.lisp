@@ -13,7 +13,7 @@
 
 ;; ACL2 base type names are the irregular verbs of FTY.
 ;; See the table here:
-;; https://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=FTY____BASETYPES
+;; https://acl2.org/doc/?topic=FTY____BASETYPES
 ;; One additional complication not covered in the table is that the
 ;; symbol-package-name of these symbols is sometimes the "ACL2" package,
 ;; but sometimes the "COMMON-LISP" package.  So you must be careful not to

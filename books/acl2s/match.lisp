@@ -621,7 +621,8 @@ Examples and proof mentioned in documentation.
 
 Testing.
 
-(include-book "xdoc/debug" :dir :system)
+(include-book ;; Newline to fool ACL2/cert.pl dependency scanner
+ "xdoc/debug" :dir :system)
 :doc match
 
 |#

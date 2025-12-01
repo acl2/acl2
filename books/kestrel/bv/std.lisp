@@ -13,6 +13,7 @@
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "bit-to-bool")
 (include-book "bool-to-bit")
+(local (include-book "unsigned-byte-p"))
 
 (defthm bool->bit-becomes-bool-to-bit
   (equal (bool->bit x)

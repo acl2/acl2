@@ -412,7 +412,7 @@ by more than one line to cross a string literal."
   (indent-region-line-by-line (region-beginning) (region-end)))
 
 ;; Simpler than version from lisp-mode.el and more consistent with TAB
-(defun indent-sexp (arg)
+(defun indent-sexp (&optional arg)
   (interactive "P")
   (mark-sexp arg)
   (indent-region (point) (mark)))

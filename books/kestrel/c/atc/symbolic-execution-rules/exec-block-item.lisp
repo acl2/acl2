@@ -27,29 +27,13 @@
   (defruled exec-block-item-when-declon
     (implies (and (syntaxp (quotep item))
                   (equal (block-item-kind item) :declon)
-                  (not (zp limit))
                   (equal declon (block-item-declon->get item))
-                  (equal var+scspec+tyname+init
-                         (obj-declon-to-ident+scspec+tyname+init declon))
-                  (equal var (mv-nth 0 var+scspec+tyname+init))
-                  (equal scspec (mv-nth 1 var+scspec+tyname+init))
-                  (equal tyname (mv-nth 2 var+scspec+tyname+init))
-                  (equal init (mv-nth 3 var+scspec+tyname+init))
-                  (scspecseq-case scspec :none)
-                  init
-                  (equal type (tyname-to-type tyname))
-                  (not (type-case type :array))
-                  (equal ival+compst1
-                         (exec-initer init compst fenv (1- limit)))
-                  (equal ival (mv-nth 0 ival+compst1))
-                  (equal compst1 (mv-nth 1 ival+compst1))
-                  (init-valuep ival)
-                  (equal val (init-value-to-value type ival))
-                  (valuep val)
-                  (equal compst2 (create-var var val compst1))
-                  (compustatep compst2))
+                  (not (zp limit))
+                  (equal compst1
+                         (exec-obj-declon declon compst fenv (1- limit)))
+                  (compustatep compst1))
              (equal (exec-block-item item compst fenv limit)
-                    (mv nil compst2)))
+                    (mv (stmt-value-none) compst1)))
     :enable exec-block-item)
 
   (defruled exec-block-item-when-stmt
@@ -69,8 +53,6 @@
       (:e block-item-kind)
       (:e block-item-declon->get)
       (:e block-item-stmt->get)
-      (:e obj-declon-to-ident+scspec+tyname+init)
-      (:e scspecseq-kind)
       return-type-of-init-value-single)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,21 +88,21 @@
     (implies (and (not (zp limit))
                   (compustatep compst))
              (equal (exec-block-item-list nil compst fenv limit)
-                    (mv nil compst)))
+                    (mv (stmt-value-none) compst)))
     :enable exec-block-item-list)
 
   (defruled exec-block-item-list-when-consp
     (implies (and (syntaxp (quotep items))
                   (consp items)
                   (not (zp limit))
-                  (equal val?+compst1
+                  (equal sval+compst1
                          (exec-block-item (car items) compst fenv (1- limit)))
-                  (equal val? (mv-nth 0 val?+compst1))
-                  (value-optionp val?)
-                  (equal compst1 (mv-nth 1 val?+compst1)))
+                  (equal sval (mv-nth 0 sval+compst1))
+                  (stmt-valuep sval)
+                  (equal compst1 (mv-nth 1 sval+compst1)))
              (equal (exec-block-item-list items compst fenv limit)
-                    (if (valuep val?)
-                        (mv val? compst1)
+                    (if (equal (stmt-value-kind sval) :return)
+                        (mv sval compst1)
                       (exec-block-item-list (cdr items)
                                             compst1
                                             fenv
@@ -129,21 +111,24 @@
 
   (defruled exec-block-item-list-of-append
     (equal (exec-block-item-list (append items1 items2) compst fenv limit)
-           (b* (((mv val? compst)
+           (b* (((mv sval compst)
                  (exec-block-item-list items1 compst fenv limit))
-                ((when (errorp val?)) (mv val? compst))
-                ((when (valuep val?)) (mv val? compst)))
+                ((when (errorp sval)) (mv sval compst))
+                ((when (stmt-value-case sval :return)) (mv sval compst)))
              (exec-block-item-list items2 compst fenv (- limit (len items1)))))
     :induct (ind items1 compst fenv limit)
-    :enable (exec-block-item-list len fix)
+    :enable (exec-block-item-list
+             stmt-valuep-when-stmt-value-resultp-and-not-errorp
+             len
+             fix)
     :prep-lemmas
     ((defun ind (items compst fenv limit)
        (b* (((when (zp limit)) nil)
             ((when (endp items)) nil)
-            ((mv val? compst)
+            ((mv sval compst)
              (exec-block-item (car items) compst fenv (1- limit)))
-            ((when (errorp val?)) nil)
-            ((when (valuep val?)) nil))
+            ((when (errorp sval)) nil)
+            ((when (stmt-value-case sval :return)) nil))
          (ind (cdr items) compst fenv (1- limit))))))
 
   (defruled append-of-take-and-nthcdr

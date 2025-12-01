@@ -17,7 +17,7 @@
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "rational-lists")
 (include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially (do not remove)
-(include-book "kestrel/booleans/boolif" :dir :system) ;since this book deals with boolif specially (do not remove)
+(include-book "kestrel/booleans/boolif-def" :dir :system) ;since this book deals with boolif specially (do not remove)
 (include-book "kestrel/utilities/myif" :dir :system) ;since this book deals with myif specially (do not remove)
 (include-book "refine-assumptions") ; todo.  for all-dag-function-call-exprp
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
@@ -680,7 +680,8 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp bound))
            (bounded-contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len) bound))
-  :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
+  :hints (("Goal" :cases ((equal ':false (get-axe-disjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
+           :in-theory (enable contextp context-representing-negation-of-node))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
@@ -123,7 +124,7 @@
          "books/system/doc/rendered-doc-combined.lsp")
  'TOP
  "ACL2+Books Manual"
- "https://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz"
+ "https://acl2.org/doc/rendered-doc-combined.lsp.gz"
  (concat *acl2-sources-dir* "TAGS-acl2-doc")
  (concat *acl2-sources-dir* "TAGS"))
 
@@ -1091,6 +1092,7 @@ a Manual\" in :doc acl2-doc for more information."
       (when topic-children-ht
         (maphash (lambda (child val)
                    (when (null (gethash child ht))
+                     (ignore val) ; for Emacs 30 byte compiler
                      (acl2-doc-topics-ht-1 child ht children-ht)))
                  topic-children-ht)))))
 
@@ -1603,20 +1605,20 @@ be used.  In particular, you can visit a displayed topic name by
 putting your cursor on it and typing <RETURN>."
 
   (interactive)
-  (let* ((buf0 (get-buffer *acl2-doc-history-buffer-name*))
-         (buf (or buf0
-                  (get-buffer-create *acl2-doc-history-buffer-name*)))
-         (all (reverse *acl2-doc-all-topics-rev*)))
-    (switch-to-buffer *acl2-doc-history-buffer-name*)
-    (acl2-doc-mode)
-    (cond (buf0
-           (setq buffer-read-only nil)
-           (delete-region (point-min) (point-max))))
-    (insert "List of all visited topics in order, newest at the bottom:\n")
-    (insert "=========================================================\n")
-    (while all
-      (insert (format "%s" (pop all)))
-      (insert "\n"))
+  (let ((buf0 (get-buffer *acl2-doc-history-buffer-name*)))
+    (when (not buf0)
+      (get-buffer-create *acl2-doc-history-buffer-name*))
+    (let ((all (reverse *acl2-doc-all-topics-rev*)))
+      (switch-to-buffer *acl2-doc-history-buffer-name*)
+      (acl2-doc-mode)
+      (cond (buf0
+             (setq buffer-read-only nil)
+             (delete-region (point-min) (point-max))))
+      (insert "List of all visited topics in order, newest at the bottom:\n")
+      (insert "=========================================================\n")
+      (while all
+        (insert (format "%s" (pop all)))
+        (insert "\n"))
 
 ;;; We could bind x to *acl2-doc-history* and execute the commented-out form
 ;;; just below, after printing a separator such as the one above.  If someone
@@ -1629,11 +1631,11 @@ putting your cursor on it and typing <RETURN>."
 ;;;   (insert (format "%s" (cadr (pop x))))
 ;;;    (insert "\n"))
 
-    (setq buffer-read-only t)
-    (set-buffer-modified-p nil)
-    (goto-char (point-max))
-    (recenter -1)
-    (message "List of all visited topics in order, newest at the bottom")))
+      (setq buffer-read-only t)
+      (set-buffer-modified-p nil)
+      (goto-char (point-max))
+      (recenter -1)
+      (message "List of all visited topics in order, newest at the bottom"))))
 
 (defun acl2-doc-help ()
 

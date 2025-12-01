@@ -15,12 +15,12 @@
 ;; May not be strictly needed for this example but will be in general:
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
+(include-book "kestrel/axe/x86/unroller" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 ;; (depends-on "add.elf64")
 ;; Lift the add function into logic by unrolling:
-(def-unrolled add "add.elf64" :target "add"
+(def-unrolled add :executable "add.elf64" :target "add"
   :output :rax ; return only the sum
   )
 

@@ -87,9 +87,7 @@
      this is the object designator that the expression denotes, if any.
      The terms are untranslated, to make them more readable,
      in particular to eliminate quotes before numbers.
-     Terms, expression, and type are passed as inputs.
-     The theorem is contextualized,
-     and further conditioned by the satisfaction of the guard of @('fn').")
+     Terms, expression, and type are passed as inputs.")
    (xdoc::p
     "The hints or instructions to prove the theorem are passed as input,
      because they depend on the specifics of the expression."))
@@ -396,7 +394,7 @@
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
                 compustate-frames-number-of-add-var-not-zero
-                read-object-of-enter-scope))
+                read-object-alloc-of-enter-scope))
        ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
                              rules prec-tags thm-index names-to-avoid wrld)))
@@ -685,7 +683,7 @@
           (then-hints
            `(("Goal"
               :in-theory '(,then-var-thm
-                           read-object-of-enter-scope
+                           read-object-alloc-of-enter-scope
                            read-object-of-update-object-same
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff
@@ -704,7 +702,7 @@
                            update-var-of-add-var
                            equal-of-ident-and-ident
                            (:e str-fix)
-                           exit-scope-of-enter-scope
+                           exit-scope-of-enter-scope-when-compustatep
                            compustatep-of-add-var
                            compustate-frames-number-of-add-var-not-zero
                            objdesign-of-var-of-add-var-iff
@@ -753,7 +751,7 @@
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
-                           read-object-of-enter-scope
+                           read-object-alloc-of-enter-scope
                            read-object-of-update-object-same
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff
@@ -772,7 +770,7 @@
                            update-var-of-add-var
                            equal-of-ident-and-ident
                            (:e str-fix)
-                           exit-scope-of-enter-scope
+                           exit-scope-of-enter-scope-when-compustatep
                            compustatep-of-add-var
                            compustate-frames-number-of-add-var-not-zero
                            objdesign-of-var-of-add-var-iff

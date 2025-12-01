@@ -278,7 +278,7 @@
                       (< k (bvplus (+ 1 (max xsize zsize)) (bvplus (+ 1 (max xsize zsize)) x z) (- y)))
                     nil)))
   :hints (("Goal" :use (:instance <-of-constant-and-+-of-minus-and-bv (x (+ x z)) (xsize (+ 1 (max xsize zsize))))
-           :in-theory (e/d (unsigned-byte-p-forced BVPLUS-OF-+-ARG2)
+           :in-theory (e/d (unsigned-byte-p-forced BVPLUS-OF-+-ARG2 bvplus-of-+-arg3)
                            (<-of-constant-and-+-of-minus-and-bv
                             SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 

@@ -14,6 +14,7 @@
 (include-book "bvchop-def")
 (include-book "../arithmetic-light/power-of-2p") ; todo: only include the def?
 (include-book "../arithmetic-light/lg-def")
+(include-book "../arithmetic-light/ceiling-of-lg-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/times"))
@@ -23,6 +24,7 @@
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/mod-and-expt"))
+(local (include-book "../arithmetic-light/ceiling-of-lg"))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 ;drop?
@@ -946,3 +948,25 @@
                   (+ x (- y))))
 ;  :hints (("Goal" :use (:instance bvchop-identity (i (+ x (- y))))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm bvchop-of-if-when-constants
+  (implies (syntaxp (and (quotep n)
+                         (quotep k1)
+                         (quotep k2)))
+           (equal (bvchop n (if test k1 k2))
+                  (if test
+                      (bvchop n k1)
+                    (bvchop n k2)))))
+
+(defthm bvchop-of-+-of-1-and-ceiling-of-lg-same
+  (implies (natp x)
+           (equal (bvchop (+ 1 (ceiling-of-lg x)) x)
+                  x)))
+
+(defthm bvchop-of-ceiling-of-lg-same
+  (implies (natp x)
+           (equal (bvchop (ceiling-of-lg x) x)
+                  (if (power-of-2p x)
+                      0
+                    x)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))

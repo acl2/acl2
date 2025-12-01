@@ -12,11 +12,12 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
-(include-book "slice")
+(include-book "slice-def")
 (include-book "getbit")
 (include-book "bvchop")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logapp"))
+(local (include-book "slice"))
 (local (include-book "../arithmetic-light/denominator"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
@@ -121,8 +122,8 @@
                 ;; (natp highsize)
                 (natp size2)
                 (natp lowsize))
-           (equal(bvcat highsize (bvchop size2 highval) lowsize lowval)
-                 (bvcat highsize highval lowsize lowval)))
+           (equal (bvcat highsize (bvchop size2 highval) lowsize lowval)
+                  (bvcat highsize highval lowsize lowval)))
   :hints (("Goal"
            :cases ((integerp lowval))
            :in-theory (enable bvcat ;bvchop-logapp
@@ -1565,3 +1566,16 @@
            (equal (+ x (bvcat m y n 0))
                   (bvcat m y n x)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(defthmd bvcat-blast-high
+  (implies (and (syntaxp (not (quotep highval))) ;Fri Mar  4 20:24:01 2011
+                (< 1 highsize)
+                (integerp highsize)
+                (natp lowsize)
+                )
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvcat 1
+                         (getbit (+ -1 highsize) highval)
+                         (+ -1 highsize lowsize)
+                         (bvcat (+ -1 highsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (enable natp))))

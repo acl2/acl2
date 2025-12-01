@@ -1,7 +1,7 @@
 ; More rules about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,25 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
-
-;see also logtail-of-packbv-gen
-;use take instead of firstn?
-(defthm logtail-of-packbv
-  (implies (and (<= count (len bvs))
-                (<= n count)
-                (natp count)
-                (natp n))
-           (equal (logtail n (packbv count 1 bvs))
-                  (packbv (- count n) 1 (firstn (- count n) bvs))))
-  :hints (("Subgoal *1/2" :cases ((equal n count)))
-          ("Goal" ;:induct (induct-cdr-double-sub-1 bvs n count)
-           :induct (packbv count 1 bvs)
-           :do-not '(generalize eliminate-destructors fertilize)
-           :expand ((all-unsigned-byte-p 1 bvs))
-;           :expand (firstn (+ count (- n)) bvs)
-           :in-theory (e/d (packbv) (;logtail-becomes-slice-bind-free
-                                     bvcat-equal-rewrite-alt
-                                     bvcat-equal-rewrite)))))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; (local
 ;;  (defthm <-of-+-of-unary-
@@ -120,24 +102,6 @@
                                    (x x)
                                    (y (+ (- 1) y)))))))
 
-;does not match very nicely because of the * in the LHS
-(defthm logtail-of-packbv-gen
-  (implies (and (<= count (len bvs))
-                (<= n count)
-                (natp count)
-                (natp n)
-                (posp size))
-           (equal (logtail (* n size) (packbv count size bvs))
-                  (packbv (- count n) size (firstn (- count n) bvs))))
-  :hints (("subgoal *1/2" :cases ((equal n count)))
-          ("Goal"
-           :induct (packbv count size bvs)
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (PACKBV bvchop-of-logtail-becomes-slice)
-                           (BVCAT-EQUAL-REWRITE-ALT
-                            BVCAT-EQUAL-REWRITE
-                            ;;zp-open ;causes problems?
-                            )))))
 
 ;drop?
 (defthm slice-of-packbv-1
@@ -184,11 +148,17 @@
                                                             bvs))))
   :hints (("Goal" :in-theory (e/d (slice take-of-nthcdr-becomes-subrange)
                                   (bvchop-of-logtail-becomes-slice
+                                   logtail-of-packbv-with-take
                                    bvchop-of-packbv-new))
-           :use (:instance bvchop-of-packbv-new
+           :use ((:instance bvchop-of-packbv-new
                             (n (+ 1 high (- low)))
                             (count (+ (- low) (len bvs)))
-                            (bvs (take (+ (- low) (len bvs)) bvs))))))
+                            (bvs (take (+ (- low) (len bvs)) bvs)))
+                 (:instance logtail-of-packbv-with-take
+                            (n low)
+                            (itemsize size)
+                            (itemcount (len bvs))
+                            (items bvs))))))
 
 (defthm slice-of-packbv-alt
   (implies (and (< high count)
@@ -266,7 +236,7 @@
                          (packbv (len l1) itemsize l1)
                          (* (len l2) itemsize)
                          (packbv (len l2) itemsize l2))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :cases ((equal 0 (len l1)))
            :use (:instance slice-of-packbv
                            (high (+ -1 (len l1) (len l2)))

@@ -1,7 +1,7 @@
 ; Tests of the prune machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,7 +19,9 @@
 (defun prune-term-test-wrapper (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs state :verify-guards nil))
   (mv-let (erp changep result state)
-    (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp t state)
+    (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp
+                nil ; no-warn-ground-functions
+                t state)
     (declare (ignore changep))
     (mv erp result state)))
 

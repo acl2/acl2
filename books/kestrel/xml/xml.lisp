@@ -1,6 +1,6 @@
 ; A formalization of XML datatypes
 ;
-; Copyright (C) 2014-2024 Kestrel Institute
+; Copyright (C) 2014-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,11 @@
 
 ;; This book describes a quick-and-dirty ACL2 encoding of XML as S-expressions.
 
-;TODO: Handle Unicode...
+;; TODO: Handle Unicode (in strings, in tags?)
+;; TODO: Handle character entities like &lt; and &gt;.
 
 ;recognizes a binding from an attribute name to a value.  Example: (= "package" "edu.kestrel.examples.app2")
+;; TODO: Consider not storing the equal sign.
 (defun xml-attributep (x)
   (declare (xargs :guard t))
   (and (true-listp x)
@@ -23,14 +25,12 @@
        (stringp (second x))
        (stringp (third x))))
 
-;; Used by the xml-parser
-(defun get-xml-attributes (items)
-  (declare (xargs :guard (true-listp items)))
-  (if (endp items)
-      nil
-    (if (xml-attributep (first items))
-        (cons (first items) (get-xml-attributes (rest items)))
-      nil)))
+(defun xml-attribute-listp (atts)
+  (declare (xargs :guard t))
+  (if (not (consp atts))
+      (null atts)
+    (and (xml-attributep (first atts))
+         (xml-attribute-listp (rest atts)))))
 
 ;Skip over a prefix of well-formed attribute bindings (these come first in the list of arguments of a parent element, before its child elements):
 (defund skip-xml-attributes (items)
@@ -52,41 +52,64 @@
   :rule-classes (:linear :rewrite)
   :hints (("Goal" :in-theory (enable skip-xml-attributes))))
 
-; xml-elementp recognizes a valid XML element (possibly containing attributes and nested elements)
-
-;an XML 'item' is an XML element or a string
-
 ; In XML, an element can have attributes (name/value pairs stored in
 ; the element's start tag), followed by child elements (nested elements listed
 ; between the parent element's start and end tags)
 (mutual-recursion
- (defund xml-item-listp (items)
-   (declare (xargs :guard (true-listp items)
-                   :measure (acl2-count items)))
-   (if (endp items)
-       t
-     (let ((item (first items)))
-       (and (or ;(xml-attributep item)
-             (stringp item)
-             (xml-elementp item))
-            (xml-item-listp (rest items))))))
+  ;; An XML 'item' is an XML element or a string
+  (defund xml-item-listp (items)
+    (declare (xargs :guard t
+                    :measure (acl2-count items)))
+    (if (not (consp items))
+        (null items)
+      (let ((item (first items)))
+        (and (or ;(xml-attributep item)
+               (stringp item)
+               (xml-elementp item))
+             (xml-item-listp (rest items))))))
 
- ;;Recognizes a well-formed XML element:
- (defund xml-elementp (x)
-   (declare (xargs :guard t
-                   :measure (acl2-count x)))
-   (and (consp x)
-        (let ((tag (first x))
-              (args (rest x)))
-          (and (stringp tag) ;fixme can unicode appear here?
-               (true-listp args)
-               ;;first we skip over any XML attrbutes (these must come first), then we check that everything else consists of well-formed child elements:
-               (xml-item-listp (skip-xml-attributes args)))))))
+  ;; Recognizes a well-formed XML element, representing a pair of matched start
+  ;; and end tags, possibly with attributes in the start tag and possibly
+  ;; containing nested xml items (strings and XML elements) between the tags.
+  (defund xml-elementp (x)
+    (declare (xargs :guard t
+                    :measure (acl2-count x)))
+    (and (consp x)
+         (let ((tag (first x))
+               (args (rest x)))
+           (and (stringp tag)
+                (true-listp args)
+                ;;first we skip over any XML attributes (these must come first), then we check that everything else consists of well-formed child elements:
+                (xml-item-listp (skip-xml-attributes args)))))))
 
-;looks for attributes followed by child elements
+(defthm xml-item-listp-forward-to-true-listp
+  (implies (xml-item-listp items)
+           (true-listp items))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable xml-item-listp))))
+
+;Recognizes a list of attributes followed by a list of child elements
+;; TODO: Change xml-elementp to store the attributes and the nested items separately.
 (defund xml-element-argsp (items)
   (declare (xargs :guard (true-listp items)))
   (xml-item-listp (skip-xml-attributes items)))
+
+(defthm skip-xml-attributes-does-nothing
+  (implies (xml-item-listp args)
+           (equal (skip-xml-attributes args)
+                  args))
+  :hints (("Goal" :in-theory (enable xml-item-listp skip-xml-attributes xml-elementp))))
+
+(defthm xml-element-argsp-of-cdr
+  (implies (xml-element-argsp args)
+           (xml-element-argsp (cdr args)))
+  :hints (("Goal" :in-theory (enable xml-element-argsp xml-item-listp skip-xml-attributes))))
+
+(defthm xml-element-argsp-of-append
+  (implies (and (xml-attribute-listp attributes)
+                (xml-item-listp child-items))
+           (xml-element-argsp (append attributes child-items)))
+  :hints (("Goal" :in-theory (enable xml-element-argsp skip-xml-attributes xml-attribute-listp))))
 
 ;re-characterize to have xml-element-argsp closed up:
 (defthm xml-elementp-rewrite
@@ -94,7 +117,7 @@
          (and (consp x)
               (let ((tag (first x))
                     (args (rest x)))
-                (and (stringp tag) ;fixme can unicode appear here?
+                (and (stringp tag)
                      (true-listp args)
                      ;;first we skip over any XML attrbutes (these must come first), then we check that everything else consists of well-formed child elements:
                      (xml-element-argsp args)))))
@@ -124,28 +147,90 @@
   :hints (("Goal" :expand (XML-ITEM-LISTP ITEMS)
            :in-theory (enable xml-item-listp))))
 
-(defthm xml-item-listp-of-skip-xml-attributes
-  (implies (xml-item-listp args)
-           (xml-item-listp (skip-xml-attributes args)))
-  :hints (("Goal" :in-theory (enable skip-xml-attributes))))
+;; (defthmd xml-item-listp-of-skip-xml-attributes
+;;   (implies (xml-item-listp args)
+;;            (xml-item-listp (skip-xml-attributes args)))
+;;   :hints (("Goal" :in-theory (enable skip-xml-attributes))))
 
-;fixme use deffilter
-;can the items include attrbutes as well as child elements?
-(defun filter-elements-with-name (name items)
-  (declare (xargs :guard (and (true-listp items)
-                              (xml-item-listp items))))
-  (if (not (consp items))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund make-xml-element (tag attributes child-items)
+  (declare (xargs :guard (and (stringp tag)
+                              (xml-attribute-listp attributes)
+                              (xml-item-listp child-items))))
+  (cons tag (append attributes child-items)))
+
+
+(defthm xml-elementp-of-make-xml-element
+  (implies (and (stringp tag)
+                (xml-attribute-listp attributes)
+                (xml-item-listp child-items))
+           (xml-elementp (make-xml-element tag attributes child-items)))
+  :hints (("Goal" :in-theory (enable make-xml-element))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Getters for the tag, attributes, and child-elements:
+
+;; Returns the tag of an XML element.
+(defund xml-element-tag (elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (car elem))
+
+;; Also used by the xml-parser
+(defund get-xml-attributes (items)
+  (declare (xargs :guard (true-listp items))) ; todo
+  (if (endp items)
       nil
-    (let ((item (first items)))
-      (if (and (not (stringp item))
-               (equal name (car item)))
-          (cons item (filter-elements-with-name name (rest items)))
-        (filter-elements-with-name name (rest items))))))
+    (if (xml-attributep (first items))
+        (cons (first items) (get-xml-attributes (rest items)))
+      ;; we've reached the end of the attributes
+      nil)))
 
-;keep the members of ITEMS that are XML elemenet, not strings
+(defthm xml-attribute-listp-of-get-xml-attributes
+  (xml-attribute-listp (get-xml-attributes elem))
+  :hints (("Goal" :in-theory (enable xml-attribute-listp
+                                     get-xml-attributes))))
+
+;; Returns the attributes of an XML element.
+(defund xml-element-attributes (elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (get-xml-attributes (cdr elem)))
+
+(defthm xml-attribute-listp-of-xml-element-attributes
+  (implies (xml-elementp elem)
+           (xml-attribute-listp (xml-element-attributes elem)))
+  :hints (("Goal" :in-theory (enable xml-elementp xml-element-attributes
+                                     xml-element-argsp))))
+
+;; Returns the child items (strings and XML elements) of an XML element:
+(defund xml-element-sub-items (elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (skip-xml-attributes (cdr elem)))
+
+(defthm <-of-acl2-count-of-xml-element-sub-items-linear
+  (implies (xml-elementp elem)
+           (< (acl2-count (xml-element-sub-items elem))
+              (acl2-count elem)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable xml-element-sub-items))))
+
+(defthm xml-item-listp-of-xml-element-sub-items
+  (implies (xml-elementp elem)
+           (xml-item-listp (xml-element-sub-items elem)))
+  :hints (("Goal" :in-theory (enable xml-element-sub-items xml-element-argsp))))
+
+(defthm true-listp-of-xml-element-sub-items-type
+  (implies (xml-elementp elem)
+           (true-listp (xml-element-sub-items elem)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable xml-element-sub-items xml-element-argsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;keep the members of ITEMS that are XML elements, not strings
 (defun filter-xml-elements (items)
-  (declare (xargs :guard (and (true-listp items)
-                              (xml-item-listp items))))
+  (declare (xargs :guard (xml-item-listp items)))
   (if (not (consp items))
       nil
     (let ((item (first items)))
@@ -153,41 +238,41 @@
           (cons item (filter-xml-elements (rest items)))
         (filter-xml-elements (rest items))))))
 
-(defthm use-XML-ELEMENT-ARGSP-limited
-  (IMPLIES (XML-ELEMENT-ARGSP ITEM)
-           (XML-ITEM-LISTP (SKIP-XML-ATTRIBUTES ITEM)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable XML-ELEMENT-ARGSP))))
+;returns all of the child elements (not the strings)
+(defun child-elements (elem)
+  (declare (xargs :guard (xml-elementp elem)
+                  :guard-hints (("Goal" :in-theory (enable xml-element-argsp)))))
+  (filter-xml-elements (xml-element-sub-items elem)))
 
-;fixme what if there are several child elements with the same name?
-(defun get-child-element (name xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (let ((child-elements (skip-xml-attributes (rest xml-element))))
-    (first (filter-elements-with-name name child-elements))))
+;; From the ITEMS (elements and strings) keep the ones that are elements whose tag is NAME.
+(defun filter-elements-with-tag (name items)
+  (declare (xargs :guard (xml-item-listp items)))
+  (if (not (consp items))
+      nil
+    (let ((item (first items)))
+      (if (and (not (stringp item))
+               (equal name (xml-element-tag item)))
+          (cons item (filter-elements-with-tag name (rest items)))
+        (filter-elements-with-tag name (rest items))))))
 
-(defun get-child-elements (name xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (let ((child-elements (skip-xml-attributes (rest xml-element))))
-    (filter-elements-with-name name child-elements)))
+;; (defthm use-xml-element-argsp-limited
+;;   (implies (xml-element-argsp item)
+;;            (xml-item-listp (skip-xml-attributes item)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable xml-element-argsp))))
 
-;returns all child elements
-(defun child-elements (xml-element)
-   (declare (xargs :guard (xml-elementp xml-element)))
-   (let ((args (rest xml-element)))
-    (filter-xml-elements (skip-xml-attributes args))))
+(defund child-elements-with-tag (tag elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (let ((child-items (xml-element-sub-items elem)))
+    (filter-elements-with-tag tag child-items)))
 
-(defthm SKIP-XML-ATTRIBUTES-does-nothing
-  (implies (xml-item-listp args)
-           (equal (skip-xml-attributes args)
-                  args))
-  :hints (("Goal" :in-theory (enable xml-item-listp skip-xml-attributes))))
+;; Returns the first  child element with the given tag.
+;; Returns nil if there aren't any.
+(defund first-child-element-with-tag (tag elem)
+  (declare (xargs :guard (xml-elementp elem)))
+  (first (child-elements-with-tag tag elem)))
 
-(defthm xml-element-argsp-of-cdr
-  (implies (xml-element-argsp args)
-           (xml-element-argsp (cdr args)))
-  :hints (("Goal" :in-theory (enable xml-element-argsp xml-item-listp skip-xml-attributes))))
-
-;use a generic? something like get-the (for "get the unique item in this list that satisfies this predicate -- obligation that only one does?)
+;use a generic? something like get-the (for "get the unique item in this list that satisfies this predicate" -- obligation that only one does?)
 (defun get-xml-attribute-aux (name args)
   (declare (xargs :guard (and (stringp name)
                               (true-listp args)
@@ -198,75 +283,116 @@
     (let ((arg (first args)))
       (if (not (xml-attributep arg))
           nil ;since the attributes come first, all that's left is child elements
-        (if (and (eq '= (first arg))
+        (if (and (eq '= (first arg)) ; drop?
                  (equal name (second arg)))
             (third arg)
           (get-xml-attribute-aux name (rest args)))))))
 
 ;returns nil or a string
 ;get the string value equated to the string name in something like (= "foo" "bar")
-(defund get-xml-attribute (name xml-element)
+(defund get-xml-attribute (name elem)
   (declare (xargs :guard (and (stringp name)
-                              (xml-elementp xml-element))))
-  (let ((args (rest xml-element)))
+                              (xml-elementp elem))))
+  (let ((args (rest elem)))
     (get-xml-attribute-aux name args)))
+
+(defun xml-attribute-presentp (name elem)
+  (declare (xargs :guard (and (stringp name)
+                              (xml-elementp elem))))
+  ;;todo: weaken to bool-fix?
+  (stringp (get-xml-attribute name elem)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Get the first thing in the XML-ELEMENT's contents (a string or child element)
+(defun xml-element-first-contents (elem)
+  (declare (xargs :guard (xml-elementp elem)
+                  :guard-hints (("Goal" :in-theory (disable xml-elementp-rewrite)))
+                  ))
+  (first (xml-element-sub-items elem)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Gather all element names (i.e., tag names):
 (mutual-recursion
- (defun gather-element-names-list (items)
-   (declare (xargs :guard (and (true-listp items)
-                               (xml-item-listp items))
-                   :measure (acl2-count items)
-                   :guard-hints (("Goal" :in-theory (enable XML-ITEM-LISTP)))))
+  (defun gather-element-names-from-items (items)
+    (declare (xargs :guard (xml-item-listp items)
+                    :measure (acl2-count items)
+                    :verify-guards nil ; done below
+                    ))
+    (if (endp items)
+        nil
+      (let ((item (first items)))
+        ;; todo: maybe union?
+        (append (if (stringp item) nil (gather-element-names item))
+                (gather-element-names-from-items (rest items))))))
+
+  (defun gather-element-names (elem)
+    (declare (xargs :guard (xml-elementp elem)
+                    :measure (acl2-count elem)))
+    (if (mbt (xml-elementp elem)) ; for termination
+        (cons (xml-element-tag elem)
+              (gather-element-names-from-items (xml-element-sub-items elem)))
+      nil)))
+
+(verify-guards gather-element-names-from-items)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *whitespace-chars*
+  '(#\Space #\Tab #\Return #\Newline))
+
+(defund whitespace-char-p (char)
+  (declare (xargs :guard t))
+  (member char *whitespace-chars*))
+
+(defun all-whitespace-char-p (chars)
+  (declare (xargs :guard (character-listp chars)))
+  (if (endp chars)
+      t
+    (and (whitespace-char-p (first chars))
+         (all-whitespace-char-p (rest chars)))))
+
+(defun whitespace-string-p (str)
+  (declare (xargs :guard (stringp str)))
+  (all-whitespace-char-p (coerce str 'list)))
+
+(mutual-recursion
+  (defun drop-whitespace-strings-from-parsed-xml-element (elem)
+    (declare (xargs :guard (xml-elementp elem)
+                    :measure (acl2-count elem)))
+    (if (not (mbt (xml-elementp elem)))
+        nil
+      (let* ((tag (xml-element-tag elem))
+             (attribs (xml-element-attributes elem))
+             (sub-items (xml-element-sub-items elem)))
+        `(,tag ,@attribs ,@(drop-whitespace-strings-from-parsed-xml-items sub-items)))))
+
+ (defun drop-whitespace-strings-from-parsed-xml-items (items)
+   (declare (xargs :guard (xml-item-listp items)
+                   :measure (acl2-count items)))
    (if (endp items)
        nil
-     (append (if (stringp (first items)) nil (gather-element-names (first items)))
-             (gather-element-names-list (rest items)))))
+     (let ((item (first items)))
+       (if (stringp item)
+           (if (whitespace-string-p item)
+               (drop-whitespace-strings-from-parsed-xml-items (rest items))
+             (cons item (drop-whitespace-strings-from-parsed-xml-items (rest items))))
+         (cons (drop-whitespace-strings-from-parsed-xml-element item)
+               (drop-whitespace-strings-from-parsed-xml-items (rest items))))))))
 
- (defun gather-element-names (item)
-   (declare (xargs :guard (xml-elementp item)
-                   :measure (acl2-count item)))
-   (if (consp item)       ;for termination
-       (cons (first item) ;the tag
-             ;;first we skip over any XML attrbutes (these must come first), then we check that everything else consists of well-formed child elements:
-             (gather-element-names-list (skip-xml-attributes (rest item))))
-     nil)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: rename get-xml-tag
-(defund get-tag (xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (car xml-element))
-
-(defun xml-attribute-presentp (name xml-element)
-  (declare (xargs :guard (and (stringp name)
-                              (xml-elementp xml-element))))
-  ;;todo: weaken to non-nil?
-  (stringp (get-xml-attribute name xml-element)))
-
-(defun xml-element-contents (xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (cdr xml-element))
-
-;; Get the first thing in the XML-ELEMENT's contents (a string or child element)
-(defun xml-element-first-contents (xml-element)
-  (declare (xargs :guard (xml-elementp xml-element)))
-  (first (xml-element-contents xml-element)))
-
-(defun all-xml-elementp (elems)
+;; Recognizes a true-listp of xml-elements.
+(defun xml-element-listp (elems)
   (declare (xargs :guard t))
-  (if (atom elems)
-      t
+  (if (not (consp elems))
+      (null elems)
     (and (xml-elementp (first elems))
-         (all-xml-elementp (rest elems)))))
-
-(defthm all-xml-elementp-of-cdr
-  (implies (all-xml-elementp elems)
-           (all-xml-elementp (cdr elems)))
-  :hints (("Goal" :in-theory (enable all-xml-elementp))))
+         (xml-element-listp (rest elems)))))
 
 (defun filter-elements-with-attribute (elements attribute-name attribute-value)
-  (declare (xargs :guard (and (true-listp elements)
-                              (all-xml-elementp elements)
+  (declare (xargs :guard (and (xml-element-listp elements)
                               (stringp attribute-name)
                               (stringp attribute-value))))
   (if (not (consp elements))
@@ -281,4 +407,7 @@
 
 ;gets the first such element, or nil
 (defun get-element-with-attribute (elements attribute-name attribute-value)
+  (declare (xargs :guard (and (xml-element-listp elements)
+                              (stringp attribute-name)
+                              (stringp attribute-value))))
   (first (filter-elements-with-attribute elements attribute-name attribute-value)))

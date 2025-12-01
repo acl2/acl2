@@ -69,7 +69,7 @@
                                    logext-cases
                                    bvminus
                                    bvchop-when-top-bit-1
-                                   getbit-when-val-is-not-an-integer
+
                                    bvuminus
                                    <-of-0-and-logext-alt
                                    *-of-expt-of-one-less)
@@ -106,7 +106,7 @@
                                           logext-of-plus
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -126,7 +126,7 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -145,7 +145,7 @@
                                           logext-of-plus
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -163,7 +163,7 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -181,7 +181,7 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -199,7 +199,7 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           bvuminus
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -335,7 +335,7 @@
                                   logext-cases
                                   bvminus
                                   bvchop-when-top-bit-1
-                                  getbit-when-val-is-not-an-integer
+
                                   )
                                  (bvminus-becomes-bvplus-of-bvuminus
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
@@ -356,7 +356,7 @@
                                   logext-cases
                                   bvminus
                                   BVCHOP-WHEN-TOP-BIT-1
-                                  GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                   )
                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
@@ -425,7 +425,7 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           )
                                   (;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant

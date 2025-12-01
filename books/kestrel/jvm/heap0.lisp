@@ -530,7 +530,7 @@
                    (equal (get-field ad pair (set-fields ad bindings heap))
                           (lookup-equal pair bindings)))
           :hints (("goal" :do-not '(generalize eliminate-destructors)
-;                   :expand(STRIP-CARS BINDINGS)
+;                   :expand (STRIP-CARS BINDINGS)
                    :in-theory (e/d (lookup-equal assoc-equal
                                     strip-cars
                                     set-fields

@@ -246,6 +246,29 @@
    )
   :tag :flextypes)
 
+; Lists of Above Aggregates ---------------------------------------------------
+
+(defund flexprod-field-listp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (flexprod-field-p (car x))
+           (flexprod-field-listp (cdr x)))
+    (null x)))
+
+(defund flexprod-listp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (flexprod-p (car x))
+           (flexprod-listp (cdr x)))
+    (null x)))
+
+(defund flexsum-listp (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (and (flexsum-p (car x))
+           (flexsum-listp (cdr x)))
+    (null x)))
+
 ; The Global Type Database ----------------------------------------------------
 
 (table flextypes-table)

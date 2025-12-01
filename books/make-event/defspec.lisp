@@ -189,7 +189,10 @@ sublis-fn.
 (defun constraint (fn wrld)
   (declare (xargs :mode :program))
   (mv-let (sym x)
-          (constraint-info fn wrld)
+          ; Old Code:
+          ; (constraint-info fn wrld)
+          ; New Code:
+          (pre-v8-7-constraint-info fn wrld)
           (cond
            ((unknown-constraints-p x)
             (er hard 'constraint

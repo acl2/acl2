@@ -79,6 +79,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund unquote-if-possible (x)
+  (declare (xargs :guard t))
+  (if (and (quotep x)
+           (consp (cdr x)))
+      (unquote x)
+    nil))
+
 ;; Returns an axe-type, or nil (if we could not determine the type).
 ;should some of the nil cases here be errors or warnings?
 ;fixme handle tuples?

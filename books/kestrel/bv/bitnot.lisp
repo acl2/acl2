@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvnot")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
 
 (defund bitnot (x)
@@ -136,3 +137,8 @@
   (not (equal (bitnot x) (getbit 0 x)))
   :hints (("Goal" :use equal-of-getbit-of-0-and-bitnot
            :in-theory (disable equal-of-getbit-of-0-and-bitnot))))
+
+(defthm bitnot-of-ifix
+  (equal (bitnot (ifix x))
+         (bitnot x))
+  :hints (("Goal" :in-theory (enable ifix))))

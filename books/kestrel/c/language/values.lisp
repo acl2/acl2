@@ -18,9 +18,10 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,9 +213,7 @@
     :true-listp t
     :elementp-of-nil nil
     :pred member-value-listp
-    :measure (two-nats-measure (acl2-count x) 0))
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :measure (two-nats-measure (acl2-count x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,7 +222,9 @@
   :returns (names ident-listp)
   :short "Lift @(tsee member-value->name) to lists."
   (member-value->name x)
+
   ///
+
   (fty::deffixequiv member-value-list->name-list
     :args ((x member-value-listp))))
 
@@ -234,7 +235,9 @@
   :returns (values value-listp)
   :short "Lift @(tsee member-value->value) to lists."
   (member-value->value x)
+
   ///
+
   (fty::deffixequiv member-value-list->value-list
     :args ((x member-value-listp))))
 
@@ -248,6 +251,8 @@
 
 (defsection value-result-theorems
   :extension value-result
+
+  (local (in-theory (enable (:e tau-system))))
 
   (defruled not-errorp-when-valuep
     (implies (valuep x)
@@ -306,6 +311,8 @@
 
 (defsection value-option-result-theorems
   :extension value-option
+
+  (local (in-theory (enable (:e tau-system))))
 
   (defruled not-errorp-when-value-optionp
     (implies (value-optionp x)
@@ -370,6 +377,108 @@
     (implies (expr-valuep x)
              (not (errorp x)))
     :enable (expr-valuep errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption expr-value-option
+  expr-value
+  :short "Fixtype of optional expression values."
+  :pred expr-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult expr-value-option "optional expression values"
+  :enable (errorp
+           expr-value-optionp
+           expr-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection expr-value-option-result-theorems
+  :extension expr-value-option
+
+  (local (in-theory (enable (:e tau-system))))
+
+  (defruled not-errorp-when-expr-value-optionp
+    (implies (expr-value-optionp x)
+             (not (errorp x)))
+    :enable expr-value-optionp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum init-value
+  :short "Fixtype of initializer values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of values for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer value has the same structure as an initializer,
+     but expressions are replaced with (their) values.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     out model of initializer values will be extended accordingly."))
+  (:single ((get value)))
+  (:list ((get value-list)))
+  :pred init-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult init-value "initialization values"
+  :enable (errorp init-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection init-value-result-theorems
+  :extension init-value-result
+
+  (defruled not-errorp-when-init-valuep
+    (implies (init-valuep x)
+             (not (errorp x)))
+    :enable (init-valuep
+             errorp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum stmt-value
+  :short "Fixtype of statement values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our dynamic semantics,
+     a statement may end its execution
+     by moving to the next statement without yielding a value,
+     by returning no value,
+     or by returning a value;
+     in full C, there are other ways in which a statement may end its execution,
+     but here we only focus on our formalized subset.
+     We capture this notion as a statement value,
+     i.e. the value yielded by a statement.")
+   (xdoc::p
+    "Note the distinction between yielding no value without a @('return'),
+     e.g. after executing a null or expression statement (e.g. assignment),
+     and returning without a value,
+     i.e. with a @('return') without expression.
+     The distinction affects how execution proceeds
+     just after the statement in question."))
+  (:none ())
+  (:return ((value? value-option)))
+  :pred stmt-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult stmt-value "statement values"
+  :enable (errorp stmt-valuep))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection stmt-value-result-theorems
+  :extension stmt-value-result
+
+  (defruled not-errorp-when-stmt-valuep
+    (implies (stmt-valuep x)
+             (not (errorp x)))
+    :enable (stmt-valuep errorp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,24 +617,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum init-value
-  :short "Fixtype of initializer values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a notion of values for "
-    (xdoc::seetopic "initer" "initializers")
-    ". An initializer value has the same structure as an initializer,
-     but expressions are replaced with (their) values.")
-   (xdoc::p
-    "As our model of initializers is extended,
-     out model of initializer values will be extended accordingly."))
-  (:single ((get value)))
-  (:list ((get value-list)))
-  :pred init-valuep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a signed integer [C17:6.2.5/4]."
@@ -533,8 +624,7 @@
       (value-case val :sshort)
       (value-case val :sint)
       (value-case val :slong)
-      (value-case val :sllong))
-  :hooks (:fix))
+      (value-case val :sllong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -545,8 +635,7 @@
       (value-case val :ushort)
       (value-case val :uint)
       (value-case val :ulong)
-      (value-case val :ullong))
-  :hooks (:fix))
+      (value-case val :ullong)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,7 +644,6 @@
   :short "Check if a value is an integer [C17:6.2.5/17]."
   (or (value-signed-integerp val)
       (value-unsigned-integerp val))
-  :hooks (:fix)
 
   ///
 
@@ -570,16 +658,14 @@
 (define value-realp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is a real [C17:6.2.5/18]."
-  (value-integerp val)
-  :hooks (:fix))
+  (value-integerp val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define value-arithmeticp ((val valuep))
   :returns (yes/no booleanp)
   :short "Check if a value is arithmetic [C17:6.2.5/18]."
-  (value-realp val)
-  :hooks (:fix))
+  (value-realp val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -587,8 +673,7 @@
   :returns (yes/no booleanp)
   :short "Check if a value is scalar [C17:6.2.5/21]."
   (or (value-arithmeticp val)
-      (value-case val :pointer))
-  :hooks (:fix))
+      (value-case val :pointer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,8 +690,7 @@
        (not (value-case val :schar))
        (not (value-case val :uchar))
        (not (value-case val :sshort))
-       (not (value-case val :ushort)))
-  :hooks (:fix))
+       (not (value-case val :ushort))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -635,8 +719,7 @@
                                       :size (len val.elements))
               :struct (type-struct val.tag))
   :guard-hints (("Goal" :in-theory (enable pos-optionp posp)))
-  :hooks (:fix)
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
+
   ///
 
   (defrule type-kind-of-type-of-value
@@ -738,7 +821,9 @@
   :returns (types type-listp)
   :short "Lift @(tsee type-of-value) to lists."
   (type-of-value x)
+
   ///
+
   (fty::deffixequiv type-list-of-value-list
     :args ((x value-listp))))
 
@@ -758,8 +843,7 @@
      as returning optional values, with @('nil') for no value."))
   (value-option-case val?
                      :some (type-of-value val?.val)
-                     :none (type-void))
-  :hooks (:fix))
+                     :none (type-void)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -772,8 +856,7 @@
     "A @(tsee member-type) is the static counterpart of
      a @(tsee member-value)."))
   (make-member-type :name (member-value->name member)
-                    :type (type-of-value (member-value->value member)))
-  :hooks (:fix))
+                    :type (type-of-value (member-value->value member))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -782,7 +865,9 @@
   :returns (memtypes member-type-listp)
   :short "Lift @(tsee member-type-of-member-value) to lists."
   (member-type-of-member-value x)
+
   ///
+
   (fty::deffixequiv member-types-of-member-values
     :args ((x member-value-listp))))
 
@@ -798,21 +883,20 @@
      an @(tsee init-value)."))
   (init-value-case ival
                    :single (init-type-single (type-of-value ival.get))
-                   :list (init-type-list (type-list-of-value-list ival.get)))
-  :hooks (:fix))
+                   :list (init-type-list (type-list-of-value-list ival.get))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult init-value "initialization values"
-  :enable (errorp init-valuep))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defsection init-value-result-theorems
-  :extension init-value-result
-
-  (defruled not-errorp-when-init-valuep
-    (implies (init-valuep x)
-             (not (errorp x)))
-    :enable (init-valuep
-             errorp)))
+(define type-option-of-stmt-value ((sval stmt-valuep))
+  :returns (type? type-optionp)
+  :short "Optional type of a statement value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return @('nil') if the statement value is @(':none').
+     Otherwise, we map the optional value to a type,
+     which is @('void') if the value is absent."))
+  (stmt-value-case
+   sval
+   :none nil
+   :return (type-of-value-option sval.value?)))

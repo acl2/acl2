@@ -145,7 +145,7 @@
        "@(':info'), to print,
         besides any error output and the results,
         also some additional information about
-        the internal operation of @('deftreeops')
+        the internal operation of @('deftreeops').
         (Currently there is no difference between
         the @(':info') and the @(':result') outputs,
         but we plan to add @(':info') outputs.).")
@@ -186,7 +186,8 @@
       to the name of the constant whose value is the grammar),
       and whose only parent is the @('*grammar*') symbol.
       That is, the generated section is
-      a sub-topic of the XDOC topic for the grammar.")
+      a sub-topic of the XDOC topic for the grammar
+      (this assumes that that parent topic exists).")
 
     (xdoc::desc
      (list
@@ -282,8 +283,7 @@
      "@('<prefix>-<rulename>-conc-equivs')"
      (xdoc::p
       "For each rule name defined in the grammar
-       by an alternation of two or more concatenations
-       satisfying one of the conditions listed below,
+       by an alternation of two or more concatenations:
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
        matching each concatenation and
@@ -294,10 +294,8 @@
        This theorem is a conjunction of equivalences,
        one for each concatenation that defines the rule name.")
      (xdoc::p
-      "The aforementioned conditions on
-       the alternation of two or more concatenations are
-       any of the following
-       (if neither are satisfied, this theorem is not generated):")
+      "Currently this is generated if and only if
+       one of the following conditions holds:")
      (xdoc::ul
       (xdoc::li
        "The alternation consists of two or more concatenations
@@ -343,33 +341,18 @@
         which asserts that the function returns @('<i>')
         iff the subtrees match the concatenation.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
-
-    (xdoc::desc
-     "@('<prefix>-<rulename>-conc')"
+       "@(tsee fty::deffixequiv) theorems for the function."))
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of one concatenation:
-       a function that, given a tree matching the rule name,
-       returns the list of lists of subtrees of the tree.
-       The generated function is accompanied by the following theorems:")
-     (xdoc::ul
-      (xdoc::li
-       "@('<prefix>-<rulename>-conc-match'),
-        which asserts that the result of the function
-        matches the concatenation.")
-      (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
+      "Currently this is generated if and only if
+       @('<prefix>-<rulename>-conc-equivs') is generated:
+       see the conditions for this above."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>')"
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of two or more concatenations,
-       such that each concatenation is
-       a singleton of a singleton repetition of a rule name element,
+      "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (numbered starting from 1)
-       in the alternation:
+       in the alternation that defines the rule name:
        a function that, given a tree matching the rule name
        whose subtrees match the concatenation @('<i>')
        (expressed via @('<prefix>-<rulename>-conc?') above),
@@ -381,138 +364,132 @@
         which asserts that the result of the function
         matches the concatenation @('<i>').")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
-
-    (xdoc::desc
-     "@('<prefix>-<rulename>-conc-matching')"
+       "@(tsee fty::deffixequiv) theorems for the function."))
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of one concatenation,
-       such that the concatenation consists of one repetition:
-       a theorem saying that
-       if a list of lists of trees matches that concatenation
-       then the list of lists of trees has the same length as the concatenation
-       and each list of trees matches
-       the corresponding repetition of the concatenation."))
+      "If the alternation that defines the rule name
+       consists of just one concatenation,
+       the @('<i>') is absent from the names of the function and theorems.")
+     (xdoc::p
+      "Currently this is generated if and only if
+       the alternation that defines the rule name consists of one concatenation
+       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       see the conditions for this above."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-matching')"
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of two or more concatenations,
+      "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (numbered starting from 1)
-       in the alternation,
-       such that the concatenation consists of one repetition:
+       in the alternation that defines the rule name:
        a theorem saying that
-       if a list of lists of trees matches that concatenation
+       if a list of lists of trees matches the concatenation
        then the list of lists of trees has the same length as the concatenation
        and each list of trees matches
-       the corresponding repetition of the concatenation."))
+       the corresponding repetition of the concatenation.")
+     (xdoc::p
+      "If the alternation that defines the rule name
+       consists of just one concatenation,
+       the @('<i>') is absent from the name of the theorem.")
+     (xdoc::p
+      "Currently this is generated if and only if
+       the concatenation consists of one repetition."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc-rep')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>')"
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of one concatenation,
-       such that the concatenation consists of one repetition:
+      "For each rule name defined in the grammar,
+       for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation that defines the rule name,
+       and for each repetition @('<j>') (numbered starting from 1)
+       in the concatenation:
        a function that, given a tree matching the rule name,
        returns the list of trees corresponding to the repetition.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
       (xdoc::li
-       "@('<prefix>-<rulename>-conc-rep-match'),
+       "@('<prefix>-<rulename>-conc<i>-rep<j>-match'),
         which asserts that the result of the function
         matches the repetition.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
+       "@(tsee fty::deffixequiv) theorems for the function."))
+     (xdoc::p
+      "If the alternation that defines the rule name
+       consists of just one concatenation,
+       the @('<i>') is absent from the names of the function and theorems.
+       If the concatenation @('<i>') consists of just one repetition,
+       the @('<j>') is absent from the names of the function and theorems.")
+     (xdoc::p
+      "Currently this is generated if and only if
+       (i) the concatenation consists of one repetition and
+       (ii) the alternation that defines the rule name
+       consists of one concatenation
+       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       see the conditions for this above."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-matching')"
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of two or more concatenations,
-       and for each concatenation @('<i>') (numbered starting from 1)
-       in the alternation,
-       such that the concatenation consists of one repetition:
-       a function that, given a tree matching the rule name,
-       returns the list of trees corresponding to the repetition.
-       The generated function is accompanied by the following theorems:")
-     (xdoc::ul
-      (xdoc::li
-       "@('<prefix>-<rulename>-conc<i>-rep-match'),
-        which asserts that the result of the function
-        matches the repetition.")
-      (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
-
-    (xdoc::desc
-     "@('<prefix>-<rulename>-conc-rep-matching')"
-     (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of one concatenation,
-       such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1:
-       a theorem saying that
-       if a list of trees matches that repetition
-       then the list of trees has a length
-       within the range of the repetition
-       and each tree matches
-       the element of the repetition."))
-
-    (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep-matching')"
-     (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of two or more concatenations,
+      "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (numbered starting from 1)
        in the alternation that defines the rule name,
-       such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1:
+       and for each repetition @('<j>') (numbered starting from 1)
+       in the concatenation:
        a theorem saying that
        if a list of trees matches that repetition
        then the list of trees has a length
        within the range of the repetition
        and each tree matches
-       the element of the repetition."))
+       the element of the repetition.")
+     (xdoc::p
+      "If the alternation that defines the rule name
+       consists of just one concatenation,
+       the @('<i>') is absent from the names of the function and theorems.
+       If the concatenation @('<i>') consists of just one repetition,
+       the @('<j>') is absent from the name of the theorem.")
+     (xdoc::p
+      "Currently this is generated if and only if
+       the concatenation consists of one repetition
+       and the repetition has a range of 1."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc-rep-elem')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-elem')"
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of one concatenation,
-       such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1:
+      "For each rule name defined in the grammar,
+       for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation that defines the rule name,
+       and for each repetition @('<j>') (numbered starting from 1)
+       in the concatenation:
        a function that, given a tree matching the rule name,
-       returns the tree corresponding to the element of the repetition.
+       and a natural number index below
+       the length of the list of trees that matches the repetition,
+       returns the tree at the given index
+       in the list of trees that matches the repetition.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
       (xdoc::li
-       "@('<prefix>-<rulename>-conc-rep-elem-match'),
+       "@('<prefix>-<rulename>-conc<i>-rep<j>-elem-match'),
         which asserts that the result of the function
-        matches the rule name of the element.")
+        matches the element of the repetition.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
-
-    (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep-elem')"
+       "@(tsee fty::deffixequiv) theorems for the function."))
      (xdoc::p
-      "For each rule name defined in the grammar by
-       an alternation of two or more concatenations,
-       and for each concatenation @('<i>') (numbered starting from 1)
-       in the alternation,
-       such that the concatenation consists of one repetition,
-       such that the repetition has a range of 1,
-       and such that the element of the repetition is a rule name:
-       a function that, given a tree matching the rule name,
-       returns the tree corresponding to the element of the repetition.
-       The generated function is accompanied by the following theorems:")
-     (xdoc::ul
-      (xdoc::li
-       "@('<prefix>-<rulename>-conc<i>-rep-elem-match'),
-        which asserts that the result of the function
-        matches the rule name of the element.")
-      (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
+      "This function does not take an index as input
+       if the repetition consists of the singleton range 1,
+       because the index input would be always 0.")
+     (xdoc::p
+      "If the alternation that defines the rule name
+       consists of just one concatenation,
+       the @('<i>') is absent from the names of the function and theorems.
+       If the concatenation @('<i>') consists of just one repetition,
+       the @('<j>') is absent from the names of the function and theorems.")
+     (xdoc::p
+      "Currently this is generated if and only if
+       (i) the concatenation consists of one repetition,
+       (ii) the repetition has a range of 1, and
+       (iii) the alternation that defines the rule name
+       consists of one concatenation
+       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       see the conditions for this above."))
 
     (xdoc::desc
      "@('<prefix>-%<b><min>-<max>-nat')"
@@ -527,7 +504,7 @@
        In the name of this generated function,
        the @('<min>') and @('<max>') part are expressed
        in digits in the base indicated by @('<b>'),
-       with unnecessary leading zeros.
+       without unnecessary leading zeros.
        The generated function is accompanied by the following theorem:")
      (xdoc::ul
       (xdoc::li
@@ -545,7 +522,7 @@
       "@('<prefix>-%s|\"<chars>\"|-leafterm')")
      (xdoc::p
       "For each character value notation that appears in the grammar,
-       of the form @('\"<chars\"') or @('%i\"<chars>\"') or @('%s\"<chars>\"')
+       of the form @('\"<chars>\"') or @('%i\"<chars>\"') or @('%s\"<chars>\"')
        where @('<chars>') is a sequence of one or more characters,
        a theorem saying that a tree that matches the character values notation
        is a terminal leaf tree.")))
@@ -564,7 +541,7 @@
       See @(tsee deftreeops-table) in the implementation for details.")
 
     (xdoc::p
-     "ACL2 already provides facilities to inspect table and their entries.
+     "ACL2 already provides facilities to inspect tables and their entries.
       We provide a macro")
     (xdoc::codeblock
      "(deftreeops-show-info *grammar*)")

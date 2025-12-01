@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See also ../axe/trim-intro-rules-axe.lisp
+
 (include-book "bv-syntax")
 (include-book "trim")
 ;(include-book "bvsx")
@@ -25,14 +27,21 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvlt")
-(include-book "trim-rules") ; need these whenever we introduce trim
+(include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
+(local (include-book "slice"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 
 ;BOZO lots more rules like this
 
+;; Should we consider leaving the natp hyps on the sizes in the rules below, so
+;; these rules don't fire in contexts where the corresponding hyps in
+;; trim-elim-rules-bv.lisp cannot be relieved?  Perhaps it suffices to have
+;; term-should-be-trimmed check that the size is a quoted natp.
+
+;enable?
 (defthmd bvnot-trim-all
-  (implies (and (syntaxp (term-should-be-trimmed size x ':all))
+  (implies (and (syntaxp (term-should-be-trimmed size x :all))
                 (natp size))
            (equal (bvnot size x)
                   (bvnot size (trim size x))))
@@ -46,10 +55,7 @@
 (defthm bvxor-trim-arg1
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize))
                 (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
+                (natp outersize))
            (equal (bvxor outersize x y)
                   (bvxor outersize (trim outersize x) y)))
   :hints (("Goal" :in-theory (enable bvxor trim))))
@@ -58,10 +64,7 @@
 (defthm bvxor-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize))
                 (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
+                (natp outersize))
            (equal (bvxor outersize x y)
                   (bvxor outersize x (trim outersize y))))
   :hints (("Goal" :in-theory (enable bvxor trim))))
@@ -77,11 +80,7 @@
                 (< highsize newsize)
                 (natp highsize)
                 (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
+                (natp lowsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (trim highsize highval) lowsize lowval)))
   :hints (("Goal" :in-theory (enable trim))))
@@ -92,11 +91,7 @@
                 (< lowsize newsize)
                 (natp highsize)
                 (natp newsize)
-                (integerp lowval)
-                (integerp highval)
-                (integerp lowval)
-                (natp lowsize)
-                )
+                (natp lowsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize (trim lowsize lowval))))
   :hints (("Goal" :in-theory (enable bvcat-of-bvchop-low trim))))
@@ -106,10 +101,7 @@
 (defthm bvif-trim-arg3
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize x) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
+                (natp outersize))
            (equal (bvif outersize test x y)
                   (bvif outersize test (trim outersize x) y)))
   :hints (("Goal" :in-theory (enable bvif trim))))
@@ -117,10 +109,7 @@
 (defthm bvif-trim-arg4
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'innersize y) (innersize)) ;bozo newsize is a bad name
                 (> innersize outersize) ;only fire if strictly greater
-                (natp outersize)
-                (integerp x)
-                (integerp y)
-                )
+                (natp outersize))
            (equal (bvif outersize test x y)
                   (bvif outersize test x (trim outersize y))))
   :hints (("Goal" :in-theory (enable bvif trim))))
@@ -167,6 +156,26 @@
                 (posp ysize))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvmult-trim-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvmult size x y)
+                  (bvmult size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvmult-trim-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'ysize y))
+                (< size ysize)
+                (natp size)
+                (posp ysize))
+           (equal (bvmult size x y)
+                  (bvmult size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,8 +261,7 @@
 (defthm leftrotate32-trim
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< 5 xsize)
-                (integerp xsize)
-                (natp x))
+                (integerp xsize))
            (equal (leftrotate32 x y)
                   (leftrotate32 (trim 5 x) y)))
   :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))

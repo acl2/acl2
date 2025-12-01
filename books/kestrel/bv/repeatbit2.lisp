@@ -1,7 +1,7 @@
 ; More theorems about repeatbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "bvchop")
 (include-book "logtail")
 (include-book "slice-def")
+(include-book "bvif") ; todo: factor out the def
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -55,3 +56,14 @@
                                        )
                             (;anti-slice
                              bvchop-of-mask-other)))))
+
+;; Gets rid of repeatbit (e.g., for STP)
+(defthmd repeatbit-becomes-bvif
+  (implies (syntaxp (quotep n))
+           (equal (repeatbit n x)
+                  (let ((bit (bvchop 1 x)))
+                    (bvif n
+                          (equal bit 1)
+                          (+ -1 (expt 2 n)) ; should get evaluated
+                          0))))
+  :hints (("Goal" :in-theory (enable repeatbit))))

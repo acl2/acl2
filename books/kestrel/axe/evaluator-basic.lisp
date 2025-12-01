@@ -174,7 +174,7 @@
     (bvchop-list bvchop-list-unguarded)
     (getbit-list getbit-list-unguarded)
 
-    (every-nth every-nth-unguarded)
+    (every-nth every-nth-unguarded) ; for array-patterns
     (all-equal$ all-equal$-unguarded)
     (all-same all-same-unguarded)
 

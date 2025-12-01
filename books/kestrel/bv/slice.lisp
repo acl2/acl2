@@ -531,35 +531,6 @@
   :hints (("Goal" :use slice-of-times-of-expt
            :in-theory (disable slice-of-times-of-expt))))
 
-(defthm slice-of-ash
-  (implies (and (<= n low)
-                (integerp low)
-                (integerp high)
-                (natp n))
-           (equal (slice high low (ash x n))
-                  (slice (- high n) (- low n) x)))
-  :hints (("Goal" :in-theory (enable ash slice logtail ;floor
-                                     expt-of-+))))
-
-;can't just turn ash into slice because we don't know what the top bit is, so
-;we need the overarching slice.
-(defthm slice-of-ash-right
-  (implies (and (< n 0)
-                (natp low)
-                (natp high)
-                (integerp n))
-           (equal (slice high low (ash x n))
-                  (slice (+ high (- n)) (+ low (- n)) x)))
-  :hints (("Goal" :in-theory (enable ash slice logtail ;floor
-                                     ifix
-                                     expt-of-+))))
-
-(defthm slice-of-ash-same
-  (implies (and (natp high)
-                (natp low))
-           (equal (slice high low (ash x low))
-                  (bvchop (+ 1 (- high low)) x)))
-  :hints (("Goal" :cases ((<= n 0)))))
 
 (defthm slices-same-when-bvchops-same
   (implies (and (equal (bvchop free x) (bvchop free y))
@@ -742,3 +713,19 @@
                   (slice (+ high (lg k)) (+ low (lg k)) x)))
   :hints (("Goal" :use (:instance slice-of-floor-of-expt (n (lg k)))
            :in-theory (disable slice-of-floor-of-expt))))
+
+(defthm slice-of-all-ones-too-high
+  (implies (and (natp low)
+                (natp high)
+                ;(<= low high)
+                )
+           (equal (slice high low (+ -1 (expt 2 low)))
+                  0))
+  :hints (("Goal" :in-theory (enable slice))))
+
+;; restrict?
+(defthmd slice-of-if-arg3
+  (equal (slice high low (if test v1 v2))
+         (if test
+             (slice high low v1)
+           (slice high low v2))))

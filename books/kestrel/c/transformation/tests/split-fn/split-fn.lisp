@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (split-fn *old*
@@ -50,7 +50,7 @@ int foo(int y) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (split-fn *old*
@@ -84,7 +84,7 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test3.c")
+  (c$::input-files :files '("test3.c")
                    :process :parse
                    :const *old*)
 
@@ -115,7 +115,7 @@ int foo(int x) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test4.c")
+  (c$::input-files :files '("test4.c")
                    :process :parse
                    :const *old*)
 
@@ -146,7 +146,7 @@ int foo(int x) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test5.c")
+  (c$::input-files :files '("test5.c")
                    :const *old*)
 
   (split-fn *old*
@@ -175,7 +175,7 @@ int foo() {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("alias.c")
+  (c$::input-files :files '("alias.c")
                    :process :parse
                    :const *old*)
 

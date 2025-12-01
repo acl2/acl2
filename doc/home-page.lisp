@@ -25,8 +25,8 @@
 (program)
 
 (defun topic-to-url-list (url chars names)
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
   (cond ((endp names) nil)
         (t (cons (cons (car chars)
                        (concatenate 'string
@@ -41,7 +41,7 @@
   "https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
 
 (defconst *bleeding-edge-manual*
-  "https://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
+  "https://acl2.org/doc/")
 
 (defconst *home-page-references*
   '(tours                               ;;; a
@@ -394,10 +394,9 @@ programming, interfaces, debugging, and testing; see <a
 href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
 the pages on <a href='~sx'> Books and Papers about ACL2 and Its
-Applications</a> and the <a
-href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
-Series</a>.  The <a href=\"~sz\">installation instructions</a> explain how to
-download and install the community books.
+Applications</a> and the <a href='~sd'>ACL2 Workshops Series</a>.  The <a
+href=\"~sz\">installation instructions</a> explain how to download and install
+the community books.
 
 <p>
 
@@ -437,8 +436,8 @@ href=\"~so\">ACL2-Doc browser</a>.
 
 (defun write-home-page (channel state url)
 
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
 
   (mv-let
    (n state)

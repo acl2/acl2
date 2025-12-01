@@ -40,7 +40,7 @@
   (equal (alistp (append x y))
          (and (alistp (true-list-fix x))
               (alistp y)))
-  :hints(("Goal" :in-theory (enable append))))
+  :hints (("Goal" :in-theory (enable append))))
 
 ;fixme: use this more
 ;call this boundp?

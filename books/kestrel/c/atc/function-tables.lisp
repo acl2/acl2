@@ -36,41 +36,55 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of:
-     an optional C type that is present,
-     and represents the function's output type,
-     when the function is not recursive;
-     a list of C types representing the function's input types;
-     an optional (loop) statement that is present,
-     and is represented by the function,
-     when the function is recursive;
-     a list of variables affected by the function;
-     a list of formals that represent external objects;
-     the name of the locally generated theorem about the function result(s);
-     the name of the locally generated theorem that asserts
-     that the execution of the function is functionally correct,
-     proved using the monolithic symbolic execution;
-     the name of the locally generated theorem that asserts
-     that the execution of the function is functionally correct,
-     proved using the modular proof generation approach;
-     the name of the locally generated theorem that asserts
-     that the measure of the function (when recursive) yields a natural number
-     (@('nil') if the function is not recursive);
-     the name of the locally generated theorem that asserts
-     that looking up the function in the function environment
-     yields the information for the function
-     (@('nil') if the function is recursive);
-     a limit that suffices to execute the code generated from the function,
-     as explained below;
-     and the locally generated function for the guard of the function.
-     The limit is a term that may depend on the function's parameters.
+    "This consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "An optional C type that is present,
+      and represents the function's output type,
+      when the function is not recursive.")
+    (xdoc::li
+     "A list of C types representing the function's input types.")
+    (xdoc::li
+     "An optional (loop) statement that is present,
+      and is represented by the function,
+      when the function is recursive.")
+    (xdoc::li
+     "A list of variables affected by the function.")
+    (xdoc::li
+     "A list of formals that represent external objects.")
+    (xdoc::li
+     "The name of the locally generated theorem about the function result(s).")
+    (xdoc::li
+     "The name of the locally generated theorem that asserts
+      that the execution of the function is functionally correct,
+      proved using the monolithic symbolic execution.")
+    (xdoc::li
+     "The name of the locally generated theorem that asserts
+      that the execution of the function is functionally correct,
+      proved using the modular proof generation approach.")
+    (xdoc::li
+     "The name of the locally generated theorem that asserts
+      that the measure of the function (when recursive) yields a natural number
+      (@('nil') if the function is not recursive).")
+    (xdoc::li
+     "The name of the locally generated theorem that asserts
+      that looking up the function in the function environment
+      yields the information for the function
+      (@('nil') if the function is recursive).")
+    (xdoc::li
+     "A limit that suffices to execute the code generated from the function,
+      as explained below.")
+    (xdoc::li
+     "The locally generated function for the guard of the function."))
+   (xdoc::p
+    "The limit is a term that may depend on the function's parameters.
      For a non-recursive function,
      the term expresses a limit that suffices to execute @(tsee exec-fun)
      on the C function generated from the ACL2 function
      when the arguments of the C functions have values
      symbolically expressed by the ACL2 function's formal parameters.
      For a recursive function,
-     the term expressed a limit that suffices to execute @(tsee exec-stmt-while)
+     the term expresses a limit that suffices to execute @(tsee exec-stmt-while)
      on the C loop generated from the ACL2 function
      when the variables read by the C loop have values
      symbolically expressed by the ACL2 function's formal parameters.
@@ -80,10 +94,7 @@
      then those, and all their direct and indirect callers,
      have limit terms that in general depend on each function's parameters.
      All these limit terms are calculated
-     when the C code is generated from the ACL2 functions.")
-   (xdoc::p
-    "Note that exactly one of the first two fields is @('nil').
-     This is an invariant."))
+     when the C code is generated from the ACL2 functions."))
   ((out-type type-option)
    (in-types type-list)
    (loop? stmt-option)

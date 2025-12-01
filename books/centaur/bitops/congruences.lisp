@@ -89,8 +89,8 @@
 (def-context-rule logsquash-of-loghead-context
   (equal (logsquash n (loghead m (logsquash n x)))
          (logsquash n (loghead m x)))
-  :fnname logsquash$inline)
-(in-theory (disable apply-context-for-logsquash$inline))
+  :fnname acl2::logsquash$inline)
+(in-theory (disable acl2::apply-context-for-logsquash$inline))
 
 (in-theory (enable logsquash-of-loghead-context))
 
@@ -174,12 +174,12 @@
 (def-context-rule logior-pass-logsquash-context-1
   (equal (logsquash n (logior (logsquash n a) b))
          (logsquash n (logior a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 (def-context-rule logior-pass-logsquash-context-2
   (equal (logsquash n (logior a (logsquash n b)))
          (logsquash n (logior a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 ;; Logand:
 (defthm logand-remove-loghead-1
@@ -221,12 +221,12 @@
 (def-context-rule logand-pass-logsquash-context-1
   (equal (logsquash n (logand (logsquash n a) b))
          (logsquash n (logand a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 (def-context-rule logand-pass-logsquash-context-2
   (equal (logsquash n (logand a (logsquash n b)))
          (logsquash n (logand a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 ;; Logxor:
 (defthm logxor-remove-loghead-1
@@ -262,12 +262,12 @@
 (def-context-rule logxor-pass-logsquash-context-1
   (equal (logsquash n (logxor (logsquash n a) b))
          (logsquash n (logxor a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 (def-context-rule logxor-pass-logsquash-context-2
   (equal (logsquash n (logxor a (logsquash n b)))
          (logsquash n (logxor a b)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 ;; Lognot:
 ;; (defthm lognot-remove-loghead
@@ -290,7 +290,7 @@
 (def-context-rule lognot-pass-logsquash-context
   (equal (logsquash n (lognot (logsquash n a)))
          (logsquash n (lognot a)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 
 
@@ -318,7 +318,7 @@
 (def-context-rule ash-propagate-logsquash-context
   (equal (logsquash n (ash (logsquash (- (nfix n) (ifix m)) i) m))
          (logsquash n (ash i m)))
-  :fnname logsquash$inline)
+  :fnname acl2::logsquash$inline)
 
 ;; (defthm right-shift-remove-logsquash
 ;;   (implies (and (<= (ifix m) 0)
@@ -725,7 +725,7 @@
 
 (def-ruleset! bitops-congruences
   '(acl2::apply-context-for-loghead$inline
-    apply-context-for-logsquash$inline
+    acl2::apply-context-for-logsquash$inline
     acl2::apply-context-for-binary-logior
     acl2::apply-context-for-binary-logand
     common-lisp::apply-context-for-logbitp
@@ -816,7 +816,7 @@
 ;; logand-with-bitmask?
 
 (in-theory (disable* acl2::apply-context-for-loghead$inline
-                     apply-context-for-logsquash$inline
+                     acl2::apply-context-for-logsquash$inline
                      acl2::apply-context-for-binary-logior
                      acl2::apply-context-for-binary-logand
                      common-lisp::apply-context-for-logbitp

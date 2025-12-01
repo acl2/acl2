@@ -173,7 +173,7 @@
   ;; assumption.  If there is a non-:unreachable error, we propagate it.
   ;; Otherwise, we return two values: a flag saying whether there was an
   ;; :unreachable error, and the value returned by the expression.
-  `(b* ((branchcond (bfr-constr-fix ,branchcond (is-constraint interp-st)))
+  `(b* ((branchcond (bfr-constr-mode-fix ,branchcond (is-constraint interp-st)))
         ((mv contra pathcond undo)
          (bfr-assume branchcond pathcond))
         ((when contra)
@@ -223,7 +223,7 @@
 
 (defmacro cpathcond ()
   '(bfr-and (bfr-hyp->bfr pathcond)
-            (bfr-constr->bfr (is-constraint interp-st))))
+            (bfr-constr-mode->bfr (is-constraint interp-st))))
 
 
 (defun glcp-put-name-each (name lst)
@@ -751,7 +751,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             (pattern-match test-obj
               ((g-boolean bfr)
                (b* ((bfr (hyp-fix bfr pathcond))
-                    (bfr (bfr-constr-fix bfr (is-constraint interp-st))))
+                    (bfr (bfr-constr-mode-fix bfr (is-constraint interp-st))))
                  (glcp-value bfr)))
               ((g-number &) (glcp-value t))
               ((g-concrete v) (glcp-value (and v t)))
@@ -761,7 +761,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
                     (bfr (bfr-to-param-space (glcp-config->param-bfr config)
                                              (bfr-var bvar)))
                     (bfr (hyp-fix bfr pathcond))
-                    (bfr (bfr-constr-fix bfr (is-constraint interp-st))))
+                    (bfr (bfr-constr-mode-fix bfr (is-constraint interp-st))))
                  (glcp-value bfr)))
               ((g-ite test then else)
                (b* (((glcp-er test-bfr) (simplify-if-test
@@ -852,7 +852,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((when look)
               (b* ((bfr (bfr-to-param-space (glcp-config->param-bfr config)
                                             (bfr-var look)))
-                   (bfr (bfr-constr-fix bfr (is-constraint interp-st)))
+                   (bfr (bfr-constr-mode-fix bfr (is-constraint interp-st)))
                    (bfr (hyp-fix bfr pathcond)))
                 (glcp-value bfr)))
 
@@ -865,7 +865,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
              ((glcp-er) (add-bvar-constraints x . ,*glcp-common-inputs*))
              (bfr (bfr-to-param-space (glcp-config->param-bfr config)
                                       (bfr-var bvar)))
-             (bfr (bfr-constr-fix bfr (is-constraint interp-st)))
+             (bfr (bfr-constr-mode-fix bfr (is-constraint interp-st)))
              (bfr (hyp-fix bfr pathcond)))
           (glcp-value bfr)))
 
@@ -1099,7 +1099,7 @@ but its arity is ~x3.  Its formal parameters are ~x4."
             ((mv contra constraint &)
              (bfr-constr-assume
               (bfr-to-param-space pathcond-bfr
-                                  (bfr-constr->bfr
+                                  (bfr-constr-mode->bfr
                                    (is-constraint interp-st)))
               (bfr-constr-init)))
             (constraint-db (parametrize-constraint-db pathcond-bfr
@@ -1270,7 +1270,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
              (mv er nil bvar-db bvar-db1 interp-st state))
             ((mv erp val-clause state)
              (glcp-analyze-interp-result
-              hyp-bfr concl-bfr (bfr-constr->bfr (is-constraint interp-st))
+              hyp-bfr concl-bfr (bfr-constr-mode->bfr (is-constraint interp-st))
               bindings id concl config bvar-db1 state))
             ((when erp)
              (flush-hons-get-hash-table-link (is-obligs interp-st))

@@ -402,6 +402,7 @@
     :prepwork
     :post-pred-events
     :post-fix-events
+    :post-acc-events
     :post-events
     :enable-rules
     :verbosep
@@ -542,6 +543,7 @@
     :prepwork
     :post-pred-events
     :post-fix-events
+    :post-acc-events
     :post-events
     :enable-rules
     :extra-binder-names
@@ -727,6 +729,7 @@
     :prepwork
     :post-pred-events
     :post-fix-events
+    :post-acc-events
     :post-events
     :enable-rules
     :verbosep))

@@ -22,6 +22,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
+(include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -67,11 +68,12 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :nonabstract (mv t
-                       (make-decl-decl
-                        :extension nil
-                        :specs paramdecl.specs
-                        :init (cons (initdeclor paramdecl.declor.declor nil nil init?) nil)))
+      :nonabstract
+      (mv t
+          (make-decl-decl
+            :extension nil
+            :specs paramdecl.specs
+            :init (list (initdeclor paramdecl.declor.declor nil nil init? nil))))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,46 +112,43 @@
                (new-fundef fundefp))
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
-    (stmt-case
-      fundef.body
-      :compound
-      (dirdeclor-case
-        fundef.declor.direct
-        :function-params
-        (b* (((unless (equal target-fn
-                             (c$::dirdeclor->ident fundef.declor.direct.declor)))
-              (mv nil (fundef-fix fundef)))
-             ((mv success new-params removed-param)
-              (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
-             ((unless success)
-              ;; TODO: use error-value-tuples
-              (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
-                             target-fn
-                             target-param)
-                      (mv nil (fundef-fix fundef))))
-             (dirdeclor-params
-               (make-dirdeclor-function-params
-                 :declor fundef.declor.direct.declor
-                 :params new-params
-                 :ellipsis fundef.declor.direct.ellipsis))
-             ((mv - decl)
-              (param-declon-to-decl removed-param (initer-single const))))
-          (mv t
-              (make-fundef
-                :extension fundef.extension
-                :spec fundef.spec
-                :declor (make-declor
-                          :pointers fundef.declor.pointers
-                          :direct dirdeclor-params)
-                :decls fundef.decls
-                :body (stmt-compound (cons (block-item-decl decl)
-                                           fundef.body.items)))))
-        :otherwise
-        ;; TODO: check when non-function-params dirdeclor still has name target-fn
-        (mv nil (fundef-fix fundef)))
-      :otherwise
-      (prog2$ (raise "Function definition body is not a compound statement.")
-              (mv nil (fundef-fix fundef)))))
+    (dirdeclor-case
+     fundef.declor.direct
+     :function-params
+     (b* (((unless (equal target-fn
+                          (c$::dirdeclor->ident fundef.declor.direct.declor)))
+           (mv nil (fundef-fix fundef)))
+          ((mv success new-params removed-param)
+           (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
+          ((unless success)
+           ;; TODO: use error-value-tuples
+           (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
+                          target-fn
+                          target-param)
+                   (mv nil (fundef-fix fundef))))
+          (dirdeclor-params
+           (make-dirdeclor-function-params
+            :declor fundef.declor.direct.declor
+            :params new-params
+            :ellipsis fundef.declor.direct.ellipsis))
+          ((mv - decl)
+           (param-declon-to-decl removed-param (initer-single const))))
+       (mv t
+           (make-fundef
+            :extension fundef.extension
+            :spec fundef.spec
+            :declor (make-declor
+                     :pointers fundef.declor.pointers
+                     :direct dirdeclor-params)
+            :decls fundef.decls
+            :body (make-comp-stmt
+                   :labels (comp-stmt->labels fundef.body)
+                   :items (cons (make-block-item-decl :decl decl :info nil)
+                                (comp-stmt->items fundef.body)))
+            :info fundef.info)))
+     :otherwise
+     ;; TODO: check when non-function-params dirdeclor still has name target-fn
+     (mv nil (fundef-fix fundef))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,6 +239,23 @@
                                          target-param
                                          const))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define specialize-code-ensemble
+  ((code code-ensemblep)
+   (target-fn identp)
+   (target-param identp)
+   (const exprp))
+  :short "Transform a code ensemble."
+  :returns (new-code code-ensemblep)
+  (b* (((code-ensemble code) code))
+    (make-code-ensemble
+     :transunits (specialize-transunit-ensemble code.transunits
+                                                target-fn
+                                                target-param
+                                                const)
+     :ienv code.ienv)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing specialize)
@@ -254,23 +270,23 @@
    const
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (tunits (transunit-ensemblep tunits))
+               (code (code-ensemblep code))
                (const-new$ symbolp)
                (target$ identp)
                (param$ identp)
                (const exprp))
   :short "Process the inputs."
   (b* (((reterr)
-        (c$::irr-transunit-ensemble)
+        (irr-code-ensemble)
         nil
         (c$::irr-ident)
         (c$::irr-ident)
         (c$::irr-expr))
        ((unless (symbolp const-old))
         (retmsg$ "~x0 must be a symbol." const-old))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
@@ -281,7 +297,7 @@
        (param (ident param))
        ((unless (exprp const))
         (retmsg$ "~x0 must be a C expression." const)))
-    (retok tunits const-new target param const)))
+    (retok code const-new target param const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,17 +306,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define specialize-gen-everything
-  ((tunits transunit-ensemblep)
+  ((code code-ensemblep)
    (const-new symbolp)
    (target identp)
    (param identp)
    (const exprp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
-  (b* ((tunits (specialize-transunit-ensemble tunits target param const))
+  (b* ((code (specialize-code-ensemble code target param const))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     defconst-event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,10 +332,10 @@
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits const-new target param const)
+       ((erp code const-new target param const)
         (specialize-process-inputs
           const-old const-new target param const wrld))
-       (event (specialize-gen-everything tunits const-new target param const)))
+       (event (specialize-gen-everything code const-new target param const)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -97,7 +97,6 @@
                 (<= (+ end 1 (- start)) (len vals)))
            (all-unsigned-byte-p size (update-subrange start end vals lst)))
   :hints (("Goal" ;:cases ((equal -1 end))
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (update-subrange natp update-nth-of-update-subrange-diff-back)
                            (update-nth-of-update-subrange-diff)))))
 

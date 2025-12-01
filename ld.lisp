@@ -3260,9 +3260,9 @@
          (not (and (consp fns)
                    (or (not ntep) ; don't puff non-trivial encapsulates
                        (mv-let
-                         (name x)
+                         (name x origins)
                          (constraint-info (car fns) installed-wrld)
-                         (declare (ignore name))
+                         (declare (ignore name origins)) ; Ignoring origins.
                          (unknown-constraints-p x))))))))
 
 (defun puffable-command-blockp (wrld cmd-form ntep installed-wrld)
@@ -5093,10 +5093,16 @@
                              :form)
                      ctx state t)
                   (value nil))
-                (pprogn (fms "There is no saved output to print.  ~
-                              See :DOC set-saved-output.~|"
-                             nil
-                             channel state nil)
+                (pprogn (let ((inh (member-eq 'prove
+                                              (f-get-global 'inhibit-output-lst
+                                                            state))))
+                          (fms "There is no saved output to print.  See :DOC ~
+                                pso.~#0~[~/  Note that PROVE output is ~
+                                inhibited, and output is not saved when that ~
+                                is the case; see :DOC set-inhibit-output-lst ~
+                                for how to turn on PROVE output.~]~|"
+                               (list (cons #\0 (if inh 1 0)))
+                               channel state nil))
                         (value :invisible))))
      (t (state-global-let*
          ((saved-output-reversed nil) ; preserve this (value doesn't matter)

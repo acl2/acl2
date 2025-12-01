@@ -20,7 +20,9 @@
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/take"))
+(local (include-book "../lists-light/true-list-fix"))
 (local (include-book "../bv/bvchop"))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
 ;; Convert a sequence of 8-bit bytes to a sequence of bits.  The bits from
 ;; earlier bytes come earlier in the result.  For a given byte, the most
@@ -39,6 +41,10 @@
 
 (defthm all-integerp-of-bytes-to-bits
   (all-integerp (bytes-to-bits bytes))
+  :hints (("Goal" :in-theory (enable bytes-to-bits))))
+
+(defthm integer-listp-of-bytes-to-bits
+  (integer-listp (bytes-to-bits bytes))
   :hints (("Goal" :in-theory (enable bytes-to-bits))))
 
 (defthm len-of-bytes-to-bits
@@ -121,7 +127,6 @@
                   (bytes-to-bits (take n lst))))
   :hints (("Goal"
            :induct (sub1-cdr-induct n lst)
-           :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (zp byte-to-bits bytes-to-bits take
                                consp-to-len-bound)
                            (;;list::len-pos-rewrite

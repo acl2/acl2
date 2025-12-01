@@ -2459,7 +2459,11 @@
                     #+:non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
-                                       (putprop fn 'constraint-lst (list term) wrld))
+                                       (putprop
+                                        fn 'constraint-lst-etc
+                                        (cons (list term)
+                                              (list (make-origin 'defun fn)))
+                                        wrld))
                             wrld)))
                 (mv-let
                  (wrld ttree)
@@ -11254,15 +11258,31 @@
                        wrld)))
      (t wrld))))
 
+(defun inline-namep (sname)
+  (declare (xargs :guard ; typically a symbol name
+                  (stringp sname)))
+  (let ((len (length sname)))
+    (and (not (int= len 0))
+         (terminal-substringp *inline-suffix*
+                              sname
+                              *inline-suffix-len-minus-1*
+                              (1- len)))))
+
+(defun notinline-namep (sname)
+  (declare (xargs :guard ; typically a symbol name
+                  (stringp sname)))
+  (let ((len (length sname)))
+    (and (not (int= len 0))
+         (terminal-substringp *notinline-suffix*
+                              sname
+                              *notinline-suffix-len-minus-1*
+                              (1- len)))))
+
 (defun split-inlines (names inlines not-inlines)
   (declare (xargs :guard (symbol-listp names)))
   (cond ((endp names)
          (mv inlines not-inlines))
-        ((let ((sname (symbol-name (car names))))
-           (terminal-substringp *inline-suffix*
-                                sname
-                                *inline-suffix-len-minus-1*
-                                (1- (length sname))))
+        ((inline-namep (symbol-name (car names)))
          (split-inlines (cdr names)
                         (cons (car names) inlines)
                         not-inlines))
@@ -11743,7 +11763,7 @@
       (putprop
        fn 'pequivs nil
        (putprop
-        fn 'constrainedp t ; 'constraint-lst comes later
+        fn 'constrainedp t ; 'constraint-lst-etc handling comes later
         (putprop
          fn 'hereditarily-constrained-fnnames (list fn)
          (putprop
@@ -12173,8 +12193,24 @@
                   (warrant (find-warrant-function-name name wrld))
                   (constraint-msg
                    (mv-let
-                     (some-name constraint-lst)
+                     (some-name constraint-lst origins)
                      (constraint-info name wrld)
+                     (declare (ignore origins))
+
+; Historical Note: Most of the functions that ignore origins are doing so only
+; temporarily.  When origins were being added to constraint processing in
+; producing v8-7 we carried out the modifications in several steps.  The first
+; was to invent ``constraint-lst-etc pairs'' and use them to collect and store
+; origins with constraints during encapsulate and other places where
+; constraints were being created.  Once we could build that prototype version
+; of the system, we took the next step, which was to actually track the origins
+; when constraints were being used.  But to build that prototype version we had
+; to change all calls of constraint-info to receive 3 results instead of 2 and
+; to ignore the origins.  So generally speaking, ``(declare (ignore origins))''
+; was a marker meaning ``come back here and track origins properly.''  But this
+; occurrence of that declaration is meant to be permanent: we don't envision
+; the :args command printing the origins of the constraints it displays.
+
                      (cond ((unknown-constraints-p constraint-lst)
                             "[UNKNOWN-CONSTRAINTS]")
                            (t (let ((constraint

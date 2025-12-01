@@ -13,10 +13,8 @@
 
 (include-book "centaur/fty/top" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,7 +44,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum feat-base
-  :short "Fixtype of RISC-V feature choices for the base."
+  :short "Fixtype of feature choices for the base."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -61,7 +59,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum feat-endian
-  :short "Fixtype of RISC-V feature choices for endianness."
+  :short "Fixtype of feature choices for endianness."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -77,7 +75,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod feat
-  :short "Fixtype of RISC-V feature choices."
+  :short "Fixtype of feature choices."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -102,8 +100,7 @@
   :returns (yes/no booleanp)
   :short "Check if the features indicate 32 bits."
   (or (feat-base-case (feat->base feat) :rv32i)
-      (feat-base-case (feat->base feat) :rv32e))
-  :hooks (:fix))
+      (feat-base-case (feat->base feat) :rv32e)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,8 +108,7 @@
   :returns (yes/no booleanp)
   :short "Check if the features indicate 64 bits."
   (or (feat-base-case (feat->base feat) :rv64i)
-      (feat-base-case (feat->base feat) :rv64e))
-  :hooks (:fix))
+      (feat-base-case (feat->base feat) :rv64e)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,24 +145,21 @@
    (xdoc::p
     "That is, if the base is RV32E or RV64E."))
   (or (feat-base-case (feat->base feat) :rv32e)
-      (feat-base-case (feat->base feat) :rv64e))
-  :hooks (:fix))
+      (feat-base-case (feat->base feat) :rv64e)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-little-endianp ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate little endian."
-  (feat-endian-case (feat->endian feat) :little)
-  :hooks (:fix))
+  (feat-endian-case (feat->endian feat) :little))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-big-endianp ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate bit endian."
-  (feat-endian-case (feat->endian feat) :big)
-  :hooks (:fix))
+  (feat-endian-case (feat->endian feat) :big))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,8 +181,7 @@
 (define feat-mp ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate the M extension."
-  (feat->m feat)
-  :hooks (:fix))
+  (feat->m feat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +198,6 @@
                     :rv64i 64
                     :rv32e 32
                     :rv64e 64))
-  :hooks (:fix)
 
   ///
 
@@ -236,7 +227,6 @@
                     :rv64i 32
                     :rv32e 16
                     :rv64e 16))
-  :hooks (:fix)
 
   ///
 
@@ -269,7 +259,6 @@
   32
   :type-prescription (and (posp (feat->ialign feat))
                           (> (feat->ialign feat) 1))
-  :hooks (:fix)
 
   ///
 
@@ -293,7 +282,6 @@
   32
   :type-prescription (and (posp (feat->ilen feat))
                           (> (feat->ilen feat) 1))
-  :hooks (:fix)
 
   ///
 

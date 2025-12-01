@@ -337,13 +337,14 @@
         *mxcsr-reserved*))
 
 
-;; Access GPR, XMM, YMM, or ZMM (specific to the formal model):
+;; Access GPR, XMM, YMM, ZMM, or MMX (specific to the formal model):
 
 (defconst *gpr-access*     0)
 (defconst *xmm-access*     1) ;; Non-VEX Encoded SIMD Instructions
 (defconst *vex-xmm-access* 2)
 (defconst *ymm-access*     3)
 (defconst *zmm-access*     4)
+(defconst *mmx-access*     5)
 
 ;; Rounding Control bit definitions (Intel manual, Dec'23, Vol. 1, Table 4-8):
 

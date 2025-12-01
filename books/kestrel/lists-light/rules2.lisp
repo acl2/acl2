@@ -655,7 +655,7 @@
                 (natp end))
            (equal (SUBRANGE start end L)
                   (repeat (+ 1 end (- start)) nil)))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE take nthcdr-of-cdr-combine) ()))))
+  :hints (("Goal" :in-theory (enable subrange take nthcdr-of-cdr-combine))))
 
 ;seems expensive
 (defthmd nth-non-nil-rule
@@ -867,7 +867,7 @@
 ;;                                                 lst))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;; ;           :induct (ind2 start end lst)
-;;            :in-theory (e/d (subrange ITEMS-HAVE-LEN) ()))))
+;;            :in-theory (enable subrange ITEMS-HAVE-LEN))))
 
 (defthm equal-of-nil-and-nthcdr
   (implies (true-listp x)

@@ -673,6 +673,7 @@
                   (equal (acl2::eval-bdd (bfr-constr->bfr hyp) env)
                          (bfr-hyp-eval hyp env)))
          :hints(("Goal" :in-theory (enable bfr-hyp-eval bfr-eval
+                                           bfr-hyp-fix
                                            bfr-constr->bfr)))))
 
 (local (defthm always-equal-of-booleans-correct

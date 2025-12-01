@@ -1,7 +1,7 @@
 ; "Pick a bit" proofs showing equality from equality of an arbitrary bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "getbit-def")
 (local (include-book "getbit"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat")) ; for equal-of-bvchop-and-bvchop-when-smaller-bvchops-equal
 

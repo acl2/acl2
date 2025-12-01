@@ -34,6 +34,8 @@
 
 ;; note that, for unsigned, the canonical region is not contiguous
 ;; Note that this is amenable to BV-based SMT solving
+;; todo: make a variant that also asserts (unsigned-byte-p 64 ad)
+;; This chops its argument down to 64-bits
 (defund unsigned-canonical-address-p (ad)
   (declare (xargs :guard (unsigned-byte-p 64 ad)))
   (acl2::bvlt 64 (acl2::bvminus 64 ad *base-of-canonical*) *len-of-canonical*))
@@ -50,6 +52,14 @@
              (unsigned-canonical-address-p x)
            (unsigned-canonical-address-p y))))
 
+;; unintuitive, but note that unsigned-canonical-address-p chops down to 64 bits
+(defthm unsigned-canonical-address-p-when-signed-byte-p-48
+  (implies (signed-byte-p 48 x)
+           (unsigned-canonical-address-p x))
+  :hints (("Goal" :cases ((<= 0 x))
+           :in-theory (enable unsigned-canonical-address-p bvlt
+                              acl2::bvchop-when-negative-lemma))))
+
 (defthm unsigned-canonical-address-p-of-bvsx-64-48
   (unsigned-canonical-address-p (bvsx 64 48 x))
   :hints (("Goal" :cases ((equal 0 (getbit 47 x)))
@@ -59,6 +69,18 @@
   (equal (unsigned-canonical-address-p (bvchop 64 x))
          (unsigned-canonical-address-p x))
   :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+
+(defthm unsigned-canonical-address-p-of-+-when-small
+  (implies (and (unsigned-byte-p 46 x)
+                (unsigned-byte-p 46 y))
+           (unsigned-canonical-address-p (+ x y)))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt))))
+
+(defthm unsigned-canonical-address-p-of-bvplus-when-small
+  (implies (and (unsigned-byte-p 46 x)
+                (unsigned-byte-p 46 y))
+           (unsigned-canonical-address-p (bvplus 64 x y)))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus ifix))))
 
 ;; also shows that unsigned-canonical-address-p means what we intend it to mean
 (defthmd canonical-address-p-of-logext-64-becomes-unsigned-canonical-address-p
@@ -89,6 +111,50 @@
                                      acl2::bvlt signed-byte-p acl2::logext-cases acl2::bvcat logapp
                                      acl2::bvchop-when-negative-lemma)
            :cases ((< ad 0)))))
+
+(local (include-book "kestrel/bv/rules4" :dir :system)) ; reduce? for acl2::<-of-bvcat-alt
+
+(defthm equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
+  (equal (equal (bvsx 64 48 x) x)
+         (and (unsigned-byte-p 64 x)
+              (unsigned-canonical-address-p x)))
+  :hints (("Goal"
+           :use (:instance acl2::split-bv
+                           (n 64)
+                           (m 48))
+           :in-theory (e/d (unsigned-canonical-address-p
+                            acl2::bvsx-alt-def-2
+                            bvlt)
+                           (acl2::bvcat-equal-rewrite-alt
+                            acl2::bvcat-equal-rewrite
+                            bvcat logapp
+                            acl2::bvcat-of-slice-and-x-adjacent
+                            acl2::bvcat-of-slice-and-slice-adjacent
+                            acl2::rewrite-unsigned-byte-p-when-term-size-is-larger)))))
+
+(defthm bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
+  (implies (and ;(canonical-regionp len base)
+                ;(in-region64p ad len base)
+                ;(in-region64p (bvplus 64 offset ad) len base)
+                (unsigned-canonical-address-p (bvplus 64 offset ad))
+                (integerp offset)
+                (integerp ad)
+                (integerp base)
+                )
+           (equal (bvsx 64 48 (bvplus 48 offset ad))
+                  (bvplus 64 offset ad)))
+  :hints (("Goal" :use (:instance equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p
+                                  (x (bvplus 64 offset ad)))
+           :in-theory (disable equal-of-bvsx-64-48-becomes-unsigned-canonical-address-p))))
+
+;; todo: prove that unsigned-canonical-address-p is equivalent to bvsx doing nothing
+(defthm bvsx-when-unsigned-canonical-address-p
+  (implies (and (unsigned-canonical-address-p x)
+                (unsigned-byte-p 64 x) ;todo
+                )
+           (equal (bvsx 64 48 x)
+                  x))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,6 +192,16 @@
                                      bvlt bvuminus bvplus
                                      acl2::bvchop-of-sum-cases))))
 
+(defthm unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus
+  (implies (and (canonical-regionp len ad2) ;free vars
+                ;; (in-region64p ad len ad2) ; instead, we use the 2 hyps below
+                (natp len)
+                (bvlt 64 (bvminus 64 ad ad2) len) ; add is in the region
+                (integerp ad)
+                (integerp ad2))
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :in-theory (enable in-region64p))))
+
 (defthm canonical-regionp-of-+-arg2
   (implies (and (integerp x)
                 (integerp y))
@@ -135,14 +211,8 @@
                                      in-region64p-of-+-arg1
                                      acl2::bvplus-of-+-arg3))))
 
-(defthm unsigned-canonical-address-p-of-+-when-small
-  (implies (and (unsigned-byte-p 46 x)
-                (unsigned-byte-p 46 y))
-           (unsigned-canonical-address-p (+ x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt))))
+;; todo: prove that a subregion of a canonical region is a canonical region
 
-(defthm unsigned-canonical-address-p-of-bvplus-when-small
-  (implies (and (unsigned-byte-p 46 x)
-                (unsigned-byte-p 46 y))
-           (unsigned-canonical-address-p (bvplus 64 x y)))
-  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p bvlt bvplus ifix))))
+;; sanity check:
+;; TODO: Prove that a canonical region is at most 2^48 bytes
+(thm (not (canonical-regionp (expt 2 64) ad)) :hints (("Goal" :in-theory (enable canonical-regionp))))

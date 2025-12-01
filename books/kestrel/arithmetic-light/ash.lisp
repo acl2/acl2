@@ -24,7 +24,7 @@
 
 (in-theory (disable ash))
 
-(defthm ash-of-0
+(defthm ash-of-0-arg2
   (equal (ash i 0)
          (ifix i))
   :hints (("Goal" :in-theory (enable ash))))
@@ -36,6 +36,12 @@
 
 (defthm integerp-of-ash
   (integerp (ash i c)))
+
+(defthmd ash-when-non-negative-becomes-*-of-expt
+  (implies (natp c)
+           (equal (ash i c)
+                  (* (ifix i) (expt 2 c))))
+  :hints (("Goal" :in-theory (enable ash))))
 
 (defthm equal-of-0-and-ash
   (equal (equal 0 (ash i c))

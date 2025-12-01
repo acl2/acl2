@@ -77,6 +77,12 @@
     (reclimit posp :rule-classes (:rewrite :type-prescription) :default '1000000
               "Recursion limit for the FGL interpreter/rewriter. Defaults to 1
 million; set smaller to catch rewrite loops faster.")
+    (stacklimit posp :rule-classes (:rewrite :type-prescription) :default '1000000
+                "Limit on the number of major frames (rewrite rule applications) on FGL's
+stack. Set smaller to catch rewrite rules faster. Similar to reclimit, but maybe easier for
+users to predict the behavior.")
+    (steplimit posp :rule-classes (:rewrite :type-prescription) :default '1000000000
+               "Limit on the number of steps (rewrite / meta rule applications) in an FGL run.")
     (make-ites booleanp :default 'nil
                "If NIL (the default), then if the two branches of an IF term
 rewrite to objects that cannot be merged, FGL produces an error.  If T, then it
@@ -93,6 +99,14 @@ fgl-rewrite-rules).")
                         "The function mode table (see @(see fgl-function-mode)). Probably
 shouldn't be changed by the user; instead use the utilities described in @(see
 fgl-rewrite-rules).")
+    (counterexample-analysis-enabledp
+     booleanp :default 't
+     "If T (the default), then the FGL clause processor will try to analyze and run
+counterexamples. Specifically, if the interpreter finishes and the (SAT-based)
+validity check of its result produces a counterexample, the SAT counterexample
+will be analyzed to try and create a counterexample to the conjecture (in terms
+of its original variables). This also affects any rewrite rules that call
+@('interp-st-run-ctrex') (it will exit without running the counterexample).")
     (prof-enabledp booleanp :default 't
                    "If T (the default), then the interpreter collects rule
 profiling information (like ACL2's @(see acl2::accumulated-persistence)) and
@@ -114,14 +128,17 @@ that the SAT check will be attempted when the interpreter gets there.. If
 @(':nil'), then we do neither of these.")
     (skip-vacuity-check booleanp :default 'nil
                         "If NIL, we use SAT to check vacuity of the
-hypotheses. Set to T to disable this vacuity check.")))
+hypotheses. Set to T to disable this vacuity check.")
+    (evisc-tuple t :default '(nil 12 100 nil)
+                 "Evisc tuple to use for printing potentially large objects.")))
 
 (local
  (defun fgl-config-process-field (field)
    (cond ((atom field) field)
          ((eq (car field) ':default)
           (if (quotep (cadr field))
-              (cons :default (cons (unquote (cadr field)) (cddr field)))
+              (cons :default
+                    (cons (cadr field) (cddr field)))
             (cons :default (cons nil (cddr field)))))
          (t (cons (car field)
                   (fgl-config-process-field (cdr field)))))))
@@ -215,3 +232,44 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
 
 (define fgl-toplevel-vacuity-check-config-wrapper (override)
   (or override (fgl-toplevel-vacuity-check-config)))
+
+
+
+
+;; Config objects for SAT checks go here so we don't have to include the whole
+;; SAT implementation just to define a rewrite rule that calls SAT.
+
+
+(defprod fgl-ipasir-config
+  :parents (fgl-sat-check)
+  :short "Configuration object for IPASIR SAT checks in the default FGL configuration."
+  ((ignore-pathcond booleanp :default nil)
+   (ignore-constraint booleanp :default nil)
+   (ipasir-callback-limit acl2::maybe-natp :default nil
+                          "Limit on the number of callbacks in a single SAT check
+                           after which the check fails.")
+   (ipasir-recycle-callback-limit acl2::maybe-natp :default nil
+                                  "Limit on the number of callbacks over the lifespan
+                                   of a solver object, after which the solver is
+                                   re-initialized.")
+   (ipasir-index natp :default '0))
+  :tag :fgl-ipasir-config)
+
+
+(defprod fgl-satlink-monolithic-sat-config
+  ((ignore-pathcond booleanp :default nil)
+   (ignore-constraint booleanp :default nil)
+   (satlink-config-override :default nil)
+   (transform booleanp :default nil)
+   (transform-config-override :default nil)
+   (conjoin :default t))
+  :tag :fgl-satlink-config)
+
+;; the main monolithic SAT configs we tend to need:
+(define monolithic-sat-with-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform t))
+
+(define monolithic-sat-without-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform nil))
+
+

@@ -15,20 +15,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key gcc cond)
+(defmacro test-dimb (input &key std gcc cond)
   ;; INPUT is an ACL2 string with the text to parse and disambiguate.
-  ;; GCC flag says whether GCC extensions are enabled.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variable AST.
   `(assert-event
-    (b* (((mv erp1 ast) (parse-file (filepath "test")
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    ,gcc))
+                                    version))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)
                     (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
+
+(defmacro test-dimb-fail (input &key std gcc)
+  ;; INPUT is an ACL2 string with the text to parse and disambiguate.
+  ;; STD indicates the C standard version (17 or 23; default 17).
+  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  `(assert-event
+    (b* ((version (if (eql ,std 23)
+                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
+                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+         ((mv erp1 ast) (parse-file (filepath "test")
+                                    (acl2::string=>nats ,input)
+                                    version))
+         (- (cw "~%Input:~%~x0~|" ast))
+         ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
+      (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
+            (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))
+            (t nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,6 +89,22 @@
   int y = sizeof(x);
   }
 ")
+
+(test-dimb
+ "int x;
+  void f() {
+  int y = _Alignof(x);
+  }
+"
+ :gcc t)
+
+(test-dimb
+ "typedef char x;
+  void f() {
+  int y = _Alignof(x);
+  }
+"
+ :gcc t)
 
 (test-dimb
  "int x;
@@ -260,10 +297,10 @@
  :cond (b* ((edecls (transunit->decls ast))
             (edecl (car edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (stmt (fundef->body fundef))
-            (items (stmt-compound->items stmt))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
-            (stmt (block-item-stmt->unwrap item))
+            (stmt (block-item-stmt->stmt item))
             (expr (stmt-return->expr? stmt)))
          (and (expr-case expr :binary)
               (binop-case (expr-binary->op expr) :sub))))
@@ -276,10 +313,10 @@
  :cond (b* ((edecls (transunit->decls ast))
             (edecl (car edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (stmt (fundef->body fundef))
-            (items (stmt-compound->items stmt))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
-            (stmt (block-item-stmt->unwrap item))
+            (stmt (block-item-stmt->stmt item))
             (expr-abc (stmt-return->expr? stmt))
             (expr-ab (expr-binary->arg1 expr-abc))
             (expr-a (expr-binary->arg1 expr-ab))
@@ -307,10 +344,10 @@
  :cond (b* ((edecls (transunit->decls ast))
             (edecl (car edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (stmt (fundef->body fundef))
-            (items (stmt-compound->items stmt))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
-            (stmt (block-item-stmt->unwrap item))
+            (stmt (block-item-stmt->stmt item))
             (expr-abc (stmt-return->expr? stmt))
             (expr-ab (expr-binary->arg1 expr-abc))
             (expr-ap (expr-binary->arg1 expr-ab))
@@ -340,10 +377,10 @@
  :cond (b* ((edecls (transunit->decls ast))
             (edecl (car edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (stmt (fundef->body fundef))
-            (items (stmt-compound->items stmt))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
-            (stmt (block-item-stmt->unwrap item))
+            (stmt (block-item-stmt->stmt item))
             (expr-abcd (stmt-return->expr? stmt))
             (expr-abc (expr-binary->arg1 expr-abcd))
             (expr-ab (expr-binary->arg1 expr-abc))
@@ -379,9 +416,36 @@
  :cond (b* ((edecls (transunit->decls ast))
             (edecl (car edecls))
             (fundef (extdecl-fundef->unwrap edecl))
-            (stmt (fundef->body fundef))
-            (items (stmt-compound->items stmt))
+            (cstmt (fundef->body fundef))
+            (items (comp-stmt->items cstmt))
             (item (car items))
-            (stmt (block-item-stmt->unwrap item))
+            (stmt (block-item-stmt->stmt item))
             (expr (stmt-return->expr? stmt)))
          (expr-case expr :binary)))
+
+(test-dimb
+ "int f() {
+}
+  int g() {
+}
+  int h(int x) {
+  return (x->y >= (f()) && x->y < (g()));
+}
+"
+ :gcc t
+ :cond (not (cw "~x0" ast)))
+
+(test-dimb
+ "void foo (void) {
+ mylabel:
+   goto mylabel;
+}
+"
+ :gcc t)
+
+(test-dimb-fail
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+} my_union_t;
+")

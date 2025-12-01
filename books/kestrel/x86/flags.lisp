@@ -17,7 +17,7 @@
 ;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
-(include-book "kestrel/bv/trim-intro-rules" :dir :system)
+(include-book "kestrel/bv/trim-intro-rules" :dir :system) ; needed for a proof below
 (include-book "kestrel/bv/putbits" :dir :system) ; todo: split out putbit
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -928,18 +928,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: more like this
-;; or should we use a "convert-to-bv" function?
-;; todo: install these in a rule-list
-(defthm trim-of-!rflagsbits->cf
-  (implies (and (unsigned-byte-p 1 cf)
-                (<= 1 size)
-                (<= size 32)
-                (integerp size))
-           (equal (trim size (!rflagsbits->cf cf rflags))
-                  (bvcat (+ -1 size) (slice 31 1 rflags)
-                         1 cf)))
-  :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
+;; ;; todo: more like this
+;; ;; or should we use a "convert-to-bv" function?
+;; ;; todo: install these in a rule-list
+;; (defthm trim-of-!rflagsbits->cf
+;;   (implies (and (unsigned-byte-p 1 cf)
+;;                 (<= 1 size)
+;;                 (<= size 32)
+;;                 (integerp size))
+;;            (equal (trim size (!rflagsbits->cf cf rflags))
+;;                   (bvcat (+ -1 size) (slice 31 1 rflags)
+;;                          1 cf)))
+;;   :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1149,3 +1149,14 @@
 ;;   :hints (("Goal" :in-theory (e/d (logcount-opener-8
 ;;                                    x86isa::bitcount8-and-logcount)
 ;;                                   (x86isa::bitcount8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move?
+
+(defthm unsigned-byte-p-of-rflagsbits->af (implies (posp size) (unsigned-byte-p size (rflagsbits->af x))) :hints (("Goal" :in-theory (enable rflagsbits->af))))
+(defthm unsigned-byte-p-of-rflagsbits->cf (implies (posp size) (unsigned-byte-p size (rflagsbits->cf x))) :hints (("Goal" :in-theory (enable rflagsbits->cf))))
+(defthm unsigned-byte-p-of-rflagsbits->of (implies (posp size) (unsigned-byte-p size (rflagsbits->of x))) :hints (("Goal" :in-theory (enable rflagsbits->of))))
+(defthm unsigned-byte-p-of-rflagsbits->pf (implies (posp size) (unsigned-byte-p size (rflagsbits->pf x))) :hints (("Goal" :in-theory (enable rflagsbits->pf))))
+(defthm unsigned-byte-p-of-rflagsbits->sf (implies (posp size) (unsigned-byte-p size (rflagsbits->sf x))) :hints (("Goal" :in-theory (enable rflagsbits->sf))))
+(defthm unsigned-byte-p-of-rflagsbits->zf (implies (posp size) (unsigned-byte-p size (rflagsbits->zf x))) :hints (("Goal" :in-theory (enable rflagsbits->zf))))

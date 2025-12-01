@@ -38,7 +38,7 @@
     (xdoc::p
      "The transformation also generates proofs of equivalence
       between old (original) and new (transformed) constructs,
-      for a subset of the constructs.
+      for a growing subset of the constructs.
       In particular, the transformation generates equivalence proofs
       for C functions of a certain form, detailed below."))
 
@@ -47,8 +47,8 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(simpadd0 const-old"
-     "          const-new"
+     "(simpadd0 :const-old ...  ; required, no default"
+     "          :const-new ...  ; required, no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,18 +56,20 @@
    (xdoc::evmac-section-inputs
 
     (xdoc::desc
-     "@('const-old')"
+     "@(':const-old') &mdash; required, no default"
      (xdoc::p
       "Specifies the code to the transformed.")
      (xdoc::p
       "This must be a symbol that names an existing ACL2 constant
-       that contains a  validated translation unit ensemble,
-       i.e. a value of type @(tsee transunit-ensemble)
-       resulting from "
-      (xdoc::seetopic "c$::validator" "validation")
-      ", and in particular containing "
+       that contains a"
+      (xdoc::seetopic "c$::validator" "validated")
+      " (and thus "
+      (xdoc::seetopic "c$::unambiguity" "unambiguous")
+      ") "
+      (xdoc::seetopic "c$::code-ensembles" "code ensemble")
+      ", in particular containing "
       (xdoc::seetopic "c$::validation-information" "validation information")
-      ". This constant could result from @(tsee c$::input-files),
+      ". This constant could result from @(tsee c$::input-files)
        or from some other "
       (xdoc::seetopic "transformation-tools" "transformation")
       ".")
@@ -76,7 +78,7 @@
        we refer to this constant as @('*old*')."))
 
     (xdoc::p
-     "@('const-new')"
+     "@(':const-new') &mdash; required, no default"
      (xdoc::p
       "Specifies the name of the constant for the transformed code.")
      (xdoc::p
@@ -93,8 +95,9 @@
      "@('*new*')"
      (xdoc::p
       "The named constant containing the result of the transformation.
-       This is a translation unit ensemble that is
-       the same as the one in @('*old*'), except that
+       This is a code ensemble that is
+       the same as the one in @('*old*'), except that,
+       in the translation unit ensemble,
        every occurrence of an expression of the form @('E + 0'),
        when @('E') is an expression that our current @(see c$::validator)
        annotates as having type @('int'),
@@ -109,19 +112,37 @@
      "Equivalence theorems."
      (xdoc::p
       "One theorem is generated for every function definition in @('*old*')
-       that has all @('int') parameters and
-       whose body consists of a single @('return') statement
-       with an expression consisting of
-       @('int') constants,
-       function parameters,
-       the unary operators that do not involve pointers
-       (i.e. @('+'), @('-'), @('~'), @('!')),
-       and the binary operators that are pure and strict
-       (i.e. @('*'), @('/'), @('%'), @('+'), @('-'), @('<<'), @('>>'),
-       @('<'), @('>'), @('<='), @('>='), @('=='), @('!='),
-       @('&'), @('^'), @('|')).
-       Note that the transformed function definition in @('*new*')
-       satisfies the same restrictions.")
+       that has all integer parameters
+       (except plain @('char') and except @('_Bool')) and
+       whose body only contains the following constructs:")
+     (xdoc::ul
+      (xdoc::li
+       "Declarations of integer variables.")
+      (xdoc::li
+       "Assignment expression statements.")
+      (xdoc::li
+       "The null statement,
+        compound statements,
+        return (with or without expression) statements,
+        conditional (@('if') and @('if-else') statements,
+        and @('while') loop statements.")
+      (xdoc::li
+       "Expressions consisting of
+        integer constants,
+        integer variables,
+        the unary operators that do not involve pointers
+        (i.e. @('+'), @('-'), @('~'), @('!')),
+        the binary operators that are pure
+        (i.e. @('*'), @('/'), @('%'), @('+'), @('-'), @('<<'), @('>>'),
+        @('<'), @('>'), @('<='), @('>='), @('=='), @('!='),
+        @('&'), @('^'), @('|'), @('&&'), @('||')),
+        the ternary conditional operator @('? :'),
+        casts to integer types,
+        and parentheses.
+        These are all pure and may be used anywhere.")
+      (xdoc::li
+       "Simple (not compound) integer assignment expressions,
+        only as expression statements."))
      (xdoc::p
       "These theorems are proved by proving a sequence of theorems,
        in a bottom-up fashion, for the sub-constructs of the functions.

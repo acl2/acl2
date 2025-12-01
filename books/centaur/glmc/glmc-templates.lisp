@@ -464,7 +464,7 @@
           (interp-st (is-prof-report interp-st))
           ((when er) (mv nil er bvar-db interp-st state))
 
-          (bit-constr-bfr (bfr-constr->bfr (is-constraint interp-st))))
+          (bit-constr-bfr (bfr-constr-mode->bfr (is-constraint interp-st))))
 
        (mv (make-glmc-fsm :nextst nextst-bfrs
                           :prop prop-bfr

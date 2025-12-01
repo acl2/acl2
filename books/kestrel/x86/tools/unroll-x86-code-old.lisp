@@ -82,6 +82,7 @@
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; assumptions (these get simplified and so don't have to be in normal form):
+       (64-bitp (member-eq executable-type '(:mach-o-64 :elf-64 :pe-64)))
        (assumptions (if (eq :mach-o-64 executable-type)
                         (cons `(standard-assumptions-mach-o-64 ',subroutine-name
                                                                ',parsed-executable
@@ -126,7 +127,7 @@
        ;; Do the symbolic simulation:
        (enables (append enables *standard-lifter-enables*))
        (term-to-simulate '(run-until-return x86))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate (w state)))
+       (term-to-simulate (wrap-in-output-extractor output term-to-simulate 64-bitp (w state)))
        ((mv result runes state)
         (symsim$-fn term-to-simulate
                     assumptions

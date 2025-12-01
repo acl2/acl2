@@ -12,11 +12,15 @@
 
 (in-package "ACL2")
 
+;; This is the Axe version of ../bv/convert-to-bv-rules.lisp
+
 (include-book "axe-syntax")
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
+(include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system) ; these rules complement the rules in this book
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system) ; todo: just get the def?
 ;(local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
@@ -38,6 +42,7 @@
 (local (include-book "kestrel/bv/bvif" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/sbvlt" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; These rules work together with TRIM rules such as trim-of-logand-becomes-bvand.
 
@@ -53,8 +58,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd getbit-convert-arg2-to-bv-axe
-  (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
-                (axe-syntaxp (term-should-be-converted-to-bvp x 'nil dag-array))
+  (implies (and (<= 0 n) ;; old: ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
+                (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
                 (integerp n))
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
@@ -391,3 +396,14 @@
            (equal (bvmod size x y)
                   (bvmod size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim bvmod))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: also do one for write
+(defthmd bv-array-read-convert-arg3-to-bv-axe
+  (implies (and (syntaxp (quotep len))
+                (axe-syntaxp (term-should-be-converted-to-bvp index nil dag-array))
+                (equal len (len data)))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size len (trim (ceiling-of-lg len) index) data)))
+  :hints (("Goal" :in-theory (enable trim))))

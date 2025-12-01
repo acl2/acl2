@@ -1727,32 +1727,46 @@
                                ,@extobj-recognizers
                                ,@correct-thms
                                ,@measure-thms
-                               ,fn-fun-env-thm))
+                               ,fn-fun-env-thm
+                               return-type-of-stmt-value-none
+                               expr-value-optionp-when-expr-valuep
+                               (:e c::expr-value-optionp)
+                               expr-valuep-of-expr-value))
                  :use (:instance (:guard-theorem ,fn)
-                       :extra-bindings-ok ,@(alist-to-doublets instantiation))
+                                 :extra-bindings-ok
+                                 ,@(alist-to-doublets instantiation))
                  :expand (:lambdas))
                 (and stable-under-simplificationp
-                     '(:in-theory (union-theories
-                                   (theory 'atc-all-rules)
-                                   '(,fn
-                                     not-errorp-when-expr-valuep
-                                     ,@not-error-thms
-                                     ,@valuep-thms
-                                     ,@value-kind-thms
-                                     not
-                                     ,@result-thms
-                                     ,@struct-reader-return-thms
-                                     ,@struct-writer-return-thms
-                                     ,@type-of-value-thms
-                                     ,@flexiblep-thms
-                                     ,@member-read-thms
-                                     ,@member-write-thms
-                                     ,@type-prescriptions-called
-                                     ,@type-prescriptions-struct-readers
-                                     ,@extobj-recognizers
-                                     ,@correct-thms
-                                     ,@measure-thms
-                                     ,fn-fun-env-thm))))))
+                     '(:in-theory
+                       (union-theories
+                        (theory 'atc-all-rules)
+                        '(,fn
+                          not-errorp-when-expr-valuep
+                          ,@not-error-thms
+                          ,@valuep-thms
+                          ,@value-kind-thms
+                          not
+                          return-type-of-stmt-value-return
+                          return-type-of-stmt-value-none
+                          stmt-value-return->value?-of-stmt-value-return
+                          value-option-fix-when-value-optionp
+                          ,@result-thms
+                          ,@struct-reader-return-thms
+                          ,@struct-writer-return-thms
+                          ,@type-of-value-thms
+                          ,@flexiblep-thms
+                          ,@member-read-thms
+                          ,@member-write-thms
+                          ,@type-prescriptions-called
+                          ,@type-prescriptions-struct-readers
+                          ,@extobj-recognizers
+                          ,@correct-thms
+                          ,@measure-thms
+                          ,fn-fun-env-thm
+                          return-type-of-stmt-value-none
+                          expr-value-optionp-when-expr-valuep
+                          (:e c::expr-value-optionp)
+                          expr-valuep-of-expr-value))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -2841,7 +2855,7 @@
            '(pop-frame-of-if*
              update-var-of-enter-scope
              update-var-of-add-var
-             exit-scope-of-enter-scope
+             exit-scope-of-enter-scope-when-compustatep
              exit-scope-of-add-var
              compustate-frames-number-of-add-var-not-zero
              compustate-frames-number-of-enter-scope-not-zero
@@ -3078,7 +3092,9 @@
         (and result-var
              (atc-type-to-type-to-quoted-thms body-type prec-tags)))
        (lemma-hints
-        `(("Goal" :in-theory '(exec-fun-open
+        `(("Goal" :in-theory '(exec-fun-open-return
+                               exec-fun-open-noreturn
+                               (:e type-void)
                                not-zp-of-limit-variable
                                ,fn-fun-env-thm
                                ,init-scope-expand-thm
@@ -3088,6 +3104,10 @@
                                (:e fun-info->body)
                                mv-nth-of-cons
                                (:e zp)
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
+                               stmt-value-return->value?-of-stmt-value-return
+                               value-option-fix-when-value-optionp
                                value-optionp-when-valuep
                                (:e value-optionp)
                                (:e type-of-value-option)
@@ -3689,17 +3709,21 @@
        (exec-stmt-while-for-fn-body
         `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              (test-eval (exec-expr-pure ',loop-test compst))
-              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              ((mv test-eval compst)
+               (exec-expr ',loop-test compst fenv (1- limit)))
+              ((when (errorp test-eval)) (mv test-eval compst))
+              ((unless test-eval)
+               (mv (error (list :void-while-test (expr-fix ',loop-test)))
+                   compst))
               (test-eval (apconvert-expr-value test-eval))
-              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              ((when (errorp test-eval)) (mv test-eval compst))
               (test-val (expr-value->value test-eval))
               (continuep (test-value test-val))
-              ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-              ((when (not continuep)) (mv nil (compustate-fix compst)))
-              ((mv val? compst) (exec-stmt ',loop-body compst fenv (1- limit)))
-              ((when (errorp val?)) (mv val? compst))
-              ((when (valuep val?)) (mv val? compst)))
+              ((when (errorp continuep)) (mv continuep compst))
+              ((when (not continuep)) (mv (stmt-value-none) compst))
+              ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
+              ((when (errorp sval)) (mv sval compst))
+              ((when (stmt-value-case sval :return)) (mv sval compst)))
            (,exec-stmt-while-for-fn compst (1- limit))))
        (exec-stmt-while-for-fn-hints
         '(("Goal" :in-theory '(acl2::zp-compound-recognizer
@@ -3736,8 +3760,15 @@
                                             (preprocess ,prog-const))
                                            limit))
          :rule-classes nil
-         :hints `(("Goal" :in-theory '(,exec-stmt-while-for-fn
-                                       exec-stmt-while))))))
+         :hints `(("Goal"
+                   :induct (,exec-stmt-while-for-fn compst limit)
+                   :in-theory '(,exec-stmt-while-for-fn
+                                exec-stmt-while
+                                valuep-when-value-optionp
+                                value-optionp-of-stmt-value-return->value?
+                                (:e valuep)
+                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                                nfix))))))
     (mv (list exec-stmt-while-for-fn-event
               exec-stmt-while-for-fn-thm-event)
         exec-stmt-while-for-fn
@@ -4178,7 +4209,7 @@
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
-                        (mv nil ,final-compst))))
+                        (mv (stmt-value-none) ,final-compst))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -4218,6 +4249,11 @@
                                ,@valuep-thms
                                ,@value-kind-thms
                                not
+                               return-type-of-stmt-value-return
+                               return-type-of-stmt-value-none
+                               stmt-value-return->value?-of-stmt-value-return
+                               stmt-value-return-of-value-option-fix-value?
+                               (:e c::value-option-fix)
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
@@ -4229,9 +4265,13 @@
                                ,@extobj-recognizers
                                ,@result-thms
                                ,@correct-thms
-                               ,@measure-thms))
+                               ,@measure-thms
+                               expr-value-optionp-when-expr-valuep
+                               expr-pure-limit
+                               max))
                  :use ((:instance (:guard-theorem ,fn)
-                        :extra-bindings-ok ,@(alist-to-doublets instantiation)))
+                                  :extra-bindings-ok
+                                  ,@(alist-to-doublets instantiation)))
                  :expand :lambdas)))
        ((mv correct-body-thm-event &)
         (evmac-generate-defthm correct-body-thm
@@ -4359,14 +4399,14 @@
                                                     prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
-                              (mv nil ,final-compst))))
+                              (mv (stmt-value-none) ,final-compst))))
        (concl-thm `(equal (exec-stmt-while ',loop-test
                                            ',loop-body
                                            ,compst-var
                                            ,fenv-var
                                            ,limit-var)
                           (b* ((,affect-binder (,fn ,@formals)))
-                            (mv nil ,final-compst))))
+                            (mv (stmt-value-none) ,final-compst))))
        (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
        (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
@@ -4508,6 +4548,11 @@
                                 ,@valuep-thms
                                 ,@value-kind-thms
                                 not
+                                stmt-value-return->value?-of-stmt-value-return
+                                (:e value-option-fix)
+                                not-errorp-when-stmt-valuep
+                                return-type-of-stmt-value-return
+                                return-type-of-stmt-value-none
                                 ,exec-stmt-while-for-fn
                                 ,@struct-reader-return-thms
                                 ,@struct-writer-return-thms
@@ -4535,7 +4580,12 @@
                                 value-kind-when-slongp
                                 value-kind-when-ullongp
                                 value-kind-when-sllongp
-                                expr-value-fix-when-expr-valuep))
+                                expr-value-fix-when-expr-valuep
+                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                                (:e expr-purep)
+                                (:e expr-pure-limit)
+                                nfix
+                                (:t exec-expr-pure)))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation

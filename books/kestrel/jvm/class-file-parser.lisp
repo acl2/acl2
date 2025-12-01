@@ -862,7 +862,7 @@
               (erp-nil)
               (acons 'bytes ;todo: bytes is a bad name for this
                      ;; TODO: In some cases (e.g., for descriptors) we might rather have chars here than a string
-                     (bytelist-to-string val) ;FFFFIXME doesn't handle non-ascii - add unicode support!  ;fixme: just turn this into a char-list?  since often this just gets unstringified anyway((when erp) (mv erp nil 0 bytes)).
+                     (bytelist-to-string val) ;FFFFIXME doesn't handle non-ascii - add unicode support!  ;fixme: just turn this into a char-list?  since often this just gets unstringified anyway ((when erp) (mv erp nil 0 bytes)).
                      (acons 'tag :CONSTANT_Utf8 nil))
               1
               bytes)))

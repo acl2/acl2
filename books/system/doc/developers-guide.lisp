@@ -1082,17 +1082,17 @@
 
  <p>As of this writing, six Common Lisp implementations support ACL2: Allegro
  Common Lisp (ACL), Clozure CL (CCL), CMU Common Lisp (CMUCL), GNU Common
- Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  (Note: As of
- Sept. 2018 there remains a problem with CMUCL that was reported several months
- ago, which the implementor has indicated that he intends to try to fix.)  Some
- ACL2 raw-Lisp code is implementation-specific, that is, depends on which of
- these six Common Lisp implementations is the host lisp.  See for example the
- definitions of @('exit-lisp') and @('getenv$-raw').  Here is an elided version
- of the definition of @('exit-lisp').  Notice the readtime conditional used for
- each of the six supported Lisp implementations and also some that are no
- longer supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
- sometimes, as below, we see the somewhat archaic (but still acceptable)
- ``@('akcl')''.)</p>
+ Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  However, see @(see
+ allegro-cl) for concerns about using Allegro CL (though, as noted in topic
+ @(see developers-guide-maintenance), that Lisp has a particularly nice
+ statistical profiler.)  Some ACL2 raw-Lisp code is implementation-specific,
+ that is, depends on which of these six Common Lisp implementations is the host
+ lisp.  See for example the definitions of @('exit-lisp') and @('getenv$-raw').
+ Here is an elided version of the definition of @('exit-lisp').  Notice the
+ readtime conditional used for each of the six supported Lisp implementations
+ and also some that are no longer supported, like CLISP.  (Note: Normally we
+ see ``@('gcl')'' for GCL but sometimes, as below, we see the somewhat
+ archaic (but still acceptable) ``@('akcl')''.)</p>
 
  @({
  (defun exit-lisp (&optional (status '0 status-p))

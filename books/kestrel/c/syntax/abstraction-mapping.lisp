@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "kestrel/c/syntax/abstract-syntax" :dir :system)
+(include-book "kestrel/c/syntax/abstract-syntax-trees" :dir :system)
 (include-book "kestrel/c/syntax/concrete-syntax" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstraction-mapping
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Syntax abstraction mapping."
   :long
   (xdoc::topstring

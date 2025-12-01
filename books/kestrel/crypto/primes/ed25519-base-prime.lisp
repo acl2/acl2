@@ -78,7 +78,7 @@
                      (2 1 1 1 1)
                      (() () () () ()))))))))))
 
-  :parents (crypto::crypto)
+  :parents (primes::primes)
 
   :short "The Ed25519 base field prime."
 

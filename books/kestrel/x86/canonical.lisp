@@ -312,3 +312,14 @@
                   (< x (- (expt 2 47) k))))
   :hints (("Goal" :cases ((< (+ K X) 140737488355328)) ; why?
            )))
+
+
+;; (defthm logext-of-+-of-small-constant-when-canonical-address-p
+;;   (implies (and (syntaxp (quotep k))
+;;                 (<= -1000000 k) ; gen
+;;                 (<= k 1000000) ; gen
+;;                 (integerp k)
+;;                 (canonical-address-p ad))
+;;            (equal (logext 64 (+ k ad))
+;;                   (+ k (logext 64 ad))))
+;;   :hints (("Goal" :in-theory (enable signed-byte-p))))

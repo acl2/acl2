@@ -1,7 +1,7 @@
 ; Utilities for parsing x86 binaries
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -147,7 +147,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv uint32 bytes) where BYTES is the bytes that remain after parsing the value.
+;; Returns (mv erp uint32 bytes) where BYTES is the bytes that remain after parsing the value.
 ;; This is a little-endian operation, because the least significant byte comes first.
 ;; TODO: Rename to have "little" in the name, and similarly for similar functions.
 (defund parse-u32 (bytes)
@@ -185,7 +185,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv uint64 bytes) where BYTES is the bytes that remain after parsing the value.
+;; Returns (mv erp uint64 bytes) where BYTES is the bytes that remain after parsing the value.
 ;; This is a little-endian operation, because the least significant byte comes first.
 (defund parse-u64 (bytes)
   (declare (xargs :guard (byte-listp bytes)))
@@ -253,6 +253,7 @@
 ;;  ;;        :exec (consp (nthcdr (+ -1 n) lst))))
 ;;  )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Given a BV and an alist from flag masks (values with a single bit set) to
 ; flag 'names', return a list of the names of the flags whose corresponding
@@ -279,9 +280,10 @@
                               (integer-listp (strip-cars flags-alist)))))
   (decode-flags-aux val flags-alist nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tries to extract the first 4 bytes as a u32.
 ;; Returns (mv erp magic-number).
-;move to a file of common utils
 (defun parse-executable-magic-number (bytes filename)
   (declare (xargs :guard (and (byte-listp bytes)
                               (stringp filename))))

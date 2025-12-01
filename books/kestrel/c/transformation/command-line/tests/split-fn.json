@@ -1,0 +1,8 @@
+{"command": "split-fn",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "split-fn.output",
+  "files": ["file4.c"],
+  "target": "foo",
+  "new-fn": "foo_new",
+  "split-point": 1}}

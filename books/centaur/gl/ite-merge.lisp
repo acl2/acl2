@@ -265,19 +265,18 @@
    (local (in-theory (enable (:type-prescription acl2-count))))
 
    (defthm merge-rest-measure-thm
-     (let ((hyp (bfr-hyp-fix hyp)))
-       (and (o-p (merge-rest-measure x y))
-            (implies (and ;; (and (not (fh c)) (not (th c)))
-                      (not (th firstcond))
-                      ;; hyp
-                      )
-                     (let ((old-measure
-                            (merge-rest-measure x y)))
-                       (and (implies (fh firstcond)
-                                     (o< (ite-merge-measure x y)
-                                         old-measure))
-                            (o< (ite-merge-measure x y)
-                                old-measure))))))
+     (and (o-p (merge-rest-measure x y))
+          (implies (and ;; (and (not (fh c)) (not (th c)))
+                    (not (th firstcond))
+                    ;; hyp
+                    )
+                   (let ((old-measure
+                          (merge-rest-measure x y)))
+                     (and (implies (fh firstcond)
+                                   (o< (ite-merge-measure x y)
+                                       old-measure))
+                          (o< (ite-merge-measure x y)
+                              old-measure)))))
      :hints (("goal" :do-not-induct t
               :in-theory nil)
              (and stable-under-simplificationp
@@ -309,45 +308,44 @@
                             false-under-hyp)))))
 
    (defthm ite-merge-measure-thm
-     (let ((hyp (bfr-hyp-fix hyp)))
-       (and (o-p (ite-merge-measure x y))
-            (implies
-             (and (not (th c)) (not (fh c)))
-             (b* ((old-measure (ite-merge-measure x y))
-                  ((mv ?first-x-cond first-x rest-x)
-                   ;; x is (if first-x-cond first-x rest-x)
-                   (breakdown-ite-by-cond x))
-                  ((mv ?first-y-cond first-y rest-y)
-                   (breakdown-ite-by-cond y)))
-               (and ;;  (implies (and (fh first-x-cond)
-                ;;                                 (fh first-y-cond))
-                ;;                            (o< (ite-merge-measure c rest-x rest-y hyp)
-                ;;                                old-measure))
-                ;;                   (implies (and (fh first-x-cond)
-                ;;                                 (not (fh first-y-cond)))
-                ;;                            (o< (ite-merge-measure c rest-x y hyp)
-                ;;                                old-measure))
-                ;;                   (implies (and (not (fh first-x-cond))
-                ;;                                 (fh first-y-cond))
-                ;;                            (o< (ite-merge-measure c x rest-y hyp)
-                ;;                                old-measure))
-                ;;                   (implies
-                ;;                    (and (not (fh first-x-cond))
-                ;;                         (not (fh first-y-cond)))
-                (let ((firstcond (hf (bfr-ite-fn c first-x-cond first-y-cond))))
-                  (and (implies (and (not (and (eq first-x-cond t)
-                                               (eq first-y-cond t)))
-                                     (equal fc firstcond))
-                                (o< (merge-rest-measure rest-x rest-y)
-                                    old-measure))
-                       (o< (maybe-merge-measure first-x first-y)
-                           old-measure)
-                       (implies (not (eq first-x-cond t))
-                                (o< (merge-rest-measure rest-x y)
-                                    old-measure))
-                       (implies (not (eq first-y-cond t))
-                                (o< (merge-rest-measure x rest-y)
-                                    old-measure)))))))))
+     (and (o-p (ite-merge-measure x y))
+          (implies
+           (and (not (th c)) (not (fh c)))
+           (b* ((old-measure (ite-merge-measure x y))
+                ((mv ?first-x-cond first-x rest-x)
+                 ;; x is (if first-x-cond first-x rest-x)
+                 (breakdown-ite-by-cond x))
+                ((mv ?first-y-cond first-y rest-y)
+                 (breakdown-ite-by-cond y)))
+             (and ;;  (implies (and (fh first-x-cond)
+              ;;                                 (fh first-y-cond))
+              ;;                            (o< (ite-merge-measure c rest-x rest-y hyp)
+              ;;                                old-measure))
+              ;;                   (implies (and (fh first-x-cond)
+              ;;                                 (not (fh first-y-cond)))
+              ;;                            (o< (ite-merge-measure c rest-x y hyp)
+              ;;                                old-measure))
+              ;;                   (implies (and (not (fh first-x-cond))
+              ;;                                 (fh first-y-cond))
+              ;;                            (o< (ite-merge-measure c x rest-y hyp)
+              ;;                                old-measure))
+              ;;                   (implies
+              ;;                    (and (not (fh first-x-cond))
+              ;;                         (not (fh first-y-cond)))
+              (let ((firstcond (hf (bfr-ite-fn c first-x-cond first-y-cond))))
+                (and (implies (and (not (and (eq first-x-cond t)
+                                             (eq first-y-cond t)))
+                                   (equal fc firstcond))
+                              (o< (merge-rest-measure rest-x rest-y)
+                                  old-measure))
+                     (o< (maybe-merge-measure first-x first-y)
+                         old-measure)
+                     (implies (not (eq first-x-cond t))
+                              (o< (merge-rest-measure rest-x y)
+                                  old-measure))
+                     (implies (not (eq first-y-cond t))
+                              (o< (merge-rest-measure x rest-y)
+                                  old-measure))))))))
      :hints (("goal" :do-not-induct t
               :in-theory '(breakdown-ite-by-cond))
              (and stable-under-simplificationp
@@ -726,6 +724,7 @@
    :hints (("goal" :do-not-induct t))))
 
 
+
 (local
  (def-ite-merge-thm
    (defthm ite-merge-of-bfr-hyp-fix
@@ -757,25 +756,25 @@
    (defcong bfr-hyp-equiv equal (ite-merge c x y hyp) 4
      :hints (("goal" :use ((:instance ite-merge-of-bfr-hyp-fix)
                            (:instance ite-merge-of-bfr-hyp-fix (hyp hyp-equiv)))
-              :in-theory (e/d (bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
+              :in-theory (e/d (bfr-hyp-equiv)
                               (ite-merge-of-bfr-hyp-fix)))))
 
    (defcong bfr-hyp-equiv equal (ite-merge-lists c x y hyp) 4
      :hints (("goal" :use ((:instance ite-merge-lists-of-bfr-hyp-fix)
                            (:instance ite-merge-lists-of-bfr-hyp-fix (hyp hyp-equiv)))
-              :in-theory (e/d (bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
+              :in-theory (e/d (bfr-hyp-equiv)
                               (ite-merge-lists-of-bfr-hyp-fix)))))
 
    (defcong bfr-hyp-equiv equal (maybe-merge c x y xhyp yhyp hyp) 6
      :hints (("goal" :use ((:instance maybe-merge-of-bfr-hyp-fix)
                            (:instance maybe-merge-of-bfr-hyp-fix (hyp hyp-equiv)))
-              :in-theory (e/d (bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
+              :in-theory (e/d (bfr-hyp-equiv)
                               (maybe-merge-of-bfr-hyp-fix)))))
 
    (defcong bfr-hyp-equiv equal (merge-rest firstcond first c x y hyp) 6
      :hints (("goal" :use ((:instance merge-rest-of-bfr-hyp-fix)
                            (:instance merge-rest-of-bfr-hyp-fix (hyp hyp-equiv)))
-              :in-theory (e/d (bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
+              :in-theory (e/d (bfr-hyp-equiv)
                               (merge-rest-of-bfr-hyp-fix)))))))
 
 ;; (defthm bfr-unassume-cong-of-ite-merge
@@ -978,11 +977,11 @@
     (equal (gobj-ite-merge c x y (bfr-hyp-fix hyp))
            (gobj-ite-merge c x y hyp)))
 
-  (defcong bfr-hyp-equiv equal (gobj-ite-merge c x y hyp) 4
-     :hints (("goal" :use ((:instance gobj-ite-merge-of-bfr-hyp-fix)
-                           (:instance gobj-ite-merge-of-bfr-hyp-fix (hyp hyp-equiv)))
-              :in-theory (e/d (bfr-hyp-equiv-in-terms-of-bfr-hyp-fix)
-                              (gobj-ite-merge-of-bfr-hyp-fix)))))
+  (defthm gobj-ite-merge-hyppair-congruence
+    (implies (bfr-hyp-equiv hyp hyp-equiv)
+             (equal (mv-nth 0 (gobj-ite-merge c x y hyp))
+                    (mv-nth 0 (gobj-ite-merge c x y hyp-equiv))))
+    :rule-classes :congruence)
 
   (defthm gobj-ite-merge-correct
     (implies (bfr-hyp-eval hyp (car env))
@@ -998,6 +997,7 @@
                   (not (gobj-depends-on k p y)))
              (not (gobj-depends-on k p (mv-nth 0 (gobj-ite-merge c x y hyp)))))
     :hints(("Goal" :in-theory (enable gobj-ite-merge)))))
+
 
 
 

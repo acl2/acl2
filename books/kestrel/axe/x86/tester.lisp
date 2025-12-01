@@ -11,14 +11,13 @@
 
 (in-package "X")
 
-;; See also the Formal Unit Tester for Java.
+;; See also ../jvm/tester.lisp, the Formal Unit Tester for Java.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
-(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
@@ -26,13 +25,14 @@
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
-(include-book "unroll-x86-code")
+(include-book "unroller")
 (include-book "tester-rules-bv")
 (include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")
 (include-book "../bv-array-rules")
+(include-book "../tester-common")
 ;(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-right
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
@@ -46,9 +46,8 @@
 
 ;; TODO: Parens in output may not be balanced?
 
-(acl2::def-constant-opener alistp) ; why?
+;(acl2::def-constant-opener alistp) ; why?
 
-;; todo: use these
 (defund get-x86-tester-table (state)
   (declare (xargs :stobjs state))
   (table-alist 'x86-tester-table (w state)))
@@ -187,70 +186,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Print OK if expected, otherwise ERROR
-(defund print-test-summary-aux (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (prog2$
-     (let* ((entry (first result-alist))
-            (name (car entry)) ; a string
-            (val (cdr entry)))
-       (if (not (and (stringp name)
-                     (= 3 (len val))))
-           (er hard? 'print-test-summary-aux "Bad entry in result-alist: ~x0." entry)
-         (let* ((result (first val)) ; either :pass or :fail
-                (expected-result (second val)) ; :pass or :fail or :any
-                (elapsed (third val))
-                (elapsed (if (and (rationalp elapsed)
-                                  (<= 0 elapsed))
-                             elapsed
-                           (prog2$ (er hard? 'print-test-summary-aux "Bad elapsed time: ~x0." elapsed)
-                                   0)))
-                (result-string (if (eq :pass result) "pass" "fail"))
-                (numspaces (nfix (- 40 (len (coerce name 'list)))))
-                )
-           (if (equal result expected-result)
-               (progn$ (cw "Test ~s0:~_1 OK (~s2)   " name numspaces result-string)
-                       (acl2::print-to-hundredths elapsed)
-                       (cw "s.~%"))
-             (if (eq :any expected-result)
-                 ;; In this case, we don't know whether the test is supposed to pass:
-                 (progn$ (cw "Test ~s0:~_1 ?? (~s2)   " name numspaces result-string)
-                         (acl2::print-to-hundredths elapsed)
-                         (cw "s.~%"))
-               (progn$ (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3).  " name numspaces result-string (if (eq :pass expected-result) "pass" "fail"))
-                       (acl2::print-to-hundredths elapsed)
-                       (cw "s~%")))))))
-     (print-test-summary-aux (rest result-alist)))))
-
-(defund print-test-summary (result-alist executable-path)
-  (declare (xargs :guard (and (alistp result-alist)
-                              (stringp executable-path))))
-  (progn$ (cw"~%========================================~%")
-          (cw "SUMMARY OF RESULTS for ~x0:~%" executable-path)
-          (print-test-summary-aux result-alist)
-          (cw"========================================~%")))
-
-(defun any-result-unexpectedp (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (let* ((entry (first result-alist))
-           ;; (name (car entry)) ; a string
-           (val (cdr entry)))
-      (if (not (and ;; (stringp name)
-                (= 3 (len val))))
-          (er hard? 'any-result-unexpectedp "Bad entry in result-alist: ~x0." entry)
-        (let* ((result (first val))           ; either :pass or :fail
-               (expected-result (second val))  ; :pass or :fail or :any
-               (expectedp (or (eq :any expected-result)
-                              (equal result expected-result))))
-          (or (not expectedp)
-              (any-result-unexpectedp (rest result-alist))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns an (mv erp passedp time state).
 ;; TODO: Add redundancy checking -- where?
 ;; Parsing of the executable is done outside this function (so we don't do it more than once).
@@ -260,15 +195,15 @@
                            assumptions ; untranslated terms
                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                           normalize-xors count-hits print monitor
+                           normalize-xors count-hits print max-printed-term-size monitor
                            step-limit step-increment
                            prune-precise prune-approx tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
                            inputs-disjoint-from
+                           assume-bytes
                            stack-slots
                            existing-stack-slots
                            position-independentp
-                           bvp
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
@@ -285,6 +220,8 @@
                               (natp step-increment)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -295,12 +232,12 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (booleanp bvp))
+                              (booleanp position-independentp))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((- (acl2::ensure-x86 parsed-executable))
@@ -355,13 +292,14 @@
           extra-assumptions
           nil ;suppress-assumptions
           inputs-disjoint-from
+          assume-bytes
           stack-slots
           existing-stack-slots
           position-independentp
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
-          t                   ; use-internal-contextsp
+          ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
           ;; extra-rules:
@@ -379,7 +317,7 @@
                     acl2::maybe-get-mach-o-segment-constant-opener
                     acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
                     acl2::maybe-get-mach-o-section-constant-opener
-                    acl2::alistp-constant-opener
+                    ;acl2::alistp-constant-opener
                     ;;acl2::const-assumptions-mach-o-64
                     ;;acl2::data-assumptions-mach-o-64
                     ;;acl2::get-mach-o-constants-address-constant-opener
@@ -403,13 +341,14 @@
           count-hits
           print
           10 ; print-base (todo: consider 16)
+          max-printed-term-size
           t ; untranslatep (todo: make this an option)
-          bvp
+          ;; t ; bvp
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
-          (acl2::real-time-since start-real-time state)
+          (real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
               (progn$ (cw "Test ~s0 passed in " function-name-string)
                       (acl2::print-to-hundredths elapsed)
@@ -435,7 +374,7 @@
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
-          (acl2::real-time-since start-real-time state)
+          (real-time-since start-real-time state)
           (mv :did-not-finish-the-run nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
@@ -458,21 +397,16 @@
                                    tactics
                                    proof-rules
                                    t   ; simplify-assumptions
-                                   ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print
                                    ;; debug ; todo: use this?
                                    max-conflicts
-                                   t       ; call-stp-when-pruning
+                                   t ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   (append '(;ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
-                                             ;;bvlt-reduce-when-not-equal-one-less
-                                             ;;boolif-of-bvlt-strengthen-to-equal
-                                             )
-                                           rules-to-monitor)
-                                   t ;normalize-xors
+                                   rules-to-monitor
+                                   t ; normalize-xors
                                    state))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state)))
+       ((mv elapsed state) (real-time-since start-real-time state)))
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
@@ -501,13 +435,12 @@
                          assumptions
                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                         normalize-xors count-hits print monitor
+                         normalize-xors count-hits print max-printed-term-size monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
-                         max-conflicts inputs-disjoint-from stack-slots existing-stack-slots
+                         max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots
                          position-independent
                          expected-result
-                         bvp
                          whole-form
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
@@ -521,6 +454,8 @@
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -535,13 +470,13 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any))
-                              (booleanp bvp))
+                              (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -571,7 +506,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -613,6 +548,7 @@
                          (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
                          (count-hits 'nil)
                          (print 'nil)
+                         (max-printed-term-size '10000)
                          (monitor 'nil)
                          (step-limit '1000000)
                          (step-increment '100)
@@ -621,28 +557,40 @@
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
                          (expected-result ':pass)
                          (inputs-disjoint-from ':code)
+                         (assume-bytes ':all)
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000)
-                         (bvp 't))
-  `(acl2::make-event-quiet (test-function-fn ',function-name-string
-                                             ,executable   ; gets evaluated
-                                             ,param-names  ; gets evaluated
-                                             ,assumptions  ; gets evaluated
-                                             ,extra-rules  ; gets evaluated
-                                             ,extra-assumption-rules ; gets evaluated
-                                             ,extra-lift-rules ; gets evaluated
-                                             ,extra-proof-rules ; gets evaluated
-                                             ,remove-rules ; gets evaluated
-                                             ,remove-assumption-rules ; gets evaluated
-                                             ,remove-lift-rules ; gets evaluated
-                                             ,remove-proof-rules ; gets evaluated
-                                             ',normalize-xors
-                                             ',count-hits
-                                             ',print
-                                             ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',bvp ',whole-form state)))
+                         (max-conflicts '1000000))
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-function"
+       (test-function-fn ',function-name-string
+                         ,executable   ; gets evaluated
+                         ,param-names  ; gets evaluated
+                         ,assumptions  ; gets evaluated
+                         ,extra-rules  ; gets evaluated
+                         ,extra-assumption-rules ; gets evaluated
+                         ,extra-lift-rules ; gets evaluated
+                         ,extra-proof-rules ; gets evaluated
+                         ,remove-rules ; gets evaluated
+                         ,remove-assumption-rules ; gets evaluated
+                         ,remove-lift-rules ; gets evaluated
+                         ,remove-proof-rules ; gets evaluated
+                         ',normalize-xors
+                         ',count-hits
+                         ',print
+                         ',max-printed-term-size
+                         ,monitor ; gets evaluated
+                         ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
+                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -653,15 +601,15 @@
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits
-                              print monitor step-limit step-increment prune-precise prune-approx
+                              print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                               tactics max-conflicts
                               inputs-disjoint-from
+                              assume-bytes
                               stack-slots
                               existing-stack-slots
                               position-independentp
                               expected-failures
                               result-alist
-                              bvp
                               state)
   (declare (xargs :guard (and (string-listp function-name-strings)
                               (and (alistp assumptions-alist)
@@ -677,6 +625,8 @@
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -691,14 +641,14 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
-                              (alistp result-alist)
-                              (booleanp bvp))
+                              (alistp result-alist))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -710,7 +660,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp bvp state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -721,10 +671,10 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                             tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
+                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                             tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
                              expected-failures
-                             (acons function-name (list result expected-result elapsed) result-alist) bvp
+                             (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
 
 ;; Returns (mv erp all-results-as-expectedp state).
@@ -735,10 +685,9 @@
                           assumptions
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                          normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                           expected-failures
-                          bvp
                           state)
   (declare (xargs :guard (and (stringp executable)
                           (or (string-listp include-fns)
@@ -755,6 +704,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -769,14 +720,14 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -850,14 +801,13 @@
                                assumption-alist
                                extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                               normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                               tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independentp
+                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                               tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
-                               bvp
                                state))
        (- (cw " Done testing functions in ~s0.)~%" executable)) ;matches "(Testing functions in" above
-       ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
+       ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")
@@ -871,10 +821,9 @@
                           assumptions
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                          normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                           expected-failures
-                          bvp
                           whole-form
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -892,6 +841,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -906,14 +857,14 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -927,10 +878,9 @@
                             assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                             expected-failures
-                            bvp
                             state))
        ((when erp) (mv erp nil state)))
     (if all-results-as-expectedp
@@ -961,6 +911,7 @@
                           (normalize-xors 't)
                           (count-hits 'nil)
                           (print 'nil)
+                          (max-printed-term-size '10000)
                           (monitor 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
@@ -969,34 +920,45 @@
                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
                           (max-conflicts '1000000)
                           (inputs-disjoint-from ':code)
+                          (assume-bytes ':all)
                           (stack-slots ':auto)
                           (existing-stack-slots ':auto)
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (bvp 't))
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
-                                              ',function-name-strings
-                                              nil ; no need for excludes (just don't list the functions you don't want to test)
-                                              ,assumptions  ; gets evaluated
-                                              ,extra-rules  ; gets evaluated
-                                              ,extra-assumption-rules  ; gets evaluated
-                                              ,extra-lift-rules ; gets evaluated
-                                              ,extra-proof-rules ; gets evaluated
-                                              ,remove-rules ; gets evaluated
-                                              ,remove-assumption-rules ; gets evaluated
-                                              ,remove-lift-rules ; gets evaluated
-                                              ,remove-proof-rules ; gets evaluated
-                                              ',normalize-xors
-                                              ',count-hits
-                                              ',print
-                                              ,monitor ; gets evaluated
-                                              ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
-                                              ',expected-failures
-                                              ',bvp
-                                              ',whole-form
-                                              state)))
+                          )
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-functions"
+       (test-functions-fn ,executable ; gets evaluated
+                          ',function-name-strings
+                          nil ; no need for excludes (just don't list the functions you don't want to test)
+                          ,assumptions  ; gets evaluated
+                          ,extra-rules  ; gets evaluated
+                          ,extra-assumption-rules  ; gets evaluated
+                          ,extra-lift-rules ; gets evaluated
+                          ,extra-proof-rules ; gets evaluated
+                          ,remove-rules ; gets evaluated
+                          ,remove-assumption-rules ; gets evaluated
+                          ,remove-lift-rules ; gets evaluated
+                          ,remove-proof-rules ; gets evaluated
+                          ',normalize-xors
+                          ',count-hits
+                          ',print
+                          ',max-printed-term-size
+                          ,monitor ; gets evaluated
+                          ',step-limit ',step-increment ',prune-precise ',prune-approx
+                          ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
+                          ',expected-failures
+                          ',whole-form
+                          state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1007,10 +969,9 @@
                      assumptions
                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                     normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                     tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                     normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                     tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                      expected-failures
-                     bvp
                      whole-form
                      state)
   (declare (xargs :guard (and (stringp executable)
@@ -1028,6 +989,8 @@
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
+                          ;; print
+                          (natp max-printed-term-size)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -1042,14 +1005,14 @@
                           (or (null max-conflicts)
                               (natp max-conflicts))
                           (member-eq inputs-disjoint-from '(nil :code :all))
+                          (member-eq assume-bytes '(:all :non-write))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (or (natp existing-stack-slots)
                               (eq :auto existing-stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures))
-                          (booleanp bvp))
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -1063,10 +1026,9 @@
                             assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from stack-slots existing-stack-slots position-independent
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                             expected-failures
-                            bvp
                             state))
        ((when erp) (mv erp nil state)))
     (if all-results-as-expectedp
@@ -1099,6 +1061,7 @@
                      (normalize-xors 't)
                      (count-hits 'nil)
                      (print 'nil)
+                     (max-printed-term-size '10000)
                      (monitor 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
@@ -1107,30 +1070,42 @@
                      (tactics '(:rewrite :stp)) ; todo: try something with :prune
                      (max-conflicts '1000000)
                      (inputs-disjoint-from ':code)
+                     (assume-bytes ':all)
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (bvp 't))
-  `(acl2::make-event-quiet (test-file-fn ,executable ; gets evaluated
-                                         ',include ; todo: evaluate?
-                                         ',exclude ; todo: evaluate?
-                                         ,assumptions  ; gets evaluated
-                                         ,extra-rules  ; gets evaluated
-                                         ,extra-assumption-rules  ; gets evaluated
-                                         ,extra-lift-rules ; gets evaluated
-                                         ,extra-proof-rules ; gets evaluated
-                                         ,remove-rules ; gets evaluated
-                                         ,remove-assumption-rules ; gets evaluated
-                                         ,remove-lift-rules ; gets evaluated
-                                         ,remove-proof-rules ; gets evaluated
-                                         ',normalize-xors
-                                         ',count-hits ',print
-                                         ,monitor ; gets evaluated
-                                         ',step-limit ',step-increment ',prune-precise ',prune-approx
-                                         ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',existing-stack-slots ',position-independent
-                                         ',expected-failures
-                                         ',bvp
-                                         ',whole-form
-                                         state)))
+                     )
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+       "acl2-unwind-protect for test-file"
+       (test-file-fn ,executable ; gets evaluated
+                     ',include ; todo: evaluate?
+                     ',exclude ; todo: evaluate?
+                     ,assumptions  ; gets evaluated
+                     ,extra-rules  ; gets evaluated
+                     ,extra-assumption-rules  ; gets evaluated
+                     ,extra-lift-rules ; gets evaluated
+                     ,extra-proof-rules ; gets evaluated
+                     ,remove-rules ; gets evaluated
+                     ,remove-assumption-rules ; gets evaluated
+                     ,remove-lift-rules ; gets evaluated
+                     ,remove-proof-rules ; gets evaluated
+                     ',normalize-xors
+                     ',count-hits
+                     ',print
+                     ',max-printed-term-size
+                     ,monitor ; gets evaluated
+                     ',step-limit ',step-increment ',prune-precise ',prune-approx
+                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
+                     ',expected-failures
+                     ',whole-form
+                     state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir, if it exists:
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+       ;; Normal exit (remove the temp-dir, if it exists):
+       (maybe-remove-temp-dir ; ,keep-temp-dir
+         state))))

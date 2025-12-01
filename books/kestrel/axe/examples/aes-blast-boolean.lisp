@@ -9,6 +9,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, due to regression failure 9/4/2025 using Allegro CL 10.1:
+; cert_param: (non-allegro)
+
 (in-package "ACL2")
 
 ;; A variant of aes-blast,lisp that uses boolean operations for NOT and AND.

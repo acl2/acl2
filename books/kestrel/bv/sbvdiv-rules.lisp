@@ -162,7 +162,6 @@
                                    truncate-becomes-floor-gen)
                            ( floor-of-minus-and-minus
                              ;floor-minus
-                             ;BVCAT-OF-+-LOW
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X
                              my-FLOOR-upper-BOUND

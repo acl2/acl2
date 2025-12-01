@@ -1727,8 +1727,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) ()))))
+;;   :hints (("Goal" :in-theory (bvxor))))
 
 ;; (defthm bvxor-convert-arg2-to-unsigned-better
 ;;   (implies (and (syntaxp; (and (not (quotep y))
@@ -1742,8 +1741,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size x (bvchop size y))))
-;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;should we break the tie between x and (lognot 1 x) when commuting bvxor's ops?
 
@@ -1856,7 +1854,7 @@
 ;;   :hints (("Goal" :cases ((and (integerp lowval) (integerp highval))
 ;;                           (and (integerp lowval) (not (integerp highval)))
 ;;                           (and (not (integerp lowval)) (integerp highval)))
-;;            :in-theory (e/d () ()))))
+;;            )))
 
 ;; (defthmd add-bvchop-to-bvcat-1
 ;;   (implies (and (syntaxp (and (not (quotep lowval))
@@ -1872,7 +1870,7 @@
 ;;   :hints (("Goal" :cases ((and (integerp lowval) (integerp highval))
 ;;                           (and (integerp lowval) (not (integerp highval)))
 ;;                           (and (not (integerp lowval)) (integerp highval)))
-;;            :in-theory (e/d () ()))))
+;;            )))
 
 ;(in-theory (enable bvchop-logapp))
 
@@ -2440,23 +2438,19 @@
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule
   (implies (not (< tp x))
-           (equal (< (IF test tp ep)
-                     x)
-                  (if test nil
-                    (< ep
-                       x)))))
+           (equal (< (if test tp ep) x)
+                  (if test nil (< ep x)))))
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule2
   (implies (< x tp)
-           (equal (< x
-                     (IF test tp ep))
-                  (if test t
-                    (< x
-                       ep)))))
+           (equal (< x (if test tp ep))
+                  (if test t (< x ep)))))
 
 ;; ;bozo drop some hyps?
 ;; (defthm byte-fix-list-of-update-subrange
@@ -2856,7 +2850,7 @@
 ;;                 (<= len end))
 ;;            (equal (SUBRANGE start end x)
 ;;                   (SUBRANGE start (+ -1 len) x)))
-;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
+;;   :hints (("Goal" :in-theory (enable SUBRANGE))))
 
 (defthm drop-linear-hyps1
   (implies (and (< (+ free x) y)
@@ -3106,7 +3100,7 @@
 ;;                 )
 ;;            (equal (bvminus n x (bvplus m y z))
 ;;                   (bvminus n x (bvplus n y z))))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ()))))
+;;   :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
 ;; ;bozo handle this better
 ;; (defthm bvplus-of-bvminus
@@ -3114,7 +3108,7 @@
 ;;                 (integerp y))
 ;;            (equal (bvplus 5 x (bvminus 5 y x))
 ;;                   (bvchop 5 y)))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ())))
+;;   :hints (("Goal" :in-theory (enable bvminus bvplus)))
 ;;   )
 
 ;; (defthm iushr-constant-opener
@@ -3432,12 +3426,3 @@
 ;;                              trim-to-n-bits-meta-rule-for-logops
 ;;                              trim-to-n-bits-meta-rule-for-slice
 ;;                              ))
-
-;BOZO or should we handle this in our translation to STP?
-;we could also handle the adding of bvchops when we translate to stp?
-;; (deftheory add-padding '(bvcat-pad-low
-;;                          bvcat-pad-high
-;;                          bvmult-pad-arg1
-;;                          bvmult-pad-arg2
-;;                          bvxor-pad-arg1
-;;                          bvxor-pad-arg2))

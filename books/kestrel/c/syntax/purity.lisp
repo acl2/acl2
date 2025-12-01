@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ purity
-  :parents (syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Pure (i.e. side-effect-free) constructs."
   :long
   (xdoc::topstring
@@ -95,6 +95,8 @@
    (expr :funcall nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -105,6 +107,8 @@
                                 (expr-fix expr)))
    (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
+   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
    (type-spec :struct nil)
    (type-spec :union nil)
    (type-spec :enum nil)

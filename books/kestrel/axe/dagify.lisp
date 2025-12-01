@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; NOTE: This book is not used much any more.
+
 ;; See also simpler functions for making dags, such as
 ;; make-term-into-dag-simple and make-term-into-dag-basic.
 
@@ -36,18 +38,6 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 ;(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
-;; (local (in-theory (disable member-equal
-;;                            subsetp-equal
-;;                            ;; axe-treep
-;;                            axe-tree-listp
-;;                            ;; for speed:
-;;                            largest-non-quotep-bound
-;;                            largest-non-quotep-bound-alt
-;;                            myquotep
-;;                            ;; mv-nth-of-if
-;;                            symbol-alistp ;don't induct
-;;                            )))
-
 (local (in-theory (disable consp-from-len-cheap
                            axe-tree-listp-when-pseudo-term-listp
                            ;;list::nth-with-large-index-2
@@ -68,7 +58,21 @@
                            natp
                            cddr-when-pseudo-termp-and-quotep
                            len-when-pseudo-termp-and-quotep-alt
-                           len-of-car-when-pseudo-termp-cheap)))
+                           len-of-car-when-pseudo-termp-cheap
+                           nth-when-all-same-cheap
+                           ;; nth-when-not-consp-cheap
+                           nth-when-zp-cheap
+                           ;; member-equal
+                           ;; subsetp-equal
+                           ;; ;; axe-treep
+                           ;; axe-tree-listp
+                           ;; ;; for speed:
+                           ;; largest-non-quotep-bound
+                           ;; largest-non-quotep-bound-alt
+                           ;; myquotep
+                           ;; ;; mv-nth-of-if
+                           ;; symbol-alistp ;don't induct
+                           )))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
 
@@ -461,7 +465,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array)
-    :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array) ()))))
+    :hints (("Goal" :in-theory (enable merge-term-into-dag-array merge-terms-into-dag-array))))
 
 ;drop?
 (defthm-flag-merge-term-into-dag-array
@@ -488,11 +492,10 @@
                                                       DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
                                                       DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                       INTERPRETED-FUNCTION-ALIST))
-                  :in-theory (e/d (merge-term-into-dag-array
-                                   merge-terms-into-dag-array
+           :in-theory (enable merge-term-into-dag-array
+                              merge-terms-into-dag-array
                                    ;call-of-dag-val-with-axe-evaluator-with-inlineable-dagp ;somewhat slow. why didn't the forward-chaining rules suffice?
-                                   )
-                                  ()))))
+                              ))))
 
 (local (in-theory (disable use-all-<-for-car
                            bounded-darg-listp-when-<-of-largest-non-quotep
@@ -694,7 +697,7 @@
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-return-type)
-           :in-theory (e/d () (merge-term-into-dag-array-return-type)))))
+           :in-theory (disable merge-term-into-dag-array-return-type))))
 
 (defthm merge-term-into-dag-array-return-type-corollary2
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array

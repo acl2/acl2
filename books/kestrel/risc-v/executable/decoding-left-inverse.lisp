@@ -15,7 +15,7 @@
 
 (include-book "../specification/encoding")
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
@@ -25,10 +25,7 @@
 (local (include-book "kestrel/fty/ubyte12-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte20-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

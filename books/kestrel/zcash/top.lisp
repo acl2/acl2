@@ -1,10 +1,10 @@
 ; Zcash Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,8 +40,7 @@
     "This library provides an ACL2 formalization of some aspects of Zcash.
      The formalization is based on the "
     (xdoc::ahref
-     "https://github.com/zcash/zips/blob/master/protocol/protocol.pdf"
-     "Zcash Protocol Specification")
+     "https://zips.z.cash/protocol/protocol.pdf" "Zcash Protocol Specification")
     " (Version 2021.1.15 [NU5 proposal] of 2021-09-01, as of this writing),
      referenced as `[ZPS]' in the documentation of this library.
      Sections, appendices, theorems, etc. are referenced
@@ -52,5 +51,13 @@
      `[ZPS:T.A.2.1]' references Theorem A.2.1
      (that is, we use `T' to refer to theorems, including lemmas).
      These square-bracketed references may be used
-     as nouns or parenthentically."))
+     as nouns or parenthentically.")
+   (xdoc::p
+    "The link to [ZPS] above actually points to
+     a newer version (presumably, the most recent)
+     than the one that our formalization is based on, specified above.
+     It is not clear whether that older version is available anywhere now;
+     but it should be possible to ``map''
+     the references in the documentation of our formalization
+     to the newer version at the link above."))
   :order-subtopics t)

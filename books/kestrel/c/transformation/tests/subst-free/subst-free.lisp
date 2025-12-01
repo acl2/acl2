@@ -65,7 +65,7 @@
   `(assert-event
     (b* (((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
-                                        t))
+                                        (c::version-c17+gcc)))
          ((mv erp2 ast) (c$::dimb-transunit ast t))
          ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)
@@ -74,7 +74,7 @@
          ((mv erp4 ast-expected)
           (c$::parse-file (filepath "test")
                           (acl2::string=>nats ,expected)
-                          t))
+                          (c::version-c17+gcc)))
          ((mv erp5 ast-expected) (c$::dimb-transunit ast-expected t))
          ((mv erp6 fundef-expected)
           (transunit-find-fundef (c$::ident ,fun) ast-expected)))
@@ -91,7 +91,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *42*
-  (expr-const
+  (make-expr-const
+    :const
     (c$::const-int (c$::make-iconst :core (c$::dec/oct/hex-const-dec 42)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

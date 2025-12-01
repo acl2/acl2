@@ -32,6 +32,15 @@
          (not (equal 0 (bvchop size x))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;rename
+(defthm bvlt-when-not-posp-arg1
+  (implies (not (posp size))
+           (not (bvlt size x y)))
+  :hints (("Goal"
+           :cases ((equal 0 size))
+           :in-theory (enable bvlt))))
+;move
+
 (defthm booleanp-of-bvlt
   (booleanp (bvlt size x y)))
 
@@ -290,6 +299,18 @@
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable bvlt))))
 
+(defthm bvlt-of-bvchop-arg2-same
+  (equal (bvlt size (bvchop size x) y)
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt)
+                  :cases ((natp size)))))
+
+(defthm bvlt-of-bvchop-arg3-same
+  (equal (bvlt size x (bvchop size y))
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt)
+                  :cases ((natp size)))))
+
 (defthm bvlt-of-bvchop-arg2
   (implies (and (<= size size2)
                 (integerp size2))
@@ -390,14 +411,6 @@
                 (bvlt size x free))
            (bvlt size x k)))
 
-;rename
-(defthm bvlt-when-not-posp-arg1
-  (implies (not (posp size))
-           (not (bvlt size x y)))
-  :hints (("Goal"
-           :cases ((equal 0 size))
-           :in-theory (enable bvlt))))
-
 ;is this expensive?
 ;the quotep hyps are new
 ;rename
@@ -457,7 +470,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;disabled during library proofs
@@ -603,18 +616,6 @@
            (not (equal const (bvchop size x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm bvlt-of-bvchop-arg3-same
-  (equal (bvlt size x (bvchop size y))
-         (bvlt size x y))
-  :hints (("Goal" :cases ((natp size)))))
-
-(defthm bvlt-of-bvchop-arg2-same
-  (equal (bvlt size (bvchop size x) y)
-         (bvlt size x y))
-  :hints (("Goal" :cases ((natp size)))))
-
-
 
 ;todo: compare these to the transitive rules
 ;todo: more like these?
@@ -1026,3 +1027,13 @@
 :hints (("Goal" :use (:instance bvchop-tighten-when-not-bvlt-of-constant-helper
                                 (x (bvchop size x)))
          :in-theory (disable bvchop-tighten-when-not-bvlt-of-constant-helper))))
+
+(defthm bvlt-of-ifix-arg2
+  (equal (bvlt size (ifix x) y)
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-of-ifix-arg3
+  (equal (bvlt size x (ifix y))
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))

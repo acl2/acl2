@@ -499,8 +499,7 @@
          (verify-guards ,run-gified
            :hints (("goal" :in-theory
                     (e/d** ((:forward-chaining gobj-listp-true-listp)
-                            hyp-p
-                            bfr-hyp-fix-when-hyp$ap))
+                            hyp-p))
                     :do-not '(preprocess))))
          ;; Verify guards of the interpreter.
          (local (in-theory nil))

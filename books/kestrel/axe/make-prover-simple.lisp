@@ -973,6 +973,7 @@
          (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
          (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
          (local (include-book "kestrel/utilities/mv-nth" :dir :system))
+         (local (include-book "kestrel/utilities/w" :dir :system))
 
          (set-inhibit-warnings "double-rewrite") ; todo: think about these
 
@@ -5879,9 +5880,6 @@
                 ((when (not (symbol-listp monitor)))
                  (er hard? ',prove-dag-implication-name "Bad :monitor argument: ~x0" monitor)
                  (mv :bad-input nil state))
-                ((when (not (ilks-plist-worldp (w state))))
-                 (er hard? ',prove-dag-implication-name "Bad world (this should not happen).")
-                 (mv :bad-input nil state))
                 ((when (not (axe-use-hintp use)))
                  (er hard? ',prove-dag-implication-name "Bad :use hint: ~x0." use) ; todo: don't use the term "hint" for these?
                  (mv :bad-input nil state))
@@ -6011,8 +6009,7 @@
                                        (symbol-listp monitor)
                                        (print-levelp print)
                                        ;; use
-                                       (symbol-listp var-ordering)
-                                       (ilks-plist-worldp (w state)))
+                                       (symbol-listp var-ordering))
                            :stobjs state
                            :mode :program ;because this translates its args if they are terms
                            ))
@@ -6106,8 +6103,7 @@
          ;; We don't actually call define-trusted-clause-processor, because that
          ;; requires a trust tag; see register-and-wrap-clause-processor-simple.lisp for that
          (defund ,clause-processor-name (clause hint state)
-           (declare (xargs :guard (and (pseudo-term-listp clause)
-                                       (ilks-plist-worldp (w state)))
+           (declare (xargs :guard (pseudo-term-listp clause)
                            :stobjs state))
            (b* (;; Check the the hint:
                 ((when (not (alistp hint)))

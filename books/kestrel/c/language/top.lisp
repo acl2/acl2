@@ -11,11 +11,10 @@
 
 (in-package "C")
 
-(include-book "implementation-environments")
+(include-book "implementation-environments/top")
 (include-book "grammar")
 (include-book "keywords")
 (include-book "character-sets")
-(include-book "bytes")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "errors")
@@ -34,6 +33,13 @@
 (include-book "operations")
 (include-book "computation-states")
 (include-book "dynamic-semantics")
+(include-book "execution-limit-monotonicity")
+(include-book "pure-expression-execution")
+(include-book "execution-without-function-calls")
+(include-book "frame-and-scope-peeling")
+(include-book "variable-visibility-preservation")
+(include-book "variable-resolution-preservation")
+(include-book "object-type-preservation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

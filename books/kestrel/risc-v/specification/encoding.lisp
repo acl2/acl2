@@ -21,14 +21,11 @@
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,8 +77,7 @@
    :sltiu #b011
    :andi  #b111
    :ori   #b110
-   :xori  #b100)
-  :hooks (:fix))
+   :xori  #b100))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,8 +92,7 @@
    funct
    :slli (mv #b001 #b0000000)
    :srli (mv #b101 #b0000000)
-   :srai (mv #b101 #b0100000))
-  :hooks (:fix))
+   :srai (mv #b101 #b0100000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,8 +107,7 @@
    funct
    :slli (mv #b001 #b000000)
    :srli (mv #b101 #b000000)
-   :srai (mv #b101 #b010000))
-  :hooks (:fix))
+   :srai (mv #b101 #b010000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,8 +119,7 @@
           [ISA:4.2.1] [ISA:35]."
   (op-imm-32-funct-case
    funct
-   :addiw #b000)
-  :hooks (:fix))
+   :addiw #b000))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,8 +134,7 @@
    funct
    :slliw (mv #b001 #b000000)
    :srliw (mv #b101 #b000000)
-   :sraiw (mv #b101 #b010000))
-  :hooks (:fix))
+   :sraiw (mv #b101 #b010000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,8 +164,7 @@
    :div    (mv #b100 #b0000001)
    :divu   (mv #b101 #b0000001)
    :rem    (mv #b110 #b0000001)
-   :remu   (mv #b111 #b0000001))
-  :hooks (:fix))
+   :remu   (mv #b111 #b0000001)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -195,8 +186,7 @@
    :divw  (mv #b100 #b0000001)
    :divuw (mv #b101 #b0000001)
    :remw  (mv #b110 #b0000001)
-   :remuw (mv #b111 #b0000001))
-  :hooks (:fix))
+   :remuw (mv #b111 #b0000001)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,8 +203,7 @@
    :blt  #b100
    :bge  #b101
    :bltu #b110
-   :bgeu #b111)
-  :hooks (:fix))
+   :bgeu #b111))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,8 +228,7 @@
          #b110)
    :ld  (assert$
          (feat-64p feat)
-         #b011))
-  :hooks (:fix))
+         #b011)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,8 +247,7 @@
    :sw #b010
    :sd (assert$
         (feat-64p feat)
-        #b011))
-  :hooks (:fix))
+        #b011)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,8 +471,10 @@
                       5 instr.rs1
                       5 instr.rs2
                       7 imm-11-5))))
-  :guard-hints (("Goal" :in-theory (enable fix ifix instr-validp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable fix
+                                           ifix
+                                           instr-validp
+                                           (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -150,6 +150,9 @@ then
       (certify-book "$basename" 1)
 EOF
 
+# Disable exit on error: when everything is fine, there is no `ACL2 error` so,
+# greps fails.
+set +e
 cat $basename.acl2.log | grep 'ACL2 Error' &> /dev/null
 if [[ $? == "0" ]]
 then

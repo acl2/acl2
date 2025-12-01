@@ -15,10 +15,7 @@
 (include-book "computation-states")
 (include-book "function-environments")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,8 +80,10 @@
      so that we can construct a pointer to it.
      Non-array expression values are left unchanged.
      If the array has no object designator, we return an error;
-     this should only happen for arrays with temporary lifetime [C17:6.2.4/8],
-     which are currently not part of our C subset.")
+     this should actually never happen (at least in our model),
+     but we need to formulate and prove an invariant
+     saying that every array expression value includes an object designator,
+     which at the moment we do not have.")
    (xdoc::p
     "We make a slight approximation for now:
      instead of returning a pointer to the first element of the array,
@@ -106,15 +105,14 @@
              :object nil)
           (error (list :array-without-designator (expr-value-fix eval))))
       (expr-value-fix eval)))
-  :hooks (:fix)
 
   ///
 
-  (defruled c::apconvert-expr-value-when-not-array
-    (implies (not (equal (c::value-kind (c::expr-value->value eval))
+  (defruled apconvert-expr-value-when-not-array
+    (implies (not (equal (value-kind (expr-value->value eval))
                          :array))
-             (equal (c::apconvert-expr-value eval)
-                    (c::expr-value-fix eval)))))
+             (equal (apconvert-expr-value eval)
+                    (expr-value-fix eval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,8 +172,7 @@
                         (t error))
                 (cond ((sllong-integerp ic.value) (value-sllong ic.value))
                       ((ullong-integerp ic.value) (value-ullong ic.value))
-                      (t error))))))
-  :hooks (:fix))
+                      (t error)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,8 +187,7 @@
               :int (eval-iconst c.get)
               :float (error :exec-const-float)
               :enum (error :exec-const-enum)
-              :char (error :exec-const-char))
-  :hooks (:fix))
+              :char (error :exec-const-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,7 +203,7 @@
   (b* ((val (eval-const c))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,8 +221,7 @@
        (val (read-object objdes compst)))
     (make-expr-value :value val :object objdes))
   :guard-hints
-  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var)))
-  :hooks (:fix))
+  (("Goal" :in-theory (enable valuep-of-read-object-of-objdesign-of-var))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,8 +262,7 @@
     (make-expr-value
      :value (make-value-pointer :core (pointer-valid objdes)
                                 :reftype type)
-     :object nil))
-  :hooks (:fix))
+     :object nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +290,7 @@
        (*val (read-object objdes compst))
        ((when (errorp *val)) *val))
     (make-expr-value :value *val :object objdes))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,8 +305,7 @@
     (:bitnot (bitnot-value arg))
     (:lognot (lognot-value arg))
     (t (error (impossible))))
-  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,8 +338,7 @@
             (val (eval-unary op (expr-value->value arg)))
             ((when (errorp val)) val))
          (make-expr-value :value val :object nil))))
-  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable unop-nonpointerp (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,8 +366,7 @@
     (:bitxor (bitxor-values arg1 arg2))
     (:bitior (bitior-values arg1 arg2))
     (t (error (impossible))))
-  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable binop-strictp binop-purep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,7 +394,7 @@
        (val (eval-binary-strict-pure op val1 val2))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,8 +417,7 @@
        (err (error (list :cast-undefined :from (value-fix arg) :to type)))
        (val (convert-integer-value arg type))
        ((when (errorp val)) err))
-    val)
-  :hooks (:fix))
+    val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,7 +433,7 @@
        (val (eval-cast tyname (expr-value->value arg)))
        ((when (errorp val)) val))
     (make-expr-value :value val :object nil))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -523,7 +513,7 @@
        ((when (errorp val)) val)
        (elem-objdes (make-objdesign-element :super objdes :index index)))
     (make-expr-value :value val :object elem-objdes))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -560,7 +550,7 @@
        (objdes-mem (and objdes-str
                         (make-objdesign-member :super objdes-str :name mem))))
     (make-expr-value :value val-mem :object objdes-mem))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,7 +595,7 @@
        ((when (errorp val)) val)
        (objdes-mem (make-objdesign-member :super objdes :name mem)))
     (make-expr-value :value val :object objdes-mem))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +627,16 @@
    (xdoc::p
     "If no error occurs, none of the expressions has side effects.
      Thus, the order in which the subexpressions are evaluated does not matter:
-     we just proceed left to right."))
+     we just proceed left to right.")
+   (xdoc::p
+    "We plan to remove this function,
+     after moving (and suitably generalizing) its code to @(tsee exec-expr).
+     The plan is for @(tsee exec-expr) to support the execution of
+     expressions that are not necessarily pure
+     but still have a well-defined order of evaluation.
+     (Further extending our dynamic semantics
+     to support multiple possible orders of evaluation
+     is something we will look at further in the future.)"))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -726,9 +725,9 @@
                     ((when (errorp eval)) eval))
                  (change-expr-value eval :object nil))))))
   :measure (expr-count e)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards nil ; done below
+
   ///
 
   (defret expr-value-resultp-of-exec-expr-pure-forward
@@ -737,7 +736,19 @@
                     :trigger-terms ((exec-expr-pure e compst)))))
 
   (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable binop-strictp)))))
+    :hints (("Goal" :in-theory (enable binop-strictp (:e tau-system)))))
+
+  (defruled not-call-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (equal (expr-kind expr) :call)))
+    :induct t)
+
+  (defruled not-asg-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (and (equal (expr-kind expr) :binary)
+                       (equal (binop-kind (expr-binary->op expr)) :asg))))
+    :induct t
+    :enable binop-purep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -774,7 +785,7 @@
        (vals (exec-expr-pure-list (cdr es) compst))
        ((when (errorp vals)) vals))
     (cons val vals))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -821,16 +832,17 @@
     (if (omap::assoc name scope)
         (error (list :init-scope :duplicate-param name))
       (omap::update name (remove-flexible-array-member actual) scope)))
-  :hooks (:fix)
   :measure (len formals)
-  :hints (("Goal" :in-theory (enable o<
+  :hints (("Goal" :in-theory (enable o-p
+                                     o<
                                      o-finp
                                      endp
                                      cdr-of-param-declon-list-fix
                                      len)))
   :verify-guards nil ; done below
   ///
-  (verify-guards init-scope))
+  (verify-guards init-scope
+    :hints (("Goal" :in-theory (enable (:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -884,193 +896,13 @@
                             :supplied (len ival.get))))
               ((unless (consp ival.get))
                (error (list :init-value-empty-mismatch))))
-           (make-value-array :elemtype elemtype :elements ival.get)))
-  :hooks (:fix))
+           (make-value-array :elemtype elemtype :elements ival.get))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines exec
   :short "Mutually recursive functions for execution."
   :flag-local nil
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-expr-call ((fun identp)
-                          (args expr-listp)
-                          (compst compustatep)
-                          (fenv fun-envp)
-                          (limit natp))
-    :returns (mv (result value-option-resultp)
-                 (new-compst compustatep))
-    :parents (dynamic-semantics exec)
-    :short "Execution a function call."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We return an optional value,
-       which is @('nil') for a function that returns @('void')."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (vals (exec-expr-pure-list args compst))
-         ((when (errorp vals)) (mv vals (compustate-fix compst))))
-      (exec-fun fun vals compst fenv (1- limit)))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-expr-call-or-pure ((e exprp)
-                                  (compst compustatep)
-                                  (fenv fun-envp)
-                                  (limit natp))
-    :returns (mv (result value-option-resultp)
-                 (new-compst compustatep))
-    :parents (dynamic-semantics exec)
-    :short "Execute a function call or a pure expression."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is only used for expressions that must be
-       either function calls or pure.
-       If the expression is a call, we use @(tsee exec-expr-call).
-       Otherwise, we resort to @(tsee exec-expr-pure),
-       we perform an array-to-pointer conversion
-       (which is appropriate because, in our C subset,
-       this ACL2  function is always used where such a conversion is needed),
-       and we peform an lvalue conversion
-       to return a value and not an expression value
-       (which is appropriate because, in our C subset,
-       this ACL2 function is always used where such a conversion is needed).")
-     (xdoc::p
-      "We return an optional value (if there is no error),
-       which is @('nil') for a function that returns @('void')."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (e (expr-fix e)))
-      (if (expr-case e :call)
-          (exec-expr-call (expr-call->fun e)
-                          (expr-call->args e)
-                          compst
-                          fenv
-                          (1- limit))
-        (b* ((eval (exec-expr-pure e compst))
-             ((when (errorp eval)) (mv eval (compustate-fix compst)))
-             (eval (apconvert-expr-value eval))
-             ((when (errorp eval)) (mv eval (compustate-fix compst))))
-          (mv (expr-value->value eval)
-              (compustate-fix compst)))))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-expr-asg ((e exprp)
-                         (compst compustatep)
-                         (fenv fun-envp)
-                         (limit natp))
-    :returns (new-compst compustate-resultp)
-    :parents (dynamic-semantics exec)
-    :short "Execute an assignment expression."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is only used for expressions that must be assignments:
-       we check that the expression is an assignment.")
-     (xdoc::p
-      "The left-hand side must be a pure lvalue expressions,
-       i.e. its evaluation must return
-       an expression value with an object designator.
-       The right-hand side must be a pure expression (lvalue or not),
-       but if the left-hand side is just an identifier,
-       then we allow the right-hand side to be also a function call.")
-     (xdoc::p
-      "The just mentioned restrictions on the subexpressions
-       are motivated by the fact that [C17] does not prescribe
-       the order of evaluation of left-hand side and right-hand side
-       of assignment expressions, just like for any other binary operator;
-       there are no sequence points [C17:5.1.2.3] within assignments.
-       Thus, if both sides are pure, the order of evaluation does not matter,
-       and we can evaluate them in any order.
-       The case of a left-hand side that is an identifier (i.e. variable)
-       and a right-hand side that is a function call
-       is allowed here because,
-       even though the function call could modify the variable,
-       its value is not actually used to perform the assignment:
-       it is overwritten by the result of the function call.
-       A function call cannot put a named variable into of out of existence,
-       because that depends on scoping;
-       thus, the successful or unsuccessul retrieval
-       of the object designator of the named variable
-       is the same whether it is performed before or after the function call.
-       Therefore it does not matter in which order
-       we evaluate the subexpressions of the assignment,
-       also in the case in which we assign a function call to a variable.
-       We should formally prove the fact mentioned just above
-       that the existence of a named variable
-       is not affected by a function call;
-       this may be actually part of a larger plan to model and support
-       assignments with arbitrary expressions,
-       where our model will cover all possible evaluation orders,
-       as done in other formalizations of C in the literature.")
-     (xdoc::p
-      "If the right-hand side is a function call,
-       we require it to return a value,
-       i.e. not @('nil'), i.e. the function cannot return @('void').")
-     (xdoc::p
-      "We allow these assignment expressions
-       as the full expressions [C17:6.8/4] of expression statements.
-       Thus, we discard the value of the assignment
-       (which is the value written to the variable);
-       this ACL2 function just returns an updated computation state."))
-    (b* (((when (zp limit)) (error :limit))
-         ((unless (expr-case e :binary))
-          (error (list :expr-asg-not-binary (expr-fix e))))
-         (op (expr-binary->op e))
-         (left (expr-binary->arg1 e))
-         (right (expr-binary->arg2 e))
-         ((unless (binop-case op :asg))
-          (error (list :expr-asg-not-asg op)))
-         ((mv val? compst)
-          (if (expr-case left :ident)
-              (exec-expr-call-or-pure right compst fenv (1- limit))
-            (b* ((eval (exec-expr-pure right compst))
-                 ((when (errorp eval)) (mv eval compst))
-                 (eval (apconvert-expr-value eval))
-                 ((when (errorp eval)) (mv eval compst)))
-              (mv (expr-value->value eval) compst))))
-         ((when (errorp val?)) val?)
-         ((when (not val?)) (error (list :asg-void-expr right)))
-         (val val?)
-         (eval (exec-expr-pure left compst))
-         ((when (errorp eval)) eval)
-         (objdes (expr-value->object eval))
-         ((unless objdes) (error (list :not-lvalue left))))
-      (write-object objdes val compst))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-expr-call-or-asg ((e exprp)
-                                 (compst compustatep)
-                                 (fenv fun-envp)
-                                 (limit natp))
-    :returns (new-compst compustate-resultp)
-    :parents (dynamic-semantics exec)
-    :short "Execute a function call or assignment expression."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is used for expressions used as expression statements.
-       Thus, in the case of a function call,
-       we discard the returned value, if any."))
-    (b* (((when (zp limit)) (error :limit)))
-      (if (expr-case e :call)
-          (b* (((mv result compst)
-                (exec-expr-call (expr-call->fun e)
-                                (expr-call->args e)
-                                compst
-                                fenv
-                                (1- limit)))
-               ((when (errorp result)) result))
-            compst)
-        (exec-expr-asg e compst fenv (1- limit))))
-    :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1102,12 +934,16 @@
          ((when (errorp scope)) (mv scope (compustate-fix compst)))
          (frame (make-frame :function fun :scopes (list scope)))
          (compst (push-frame frame compst))
-         ((mv val? compst) (exec-block-item-list info.body
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
+         ((mv sval compst) (exec-block-item-list info.body
+                                                  compst
+                                                  fenv
+                                                  (1- limit)))
          (compst (pop-frame compst))
-         ((when (errorp val?)) (mv val? compst))
+         ((when (errorp sval)) (mv sval compst))
+         (val? (stmt-value-case
+                sval
+                :none nil
+                :return sval.value?))
          ((unless (equal (type-of-value-option val?)
                          (tyname-to-type info.result)))
           (mv (error (list :return-value-mistype
@@ -1119,12 +955,244 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr ((e exprp)
+                     (compst compustatep)
+                     (fenv fun-envp)
+                     (limit natp))
+    :returns (mv (eval expr-value-option-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute an expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We return an optional expression value,
+       and a possibly updated computation state.
+       The optional expression value is @('nil')
+       for expressions that do not return a value or designate an object,
+       e.g. calls of @('void') functions.")
+     (xdoc::p
+      "We support the execution of expressions whose order of evaluation
+       is determined by [C17] or does not matter;
+       we characterize this subset of the expressions conservatively,
+       returning errors on expressions outside the characterization.
+       As noted in @(tsee exec-expr-pure),
+       we are in the process of moving the code from there to here,
+       and we will eventually eliminate @(tsee exec-expr-pure);
+       as we move the code here, we also generalize it
+       in the sense of supporting the execution of more expressions,
+       namely ones that are not pure but have
+       a deterministic order of evaluation.")
+     (xdoc::p
+      "Variables and constants are always deterministic,
+       so they are supported in all cases.")
+     (xdoc::p
+      "An array subscript expression involves two sub-expressions,
+       whose order of evaluation is unspecified.
+       So we require both of them to be pure,
+       so that the order of evaluation does not matter.
+       We execute the first one before the second one,
+       but we could as well do the opposite,
+       since the computations state does not change.")
+     (xdoc::p
+      "In a function call,
+       the order of evaluation of the function and arguments is not specified.
+       In our current abstract syntax,
+       the function sub-expression is always pure;
+       we require all the argument expressions to be pure.
+       Thus the order of evaluation of function and arguments does not matter.
+       We use @(tsee exec-expr-pure-list) for the arguments
+       (but we plan to use a new function @('exec-expr-list') at some point),
+       and we delegate to @(tsee exec-fun)
+       the evaluation of the function sub-expression itself.")
+     (xdoc::p
+      "If the expression is a function call,
+       its arguments must be all pure expressions;
+       if they were not, they might modify the function-valued expression.
+       We execute the arguments and then the function.")
+     (xdoc::p
+      "A member or unary expression is always deterministic,
+       because it has a single sub-expression.")
+     (xdoc::p
+      "For now we do not support pre/post-increment/decrement expressions.")
+     (xdoc::p
+      "A cast expression is always deterministic in our current C subset,
+       because the type name does not undergo any execution currently.")
+     (xdoc::p
+      "For a binary expression with a strict pure operator,
+       we require the two sub-expressions to be pure,
+       because the order of evaluation is not specified;
+       we evaluate the left one before the right one,
+       but it makes no difference because
+       the computation state does not change.")
+     (xdoc::p
+      "Non-strict binary expressions must be pure for now,
+       but we plan to relax this, since the order of evaluation is determined.
+       We delegate their execution to @(tsee exec-expr-pure) for now.")
+     (xdoc::p
+      "If the binary expression is a (simple, not compound) assignment,
+       the left-hand side must be a pure lvalue expression;
+       if it were not pure,
+       it could potentially change the value of the right-hand side,
+       if evaluated before the right-hand side,
+       so it is conservatively safe to require the left-hand side to be pure.
+       We perform array-to-pointer conversion [C23:6.3.3.1]
+       on the result of evaluating the left-hand side;
+       this must yield an expression value with an object designator.
+       The right-hand side must be a pure expression (lvalue or not),
+       but if the left-hand side is just an identifier,
+       then we allow the right-hand side to be any supported expression.
+       The latter relaxation is justified by the fact that,
+       if the left-hand side is a variable,
+       it the object that it designates is not affected
+       by any side effect of the right-hand side
+       (see @(see variable-resolution-preservation)):
+       it is always the same variable,
+       whose value may be affected by the right-hand side,
+       but its value is not used for the assignment,
+       as it is overwritten by the assignment.
+       Array-to-pointer conversion [C23:6.3.3.1] is applied
+       to the result of evaluating the right-hand side,
+       which must return an expression value (not @('nil')).
+       Note that the assignment itself is not an lvalue;
+       its result is the value assigned by the assignment.")
+     (xdoc::p
+      "The remaining binary expressions are compound assignments.
+       They are not supported for now."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
+      (expr-case
+       e
+       :ident (mv (exec-ident e.get compst) (compustate-fix compst))
+       :const (mv (exec-const e.get) (compustate-fix compst))
+       :arrsub (b* (((unless (and (expr-purep e.arr)
+                                  (expr-purep e.sub)))
+                     (mv (error (list :arrsub-nonpure-arg (expr-fix e)))
+                         (compustate-fix compst)))
+                    ((mv arr compst) (exec-expr e.arr compst fenv (1- limit)))
+                    ((when (errorp arr)) (mv arr compst))
+                    ((unless arr)
+                     (mv (error (list :arrsub-void-expr e.arr)) compst))
+                    ((mv sub compst) (exec-expr e.sub compst fenv (1- limit)))
+                    ((when (errorp sub)) (mv sub compst))
+                    ((unless sub)
+                     (mv (error (list :arrsub-void-expr e.sub)) compst)))
+                 (mv (exec-arrsub arr sub compst) compst))
+       :call (b* ((vals (exec-expr-pure-list e.args compst))
+                  ((when (errorp vals)) (mv vals (compustate-fix compst)))
+                  ((mv val? compst)
+                   (exec-fun e.fun vals compst fenv (1- limit)))
+                  ((when (errorp val?)) (mv val? compst)))
+               (if val?
+                   (mv (make-expr-value :value val? :object nil) compst)
+                 (mv nil compst)))
+       :member (b* (((mv str compst)
+                     (exec-expr e.target compst fenv (1- limit)))
+                    ((when (errorp str)) (mv str compst))
+                    ((unless str)
+                     (mv (error (list :member-void-expr (expr-fix e)))
+                         compst)))
+                 (mv (exec-member str e.name) compst))
+       :memberp (b* (((mv str compst)
+                      (exec-expr e.target compst fenv (1- limit)))
+                     ((when (errorp str)) (mv str compst))
+                     ((unless str)
+                      (mv (error (list :memberp-void-expr (expr-fix e)))
+                          compst)))
+                  (mv (exec-memberp str e.name compst) compst))
+       :postinc (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :postdec (mv (error (list :expression-not-supported (expr-fix e)))
+                    (compustate-fix compst))
+       :preinc (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
+       :predec (mv (error (list :expression-not-supported (expr-fix e)))
+                   (compustate-fix compst))
+       :unary (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
+                   ((when (errorp arg)) (mv arg compst))
+                   ((unless arg)
+                    (mv (error (list :unary-void-expr e.arg)) compst)))
+                (mv (exec-unary e.op arg compst) compst))
+       :cast (b* (((mv arg compst) (exec-expr e.arg compst fenv (1- limit)))
+                  ((when (errorp arg)) (mv arg compst))
+                  ((unless arg)
+                   (mv (error (list :cast-void-expr e.arg)) compst)))
+               (mv (exec-cast e.type arg) compst))
+       :binary (cond
+                ((and (binop-strictp e.op)
+                      (binop-purep e.op))
+                 (b* (((unless (and (expr-purep e.arg1)
+                                    (expr-purep e.arg2)))
+                       (mv (error (list :pure-strict-binary-nonpure-args
+                                        (expr-fix e)))
+                           (compustate-fix compst)))
+                      ((mv arg1-eval compst)
+                       (c::exec-expr e.arg1 compst fenv (1- limit)))
+                      ((when (errorp arg1-eval)) (mv arg1-eval compst))
+                      ((unless arg1-eval)
+                       (mv (error (list :binary-void-expr e.arg1)) compst))
+                      ((mv arg2-eval compst)
+                       (c::exec-expr e.arg2 compst fenv (1- limit)))
+                      ((when (errorp arg2-eval)) (mv arg2-eval compst))
+                      ((unless arg2-eval)
+                       (mv (error (list :binary-void-expr e.arg2)) compst)))
+                   (mv (exec-binary-strict-pure e.op arg1-eval arg2-eval)
+                       compst)))
+                ((or (binop-case e.op :logand)
+                     (binop-case e.op :logor))
+                 (if (expr-purep e)
+                     (mv (exec-expr-pure e compst) (compustate-fix compst))
+                   (mv (error (list :nonstrict-binary-nonpure-args
+                                    (expr-fix e)))
+                       (compustate-fix compst))))
+                ((binop-case e.op :asg)
+                 (b* ((left (expr-binary->arg1 e))
+                      (right (expr-binary->arg2 e))
+                      ((unless (expr-purep left))
+                       (mv (error (list :asg-left-nonpure (expr-fix e)))
+                           (compustate-fix compst)))
+                      ((unless (or (expr-case left :ident)
+                                   (expr-purep right)))
+                       (mv (error (list :asg-right-nonpure (expr-fix e)))
+                           (compustate-fix compst)))
+                      ((mv left-eval compst)
+                       (exec-expr left compst fenv (1- limit)))
+                      ((when (errorp left-eval)) (mv left-eval compst))
+                      ((unless left-eval)
+                       (mv (error (list :asg-left-void (expr-fix e))) compst))
+                      (left-eval (apconvert-expr-value left-eval))
+                      ((when (errorp left-eval)) (mv left-eval compst))
+                      (objdes (expr-value->object left-eval))
+                      ((unless objdes)
+                       (mv (error (list :asg-not-lvalue left)) compst))
+                      ((mv right-eval compst)
+                       (exec-expr right compst fenv (1- limit)))
+                      ((when (errorp right-eval)) (mv right-eval compst))
+                      ((when (not right-eval))
+                       (mv (error (list :asg-right-void right)) compst))
+                      (right-eval (apconvert-expr-value right-eval))
+                      ((when (errorp right-eval)) (mv right-eval compst))
+                      (val (expr-value->value right-eval))
+                      (compst/error (write-object objdes val compst))
+                      ((when (errorp compst/error))
+                       (mv compst/error compst))
+                      (compst compst/error))
+                   (mv (make-expr-value :value val :object nil) compst)))
+                (t (mv (error (list :expression-not-supported (expr-fix e)))
+                       (compustate-fix compst))))
+       :cond (if (expr-purep e)
+                 (mv (exec-expr-pure e compst) (compustate-fix compst))
+               (mv (error (list :cond-nonpure-args (expr-fix e)))
+                   (compustate-fix compst)))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-stmt ((s stmtp)
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-option-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a statement."
@@ -1133,65 +1201,83 @@
      (xdoc::p
       "For now we only support the execution of certain statements.")
      (xdoc::p
+      "Since an expression statement discards
+       the value returned by the expression (if any),
+       there is no need to perform array-to-pointer conversion [C23:6.3.3.1].
+       The fact that array-to-pointer conversion may return an error
+       is just an artifact of our current model, which we plan to eliminate.")
+     (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
-       and we exit that scope after executing the block items."))
+       and we exit that scope after executing the block items.")
+     (xdoc::p
+      "An iteration statement forms a block [C17:6.8.5/5],
+       so we must enter a new scope before it and exit the scope after it.
+       We are currently not doing that for @('while') loops,
+       but we plan to do that;
+       at the moment it does not make a difference,
+       given how we use the dynamic semantics."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
        s
        :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :compound (b* ((compst (enter-scope compst))
-                      ((mv value? compst)
+                      ((mv sval compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
-                   (mv value? (exit-scope compst)))
-       :expr (b* ((compst/error (exec-expr-call-or-asg s.get
-                                                       compst
-                                                       fenv
-                                                       (1- limit)))
-                  ((when (errorp compst/error))
-                   (mv compst/error (compustate-fix compst))))
-               (mv nil compst/error))
-       :null (mv nil (compustate-fix compst))
-       :if (b* ((test (exec-expr-pure s.test compst))
-                ((when (errorp test)) (mv test (compustate-fix compst)))
+                   (mv sval (exit-scope compst)))
+       :expr (b* (((mv eval compst) (exec-expr s.get compst fenv (1- limit)))
+                  ((when (errorp eval)) (mv eval compst)))
+               (mv (stmt-value-none) compst))
+       :null (mv (stmt-value-none) (compustate-fix compst))
+       :if (b* (((mv test compst) (exec-expr s.test compst fenv (1- limit)))
+                ((when (errorp test)) (mv test compst))
+                ((unless test) (mv (error (list :void-if-test s.test)) compst))
                 (test (apconvert-expr-value test))
-                ((when (errorp test)) (mv test (compustate-fix compst)))
+                ((when (errorp test)) (mv test compst))
                 (test (expr-value->value test))
                 (test (test-value test))
-                ((when (errorp test)) (mv test (compustate-fix compst))))
+                ((when (errorp test)) (mv test compst)))
              (if test
                  (exec-stmt s.then compst fenv (1- limit))
-               (mv nil (compustate-fix compst))))
-       :ifelse (b* ((test (exec-expr-pure s.test compst))
-                    ((when (errorp test)) (mv test (compustate-fix compst)))
+               (mv (stmt-value-none) compst)))
+       :ifelse (b* (((mv test compst) (exec-expr s.test compst fenv (1- limit)))
+                    ((when (errorp test)) (mv test compst))
+                    ((unless test)
+                     (mv (error (list :void-ifelse-test s.test)) compst))
                     (test (apconvert-expr-value test))
-                    ((when (errorp test)) (mv test (compustate-fix compst)))
+                    ((when (errorp test)) (mv test compst))
                     (test (expr-value->value test))
                     (test (test-value test))
-                    ((when (errorp test)) (mv test (compustate-fix compst))))
+                    ((when (errorp test)) (mv test compst)))
                  (if test
                      (exec-stmt s.then compst fenv (1- limit))
                    (exec-stmt s.else compst fenv (1- limit))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (exec-stmt-while s.test s.body compst fenv (1- limit))
-       :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :dowhile (b* ((compst (enter-scope compst))
+                     ((mv sval compst)
+                      (exec-stmt-dowhile s.body s.test compst fenv (1- limit)))
+                     ((when (errorp sval)) (mv sval (exit-scope compst)))
+                     (compst (exit-scope compst)))
+                  (mv sval compst))
        :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (b* (((mv val? compst)
-                         (exec-expr-call-or-pure s.value
-                                                 compst
-                                                 fenv
-                                                 (1- limit)))
-                        ((when (errorp val?)) (mv val? compst))
-                        ((when (not val?)) (mv (error (list :return-void-expr
-                                                        s.value))
-                                               compst)))
-                     (mv val? compst))
-                 (mv nil (compustate-fix compst)))))
+                   (b* (((mv eval? compst)
+                         (exec-expr s.value compst fenv (1- limit)))
+                        ((when (errorp eval?)) (mv eval? compst))
+                        ((when (not eval?)) (mv (error (list :return-void-expr
+                                                             s.value))
+                                                compst))
+                        (eval eval?)
+                        (eval (apconvert-expr-value eval))
+                        ((when (errorp eval)) (mv eval compst))
+                        (val (expr-value->value eval)))
+                     (mv (stmt-value-return val) compst))
+                 (mv (stmt-value-return nil) (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1202,7 +1288,7 @@
                            (fenv fun-envp)
                            (limit natp))
     :guard (> (compustate-frames-number compst) 0)
-    :returns (mv (result value-option-resultp)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a @('while') statement."
@@ -1214,24 +1300,74 @@
        because it means that the loop completes,
        and execution can proceed with any code after the loop.
        Otherwise, we recursively execute the body.
-       If the body returns a result,
-       we return it from this ACL2 function without continuing the loop.
-       If the body returns no result,
+       We should push and then pop a scope,
+       because the body of a loop forms a block [C17:6.8.5/5];
+       we plan to do that, but currently that makes no difference
+       given how we are using our dynamic semantics of C.
+       If the body terminates with a @('return'),
+       we terminate the loop with the same result.
+       If the body does not terminate with a @('return'),
        we re-execute the loop,
        by calling this ACL2 function recursively."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         (test-eval (exec-expr-pure test compst))
-         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         ((mv test-eval compst) (exec-expr test compst fenv (1- limit)))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         ((unless test-eval)
+          (mv (error (list :void-while-test (expr-fix test))) compst))
          (test-eval (apconvert-expr-value test-eval))
-         ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+         ((when (errorp test-eval)) (mv test-eval compst))
          (test-val (expr-value->value test-eval))
          (continuep (test-value test-val))
-         ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
-         ((when (not continuep)) (mv nil (compustate-fix compst)))
-         ((mv val? compst) (exec-stmt body compst fenv (1- limit)))
-         ((when (errorp val?)) (mv val? compst))
-         ((when (valuep val?)) (mv val? compst)))
+         ((when (errorp continuep)) (mv continuep compst))
+         ((when (not continuep)) (mv (stmt-value-none) compst))
+         ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst)))
       (exec-stmt-while test body compst fenv (1- limit)))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-stmt-dowhile ((body stmtp)
+                             (test exprp)
+                             (compst compustatep)
+                             (fenv fun-envp)
+                             (limit natp))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (sval stmt-value-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute a @('do-while') statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "First, we execute the body,
+       pushing and then popping a scope,
+       because the body forms a block [C17:6.8.5/5].
+       If the body terminates with a @('return'),
+       we end the execution of the loop with the same result.
+       Otherwise, we execute the test.
+       If it yields a 0 scalar, the loop terminates execution,
+       with a statement value indicating non-@('return') termination.
+       Otherwise, we re-execute the loop,
+       by calling this ACL2 function recursively."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         (compst (enter-scope compst))
+         ((mv sval compst) (exec-stmt body compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval (exit-scope compst)))
+         (compst (exit-scope compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst))
+         ((mv test-eval compst) (exec-expr test compst fenv (1- limit)))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         ((unless test-eval)
+          (mv (error (list :void-dowhile-test (expr-fix test))) compst))
+         (test-eval (apconvert-expr-value test-eval))
+         ((when (errorp test-eval)) (mv test-eval compst))
+         (test-val (expr-value->value test-eval))
+         (continuep (test-value test-val))
+         ((when (errorp continuep)) (mv continuep compst))
+         ((when (not continuep)) (mv (stmt-value-none) compst)))
+      (exec-stmt-dowhile body test compst fenv (1- limit)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1259,14 +1395,14 @@
       (initer-case
        initer
        :single
-       (b* (((mv val compst) (exec-expr-call-or-pure initer.get
-                                                     compst
-                                                     fenv
-                                                     (1- limit)))
-            ((when (errorp val)) (mv val compst))
-            ((when (not val))
+       (b* (((mv eval compst) (exec-expr initer.get compst fenv (1- limit)))
+            ((when (errorp eval)) (mv eval compst))
+            ((when (not eval))
              (mv (error (list :void-initializer (initer-fix initer)))
                  compst))
+            (eval (apconvert-expr-value eval))
+            ((when (errorp eval)) (mv eval compst))
+            (val (expr-value->value eval))
             (ival (init-value-single val)))
          (mv ival compst))
        :list
@@ -1278,58 +1414,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-block-item ((item block-itemp)
+  (define exec-obj-declon ((declon obj-declonp)
                            (compst compustatep)
                            (fenv fun-envp)
                            (limit natp))
-    :guard (and (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 0))
-    :returns (mv (result value-option-resultp)
-                 (new-compst compustatep))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (new-compst compustate-resultp)
     :parents (dynamic-semantics exec)
-    :short "Execute a block item."
+    :short "Execute an object declaration."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Besides an optional value result,
-       we also return a possibly updated computation state.")
+      "For now this is only for object declarations in blocks,
+       consistently with the guard of this function.")
      (xdoc::p
-      "If the block item is a declaration,
-       we ensure that it has no @('extern') storage class specifier
-       (we do not support it in blocks),
+      "We ensure that the declaration
+       has no @('extern') storage class specifier
+       (we do not support that in blocks),
        then we execute the initializer (which we require here),
        then we add the variable to the top scope of the top frame.
        The initializer value must have the same type as the variable,
        which automatically excludes the case of the variable being @('void'),
        since @(tsee type-of-value) never returns @('void')
-       (under the guard).
+       (under its guard).
        For now we disallow array objects;
-       these will be supported later.")
-     (xdoc::p
-      "If the block item is a statement,
-       we execute it like any other statement."))
+       these will be supported later."))
+    (b* (((when (zp limit)) (error :limit))
+         ((mv var scspec tyname init?)
+          (obj-declon-to-ident+scspec+tyname+init declon))
+         ((unless (scspecseq-case scspec :none))
+          (error :unsupported-storage-class-specifier))
+         (type (tyname-to-type tyname))
+         ((when (type-case type :array)) (error :unsupported-local-array))
+         ((when (not init?)) (error :unsupported-no-initializer))
+         (init init?)
+         ((mv ival compst) (exec-initer init compst fenv (1- limit)))
+         ((when (errorp ival)) ival)
+         (val (init-value-to-value type ival))
+         ((when (errorp val)) val))
+      (create-var var val compst))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-block-item ((item block-itemp)
+                           (compst compustatep)
+                           (fenv fun-envp)
+                           (limit natp))
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (sval stmt-value-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute a block item."
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
-       :declon
-       (b* (((mv var scspec tyname init?)
-             (obj-declon-to-ident+scspec+tyname+init item.get))
-            ((unless (scspecseq-case scspec :none))
-             (mv (error :unsupported-storage-class-specifier)
-                 (compustate-fix compst)))
-            (type (tyname-to-type tyname))
-            ((when (type-case type :array))
-             (mv (error :unsupported-local-array) (compustate-fix compst)))
-            ((when (not init?))
-             (mv (error :unsupported-no-initializer) (compustate-fix compst)))
-            (init init?)
-            ((mv ival compst) (exec-initer init compst fenv (1- limit)))
-            ((when (errorp ival)) (mv ival compst))
-            (val (init-value-to-value type ival))
-            ((when (errorp val)) (mv val compst))
-            (new-compst (create-var var val compst))
-            ((when (errorp new-compst)) (mv new-compst compst)))
-         (mv nil new-compst))
+       :declon (b* ((new-compst
+                     (exec-obj-declon item.get compst fenv (1- limit)))
+                    ((when (errorp new-compst))
+                     (mv new-compst (compustate-fix compst))))
+                 (mv (stmt-value-none) new-compst))
        :stmt (exec-stmt item.get compst fenv (1- limit))))
     :measure (nfix limit))
 
@@ -1339,9 +1483,8 @@
                                 (compst compustatep)
                                 (fenv fun-envp)
                                 (limit natp))
-    :guard (and (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 0))
-    :returns (mv (result value-option-resultp)
+    :guard (> (compustate-frames-number compst) 0)
+    :returns (mv (sval stmt-value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
     :short "Execute a list of block items."
@@ -1350,10 +1493,10 @@
      (xdoc::p
       "We thread the computation state through the block items."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-         ((when (endp items)) (mv nil (compustate-fix compst)))
-         ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
-         ((when (errorp val?)) (mv val? compst))
-         ((when (valuep val?)) (mv val? compst)))
+         ((when (endp items)) (mv (stmt-value-none) (compustate-fix compst)))
+         ((mv sval compst) (exec-block-item (car items) compst fenv (1- limit)))
+         ((when (errorp sval)) (mv sval compst))
+         ((when (stmt-value-case sval :return)) (mv sval compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
@@ -1368,38 +1511,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :hints (("Goal" :in-theory (enable o< o-finp nfix)))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp nfix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :returns-hints (("Goal"
+                   :expand (exec-expr e compst fenv limit)
+                   :in-theory (enable (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards nil ; done below
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ///
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
-    (defret compustate-frames-number-of-exec-expr-call
-      (equal (compustate-frames-number new-compst)
-             (compustate-frames-number compst))
-      :fn exec-expr-call)
-    (defret compustate-frames-number-of-exec-expr-call-or-pure
-      (equal (compustate-frames-number new-compst)
-             (compustate-frames-number compst))
-      :fn exec-expr-call-or-pure)
-    (defret compustate-frames-number-of-exec-expr-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-frames-number new-compst)
-                      (compustate-frames-number compst)))
-      :fn exec-expr-asg)
-    (defret compustate-frames-number-of-exec-expr-call-or-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-frames-number new-compst)
-                      (compustate-frames-number compst)))
-      :fn exec-expr-call-or-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-fun)
+    (defret compustate-frames-number-of-exec-expr
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-expr)
     (defret compustate-frames-number-of-exec-stmt
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1410,6 +1548,11 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-frames-number-of-exec-stmt-dowhile
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-dowhile)
     (defret compustate-frames-number-of-exec-initer
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1420,49 +1563,39 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item)
+    (defret compustate-frames-number-of-exec-obj-declon
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-obj-declon)
     (defret compustate-frames-number-of-exec-block-item-list
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable len)
-             :expand ((exec-expr-call fun args compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-asg e compst fenv limit)
-                      (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-fun fun args compst fenv limit)
+             :in-theory (enable len (:e tau-system))
+             :expand ((exec-fun fun args compst fenv limit)
+                      (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
+                      (exec-obj-declon declon compst fenv limit)
                       (exec-block-item item compst fenv limit)
                       (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
-    (defret compustate-scopes-numbers-of-exec-expr-call
-      (equal (compustate-scopes-numbers new-compst)
-             (compustate-scopes-numbers compst))
-      :fn exec-expr-call)
-    (defret compustate-scopes-numbers-of-exec-expr-call-or-pure
-      (equal (compustate-scopes-numbers new-compst)
-             (compustate-scopes-numbers compst))
-      :fn exec-expr-call-or-pure)
-    (defret compustate-scopes-numbers-of-exec-expr-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-scopes-numbers new-compst)
-                      (compustate-scopes-numbers compst)))
-      :fn exec-expr-asg)
-    (defret compustate-scopes-numbers-of-exec-expr-call-or-asg
-      (implies (compustatep new-compst)
-               (equal (compustate-scopes-numbers new-compst)
-                      (compustate-scopes-numbers compst)))
-      :fn exec-expr-call-or-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :rule-classes nil
       :fn exec-fun)
+    (defret compustate-scopes-numbers-of-exec-expr
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :fn exec-expr)
     (defret compustate-scopes-numbers-of-exec-stmt
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1473,138 +1606,60 @@
              (compustate-scopes-numbers compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt-while)
+    (defret compustate-scopes-numbers-of-exec-stmt-dowhile
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-stmt-dowhile)
     (defret compustate-scopes-numbers-of-exec-initer
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
-      :hyp (and (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 0))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-initer)
+    (defret compustate-scopes-numbers-of-exec-obj-declon
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :hyp (> (compustate-frames-number compst) 0)
+      :fn exec-obj-declon)
     (defret compustate-scopes-numbers-of-exec-block-item
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
-      :hyp (and (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 0))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item)
     (defret compustate-scopes-numbers-of-exec-block-item-list
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
-      :hyp (and (> (compustate-frames-number compst) 0)
-                (> (compustate-top-frame-scopes-number compst) 0))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable len)
-             :expand ((exec-expr-call fun args compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-asg e compst fenv limit)
-                      (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-fun fun args compst fenv limit)
+             :in-theory (enable len (:e tau-system))
+             :expand ((exec-fun fun args compst fenv limit)
+                      (exec-expr e compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
                       (exec-initer initer compst fenv limit)
+                      (exec-obj-declon declon compst fenv limit)
                       (exec-block-item item compst fenv limit)
                       (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-stmt :hints (("Goal" :in-theory (enable len))))
+  (verify-guards exec-fun
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       (:e tau-system)
+       len
+       expr-value-optionp-when-expr-value-option-resultp-and-not-errorp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual exec
-    :hints (("Goal" :in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection exec-without-calls
-  :short "Execution not involving function calls is
-          independent from the function environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We express this by saying that
-     when the execution functions are applied to constructs
-     (expressions, statements, etc.)
-     that do not contain function calls,
-     they always yield the same results
-     given any two arbitrary function environments."))
-
-  (defthm-exec-flag
-    (defthm exec-expr-call-without-calls
-      t
-      :rule-classes nil
-      :flag exec-expr-call)
-    (defthm exec-expr-call-or-pure-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-pure e compst fenv limit)
-                      (exec-expr-call-or-pure e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-pure)
-    (defthm exec-expr-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-asg e compst fenv limit)
-                      (exec-expr-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-asg)
-    (defthm exec-expr-call-or-asg-without-calls
-      (implies (expr-nocallsp e)
-               (equal (exec-expr-call-or-asg e compst fenv limit)
-                      (exec-expr-call-or-asg e compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-expr-call-or-asg)
-    (defthm exec-fun-without-calls
-      t
-      :rule-classes nil
-      :flag exec-fun)
-    (defthm exec-stmt-without-calls
-      (implies (stmt-nocallsp s)
-               (equal (exec-stmt s compst fenv limit)
-                      (exec-stmt s compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-stmt)
-    (defthm exec-stmt-while-without-calls
-      (implies (and (expr-nocallsp test)
-                    (stmt-nocallsp body))
-               (equal (exec-stmt-while test body compst fenv limit)
-                      (exec-stmt-while test body compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-stmt-while)
-    (defthm exec-initer-without-calls
-      (implies (initer-nocallsp initer)
-               (equal (exec-initer initer compst fenv limit)
-                      (exec-initer initer compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-initer)
-    (defthm exec-block-item-without-calls
-      (implies (block-item-nocallsp item)
-               (equal (exec-block-item item compst fenv limit)
-                      (exec-block-item item compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-block-item)
-    (defthm exec-block-item-list-without-calls
-      (implies (block-item-list-nocallsp items)
-               (equal (exec-block-item-list items compst fenv limit)
-                      (exec-block-item-list items compst fenv1 limit)))
-      :rule-classes nil
-      :flag exec-block-item-list)
     :hints (("Goal"
-             :in-theory (enable exec-expr-call
-                                exec-expr-call-or-pure
-                                exec-expr-asg
-                                exec-expr-call-or-asg
-                                exec-stmt
-                                exec-stmt-while
-                                exec-initer
-                                exec-block-item
-                                exec-block-item-list
-                                expr-nocallsp
-                                expr-list-nocallsp
-                                expr-option-nocallsp
-                                initer-nocallsp
-                                initer-option-nocallsp
-                                obj-declon-nocallsp
-                                stmt-nocallsp
-                                block-item-nocallsp
-                                block-item-list-nocallsp
-                                expr-option-some->val
-                                initer-option-some->val
-                                obj-declon-to-ident+scspec+tyname+init)))))
+             :expand ((exec-expr e compst fenv limit)
+                      (exec-expr (expr-fix e) compst fenv limit)
+                      (exec-expr e (compustate-fix compst) fenv limit)
+                      (exec-expr e compst (fun-env-fix fenv) limit))
+             :in-theory (enable nfix)))))

@@ -11,10 +11,14 @@
 
 (in-package "X")
 
+;; TODO: Deprecate (use newer versions in run-until-return3.lisp and run-until-return4.lisp).
+
 ;TODO: Use x86isa package?
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
+(include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
+(include-book "kestrel/lists-light/memberp" :dir :system)
 
 ;; Tests whether the stack is shorter than it was when the RSP was OLD-RSP.  Recall
 ;; that the stack grows downward, so a larger RSP means a shorter stack.
@@ -68,21 +72,21 @@
 (defpun run-until-stack-shorter-than-or-reach-pc (old-rsp stop-pcs x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
   (if (or (stack-shorter-thanp old-rsp x86)
-          (member-equal (rip x86) stop-pcs))
+          (memberp (rip x86) stop-pcs))
       x86
     (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-or-reach-pc-base
   (implies (or (stack-shorter-thanp old-rsp x86)
-               (member-equal (rip x86) stop-pcs))
+               (memberp (rip x86) stop-pcs))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-or-reach-pc-opener
   (implies (not (or (stack-shorter-thanp old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86)))))
 

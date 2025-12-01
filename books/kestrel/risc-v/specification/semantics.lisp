@@ -14,7 +14,7 @@
 (include-book "instructions")
 (include-book "states")
 
-(local (include-book "../library-extensions/theorems"))
+(local (include-book "../library-extensions/logops-theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -23,10 +23,7 @@
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -49,7 +46,8 @@
      For the latter kinds of instructions,
      we read unsigned operands in the semntic functions;
      however, in @(see semantics-equivalences) we prove
-     equivalent definitions that read signed operands.")
+     equivalent definitions that read signed operands,
+     or a mix of signed and unsigned operands.")
    (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
@@ -71,9 +69,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-addi-alt-defs),
+     we could equivalently leave it signed.
      We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -84,7 +86,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -124,7 +125,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -164,7 +164,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -189,9 +188,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-andi-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -202,7 +205,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -227,9 +229,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining an unsigned @('XLEN')-bit integer;
+     as shown in @(see exec-ori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -240,7 +246,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -265,9 +270,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer;
+     as shown in @(see exec-xori-alt-defs),
+     we could equivalently leave it signed.
      We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -278,7 +287,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -309,7 +317,6 @@
                      :andi (exec-andi rd rs1 imm stat feat)
                      :ori (exec-ori rd rs1 imm stat feat)
                      :xori (exec-xori rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -346,7 +353,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -368,7 +374,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SLLI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SLLI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -384,7 +390,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -423,7 +428,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -445,7 +449,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SRLI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SRLI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -462,7 +466,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -501,7 +504,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -523,7 +525,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the SRAI instruction [ISA:2.4.1] in 64-bit mode."
+  :short "Semantics of the SRAI instruction [ISA:4.2.1] in 64-bit mode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -540,7 +542,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -569,7 +570,6 @@
                       :slli (exec-slli32 rd rs1 imm stat feat)
                       :srli (exec-srli32 rd rs1 imm stat feat)
                       :srai (exec-srai32 rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -597,7 +597,6 @@
                       :slli (exec-slli64 rd rs1 imm stat feat)
                       :srli (exec-srli64 rd rs1 imm stat feat)
                       :srai (exec-srai64 rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -637,7 +636,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -668,7 +666,6 @@
     "These are only valid in 64-bit mode."))
   (op-imm-32-funct-case funct
                         :addiw (exec-addiw rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -707,7 +704,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -748,7 +744,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -789,7 +784,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -822,7 +816,6 @@
                          :slliw (exec-slliw rd rs1 imm stat feat)
                          :srliw (exec-srliw rd rs1 imm stat feat)
                          :sraiw (exec-sraiw rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -858,7 +851,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -902,7 +894,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -940,7 +931,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -978,7 +968,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1017,7 +1006,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1056,7 +1044,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1095,7 +1082,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1134,7 +1120,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1173,7 +1158,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1219,7 +1203,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1265,7 +1248,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1312,7 +1294,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1335,7 +1316,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MUL') instruction [ISA:12.1]."
+  :short "Semantics of the @('MUL') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1349,7 +1330,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1372,7 +1352,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULH') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1389,7 +1369,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1412,7 +1391,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHU') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULHU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1429,7 +1408,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1452,7 +1430,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHSU') instruction [ISA:12.1]."
+  :short "Semantics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1470,7 +1448,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1493,7 +1470,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIV') instruction [ISA:12.2]."
+  :short "Semantics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1512,7 +1489,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1535,7 +1511,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIVU') instruction [ISA:12.2]."
+  :short "Semantics of the @('DIVU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1554,7 +1530,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1577,7 +1552,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REM') instruction [ISA:12.2]."
+  :short "Semantics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1597,7 +1572,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1620,7 +1594,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REMU') instruction [ISA:12.2]."
+  :short "Semantics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1640,7 +1614,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1688,7 +1661,6 @@
                  :divu (exec-divu rd rs1 rs2 stat feat)
                  :rem (exec-rem rd rs1 rs2 stat feat)
                  :remu (exec-remu rd rs1 rs2 stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -1727,7 +1699,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1764,7 +1735,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1805,7 +1775,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1847,7 +1816,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1889,7 +1857,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1928,7 +1895,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -1971,7 +1937,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2014,7 +1979,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2058,7 +2022,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2102,7 +2065,6 @@
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2143,7 +2105,6 @@
                     :divuw (exec-divuw rd rs1 rs2 stat feat)
                     :remw (exec-remw rd rs1 rs2 stat feat)
                     :remuw (exec-remuw rd rs1 rs2 stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2191,7 +2152,6 @@
        (stat (write-pc target-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2240,7 +2200,6 @@
        (stat (write-pc target-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2295,7 +2254,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2348,7 +2306,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2401,7 +2358,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2454,7 +2410,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2507,7 +2462,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2560,7 +2514,6 @@
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
-  :hooks (:fix)
 
   ///
 
@@ -2590,7 +2543,6 @@
                      :bltu (exec-bltu rs1 rs2 imm pc stat feat)
                      :bge (exec-bge rs1 rs2 imm pc stat feat)
                      :bgeu (exec-bgeu rs1 rs2 imm pc stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2616,8 +2568,7 @@
   (b* ((base (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (offset (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm)))))
     (+ base offset))
-  :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2641,12 +2592,11 @@
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
        (result (loghead (feat->xlen feat)
-                        (logext 8 (read-memory-unsigned8 addr stat feat))))
+                        (logext 8 (read-mem8 addr stat feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2677,12 +2627,11 @@
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-memory-unsigned8 addr stat feat))
+       (result (read-mem8 addr stat feat))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2714,12 +2663,11 @@
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
        (result (loghead (feat->xlen feat)
-                        (logext 16 (read-memory-unsigned16 addr stat feat))))
+                        (logext 16 (read-mem16 addr stat feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2750,12 +2698,11 @@
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-memory-unsigned16 addr stat feat))
+       (result (read-mem16 addr stat feat))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2785,12 +2732,11 @@
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-memory-unsigned32 addr stat feat))
+       (result (read-mem32 addr stat feat))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2824,12 +2770,11 @@
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-memory-unsigned32 addr stat feat))
+       (result (read-mem32 addr stat feat))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2862,12 +2807,11 @@
      We write the integer to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-memory-unsigned64 addr stat feat))
+       (result (read-mem64 addr stat feat))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2902,7 +2846,6 @@
                    :lw (exec-lw rd rs1 imm stat feat)
                    :lwu (exec-lwu rd rs1 imm stat feat)
                    :ld (exec-ld rd rs1 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -2932,11 +2875,10 @@
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
        (val (loghead 8 (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
-       (stat (write-memory-unsigned8 addr val stat feat))
+       (stat (write-mem8 addr val stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -2965,11 +2907,10 @@
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
        (val (loghead 16 (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
-       (stat (write-memory-unsigned16 addr val stat feat))
+       (stat (write-mem16 addr val stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3004,11 +2945,10 @@
                   ((feat-64p feat)
                    (loghead 32 (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
                   (t (impossible))))
-       (stat (write-memory-unsigned32 addr val stat feat))
+       (stat (write-mem32 addr val stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3040,11 +2980,10 @@
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
        (val (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
-       (stat (write-memory-unsigned64 addr val stat feat))
+       (stat (write-mem64 addr val stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum)))
-  :hooks (:fix)
 
   ///
 
@@ -3073,7 +3012,6 @@
                     :sh (exec-sh rs1 rs2 imm stat feat)
                     :sw (exec-sw rs1 rs2 imm stat feat)
                     :sd (exec-sd rs1 rs2 imm stat feat))
-  :hooks (:fix)
 
   ///
 
@@ -3176,7 +3114,6 @@
   :guard-hints (("Goal"
                  :in-theory (enable instr-validp)
                  :cases ((feat-embedp feat))))
-  :hooks (:fix)
 
   :prepwork
   ((defrulel lemma

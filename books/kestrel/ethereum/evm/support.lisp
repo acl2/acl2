@@ -40,12 +40,6 @@
     (implies (nat-listp x)
              (eqlable-listp x))))
 
-;move
-(defthm unsigned-byte-p-of-bool-to-bit
-  (implies (posp size)
-           (unsigned-byte-p size (acl2::bool-to-bit bool)))
-  :hints (("Goal" :in-theory (enable acl2::bool-to-bit))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Material from conversions-es.lisp:

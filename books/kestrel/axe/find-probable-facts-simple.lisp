@@ -416,7 +416,7 @@
  (defthm natp-of-mv-nth-1-of-try-to-split-set-simple
    (natp (mv-nth 1 (try-to-split-set-simple set test-case-stobj print acc)))
    :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (e/d (try-to-split-set-simple) ())))))
+   :hints (("Goal" :in-theory (enable try-to-split-set-simple)))))
 
 (local
  (defthm booleanp-of-mv-nth-2-of-try-to-split-set-simple

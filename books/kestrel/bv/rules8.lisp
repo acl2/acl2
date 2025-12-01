@@ -31,17 +31,6 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 
-;drop or move hyps?
-;expensive?
-(defthmd mod-equal-impossible-value
-  (implies (and (<= j k) ; unusual
-                (natp i)
-                (natp j))
-           (equal (equal k (mod i j))
-                  (if (equal 0 j)
-                      (equal k i)
-                    nil))))
-
 (defthm floor-of-sum-of-minus-expt-and-bvchop
   (implies (rationalp y)
            (equal (FLOOR (+ (- (EXPT 2 SIZE)) (BVCHOP SIZE X)) y)

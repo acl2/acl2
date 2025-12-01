@@ -556,31 +556,30 @@ endif
 # systems), and that we want to work around for the moment:
 BROKEN_BOOKS :=
 
-# The models/y86 books are a special case.  We prefer to include them
-# only with the "all" target, not the "regression" target, since they
-# have large memory requirements -- and then, only for certain host
+# The models/y86-old books are a special case.  We prefer, since they
+# have large memory requirements, to build them only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
 # did not get the benefit of the cert.pl dependency analysis; for
 # example, if arithmetic-5/top.cert was out of date then "make" would
-# not rebuild the models/y86/ books as it should.  So we no longer
+# not rebuild the models/y86-old/ books as it should.  So we no longer
 # exclude them in the "egrep -v" command above, instead allowing
 # cert.pl to do its thing.
 
 ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books, even for the "all" target.  In
+# skip the models/y86-old/ books, even for the "all" target.  In
 # particular, we exclude GCL: in one ANSI GCL ACL2 regression,
 # certification runs were still proceeding after more than 10 hours
-# for each of four books under models/y86/
+# for each of four books under models/y86-old/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
 # y86-two-level-abs/common/x86-state-concrete, and
 # y86-basic/py86/popcount), probably because of the demands of
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+BROKEN_BOOKS += $(filter models/y86-old/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))

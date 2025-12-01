@@ -16,10 +16,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/letter-digit-uscore-chars" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,9 +38,7 @@
     (xdoc::li
      "Starts with a letter or underscore.")
     (xdoc::li
-     "Differs from all the "
-     (xdoc::seetopic "*keywords*" "keywords")
-     "."))
+     "Differs from all the @(see keywords)."))
    (xdoc::p
     "The rationale behind this notion is the following.")
    (xdoc::p
@@ -115,9 +110,10 @@
    "Sequences of characters satisfying these conditions may be "
    (xdoc::seetopic "portable-ascii-identifiers" "portable ASCII identifiers")
    ", provided they are distinct from keywords.")
-  (and (consp chs)
-       (str::letter/digit/uscore-charlist-p chs)
-       (not (str::dec-digit-char-p (car chs)))))
+  (b* ((chs (str::character-list-fix chs)))
+    (and (consp chs)
+         (str::letter/digit/uscore-charlist-p chs)
+         (not (str::dec-digit-char-p (car chs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,5 +124,10 @@
           (xdoc::seetopic "portable-ascii-identifiers"
                           "portable ASCII identifier")
           ".")
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only check distinctness with the C17 keywords,
+     but we plan to generalize that to other C versions."))
   (and (paident-char-listp (str::explode str))
-       (not (member-equal str *keywords*))))
+       (not (member-equal (str-fix str) *keywords-c17*))))

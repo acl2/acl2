@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,28 +13,35 @@
 
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
+(include-book "unsigned-byte-listp-def")
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "unsigned-byte-listp"))
 
-;; Readd the element at position INDEX of the array DATA, which should be a
+;; Read the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
 ;; ELEMENT-SIZE.  The INDEX should be less than LEN.  This function chops the
 ;; index, to follow the convention that BV functions chop their arguments. This
-;; function now returns 0 if the trimmed index is too long.  Don't change that
+;; function now returns 0 if the chopped index is too long.  Don't change that
 ;; behavior without also changing how calls to bv-array-read are translated to
 ;; STP.
 (defund bv-array-read (element-size len index data)
   (declare (xargs :guard (and (natp element-size)
-                              (natp len)
-                              (integerp index) ;todo: consider natp
-                              (true-listp data))
+                              (equal len (len data))
+                              (natp index)
+                              ;; (< index (len data)) ; todo uncomment but consider using the chopped index
+                              (unsigned-byte-listp element-size data) ; (true-listp data)
+                              )
                   :type-prescription (natp (bv-array-read element-size len index data))))
   (let* ((len (nfix len))
-         (numbits (ceiling-of-lg len)) ;number of index bits needed
+          ;number of index bits needed ; todo: disallow len=0 (no valid indices):
+         (numbits (mbe :exec (if (equal 0 len) 0 (ceiling-of-lg len)) ; avoid calling ceiling-of-lg on 0 (guard violation)
+                       :logic (ceiling-of-lg len)))
          ;; Chop the index down to the needed number of bits:
          (index (bvchop numbits (ifix index))))
     (if (< index len) ;; always true when LEN is a power of 2
@@ -143,7 +150,8 @@
          (bvchop element-size (nth 0 data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-;; the index gets chopped down to 0 bits
+;; unusual case: when the array has size 1, the only valid index is 0 (because
+;; the index gets chopped down to 0 bits).  Thus, the index is irrelevant.
 ;todo: maybe enable
 (defthmd bv-array-read-of-1-arg2-better
   (implies (< 0 index) ;prevents loops (could also do a syntactic check against '0 but not for axe?)
@@ -161,6 +169,7 @@
          0)
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; If the index fits in ISIZE bits, we only need 2^ISIZE elements.
 (defthmd bv-array-read-shorten-core
   (implies (and (unsigned-byte-p isize index)
                 (< (expt 2 isize) len)
@@ -258,7 +267,7 @@
 (defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
   (implies (and (natp len)
                 (natp index))
-           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
+           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len))) data)
                   (bv-array-read element-width len index data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
@@ -285,8 +294,10 @@
   (implies (not (integerp arg3))
            (equal (bv-array-read arg1 arg2 arg3 arg4)
                   (bv-array-read arg1 arg2 0 arg4)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; When the index is < k, we discard all but the first k array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<
   (implies (and (syntaxp (quotep data))
                 (< index k) ; k is a free var
@@ -300,15 +311,70 @@
                   (bv-array-read element-size k index (take k data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
+;; When the index is <= k, we discard all but the first k+1 array elements,
+;; because later elements cannot be accessed.
 (defthmd bv-array-read-shorten-when-<=
   (implies (and (syntaxp (quotep data))
                 (<= index k) ; k is a free var
                 (syntaxp (and (quotep k)
                               (quotep len)))
-                (< (+ 1 k) len) ; avoid loops
+                (< (+ 1 k) len) ; avoids loops
                 (natp index)
                 (natp k)
                 (natp len))
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (+ 1 k) index (take (+ 1 k) data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-+-of-ceiling-of-lg
+  (implies (integerp i)
+           (equal (bv-array-read element-size array-len (+ i (expt 2 (ceiling-of-lg array-len))) array)
+                  (bv-array-read element-size array-len i array)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-expt2-of-ceiling-of-lg
+  (equal (bv-array-read element-size array-len (expt 2 (ceiling-of-lg array-len)) array)
+         (bv-array-read element-size array-len 0 array))
+  :hints (("Goal" :use (:instance bv-array-read-of-expt2-of-+-of-ceiling-of-lg (i 0))
+                  :in-theory (disable bv-array-read-of-expt2-of-+-of-ceiling-of-lg))))
+
+(defthm bv-array-read-of-+-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (integerp j)
+                (natp size))
+           (equal (bv-array-read element-size len (+ i (bvchop size j)) data)
+                  (bv-array-read element-size len (+ i j) data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-of-bvchop-bigger
+  (implies (and (<= (ceiling-of-lg len) size)
+                (natp len)
+                (integerp i)
+                (natp size))
+           (equal (bv-array-read element-size len (bvchop size i) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-of-+-len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (+ i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthm bv-array-read-of---len-when-power-of-2p
+  (implies (and (power-of-2p len)
+                (natp len)
+                (integerp i))
+           (equal (bv-array-read element-size len (- i len) data)
+                  (bv-array-read element-size len i data)))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
+
+(defthmd bv-array-read-out-of-bounds
+  (implies (bvlt (ceiling-of-lg len) (+ -1 len) index) ; can only happen is len is not a power of 2
+           (equal (bv-array-read size len index data)
+                  0))
+  :hints (("Goal" :in-theory (enable bv-array-read bvlt))))

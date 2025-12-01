@@ -21,14 +21,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (specialize *old*
               *new*
               :target "foo"
               :param "y"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 1)))))
@@ -50,14 +51,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (specialize *old*
               *new*
               :target "foo"
               :param "z"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 42)))))

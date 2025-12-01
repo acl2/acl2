@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,12 +21,13 @@
 
   (fty::deftagsum rlp-tree
     :parents (rlp)
-    :short "RLP trees."
+    :short "Fixtype of RLP trees."
     :long
     (xdoc::topstring
      (xdoc::p
-      "An RLP tree has
-       a <see topic='@(url byte-arrays)'>byte array</see> at each leaf.
+      "An RLP tree has a "
+      (xdoc::seetopic "byte-arrays" "byte array")
+      " at each leaf.
        A branching node of the tree carries no additional information
        besides the structure implied by
        the sequence of its (zero or more) subtrees.")
@@ -35,12 +36,12 @@
        corresponds to @($\\mathbb{T}$) [YP:(176)].
        The definition of type @('rlp-tree-list')
        corresponds to @($\\mathbb{L}$) [YP:(177)];
-       we use true lists to model sequences of subtrees.")
+       we use lists to model sequences of subtrees.")
      (xdoc::p
-      "These trees are called `items' in [Wiki:RLP];
+      "These trees are called `items' in [Doc:RLP];
        we prefer the term `tree', because it seems clearer.
        The byte sequences at the leaves are called
-       `byte arrays' in [YP:B] and [Wiki:RLP], and also `strings' in [Wiki:RLP];
+       `byte arrays' in [YP:B] and [Doc:RLP], and also `strings' in [Doc:RLP];
        we prefer the former term, because it seems clearer."))
     (:leaf ((bytes byte-list)))
     (:branch ((subtrees rlp-tree-list)))
@@ -73,7 +74,7 @@
 
   (fty::deflist rlp-tree-list
     :parents (rlp-tree)
-    :short "True lists of RLP trees."
+    :short "Fixtype of lists of RLP trees."
     :elt-type rlp-tree
     :true-listp t
     :elementp-of-nil nil

@@ -808,7 +808,7 @@
            (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes (+ n TEXT-OFFSET))
                        ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
                        (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
-  :hints (("Goal" :use ()
+  :hints (("Goal"
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )
@@ -841,7 +841,7 @@
            (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes TEXT-OFFSET)
                        ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
                        (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
-  :hints (("Goal" :use ()
+  :hints (("Goal"
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )

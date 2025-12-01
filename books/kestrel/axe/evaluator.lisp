@@ -26,7 +26,7 @@
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us sbvdiv
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
@@ -446,7 +446,7 @@
                   (booland booland arg1 arg2) ;unguarded
                   (boolor boolor arg1 arg2)   ;unguarded
                   (getbit-list getbit-list-unguarded arg1 arg2) ; see getbit-list-unguarded-correct
-                  (set::union . (eval-in-logic (set::union arg1 arg2)))
+                  (set::union$inline . (eval-in-logic (set::union$inline arg1 arg2)))
                   (leftrotate32 leftrotate32-unguarded arg1 arg2)
 ;                  (list::val list::val arg1 arg2) ;new Tue Jul 17 16:49:17 2012
 ;                  (n-new-ads2 n-new-ads2 arg1 arg2)

@@ -32,9 +32,9 @@
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 ;(local (include-book "../axe-rules-mixed")) ; drop?
-(local (include-book "../rules3")) ;drop
+(local (include-book "../rules3")) ;drop ; maybe for <-of-constant-and-bvchop-when-equal-of-getbit
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -53,6 +53,8 @@
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system))
+(local (include-book "kestrel/bv/sbvlt-rules" :dir :system))
 ;(local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 
 ;gen
@@ -104,13 +106,14 @@
 ;gen
 ;why is this needed? maybe because of <-BECOMES-BVLT-AXE-BIND-FREE-ARG1-STRONG
 (defthm unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-  (implies (bvlt '32 x '4)
-           (unsigned-byte-p '2 (bvchop '32 x))))
+  (implies (bvlt 32 x 4)
+           (unsigned-byte-p 2 (bvchop 32 x))))
 
 ;; could restrict to constants
 (defthm bvsx-when-bvlt
   (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
                 (natp old-size)
+                (integerp new-size)
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   (bvchop old-size x)))
@@ -343,18 +346,6 @@
                   (bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-(defthm bvchop-subst-constant-alt
-  (implies (and (syntaxp (not (quotep x)))
-                (equal (bvchop free x) k) ; this rule
-                (syntaxp (quotep k))
-                (<= size free)
-                ;(natp size)
-                (integerp free))
-           (equal (bvchop size x)
-                  (bvchop size k)))
-  :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
-           :in-theory (disable bvchop-subst-constant))))
-
 ;gen
 (defthm bvcat-of-repeatbit-of-getbit-of-bvsx-same
   (implies (and (equal oldsize-1 (+ oldsize -1))
@@ -468,8 +459,8 @@
   (implies (and (integerp k)
                 (integerp text-offset)
                 (integerp index))
-           (equal (logext 64 (binary-+ k (bvplus 64 text-offset index)))
-                  (logext 64 (binary-+ k (+ text-offset index)))))
+           (equal (logext 64 (+ k (bvplus 64 text-offset index)))
+                  (logext 64 (+ k (+ text-offset index)))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext bvplus))))
 
 ;slow!

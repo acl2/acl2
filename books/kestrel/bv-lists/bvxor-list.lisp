@@ -1,8 +1,7 @@
-
-; BV List Library: bvxor-list
+; Apply bvxor to corresponding elements of 2 lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,7 +48,7 @@
            (equal (nth index (bvxor-list size vals1 vals2))
                   (bvxor size (nth index vals1)
                          (nth index vals2))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((bvxor-list size vals1 vals2))
            :in-theory (enable bvxor-list nth))))
 
@@ -62,6 +61,10 @@
   (implies (natp size)
            (unsigned-byte-listp size (bvxor-list size x y)))
   :hints (("Goal" :in-theory (enable bvxor-list unsigned-byte-listp))))
+
+(defthm integer-listp-of-bvxor-list
+  (integer-listp (bvxor-list size x y))
+  :hints (("Goal" :in-theory (enable bvxor-list integer-listp))))
 
 (defthm all-integerp-of-bvxor-list
   (all-integerp (bvxor-list size x y))

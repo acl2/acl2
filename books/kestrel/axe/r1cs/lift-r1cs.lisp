@@ -179,7 +179,7 @@
                                          ,print
                                          ',whole-form
                                          state))
-  :parents (acl2::axe-r1cs)
+  :parents (acl2::axe-r1cs acl2::axe-lifters)
   :short "A tool to lift an R1CS into logic"
   :description "Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an R1CS, given as a list of variables, a list of constraints, and a prime.  Creates a constant DAG whose name is the @('name-of-defconst') input supplied by the user.  The lifting is done by applying the Axe Rewriter.  See also @(tsee acl2::axe-r1cs)."
   :args ((name-of-defconst "The name of the defconst (a symbol) that will be created to hold the DAG.  This name should start and end with @('*').")

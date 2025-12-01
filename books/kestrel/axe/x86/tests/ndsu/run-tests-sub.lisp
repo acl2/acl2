@@ -9,8 +9,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-; cert_param: (ttags :all)
 ; cert_param: (uses-stp)
 (in-package "X") ; X is the package for doing x86 proofs with Axe
 
