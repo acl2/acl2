@@ -140,6 +140,7 @@
 (defconst *array-symbols-to-import*
   '(list-to-bv-array
     list-to-bv-array-aux
+    list-to-byte-array
     bv-array-to-list
     bv-array-to-list-aux
     bv-array-read
@@ -233,6 +234,7 @@
     *nil*
     erp-nil
     erp-t
+    enquote
     myquotep
     step-incrementp
     print-levelp
@@ -354,6 +356,7 @@
     *axe-evaluator-functions*
     get-conjuncts-of-terms2
     parsed-executablep
+    parsed-executable-type
 
     maybe-remove-temp-dir
 
@@ -363,6 +366,10 @@
     parse-executable
     parse-elf-file-bytes ; helpful for tracing ; todo: more
     parsed-elfp
+    parsed-elf-entry-point
+    subroutine-address-elf
+
+    ensure-target-exists-in-executable
     ))
 
 (defconst *arithmetic-symbols*
