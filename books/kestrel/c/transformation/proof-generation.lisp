@@ -1414,11 +1414,9 @@
      both argument expressions are pure,
      since the order of evaluation is unspecified in C.")
    (xdoc::p
-    "For pure non-strict binary operators,
-     for now we also require both argument expressions to be pure
-     in order to generate a theorem.
-     But this could be relaxed, since in this case
-     the order of evaluation is prescribed.")
+    "For non-strict binary operators (which are pure),
+     the argument expressions may be pure or not,
+     because the order of evaluation is always determined.")
    (xdoc::p
     "For the non-pure strict simple assignment operator,
      for theorem generation we require the left expression to be a variable.
@@ -1497,10 +1495,7 @@
                        :thm-name thm-name
                        :vartys gin.vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
-      (b* (((unless (and (expr-purep arg1)
-                         (expr-purep arg2)))
-            (mv expr-new gout-no-thm))
-           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+      (b* (((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
