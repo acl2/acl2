@@ -583,13 +583,12 @@
    (xdoc::p
     "This is based on @(tsee c::exec-initer).
      If the initializer is a single expression,
-     the expression must be a supported call or pure expression.
+     the expression may be any supported expression.
      If the initializer is a list,
      each element of the list must be a supported pure expressions."))
   (initer-case
    initer
-   :single (or (expr-pure-formalp initer.expr)
-               (expr-call-formalp initer.expr))
+   :single (expr-formalp initer.expr)
    :list (desiniter-list-formalp initer.elems))
   :hooks (:fix))
 
