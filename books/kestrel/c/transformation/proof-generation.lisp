@@ -324,18 +324,18 @@
                (c::exec-expr old-expr compst old-fenv limit))
               ((mv new-eval new-compst)
                (c::exec-expr new-expr compst new-fenv limit))
-              (old-value (c::expr-value->value old-eval))
-              (new-value (c::expr-value->value new-eval)))
+              (old-val (c::expr-value->value old-eval))
+              (new-val (c::expr-value->value new-eval)))
            (implies (and ,@vars-pre
                          (not (c::errorp old-eval)))
                     (and (not (c::errorp new-eval))
                          (iff old-eval new-eval)
-                         (equal old-value new-value)
+                         (equal old-val new-val)
                          (equal old-compst new-compst)
                          ,@(if (c::type-case ctype :void)
                                '((not old-eval))
                              `(old-eval
-                               (equal (c::type-of-value old-value) ',ctype)))
+                               (equal (c::type-of-value old-val) ',ctype)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
