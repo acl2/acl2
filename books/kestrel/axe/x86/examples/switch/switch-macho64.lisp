@@ -40,10 +40,8 @@
                    acl2::slice-of-bvplus-of-bvcat-special
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
-                   acl2::bvsx-of-bv-array-read-constant-array
-                   acl2::bvplus-of-bv-array-read-constant-array-smt
-                   set-rip-of-bv-array-read-split-cases
-                   acl2::bv-array-read-cases-opener
+                   acl2::bvsx-of-bv-array-read-constant-array ; could drop this if we could split bv-array-reads into cases deep within set-rip contexts
+                   acl2::bvplus-of-bv-array-read-constant-array-smt ; could drop this if we could split bv-array-reads into cases deep within set-rip contexts
                    set-rip-of-bvif-split
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)

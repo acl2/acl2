@@ -4233,6 +4233,8 @@
             ;; todo: more like these?:
             set-rip-of-bvchop
             set-rip-of-logext
+            set-rip-of-bv-array-read-split-cases-smt ; needs bv-array-read-cases-opener
+            acl2::bv-array-read-cases-opener
             )))
 
 (defund new-normal-form-rules64-intro ()
@@ -6351,20 +6353,22 @@
     x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
     ))
 
-;; Can't really use the new, nicer normal forms for readers and writers, since
-;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
+;; now same as unroller-rules32!
+;; not really used yet
 (defund loop-lifter-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules32)
-          (old-normal-form-rules)))
+          ;;(old-normal-form-rules)
+          (new-normal-form-rules-common)
+          (new-normal-form-rules32)))
 
-;; compare to unroller-rules64
+;; now same as unroller-rules64!
 (defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
           (new-normal-form-rules64)
-          ;(old-normal-form-rules)
+          ;;(old-normal-form-rules)
           (read-and-write-rules-bv)
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
