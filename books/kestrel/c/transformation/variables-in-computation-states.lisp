@@ -249,19 +249,6 @@
              c::exec-ident
              c::compustate-has-var-with-type-p))
 
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-ident-compustate-vars-pure
-    (b* ((expr (c::expr-ident var))
-         (result (c::exec-expr-pure expr compst))
-         (value (c::expr-value->value result)))
-      (implies (c::compustate-has-var-with-type-p var type compst)
-               (equal (c::type-of-value value) (c::type-fix type))))
-    :enable (c::exec-expr-pure
-             c::exec-ident
-             c::compustate-has-var-with-type-p))
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-compustate-vars
