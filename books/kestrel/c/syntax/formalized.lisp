@@ -726,19 +726,17 @@
      :labeled nil
      :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
-               (expr-pure-formalp stmt.expr?)
-               (expr-call-formalp stmt.expr?)
-               (expr-asg-formalp stmt.expr?))
-     :if (and (expr-pure-formalp stmt.test)
+               (expr-formalp stmt.expr?))
+     :if (and (expr-formalp stmt.test)
               (stmt-formalp stmt.then))
-     :ifelse (and (expr-pure-formalp stmt.test)
+     :ifelse (and (expr-formalp stmt.test)
                   (stmt-formalp stmt.then)
                   (stmt-formalp stmt.else))
      :switch nil
-     :while (and (expr-pure-formalp stmt.test)
+     :while (and (expr-formalp stmt.test)
                  (stmt-formalp stmt.body))
      :dowhile (and (stmt-formalp stmt.body)
-                   (expr-pure-formalp stmt.test))
+                   (expr-formalp stmt.test))
      :for-expr nil
      :for-decl nil
      :for-ambig (impossible)
