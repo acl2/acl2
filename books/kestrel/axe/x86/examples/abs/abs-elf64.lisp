@@ -57,7 +57,7 @@
 ;;  [10] .plt              PROGBITS        0000000000401020 001020 000020 10  AX  0   0 16
 ;;     where 0000000000401020 is the address; 001020 is the file offset;
 ;;           000020 is the size of the .plt section, and 10 is the entry size.
-;;     Since 401020 <= 401030 <= 401020+20, it is in in the PLT.
+;;     Since 401020 <= 401030 < 401020+20, it is in the PLT.
 ;;
 ;;  2. Calculate the PLT index.  (401030 - 401020) = 0x10 is the offset.
 ;;     Divide by the entry size (0x10 / 0x10) = 1 is the PLT index.
@@ -68,16 +68,22 @@
 ;;     E.g. readelf -S -W abs.elf64
 ;;     shows:
 ;;  [ 8] .rela.plt         RELA            0000000000400468 000468 000018 18  AI  3  22  8
-;;     So, what do we find at .rela.pit[0]?
+;;     So, what do we find at .rela.plt[0]?
+;;       readelf -x .rela.plt abs.elf64
+;;     Hex dump of section '.rela.plt':
+;;       0x00400468 00404000 00000000 07000000 02000000 .@@.............
+;;       0x00400478 00000000 00000000                   ........
 ;;     Each .rela.plt entry is an Elf64_Rela structure (24 bytes):
 ;;      typedef struct {
 ;;          Elf64_Addr    r_offset;   // 8 bytes - GOT slot address
 ;;          Elf64_Xword   r_info;     // 8 bytes - symbol index + type
 ;;          Elf64_Sxword  r_addend;   // 8 bytes - addend (usually 0)
 ;;      } Elf64_Rela;
-;;  The r_info field encodes two values:
-;;  - Low 32 bits: 0x00000007 = relocation type (R_X86_64_JUMP_SLOT)
-;;  - High 32 bits: (r_info >> 32) = 0x00000002 = symbol index into .dynsym
+;;     The r_info field is 07000000 02000000, little-endian representation of
+;;       0x0000000200000007
+;;     r-info encodes two values:
+;;      - Low 32 bits: 0x00000007 = relocation type (R_X86_64_JUMP_SLOT)
+;;      - High 32 bits: (r_info >> 32) = 0x00000002 = symbol index into .dynsym
 ;;
 ;; 4. Look up the symbol index into .dynsym, to find the string start index into .dynstr
 ;;    E.g. readelf -S -W abs.elf64
@@ -93,7 +99,7 @@
 ;;      ...
 ;;      0x00400388 01000000 12000000 00000000 00000000 ................
 ;;    So the string start index is 1.
-;;    
+;;
 ;; 5. Look up the string in .dynstr
 ;;      readelf -S -W abs.elf64
 ;;    shows:
@@ -106,7 +112,10 @@
 ;;        0x004003b8 00616273 005f5f6c 6962635f 73746172 .abs.__libc_star
 ;;    So the string starting at 0x4003b9 to the next null is "abs"
 ;;
-;;  6. Apply an abs summary instead of trying to execute the actual library code.
+;;  Note: because `strip` doesn't remove .dynsym or .dynstr, the above works
+;;  for a stripped binary.
+;;
+;; 6. Apply an abs summary instead of trying to execute the actual library code.
 
 
 ;; Once library call detection is working, the above should produce
