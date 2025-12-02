@@ -396,7 +396,7 @@
                                      `(bvplus '64 ',target-offset ,base-address-var))
                                  ;; Not position-independent, so the target is a concrete address:
                                  (acl2::enquote target-offset))))
-      (append (make-standard-state-assumptions-fn state-var)
+      (append (make-standard-state-assumptions-fn state-var) ; todo: these are untranslated
               ;; Assumptions about the BASE-ADDRESS-VAR:
               (if position-independentp
                   `((integerp ,base-address-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
@@ -639,7 +639,7 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-elf-text-section-address parsed-elf))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-address nil)))
+                  (mv :bad-code-addres nil)))
               ; todo: could there be extra zeros?:
               (mv nil (acons code-address (len (acl2::get-elf-code parsed-elf)) nil))))))
        ((when erp) (mv erp nil nil))
@@ -740,7 +740,7 @@
             ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
             (b* ((code-address (acl2::get-mach-o-code-address parsed-macho))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-address nil)))
+                  (mv :bad-code-addres nil)))
               ; todo: could there be extra zeros?:
               (mv nil (acons code-address (len (acl2::get-mach-o-code parsed-macho)) nil))))))
        ((when erp) (mv erp nil nil))
@@ -849,7 +849,7 @@
             (b* (((mv erp code-address) (acl2::get-pe-section-rva ".text" parsed-pe))
                  ((when erp) (mv erp nil))
                  ((when (not (natp code-address))) ; impossible?
-                  (mv :bad-code-address nil))
+                  (mv :bad-code-addres nil))
                  ((mv erp text-section-bytes) (acl2::get-pe-text-section-bytes parsed-pe))
                  ((when erp) (mv erp nil)))
               ; todo: could there be extra zeros?:
