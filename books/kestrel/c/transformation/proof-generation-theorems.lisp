@@ -109,24 +109,7 @@
      we use potentially different function environments
      for the old vs. new constructs.
      We always use the same initial computation state
-     for old and new constructs.")
-   (xdoc::p
-    "The theorem @('expr-pure-congruence') is a bit different,
-     because it does not change the expressions,
-     but it changes from @(tsee c::exec-expr-pure) to @(tsee c::exec-expr).
-     So it is still a form of equivalence lifting,
-     and it has a form similar to other theorems.
-     A critical hypothesis is that the limit for the new expression
-     does not exceed the limit for the old expression:
-     this is so that, under the assumption that the old expression
-     does not yield an error under @(tsee c::exec-expr),
-     neither does the new expression.
-     In the absence of this hypothesis,
-     the new expression could need a higher limit.
-     In general, transformations may need to also transform limits;
-     for now these theorems support transformations in which
-     the limit does not increase,
-     but we plan to generalize this."))
+     for old and new constructs."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,28 +151,6 @@
                     old-eval
                     (equal (c::type-of-value old-val) type))))
     :enable (c::exec-expr
-             c::exec-const
-             c::eval-const
-             c::eval-iconst
-             c::check-iconst
-             c::type-of-value)
-    :disable ((:e tau-system))) ; for speed
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-const-congruence-pure
-    (b* ((expr (c::expr-const const))
-         (eval (c::exec-expr-pure expr compst))
-         (val (c::expr-value->value eval))
-         (iconst (c::const-int->get const))
-         (type (c::check-iconst iconst)))
-      (implies (and (equal (c::const-kind const) :int)
-                    (c::typep type)
-                    (not (c::errorp eval)))
-               (and eval
-                    (equal (c::type-of-value val) type))))
-    :enable (c::exec-expr-pure
              c::exec-const
              c::eval-const
              c::eval-iconst
@@ -265,47 +226,6 @@
              c::value-kind-not-array-when-value-integerp
              c::lognot-value-lemma))
 
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-unary-congruence-pure
-    (b* ((old (c::expr-unary op old-arg))
-         (new (c::expr-unary op new-arg))
-         (old-arg-result (c::exec-expr-pure old-arg compst))
-         (new-arg-result (c::exec-expr-pure new-arg compst))
-         (old-arg-value (c::expr-value->value old-arg-result))
-         (new-arg-value (c::expr-value->value new-arg-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type (c::type-of-value old-arg-value)))
-      (implies (and (c::unop-nonpointerp op)
-                    (not (c::errorp old-result))
-                    (not (c::errorp new-arg-result))
-                    (equal old-arg-value new-arg-value)
-                    (c::type-nonchar-integerp type))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value)
-                           (if (equal (c::unop-kind op) :lognot)
-                               (c::type-sint)
-                             (c::promote-type type))))))
-    :expand ((c::exec-expr-pure (c::expr-unary op old-arg) compst)
-             (c::exec-expr-pure (c::expr-unary op new-arg) compst))
-    :disable ((:e c::type-sint))
-    :enable (c::unop-nonpointerp
-             c::exec-unary
-             c::eval-unary
-             c::apconvert-expr-value-when-not-array
-             c::value-arithmeticp
-             c::value-realp
-             c::value-integerp
-             c::value-signed-integerp
-             c::value-unsigned-integerp
-             c::value-kind-not-array-when-value-integerp
-             c::lognot-value-lemma))
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-cast-congruence
@@ -339,38 +259,6 @@
                            type1))))
     :expand ((c::exec-expr (c::expr-cast tyname old-arg) compst old-fenv limit)
              (c::exec-expr (c::expr-cast tyname new-arg) compst new-fenv limit))
-    :enable (c::exec-cast
-             c::eval-cast
-             c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-cast-congruence-pure
-    (b* ((old (c::expr-cast tyname old-arg))
-         (new (c::expr-cast tyname new-arg))
-         (old-arg-result (c::exec-expr-pure old-arg compst))
-         (new-arg-result (c::exec-expr-pure new-arg compst))
-         (old-arg-value (c::expr-value->value old-arg-result))
-         (new-arg-value (c::expr-value->value new-arg-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type (c::type-of-value old-arg-value))
-         (type1 (c::tyname-to-type tyname)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-arg-result))
-                    (equal old-arg-value new-arg-value)
-                    (c::type-nonchar-integerp type)
-                    (c::type-nonchar-integerp type1))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value)
-                           type1))))
-    :expand ((c::exec-expr-pure (c::expr-cast tyname old-arg) compst)
-             (c::exec-expr-pure (c::expr-cast tyname new-arg) compst))
     :enable (c::exec-cast
              c::eval-cast
              c::apconvert-expr-value-when-not-array
@@ -440,82 +328,38 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-binary-pure-strict-congruence-pure
-    (b* ((old (c::expr-binary op old-arg1 old-arg2))
-         (new (c::expr-binary op new-arg1 new-arg2))
-         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
-         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
-         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
-         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
-         (old-arg1-value (c::expr-value->value old-arg1-result))
-         (old-arg2-value (c::expr-value->value old-arg2-result))
-         (new-arg1-value (c::expr-value->value new-arg1-result))
-         (new-arg2-value (c::expr-value->value new-arg2-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type1 (c::type-of-value old-arg1-value))
-         (type2 (c::type-of-value old-arg2-value)))
-      (implies (and (c::binop-purep op)
-                    (c::binop-strictp op)
-                    (not (c::errorp old-result))
-                    (not (c::errorp new-arg1-result))
-                    (not (c::errorp new-arg2-result))
-                    (equal old-arg1-value new-arg1-value)
-                    (equal old-arg2-value new-arg2-value)
-                    (c::type-nonchar-integerp type1)
-                    (c::type-nonchar-integerp type2))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value)
-                           (cond ((member-equal (c::binop-kind op)
-                                                '(:mul :div :rem :add :sub
-                                                  :bitand :bitxor :bitior))
-                                  (c::uaconvert-types type1 type2))
-                                 ((member-equal (c::binop-kind op)
-                                                '(:shl :shr))
-                                  (c::promote-type type1))
-                                 (t (c::type-sint)))))))
-    :expand ((c::exec-expr-pure (c::expr-binary op old-arg1 old-arg2) compst)
-             (c::exec-expr-pure (c::expr-binary op new-arg1 new-arg2) compst))
-    :disable ((:e c::type-sint))
-    :enable (c::binop-purep
-             c::binop-strictp
-             c::exec-binary-strict-pure
-             c::eval-binary-strict-pure
-             c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-logand-first-congruence
     (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
-         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
-         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
-         (old-arg1-value (c::expr-value->value old-arg1-result))
-         (new-arg1-value (c::expr-value->value new-arg1-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type1 (c::type-of-value old-arg1-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-arg1-result))
-                    (equal old-arg1-value new-arg1-value)
+         ((mv old-arg1-eval old-arg1-compst)
+          (c::exec-expr old-arg1 compst old-fenv (1- limit)))
+         ((mv new-arg1-eval new-arg1-compst)
+          (c::exec-expr new-arg1 compst new-fenv (1- limit)))
+         (old-arg1-val (c::expr-value->value old-arg1-eval))
+         (new-arg1-val (c::expr-value->value new-arg1-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type1 (c::type-of-value old-arg1-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-arg1-eval))
+                    (iff old-arg1-eval new-arg1-eval)
+                    (equal old-arg1-val new-arg1-val)
+                    (equal old-arg1-compst new-arg1-compst)
                     (c::type-nonchar-integerp type1)
-                    (not (c::test-value old-arg1-value)))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
-    :expand ((c::exec-expr-pure (c::expr-binary '(:logand) old-arg1 old-arg2)
-                                compst)
-             (c::exec-expr-pure (c::expr-binary '(:logand) new-arg1 new-arg2)
-                                compst))
+                    (not (c::test-value old-arg1-val)))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    (equal (c::type-of-value old-val) (c::type-sint)))))
+    :expand ((c::exec-expr (c::expr-binary '(:logand) old-arg1 old-arg2)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
+                           compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -524,35 +368,45 @@
   (defruled expr-binary-logand-second-congruence
     (b* ((old (c::expr-binary (c::binop-logand) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logand) new-arg1 new-arg2))
-         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
-         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
-         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
-         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
-         (old-arg1-value (c::expr-value->value old-arg1-result))
-         (old-arg2-value (c::expr-value->value old-arg2-result))
-         (new-arg1-value (c::expr-value->value new-arg1-result))
-         (new-arg2-value (c::expr-value->value new-arg2-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type1 (c::type-of-value old-arg1-value))
-         (type2 (c::type-of-value old-arg2-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-arg1-result))
-                    (not (c::errorp new-arg2-result))
-                    (equal old-arg1-value new-arg1-value)
-                    (equal old-arg2-value new-arg2-value)
+         ((mv old-arg1-eval old-arg1-compst)
+          (c::exec-expr old-arg1 compst old-fenv (1- limit)))
+         ((mv old-arg2-eval old-arg2-compst)
+          (c::exec-expr old-arg2 old-arg1-compst old-fenv (1- limit)))
+         ((mv new-arg1-eval new-arg1-compst)
+          (c::exec-expr new-arg1 compst new-fenv (1- limit)))
+         ((mv new-arg2-eval new-arg2-compst)
+          (c::exec-expr new-arg2 new-arg1-compst new-fenv (1- limit)))
+         (old-arg1-val (c::expr-value->value old-arg1-eval))
+         (old-arg2-val (c::expr-value->value old-arg2-eval))
+         (new-arg1-val (c::expr-value->value new-arg1-eval))
+         (new-arg2-val (c::expr-value->value new-arg2-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type1 (c::type-of-value old-arg1-val))
+         (type2 (c::type-of-value old-arg2-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-arg1-eval))
+                    (not (c::errorp new-arg2-eval))
+                    (iff old-arg1-eval new-arg1-eval)
+                    (iff old-arg2-eval new-arg2-eval)
+                    (equal old-arg1-val new-arg1-val)
+                    (equal old-arg2-val new-arg2-val)
+                    (equal old-arg1-compst new-arg1-compst)
+                    (equal old-arg2-compst new-arg2-compst)
                     (c::type-nonchar-integerp type1)
                     (c::type-nonchar-integerp type2)
-                    (c::test-value old-arg1-value))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
-    :expand ((c::exec-expr-pure (c::expr-binary '(:logand) old-arg1 old-arg2)
-                                compst)
-             (c::exec-expr-pure (c::expr-binary '(:logand) new-arg1 new-arg2)
-                                compst))
+                    (c::test-value old-arg1-val))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    (equal (c::type-of-value old-val) (c::type-sint)))))
+    :expand ((c::exec-expr (c::expr-binary '(:logand) old-arg1 old-arg2)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
+                           compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -561,27 +415,33 @@
   (defruled expr-binary-logor-first-congruence
     (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
-         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
-         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
-         (old-arg1-value (c::expr-value->value old-arg1-result))
-         (new-arg1-value (c::expr-value->value new-arg1-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type1 (c::type-of-value old-arg1-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-arg1-result))
-                    (equal old-arg1-value new-arg1-value)
+         ((mv old-arg1-eval old-arg1-compst)
+          (c::exec-expr old-arg1 compst old-fenv (1- limit)))
+         ((mv new-arg1-eval new-arg1-compst)
+          (c::exec-expr new-arg1 compst new-fenv (1- limit)))
+         (old-arg1-val (c::expr-value->value old-arg1-eval))
+         (new-arg1-val (c::expr-value->value new-arg1-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type1 (c::type-of-value old-arg1-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-arg1-eval))
+                    (iff old-arg1-eval new-arg1-eval)
+                    (equal old-arg1-val new-arg1-val)
+                    (equal old-arg1-compst new-arg1-compst)
                     (c::type-nonchar-integerp type1)
-                    (c::test-value old-arg1-value))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
-    :expand ((c::exec-expr-pure (c::expr-binary '(:logor) old-arg1 old-arg2)
-                                compst)
-             (c::exec-expr-pure (c::expr-binary '(:logor) new-arg1 new-arg2)
-                                compst))
+                    (c::test-value old-arg1-val))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    (equal (c::type-of-value old-val) (c::type-sint)))))
+    :expand ((c::exec-expr (c::expr-binary '(:logor) old-arg1 old-arg2)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
+                           compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -590,35 +450,45 @@
   (defruled expr-binary-logor-second-congruence
     (b* ((old (c::expr-binary (c::binop-logor) old-arg1 old-arg2))
          (new (c::expr-binary (c::binop-logor) new-arg1 new-arg2))
-         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
-         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
-         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
-         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
-         (old-arg1-value (c::expr-value->value old-arg1-result))
-         (old-arg2-value (c::expr-value->value old-arg2-result))
-         (new-arg1-value (c::expr-value->value new-arg1-result))
-         (new-arg2-value (c::expr-value->value new-arg2-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type1 (c::type-of-value old-arg1-value))
-         (type2 (c::type-of-value old-arg2-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-arg1-result))
-                    (not (c::errorp new-arg2-result))
-                    (equal old-arg1-value new-arg1-value)
-                    (equal old-arg2-value new-arg2-value)
+         ((mv old-arg1-eval old-arg1-compst)
+          (c::exec-expr old-arg1 compst old-fenv (1- limit)))
+         ((mv old-arg2-eval old-arg2-compst)
+          (c::exec-expr old-arg2 old-arg1-compst old-fenv (1- limit)))
+         ((mv new-arg1-eval new-arg1-compst)
+          (c::exec-expr new-arg1 compst new-fenv (1- limit)))
+         ((mv new-arg2-eval new-arg2-compst)
+          (c::exec-expr new-arg2 new-arg1-compst new-fenv (1- limit)))
+         (old-arg1-val (c::expr-value->value old-arg1-eval))
+         (old-arg2-val (c::expr-value->value old-arg2-eval))
+         (new-arg1-val (c::expr-value->value new-arg1-eval))
+         (new-arg2-val (c::expr-value->value new-arg2-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type1 (c::type-of-value old-arg1-val))
+         (type2 (c::type-of-value old-arg2-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-arg1-eval))
+                    (not (c::errorp new-arg2-eval))
+                    (iff old-arg1-eval new-arg1-eval)
+                    (iff old-arg2-eval new-arg2-eval)
+                    (equal old-arg1-val new-arg1-val)
+                    (equal old-arg2-val new-arg2-val)
+                    (equal old-arg1-compst new-arg1-compst)
+                    (equal old-arg2-compst new-arg2-compst)
                     (c::type-nonchar-integerp type1)
                     (c::type-nonchar-integerp type2)
-                    (not (c::test-value old-arg1-value)))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
-    :expand ((c::exec-expr-pure (c::expr-binary '(:logor) old-arg1 old-arg2)
-                                compst)
-             (c::exec-expr-pure (c::expr-binary '(:logor) new-arg1 new-arg2)
-                                compst))
+                    (not (c::test-value old-arg1-val)))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    (equal (c::type-of-value old-val) (c::type-sint)))))
+    :expand ((c::exec-expr (c::expr-binary '(:logor) old-arg1 old-arg2)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
+                           compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -668,35 +538,45 @@
   (defruled expr-cond-true-congruence
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
-         (old-test-result (c::exec-expr-pure old-test compst))
-         (old-then-result (c::exec-expr-pure old-then compst))
-         (new-test-result (c::exec-expr-pure new-test compst))
-         (new-then-result (c::exec-expr-pure new-then compst))
-         (old-test-value (c::expr-value->value old-test-result))
-         (old-then-value (c::expr-value->value old-then-result))
-         (new-test-value (c::expr-value->value new-test-result))
-         (new-then-value (c::expr-value->value new-then-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type-test (c::type-of-value old-test-value))
-         (type-then (c::type-of-value old-then-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-test-result))
-                    (not (c::errorp new-then-result))
-                    (equal old-test-value new-test-value)
-                    (equal old-then-value new-then-value)
+         ((mv old-test-eval old-test-compst)
+          (c::exec-expr old-test compst old-fenv (1- limit)))
+         ((mv old-then-eval old-then-compst)
+          (c::exec-expr old-then old-test-compst old-fenv (1- limit)))
+         ((mv new-test-eval new-test-compst)
+          (c::exec-expr new-test compst new-fenv (1- limit)))
+         ((mv new-then-eval new-then-compst)
+          (c::exec-expr new-then new-test-compst new-fenv (1- limit)))
+         (old-test-val (c::expr-value->value old-test-eval))
+         (old-then-val (c::expr-value->value old-then-eval))
+         (new-test-val (c::expr-value->value new-test-eval))
+         (new-then-val (c::expr-value->value new-then-eval))
+         ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
+         ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
+         (old-val (c::expr-value->value old-eval))
+         (new-val (c::expr-value->value new-eval))
+         (type-test (c::type-of-value old-test-val))
+         (type-then (c::type-of-value old-then-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-test-eval))
+                    (not (c::errorp new-then-eval))
+                    (iff old-test-eval new-test-eval)
+                    (iff old-then-eval new-then-eval)
+                    (equal old-test-val new-test-val)
+                    (equal old-then-val new-then-val)
+                    (equal old-test-compst new-test-compst)
+                    (equal old-then-compst new-then-compst)
                     (c::type-nonchar-integerp type-test)
                     (c::type-nonchar-integerp type-then)
-                    (c::test-value old-test-value))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) type-then))))
-    :expand ((c::exec-expr-pure (c::expr-cond old-test old-then old-else)
-                                compst)
-             (c::exec-expr-pure (c::expr-cond new-test new-then new-else)
-                                compst))
+                    (c::test-value old-test-val))
+               (and (not (c::errorp new-eval))
+                    (iff old-eval new-eval)
+                    (equal old-val new-val)
+                    (equal old-compst new-compst)
+                    (equal (c::type-of-value old-val) type-then))))
+    :expand ((c::exec-expr (c::expr-cond old-test old-then old-else)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-cond new-test new-then new-else)
+                           compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -705,74 +585,47 @@
   (defruled expr-cond-false-congruence
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
-         (old-test-result (c::exec-expr-pure old-test compst))
-         (old-else-result (c::exec-expr-pure old-else compst))
-         (new-test-result (c::exec-expr-pure new-test compst))
-         (new-else-result (c::exec-expr-pure new-else compst))
-         (old-test-value (c::expr-value->value old-test-result))
-         (old-else-value (c::expr-value->value old-else-result))
-         (new-test-value (c::expr-value->value new-test-result))
-         (new-else-value (c::expr-value->value new-else-result))
-         (old-result (c::exec-expr-pure old compst))
-         (new-result (c::exec-expr-pure new compst))
-         (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result))
-         (type-test (c::type-of-value old-test-value))
-         (type-else (c::type-of-value old-else-value)))
-      (implies (and (not (c::errorp old-result))
-                    (not (c::errorp new-test-result))
-                    (not (c::errorp new-else-result))
-                    (equal old-test-value new-test-value)
-                    (equal old-else-value new-else-value)
-                    (c::type-nonchar-integerp type-test)
-                    (c::type-nonchar-integerp type-else)
-                    (not (c::test-value old-test-value)))
-               (and (not (c::errorp new-result))
-                    (equal old-value new-value)
-                    (equal (c::type-of-value old-value) type-else))))
-    :expand ((c::exec-expr-pure (c::expr-cond old-test old-then old-else)
-                                compst)
-             (c::exec-expr-pure (c::expr-cond new-test new-then new-else)
-                                compst))
-    :enable (c::apconvert-expr-value-when-not-array
-             c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled expr-pure-congruence
-    (b* ((old-eval-pure (c::exec-expr-pure old compst))
-         (new-eval-pure (c::exec-expr-pure new compst))
-         (old-val-pure (c::expr-value->value old-eval-pure))
-         (new-val-pure (c::expr-value->value new-eval-pure))
+         ((mv old-test-eval old-test-compst)
+          (c::exec-expr old-test compst old-fenv (1- limit)))
+         ((mv old-else-eval old-else-compst)
+          (c::exec-expr old-else old-test-compst old-fenv (1- limit)))
+         ((mv new-test-eval new-test-compst)
+          (c::exec-expr new-test compst new-fenv (1- limit)))
+         ((mv new-else-eval new-else-compst)
+          (c::exec-expr new-else new-test-compst new-fenv (1- limit)))
+         (old-test-val (c::expr-value->value old-test-eval))
+         (old-else-val (c::expr-value->value old-else-eval))
+         (new-test-val (c::expr-value->value new-test-eval))
+         (new-else-val (c::expr-value->value new-else-eval))
          ((mv old-eval old-compst) (c::exec-expr old compst old-fenv limit))
          ((mv new-eval new-compst) (c::exec-expr new compst new-fenv limit))
          (old-val (c::expr-value->value old-eval))
-         (new-val (c::expr-value->value new-eval)))
-      (implies (and (c::expr-purep old)
-                    (c::expr-purep new)
-                    (not (c::errorp old-eval))
-                    (not (c::errorp new-eval-pure))
-                    (equal old-val-pure new-val-pure)
-                    (<= (c::expr-pure-limit new) (c::expr-pure-limit old)))
+         (new-val (c::expr-value->value new-eval))
+         (type-test (c::type-of-value old-test-val))
+         (type-else (c::type-of-value old-else-val)))
+      (implies (and (not (c::errorp old-eval))
+                    (not (c::errorp new-test-eval))
+                    (not (c::errorp new-else-eval))
+                    (iff old-test-eval new-test-eval)
+                    (iff old-else-eval new-else-eval)
+                    (equal old-test-val new-test-val)
+                    (equal old-else-val new-else-val)
+                    (equal old-test-compst new-test-compst)
+                    (equal old-else-compst new-else-compst)
+                    (c::type-nonchar-integerp type-test)
+                    (c::type-nonchar-integerp type-else)
+                    (not (c::test-value old-test-val)))
                (and (not (c::errorp new-eval))
                     (iff old-eval new-eval)
                     (equal old-val new-val)
                     (equal old-compst new-compst)
-                    (equal (c::type-of-value old-val)
-                           (c::type-of-value old-val-pure)))))
-    :use ((:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
-                     (expr old)
-                     (compst compst)
-                     (fenv old-fenv)
-                     (limit limit))
-          (:instance c::exec-expr-to-exec-expr-pure-when-expr-pure-limit
-                     (expr new)
-                     (compst compst)
-                     (fenv new-fenv)
-                     (limit limit)))
-    :enable (c::pure-limit-bound-when-exec-expr-not-error
-             nfix
-             c::exec-expr))
+                    (equal (c::type-of-value old-val) type-else))))
+    :expand ((c::exec-expr (c::expr-cond old-test old-then old-else)
+                           compst old-fenv limit)
+             (c::exec-expr (c::expr-cond new-test new-then new-else)
+                           compst new-fenv limit))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1289,14 +1142,6 @@
                          (c::expr-unary op arg) compst fenv limit))))
     :expand (c::exec-expr (c::expr-unary op arg) compst fenv limit))
 
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-unary-errors-pure
-    (implies (c::errorp (c::exec-expr-pure arg compst))
-             (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
-    :expand (c::exec-expr-pure (c::expr-unary op arg) compst))
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-cast-errors
@@ -1306,14 +1151,6 @@
               (mv-nth 0 (c::exec-expr
                          (c::expr-cast tyname arg) compst fenv limit))))
     :expand (c::exec-expr (c::expr-cast tyname arg) compst fenv limit))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-cast-errors-pure
-    (implies (c::errorp (c::exec-expr-pure arg compst))
-             (c::errorp (c::exec-expr-pure (c::expr-cast tyname arg) compst)))
-    :expand ((c::exec-expr-pure (c::expr-cast tyname arg) compst)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1329,67 +1166,65 @@
                            (c::expr-binary op arg1 arg2) compst fenv limit)))))
     :expand (c::exec-expr (c::expr-binary op arg1 arg2) compst fenv limit))
 
-  ;;;;;;;;;;;;;;;;;;;;
-
-  ;; temporary variant for pure expression execution
-  (defruled expr-binary-pure-strict-errors-pure
-    (implies (and (c::binop-strictp op)
-                  (or (c::errorp (c::exec-expr-pure arg1 compst))
-                      (c::errorp (c::exec-expr-pure arg2 compst))))
-             (c::errorp
-              (c::exec-expr-pure (c::expr-binary op arg1 arg2) compst)))
-    :expand (c::exec-expr-pure (c::expr-binary op arg1 arg2) compst)
-    :enable c::binop-strictp)
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-logand-first-errors
-    (implies (c::errorp (c::exec-expr-pure arg1 compst))
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-expr arg1 compst fenv (1- limit))))
              (c::errorp
-              (c::exec-expr-pure (c::expr-binary (c::binop-logand) arg1 arg2)
-                                 compst)))
-    :expand (c::exec-expr-pure (c::expr-binary '(:logand) arg1 arg2) compst))
+              (mv-nth 0 (c::exec-expr
+                         (c::expr-binary (c::binop-logand) arg1 arg2)
+                         compst fenv limit))))
+    :expand (c::exec-expr
+             (c::expr-binary '(:logand) arg1 arg2) compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-logand-second-errors
-    (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
-                  (c::type-nonchar-integerp
-                   (c::type-of-value
-                    (c::expr-value->value (c::exec-expr-pure arg1 compst))))
-                  (c::test-value
-                   (c::expr-value->value (c::exec-expr-pure arg1 compst)))
-                  (c::errorp (c::exec-expr-pure arg2 compst)))
-             (c::errorp
-              (c::exec-expr-pure (c::expr-binary (c::binop-logand) arg1 arg2)
-                                 compst)))
-    :expand (c::exec-expr-pure (c::expr-binary '(:logand) arg1 arg2) compst)
+    (b* (((mv eval compst1) (c::exec-expr arg1 compst fenv (1- limit))))
+      (implies (and (not (c::errorp eval))
+                    (c::type-nonchar-integerp
+                     (c::type-of-value (c::expr-value->value eval)))
+                    (c::test-value (c::expr-value->value eval))
+                    (c::errorp
+                     (mv-nth 0 (c::exec-expr arg2 compst1 fenv (1- limit)))))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-binary (c::binop-logand) arg1 arg2)
+                           compst fenv limit)))))
+    :expand (c::exec-expr
+             (c::expr-binary '(:logand) arg1 arg2) compst fenv limit)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-logor-first-errors
-    (implies (c::errorp (c::exec-expr-pure arg1 compst))
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-expr arg1 compst fenv (1- limit))))
              (c::errorp
-              (c::exec-expr-pure (c::expr-binary (c::binop-logor) arg1 arg2)
-                                 compst)))
-    :expand (c::exec-expr-pure (c::expr-binary '(:logor) arg1 arg2) compst))
+              (mv-nth 0 (c::exec-expr
+                         (c::expr-binary (c::binop-logor) arg1 arg2)
+                         compst fenv limit))))
+    :expand (c::exec-expr
+             (c::expr-binary '(:logor) arg1 arg2) compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-binary-logor-second-errors
-    (implies (and (not (c::errorp (c::exec-expr-pure arg1 compst)))
-                  (c::type-nonchar-integerp
-                   (c::type-of-value
-                    (c::expr-value->value (c::exec-expr-pure arg1 compst))))
-                  (not (c::test-value
-                        (c::expr-value->value (c::exec-expr-pure arg1 compst))))
-                  (c::errorp (c::exec-expr-pure arg2 compst)))
-             (c::errorp
-              (c::exec-expr-pure (c::expr-binary (c::binop-logor) arg1 arg2)
-                                 compst)))
-    :expand (c::exec-expr-pure (c::expr-binary '(:logor) arg1 arg2) compst)
+    (b* (((mv eval compst1) (c::exec-expr arg1 compst fenv (1- limit))))
+      (implies (and (not (c::errorp eval))
+                    (c::type-nonchar-integerp
+                     (c::type-of-value (c::expr-value->value eval)))
+                    (not (c::test-value (c::expr-value->value eval)))
+                    (c::errorp
+                     (mv-nth 0 (c::exec-expr arg2 compst1 fenv (1- limit)))))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-binary (c::binop-logor) arg1 arg2)
+                           compst fenv limit)))))
+    :expand (c::exec-expr
+             (c::expr-binary '(:logor) arg1 arg2) compst fenv limit)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
@@ -1414,54 +1249,48 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-cond-test-errors
-    (implies (c::errorp (c::exec-expr-pure test compst))
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-expr test compst fenv (1- limit))))
              (c::errorp
-              (c::exec-expr-pure (c::expr-cond test then else) compst)))
-    :expand (c::exec-expr-pure (c::expr-cond test then else) compst))
+              (mv-nth 0 (c::exec-expr
+                         (c::expr-cond test then else) compst fenv limit))))
+    :expand (c::exec-expr (c::expr-cond test then else) compst fenv limit))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-cond-then-errors
-    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
-                  (c::type-nonchar-integerp
-                   (c::type-of-value
-                    (c::expr-value->value (c::exec-expr-pure test compst))))
-                  (c::test-value
-                   (c::expr-value->value (c::exec-expr-pure test compst)))
-                  (c::errorp (c::exec-expr-pure then compst)))
-             (c::errorp
-              (c::exec-expr-pure (c::expr-cond test then else) compst)))
-    :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
+    (b* (((mv eval compst1) (c::exec-expr test compst fenv (1- limit))))
+      (implies (and (not (c::errorp eval))
+                    (c::type-nonchar-integerp
+                     (c::type-of-value (c::expr-value->value eval)))
+                    (c::test-value (c::expr-value->value eval))
+                    (c::errorp
+                     (mv-nth 0 (c::exec-expr then compst1 fenv (1- limit)))))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-cond test then else) compst fenv limit)))))
+    :expand (c::exec-expr
+             (c::expr-cond test then else) compst fenv limit)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (defruled expr-cond-else-errors
-    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
-                  (c::type-nonchar-integerp
-                   (c::type-of-value
-                    (c::expr-value->value (c::exec-expr-pure test compst))))
-                  (not (c::test-value
-                        (c::expr-value->value (c::exec-expr-pure test compst))))
-                  (c::errorp (c::exec-expr-pure else compst)))
-             (c::errorp
-              (c::exec-expr-pure (c::expr-cond test then else) compst)))
-    :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
+    (b* (((mv eval compst1) (c::exec-expr test compst fenv (1- limit))))
+      (implies (and (not (c::errorp eval))
+                    (c::type-nonchar-integerp
+                     (c::type-of-value (c::expr-value->value eval)))
+                    (not (c::test-value (c::expr-value->value eval)))
+                    (c::errorp
+                     (mv-nth 0 (c::exec-expr else compst1 fenv (1- limit)))))
+               (c::errorp
+                (mv-nth 0 (c::exec-expr
+                           (c::expr-cond test then else) compst fenv limit)))))
+    :expand (c::exec-expr
+             (c::expr-cond test then else) compst fenv limit)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defruled expr-pure-errors
-    (implies (and (c::expr-purep expr)
-                  (c::errorp (c::exec-expr-pure expr compst)))
-             (c::errorp (mv-nth 0 (c::exec-expr expr compst fenv limit))))
-    :use (:instance c::exec-expr-to-exec-expr-pure-when-not-errorp
-                    (expr expr)
-                    (compst compst)
-                    (fenv fenv)
-                    (limit limit)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

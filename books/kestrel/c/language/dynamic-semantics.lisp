@@ -629,14 +629,9 @@
      Thus, the order in which the subexpressions are evaluated does not matter:
      we just proceed left to right.")
    (xdoc::p
-    "We plan to remove this function,
-     after moving (and suitably generalizing) its code to @(tsee exec-expr).
-     The plan is for @(tsee exec-expr) to support the execution of
-     expressions that are not necessarily pure
-     but still have a well-defined order of evaluation.
-     (Further extending our dynamic semantics
-     to support multiple possible orders of evaluation
-     is something we will look at further in the future.)"))
+    "We plan to remove this function from our dynamic semantics,
+     after we create a new @('exec-expr-list')
+     to replace @(tsee exec-expr-pure-list)."))
   (b* ((e (expr-fix e)))
     (expr-case
      e
@@ -975,14 +970,7 @@
       "We support the execution of expressions whose order of evaluation
        is determined by [C17] or does not matter;
        we characterize this subset of the expressions conservatively,
-       returning errors on expressions outside the characterization.
-       As noted in @(tsee exec-expr-pure),
-       we are in the process of moving the code from there to here,
-       and we will eventually eliminate @(tsee exec-expr-pure);
-       as we move the code here, we also generalize it
-       in the sense of supporting the execution of more expressions,
-       namely ones that are not pure but have
-       a deterministic order of evaluation.")
+       returning errors on expressions outside the characterization.")
      (xdoc::p
       "Variables and constants are always deterministic,
        so they are supported in all cases.")
@@ -1026,9 +1014,8 @@
        but it makes no difference because
        the computation state does not change.")
      (xdoc::p
-      "Non-strict binary expressions must be pure for now,
-       but we plan to relax this, since the order of evaluation is determined.
-       We delegate their execution to @(tsee exec-expr-pure) for now.")
+      "Non-strict binary expressions do not need to be pure,
+       because the order of evaluation is always determined.")
      (xdoc::p
       "If the binary expression is a (simple, not compound) assignment,
        the left-hand side must be a pure lvalue expression;
@@ -1058,7 +1045,10 @@
        its result is the value assigned by the assignment.")
      (xdoc::p
       "The remaining binary expressions are compound assignments.
-       They are not supported for now."))
+       They are not supported for now.")
+     (xdoc::p
+      "Ternary expressions do not need to be pure,
+       because the order of evaluation is always determined."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (expr-case
        e
@@ -1137,13 +1127,64 @@
                        (mv (error (list :binary-void-expr e.arg2)) compst)))
                    (mv (exec-binary-strict-pure e.op arg1-eval arg2-eval)
                        compst)))
-                ((or (binop-case e.op :logand)
-                     (binop-case e.op :logor))
-                 (if (expr-purep e)
-                     (mv (exec-expr-pure e compst) (compustate-fix compst))
-                   (mv (error (list :nonstrict-binary-nonpure-args
-                                    (expr-fix e)))
-                       (compustate-fix compst))))
+                ((binop-case e.op :logand)
+                 (b* (((mv arg1-eval compst)
+                       (exec-expr e.arg1 compst fenv (1- limit)))
+                      ((when (errorp arg1-eval)) (mv arg1-eval compst))
+                      ((unless arg1-eval)
+                       (mv (error (list :logand-void-arg (expr-fix e)))
+                           compst))
+                      (arg1 (apconvert-expr-value arg1-eval))
+                      ((when (errorp arg1)) (mv arg1 compst))
+                      (test1 (test-value (expr-value->value arg1)))
+                      ((when (errorp test1)) (mv test1 compst))
+                      ((when (not test1))
+                       (mv (make-expr-value :value (value-sint 0) :object nil)
+                           compst))
+                      ((mv arg2-eval compst)
+                       (exec-expr e.arg2 compst fenv (1- limit)))
+                      ((when (errorp arg2-eval)) (mv arg2-eval compst))
+                      ((unless arg2-eval)
+                       (mv (error (list :logand-void-arg (expr-fix e)))
+                           compst))
+                      (arg2 (apconvert-expr-value arg2-eval))
+                      ((when (errorp arg2)) (mv arg2 compst))
+                      (test2 (test-value (expr-value->value arg2)))
+                      ((when (errorp test2)) (mv test2 compst)))
+                   (if test2
+                       (mv (make-expr-value :value (value-sint 1) :object nil)
+                           compst)
+                     (mv (make-expr-value :value (value-sint 0) :object nil)
+                         compst))))
+                ((binop-case e.op :logor)
+                 (b* (((mv arg1-eval compst)
+                       (exec-expr e.arg1 compst fenv (1- limit)))
+                      ((when (errorp arg1-eval)) (mv arg1-eval compst))
+                      ((unless arg1-eval)
+                       (mv (error (list :logor-void-arg (expr-fix e)))
+                           compst))
+                      (arg1 (apconvert-expr-value arg1-eval))
+                      ((when (errorp arg1)) (mv arg1 compst))
+                      (test1 (test-value (expr-value->value arg1)))
+                      ((when (errorp test1)) (mv test1 compst))
+                      ((when test1)
+                       (mv (make-expr-value :value (value-sint 1) :object nil)
+                           compst))
+                      ((mv arg2-eval compst)
+                       (exec-expr e.arg2 compst fenv (1- limit)))
+                      ((when (errorp arg2-eval)) (mv arg2-eval compst))
+                      ((unless arg2-eval)
+                       (mv (error (list :logor-void-arg (expr-fix e)))
+                           compst))
+                      (arg2 (apconvert-expr-value arg2-eval))
+                      ((when (errorp arg2)) (mv arg2 compst))
+                      (test2 (test-value (expr-value->value arg2)))
+                      ((when (errorp test2)) (mv test2 compst)))
+                   (if test2
+                       (mv (make-expr-value :value (value-sint 1) :object nil)
+                           compst)
+                     (mv (make-expr-value :value (value-sint 0) :object nil)
+                         compst))))
                 ((binop-case e.op :asg)
                  (b* ((left (expr-binary->arg1 e))
                       (right (expr-binary->arg2 e))
@@ -1179,10 +1220,33 @@
                    (mv (make-expr-value :value val :object nil) compst)))
                 (t (mv (error (list :expression-not-supported (expr-fix e)))
                        (compustate-fix compst))))
-       :cond (if (expr-purep e)
-                 (mv (exec-expr-pure e compst) (compustate-fix compst))
-               (mv (error (list :cond-nonpure-args (expr-fix e)))
-                   (compustate-fix compst)))))
+       :cond (b* (((mv test compst) (exec-expr e.test compst fenv (1- limit)))
+                  ((when (errorp test)) (mv test compst))
+                  ((unless test)
+                   (mv (error (list :cond-void-test (expr-fix e))) compst))
+                  (test (apconvert-expr-value test))
+                  ((when (errorp test)) (mv test compst))
+                  (test (test-value (expr-value->value test)))
+                  ((when (errorp test)) (mv test compst)))
+               (if test
+                   (b* (((mv eval compst)
+                         (exec-expr e.then compst fenv (1- limit)))
+                        ((when (errorp eval)) (mv eval compst))
+                        ((unless eval)
+                         (mv (error (list :cond-void-then (expr-fix e)))
+                             compst))
+                        (eval (apconvert-expr-value eval))
+                        ((when (errorp eval)) (mv eval compst)))
+                     (mv (change-expr-value eval :object nil) compst))
+                 (b* (((mv eval compst)
+                       (exec-expr e.else compst fenv (1- limit)))
+                      ((when (errorp eval)) (mv eval compst))
+                      ((unless eval)
+                       (mv (error (list :cond-void-else (expr-fix e)))
+                           compst))
+                      (eval (apconvert-expr-value eval))
+                      ((when (errorp eval)) (mv eval compst)))
+                   (mv (change-expr-value eval :object nil) compst))))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

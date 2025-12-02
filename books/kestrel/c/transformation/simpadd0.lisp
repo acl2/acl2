@@ -142,11 +142,7 @@
      We enable the executable counterparts of various functions
      so that things match up in the proof;
      in particular, we need to reduce the @('(c::expr-const ...)')
-     in the theorem @('simpadd0-expr+zero-to-expr') to a quoted constant.")
-   (xdoc::p
-    "We temporarily also use @('simpadd0-expr+zero-to-expr-pure')
-     to prove the verion of the theorem for pure expression execution.
-     We will eventually remove this part, as explained elsewhere."))
+     in the theorem @('simpadd0-expr+zero-to-expr') to a quoted constant."))
   (b* (((mv expr-new (gout gout))
         (xeq-expr-binary op
                          arg1 arg1-new arg1-thm-name
@@ -181,18 +177,12 @@
                        (:instance simpadd0-expr+zero-to-expr
                                   (expr ',cexpr-new-simp)
                                   (fenv old-fenv))
-                       (:instance simpadd0-expr+zero-to-expr-pure
-                                  (expr ',cexpr-new-simp))
                        ,arg1-thm-name
                        (:instance expr-binary-pure-strict-errors
                                   (op ',(c::binop-add))
                                   (arg1 ',cexpr-new-simp)
                                   (arg2 ',czero)
                                   (fenv old-fenv))
-                       (:instance expr-binary-pure-strict-errors-pure
-                                  (op ',(c::binop-add))
-                                  (arg1 ',cexpr-new-simp)
-                                  (arg2 ',czero))
                        (:instance c::exec-expr-limit-monotone
                                   (e ',cexpr-new-simp)
                                   (compst compst)
@@ -281,29 +271,6 @@
                                              (length :none)))))
              compst fenv limit)
     :enable (c::exec-expr
-             c::exec-binary-strict-pure
-             c::eval-binary-strict-pure
-             c::apconvert-expr-value-when-not-array
-             c::add-values-of-sint-and-sint0
-             c::type-of-value))
-
-  (defruled simpadd0-expr+zero-to-expr-pure
-    (b* ((zero (c::expr-const
-                (c::const-int
-                 (c::make-iconst
-                  :value 0
-                  :base (c::iconst-base-oct)
-                  :unsignedp nil
-                  :length (c::iconst-length-none)))))
-         (expr+zero (c::expr-binary (c::binop-add) expr zero))
-         (expr-result (c::exec-expr-pure expr compst))
-         (expr-value (c::expr-value->value expr-result))
-         (expr+zero-result (c::exec-expr-pure expr+zero compst))
-         (expr+zero-value (c::expr-value->value expr+zero-result)))
-      (implies (and (not (c::errorp expr-result))
-                    (equal (c::type-of-value expr-value) (c::type-sint)))
-               (equal expr+zero-value expr-value)))
-    :enable (c::exec-expr-pure
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
