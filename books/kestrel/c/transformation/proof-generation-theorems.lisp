@@ -1457,9 +1457,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defruled block-item-list-cons-rest-errors
-    (b* (((mv result compst1) (c::exec-block-item item compst fenv (1- limit))))
-      (implies (and (not (c::errorp result))
-                    (equal (c::stmt-value-kind result) :none)
+    (b* (((mv sval compst1) (c::exec-block-item item compst fenv (1- limit))))
+      (implies (and (not (c::errorp sval))
+                    (equal (c::stmt-value-kind sval) :none)
                     (c::errorp (mv-nth 0 (c::exec-block-item-list
                                           items compst1 fenv (1- limit)))))
                (c::errorp
