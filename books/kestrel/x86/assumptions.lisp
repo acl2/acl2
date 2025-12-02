@@ -50,30 +50,32 @@
 
     ;; Assume denormals are not treated as 0 (this is 0 upon power up or reset
     ;; and is incompatible with IEEE 754):
-    (equal (mxcsrbits->daz (mxcsr ,state-var)) '0)
+    (equal (mxcsrbits->daz$inline (mxcsr ,state-var)) '0)
 
     ;; Assume exceptions are being masked (these are 1 at power up or reset):
-    (equal (mxcsrbits->im (mxcsr ,state-var)) '1)
-    (equal (mxcsrbits->dm (mxcsr ,state-var)) '1)
-    (equal (mxcsrbits->zm (mxcsr ,state-var)) '1)
-    (equal (mxcsrbits->om (mxcsr ,state-var)) '1)
-    (equal (mxcsrbits->um (mxcsr ,state-var)) '1)
-    (equal (mxcsrbits->pm (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->im$inline (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->dm$inline (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->zm$inline (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->om$inline (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->um$inline (mxcsr ,state-var)) '1)
+    (equal (mxcsrbits->pm$inline (mxcsr ,state-var)) '1)
 
     ;; Assume that we are are not flushing to 0 (this is 0 upon power up or reset and
     ;; is incompatible with IEEE 754):
-    (equal (mxcsrbits->ftz (mxcsr ,state-var)) '0)
+    (equal (mxcsrbits->ftz$inline (mxcsr ,state-var)) '0)
 
     ;; Assume the rounding mode is round-to-nearest-ties-to-even (the default
     ;; rounding mode):
-    (equal (mxcsrbits->rc (mxcsr ,state-var)) '0)
+    (equal (mxcsrbits->rc$inline (mxcsr ,state-var)) '0)
 
     ;; These help with things like SSE/AVX/etc
-    (cr0bits-p (ctri '0 ,state-var)) ; so we can extract the bits (todo: avoid actually using this assumption?)
-    (equal (cr0bits->ts (ctri '0 ,state-var)) '0)
-    (equal (cr0bits->em (ctri '0 ,state-var)) '0)
-    (cr4bits-p (ctri '4 ,state-var)) ; so we can call cr4bits->osfxsr (todo: avoid actually using this assumption?)
-    (equal (cr4bits->osfxsr (ctri '4 ,state-var)) '1)))
+    (unsigned-byte-p '32 ; cr0bits-p
+     (ctri '0 ,state-var)) ; so we can extract the bits (todo: avoid actually using this assumption?)
+    (equal (cr0bits->ts$inline (ctri '0 ,state-var)) '0)
+    (equal (cr0bits->em$inline (ctri '0 ,state-var)) '0)
+    (unsigned-byte-p '26 ;cr4bits-p
+                     (ctri '4 ,state-var)) ; so we can call cr4bits->osfxsr (todo: avoid actually using this assumption?)
+    (equal (cr4bits->osfxsr$inline (ctri '4 ,state-var)) '1)))
 
 (defthm pseudo-term-listp-of-make-standard-state-assumptions-fn
   (implies (symbolp state-var)
