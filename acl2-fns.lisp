@@ -1394,7 +1394,12 @@ notation causes an error and (b) the use of ,. is not permitted."
                                 (symbol-name package-name))
                                ((stringp package-name)
                                 package-name)
-                               (t "<unknown>")))
+                               (t (acl2-reader-error
+                                   "A package name appears to have been ~
+                                    missing, where the form ~x0 was read ~
+                                    immediately after a #! directive.~|See ~
+                                    :DOC sharp-bang-reader."
+                                   package-name))))
          (*package* (cond
                      (*read-suppress* *package*)
                      ((assoc package-string

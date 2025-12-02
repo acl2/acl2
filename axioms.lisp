@@ -2992,8 +2992,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (t
         (when (not (inhibit-er-hard state))
           (let ((*standard-output* *error-output*)
-                (*wormholep* nil))
-            (error-fms t ctx summary str alist state)))
+                (*wormholep* nil)
+                (summary (if (or (null summary)
+                                 (stringp summary))
+                             summary
+                           "Ill-formed summary")))
+            (cond
+             ((and (stringp str)
+                   (character-alistp alist))
+
+; Other than the two conjuncts tested just above, we expect the other conjuncts
+; of the guard for error-fms to be true.
+
+              (error-fms t ctx summary str alist state))
+             (t
+              (error-fms t ctx summary
+                         "A hard error has been invoked with the ill-formed ~
+                          string and alist arguments below.~%String:~%  ~
+                          ~x0~|Alist:~%  ~x1"
+                         (list (cons #\0 str)
+                               (cons #\1 alist))
+                         state)))))
 
 ; Here is a historical comment, perhaps no longer directly relevant.
 
