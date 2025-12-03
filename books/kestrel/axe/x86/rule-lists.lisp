@@ -356,8 +356,8 @@
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
     read-of-logext
-    read-when-equal-of-read ; non-bv, drop?
-    read-when-equal-of-read-alt ; non-bv, drop?
+    ;read-when-equal-of-read ; non-bv, drop?
+    ;read-when-equal-of-read-alt ; non-bv, drop?
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
@@ -2729,6 +2729,11 @@
             ;; these can discard bytes from large executable segments:
             acl2::bv-array-read-shorten-when-bvlt
             acl2::bv-array-read-shorten-when-not-bvlt
+
+            acl2::bv-array-read-convert-arg3-to-bv-axe
+            ;;acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
+            ;;acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
+
 
             acl2::integerp-of-if-strong
 
@@ -5855,8 +5860,7 @@
     acl2::logext-of-+-of-bvplus-same-size
     acl2::logext-of-+-of-+-of-mult-same-size
     ;; acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
-    acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
-    acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
+
     acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op ; todo: why is nth showing up?
     acl2::nth-becomes-bv-array-read-strong2 ; todo: why is nth showing up?
     acl2::bvplus-of-*-arg1 ; introduces bvmult

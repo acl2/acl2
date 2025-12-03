@@ -100,7 +100,6 @@
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
                    unsigned-canonical-address-p-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
-                   acl2::bv-array-read-convert-arg3-to-bv-axe
                    acl2::bv-array-read-shorten-when-in-first-half-smt
                    acl2::bv-array-read-chunk-little-when-multiple-8-8-smt
                    ;bv-array-read-chunk-little-when-multiple-8-336
