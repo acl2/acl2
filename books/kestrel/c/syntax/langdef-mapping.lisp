@@ -842,15 +842,6 @@
     :hints (("Goal"
              :in-theory (enable expr-call-formalp
                                 check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-asg-formalp
-    (not erp)
-    :hyp (expr-asg-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-asg-formalp
-                                expr-pure-formalp)
              :expand (ldm-expr expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -411,36 +411,6 @@
        (expr-list-pure-formalp (expr-funcall->args expr)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-asg-formalp ((expr exprp))
-  :guard (expr-unambp expr)
-  :returns (yes/no booleanp)
-  :short "Check if an expression has formal dynamic semantics,
-          as an assignment expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the assignment expressions supported by @(tsee c::exec-expr).
-     The expression must be a simple assignment expression.
-     The sub-expressions must have formal dynamic semantics.
-     The left expression must be pure.
-     The right expression must be pure
-     unless the left expression is an identifier,
-     in which case the right expression may be a function call."))
-  (and (expr-case expr :binary)
-       (binop-case (expr-binary->op expr) :asg)
-       (if (expr-case (expr-binary->arg1 expr) :ident)
-           (and (ident-formalp (expr-ident->ident (expr-binary->arg1 expr)))
-                (or (expr-pure-formalp (expr-binary->arg2 expr))
-                    (expr-call-formalp (expr-binary->arg2 expr))
-                    (expr-asg-formalp (expr-binary->arg2 expr))))
-         (and (expr-pure-formalp (expr-binary->arg1 expr))
-              (expr-pure-formalp (expr-binary->arg2 expr)))))
-  :measure (expr-count expr)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-formalp ((expr exprp))
