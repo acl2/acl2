@@ -625,7 +625,6 @@
     ;; formalized subset:
 
     ident-formalp
-    expr-pure-formalp
     expr-formalp
     initer-formalp
     dirdeclor-block-formalp
