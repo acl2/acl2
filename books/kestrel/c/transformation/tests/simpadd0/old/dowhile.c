@@ -5,4 +5,6 @@ void f(int x, int y) {
   do {
     y = y * x;
   } while (y + 0 <= 0);
+  do {
+  } while (x = y);
 }

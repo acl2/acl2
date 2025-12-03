@@ -39,6 +39,8 @@
   while (y < 0) {
     y = y * x;
   }
+  while (x = y) {
+  }
 }
 ")
 

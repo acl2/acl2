@@ -33,8 +33,11 @@
 
 (assert-file-contents
  :file "new/ternary_int.c"
- :content "int ternary_int(int x, int y, int z) {
+ :content "int ternary_pure(int x, int y, int z) {
   return x ? y : z;
+}
+int ternary_nonpure(int x, int y, int z, int w) {
+  return (x = w) ? (x = ~w) : (x = !w);
 }
 ")
 

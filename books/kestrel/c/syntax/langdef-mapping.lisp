@@ -813,45 +813,19 @@
   (fty::deffixequiv-mutual ldm-exprs)
 
   (defret-mutual ldm-exprs-ok-when-exprs-formalp
-    (defret ldm-expr-ok-when-expr-pure-formalp
+    (defret ldm-expr-ok-when-expr-formalp
       (not erp)
-      :hyp (expr-pure-formalp expr)
+      :hyp (expr-formalp expr)
       :fn ldm-expr)
-    (defret ldm-expr-list-ok-when-expr-list-pure-formalp
+    (defret ldm-expr-list-ok-when-expr-list-formalp
       (not erp)
-      :hyp (expr-list-pure-formalp exprs)
+      :hyp (expr-list-formalp exprs)
       :fn ldm-expr-list)
     :hints (("Goal"
-             :expand (expr-pure-formalp expr)
-             :in-theory (enable expr-pure-formalp
-                                expr-list-pure-formalp))))
-
-  (defret ldm-expr-ok-when-expr-formalp
-    (not erp)
-    :hyp (expr-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
+             :expand (expr-formalp expr)
              :in-theory (enable expr-formalp
-                                check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-call-formalp
-                                check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-asg-formalp
-    (not erp)
-    :hyp (expr-asg-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-asg-formalp
-                                expr-pure-formalp)
-             :expand (ldm-expr expr)))))
+                                expr-list-formalp
+                                check-expr-ident)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -869,14 +843,9 @@
 
   ///
 
-  (defret ldm-expr-option-ok-when-expr-pure-formalp
+  (defret ldm-expr-option-ok-when-expr-formalp
     (not erp)
-    :hyp (expr-pure-formalp expr?)
-    :hints (("Goal" :in-theory (enable expr-option-some->val))))
-
-  (defret ldm-expr-option-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr?)
+    :hyp (expr-formalp expr?)
     :hints (("Goal" :in-theory (enable expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
