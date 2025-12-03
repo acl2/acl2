@@ -1,6 +1,6 @@
 ; BV Library: Rules about bvequal
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "bvequal")
 (include-book "bvplus")
 (include-book "bvuminus")
+(local (include-book "bvchop"))
 
 ;; todo: generalize some of these rules to allow the sizes to differ?
 

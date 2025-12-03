@@ -11,19 +11,12 @@
 
 (in-package "ACL2")
 
-;; TODO: Consider defining bvminus in terms of bvplus and bvuminus.
-
+(include-book "bvminus-def")
 (include-book "bvchop")
-(local (include-book "bvplus")) ; move down
 (include-book "bvuminus")
+(local (include-book "bvplus"))
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-
-;; Compute the (modular) difference of X and Y.
-;; TODO: Consider defining this in terms of bvplus and bvuminus.
-(defund bvminus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (- (ifix x) (ifix y))))
 
 (defthm integerp-of-bvminus
   (integerp (bvminus size x y)))
@@ -293,7 +286,11 @@
   (implies (natp size)
            (equal (bvminus size (bvplus size y (bvplus size z x)) (bvplus size w x))
                   (bvminus size (bvplus size y z) w)))
-  :hints (("Goal" :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))
+  :hints (("Goal" :in-theory (e/d (bvminus-becomes-bvplus-of-bvuminus
+                                   bvplus-commutative-2-smart
+                                   bvplus-commutative-smart)
+                                  (bvplus-commutative-2
+                                   bvplus-commutative)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
