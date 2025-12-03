@@ -1793,12 +1793,10 @@
            :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
                         (:e c::initer-single->get)
-                        (:e c::expr-purep)
                         (:e c::expr-kind)
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
-                        (:e c::expr-pure-limit)
                         initer-compustate-vars)
            :use ((:instance ,expr-thm-name
                             (limit (1- limit)))
