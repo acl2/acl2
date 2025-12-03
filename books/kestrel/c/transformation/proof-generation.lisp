@@ -2042,8 +2042,7 @@
        (stmt (make-stmt-if :test test :then then))
        (stmt-new (make-stmt-if :test test-new :then then-new))
        ((unless (and test-thm-name
-                     then-thm-name
-                     (expr-purep test)))
+                     then-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
@@ -2154,8 +2153,7 @@
         (make-stmt-ifelse :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)))
+                     else-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        (else-types (stmt-types else))
