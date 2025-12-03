@@ -393,96 +393,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-formalp ((expr exprp))
-  :guard (expr-unambp expr)
-  :returns (yes/no booleanp)
-  :short "Check if an expression has a formal dynamic semantics."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The expressions not supported by @(tsee ldm-expr)
-     are not supported here either.
-     The remaining expressions are supported or not
-     according to @(tsee c::exec-expr)
-     and the specialized functions it calls (e.g. @(tsee c::exec-arrsub))."))
-  (expr-case
-   expr
-   :ident (ident-formalp expr.ident)
-   :const (const-formalp expr.const)
-   :string nil
-   :paren (expr-formalp expr.inner)
-   :gensel nil
-   :arrsub (and (expr-formalp expr.arg1)
-                (expr-formalp expr.arg2)
-                (expr-purep expr.arg1)
-                (expr-purep expr.arg2))
-   :funcall (and (expr-case expr.fun :ident)
-                 (ident-formalp (expr-ident->ident expr.fun))
-                 (expr-list-pure-formalp expr.args))
-   :member (and (expr-formalp expr.arg)
-                (ident-formalp expr.name))
-   :memberp (and (expr-formalp expr.arg)
-                 (ident-formalp expr.name))
-   :complit nil
-   :unary (unop-case
-           expr.op
-           :address (expr-formalp expr.arg)
-           :indir (expr-formalp expr.arg)
-           :plus (expr-formalp expr.arg)
-           :minus (expr-formalp expr.arg)
-           :bitnot (expr-formalp expr.arg)
-           :lognot (expr-formalp expr.arg)
-           :preinc nil
-           :predec nil
-           :postinc nil
-           :postdec nil
-           :sizeof nil
-           :alignof nil
-           :real nil
-           :imag nil)
-   :label-addr nil
-   :sizeof nil
-   :sizeof-ambig (impossible)
-   :alignof nil
-   :alignof-ambig (impossible)
-   :cast (and (tyname-formalp expr.type)
-              (expr-formalp expr.arg))
-   :binary (cond
-            ((and (binop-strictp expr.op)
-                  (binop-purep expr.op))
-             (and (expr-formalp expr.arg1)
+(defines exprs-formalp
+  :short "Check if expressions and expression lists
+          have a formal dynamic semantics."
+
+  (define expr-formalp ((expr exprp))
+    :guard (expr-unambp expr)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset exprs-formalp)
+    :short "Check if an expression has a formal dynamic semantics."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The expressions not supported by @(tsee ldm-expr)
+       are not supported here either.
+       The remaining expressions are supported or not
+       according to @(tsee c::exec-expr)
+       and the specialized functions it calls (e.g. @(tsee c::exec-arrsub))."))
+    (expr-case
+     expr
+     :ident (ident-formalp expr.ident)
+     :const (const-formalp expr.const)
+     :string nil
+     :paren (expr-formalp expr.inner)
+     :gensel nil
+     :arrsub (and (expr-formalp expr.arg1)
                   (expr-formalp expr.arg2)
                   (expr-purep expr.arg1)
-                  (expr-purep expr.arg2)))
-            ((member-eq (binop-kind expr.op) '(:logand :logor))
-             (and (expr-formalp expr.arg1)
-                  (expr-formalp expr.arg2)))
-            ((eq (binop-kind expr.op) :asg)
-             (and (expr-formalp expr.arg1)
-                  (expr-formalp expr.arg2)
-                  (or (expr-case expr.arg1 :ident)
-                      (expr-purep expr.arg2))))
-            (t nil))
-   :cond (and (expr-formalp expr.test)
-              (expr-option-case expr.then
-                                :some (expr-formalp expr.then.val)
-                                :none nil)
-              (expr-formalp expr.else))
-   :comma nil
-   :cast/call-ambig (impossible)
-   :cast/mul-ambig (impossible)
-   :cast/add-ambig (impossible)
-   :cast/sub-ambig (impossible)
-   :cast/and-ambig (impossible)
-   :cast/logand-ambig (impossible)
-   :stmt nil
-   :tycompat nil
-   :offsetof nil
-   :va-arg nil
-   :extension nil)
-  :measure (expr-count expr)
+                  (expr-purep expr.arg2))
+     :funcall (and (expr-case expr.fun :ident)
+                   (ident-formalp (expr-ident->ident expr.fun))
+                   (expr-list-formalp expr.args)
+                   (expr-list-purep expr.args))
+     :member (and (expr-formalp expr.arg)
+                  (ident-formalp expr.name))
+     :memberp (and (expr-formalp expr.arg)
+                   (ident-formalp expr.name))
+     :complit nil
+     :unary (unop-case
+             expr.op
+             :address (expr-formalp expr.arg)
+             :indir (expr-formalp expr.arg)
+             :plus (expr-formalp expr.arg)
+             :minus (expr-formalp expr.arg)
+             :bitnot (expr-formalp expr.arg)
+             :lognot (expr-formalp expr.arg)
+             :preinc nil
+             :predec nil
+             :postinc nil
+             :postdec nil
+             :sizeof nil
+             :alignof nil
+             :real nil
+             :imag nil)
+     :label-addr nil
+     :sizeof nil
+     :sizeof-ambig (impossible)
+     :alignof nil
+     :alignof-ambig (impossible)
+     :cast (and (tyname-formalp expr.type)
+                (expr-formalp expr.arg))
+     :binary (cond
+              ((and (binop-strictp expr.op)
+                    (binop-purep expr.op))
+               (and (expr-formalp expr.arg1)
+                    (expr-formalp expr.arg2)
+                    (expr-purep expr.arg1)
+                    (expr-purep expr.arg2)))
+              ((member-eq (binop-kind expr.op) '(:logand :logor))
+               (and (expr-formalp expr.arg1)
+                    (expr-formalp expr.arg2)))
+              ((eq (binop-kind expr.op) :asg)
+               (and (expr-formalp expr.arg1)
+                    (expr-formalp expr.arg2)
+                    (or (expr-case expr.arg1 :ident)
+                        (expr-purep expr.arg2))))
+              (t nil))
+     :cond (and (expr-formalp expr.test)
+                (expr-option-case expr.then
+                                  :some (expr-formalp expr.then.val)
+                                  :none nil)
+                (expr-formalp expr.else))
+     :comma nil
+     :cast/call-ambig (impossible)
+     :cast/mul-ambig (impossible)
+     :cast/add-ambig (impossible)
+     :cast/sub-ambig (impossible)
+     :cast/and-ambig (impossible)
+     :cast/logand-ambig (impossible)
+     :stmt nil
+     :tycompat nil
+     :offsetof nil
+     :va-arg nil
+     :extension nil)
+    :measure (expr-count expr))
+
+  (define expr-list-formalp ((exprs expr-listp))
+    :guard (expr-list-unambp exprs)
+    :returns (yes/no booleanp)
+    :parents (formalized-subset exprs-formalp)
+    :short "Check if all the expressions in a list of expressions
+            have a formal dynamic semantics."
+    (or (endp exprs)
+        (and (expr-formalp (car exprs))
+             (expr-list-formalp (cdr exprs))))
+    :measure (expr-list-count exprs))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv-mutual exprs-formalp)
+
+  (std::deflist expr-list-formalp (x)
+    :guard (expr-listp x)
+    (expr-formalp x)
+    :elementp-of-nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +533,7 @@
   (b* (((desiniter desiniter) desiniter))
     (and (endp desiniter.designors)
          (initer-case desiniter.initer :single)
-         (expr-pure-formalp (initer-single->expr desiniter.initer))))
+         (expr-formalp (initer-single->expr desiniter.initer))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
