@@ -43,17 +43,17 @@
        (natp (lookup-equal :virtual-size h))
        (keyword-listp (lookup-eq :characteristics h))))
 
-(local
-  (defthm alistp-when-pe-section-headerp
-    (implies (pe-section-headerp h)
-             (alistp h))
-    :hints (("Goal" :in-theory (enable pe-section-headerp)))))
+(defthmd alistp-when-pe-section-headerp
+  (implies (pe-section-headerp h)
+           (alistp h))
+  :hints (("Goal" :in-theory (enable pe-section-headerp))))
 
-(local
-  (defthm natp-of-lookup-equal-of-virtual-address
-      (implies (pe-section-headerp h)
-               (natp (lookup-equal :virtual-address h)))
-    :hints (("Goal" :in-theory (enable pe-section-headerp)))))
+(local (in-theory (enable alistp-when-pe-section-headerp)))
+
+(defthm natp-of-lookup-equal-of-virtual-address
+  (implies (pe-section-headerp h)
+           (natp (lookup-equal :virtual-address h)))
+  :hints (("Goal" :in-theory (enable pe-section-headerp))))
 
 (local
   (defthm natp-of-lookup-equal-of-virtual-size
@@ -133,6 +133,8 @@
        (pe-section-listp (lookup-eq :sections pe))
        (pe-symbol-tablep (lookup-eq :symbol-table pe))
        (symbol-alistp (lookup-eq :optional-header-standard-fields pe))
+       (natp (lookup-equal :base-of-code (lookup-eq :optional-header-standard-fields pe)))
+       (natp (lookup-equal :address-of-entry-point (lookup-eq :optional-header-standard-fields pe)))
        (symbol-alistp (lookup-eq :coff-file-header pe))))
 
 (defthm parsed-pe-p-forward-to-symbol-alistp
@@ -153,11 +155,12 @@
            (pe-section-listp (get-pe-sections parsed-pe)))
   :hints (("Goal" :in-theory (enable get-pe-sections parsed-pe-p))))
 
-(local
-  (defthm true-listp-when-pe-section-listp
-    (implies (pe-section-listp sections)
-             (true-listp sections))
-    :hints (("Goal" :in-theory (enable pe-section-listp)))))
+(defthmd true-listp-when-pe-section-listp
+  (implies (pe-section-listp sections)
+           (true-listp sections))
+  :hints (("Goal" :in-theory (enable pe-section-listp))))
+
+(local (in-theory (enable true-listp-when-pe-section-listp)))
 
 ;; Returns (mv erp info) where INFO is the section-info (an alist).
 (defund get-pe-section-info-aux (name sections)
@@ -307,6 +310,11 @@
   (let* ((optional-header-standard-fields (lookup-eq-safe :optional-header-standard-fields parsed-pe)))
     (lookup-eq-safe :address-of-entry-point optional-header-standard-fields)))
 
+(defthm natp-of-get-pe-entry-point
+  (implies (parsed-pe-p parsed-pe)
+           (natp (get-pe-entry-point parsed-pe)))
+  :hints (("Goal" :in-theory (enable parsed-pe-p get-pe-entry-point))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Relative to the base of the image
@@ -315,6 +323,11 @@
                   :guard-hints (("Goal" :in-theory (enable parsed-pe-p)))))
   (let* ((optional-header-standard-fields (lookup-eq-safe :optional-header-standard-fields parsed-pe)))
     (lookup-eq-safe :base-of-code optional-header-standard-fields)))
+
+(defthm natp-of-get-pe-base-of-code
+  (implies (parsed-pe-p parsed-pe)
+           (natp (get-pe-base-of-code parsed-pe)))
+  :hints (("Goal" :in-theory (enable parsed-pe-p get-pe-base-of-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -352,18 +365,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv offset-to-subroutine section-number).  Throws an error if not found
-(defun subroutine-offset-and-section-number-pe-32 (target parsed-pe)
+(defund subroutine-offset-and-section-number-pe-32 (target parsed-pe)
   (declare (xargs :guard (and (stringp target)
                               (parsed-pe-p parsed-pe))
                   :guard-hints (("Goal" :in-theory (enable parsed-pe-p)))))
   (b* ((symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
        ((when (eq :none symbol-table))
-        (er hard? 'subroutine-offset-pe-32 "No symbol table present.")
-        (mv nil nil))
+        (er hard? 'subroutine-offset-and-section-number-pe-32 "No symbol table present.")
+        (mv 0 1))
        (symbol-record (acl2::lookup-pe-symbol target symbol-table))
        (offset-to-subroutine (acl2::lookup-eq-safe :value symbol-record)) ;relative to the base of the section?
-       (section-number (acl2::lookup-eq-safe :section-number symbol-record)))
+       ((when (not (natp offset-to-subroutine)))
+        (er hard? 'subroutine-offset-and-section-number-pe-32 "Bad offset to subroutine: ~x0." offset-to-subroutine)
+        (mv 0 1))
+       (section-number (acl2::lookup-eq-safe :section-number symbol-record))
+       ((when (not (posp section-number)))
+        (er hard? 'subroutine-offset-and-section-number-pe-32 "Bad section number: ~x0." section-number)
+        (mv 0 1)))
     (mv offset-to-subroutine section-number)))
+
+(defthm subroutine-offset-and-section-number-pe-32-return-type
+  (implies (parsed-pe-p parsed-pe)
+           (and (natp (mv-nth 0 (subroutine-offset-and-section-number-pe-32 target parsed-pe)))
+                (posp (mv-nth 1 (subroutine-offset-and-section-number-pe-32 target parsed-pe)))))
+  :hints (("Goal" :in-theory (enable subroutine-offset-and-section-number-pe-32))))
 
 (defun subroutine-offset-pe-32 (target parsed-pe)
   (declare (xargs :guard (and (stringp target)
