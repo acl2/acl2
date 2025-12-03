@@ -1675,10 +1675,7 @@
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)
-                     (expr-option-purep then)
-                     (expr-purep else)))
+                     else-thm-name))
         (mv expr-new (gout-no-thm gin)))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
        ((mv & old-then) (ldm-expr-option then)) ; ERP must be NIL
