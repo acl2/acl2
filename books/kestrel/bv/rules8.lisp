@@ -15,7 +15,7 @@
 (include-book "bvchop")
 (include-book "slice")
 (include-book "bvplus")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "unsigned-byte-p-forced")
 (include-book "bv-syntax") ; for bind-var-to-bv-term-size
 (local (include-book "rules")) ;for logtail-of-minus

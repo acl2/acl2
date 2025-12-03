@@ -32,6 +32,7 @@
 (local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/sbvrem" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

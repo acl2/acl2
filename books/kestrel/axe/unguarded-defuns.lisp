@@ -64,6 +64,7 @@
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 

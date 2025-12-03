@@ -51,6 +51,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system)) ; why?
 
 (local
  (defthmd even-when-power-of-2-and-at-least-2

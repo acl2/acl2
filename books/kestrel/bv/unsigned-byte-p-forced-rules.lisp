@@ -32,6 +32,7 @@
 (include-book "leftrotate32") ; pull out the def?
 (include-book "rightrotate32") ; pull out the def?
 (local (include-book "bvsx"))
+(local (include-book "bvuminus"))
 (local (include-book "repeatbit"))
 (local (include-book "unsigned-byte-p"))
 

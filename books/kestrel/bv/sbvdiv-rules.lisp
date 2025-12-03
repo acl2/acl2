@@ -14,7 +14,7 @@
 
 (include-book "sbvdiv")
 (include-book "bvdiv")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "bvminus")
 (include-book "sbvlt") ;for sbvle
 (include-book "bitnot")

@@ -32,6 +32,7 @@
 (local (include-book "repeatbit2"))
 (local (include-book "getbit"))
 (local (include-book "slice"))
+(local (include-book "bvuminus"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (defthm trim-of-bvchop

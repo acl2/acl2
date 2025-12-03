@@ -13,8 +13,11 @@
 
 (include-book "bvminus-def")
 (include-book "bvchop")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
+(include-book "bvplus-def")
+(include-book "getbit-def")
 (local (include-book "bvplus"))
+(local (include-book "bvuminus"))
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 

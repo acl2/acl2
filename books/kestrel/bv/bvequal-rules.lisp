@@ -11,9 +11,10 @@
 (in-package "ACL2")
 
 (include-book "bvequal")
-(include-book "bvplus")
-(include-book "bvuminus")
+(include-book "bvplus-def")
+(include-book "bvuminus-def")
 (local (include-book "bvchop"))
+(local (include-book "bvplus"))
 
 ;; todo: generalize some of these rules to allow the sizes to differ?
 
