@@ -833,15 +833,6 @@
     :hints (("Goal"
              :in-theory (enable expr-formalp
                                 check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-call-formalp
-                                check-expr-ident)
              :expand (ldm-expr expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -863,11 +854,6 @@
   (defret ldm-expr-option-ok-when-expr-pure-formalp
     (not erp)
     :hyp (expr-pure-formalp expr?)
-    :hints (("Goal" :in-theory (enable expr-option-some->val))))
-
-  (defret ldm-expr-option-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr?)
     :hints (("Goal" :in-theory (enable expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

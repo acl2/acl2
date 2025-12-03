@@ -391,26 +391,6 @@
            (expr-list-pure-formalp (cdr exprs))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-call-formalp ((expr exprp))
-  :guard (expr-unambp expr)
-  :returns (yes/no booleanp)
-  :short "Check if an expression has formal dynamic semantics,
-          as a call expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the call expressions supported by @(tsee c::exec-expr).
-     The expression must be a function call,
-     the function sub-expression must be an identifier,
-     and the arguments must be supported pure expressions."))
-  (and (expr-case expr :funcall)
-       (expr-case (expr-funcall->fun expr) :ident)
-       (ident-formalp (expr-ident->ident (expr-funcall->fun expr)))
-       (expr-list-pure-formalp (expr-funcall->args expr)))
-  :hooks (:fix))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-formalp ((expr exprp))
