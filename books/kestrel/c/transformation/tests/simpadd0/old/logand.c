@@ -3,5 +3,5 @@ int logand(short x, long y) {
 }
 
 int logand_nonpure(int x, int y, int z) {
-  return (x = z) && (y = ~z);
+  return (x = z + 0) && (y = ~z);
 }
