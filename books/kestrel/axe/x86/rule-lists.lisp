@@ -356,8 +356,8 @@
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
     read-of-logext
-    read-when-equal-of-read
-    read-when-equal-of-read-alt
+    read-when-equal-of-read ; non-bv, drop?
+    read-when-equal-of-read-alt ; non-bv, drop?
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
@@ -492,10 +492,11 @@
     disjoint-regions48p-of-+-arg4
     read-of-+-arg2
     write-of-+-arg2
-    read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp
-    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version?
-    read-when-equal-of-read-and-subregion48p
-    read-when-equal-of-read-and-subregion48p-alt
+
+    ;; move these?
+    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version? ; introduces bv-array-read-chunk-little
+    read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp  ; needed?
+    read-when-equal-of-read-and-subregion48p-alt ; needed?
     ;; todo: move these?:
     acl2::bvchop-of-+-becomes-bvplus
     ;;acl2::bvplus-of-*-arg1
@@ -5854,10 +5855,10 @@
     acl2::logext-of-+-of-bvplus-same-size
     acl2::logext-of-+-of-+-of-mult-same-size
     ;; acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
-    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
     acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
     acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
-    acl2::nth-becomes-bv-array-read-strong2
+    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op ; todo: why is nth showing up?
+    acl2::nth-becomes-bv-array-read-strong2 ; todo: why is nth showing up?
     acl2::bvplus-of-*-arg1 ; introduces bvmult
     acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
     ;; not-equal-of-+-and-+-when-separate
