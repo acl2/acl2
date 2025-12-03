@@ -36,7 +36,7 @@
  :content "int gg(int y) {
   int z = (y);
   int w = (y = 3);
-  return z + w;
+  return z = w;
 }
 ")
 
