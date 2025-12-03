@@ -1,4 +1,5 @@
 int gg(int y) {
   int z = (y + 0);
-  return z;
+  int w = (y = 3);
+  return z + w;
 }

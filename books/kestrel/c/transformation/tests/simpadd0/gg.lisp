@@ -35,7 +35,8 @@
  :file "new/gg.c"
  :content "int gg(int y) {
   int z = (y);
-  return z;
+  int w = (y = 3);
+  return z + w;
 }
 ")
 

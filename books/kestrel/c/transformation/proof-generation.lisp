@@ -1784,8 +1784,7 @@
   (b* (((gin gin) gin)
        (initer (initer-single expr))
        (initer-new (initer-single expr-new))
-       ((unless (and expr-thm-name
-                     (expr-purep expr)))
+       ((unless expr-thm-name)
         (mv initer-new (gout-no-thm gin)))
        ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
