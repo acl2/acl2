@@ -351,6 +351,11 @@
     acl2::bv-array-read-shorten-when-not-max-smt
     acl2::bv-array-read-shorten-when-not-zero-smt
 
+    ;; these push computation into the array elements:
+    ;; could drop these if we could split bv-array-reads into cases deep within set-rip contexts (and lift the resulting IFs):
+    acl2::bvsx-of-bv-array-read-constant-array
+    acl2::bvplus-of-bv-array-read-constant-array-smt
+
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
