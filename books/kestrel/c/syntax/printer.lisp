@@ -1336,10 +1336,10 @@
   :short "Print a constant."
   (const-case
    const
-   :int (print-iconst const.unwrap pstate)
-   :float (print-fconst const.unwrap pstate)
-   :enum (print-ident const.unwrap pstate)
-   :char (print-cconst const.unwrap pstate))
+   :int (print-iconst const.iconst pstate)
+   :float (print-fconst const.fconst pstate)
+   :enum (print-ident const.ident pstate)
+   :char (print-cconst const.cconst pstate))
   :hooks (:fix)
 
   ///

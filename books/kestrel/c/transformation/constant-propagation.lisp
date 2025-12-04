@@ -273,7 +273,7 @@
   :returns (value? c::value-optionp)
   (const-case
    const
-   :int (iconst-to-value const.unwrap)
+   :int (iconst-to-value const.iconst)
    ;; TODO: support other constants
    :otherwise nil))
 

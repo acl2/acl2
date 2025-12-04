@@ -857,10 +857,10 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>constant</i> in the grammar in [C}."))
-  (:int ((unwrap iconst)))
-  (:float ((unwrap fconst)))
-  (:enum ((unwrap ident)))
-  (:char ((unwrap cconst)))
+  (:int ((iconst iconst)))
+  (:float ((fconst fconst)))
+  (:enum ((ident ident)))
+  (:char ((cconst cconst)))
   :pred constp
   :layout :fulltree)
 

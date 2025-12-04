@@ -914,13 +914,13 @@
   (b* (((reterr) (irr-const) (irr-type)))
     (const-case
      const
-     :int (b* (((erp iconst type) (valid-iconst const.unwrap ienv)))
+     :int (b* (((erp iconst type) (valid-iconst const.iconst ienv)))
             (retok (const-int iconst) type))
-     :float (b* ((type (valid-fconst const.unwrap)))
+     :float (b* ((type (valid-fconst const.fconst)))
               (retok (const-fix const) type))
-     :enum (b* (((erp type) (valid-enum-const const.unwrap table)))
+     :enum (b* (((erp type) (valid-enum-const const.ident table)))
              (retok (const-fix const) type))
-     :char (b* (((erp type) (valid-cconst const.unwrap ienv)))
+     :char (b* (((erp type) (valid-cconst const.cconst ienv)))
              (retok (const-fix const) type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
