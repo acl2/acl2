@@ -247,6 +247,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist plexeme-list
+  :short "Fixtype of lists of preprocessing lexemes."
+  :elt-type plexeme
+  :true-listp t
+  :elementp-of-nil nil
+  :pred plexeme-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod plexeme+span
   :short "Fixtype of pairs consisting of a lexeme and a span."
   ((lexeme plexeme)
@@ -278,6 +287,61 @@
                          (<= (nfix i) (len lexemes)))))
     :induct t
     :enable (update-nth nfix zp len)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-tokenp ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a preprocessing lexeme is a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is according to the grammar rule for <i>preprocessing-token</i>
+     [C17:6.4] [C17:A.1.1]."))
+  (and (member-eq (plexeme-kind lexeme)
+                  '(:header
+                    :ident
+                    :number
+                    :char
+                    :string
+                    :punctuator
+                    :other))
+       t)
+  :hooks (:fix)
+
+  ///
+
+  (defruled plexeme-tokenp-alt-def
+    (equal (plexeme-tokenp lexeme)
+           (not (member-eq (plexeme-kind lexeme)
+                           '(:block-comment
+                             :line-comment
+                             :newline
+                             :spaces
+                             :horizontal-tab
+                             :vertical-tab
+                             :form-feed))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist plexeme-list-tokenp (x)
+  :guard (plexeme-listp x)
+  :short "Check if every preprocessing lexeme in a list is a token."
+  (plexeme-tokenp x)
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv plexeme-list-tokenp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist plexeme-list-nontokenp (x)
+  :guard (plexeme-listp x)
+  :short "Check if no preprocessing lexeme in a list is a token."
+  (plexeme-tokenp x)
+  :negatedp t
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv plexeme-list-nontokenp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2725,7 +2789,6 @@
                (lexeme? plexeme-optionp)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :guard-debug t
   :short "Lex a lexeme during preprocessing."
   :long
   (xdoc::topstring
@@ -3289,6 +3352,58 @@
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plex-token ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (token-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a token during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We lex zero or more non-tokens, until we find a token.
+     We return the list of non-tokens, and the token with its span.
+     If we reach the end of file, we return @('nil') as the token,
+     and an span consisting of just the current position.")
+   (xdoc::p
+    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
+     see that function's documentation."))
+  (b* (((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontokens token token-span ppstate) (plex-token headerp ppstate)))
+    (retok (cons lexeme nontokens) token token-span ppstate))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-list-nontokenp-of-plex-token
+    (plexeme-list-nontokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-tokenp-of-plex-token
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plex-token-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-plexr-token-cond
+    (implies (and (not erp)
+                  token?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
