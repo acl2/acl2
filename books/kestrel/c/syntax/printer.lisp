@@ -3299,7 +3299,7 @@
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdeclon.unwrap pstate)
+     :statassert (print-statassert structdeclon.statassert pstate)
      :empty (print-astring ";" pstate))
     :measure (two-nats-measure (struct-declon-count structdeclon) 0))
 

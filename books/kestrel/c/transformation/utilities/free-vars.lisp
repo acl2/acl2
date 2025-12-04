@@ -633,7 +633,7 @@
                             (free-vars-attrib-spec-list struct-declon.attribs
                                                         bound-vars)))
               bound-vars))
-        :statassert (mv (free-vars-statassert struct-declon.unwrap bound-vars)
+        :statassert (mv (free-vars-statassert struct-declon.statassert bound-vars)
                         bound-vars)
         :empty (mv nil bound-vars)))
     :measure (struct-declon-count struct-declon))

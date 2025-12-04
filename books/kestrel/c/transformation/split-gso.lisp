@@ -247,7 +247,7 @@
                 (retok (and (member-equal ident names) t)))
       :statassert (retmsg$ "Static assertion structure declaration unsupported:
                             ~x0"
-                           struct-declon.unwrap)
+                           struct-declon.statassert)
       :empty (retok nil))))
 
 (define split-struct-declon-list

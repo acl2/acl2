@@ -2715,7 +2715,7 @@
               (specquals spec/qual-list)
               (declors struct-declor-list)
               (attribs attrib-spec-list))) ; GCC extension
-    (:statassert ((unwrap statassert)))
+    (:statassert ((statassert statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp
     :layout :fulltree

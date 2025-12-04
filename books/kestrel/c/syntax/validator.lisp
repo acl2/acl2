@@ -5123,7 +5123,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert structdeclon.unwrap table ienv)))
+             (valid-statassert structdeclon.statassert table ienv)))
          (retok (struct-declon-statassert new-statassert)
                 (ident-list-fix previous)
                 types
