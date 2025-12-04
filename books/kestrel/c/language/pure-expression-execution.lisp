@@ -96,6 +96,25 @@
   :verify-guards :after-returns
   :guard-hints (("Goal" :expand (expr-purep expr))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-list-pure-limit ((exprs expr-listp))
+  :guard (expr-list-purep exprs)
+  :returns (limit posp :rule-classes (:rewrite :type-prescription))
+  :short "Limit to pass to @(tsee exec-expr-list)
+          for the execution of the given list of pure expressions to terminate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the list is empty, we still need 1 because
+     @(tsee exec-expr-list) checks the limit against @(tsee zp)
+     before examining the list.
+     If the list is not empty, we additionally need enough
+     to execute the first and the rest, so we take the maximum."))
+  (cond ((endp exprs) 1)
+        (t (1+ (max (expr-pure-limit (car exprs))
+                    (expr-list-pure-limit (cdr exprs)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define induct-exec-expr-of-pure ((expr exprp) (limit natp))
@@ -121,6 +140,20 @@
              :otherwise nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :verify-guards nil
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define induct-exec-expr-list-of-pure ((exprs expr-listp) (limit natp))
+  :short "Induction scheme for @(tsee exec-expr-list)
+          applied to a list of pure expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This concerns both the list structure and the limit."))
+  (cond ((endp exprs) nil)
+        (t (induct-exec-expr-list-of-pure (cdr exprs) (1- limit))))
   :verify-guards nil
   :hooks nil)
 
@@ -153,7 +186,7 @@
            nfix
            max))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled exec-expr-to-exec-expr-pure-when-not-errorp
   :short "Reduction of @(tsee exec-expr) to @(tsee exec-expr-pure),
@@ -176,3 +209,55 @@
   :enable (induct-exec-expr-of-pure
            exec-expr
            binop-strictp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-expr-list-to-exec-expr-pure-list-when-expr-pure-list-limit
+  :short "Reduction of @(tsee exec-expr-list) to @(tsee exec-expr-pure-list)
+          under a hypothesis about the limit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given a list of pure expressions and a sufficient limit for it,
+     the first result of @(tsee exec-expr-list) is
+     the same as the (only) result of @(tsee exec-expr-pure-list)
+     (whether it is an error or not),
+     and the second result of @(tsee exec-expr-list) is
+     the unchanged computation state."))
+  (implies (and (expr-list-purep exprs)
+                (>= (nfix limit) (expr-list-pure-limit exprs)))
+           (equal (exec-expr-list exprs compst fenv limit)
+                  (mv (exec-expr-pure-list exprs compst)
+                      (compustate-fix compst))))
+  :induct (induct-exec-expr-list-of-pure exprs limit)
+  :enable (induct-exec-expr-list-of-pure
+           exec-expr-list
+           exec-expr-pure-list
+           expr-list-pure-limit
+           exec-expr-to-exec-expr-pure-when-expr-pure-limit
+           nfix
+           max))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-expr-list-to-exec-expr-pure-list-when-not-errorp
+  :short "Reduction of @(tsee exec-expr-list) to @(tsee exec-expr-pure-list),
+          under a hypothesis about the absence of errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee exec-expr-list) on a pure expression does not return an error,
+     then it returns the same result as @(tsee exec-expr-pure-list),
+     and the computation state is unchanged."))
+  (implies (and (expr-list-purep exprs)
+                (not (errorp
+                      (mv-nth 0 (exec-expr-list exprs compst fenv limit)))))
+           (equal (exec-expr-list exprs compst fenv limit)
+                  (mv (exec-expr-pure-list exprs compst)
+                      (compustate-fix compst))))
+  :induct (induct-exec-expr-list-of-pure exprs limit)
+  :expand (exec-expr-list exprs compst fenv limit)
+  :enable (induct-exec-expr-list-of-pure
+           exec-expr-list
+           exec-expr-pure-list
+           exec-expr-to-exec-expr-pure-when-not-errorp))

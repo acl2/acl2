@@ -989,10 +989,10 @@
        the function sub-expression is always pure;
        we require all the argument expressions to be pure.
        Thus the order of evaluation of function and arguments does not matter.
-       We use @(tsee exec-expr-pure-list) for the arguments
-       (but we plan to use a new function @('exec-expr-list') at some point),
+       We use @(tsee exec-expr-list) for the arguments,
+       which evaluates them left-to-right (but any order would be equivalent),
        and we delegate to @(tsee exec-fun)
-       the evaluation of the function sub-expression itself.")
+       the evaluation of the function call itself.")
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions;
@@ -1067,8 +1067,12 @@
                     ((unless sub)
                      (mv (error (list :arrsub-void-expr e.sub)) compst)))
                  (mv (exec-arrsub arr sub compst) compst))
-       :call (b* ((vals (exec-expr-pure-list e.args compst))
-                  ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       :call (b* (((unless (expr-list-purep e.args))
+                   (mv (error (list :call-nonpure-args (expr-fix e)))
+                       (compustate-fix compst)))
+                  ((mv vals compst)
+                   (exec-expr-list e.args compst fenv (1- limit)))
+                  ((when (errorp vals)) (mv vals compst))
                   ((mv val? compst)
                    (exec-fun e.fun vals compst fenv (1- limit)))
                   ((when (errorp val?)) (mv val? compst)))
@@ -1247,6 +1251,41 @@
                       (eval (apconvert-expr-value eval))
                       ((when (errorp eval)) (mv eval compst)))
                    (mv (change-expr-value eval :object nil) compst))))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-expr-list ((es expr-listp)
+                          (compst compustatep)
+                          (fenv fun-envp)
+                          (limit natp))
+    :returns (mv (vals value-list-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute zero or more expressions, in order."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The order is actually unimportant because we only call this function
+       when either there is zero or one expression, or they are all pure.")
+     (xdoc::p
+      "All the expressions must return a value,
+       i.e. they must not be @('void').")
+     (xdoc::p
+      "We perform array-to-pointer conversions on all the results,
+       because that is required by all the callers of this function."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (endp es)) (mv nil (compustate-fix compst)))
+         ((mv eval compst) (exec-expr (car es) compst fenv (1- limit)))
+         ((when (errorp eval)) (mv eval compst))
+         ((unless eval)
+          (mv (error (list :void-expr-in-list (expr-fix (car es)))) compst))
+         (eval (apconvert-expr-value eval))
+         ((when (errorp eval)) (mv eval compst))
+         (val (expr-value->value eval))
+         ((mv vals compst) (exec-expr-list (cdr es) compst fenv (1- limit)))
+         ((when (errorp vals)) (mv vals compst)))
+      (mv (cons val vals) compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1449,11 +1488,11 @@
     (xdoc::topstring
      (xdoc::p
       "If the initializer consists of a single expression,
-       the expression must be a function call or a pure expression.
-       If it is a function call, it must return a value (not @('nil')).")
+       the expression must not return @('void')..")
      (xdoc::p
       "If the initializer consists of a list of expressions,
-       the expressions must be pure,
+       unless there are zero or one expressions,
+       the expressions must be all pure,
        to avoid ambiguities with the order of evaluation."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (initer-case
@@ -1470,10 +1509,15 @@
             (ival (init-value-single val)))
          (mv ival compst))
        :list
-       (b* ((vals (exec-expr-pure-list initer.get compst))
-            ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       (b* (((unless (or (<= (len initer.get) 1)
+                         (expr-list-purep initer.get)))
+             (mv (error (list :non-pure-initer (initer-fix initer)))
+                 (compustate-fix compst)))
+            ((mv vals compst)
+             (exec-expr-list initer.get compst fenv (1- limit)))
+            ((when (errorp vals)) (mv vals compst))
             (ival (init-value-list vals)))
-         (mv ival (compustate-fix compst)))))
+         (mv ival compst))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1579,9 +1623,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :returns-hints (("Goal"
-                   :expand (exec-expr e compst fenv limit)
-                   :in-theory (enable (:e tau-system))))
+  :returns-hints
+  (("Goal"
+    :expand (exec-expr e compst fenv limit)
+    :in-theory (enable value-listp-when-value-list-resultp-and-not-errorp
+                       (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1602,6 +1648,10 @@
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-expr)
+    (defret compustate-frames-number-of-exec-expr-list
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-expr-list)
     (defret compustate-frames-number-of-exec-stmt
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1642,6 +1692,7 @@
              :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
+                      (exec-expr-list es compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
                       (exec-obj-declon declon compst fenv limit)
@@ -1660,6 +1711,10 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :fn exec-expr)
+    (defret compustate-scopes-numbers-of-exec-expr-list
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :fn exec-expr-list)
     (defret compustate-scopes-numbers-of-exec-stmt
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1700,6 +1755,7 @@
              :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
+                      (exec-expr-list es compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
                       (exec-initer initer compst fenv limit)
@@ -1725,5 +1781,6 @@
              :expand ((exec-expr e compst fenv limit)
                       (exec-expr (expr-fix e) compst fenv limit)
                       (exec-expr e (compustate-fix compst) fenv limit)
-                      (exec-expr e compst (fun-env-fix fenv) limit))
-             :in-theory (enable nfix)))))
+                      (exec-expr e compst (fun-env-fix fenv) limit)
+                      (exec-expr-list (expr-list-fix es) compst fenv limit))
+             :in-theory (enable nfix identity)))))
