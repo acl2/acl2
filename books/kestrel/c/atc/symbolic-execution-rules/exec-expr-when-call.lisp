@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../../language/dynamic-semantics")
+(include-book "../pure-expression-execution")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
@@ -25,8 +25,10 @@
   :short "Rules for executing function call expressions."
 
   (defruled exec-expr-when-call-value-open
-    (implies (and (not (zp limit))
+    (implies (and (integerp limit)
+                  (>= limit (1+ (expr-list-pure-limit (expr-call->args expr))))
                   (equal (expr-kind expr) :call)
+                  (expr-list-purep (expr-call->args expr))
                   (equal vals
                          (exec-expr-pure-list (expr-call->args expr) compst))
                   (value-listp vals)
@@ -41,12 +43,15 @@
                   (valuep val))
              (equal (exec-expr expr compst fenv limit)
                     (mv (expr-value val nil) compst1)))
-    :enable (exec-expr
-             expr-purep))
+    :expand (exec-expr expr compst fenv limit)
+    :enable (exec-expr-list-to-exec-expr-pure-list-when-expr-pure-list-limit
+             nfix))
 
   (defruled exec-expr-when-call-novalue-open
-    (implies (and (not (zp limit))
+    (implies (and (integerp limit)
+                  (>= limit (1+ (expr-list-pure-limit (expr-call->args expr))))
                   (equal (expr-kind expr) :call)
+                  (expr-list-purep (expr-call->args expr))
                   (equal vals
                          (exec-expr-pure-list (expr-call->args expr) compst))
                   (value-listp vals)
@@ -61,12 +66,15 @@
                   (not val))
              (equal (exec-expr expr compst fenv limit)
                     (mv nil compst1)))
-    :enable (exec-expr
-             expr-purep))
+    :expand (exec-expr expr compst fenv limit)
+    :enable (exec-expr-list-to-exec-expr-pure-list-when-expr-pure-list-limit
+             nfix))
 
   (defval *atc-exec-expr-when-call-rules*
     '(exec-expr-when-call-value-open
       exec-expr-when-call-novalue-open
       (:e expr-kind)
       (:e expr-call->fun)
-      (:e expr-call->args))))
+      (:e expr-call->args)
+      (:e expr-list-purep)
+      (:e expr-list-pure-limit))))

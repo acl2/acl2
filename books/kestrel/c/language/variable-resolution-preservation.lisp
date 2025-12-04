@@ -630,6 +630,11 @@
                                               (expr-binary->arg1 e)
                                               compst fenv (+ -1 limit)))
                                    fenv (+ -1 limit)))))))))
+    (defthm var-resolve-preservep-of-exec-expr-list
+      (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+        (implies (not (errorp result))
+                 (var-resolve-preservep compst compst1)))
+      :flag exec-expr-list)
     (defthm var-resolve-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -680,6 +685,7 @@
              (enable
               exec-fun
               exec-expr
+              exec-expr-list
               exec-stmt
               exec-stmt-while
               exec-stmt-dowhile
@@ -698,6 +704,7 @@
 
   (in-theory (disable var-resolve-preservep-of-exec-fun
                       var-resolve-preservep-of-exec-expr
+                      var-resolve-preservep-of-exec-expr-list
                       var-resolve-preservep-of-exec-stmt
                       var-resolve-preservep-of-exec-stmt-while
                       var-resolve-preservep-of-exec-stmt-dowhile
@@ -737,6 +744,22 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr e compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-resolve-of-exec-expr-list
+    (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (objdesign-of-var var compst))
+               (equal (objdesign-of-var var compst1)
+                      (objdesign-of-var var compst))))
+    :use (var-resolve-preservep-of-exec-expr-list
+          (:instance var-resolve-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-expr-list es compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

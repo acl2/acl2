@@ -857,10 +857,10 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>constant</i> in the grammar in [C}."))
-  (:int ((unwrap iconst)))
-  (:float ((unwrap fconst)))
-  (:enum ((unwrap ident)))
-  (:char ((unwrap cconst)))
+  (:int ((iconst iconst)))
+  (:float ((fconst fconst)))
+  (:enum ((ident ident)))
+  (:char ((cconst cconst)))
   :pred constp
   :layout :fulltree)
 
@@ -1428,7 +1428,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are a GCC extension; see ABNF grammar."))
-  ((unwrap stringlit-list))
+  ((strings stringlit-list))
   :pred asm-clobberp
   :layout :fulltree)
 
@@ -1455,8 +1455,8 @@
     "Attributes are a GCC extension.
      An attribute name is an identifier or a keyword: see the ABNF grammar.
      We use an ACL2 string to represent a keyword."))
-  (:ident ((unwrap ident)))
-  (:keyword ((unwrap string)))
+  (:ident ((ident ident)))
+  (:keyword ((keyword string)))
   :pred attrib-namep
   :layout :fulltree)
 
@@ -2232,8 +2232,8 @@
   (fty::deftagsum typequal/attribspec
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of type qualifiers and attribute specifiers."
-    (:type ((unwrap type-qual)))
-    (:attrib ((unwrap attrib-spec)))
+    (:type ((qual type-qual)))
+    (:attrib ((spec attrib-spec)))
     :pred typequal/attribspec-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2715,7 +2715,7 @@
               (specquals spec/qual-list)
               (declors struct-declor-list)
               (attribs attrib-spec-list))) ; GCC extension
-    (:statassert ((unwrap statassert)))
+    (:statassert ((statassert statassert)))
     (:empty ()) ; GCC extension
     :pred struct-declonp
     :layout :fulltree

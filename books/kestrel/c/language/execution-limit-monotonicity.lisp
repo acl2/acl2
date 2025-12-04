@@ -124,8 +124,13 @@
                     ((unless sub)
                      (mv (error (list :arrsub-void-expr e.sub)) compst)))
                  (mv (exec-arrsub arr sub compst) compst))
-       :call (b* ((vals (exec-expr-pure-list e.args compst))
-                  ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       :call (b* (((unless (expr-list-purep e.args))
+                   (mv (error (list :call-nonpure-args (expr-fix e)))
+                       (compustate-fix compst)))
+                  ((mv vals compst)
+                   (exec-expr-list-2limits
+                    e.args compst fenv (1- limit) (1- limit1)))
+                  ((when (errorp vals)) (mv vals compst))
                   ((mv val? compst)
                    (exec-fun-2limits
                     e.fun vals compst fenv (1- limit) (1- limit1)))
@@ -224,7 +229,6 @@
                            compst)
                      (mv (make-expr-value :value (value-sint 0) :object nil)
                          compst))))
-
                 ((binop-case e.op :logor)
                  (b* (((mv arg1-eval compst)
                        (exec-expr-2limits
@@ -324,6 +328,27 @@
                       (eval (apconvert-expr-value eval))
                       ((when (errorp eval)) (mv eval compst)))
                    (mv (change-expr-value eval :object nil) compst))))))
+    :measure (+ (nfix limit1) (nfix limit)))
+
+  (define exec-expr-list-2limits ((es expr-listp)
+                                  (compst compustatep)
+                                  (fenv fun-envp)
+                                  (limit natp)
+                                  (limit1 natp))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (endp es)) (mv nil (compustate-fix compst)))
+         ((mv eval compst)
+          (exec-expr-2limits (car es) compst fenv (1- limit) (1- limit1)))
+         ((when (errorp eval)) (mv eval compst))
+         ((unless eval)
+          (mv (error (list :void-expr-in-list (expr-fix (car es)))) compst))
+         (eval (apconvert-expr-value eval))
+         ((when (errorp eval)) (mv eval compst))
+         (val (expr-value->value eval))
+         ((mv vals compst)
+          (exec-expr-list-2limits (cdr es) compst fenv (1- limit) (1- limit1)))
+         ((when (errorp vals)) (mv vals compst)))
+      (mv (cons val vals) compst))
     :measure (+ (nfix limit1) (nfix limit)))
 
   (define exec-stmt-2limits (s compst fenv limit limit1)
@@ -463,10 +488,16 @@
             (ival (init-value-single val)))
          (mv ival compst))
        :list
-       (b* ((vals (exec-expr-pure-list initer.get compst))
-            ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       (b* (((unless (or (<= (len initer.get) 1)
+                         (expr-list-purep initer.get)))
+             (mv (error (list :non-pure-initer (initer-fix initer)))
+                 (compustate-fix compst)))
+            ((mv vals compst)
+             (exec-expr-list-2limits
+              initer.get compst fenv (1- limit) (1- limit1)))
+            ((when (errorp vals)) (mv vals compst))
             (ival (init-value-list vals)))
-         (mv ival (compustate-fix compst)))))
+         (mv ival compst))))
     :measure (+ (nfix limit1) (nfix limit)))
 
   (define exec-obj-declon-2limits (declon compst fenv limit limit1)
@@ -546,6 +577,13 @@
       :flag exec-expr-2limits
       :hints ('(:expand ((exec-expr-2limits e compst fenv limit limit1)
                          (exec-expr e compst fenv limit)))))
+    (defthm exec-expr-list-2limits-to-exec-expr-list
+      (implies (>= (nfix limit1) (nfix limit))
+               (equal (exec-expr-list-2limits es compst fenv limit limit1)
+                      (exec-expr-list es compst fenv limit)))
+      :flag exec-expr-list-2limits
+      :hints ('(:expand ((exec-expr-list-2limits es compst fenv limit limit1)
+                         (exec-expr-list es compst fenv limit)))))
     (defthm exec-stmt-2limits-to-exec-stmt
       (implies (>= (nfix limit1) (nfix limit))
                (equal (exec-stmt-2limits s compst fenv limit limit1)
@@ -586,6 +624,7 @@
       :flag exec-block-item-list-2limits)
     :hints (("Goal" :in-theory (enable exec-fun-2limits
                                        exec-expr-2limits
+                                       exec-expr-list-2limits
                                        exec-stmt-2limits
                                        exec-stmt-while-2limits
                                        exec-stmt-dowhile-2limits
@@ -595,6 +634,7 @@
                                        exec-block-item-list-2limits
                                        exec-fun
                                        exec-expr
+                                       exec-expr-list
                                        exec-stmt
                                        exec-stmt-while
                                        exec-stmt-dowhile
@@ -624,8 +664,8 @@
                  (equal (exec-fun fun args compst fenv limit1)
                         (exec-fun fun args compst fenv limit))))
       :flag exec-fun-2limits
-      :hints ('(:expand (exec-fun fun args compst fenv limit)
-                :in-theory (enable exec-fun nfix))))
+      :hints ('(:expand ((exec-fun fun args compst fenv limit)
+                         (exec-fun fun args compst fenv limit1)))))
     (defthm exec-expr-limit-monotone
       (b* (((mv eval? &) (exec-expr e compst fenv limit)))
         (implies (and (not (errorp eval?))
@@ -634,8 +674,17 @@
                         (exec-expr e compst fenv limit))))
       :flag exec-expr-2limits
       :hints ('(:expand ((exec-expr e compst fenv limit)
-                         (exec-expr e compst fenv limit1))
-                :in-theory (enable exec-expr nfix))))
+                         (exec-expr e compst fenv limit1)))))
+    (defthm exec-expr-list-limit-monotone
+      (b* (((mv eval? &) (exec-expr-list es compst fenv limit)))
+        (implies (and (not (errorp eval?))
+                      (>= (nfix limit1) (nfix limit)))
+                 (equal (exec-expr-list es compst fenv limit1)
+                        (exec-expr-list es compst fenv limit))))
+      :flag exec-expr-list-2limits
+      :hints ('(:expand ((exec-expr-list es compst fenv limit)
+                         (exec-expr-list es compst fenv limit1))
+                :in-theory (enable exec-expr-list nfix))))
     (defthm exec-stmt-limit-monotone
       (b* (((mv sval &) (exec-stmt s compst fenv limit)))
         (implies (and (not (errorp sval))
@@ -643,8 +692,8 @@
                  (equal (exec-stmt s compst fenv limit1)
                         (exec-stmt s compst fenv limit))))
       :flag exec-stmt-2limits
-      :hints ('(:expand (exec-stmt s compst fenv limit)
-                :in-theory (enable exec-stmt nfix))))
+      :hints ('(:expand ((exec-stmt s compst fenv limit)
+                         (exec-stmt s compst fenv limit1)))))
     (defthm exec-stmt-while-limit-monotone
       (b* (((mv sval &) (exec-stmt-while test body compst fenv limit)))
         (implies (and (not (errorp sval))
@@ -652,8 +701,8 @@
                  (equal (exec-stmt-while test body compst fenv limit1)
                         (exec-stmt-while test body compst fenv limit))))
       :flag exec-stmt-while-2limits
-      :hints ('(:expand (exec-stmt-while test body compst fenv limit)
-                :in-theory (enable exec-stmt-while nfix))))
+      :hints ('(:expand ((exec-stmt-while test body compst fenv limit)
+                         (exec-stmt-while test body compst fenv limit1)))))
     (defthm exec-stmt-dowhile-limit-monotone
       (b* (((mv sval &) (exec-stmt-dowhile body test compst fenv limit)))
         (implies (and (not (errorp sval))
@@ -661,8 +710,8 @@
                  (equal (exec-stmt-dowhile body test compst fenv limit1)
                         (exec-stmt-dowhile body test compst fenv limit))))
       :flag exec-stmt-dowhile-2limits
-      :hints ('(:expand (exec-stmt-dowhile body test compst fenv limit)
-                :in-theory (enable exec-stmt-dowhile nfix))))
+      :hints ('(:expand ((exec-stmt-dowhile body test compst fenv limit)
+                         (exec-stmt-dowhile body test compst fenv limit1)))))
     (defthm exec-initer-limit-monotone
       (b* (((mv ival &) (exec-initer initer compst fenv limit)))
         (implies (and (not (errorp ival))
@@ -670,8 +719,8 @@
                  (equal (exec-initer initer compst fenv limit1)
                         (exec-initer initer compst fenv limit))))
       :flag exec-initer-2limits
-      :hints ('(:expand (exec-initer initer compst fenv limit)
-                :in-theory (enable exec-initer nfix))))
+      :hints ('(:expand ((exec-initer initer compst fenv limit)
+                         (exec-initer initer compst fenv limit1)))))
     (defthm exec-obj-declon-limit-monotone
       (b* ((compst1 (exec-obj-declon declon compst fenv limit)))
         (implies (and (not (errorp compst1))
@@ -679,8 +728,8 @@
                  (equal (exec-obj-declon declon compst fenv limit1)
                         (exec-obj-declon declon compst fenv limit))))
       :flag exec-obj-declon-2limits
-      :hints ('(:expand (exec-obj-declon declon compst fenv limit)
-                :in-theory (enable exec-obj-declon nfix))))
+      :hints ('(:expand ((exec-obj-declon declon compst fenv limit)
+                         (exec-obj-declon declon compst fenv limit1)))))
     (defthm exec-block-item-limit-monotone
       (b* (((mv sval &) (exec-block-item item compst fenv limit)))
         (implies (and (not (errorp sval))
@@ -688,8 +737,8 @@
                  (equal (exec-block-item item compst fenv limit1)
                         (exec-block-item item compst fenv limit))))
       :flag exec-block-item-2limits
-      :hints ('(:expand (exec-block-item item compst fenv limit)
-                :in-theory (enable exec-block-item nfix))))
+      :hints ('(:expand ((exec-block-item item compst fenv limit)
+                         (exec-block-item item compst fenv limit1)))))
     (defthm exec-block-item-list-limit-monotone
       (b* (((mv sval &) (exec-block-item-list items compst fenv limit)))
         (implies (and (not (errorp sval))
@@ -697,8 +746,9 @@
                  (equal (exec-block-item-list items compst fenv limit1)
                         (exec-block-item-list items compst fenv limit))))
       :flag exec-block-item-list-2limits
-      :hints ('(:expand (exec-block-item-list items compst fenv limit)
-                :in-theory (enable exec-block-item-list nfix)))))
+      :hints ('(:expand ((exec-block-item-list items compst fenv limit)
+                         (exec-block-item-list items compst fenv limit1)))))
+    :hints (("Goal" :in-theory (enable nfix))))
 
   (in-theory (disable exec-fun-limit-monotone
                       exec-expr-limit-monotone

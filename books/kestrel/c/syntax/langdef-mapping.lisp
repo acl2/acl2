@@ -172,11 +172,11 @@
   (b* (((reterr) (c::const-enum (c::ident "irrelevant"))))
     (const-case
      const
-     :int (retok (c::const-int (ldm-iconst const.unwrap)))
-     :float (reterr (msg "Unsupported floating constant ~x0." const.unwrap))
-     :enum (b* (((erp ident1) (ldm-ident const.unwrap)))
+     :int (retok (c::const-int (ldm-iconst const.iconst)))
+     :float (reterr (msg "Unsupported floating constant ~x0." const.fconst))
+     :enum (b* (((erp ident1) (ldm-ident const.ident)))
              (retok (c::const-enum ident1)))
-     :char (reterr (msg "Unsupported character constant ~x0." const.unwrap))))
+     :char (reterr (msg "Unsupported character constant ~x0." const.cconst))))
   :hooks (:fix)
 
   ///

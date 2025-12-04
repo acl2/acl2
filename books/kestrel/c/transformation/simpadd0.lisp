@@ -1472,7 +1472,7 @@
                       :attribs structdeclon.attribs)
                      (gout-no-thm gin)))
        :statassert (b* (((mv new-structdeclon (gout gout-structdeclon))
-                         (simpadd0-statassert structdeclon.unwrap gin))
+                         (simpadd0-statassert structdeclon.statassert gin))
                         (gin (gin-update gin gout-structdeclon)))
                      (mv (struct-declon-statassert new-structdeclon)
                          (gout-no-thm gin)))
