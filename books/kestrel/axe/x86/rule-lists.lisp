@@ -1362,7 +1362,6 @@
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
-    acl2::bvsx-of-logext
     acl2::logext-of-+-of-logext-arg2
 
     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
