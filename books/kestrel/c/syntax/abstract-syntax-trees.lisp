@@ -1455,8 +1455,8 @@
     "Attributes are a GCC extension.
      An attribute name is an identifier or a keyword: see the ABNF grammar.
      We use an ACL2 string to represent a keyword."))
-  (:ident ((unwrap ident)))
-  (:keyword ((unwrap string)))
+  (:ident ((ident ident)))
+  (:keyword ((keyword string)))
   :pred attrib-namep
   :layout :fulltree)
 

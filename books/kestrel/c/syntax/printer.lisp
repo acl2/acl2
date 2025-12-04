@@ -1882,8 +1882,8 @@
   :short "Print an attribute name."
   (attrib-name-case
    attrname
-   :ident (print-ident attrname.unwrap pstate)
-   :keyword (b* ((chars (acl2::string=>nats attrname.unwrap))
+   :ident (print-ident attrname.ident pstate)
+   :keyword (b* ((chars (acl2::string=>nats attrname.keyword))
                  ((unless (grammar-character-listp chars))
                   (raise "Misusage error: ~
                           the attribute name keyword consists of ~
@@ -1891,7 +1891,7 @@
                           not all of which are allowed by the ABNF grammar."
                          chars)
                   (pristate-fix pstate)))
-              (print-astring attrname.unwrap pstate)))
+              (print-astring attrname.keyword pstate)))
   :hooks (:fix)
 
   ///
