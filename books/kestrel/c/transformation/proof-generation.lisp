@@ -320,22 +320,22 @@
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
-              ((mv old-result old-compst)
+              ((mv old-eval old-compst)
                (c::exec-expr old-expr compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-eval new-compst)
                (c::exec-expr new-expr compst new-fenv limit))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
+              (old-val (c::expr-value->value old-eval))
+              (new-val (c::expr-value->value new-eval)))
            (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (iff old-result new-result)
-                         (equal old-value new-value)
+                         (not (c::errorp old-eval)))
+                    (and (not (c::errorp new-eval))
+                         (iff old-eval new-eval)
+                         (equal old-val new-val)
                          (equal old-compst new-compst)
                          ,@(if (c::type-case ctype :void)
-                               '((not old-result))
-                             `(old-result
-                               (equal (c::type-of-value old-value) ',ctype)))
+                               '((not old-eval))
+                             `(old-eval
+                               (equal (c::type-of-value old-val) ',ctype)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
@@ -392,17 +392,17 @@
        (formula
         `(b* ((old-initer ',old-initer)
               (new-initer ',new-initer)
-              ((mv old-result old-compst)
+              ((mv old-ival old-compst)
                (c::exec-initer old-initer compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-ival new-compst)
                (c::exec-initer new-initer compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-ival)))
+                    (and (not (c::errorp new-ival))
+                         (equal old-ival new-ival)
                          (equal old-compst new-compst)
-                         (equal (c::init-type-of-init-value old-result)
+                         (equal (c::init-type-of-init-value old-ival)
                                 (c::init-type-single ',ctype))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -456,17 +456,17 @@
        (formula
         `(b* ((old-stmt ',old-stmt)
               (new-stmt ',new-stmt)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-stmt old-stmt compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -578,17 +578,17 @@
        (formula
         `(b* ((old-item ',old-item)
               (new-item ',new-item)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-block-item old-item compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -650,17 +650,17 @@
        (formula
         `(b* ((old-items ',old-items)
               (new-items ',new-items)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-block-item-list old-items compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -1414,11 +1414,9 @@
      both argument expressions are pure,
      since the order of evaluation is unspecified in C.")
    (xdoc::p
-    "For pure non-strict binary operators,
-     for now we also require both argument expressions to be pure
-     in order to generate a theorem.
-     But this could be relaxed, since in this case
-     the order of evaluation is prescribed.")
+    "For non-strict binary operators (which are pure),
+     the argument expressions may be pure or not,
+     because the order of evaluation is always determined.")
    (xdoc::p
     "For the non-pure strict simple assignment operator,
      for theorem generation we require the left expression to be a variable.
@@ -1497,10 +1495,7 @@
                        :thm-name thm-name
                        :vartys gin.vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
-      (b* (((unless (and (expr-purep arg1)
-                         (expr-purep arg2)))
-            (mv expr-new gout-no-thm))
-           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+      (b* (((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
@@ -1680,10 +1675,7 @@
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)
-                     (expr-option-purep then)
-                     (expr-purep else)))
+                     else-thm-name))
         (mv expr-new (gout-no-thm gin)))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
        ((mv & old-then) (ldm-expr-option then)) ; ERP must be NIL
@@ -1792,8 +1784,7 @@
   (b* (((gin gin) gin)
        (initer (initer-single expr))
        (initer-new (initer-single expr-new))
-       ((unless (and expr-thm-name
-                     (expr-purep expr)))
+       ((unless expr-thm-name)
         (mv initer-new (gout-no-thm gin)))
        ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
@@ -1802,12 +1793,10 @@
            :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
                         (:e c::initer-single->get)
-                        (:e c::expr-purep)
                         (:e c::expr-kind)
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
-                        (:e c::expr-pure-limit)
                         initer-compustate-vars)
            :use ((:instance ,expr-thm-name
                             (limit (1- limit)))
@@ -2051,8 +2040,7 @@
        (stmt (make-stmt-if :test test :then then))
        (stmt-new (make-stmt-if :test test-new :then then-new))
        ((unless (and test-thm-name
-                     then-thm-name
-                     (expr-purep test)))
+                     then-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
@@ -2163,8 +2151,7 @@
         (make-stmt-ifelse :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)))
+                     else-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        (else-types (stmt-types else))
@@ -3173,9 +3160,9 @@
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
               (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-              ((mv old-result old-compst)
+              ((mv old-val old-compst)
                (c::exec-fun fun (list ,@args) compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-val new-compst)
                (c::exec-fun fun (list ,@args) compst new-fenv limit)))
            (implies (and ,@global-vars-pre
                          ,@arg-types
@@ -3185,11 +3172,11 @@
                          (equal (c::fun-env-lookup fun new-fenv)
                                 (c::fun-info-from-fundef
                                  (mv-nth 1 (ldm-fundef new))))
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-val)))
+                    (and (not (c::errorp new-val))
+                         (equal old-val new-val)
                          (equal old-compst new-compst)
-                         (set::in (c::type-of-value-option old-result)
+                         (set::in (c::type-of-value-option old-val)
                                   (mv-nth 1 (ldm-type-set ',types)))))))
        (hints
         `(("Goal"

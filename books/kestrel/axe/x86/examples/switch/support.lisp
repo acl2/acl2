@@ -1,9 +1,25 @@
 (in-package "X")
 
-(include-book "kestrel/axe/x86/unroller" :dir :system) ; todo: reduce, or file all these rules
-(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
+;; todo: file all these rules
 
-(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
+(include-book "kestrel/axe/axe-syntax" :dir :system) ; for axe-smt
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-hack
+(local (include-book "kestrel/bv/rules10" :dir :system))
+(local (include-book "kestrel/lists-light/group" :dir :system)) ; for acl2::*-of-/-same-alt
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/axe/rules3" :dir :system))
+(local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
+
+;(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
+
+(local (in-theory (disable nth len)))
 
 (defthm *-of-4-and-slice-when-multiple
   (implies (and (equal 0 (mod index 4))
@@ -53,8 +69,7 @@
                            (bvchop 2 index)
 ;                           (bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
  ;                          (bvlt (ceiling-of-lg (len array)) (+ 3 index) (len array))
-                           (slice (+ -1 (ceiling-of-lg (len array)))
-                         2 index))
+                           (slice (+ -1 (ceiling-of-lg (len array))) 2 index))
                   :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (bv-array-read
                                    packbv-little

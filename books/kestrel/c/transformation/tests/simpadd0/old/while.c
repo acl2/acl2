@@ -4,4 +4,6 @@ void f(int x, int y) {
   while (y + 0 < 0) {
     y = y * x;
   }
+  while (x = y) {
+  }
 }

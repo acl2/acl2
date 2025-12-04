@@ -39,6 +39,12 @@
   else
     return 2;
 }
+void g(int z, int w) {
+  if (z = w)
+    return 1;
+  else
+    return 2;
+}
 ")
 
 (assert-highest-thm-has-exec-fun *new-code*)

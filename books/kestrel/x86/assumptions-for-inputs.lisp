@@ -84,7 +84,7 @@
                                              (cons `(equal (read ',bytes-per-element
                                                                  ,(if (= 0 index)
                                                                       pointer-name ; special case (offset of 0)
-                                                                    `(+ ',element-offset ,pointer-name) ; todo: option to use bvplus here?
+                                                                    `(binary-+ ',element-offset ,pointer-name) ; todo: option to use bvplus here?
                                                                     )
                                                                  x86)
                                                            ,var)

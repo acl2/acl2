@@ -258,16 +258,15 @@
 ;; let us show that that has no effect.
 (defund register-high-bit-assumptions ()
   (declare (xargs :guard t))
-  '((equal (rax-high x86) 0)
-    (equal (rbx-high x86) 0)
-    (equal (rcx-high x86) 0)
-    (equal (rdx-high x86) 0)
-    (equal (rsp-high x86) 0)
-    (equal (rbp-high x86) 0)))
-
+  '((equal (rax-high x86) '0)
+    (equal (rbx-high x86) '0)
+    (equal (rcx-high x86) '0)
+    (equal (rdx-high x86) '0)
+    (equal (rsp-high x86) '0)
+    (equal (rbp-high x86) '0)))
 
 ;; This simplifies the assumptions (if there are any extra-assumptions).
-;; Returns (mv erp assumptions untranslated-assumptions assumption-rules input-assumption-vars state).
+;; Returns (mv erp assumptions assumption-rules input-assumption-vars state).
 (defun assumptions-new (target
                         parsed-executable
                         extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
@@ -288,13 +287,12 @@
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
-                              (true-listp extra-assumptions) ; untranslated terms
+                              (pseudo-term-listp extra-assumptions)
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
-                              (or (natp existing-stack-slots)
-                                  (eq :auto existing-stack-slots))
+                              (natp existing-stack-slots)
 
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
@@ -305,14 +303,13 @@
 
                               (count-hits-argp count-hits)
                               (print-levelp print)
-                              ;todo: more
-                              )
-                  :mode :program ; because of translate-terms
+                              ;;todo: more?
+                              (equal executable-type (acl2::parsed-executable-type parsed-executable))
+                              (booleanp position-independentp))
                   :stobjs state))
   (if (eq :elf-64 executable-type)
       ;; New assumption generation behavior for ELF64:
-      (b* (;; These are untranslated (in general):
-           ((mv erp automatic-assumptions input-assumption-vars)
+      (b* (((mv erp automatic-assumptions input-assumption-vars)
             (if suppress-assumptions
                 (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
               (assumptions-elf64-new target
@@ -325,24 +322,23 @@
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                      assume-bytes
                                      parsed-executable)))
-           ((when erp) (mv erp nil nil nil nil state))
-           (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
+           ((when erp) (mv erp nil nil nil state))
+           (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
            ;; Translate all the assumptions:
-           (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+           ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
            ;; Maybe simplify the assumptions:
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                 (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
               (mv nil assumptions nil state)))
-           ((when erp) (mv erp nil nil nil nil state)))
-        (mv nil assumptions
-            untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
+           ((when erp) (mv erp nil nil nil state)))
+        (mv nil
+            assumptions ; or should these be the unwritten ones (and similarly below)?
             assumption-rules input-assumption-vars state))
     (if (eq :mach-o-64 executable-type) ; todo: combine with the case above?
         ;; New assumption generation behavior for MACHO64:
-        (b* (;; These are untranslated (in general):
-             ((mv erp automatic-assumptions input-assumption-vars)
+        (b* (((mv erp automatic-assumptions input-assumption-vars)
               (if suppress-assumptions
                   (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                 (assumptions-macho64-new target
@@ -355,24 +351,21 @@
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                          assume-bytes
                                          parsed-executable)))
-             ((when erp) (mv erp nil nil nil nil state))
-             (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
+             ((when erp) (mv erp nil nil nil state))
+             (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
              ;; Translate all the assumptions:
-             (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+             ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
              ;; Maybe simplify the assumptions:
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                   (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                 (mv nil assumptions nil state)))
-             ((when erp) (mv erp nil nil nil nil state)))
-          (mv nil assumptions
-              untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
-              assumption-rules input-assumption-vars state))
+             ((when erp) (mv erp nil nil nil state)))
+          (mv nil assumptions assumption-rules input-assumption-vars state))
       (if (eq :pe-64 executable-type) ; todo: combine with the cases above?
           ;; New assumption generation behavior for PE64:
-          (b* (;; These are untranslated (in general):
-               ((mv erp automatic-assumptions input-assumption-vars)
+          (b* (((mv erp automatic-assumptions input-assumption-vars)
                 (if suppress-assumptions
                     (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                   (assumptions-pe64-new target
@@ -385,20 +378,18 @@
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                         assume-bytes
                                         parsed-executable)))
-               ((when erp) (mv erp nil nil nil nil state))
-               (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
+               ((when erp) (mv erp nil nil nil state))
+               (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                ;; Translate all the assumptions:
-               (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+               ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
                ;; Maybe simplify the assumptions:
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                     (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                   (mv nil assumptions nil state)))
-               ((when erp) (mv erp nil nil nil nil state)))
-            (mv nil assumptions
-                untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
-                assumption-rules input-assumption-vars state))
+               ((when erp) (mv erp nil nil nil state)))
+            (mv nil assumptions assumption-rules input-assumption-vars state))
 
         ;; (b* (((when (eq :entry-point target)) ; todo
         ;;       (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
@@ -570,11 +561,11 @@
              ((when (and (eq :entry-point target)
                          (not (eq :pe-32 executable-type))))
               (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
-              (mv :bad-entry-point nil nil nil nil state))
+              (mv :bad-entry-point nil nil nil state))
              ((when (and (natp target)
                          (not (eq :pe-32 executable-type))))
               (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
-              (mv :bad-entry-point nil nil nil nil state))
+              (mv :bad-entry-point nil nil nil state))
              ;; (text-offset
              ;;   (and 64-bitp ; todo
              ;;        (if (eq :pe-64 executable-type)
@@ -637,8 +628,8 @@
               )
              (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
              (assumptions (append assumptions extra-assumptions))
-             (assumptions-to-return assumptions) ; untranslated?
-             (assumptions (translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+             ;; (assumptions-to-return assumptions)
+             ;; (assumptions (translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
              (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                    (print-terms-elided assumptions
                                                                                        '(;; (standard-assumptions-elf-64 t nil t t t t)
@@ -655,8 +646,8 @@
              ;; canonical-addressp (which we know from other assumptions is true):
              ((mv erp assumptions assumption-rules state)
               (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
-             ((when erp) (mv erp nil nil nil nil state)))
-          (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
+             ((when erp) (mv erp nil nil nil state)))
+          (mv nil assumptions assumption-rules input-assumption-vars state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -946,7 +937,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
-                              (true-listp extra-assumptions) ; untranslated terms
+                              (pseudo-term-listp extra-assumptions)
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (member-eq assume-bytes '(:all :non-write))
@@ -981,7 +972,7 @@
                               (booleanp untranslatep)
                               )
                   :stobjs state
-                  :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
+                  :mode :program ; because of wrap-in-output-extractor
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -1032,7 +1023,7 @@
                                    )
                                existing-stack-slots))
        ;; Generate assumptions:
-       ((mv erp assumptions untranslated-assumptions
+       ((mv erp assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             input-assumption-vars
             state)
@@ -1063,6 +1054,9 @@
                                  (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
                                                                    (equal t nil)))))
                              (cw ")~%"))))
+       ((when (not (term-listp assumptions (w state))))
+        (er hard? 'unroll-x86-code-core "Bad assumptions: ~X01." assumptions nil)
+        (mv :bad-assumptions nil nil nil nil nil nil state))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (term-to-simulate (if stop-pcs
@@ -1141,7 +1135,7 @@
                     (print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
+    (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
@@ -1248,6 +1242,8 @@
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
+       ;; We do this here, outside unroll-x86-code-core so that function can be in :logic mode:
+       (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
@@ -1370,7 +1366,7 @@
                           nil)
                 t)
               (let* ((defthm `(defthm ,(pack$ lifted-name '-correct)
-                                (implies (and ,@assumptions)
+                                (implies (and ,@(untranslate$-list assumptions nil state))
                                          (equal ,term-to-simulate
                                                 (,lifted-name ,@fn-formals)))
                                 :hints ,(if restrict-theory
@@ -1507,8 +1503,8 @@
          ;; todo: how do these affect assumption simp:
          (extra-rules "A symbol-list indicating rules to use, in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
          (remove-rules "A symbol-list indicating rules to turn off.")
-         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
-         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
+         (extra-assumption-rules "A symbol-list indicating extra rules to be used when simplifying assumptions, in addition to the standard rules.")
+         (remove-assumption-rules "A symbol-list indicating rules to be removed (from the standard rules) when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
