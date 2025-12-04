@@ -137,6 +137,9 @@
 (defconst *risc-v-symbols-in-acl2-package*
   '(ubyte32-list-fix))
 
+(defconst *axe-risc-v-implementation-symbols*
+  '(ensure-risc-v))
+
 ;; todo: make consistent with X package
 (defpkg "R"
     (append *symbols-from-acl2-package*
@@ -154,6 +157,7 @@
 
             ;; RISC-V-specific stuff:
             *risc-v-symbols*
+            *axe-risc-v-implementation-symbols*
             *risc-v-symbols-in-acl2-package*
 
             (set-difference-eq *acl2-exports*
