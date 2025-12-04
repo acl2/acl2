@@ -39,7 +39,6 @@
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                    acl2::bvsx-of-bv-array-read-constant-array ; could drop this if we could split bv-array-reads into cases deep within set-rip contexts
                    acl2::bvplus-of-bv-array-read-constant-array-smt ; could drop this if we could split bv-array-reads into cases deep within set-rip contexts
-                   set-rip-of-bvif-split
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil

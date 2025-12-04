@@ -4242,7 +4242,8 @@
             ;; todo: more like these?:
             set-rip-of-bvchop
             set-rip-of-logext
-            set-rip-of-bv-array-read-split-cases-smt ; needs bv-array-read-cases-opener
+            set-rip-of-bvif-split ; we must resolve the RIP to keep going
+            set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
             acl2::bv-array-read-cases-opener
             )))
 
