@@ -1722,9 +1722,9 @@
                                     :specs specs
                                     :init init)
                     (merge-block-env idents env)))
-        :statassert (b* (((mv unwrap env)
-                          (const-prop-statassert decl.unwrap env)))
-                      (mv (decl-statassert unwrap) env))))
+        :statassert (b* (((mv statassert env)
+                          (const-prop-statassert decl.statassert env)))
+                      (mv (decl-statassert statassert) env))))
     :measure (decl-count decl))
 
   (define const-prop-decl-list

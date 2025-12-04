@@ -3011,7 +3011,7 @@
     (:decl ((extension bool)
             (specs decl-spec-list)
             (init initdeclor-list)))
-    (:statassert ((unwrap statassert)))
+    (:statassert ((statassert statassert)))
     :pred declp
     :base-case-override :statassert
     :layout :fulltree

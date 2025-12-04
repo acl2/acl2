@@ -2884,7 +2884,7 @@
                                 :init new-init)
                 table))
        :statassert
-       (b* (((erp new-statassert table) (dimb-statassert decl.unwrap table)))
+       (b* (((erp new-statassert table) (dimb-statassert decl.statassert table)))
          (retok (decl-statassert new-statassert) table))))
     :measure (decl-count decl))
 

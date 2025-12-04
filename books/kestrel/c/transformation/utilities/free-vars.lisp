@@ -821,7 +821,7 @@
     (decl-case
      decl
      :decl (free-vars-initdeclor-list decl.init bound-vars)
-     :statassert (mv (free-vars-statassert decl.unwrap bound-vars)
+     :statassert (mv (free-vars-statassert decl.statassert bound-vars)
                      (ident-set-fix bound-vars)))
     :measure (decl-count decl))
 

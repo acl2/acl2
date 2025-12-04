@@ -3638,7 +3638,7 @@
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert
-     (print-statassert decl.unwrap pstate))
+     (print-statassert decl.statassert pstate))
     :measure (two-nats-measure (decl-count decl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

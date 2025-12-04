@@ -497,7 +497,7 @@
    :decl (call-graph-initdeclor-list decl.init fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
-   :statassert (call-graph-statassert decl.unwrap fn-name filepath valid-table call-graph)))
+   :statassert (call-graph-statassert decl.statassert fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -5769,7 +5769,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert decl.unwrap table ienv)))
+             (valid-statassert decl.statassert table ienv)))
          (retok (decl-statassert new-statassert) types table))))
     :measure (decl-count decl))
 

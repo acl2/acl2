@@ -1752,7 +1752,7 @@
                             gout-init.vartys
                             gin))
      :statassert (b* (((mv new-decl (gout gout-decl))
-                       (simpadd0-statassert decl.unwrap gin))
+                       (simpadd0-statassert decl.statassert gin))
                       (gin (gin-update gin gout-decl)))
                    (mv (decl-statassert new-decl)
                        (gout-no-thm gin))))

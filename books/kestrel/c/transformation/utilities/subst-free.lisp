@@ -1169,7 +1169,7 @@
                  (ident-set-fix bound-vars)))
      :statassert
      (mv (decl-statassert
-           (statassert-subst-free (c$::decl-statassert->unwrap decl)
+           (statassert-subst-free (c$::decl-statassert->statassert decl)
                                   subst bound-vars))
          nil))
     :measure (decl-count decl))
