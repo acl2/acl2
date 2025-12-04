@@ -860,6 +860,7 @@
      is retrieved from the called function's information;
      we add 1 to it, to take into account the decrementing of the limit
      to go from @(tsee exec-expr) to @(tsee exec-fun).
+     We also add the limit for executing the (pure) arguments.
      If the called function affects no objects,
      the @('result') term is essentially the untranslation of the input term,
      and @('new-compst') is the same as the computation state variable;
@@ -948,6 +949,12 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              (result-fn-thm (atc-fn-info->result-thm fninfo))
+             (limit `(binary-+ '1 ,limit))
+             ((unless (expr-list-purep args.exprs))
+              (reterr (raise "Internal error: ~
+                              non-pure function call arguments ~x0."
+                             args.exprs)))
+             (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -955,7 +962,7 @@
                      term
                      nil
                      nil
-                     `(binary-+ '1 ,limit)
+                     limit
                      args.events
                      nil
                      gin.inscope
@@ -999,7 +1006,6 @@
               (reterr
                (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                       called-fn called-formals args.terms)))
-             (call-limit `(binary-+ '1 ,limit))
              ((mv result new-compst)
               (atc-gen-call-result-and-endstate out-type
                                                 gin.affect
@@ -1018,7 +1024,7 @@
                                               gin.fn-guard
                                               gin.compst-var
                                               gin.limit-var
-                                              call-limit
+                                              limit
                                               t
                                               wrld))
              ((mv type-formula &)
@@ -1041,6 +1047,8 @@
               `(("Goal"
                  :in-theory
                  '(exec-expr-when-call-value-open
+                   (:e expr-list-purep)
+                   (:e expr-list-pure-limit)
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1128,7 +1136,7 @@
                  term
                  result
                  new-compst
-                 `(binary-+ '1 ,limit)
+                 limit
                  (append args.events
                          (list guard-lemma-event
                                call-event))
@@ -5256,9 +5264,11 @@
    (xdoc::p
     "We also generate a theorem about @(tsee exec-expr)
      applied to the call expression.
-     The limit is 1 more than the function's limit:
-     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-pure-list).
-     Since the limit term for the function is over the function's formal,
+     The limit is obtained by incrementing the function's limit
+     by one plus the limit needed for the (pure) argument list:
+     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-list),
+     and that needs the limit for the arguments.
+     Since the limit term for the function is over the function's formals,
      we need to perform a substitution of the formals with the actuals."))
   (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))
@@ -5312,6 +5322,12 @@
        ((unless fninfo)
         (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+       ((unless (expr-list-purep args.exprs))
+        (reterr (raise "Internal error: ~
+                        non-pure function call arguments ~x0."
+                       args.exprs)))
+       (limit `(binary-+ '1 ,limit))
+       (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)))
         (retok (make-stmt-gout
@@ -5320,7 +5336,7 @@
                 :term term
                 :context gin.context
                 :inscope gin.inscope
-                :limit `(binary-+ '4 ,limit)
+                :limit limit
                 :events args.events
                 :thm-name nil
                 :thm-index args.thm-index
@@ -5360,7 +5376,6 @@
        ((unless (equal (len called-formals) (len args.terms)))
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
-       (call-limit `(binary-+ '1 ,limit))
        ((mv result new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
@@ -5379,7 +5394,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        call-limit
+                                        limit
                                         t
                                         wrld))
        ((mv type-formula inscope-thms)
@@ -5403,6 +5418,8 @@
            :in-theory
            '(exec-expr-when-call-value-open
              exec-expr-when-call-novalue-open
+             (:e expr-list-purep)
+             (:e expr-list-pure-limit)
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
@@ -5527,7 +5544,7 @@
                                                  :hints call-hints
                                                  :enable nil))
        (stmt (stmt-expr call-expr))
-       (stmt-limit `(binary-+ '1 ,call-limit))
+       (stmt-limit `(binary-+ '1 ,limit))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix stmt-thm-name
@@ -5722,7 +5739,8 @@
     :in-theory
     (e/d (length
           acl2::true-listp-when-pseudo-event-form-listp-rewrite
-          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+          alistp-when-atc-symbol-fninfo-alistp-rewrite
+          pseudo-termp)
          ((:e tau-system)))))
   :prepwork
   ((local (in-theory (disable mv-nth-of-cons)))
