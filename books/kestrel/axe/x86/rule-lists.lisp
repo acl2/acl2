@@ -2068,9 +2068,13 @@
   (declare (xargs :guard t))
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
     ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
+
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
-    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp only when nothing else works
-    canonical-regionp-of-+-arg2
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp (only when nothing else works)
+    unsigned-canonical-address-p-smt ; calls SMT on the address expression
+
+    canonical-regionp-of-+-arg2 ; todo: general convert rule?
+
     unsigned-canonical-address-p-of-bvif ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-if ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-bvsx-64-48 ; always true
@@ -2079,8 +2083,8 @@
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
 
-    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
-    write-of-logext-arg2 ; move?
+    bvsx-64-48-of-bvplus-48-when-unsigned-canonical-address-p
+    write-of-logext-arg2 ; move? use a general trim rule?
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
     bvsx-when-unsigned-canonical-address-p))
 
@@ -6448,7 +6452,7 @@
 
 ;; Try these as a last resort:
 ;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
-(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p-axe-smt 1)
+(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt 1)
 (set-axe-rule-priority unsigned-canonical-address-p-smt 1)
 
 ;; Based on how commonly these rules were used in an example:
