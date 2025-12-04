@@ -1160,6 +1160,7 @@
 (defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
 (defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))
 
+;; Uses the SMT solver to try to show that an address is canonical.
 (defthm unsigned-canonical-address-p-smt
   (implies (axe-smt (bvlt 64 (bvminus 64 ad *base-of-canonical*) *len-of-canonical*)) ; just the def
            (unsigned-canonical-address-p ad))
