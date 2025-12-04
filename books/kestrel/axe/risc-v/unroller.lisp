@@ -44,6 +44,7 @@
 (include-book "../bv-rules-axe0")
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../bv-array-rules-axe") ;reduce?
+(include-book "../logops-rules-axe")
 (include-book "assumptions")
 (include-book "run-until-return")
 (include-book "pc")
