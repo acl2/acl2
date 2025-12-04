@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../../language/dynamic-semantics")
+(include-book "../../language/pure-expression-execution")
 
 (include-book "../../representation/integer-operations")
 

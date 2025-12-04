@@ -23,15 +23,201 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(tsee exec-expr-pure),
-     we are planning to move away from that function
-     in favor of (an extended version of) @(tsee exec-expr).
-     However, while we have both versions, here we prove
-     properties that relate the two execution functions on pure expressions.
-     We also define some more general concepts
-     that may survive after the elimination of @(tsee exec-expr-pure)."))
+    "We introduce functions to execute
+     pure expressions and lists of pure expressions.
+     These do not depend on function environments,
+     because pure expressions do not have any function calls,
+     and do not depend on limits,
+     because pure expressions always terminate execution.
+     We prove properties that relate these specialized execution functions
+     to the general execution functions for expressions and lists thereof."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-pure ((e exprp) (compst compustatep))
+  :returns (eval expr-value-resultp)
+  :short "Execute a pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return an error if we encounter a non-pure expression.
+     While function calls do not necessarily have side effects,
+     establishing that requires looking at the function.
+     Thus, for simplicity, we regard function calls to be non-pure,
+     i.e. we return an error if we encounter them here.")
+   (xdoc::p
+    "We also reject pre/post-increment/decrement expressions,
+     which are obviously non-pure.")
+   (xdoc::p
+    "When executing a ternary expression,
+     we drop any object designators
+     from the second or third expression's execution,
+     because ternary expressions are not lvalues
+     [C17:6.5.15/4, footnote 113].")
+   (xdoc::p
+    "Recall that our C abstract syntax does not cover
+     all the possible C expressions yet.
+     Thus, we may extend this ACL2 function
+     with support for more kinds of pure expressions in the future.")
+   (xdoc::p
+    "If no error occurs, none of the expressions has side effects.
+     Thus, the order in which the subexpressions are evaluated does not matter:
+     we just proceed left to right.")
+   (xdoc::p
+    "We plan to remove this function from our dynamic semantics,
+     after we create a new @('exec-expr-list')
+     to replace @(tsee exec-expr-pure-list)."))
+  (b* ((e (expr-fix e)))
+    (expr-case
+     e
+     :ident (exec-ident e.get compst)
+     :const (exec-const e.get)
+     :arrsub (b* ((arr (exec-expr-pure e.arr compst))
+                  ((when (errorp arr)) arr)
+                  (sub (exec-expr-pure e.sub compst))
+                  ((when (errorp sub)) sub))
+               (exec-arrsub arr sub compst))
+     :call (error (list :non-pure-expr e))
+     :member (b* ((str (exec-expr-pure e.target compst))
+                  ((when (errorp str)) str))
+               (exec-member str e.name))
+     :memberp (b* ((str (exec-expr-pure e.target compst))
+                   ((when (errorp str)) str))
+                (exec-memberp str e.name compst))
+     :postinc (error (list :non-pure-expr e))
+     :postdec (error (list :non-pure-expr e))
+     :preinc (error (list :non-pure-expr e))
+     :predec (error (list :non-pure-expr e))
+     :unary (b* ((arg (exec-expr-pure e.arg compst))
+                 ((when (errorp arg)) arg))
+              (exec-unary e.op arg compst))
+     :cast (b* ((arg (exec-expr-pure e.arg compst))
+                ((when (errorp arg)) arg))
+             (exec-cast e.type arg))
+     :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
+               (case (binop-kind e.op)
+                 (:logand
+                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                       ((when (errorp arg1)) arg1)
+                       (arg1 (apconvert-expr-value arg1))
+                       ((when (errorp arg1)) arg1)
+                       (test1 (test-value (expr-value->value arg1)))
+                       ((when (errorp test1)) test1)
+                       ((when (not test1))
+                        (make-expr-value :value (value-sint 0) :object nil))
+                       (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (arg2 (apconvert-expr-value arg2))
+                       ((when (errorp arg2)) arg2)
+                       (test2 (test-value (expr-value->value arg2)))
+                       ((when (errorp test2)) test2))
+                    (if test2
+                        (make-expr-value :value (value-sint 1) :object nil)
+                      (make-expr-value :value (value-sint 0) :object nil))))
+                 (:logor
+                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                       ((when (errorp arg1)) arg1)
+                       (arg1 (apconvert-expr-value arg1))
+                       ((when (errorp arg1)) arg1)
+                       (test1 (test-value (expr-value->value arg1)))
+                       ((when (errorp test1)) test1)
+                       ((when test1)
+                        (make-expr-value :value (value-sint 1) :object nil))
+                       (arg2 (exec-expr-pure e.arg2 compst))
+                       ((when (errorp arg2)) arg2)
+                       (arg2 (apconvert-expr-value arg2))
+                       ((when (errorp arg2)) arg2)
+                       (test2 (test-value (expr-value->value arg2)))
+                       ((when (errorp test2)) test2))
+                    (if test2
+                        (make-expr-value :value (value-sint 1) :object nil)
+                      (make-expr-value :value (value-sint 0) :object nil))))
+                 (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
+                         ((when (errorp arg1)) arg1)
+                         (arg2 (exec-expr-pure e.arg2 compst))
+                         ((when (errorp arg2)) arg2))
+                      (exec-binary-strict-pure e.op arg1 arg2)))))
+     :cond (b* ((test (exec-expr-pure e.test compst))
+                ((when (errorp test)) test)
+                (test (apconvert-expr-value test))
+                ((when (errorp test)) test)
+                (test (test-value (expr-value->value test)))
+                ((when (errorp test)) test))
+             (if test
+                 (b* ((eval (exec-expr-pure e.then compst))
+                      ((when (errorp eval)) eval)
+                      (eval (apconvert-expr-value eval))
+                      ((when (errorp eval)) eval))
+                   (change-expr-value eval :object nil))
+               (b* ((eval (exec-expr-pure e.else compst))
+                    ((when (errorp eval)) eval)
+                    (eval (apconvert-expr-value eval))
+                    ((when (errorp eval)) eval))
+                 (change-expr-value eval :object nil))))))
+  :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :verify-guards nil ; done below
+
+  ///
+
+  (defret expr-value-resultp-of-exec-expr-pure-forward
+    (expr-value-resultp eval)
+    :rule-classes ((:forward-chaining
+                    :trigger-terms ((exec-expr-pure e compst)))))
+
+  (verify-guards exec-expr-pure
+    :hints (("Goal" :in-theory (enable binop-strictp (:e tau-system)))))
+
+  (defruled not-call-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (equal (expr-kind expr) :call)))
+    :induct t)
+
+  (defruled not-asg-when-exec-expr-pure-not-error
+    (implies (not (errorp (exec-expr-pure expr compst)))
+             (not (and (equal (expr-kind expr) :binary)
+                       (equal (binop-kind (expr-binary->op expr)) :asg))))
+    :induct t
+    :enable binop-purep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-pure-list ((es expr-listp) (compst compustatep))
+  :returns (result
+            value-list-resultp
+            :hints (("Goal"
+                     :induct t
+                     :in-theory
+                     (enable
+                      valuep-when-value-resultp-and-not-errorp
+                      value-listp-when-value-list-resultp-and-not-errorp))))
+  :short "Execute a list of pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given that the expressions have no side effects (if there is no error),
+     the order of evaluation does not matter.
+     Thus, we proceed left to right.")
+   (xdoc::p
+    "This ACL2 function is only used in situations
+     in which we are interested in the values of the expressions,
+     not their expression values (i.e. object designators, if any).
+     Thus, we just return lists of values here.")
+   (xdoc::p
+    "In the situations in which this ACL2 function is used,
+     we also need to perform array-to-pointer conversion [C17:6.3.2.1/3]."))
+  (b* (((when (endp es)) nil)
+       (eval (exec-expr-pure (car es) compst))
+       ((when (errorp eval)) eval)
+       (eval (apconvert-expr-value eval))
+       ((when (errorp eval)) eval)
+       (val (expr-value->value eval))
+       (vals (exec-expr-pure-list (cdr es) compst))
+       ((when (errorp vals)) vals))
+    (cons val vals))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,7 +229,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The function @(tsee exec-expr-pure) handles possible non-termination
+    "The function @(tsee exec-expr) handles possible non-termination
      via the artificial limit input to the execution functions.
      However, pure expressions always terminate,
      and we can calculate, for each pure expression,
