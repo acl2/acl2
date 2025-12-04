@@ -1845,7 +1845,7 @@
 (define print-asm-clobber ((clobber asm-clobberp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an assembler clobber."
-  (b* ((strings (asm-clobber->unwrap clobber))
+  (b* ((strings (asm-clobber->strings clobber))
        ((unless (consp strings))
         (raise "Misusage error: ~
                 no string literals in assembler clobber.")

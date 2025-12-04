@@ -1428,7 +1428,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are a GCC extension; see ABNF grammar."))
-  ((unwrap stringlit-list))
+  ((strings stringlit-list))
   :pred asm-clobberp
   :layout :fulltree)
 
