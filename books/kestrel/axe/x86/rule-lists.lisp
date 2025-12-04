@@ -511,10 +511,10 @@
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
   (append
-  '(read-1-of-write-1-diff
+  '(read-1-of-write-1-diff ; uses 'not equal' in the hyp
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
-    read-of-write-within
+    read-of-write-within ; uses mostly bv hyps
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
