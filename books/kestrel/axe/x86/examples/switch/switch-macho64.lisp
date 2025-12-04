@@ -30,7 +30,6 @@
     :target "_classify_value"
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
-                   acl2::bv-array-read-shorten-when-in-first-half-smt
                    acl2::bv-array-read-chunk-little-when-multiple-4-8-smt
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
