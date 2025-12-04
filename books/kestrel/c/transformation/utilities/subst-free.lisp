@@ -502,7 +502,7 @@
      :attrib
      (c$::typequal/attribspec-attrib
        (attrib-spec-subst-free
-         (c$::typequal/attribspec-attrib->unwrap typequal/attribspec)
+         (c$::typequal/attribspec-attrib->spec typequal/attribspec)
          subst bound-vars)))
     :measure (c$::typequal/attribspec-count typequal/attribspec))
 

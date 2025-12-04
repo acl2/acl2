@@ -291,7 +291,7 @@
     (c$::typequal/attribspec-case
      typequal/attribspec
      :type nil
-     :attrib (free-vars-attrib-spec typequal/attribspec.unwrap bound-vars))
+     :attrib (free-vars-attrib-spec typequal/attribspec.spec bound-vars))
     :measure (c$::typequal/attribspec-count typequal/attribspec))
 
   (define free-vars-typequal/attribspec-list
