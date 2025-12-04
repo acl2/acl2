@@ -13,8 +13,7 @@
 
 (include-book "expression-generation")
 (include-book "object-tables")
-
-(include-book "../language/pure-expression-execution")
+(include-book "pure-expression-execution")
 
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)

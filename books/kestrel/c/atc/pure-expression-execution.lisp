@@ -11,15 +11,15 @@
 
 (in-package "C")
 
-(include-book "dynamic-semantics")
+(include-book "../language/dynamic-semantics")
 
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ pure-expression-execution
-  :parents (dynamic-semantics)
-  :short "Properties about the execution of pure expressions."
+  :parents (atc)
+  :short "Execution of pure expressions for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -30,7 +30,19 @@
      and do not depend on limits,
      because pure expressions always terminate execution.
      We prove properties that relate these specialized execution functions
-     to the general execution functions for expressions and lists thereof."))
+     to the general execution functions for expressions and lists thereof.")
+   (xdoc::p
+    "This is a more general concept than ATC,
+     but it is currently only used for ATC;
+     this is why it is under ATC.
+     The functions @(tsee exec-expr-pure) and @(tsee exec-expr-pure-list)
+     were part of an earlier version of our dynamic semantics of C,
+     and that is part of why ATC is based on that.
+     Since then, we have evolved our dynamic semantics of C,
+     but ATC is still based on these functions to execute pure expressions.
+     In the future, we may evolve ATC to use directly
+     @(tsee exec-expr) and @(tsee exec-expr-list),
+     and eliminate these concepts about pure expression execution."))
   :order-subtopics t
   :default-parent t)
 
