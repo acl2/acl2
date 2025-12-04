@@ -2646,7 +2646,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert table)
-             (dimb-statassert structdeclon.unwrap table)))
+             (dimb-statassert structdeclon.statassert table)))
          (retok (struct-declon-statassert new-statassert)
                 table))
        :empty (retok (struct-declon-empty) (dimb-table-fix table))))
