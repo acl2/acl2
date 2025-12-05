@@ -945,7 +945,7 @@
      :continue nil
      :break nil
      :return (free-vars-expr-option stmt.expr? bound-vars)
-     :asm (free-vars-asm-stmt stmt.unwrap bound-vars)
+     :asm (free-vars-asm-stmt stmt.stmt bound-vars)
      :for-ambig (raise "Unexpected ambiguous expression"))
     :no-function nil
     :measure (stmt-count stmt))

@@ -1365,7 +1365,7 @@
                                subst bound-vars)
        :info stmt.info)
      :asm (c$::stmt-asm
-            (asm-stmt-subst-free (c$::stmt-asm->unwrap stmt)
+            (asm-stmt-subst-free (c$::stmt-asm->stmt stmt)
                                  subst bound-vars)))
     :measure (stmt-count stmt))
 

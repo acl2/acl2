@@ -3239,7 +3239,7 @@
     (:break ())
     (:return ((expr? expr-option)
               (info any)))
-    (:asm ((unwrap asm-stmt)))
+    (:asm ((stmt asm-stmt)))
     :pred stmtp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

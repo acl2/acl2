@@ -6118,7 +6118,7 @@
                 nil
                 table))
        :asm
-       (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table))))
+       (retok (stmt-asm stmt.stmt) nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

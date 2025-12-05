@@ -4141,7 +4141,7 @@
           (pstate (print-new-line pstate)))
        pstate)
      :asm
-     (print-asm-stmt stmt.unwrap pstate))
+     (print-asm-stmt stmt.stmt pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
