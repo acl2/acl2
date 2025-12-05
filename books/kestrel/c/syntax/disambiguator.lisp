@@ -2578,7 +2578,7 @@
                     :info nil)
                    table))
           :absdeclor
-          (retok (param-declor-abstract declor/absdeclor.declor)
+          (retok (param-declor-abstract declor/absdeclor.absdeclor)
                  (dimb-table-fix table))))))
     :measure (param-declor-count paramdeclor))
 

@@ -3480,7 +3480,7 @@
 (fty::deftagsum declor/absdeclor
   :short "Fixtype of declarators or abstract declarators."
   (:declor ((declor declor)))
-  (:absdeclor ((declor absdeclor)))
+  (:absdeclor ((absdeclor absdeclor)))
   :pred declor/absdeclor-p
   :layout :fulltree)
 
@@ -3507,9 +3507,9 @@
      that may be expressions or type names.
      In contrast, this fixtype includes constructs that are
      either just expressions, or just type names, or ambiguous ones."))
-  (:expr ((unwrap expr)))
-  (:tyname ((unwrap tyname)))
-  (:ambig ((unwrap amb-expr/tyname)))
+  (:expr ((expr expr)))
+  (:tyname ((tyname tyname)))
+  (:ambig ((expr/tyname amb-expr/tyname)))
   :pred amb?-expr/tyname-p
   :layout :fulltree)
 
@@ -3529,9 +3529,9 @@
      either just declarators,
      or just abstract declarators,
      or ambiguous ones."))
-  (:declor ((unwrap declor)))
-  (:absdeclor ((unwrap absdeclor)))
-  (:ambig ((unwrap amb-declor/absdeclor)))
+  (:declor ((declor declor)))
+  (:absdeclor ((absdeclor absdeclor)))
+  (:ambig ((declor/absdeclor amb-declor/absdeclor)))
   :pred amb?-declor/absdeclor-p
   :layout :fulltree)
 
@@ -3548,9 +3548,9 @@
      a declaration,
      an (expression) statement,
      or an ambiguous declaration or statements."))
-  (:decl ((unwrap decl)))
-  (:stmt ((unwrap expr)))
-  (:ambig ((unwrap amb-decl/stmt)))
+  (:decl ((decl decl)))
+  (:stmt ((expr expr)))
+  (:ambig ((decl/stmt amb-decl/stmt)))
   :pred amb?-decl/stmt-p
   :layout :fulltree)
 
