@@ -15,7 +15,7 @@
 
 (include-book "bv-syntax")
 (include-book "trim")
-;(include-book "bvsx")
+(include-book "bvsx-def")
 (include-book "leftrotate32")
 (include-book "bvnot")
 (include-book "bvcat")
@@ -265,3 +265,11 @@
            (equal (leftrotate32 x y)
                   (leftrotate32 (trim 5 x) y)))
   :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvsx-trim-all
+  (implies (syntaxp (term-should-be-trimmed old-size x :all))
+           (equal (bvsx new-size old-size x)
+                  (bvsx new-size old-size (trim old-size x))))
+  :hints (("Goal" :in-theory (enable trim))))

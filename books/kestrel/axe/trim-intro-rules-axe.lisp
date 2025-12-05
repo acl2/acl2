@@ -613,3 +613,11 @@
            (equal (trim size i)
                   i))
   :hints (("Goal" :in-theory (enable trim unsigned-byte-p-forced))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvsx-trim-axe-all
+  (implies (axe-syntaxp (term-should-be-trimmed-axe old-size x :all dag-array))
+           (equal (bvsx new-size old-size x)
+                  (bvsx new-size old-size (trim old-size x))))
+  :hints (("Goal" :in-theory (enable trim))))

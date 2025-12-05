@@ -291,7 +291,7 @@
     (c$::typequal/attribspec-case
      typequal/attribspec
      :type nil
-     :attrib (free-vars-attrib-spec typequal/attribspec.unwrap bound-vars))
+     :attrib (free-vars-attrib-spec typequal/attribspec.spec bound-vars))
     :measure (c$::typequal/attribspec-count typequal/attribspec))
 
   (define free-vars-typequal/attribspec-list
@@ -633,7 +633,7 @@
                             (free-vars-attrib-spec-list struct-declon.attribs
                                                         bound-vars)))
               bound-vars))
-        :statassert (mv (free-vars-statassert struct-declon.unwrap bound-vars)
+        :statassert (mv (free-vars-statassert struct-declon.statassert bound-vars)
                         bound-vars)
         :empty (mv nil bound-vars)))
     :measure (struct-declon-count struct-declon))

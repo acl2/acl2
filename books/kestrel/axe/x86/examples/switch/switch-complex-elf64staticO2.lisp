@@ -98,9 +98,7 @@
     :executable "switch-complex.elf64staticO2"
     :target "process_command"
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
-                   unsigned-canonical-address-p-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
-                   acl2::bv-array-read-shorten-when-in-first-half-smt
                    acl2::bv-array-read-chunk-little-when-multiple-8-8-smt
                    ;bv-array-read-chunk-little-when-multiple-8-336
                    acl2::slice-trim-axe-all
@@ -110,9 +108,6 @@
                    acl2::slice-of-bvplus-of-bvcat-special
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
-                   acl2::bvsx-of-bv-array-read-constant-array
-                   acl2::bvplus-of-bv-array-read-constant-array-smt
-                   set-rip-of-bvif-split
                    x86isa::x86-fetch-decode-execute-of-if)
     :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
     :position-independent nil

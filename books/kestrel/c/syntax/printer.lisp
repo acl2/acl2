@@ -1336,10 +1336,10 @@
   :short "Print a constant."
   (const-case
    const
-   :int (print-iconst const.unwrap pstate)
-   :float (print-fconst const.unwrap pstate)
-   :enum (print-ident const.unwrap pstate)
-   :char (print-cconst const.unwrap pstate))
+   :int (print-iconst const.iconst pstate)
+   :float (print-fconst const.fconst pstate)
+   :enum (print-ident const.ident pstate)
+   :char (print-cconst const.cconst pstate))
   :hooks (:fix)
 
   ///
@@ -1845,7 +1845,7 @@
 (define print-asm-clobber ((clobber asm-clobberp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an assembler clobber."
-  (b* ((strings (asm-clobber->unwrap clobber))
+  (b* ((strings (asm-clobber->strings clobber))
        ((unless (consp strings))
         (raise "Misusage error: ~
                 no string literals in assembler clobber.")
@@ -1882,8 +1882,8 @@
   :short "Print an attribute name."
   (attrib-name-case
    attrname
-   :ident (print-ident attrname.unwrap pstate)
-   :keyword (b* ((chars (acl2::string=>nats attrname.unwrap))
+   :ident (print-ident attrname.ident pstate)
+   :keyword (b* ((chars (acl2::string=>nats attrname.keyword))
                  ((unless (grammar-character-listp chars))
                   (raise "Misusage error: ~
                           the attribute name keyword consists of ~
@@ -1891,7 +1891,7 @@
                           not all of which are allowed by the ABNF grammar."
                          chars)
                   (pristate-fix pstate)))
-              (print-astring attrname.unwrap pstate)))
+              (print-astring attrname.keyword pstate)))
   :hooks (:fix)
 
   ///
@@ -2658,8 +2658,8 @@
     :short "Print a type qualifier or attribute specifier."
     (typequal/attribspec-case
      tyqualattrib
-     :type (print-type-qual tyqualattrib.unwrap pstate)
-     :attrib (print-attrib-spec tyqualattrib.unwrap pstate))
+     :type (print-type-qual tyqualattrib.qual pstate)
+     :attrib (print-attrib-spec tyqualattrib.spec pstate))
     :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3299,7 +3299,7 @@
                     pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
-     :statassert (print-statassert structdeclon.unwrap pstate)
+     :statassert (print-statassert structdeclon.statassert pstate)
      :empty (print-astring ";" pstate))
     :measure (two-nats-measure (struct-declon-count structdeclon) 0))
 

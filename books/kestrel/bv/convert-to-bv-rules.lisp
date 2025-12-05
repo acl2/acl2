@@ -261,3 +261,11 @@
            (equal (bitxor x y)
                   (bitxor x (trim 1 y))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvsx-convert-arg3-to-bv
+  (implies (syntaxp (convertible-to-bvp x))
+           (equal (bvsx new-size old-size x)
+                  (bvsx new-size old-size (trim old-size x))))
+  :hints (("Goal" :in-theory (enable trim))))

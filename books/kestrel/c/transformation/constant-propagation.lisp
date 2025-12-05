@@ -273,7 +273,7 @@
   :returns (value? c::value-optionp)
   (const-case
    const
-   :int (iconst-to-value const.unwrap)
+   :int (iconst-to-value const.iconst)
    ;; TODO: support other constants
    :otherwise nil))
 
@@ -1534,9 +1534,9 @@
                         :declors declors
                         :attribs struct-declon.attribs)
                       env))
-        :statassert (b* (((mv unwrap env)
-                          (const-prop-statassert struct-declon.unwrap env)))
-                      (mv (struct-declon-statassert unwrap)
+        :statassert (b* (((mv statassert env)
+                          (const-prop-statassert struct-declon.statassert env)))
+                      (mv (struct-declon-statassert statassert)
                           env))
         :empty (mv (struct-declon-empty) env)))
     :measure (struct-declon-count struct-declon))

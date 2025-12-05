@@ -51,7 +51,7 @@
     constp
     const-fix
     const-case
-    const-int->unwrap
+    const-int->iconst
 
     typequal/attribspec-list-listp
 
