@@ -60,6 +60,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist filepath-list
+  :short "Fixtype of lists of file paths."
+  :elt-type filepath
+  :true-listp t
+  :elementp-of-nil nil
+  :pred filepath-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset filepath-set
   :short "Fixtype of sets of file paths."
   :elt-type filepath

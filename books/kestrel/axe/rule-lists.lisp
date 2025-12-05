@@ -521,6 +521,8 @@
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
+    bvsx-convert-arg3-to-bv-axe
+
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
@@ -662,7 +664,8 @@
     bvif-trim-arg4-axe
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
-    leftrotate32-trim-arg1-axe-all))
+    leftrotate32-trim-arg1-axe-all
+    bvsx-trim-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()

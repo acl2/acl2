@@ -11746,7 +11746,7 @@
      we reject input with zero external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
-     as prescribed in [C17:5.1.1.2/2].
+     as prescribed in [C17:5.1.1.2/1/2].
      We check that the end-of-file position,
      returned by @(tsee parse-*-external-declaration),
      is at column 0:
