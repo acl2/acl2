@@ -3488,8 +3488,8 @@
 
 (fty::deftagsum decl/stmt
   :short "Fixtype of declarations or (expression) statements."
-  (:decl ((unwrap decl)))
-  (:stmt ((unwrap expr)))
+  (:decl ((decl decl)))
+  (:stmt ((expr expr)))
   :pred decl/stmt-p
   :layout :fulltree)
 

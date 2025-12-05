@@ -3049,12 +3049,12 @@
             (table (dimb-pop-scope table)))
          (decl/stmt-case
           decl/expr
-          :decl (retok (make-stmt-for-decl :init decl/expr.unwrap
+          :decl (retok (make-stmt-for-decl :init decl/expr.decl
                                            :test new-test
                                            :next new-next
                                            :body new-body)
                        table)
-          :stmt (retok (make-stmt-for-expr :init decl/expr.unwrap
+          :stmt (retok (make-stmt-for-expr :init decl/expr.expr
                                            :test new-test
                                            :next new-next
                                            :body new-body)
@@ -3135,11 +3135,11 @@
        (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.decl/stmt table)))
          (decl/stmt-case
           decl/stmt
-          :decl (retok (make-block-item-decl :decl decl/stmt.unwrap
+          :decl (retok (make-block-item-decl :decl decl/stmt.decl
                                              :info nil)
                        table)
           :stmt (retok (make-block-item-stmt
-                        :stmt (make-stmt-expr :expr? decl/stmt.unwrap
+                        :stmt (make-stmt-expr :expr? decl/stmt.expr
                                               :info nil)
                         :info nil)
                        table)))))
