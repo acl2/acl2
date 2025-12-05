@@ -29,6 +29,7 @@
 (include-book "choose-rules")
 ;(include-book "rules-in-rule-lists")
 ;; The rest of these include-books are to bring in everything included in def-simplified-rules below:
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "rules1") ; for BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-SAME
 (include-book "basic-rules") ;for equal-same
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE

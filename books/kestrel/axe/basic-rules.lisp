@@ -12,13 +12,16 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/if" :dir :system)
+;(include-book "kestrel/utilities/if" :dir :system) ; drop?
 (include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;; TODO: Rephrase some of these
 
 ;;theorems about built-in ACL2 functions.  Many of these are things that ACL2
 ;;knows by type reasoning (but Axe does not have type reasoning).
+
+;; See also arithmetic-rules-axe.lisp
 
 (defthmd rationalp-of-len
   (rationalp (len x)))
@@ -30,6 +33,12 @@
 
 (defthmd acl2-numberp-of-*
   (acl2-numberp (* x y)))
+
+;dup
+(defthm integerp-of-*
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (* x y))))
 
 (defthmd acl2-numberp-of-unary--
   (acl2-numberp (unary-- x)))
@@ -189,3 +198,12 @@
 (defthmd acl2-numberp-when-signed-byte-p
   (implies (signed-byte-p size x) ; size is a free var
            (acl2-numberp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;dup
+(defthm integerp-of-mod
+  (implies (integerp y)
+           (equal (integerp (mod x y))
+                  (integerp (fix x))))
+  :hints (("Goal" :in-theory (enable mod))))
