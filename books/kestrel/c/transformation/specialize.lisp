@@ -234,7 +234,7 @@
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
-      (specialize-filepath-transunit-map tunits.unwrap
+      (specialize-filepath-transunit-map tunits.units
                                          target-fn
                                          target-param
                                          const))))

@@ -3875,7 +3875,7 @@
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
-       (tumap (transunit-ensemble->unwrap tuens))
+       (tumap (transunit-ensemble->units tuens))
        ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))

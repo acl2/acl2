@@ -3153,7 +3153,7 @@
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits)
        ((mv new-map (gout gout-map))
-        (simpadd0-filepath-transunit-map tunits.unwrap gin))
+        (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
     (mv (transunit-ensemble new-map)
         (gout-no-thm gin)))

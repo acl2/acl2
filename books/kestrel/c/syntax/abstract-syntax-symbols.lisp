@@ -436,7 +436,7 @@
     extdecl-fix
     extdecl-case
     extdecl-fundef
-    extdecl-fundef->unwrap
+    extdecl-fundef->fundef
     extdecl-decl
     extdecl-empty
 
@@ -452,7 +452,7 @@
 
     transunit-ensemblep
     transunit-ensemble
-    transunit-ensemble->unwrap
+    transunit-ensemble->units
 
     filepathp
     filepath

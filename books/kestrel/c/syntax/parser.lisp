@@ -11881,5 +11881,5 @@
   (defret filepaths-of-parse-fileset
     (implies (and (not keep-going)
                   (not erp))
-             (equal (omap::keys (transunit-ensemble->unwrap tunits))
+             (equal (omap::keys (transunit-ensemble->units tunits))
                     (omap::keys (fileset->unwrap fileset))))))

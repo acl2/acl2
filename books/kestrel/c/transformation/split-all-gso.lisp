@@ -282,7 +282,7 @@
                (gso identp)
                (field-name identp))
   (b* (((transunit-ensemble tunits) tunits))
-    (filepath-transunit-map-find-gso-candidate tunits.unwrap blacklist))
+    (filepath-transunit-map-find-gso-candidate tunits.units blacklist))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

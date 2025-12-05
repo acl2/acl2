@@ -3692,6 +3692,6 @@
      The notion of file set as formalized here will still apply to that case,
      with some elements of the ensembles
      that may be headers instead of source files."))
-  ((unwrap filepath-transunit-map))
+  ((units filepath-transunit-map))
   :pred transunit-ensemblep
   :layout :fulltree)

@@ -1800,7 +1800,7 @@
     "Note that @(tsee c::fileset) is quite different from @(tsee c$::fileset).
      We plan to make the terminology more consistent."))
   (b* (((reterr) (c::fileset "" nil (c::file nil)))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation unit ensemble ~
                       with ~x0 translation units."

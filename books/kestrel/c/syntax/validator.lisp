@@ -6921,7 +6921,7 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((erp new-map)
         (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
        (- (if keep-going

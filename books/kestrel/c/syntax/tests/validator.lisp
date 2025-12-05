@@ -232,7 +232,7 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((transunit (omap::head-val (transunit-ensemble->unwrap ast)))
+ :cond (b* ((transunit (omap::head-val (transunit-ensemble->units ast)))
             (edecls (transunit->decls transunit))
             (edecl (cadr edecls))
             (fundef (extdecl-fundef->fundef edecl))
@@ -850,7 +850,7 @@ void bar(void) {
   return bar;
 }
 "
-  :cond (b* ((filepath-transunit-map (transunit-ensemble->unwrap ast))
+  :cond (b* ((filepath-transunit-map (transunit-ensemble->units ast))
              (transunit1 (omap::head-val filepath-transunit-map))
              (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
              (edecls1 (transunit->decls transunit1))

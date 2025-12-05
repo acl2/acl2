@@ -2018,7 +2018,7 @@
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
-      (const-prop-filepath-transunit-map tunits.unwrap))))
+      (const-prop-filepath-transunit-map tunits.units))))
 
 (define const-prop-code-ensemble
   ((code code-ensemblep))

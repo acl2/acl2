@@ -189,7 +189,7 @@
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
-      (copy-fn-filepath-transunit-map tunits.unwrap
+      (copy-fn-filepath-transunit-map tunits.units
                                       target-fn
                                       new-fn))))
 

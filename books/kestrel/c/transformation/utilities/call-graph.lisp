@@ -743,7 +743,7 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit ensemble."
   (call-graph-filepath-transunit-map
-   (c$::transunit-ensemble->unwrap ensemble)
+   (c$::transunit-ensemble->units ensemble)
    nil)
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 

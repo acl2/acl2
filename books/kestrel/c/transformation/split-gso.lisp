@@ -142,7 +142,7 @@
                (linkage c$::linkagep)
                (tag? ident-optionp))
   (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
-       (unwrapped-tunits (transunit-ensemble->unwrap tunits))
+       (unwrapped-tunits (transunit-ensemble->units tunits))
        ((unless filepath?)
         (get-gso-filepath-linkage-search ident unwrapped-tunits))
        (lookup
@@ -176,7 +176,7 @@
     (and (transunit-ensemblep tunits)
          (not (mv-nth 0 (get-gso-filepath-linkage filepath? ident tunits))))
     (omap::assoc (mv-nth 1 (get-gso-filepath-linkage filepath? ident tunits))
-                 (transunit-ensemble->unwrap tunits)))
+                 (transunit-ensemble->units tunits)))
   :enable get-gso-filepath-linkage)
 
 (define get-gso-info
@@ -200,7 +200,7 @@
     (and (transunit-ensemblep tunits)
          (not (mv-nth 0 (get-gso-info filepath? ident tunits))))
     (omap::assoc (mv-nth 2 (get-gso-info filepath? ident tunits))
-                 (transunit-ensemble->unwrap tunits)))
+                 (transunit-ensemble->units tunits)))
   :enable get-gso-info)
 
 (local (in-theory (enable assoc-of-get-gso-info.filepath?)))
@@ -1099,7 +1099,7 @@
   (b* (((reterr) (c$::transunit-ensemble-fix tunits))
        ((erp struct-tag filepath linkage)
         (get-gso-info filepath? orig-struct tunits))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((erp map)
         (split-gso-filepath-transunit-map
           struct-tag

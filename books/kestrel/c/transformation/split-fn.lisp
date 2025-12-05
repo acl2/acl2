@@ -557,7 +557,7 @@
        ((mv er map)
         (split-fn-filepath-transunit-map target-fn
                                          new-fn-name
-                                         tunits.unwrap
+                                         tunits.units
                                          split-point)))
     (mv er (transunit-ensemble map))))
 

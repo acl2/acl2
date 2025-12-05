@@ -1115,7 +1115,7 @@
     "As in @(tsee ldm-transunit-ensemble),
      there must be a single translation unit,
      and in addition it must have formal dynamic semantics."))
-  (b* ((map (transunit-ensemble->unwrap tunits)))
+  (b* ((map (transunit-ensemble->units tunits)))
     (and (= (omap::size map) 1)
          (transunit-formalp (omap::head-val map))))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))

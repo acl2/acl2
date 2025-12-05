@@ -4487,7 +4487,7 @@
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset
-   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
+   (print-filepath-transunit-map (transunit-ensemble->units tunits)
                                  options
                                  gcc))
   :hooks (:fix)
@@ -4496,4 +4496,4 @@
 
   (defret keys-of-print-fileset
     (equal (omap::keys (fileset->unwrap fileset))
-           (omap::keys (transunit-ensemble->unwrap tunits)))))
+           (omap::keys (transunit-ensemble->units tunits)))))
