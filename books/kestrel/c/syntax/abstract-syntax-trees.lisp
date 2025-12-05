@@ -3283,7 +3283,7 @@
             (info any)))
     (:stmt ((stmt stmt)
             (info any)))
-    (:ambig ((unwrap amb-decl/stmt)))
+    (:ambig ((decl/stmt amb-decl/stmt)))
     :pred block-itemp
     :base-case-override :stmt
     :layout :fulltree

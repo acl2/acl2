@@ -3132,7 +3132,7 @@
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
          (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
        :ambig
-       (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.unwrap table)))
+       (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.decl/stmt table)))
          (decl/stmt-case
           decl/stmt
           :decl (retok (make-block-item-decl :decl decl/stmt.unwrap
