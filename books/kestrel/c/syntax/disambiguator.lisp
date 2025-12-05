@@ -2574,11 +2574,11 @@
                 (retmsg$ ""))
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
             (retok (make-param-declor-nonabstract
-                    :declor declor/absdeclor.unwrap
+                    :declor declor/absdeclor.declor
                     :info nil)
                    table))
           :absdeclor
-          (retok (param-declor-abstract declor/absdeclor.unwrap)
+          (retok (param-declor-abstract declor/absdeclor.declor)
                  (dimb-table-fix table))))))
     :measure (param-declor-count paramdeclor))
 

@@ -3479,8 +3479,8 @@
 
 (fty::deftagsum declor/absdeclor
   :short "Fixtype of declarators or abstract declarators."
-  (:declor ((unwrap declor)))
-  (:absdeclor ((unwrap absdeclor)))
+  (:declor ((declor declor)))
+  (:absdeclor ((declor absdeclor)))
   :pred declor/absdeclor-p
   :layout :fulltree)
 
