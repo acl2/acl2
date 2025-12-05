@@ -2260,10 +2260,9 @@
   '(acl2::ash-negative-becomes-slice-axe
     acl2::ash-of-0-arg1
     acl2::ash-of-0-arg2
-    acl2::open-ash-positive-constants
+    common-lisp::ash-constant-opener ; acl2::open-ash-positive-constants
     acl2::bvchop-of-ash-left-shift
     acl2::integerp-of-ash))
-
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64

@@ -149,15 +149,15 @@
                             bvchop-upper-bound-strong
                             BVCHOP-BOUND-2)))))
 
-;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
-(defthmd open-ash-positive-constants
-  (implies (and (syntaxp (and (quotep i)
-                              (quotep c)))
-                (natp c)
-                (integerp i))
-           (equal (ash i c)
-                  (* i (expt 2 c))))
-  :hints (("Goal" :in-theory (enable ash))))
+;; ;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
+;; (defthmd open-ash-positive-constants
+;;   (implies (and (syntaxp (and (quotep i)
+;;                               (quotep c)))
+;;                 (natp c)
+;;                 (integerp i))
+;;            (equal (ash i c)
+;;                   (* i (expt 2 c))))
+;;   :hints (("Goal" :in-theory (enable ash))))
 
 ;; ;gen
 ;; (defthmd strengthen-upper-bound-when-top-bit-0
