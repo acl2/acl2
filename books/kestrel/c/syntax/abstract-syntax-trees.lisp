@@ -3470,8 +3470,8 @@
 
 (fty::deftagsum expr/tyname
   :short "Fixtype of expressions or type names."
-  (:expr ((unwrap expr)))
-  (:tyname ((unwrap tyname)))
+  (:expr ((expr expr)))
+  (:tyname ((tyname tyname)))
   :pred expr/tyname-p
   :layout :fulltree)
 
