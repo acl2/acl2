@@ -470,7 +470,7 @@
                     (split-fn-fundef
                       target-fn
                       new-fn-name
-                      extdecl.unwrap
+                      extdecl.fundef
                       split-point)))
                 (fundef-option-case
                   fundef2

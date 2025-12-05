@@ -152,7 +152,7 @@
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (fundef-try-split-fn-when
-                      extdecl.unwrap
+                      extdecl.fundef
                       triggers
                       transunits)))
                 (fundef-option-case

@@ -685,7 +685,7 @@
   :returns (call-graph$ call-graphp)
   (extdecl-case
    extdecl
-   :fundef (call-graph-fundef extdecl.unwrap filepath valid-table call-graph)
+   :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
    :decl (call-graph-fix call-graph)
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))

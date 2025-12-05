@@ -6780,14 +6780,14 @@
     (extdecl-case
      edecl
      :fundef (b* (((erp new-fundef table)
-                   (valid-fundef edecl.unwrap table ienv)))
+                   (valid-fundef edecl.fundef table ienv)))
                (retok (extdecl-fundef new-fundef) table))
      :decl (b* (((erp new-decl types table)
-                 (valid-decl edecl.unwrap table ienv))
+                 (valid-decl edecl.decl table ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
-                          edecl.unwrap)))
+                          edecl.decl)))
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))

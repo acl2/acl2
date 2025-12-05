@@ -1973,10 +1973,10 @@
   :returns (new-extdecl extdeclp)
   (extdecl-case
    extdecl
-   :fundef (extdecl-fundef (const-prop-fundef extdecl.unwrap env))
-   :decl (b* (((mv unwrap -)
-               (const-prop-decl extdecl.unwrap env)))
-           (extdecl-decl unwrap))
+   :fundef (extdecl-fundef (const-prop-fundef extdecl.fundef env))
+   :decl (b* (((mv decl -)
+               (const-prop-decl extdecl.decl env)))
+           (extdecl-decl decl))
    :empty (extdecl-empty)
    :asm (extdecl-fix extdecl)))
 

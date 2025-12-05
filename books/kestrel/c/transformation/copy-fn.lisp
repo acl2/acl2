@@ -120,7 +120,7 @@
    extdecl
    :fundef (b* ((fundef?
                  (copy-fn-fundef
-                   extdecl.unwrap
+                   extdecl.fundef
                    target-fn
                    new-fn)))
              (if fundef?

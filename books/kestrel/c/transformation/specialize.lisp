@@ -165,7 +165,7 @@
    extdecl
    :fundef (b* (((mv found fundef)
                  (specialize-fundef
-                   extdecl.unwrap
+                   extdecl.fundef
                    target-fn
                    target-param
                    const)))

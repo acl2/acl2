@@ -87,7 +87,7 @@
   :returns (ident? ident-optionp)
   (extdecl-case
    extdecl
-   :decl (decl-find-first-field-name extdecl.unwrap struct-tag)
+   :decl (decl-find-first-field-name extdecl.decl struct-tag)
    :otherwise nil))
 
 (define extdecl-list-find-first-field-name
@@ -188,7 +188,7 @@
   (extdecl-case
    extdecl
    :fundef nil
-   :decl (decl-find-gso-candidate extdecl.unwrap blacklist)
+   :decl (decl-find-gso-candidate extdecl.decl blacklist)
    :empty nil
    :asm nil))
 

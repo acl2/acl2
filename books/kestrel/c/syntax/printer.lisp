@@ -4360,12 +4360,12 @@
   :short "Print an external declaration."
   (extdecl-case
    extdecl
-   :fundef (print-fundef extdecl.unwrap pstate)
-   :decl (print-decl extdecl.unwrap pstate)
+   :fundef (print-fundef extdecl.fundef pstate)
+   :decl (print-decl extdecl.decl pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
             pstate)
-   :asm (print-asm-stmt extdecl.unwrap pstate))
+   :asm (print-asm-stmt extdecl.stmt pstate))
   :hooks (:fix)
 
   ///

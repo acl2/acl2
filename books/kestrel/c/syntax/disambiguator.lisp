@@ -3743,10 +3743,10 @@
     (extdecl-case
      extdecl
      :fundef
-     (b* (((erp new-fundef table) (dimb-fundef extdecl.unwrap table gcc)))
+     (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
        (retok (extdecl-fundef new-fundef) table))
      :decl
-     (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
+     (b* (((erp new-decl table) (dimb-decl extdecl.decl table)))
        (retok (extdecl-decl new-decl) table))
      :empty
      (retok (extdecl-fix extdecl) (dimb-table-fix table))

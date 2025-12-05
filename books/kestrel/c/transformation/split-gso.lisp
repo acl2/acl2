@@ -370,7 +370,7 @@
                     new2
                     blacklist
                     split-members
-                    extdecl.unwrap)))
+                    extdecl.decl)))
               (retok new1
                      new2
                      (decl-list-to-extdecl-list decls)))
@@ -759,7 +759,7 @@
                     new1-type
                     new2-type
                     split-members
-                    extdecl.unwrap)))
+                    extdecl.decl)))
               (retok found
                      (decl-list-to-extdecl-list decls)))
       :empty (retok nil (list (extdecl-fix extdecl)))

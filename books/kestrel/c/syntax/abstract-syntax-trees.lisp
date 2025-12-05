@@ -3611,10 +3611,10 @@
    (xdoc::p
     "As a GCC extension, we also allow an assembler statement.
      See the ABNF grammar."))
-  (:fundef ((unwrap fundef)))
-  (:decl ((unwrap decl)))
+  (:fundef ((fundef fundef)))
+  (:decl ((decl decl)))
   (:empty ()) ; GCC extension
-  (:asm ((unwrap asm-stmt))) ; GCC extension
+  (:asm ((stmt asm-stmt))) ; GCC extension
   :pred extdeclp
   :layout :fulltree)
 

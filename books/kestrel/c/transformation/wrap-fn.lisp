@@ -522,9 +522,9 @@
   (extdecl-case
     extdecl
     :fundef (fundef-wrap-fn-add-wrapper-def
-              extdecl.unwrap target-name wrapper-name? blacklist)
+              extdecl.fundef target-name wrapper-name? blacklist)
     :decl (decl-wrap-fn-add-wrapper-def
-            extdecl.unwrap target-name wrapper-name? blacklist)
+            extdecl.decl target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///

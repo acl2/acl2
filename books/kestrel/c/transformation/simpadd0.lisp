@@ -2973,13 +2973,13 @@
     (extdecl-case
      extdecl
      :fundef (b* (((mv new-fundef (gout gout-fundef))
-                   (simpadd0-fundef extdecl.unwrap gin))
+                   (simpadd0-fundef extdecl.fundef gin))
                   (gin (gin-update gin gout-fundef)))
                (mv (extdecl-fundef new-fundef)
                    (change-gout (gout-no-thm gin)
                                 :vartys gout-fundef.vartys)))
      :decl (b* (((mv new-decl (gout gout-decl))
-                 (simpadd0-decl extdecl.unwrap gin))
+                 (simpadd0-decl extdecl.decl gin))
                 (gin (gin-update gin gout-decl)))
              (mv (extdecl-decl new-decl)
                  (change-gout (gout-no-thm gin)
