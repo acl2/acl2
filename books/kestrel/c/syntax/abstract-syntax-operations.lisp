@@ -408,7 +408,7 @@
   (b* (((unless (expr-case expr :const)) nil)
        (const (expr-const->const expr))
        ((unless (const-case const :int)) nil)
-       ((iconst iconst) (const-int->unwrap const))
+       ((iconst iconst) (const-int->iconst const))
        ((when iconst.suffix?) nil)
        ((unless (dec/oct/hex-const-case iconst.core :oct)) nil)
        ((dec/oct/hex-const-oct doh) iconst.core)
@@ -711,7 +711,7 @@
   (b* (((unless (expr-case expr :const)) nil)
        (const (expr-const->const expr))
        ((unless (const-case const :int)))
-       (iconst (const-int->unwrap const)))
+       (iconst (const-int->iconst const)))
     iconst))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

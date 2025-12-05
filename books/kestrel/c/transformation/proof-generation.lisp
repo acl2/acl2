@@ -1135,7 +1135,7 @@
        (expr (make-expr-const :const const :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr gout-no-thm))
-       ((iconst iconst) (const-int->unwrap const))
+       ((iconst iconst) (const-int->iconst const))
        ((iconst-info info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))

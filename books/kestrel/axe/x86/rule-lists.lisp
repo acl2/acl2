@@ -351,6 +351,11 @@
     acl2::bv-array-read-shorten-when-not-max-smt
     acl2::bv-array-read-shorten-when-not-zero-smt
 
+    ;; these push computation into the array elements:
+    ;; could drop these if we could split bv-array-reads into cases deep within set-rip contexts (and lift the resulting IFs):
+    acl2::bvsx-of-bv-array-read-constant-array
+    acl2::bvplus-of-bv-array-read-constant-array-smt
+
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
@@ -511,10 +516,10 @@
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
   (append
-  '(read-1-of-write-1-diff
+  '(read-1-of-write-1-diff ; uses 'not equal' in the hyp
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
-    read-of-write-within
+    read-of-write-within ; uses mostly bv hyps
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
@@ -1362,7 +1367,6 @@
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
-    acl2::bvsx-of-logext
     acl2::logext-of-+-of-logext-arg2
 
     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
@@ -2068,9 +2072,13 @@
   (declare (xargs :guard t))
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
     ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
+
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
-    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp only when nothing else works
-    canonical-regionp-of-+-arg2
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp (only when nothing else works)
+    unsigned-canonical-address-p-smt ; calls SMT on the address expression
+
+    canonical-regionp-of-+-arg2 ; todo: general convert rule?
+
     unsigned-canonical-address-p-of-bvif ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-if ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-bvsx-64-48 ; always true
@@ -2079,8 +2087,8 @@
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
 
-    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
-    write-of-logext-arg2 ; move?
+    bvsx-64-48-of-bvplus-48-when-unsigned-canonical-address-p
+    write-of-logext-arg2 ; move? use a general trim rule?
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
     bvsx-when-unsigned-canonical-address-p))
 
@@ -4238,7 +4246,8 @@
             ;; todo: more like these?:
             set-rip-of-bvchop
             set-rip-of-logext
-            set-rip-of-bv-array-read-split-cases-smt ; needs bv-array-read-cases-opener
+            set-rip-of-bvif-split ; we must resolve the RIP to keep going
+            set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
             acl2::bv-array-read-cases-opener
             )))
 
@@ -6447,7 +6456,7 @@
 
 ;; Try these as a last resort:
 ;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
-(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p-axe-smt 1)
+(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt 1)
 (set-axe-rule-priority unsigned-canonical-address-p-smt 1)
 
 ;; Based on how commonly these rules were used in an example:

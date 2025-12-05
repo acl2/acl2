@@ -476,6 +476,11 @@
                                               (expr-binary->arg1 e)
                                               compst fenv (+ -1 limit)))
                                    fenv (+ -1 limit)))))))))
+    (defthm var-visible-preservep-of-exec-expr-list
+      (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+        (implies (not (errorp result))
+                 (var-visible-preservep compst compst1)))
+      :flag exec-expr-list)
     (defthm var-visible-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -523,6 +528,7 @@
              (enable
               exec-fun
               exec-expr
+              exec-expr-list
               exec-stmt
               exec-stmt-while
               exec-stmt-dowhile
@@ -539,6 +545,7 @@
 
   (in-theory (disable var-visible-preservep-of-exec-fun
                       var-visible-preservep-of-exec-expr
+                      var-visible-preservep-of-exec-expr-list
                       var-visible-preservep-of-exec-stmt
                       var-visible-preservep-of-exec-stmt-while
                       var-visible-preservep-of-exec-stmt-dowhile
@@ -576,6 +583,21 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr e compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-visible-of-exec-expr-list
+    (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (objdesign-of-var var compst))
+               (objdesign-of-var var compst1)))
+    :use (var-visible-preservep-of-exec-expr-list
+          (:instance var-visible-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-expr-list es compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

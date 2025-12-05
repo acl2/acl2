@@ -12,8 +12,6 @@
 
 (include-book "variables-in-computation-states")
 
-(include-book "../language/pure-expression-execution")
-
 (include-book "std/util/defund-sk" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

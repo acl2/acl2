@@ -337,8 +337,8 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the community books @('kestrel/c/atc/integers.lisp')
-    and @('kestrel/c/atc/integer-operations.lisp').
+    is in the community books @('kestrel/c/representation/integers.lisp')
+    and @('kestrel/c/representation/integer-operations.lisp').
     These are automatically included when ATC is included,
     but one may want to include those file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
@@ -434,7 +434,7 @@
     (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of nullary) @('int') operations.
     Our ACL2 representation in community book
-    @('kestrel/c/atc/integers.lisp') provides functions
+    @('kestrel/c/representation/integers.lisp') provides functions
     @(tsee sint-dec-const),
     @(tsee sint-oct-const), and
     @(tsee sint-hex-const)
@@ -570,7 +570,7 @@
     in the sense that they do not represent anything in the C code.
     However the functions @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
-    from the community book @('kestrel/c/atc/integers.lisp').")
+    from the community book @('kestrel/c/representation/integers.lisp').")
 
   (xdoc::p
    "In the envisioned use of ATC,
@@ -1490,7 +1490,7 @@
     Since @('nil') is different from the ACL2 model of any C scalar zero,
     and also @('t') is different from the ACL2 model of any C scalar non-zero,
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
-    The community book @('kestrel/c/atc/signed-ints.lisp'),
+    The community book @('kestrel/c/representation/integer-operations.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
     provides a function @(tsee boolean-from-sint)
     the converts (the ACL2 representation of) a C @('int')

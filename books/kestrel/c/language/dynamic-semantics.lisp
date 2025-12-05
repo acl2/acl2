@@ -25,22 +25,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We distinguish between pure (i.e. side-effect-free) expressions
-     and expressions that may have side effects.
-     We allow the latter to appear only in certain parts of statements,
-     and we put restrictions to ensure a predictable order of evaluation.
-     Pure expressions may be evaluated in any order;
-     we evaluate them left to right.")
-   (xdoc::p
     "We formalize a big-step operational interpretive semantics.
      To ensure the termination of the ACL2 mutually recursive functions
-     that formalize the execution of statements, function calls, etc.,
+     that formalize the execution of expressions, statements, etc.,
      these ACL2 functions take a limit on the depth of the recursive calls,
      which ends the recursion with an error when it reaches 0,
      which is decremented at each recursive call,
      and which is used as termination measure.
      Thus, a proof of total correctness
-     (i.e. the code terminates and produces correct results)
+     (i.e. the code terminates <i>and</i> produces correct results)
      involves showing the existence of sufficiently large limit values,
      while a proof of partial correctness
      (i.e. the code produces correct results if it terminates)
@@ -55,9 +48,12 @@
      However, it is accurate for our current uses
      (namely, supporting proof generation in "
     (xdoc::seetopic "atc" "ATC")
+    " and in "
+    (xdoc::seetopic "c2c::transformation-tools" "C2C")
     ". This dynamic semantics is work in progress;
      we plan to make it completely accurate
-     for all the covered subset of C."))
+     for all the covered subset of C,
+     and to continue extending the covered subset of C."))
   :order-subtopics t
   :default-parent t)
 
@@ -599,191 +595,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr-pure ((e exprp) (compst compustatep))
-  :returns (eval expr-value-resultp)
-  :short "Execute a pure expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return an error if we encounter a non-pure expression.
-     While function calls do not necessarily have side effects,
-     establishing that requires looking at the function.
-     Thus, for simplicity, we regard function calls to be non-pure,
-     i.e. we return an error if we encounter them here.")
-   (xdoc::p
-    "We also reject pre/post-increment/decrement expressions,
-     which are obviously non-pure.")
-   (xdoc::p
-    "When executing a ternary expression,
-     we drop any object designators
-     from the second or third expression's execution,
-     because ternary expressions are not lvalues
-     [C17:6.5.15/4, footnote 113].")
-   (xdoc::p
-    "Recall that our C abstract syntax does not cover
-     all the possible C expressions yet.
-     Thus, we may extend this ACL2 function
-     with support for more kinds of pure expressions in the future.")
-   (xdoc::p
-    "If no error occurs, none of the expressions has side effects.
-     Thus, the order in which the subexpressions are evaluated does not matter:
-     we just proceed left to right.")
-   (xdoc::p
-    "We plan to remove this function from our dynamic semantics,
-     after we create a new @('exec-expr-list')
-     to replace @(tsee exec-expr-pure-list)."))
-  (b* ((e (expr-fix e)))
-    (expr-case
-     e
-     :ident (exec-ident e.get compst)
-     :const (exec-const e.get)
-     :arrsub (b* ((arr (exec-expr-pure e.arr compst))
-                  ((when (errorp arr)) arr)
-                  (sub (exec-expr-pure e.sub compst))
-                  ((when (errorp sub)) sub))
-               (exec-arrsub arr sub compst))
-     :call (error (list :non-pure-expr e))
-     :member (b* ((str (exec-expr-pure e.target compst))
-                  ((when (errorp str)) str))
-               (exec-member str e.name))
-     :memberp (b* ((str (exec-expr-pure e.target compst))
-                   ((when (errorp str)) str))
-                (exec-memberp str e.name compst))
-     :postinc (error (list :non-pure-expr e))
-     :postdec (error (list :non-pure-expr e))
-     :preinc (error (list :non-pure-expr e))
-     :predec (error (list :non-pure-expr e))
-     :unary (b* ((arg (exec-expr-pure e.arg compst))
-                 ((when (errorp arg)) arg))
-              (exec-unary e.op arg compst))
-     :cast (b* ((arg (exec-expr-pure e.arg compst))
-                ((when (errorp arg)) arg))
-             (exec-cast e.type arg))
-     :binary (b* (((unless (binop-purep e.op)) (error (list :non-pure-expr e))))
-               (case (binop-kind e.op)
-                 (:logand
-                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
-                       ((when (errorp arg1)) arg1)
-                       (arg1 (apconvert-expr-value arg1))
-                       ((when (errorp arg1)) arg1)
-                       (test1 (test-value (expr-value->value arg1)))
-                       ((when (errorp test1)) test1)
-                       ((when (not test1))
-                        (make-expr-value :value (value-sint 0) :object nil))
-                       (arg2 (exec-expr-pure e.arg2 compst))
-                       ((when (errorp arg2)) arg2)
-                       (arg2 (apconvert-expr-value arg2))
-                       ((when (errorp arg2)) arg2)
-                       (test2 (test-value (expr-value->value arg2)))
-                       ((when (errorp test2)) test2))
-                    (if test2
-                        (make-expr-value :value (value-sint 1) :object nil)
-                      (make-expr-value :value (value-sint 0) :object nil))))
-                 (:logor
-                  (b* ((arg1 (exec-expr-pure e.arg1 compst))
-                       ((when (errorp arg1)) arg1)
-                       (arg1 (apconvert-expr-value arg1))
-                       ((when (errorp arg1)) arg1)
-                       (test1 (test-value (expr-value->value arg1)))
-                       ((when (errorp test1)) test1)
-                       ((when test1)
-                        (make-expr-value :value (value-sint 1) :object nil))
-                       (arg2 (exec-expr-pure e.arg2 compst))
-                       ((when (errorp arg2)) arg2)
-                       (arg2 (apconvert-expr-value arg2))
-                       ((when (errorp arg2)) arg2)
-                       (test2 (test-value (expr-value->value arg2)))
-                       ((when (errorp test2)) test2))
-                    (if test2
-                        (make-expr-value :value (value-sint 1) :object nil)
-                      (make-expr-value :value (value-sint 0) :object nil))))
-                 (t (b* ((arg1 (exec-expr-pure e.arg1 compst))
-                         ((when (errorp arg1)) arg1)
-                         (arg2 (exec-expr-pure e.arg2 compst))
-                         ((when (errorp arg2)) arg2))
-                      (exec-binary-strict-pure e.op arg1 arg2)))))
-     :cond (b* ((test (exec-expr-pure e.test compst))
-                ((when (errorp test)) test)
-                (test (apconvert-expr-value test))
-                ((when (errorp test)) test)
-                (test (test-value (expr-value->value test)))
-                ((when (errorp test)) test))
-             (if test
-                 (b* ((eval (exec-expr-pure e.then compst))
-                      ((when (errorp eval)) eval)
-                      (eval (apconvert-expr-value eval))
-                      ((when (errorp eval)) eval))
-                   (change-expr-value eval :object nil))
-               (b* ((eval (exec-expr-pure e.else compst))
-                    ((when (errorp eval)) eval)
-                    (eval (apconvert-expr-value eval))
-                    ((when (errorp eval)) eval))
-                 (change-expr-value eval :object nil))))))
-  :measure (expr-count e)
-  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-  :verify-guards nil ; done below
-
-  ///
-
-  (defret expr-value-resultp-of-exec-expr-pure-forward
-    (expr-value-resultp eval)
-    :rule-classes ((:forward-chaining
-                    :trigger-terms ((exec-expr-pure e compst)))))
-
-  (verify-guards exec-expr-pure
-    :hints (("Goal" :in-theory (enable binop-strictp (:e tau-system)))))
-
-  (defruled not-call-when-exec-expr-pure-not-error
-    (implies (not (errorp (exec-expr-pure expr compst)))
-             (not (equal (expr-kind expr) :call)))
-    :induct t)
-
-  (defruled not-asg-when-exec-expr-pure-not-error
-    (implies (not (errorp (exec-expr-pure expr compst)))
-             (not (and (equal (expr-kind expr) :binary)
-                       (equal (binop-kind (expr-binary->op expr)) :asg))))
-    :induct t
-    :enable binop-purep))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define exec-expr-pure-list ((es expr-listp) (compst compustatep))
-  :returns (result
-            value-list-resultp
-            :hints (("Goal"
-                     :induct t
-                     :in-theory
-                     (enable
-                      valuep-when-value-resultp-and-not-errorp
-                      value-listp-when-value-list-resultp-and-not-errorp))))
-  :short "Execute a list of pure expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Given that the expression have no side effects (if there is no error),
-     the order of evaluation does not matter.
-     Thus, we proceed left to right.")
-   (xdoc::p
-    "This ACL2 function is only used in situations
-     in which we are interested in the values of the expressions,
-     not their expression values (i.e. object designators, if any).
-     Thus, we just return lists of values here.")
-   (xdoc::p
-    "In the situations in which this ACL2 function is used,
-     we also need to perform array-to-pointer conversion [C17:6.3.2.1/3]."))
-  (b* (((when (endp es)) nil)
-       (eval (exec-expr-pure (car es) compst))
-       ((when (errorp eval)) eval)
-       (eval (apconvert-expr-value eval))
-       ((when (errorp eval)) eval)
-       (val (expr-value->value eval))
-       (vals (exec-expr-pure-list (cdr es) compst))
-       ((when (errorp vals)) vals))
-    (cons val vals))
-  :guard-hints (("Goal" :in-theory (enable (:e tau-system)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define init-scope ((formals param-declon-listp) (actuals value-listp))
   :returns (result scope-resultp
                    :hints (("Goal"
@@ -989,10 +800,10 @@
        the function sub-expression is always pure;
        we require all the argument expressions to be pure.
        Thus the order of evaluation of function and arguments does not matter.
-       We use @(tsee exec-expr-pure-list) for the arguments
-       (but we plan to use a new function @('exec-expr-list') at some point),
+       We use @(tsee exec-expr-list) for the arguments,
+       which evaluates them left-to-right (but any order would be equivalent),
        and we delegate to @(tsee exec-fun)
-       the evaluation of the function sub-expression itself.")
+       the evaluation of the function call itself.")
      (xdoc::p
       "If the expression is a function call,
        its arguments must be all pure expressions;
@@ -1067,8 +878,12 @@
                     ((unless sub)
                      (mv (error (list :arrsub-void-expr e.sub)) compst)))
                  (mv (exec-arrsub arr sub compst) compst))
-       :call (b* ((vals (exec-expr-pure-list e.args compst))
-                  ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       :call (b* (((unless (expr-list-purep e.args))
+                   (mv (error (list :call-nonpure-args (expr-fix e)))
+                       (compustate-fix compst)))
+                  ((mv vals compst)
+                   (exec-expr-list e.args compst fenv (1- limit)))
+                  ((when (errorp vals)) (mv vals compst))
                   ((mv val? compst)
                    (exec-fun e.fun vals compst fenv (1- limit)))
                   ((when (errorp val?)) (mv val? compst)))
@@ -1247,6 +1062,41 @@
                       (eval (apconvert-expr-value eval))
                       ((when (errorp eval)) (mv eval compst)))
                    (mv (change-expr-value eval :object nil) compst))))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-expr-list ((es expr-listp)
+                          (compst compustatep)
+                          (fenv fun-envp)
+                          (limit natp))
+    :returns (mv (vals value-list-resultp)
+                 (new-compst compustatep))
+    :parents (dynamic-semantics exec)
+    :short "Execute zero or more expressions, in order."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The order is actually unimportant because we only call this function
+       when either there is zero or one expression, or they are all pure.")
+     (xdoc::p
+      "All the expressions must return a value,
+       i.e. they must not be @('void').")
+     (xdoc::p
+      "We perform array-to-pointer conversions on all the results,
+       because that is required by all the callers of this function."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (endp es)) (mv nil (compustate-fix compst)))
+         ((mv eval compst) (exec-expr (car es) compst fenv (1- limit)))
+         ((when (errorp eval)) (mv eval compst))
+         ((unless eval)
+          (mv (error (list :void-expr-in-list (expr-fix (car es)))) compst))
+         (eval (apconvert-expr-value eval))
+         ((when (errorp eval)) (mv eval compst))
+         (val (expr-value->value eval))
+         ((mv vals compst) (exec-expr-list (cdr es) compst fenv (1- limit)))
+         ((when (errorp vals)) (mv vals compst)))
+      (mv (cons val vals) compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1449,11 +1299,11 @@
     (xdoc::topstring
      (xdoc::p
       "If the initializer consists of a single expression,
-       the expression must be a function call or a pure expression.
-       If it is a function call, it must return a value (not @('nil')).")
+       the expression must not return @('void')..")
      (xdoc::p
       "If the initializer consists of a list of expressions,
-       the expressions must be pure,
+       unless there are zero or one expressions,
+       the expressions must be all pure,
        to avoid ambiguities with the order of evaluation."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (initer-case
@@ -1470,10 +1320,15 @@
             (ival (init-value-single val)))
          (mv ival compst))
        :list
-       (b* ((vals (exec-expr-pure-list initer.get compst))
-            ((when (errorp vals)) (mv vals (compustate-fix compst)))
+       (b* (((unless (or (<= (len initer.get) 1)
+                         (expr-list-purep initer.get)))
+             (mv (error (list :non-pure-initer (initer-fix initer)))
+                 (compustate-fix compst)))
+            ((mv vals compst)
+             (exec-expr-list initer.get compst fenv (1- limit)))
+            ((when (errorp vals)) (mv vals compst))
             (ival (init-value-list vals)))
-         (mv ival (compustate-fix compst)))))
+         (mv ival compst))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1579,9 +1434,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :returns-hints (("Goal"
-                   :expand (exec-expr e compst fenv limit)
-                   :in-theory (enable (:e tau-system))))
+  :returns-hints
+  (("Goal"
+    :expand (exec-expr e compst fenv limit)
+    :in-theory (enable value-listp-when-value-list-resultp-and-not-errorp
+                       (:e tau-system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1602,6 +1459,10 @@
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-expr)
+    (defret compustate-frames-number-of-exec-expr-list
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :fn exec-expr-list)
     (defret compustate-frames-number-of-exec-stmt
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1642,6 +1503,7 @@
              :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
+                      (exec-expr-list es compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-initer initer compst fenv limit)
                       (exec-obj-declon declon compst fenv limit)
@@ -1660,6 +1522,10 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :fn exec-expr)
+    (defret compustate-scopes-numbers-of-exec-expr-list
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :fn exec-expr-list)
     (defret compustate-scopes-numbers-of-exec-stmt
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1700,6 +1566,7 @@
              :in-theory (enable len (:e tau-system))
              :expand ((exec-fun fun args compst fenv limit)
                       (exec-expr e compst fenv limit)
+                      (exec-expr-list es compst fenv limit)
                       (exec-stmt s compst fenv limit)
                       (exec-stmt-while test body compst fenv limit)
                       (exec-initer initer compst fenv limit)
@@ -1725,5 +1592,6 @@
              :expand ((exec-expr e compst fenv limit)
                       (exec-expr (expr-fix e) compst fenv limit)
                       (exec-expr e (compustate-fix compst) fenv limit)
-                      (exec-expr e compst (fun-env-fix fenv) limit))
-             :in-theory (enable nfix)))))
+                      (exec-expr e compst (fun-env-fix fenv) limit)
+                      (exec-expr-list (expr-list-fix es) compst fenv limit))
+             :in-theory (enable nfix identity)))))
