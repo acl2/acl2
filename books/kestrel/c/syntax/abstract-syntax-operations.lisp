@@ -12,10 +12,9 @@
 
 (include-book "abstract-syntax-irrelevants")
 
-(include-book "std/basic/controlled-configuration" :dir :system)
-(acl2::controlled-configuration)
-
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
