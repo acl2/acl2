@@ -3011,7 +3011,7 @@
     (:decl ((extension bool)
             (specs decl-spec-list)
             (init initdeclor-list)))
-    (:statassert ((unwrap statassert)))
+    (:statassert ((statassert statassert)))
     :pred declp
     :base-case-override :statassert
     :layout :fulltree
@@ -3239,7 +3239,7 @@
     (:break ())
     (:return ((expr? expr-option)
               (info any)))
-    (:asm ((unwrap asm-stmt)))
+    (:asm ((stmt asm-stmt)))
     :pred stmtp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -3283,7 +3283,7 @@
             (info any)))
     (:stmt ((stmt stmt)
             (info any)))
-    (:ambig ((unwrap amb-decl/stmt)))
+    (:ambig ((decl/stmt amb-decl/stmt)))
     :pred block-itemp
     :base-case-override :stmt
     :layout :fulltree
@@ -3470,8 +3470,8 @@
 
 (fty::deftagsum expr/tyname
   :short "Fixtype of expressions or type names."
-  (:expr ((unwrap expr)))
-  (:tyname ((unwrap tyname)))
+  (:expr ((expr expr)))
+  (:tyname ((tyname tyname)))
   :pred expr/tyname-p
   :layout :fulltree)
 
@@ -3479,8 +3479,8 @@
 
 (fty::deftagsum declor/absdeclor
   :short "Fixtype of declarators or abstract declarators."
-  (:declor ((unwrap declor)))
-  (:absdeclor ((unwrap absdeclor)))
+  (:declor ((declor declor)))
+  (:absdeclor ((absdeclor absdeclor)))
   :pred declor/absdeclor-p
   :layout :fulltree)
 
@@ -3488,8 +3488,8 @@
 
 (fty::deftagsum decl/stmt
   :short "Fixtype of declarations or (expression) statements."
-  (:decl ((unwrap decl)))
-  (:stmt ((unwrap expr)))
+  (:decl ((decl decl)))
+  (:stmt ((expr expr)))
   :pred decl/stmt-p
   :layout :fulltree)
 
@@ -3507,9 +3507,9 @@
      that may be expressions or type names.
      In contrast, this fixtype includes constructs that are
      either just expressions, or just type names, or ambiguous ones."))
-  (:expr ((unwrap expr)))
-  (:tyname ((unwrap tyname)))
-  (:ambig ((unwrap amb-expr/tyname)))
+  (:expr ((expr expr)))
+  (:tyname ((tyname tyname)))
+  (:ambig ((expr/tyname amb-expr/tyname)))
   :pred amb?-expr/tyname-p
   :layout :fulltree)
 
@@ -3529,9 +3529,9 @@
      either just declarators,
      or just abstract declarators,
      or ambiguous ones."))
-  (:declor ((unwrap declor)))
-  (:absdeclor ((unwrap absdeclor)))
-  (:ambig ((unwrap amb-declor/absdeclor)))
+  (:declor ((declor declor)))
+  (:absdeclor ((absdeclor absdeclor)))
+  (:ambig ((declor/absdeclor amb-declor/absdeclor)))
   :pred amb?-declor/absdeclor-p
   :layout :fulltree)
 
@@ -3548,9 +3548,9 @@
      a declaration,
      an (expression) statement,
      or an ambiguous declaration or statements."))
-  (:decl ((unwrap decl)))
-  (:stmt ((unwrap expr)))
-  (:ambig ((unwrap amb-decl/stmt)))
+  (:decl ((decl decl)))
+  (:stmt ((expr expr)))
+  (:ambig ((decl/stmt amb-decl/stmt)))
   :pred amb?-decl/stmt-p
   :layout :fulltree)
 
@@ -3611,10 +3611,10 @@
    (xdoc::p
     "As a GCC extension, we also allow an assembler statement.
      See the ABNF grammar."))
-  (:fundef ((unwrap fundef)))
-  (:decl ((unwrap decl)))
+  (:fundef ((fundef fundef)))
+  (:decl ((decl decl)))
   (:empty ()) ; GCC extension
-  (:asm ((unwrap asm-stmt))) ; GCC extension
+  (:asm ((stmt asm-stmt))) ; GCC extension
   :pred extdeclp
   :layout :fulltree)
 
@@ -3692,6 +3692,6 @@
      The notion of file set as formalized here will still apply to that case,
      with some elements of the ensembles
      that may be headers instead of source files."))
-  ((unwrap filepath-transunit-map))
+  ((units filepath-transunit-map))
   :pred transunit-ensemblep
   :layout :fulltree)

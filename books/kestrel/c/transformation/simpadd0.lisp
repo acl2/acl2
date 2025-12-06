@@ -1752,7 +1752,7 @@
                             gout-init.vartys
                             gin))
      :statassert (b* (((mv new-decl (gout gout-decl))
-                       (simpadd0-statassert decl.unwrap gin))
+                       (simpadd0-statassert decl.statassert gin))
                       (gin (gin-update gin gout-decl)))
                    (mv (decl-statassert new-decl)
                        (gout-no-thm gin))))
@@ -2973,13 +2973,13 @@
     (extdecl-case
      extdecl
      :fundef (b* (((mv new-fundef (gout gout-fundef))
-                   (simpadd0-fundef extdecl.unwrap gin))
+                   (simpadd0-fundef extdecl.fundef gin))
                   (gin (gin-update gin gout-fundef)))
                (mv (extdecl-fundef new-fundef)
                    (change-gout (gout-no-thm gin)
                                 :vartys gout-fundef.vartys)))
      :decl (b* (((mv new-decl (gout gout-decl))
-                 (simpadd0-decl extdecl.unwrap gin))
+                 (simpadd0-decl extdecl.decl gin))
                 (gin (gin-update gin gout-decl)))
              (mv (extdecl-decl new-decl)
                  (change-gout (gout-no-thm gin)
@@ -3153,7 +3153,7 @@
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits)
        ((mv new-map (gout gout-map))
-        (simpadd0-filepath-transunit-map tunits.unwrap gin))
+        (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
     (mv (transunit-ensemble new-map)
         (gout-no-thm gin)))
