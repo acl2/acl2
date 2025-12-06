@@ -14,7 +14,8 @@
 
 ;; TODO: Add more tests
 
-;; Work around GCL issue where this book gets the same temp file name as
+;; Work around GCL issue (fixed in November 2025 in a pre-release version of
+;; GCL 2.7.2) where this book gets the same temp file name as
 ;; blake2s1round.lisp when GCL compiles it:
 ; cert_param: (non-gcl)
 
