@@ -30,14 +30,6 @@
 ;; Needed by FTY
 (local (in-theory (enable nfix fix)))
 
-;; Needed by FTY when tau is disabled
-(defrulel sfix-when-not-setp-cheap
-  (implies (not (setp x))
-           (equal (sfix x)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable sfix)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-trees
