@@ -15,10 +15,7 @@
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +185,6 @@
      :char+short+int+long+llong+bool-format
      char+short+int+long+llong+bool-format))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
-  :hooks (:fix)
 
   :prepwork
   ((defruled ldm-ienv-wfp-lemma
@@ -242,7 +238,6 @@
      we make that an input to this function for uniformity and extensibility."))
   (declare (ignore ienv))
   255
-  :hooks (:fix)
   :type-prescription (and (posp (ienv->uchar-max ienv))
                           (> (ienv->uchar-max ienv) 1))
 
@@ -266,7 +261,6 @@
      we make that an input to this function for uniformity and extensibility."))
   (declare (ignore ienv))
   127
-  :hooks (:fix)
   :type-prescription (and (posp (ienv->schar-max ienv))
                           (> (ienv->schar-max ienv) 1))
 
@@ -290,7 +284,6 @@
      we make that an input to this function for uniformity and extensibility."))
   (declare (ignore ienv))
   -128
-  :hooks (:fix)
   :type-prescription (integerp (ienv->schar-min ienv))
 
   ///
@@ -309,7 +302,6 @@
   (if (ienv->plain-char-signedp ienv)
       127
     255)
-  :hooks (:fix)
   :type-prescription (and (posp (ienv->char-max ienv))
                           (> (ienv->char-max ienv) 1))
 
@@ -330,7 +322,6 @@
   (if (ienv->plain-char-signedp ienv)
       -128
     0)
-  :hooks (:fix)
   :type-prescription (integerp (ienv->char-min ienv))
 
   ///
@@ -348,7 +339,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (* 8 (ienv->short-bytes ienv))))
-  :hooks (:fix)
 
   ///
 
@@ -371,7 +361,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (1- (* 8 (ienv->short-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -394,7 +383,6 @@
   :returns (min integerp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
   (- (expt 2 (1- (* 8 (ienv->short-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -412,7 +400,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (* 8 (ienv->int-bytes ienv))))
-  :hooks (:fix)
 
   ///
 
@@ -435,7 +422,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (1- (* 8 (ienv->int-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -458,7 +444,6 @@
   :returns (min integerp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
   (- (expt 2 (1- (* 8 (ienv->int-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -476,7 +461,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (* 8 (ienv->long-bytes ienv))))
-  :hooks (:fix)
 
   ///
 
@@ -499,7 +483,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (1- (* 8 (ienv->long-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -522,7 +505,6 @@
   :returns (min integerp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
   (- (expt 2 (1- (* 8 (ienv->long-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -540,7 +522,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (* 8 (ienv->llong-bytes ienv))))
-  :hooks (:fix)
 
   ///
 
@@ -563,7 +544,6 @@
   :returns (max posp)
   :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
   (1- (expt 2 (1- (* 8 (ienv->llong-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -586,7 +566,6 @@
   :returns (min integerp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
   (- (expt 2 (1- (* 8 (ienv->llong-bytes ienv)))))
-  :hooks (:fix)
 
   ///
 
@@ -606,7 +585,6 @@
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uchar-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -624,7 +602,6 @@
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (ifix val))
        (<= (ifix val) (ienv->schar-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -643,7 +620,6 @@
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (ifix val))
        (<= (ifix val) (ienv->char-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -662,7 +638,6 @@
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ushort-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -680,7 +655,6 @@
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (ifix val))
        (<= (ifix val) (ienv->sshort-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -699,7 +673,6 @@
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->uint-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -717,7 +690,6 @@
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (ifix val))
        (<= (ifix val) (ienv->sint-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -736,7 +708,6 @@
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ulong-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -754,7 +725,6 @@
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (ifix val))
        (<= (ifix val) (ienv->slong-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -773,7 +743,6 @@
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ienv->ullong-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -791,7 +760,6 @@
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (ifix val))
        (<= (ifix val) (ienv->sllong-max ienv)))
-  :hooks (:fix)
 
   ///
 
@@ -807,8 +775,7 @@
 (define ienv->gcc ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
-  (c::version-gccp (ienv->version ienv))
-  :hooks (:fix))
+  (c::version-gccp (ienv->version ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -821,5 +788,4 @@
     (cond ((c::version-std-c17p ienv.version) 17)
           ((c::version-std-c23p ienv.version) 23)))
   :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
-                                           c::version-std-c23p)))
-  :hooks (:fix))
+                                           c::version-std-c23p))))
