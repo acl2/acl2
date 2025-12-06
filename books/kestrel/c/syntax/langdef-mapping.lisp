@@ -1711,9 +1711,9 @@
        ((when (extdecl-case extdecl :asm))
         (reterr (msg "Unsupported assembler statement at the top level.")))
        ((when (extdecl-case extdecl :fundef))
-        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
+        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->fundef extdecl))))
           (retok (c::ext-declon-fundef fundef))))
-       (decl (extdecl-decl->unwrap extdecl))
+       (decl (extdecl-decl->decl extdecl))
        ((mv erp fundeclon) (ldm-decl-fun decl))
        ((when (not erp))
         (retok (c::ext-declon-fun-declon fundeclon)))
@@ -1800,7 +1800,7 @@
     "Note that @(tsee c::fileset) is quite different from @(tsee c$::fileset).
      We plan to make the terminology more consistent."))
   (b* (((reterr) (c::fileset "" nil (c::file nil)))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation unit ensemble ~
                       with ~x0 translation units."

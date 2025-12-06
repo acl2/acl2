@@ -189,9 +189,6 @@
             not-of-if
 
             fix-when-acl2-numberp
-            acl2-numberp-of-+
-            acl2-numberp-of-fix
-            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -203,7 +200,7 @@
             double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
 
-            not-stringp-of-cons)
+            )
           (mv-nth-rules)
           (boolean-rules-safe)
           (booleanp-rules)))
@@ -252,7 +249,24 @@
     integerp-of--
     integerp-of-+
 
-    integerp-when-unsigned-byte-p-free))
+    integerp-when-unsigned-byte-p-free
+
+    ;; todo: acl2-numberp-when-integerp
+    ;; todo: acl2-numberp-when-natp ?
+    acl2-numberp-of-fix
+    acl2-numberp-of-+
+    acl2-numberp-of-*
+    acl2-numberp-of-unary--
+    acl2-numberp-of-mod
+    acl2-numberp-of-floor
+
+    integerp-of-ifix
+    integerp-of-+
+    integerp-of-*
+    integerp-of-mod
+
+    not-stringp-of-cons
+    ))
 
 (defun safe-trim-rules ()
   (declare (xargs :guard t))
@@ -2216,6 +2230,7 @@
 ;;normalize boolif nests that are really ands?
 
 ;; TODO: add many more rules to this?
+; not used?
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2284,10 +2299,10 @@
     bvplus-of-unary-minus
     bvchop-of-+-becomes-bvplus
     ;move these to type-rules:
-    integerp-of-*
-    acl2-numberp-of-+
-    acl2-numberp-of-*
-    acl2-numberp-of-unary--
+    ;; integerp-of-*
+    ;; acl2-numberp-of-+
+    ;; acl2-numberp-of-*
+    ;; acl2-numberp-of-unary--
     fix
     integerp-of-+-when-integerp-1-cheap
     mod-becomes-bvchop-when-power-of-2p

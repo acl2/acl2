@@ -1377,6 +1377,8 @@
 
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
+
+    acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
     ))
 
 ;; ;not used?

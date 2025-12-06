@@ -1070,10 +1070,10 @@
      This is why we include them in this predicate."))
   (extdecl-case
    edecl
-   :fundef (fundef-formalp edecl.unwrap)
-   :decl (or (decl-obj-formalp edecl.unwrap)
-             (decl-struct-formalp edecl.unwrap)
-             (decl-fun-formalp edecl.unwrap))
+   :fundef (fundef-formalp edecl.fundef)
+   :decl (or (decl-obj-formalp edecl.decl)
+             (decl-struct-formalp edecl.decl)
+             (decl-fun-formalp edecl.decl))
    :empty nil
    :asm nil)
   :hooks (:fix))
@@ -1115,7 +1115,7 @@
     "As in @(tsee ldm-transunit-ensemble),
      there must be a single translation unit,
      and in addition it must have formal dynamic semantics."))
-  (b* ((map (transunit-ensemble->unwrap tunits)))
+  (b* ((map (transunit-ensemble->units tunits)))
     (and (= (omap::size map) 1)
          (transunit-formalp (omap::head-val map))))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))

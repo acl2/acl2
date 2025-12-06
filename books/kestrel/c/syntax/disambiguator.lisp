@@ -1400,9 +1400,9 @@
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (dimb-make/adjust-expr-unary (unop-sizeof)
-                                                    expr-or-tyname.unwrap)
+                                                    expr-or-tyname.expr)
                        table)
-          :tyname (retok (expr-sizeof expr-or-tyname.unwrap)
+          :tyname (retok (expr-sizeof expr-or-tyname.tyname)
                          table)))
        :alignof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
@@ -1414,9 +1414,9 @@
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (dimb-make/adjust-expr-unary (unop-alignof expr.uscores)
-                                                    expr-or-tyname.unwrap)
+                                                    expr-or-tyname.expr)
                        table)
-          :tyname (retok (make-expr-alignof :type expr-or-tyname.unwrap
+          :tyname (retok (make-expr-alignof :type expr-or-tyname.tyname
                                             :uscores expr.uscores)
                          table)))
        :cast
@@ -1451,13 +1451,13 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/call-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/call-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                    expr.inc/dec
                                    new-arg/rest)
            table)
           :expr
           (retok
-           (dimb-cast/call-to-call (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/call-to-call (expr/tyname-expr->expr expr/tyname)
                                    expr.inc/dec
                                    new-arg/rest)
            table)))
@@ -1469,13 +1469,13 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/mul-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/mul-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                   expr.inc/dec
                                   new-arg/arg2)
            table)
           :expr
           (retok
-           (dimb-cast/mul-to-mul (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/mul-to-mul (expr/tyname-expr->expr expr/tyname)
                                  expr.inc/dec
                                  new-arg/arg2)
            table)))
@@ -1487,14 +1487,14 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/addsub-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/addsub-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                      expr.inc/dec
                                      new-arg/arg2
                                      (unop-plus))
            table)
           :expr
           (retok
-           (dimb-cast/addsub-to-addsub (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/addsub-to-addsub (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2
                                        (binop-add))
@@ -1507,14 +1507,14 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/addsub-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/addsub-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                      expr.inc/dec
                                      new-arg/arg2
                                      (unop-minus))
            table)
           :expr
           (retok
-           (dimb-cast/addsub-to-addsub (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/addsub-to-addsub (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2
                                        (binop-sub))
@@ -1527,13 +1527,13 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/and-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/and-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                   expr.inc/dec
                                   new-arg/arg2)
            table)
           :expr
           (retok
-           (dimb-cast/and-to-and (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/and-to-and (expr/tyname-expr->expr expr/tyname)
                                  expr.inc/dec
                                  new-arg/arg2)
            table)))
@@ -1545,13 +1545,13 @@
           expr/tyname
           :tyname
           (retok
-           (dimb-cast/logand-to-cast (expr/tyname-tyname->unwrap expr/tyname)
+           (dimb-cast/logand-to-cast (expr/tyname-tyname->tyname expr/tyname)
                                      expr.inc/dec
                                      new-arg/arg2)
            table)
           :expr
           (retok
-           (dimb-cast/logand-to-logand (expr/tyname-expr->unwrap expr/tyname)
+           (dimb-cast/logand-to-logand (expr/tyname-expr->expr expr/tyname)
                                        expr.inc/dec
                                        new-arg/arg2)
            table)))
@@ -1807,10 +1807,10 @@
              (dimb-amb-expr/tyname tyspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.unwrap
+          :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.expr
                                                    :uscores tyspec.uscores)
                        table)
-          :tyname (retok (make-type-spec-typeof-type :type expr/tyname.unwrap
+          :tyname (retok (make-type-spec-typeof-type :type expr/tyname.tyname
                                                      :uscores tyspec.uscores)
                          table)))
        :auto-type (retok (type-spec-auto-type) (dimb-table-fix table))))
@@ -1895,9 +1895,9 @@
              (dimb-amb-expr/tyname alignspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
+          :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
                        table)
-          :tyname (retok (align-spec-alignas-type expr/tyname.unwrap)
+          :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
                          table)))))
     :measure (align-spec-count alignspec))
 
@@ -2574,11 +2574,11 @@
                 (retmsg$ ""))
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
             (retok (make-param-declor-nonabstract
-                    :declor declor/absdeclor.unwrap
+                    :declor declor/absdeclor.declor
                     :info nil)
                    table))
           :absdeclor
-          (retok (param-declor-abstract declor/absdeclor.unwrap)
+          (retok (param-declor-abstract declor/absdeclor.absdeclor)
                  (dimb-table-fix table))))))
     :measure (param-declor-count paramdeclor))
 
@@ -2884,7 +2884,7 @@
                                 :init new-init)
                 table))
        :statassert
-       (b* (((erp new-statassert table) (dimb-statassert decl.unwrap table)))
+       (b* (((erp new-statassert table) (dimb-statassert decl.statassert table)))
          (retok (decl-statassert new-statassert) table))))
     :measure (decl-count decl))
 
@@ -3049,12 +3049,12 @@
             (table (dimb-pop-scope table)))
          (decl/stmt-case
           decl/expr
-          :decl (retok (make-stmt-for-decl :init decl/expr.unwrap
+          :decl (retok (make-stmt-for-decl :init decl/expr.decl
                                            :test new-test
                                            :next new-next
                                            :body new-body)
                        table)
-          :stmt (retok (make-stmt-for-expr :init decl/expr.unwrap
+          :stmt (retok (make-stmt-for-expr :init decl/expr.expr
                                            :test new-test
                                            :next new-next
                                            :body new-body)
@@ -3132,14 +3132,14 @@
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
          (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
        :ambig
-       (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.unwrap table)))
+       (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.decl/stmt table)))
          (decl/stmt-case
           decl/stmt
-          :decl (retok (make-block-item-decl :decl decl/stmt.unwrap
+          :decl (retok (make-block-item-decl :decl decl/stmt.decl
                                              :info nil)
                        table)
           :stmt (retok (make-block-item-stmt
-                        :stmt (make-stmt-expr :expr? decl/stmt.unwrap
+                        :stmt (make-stmt-expr :expr? decl/stmt.expr
                                               :info nil)
                         :info nil)
                        table)))))
@@ -3743,10 +3743,10 @@
     (extdecl-case
      extdecl
      :fundef
-     (b* (((erp new-fundef table) (dimb-fundef extdecl.unwrap table gcc)))
+     (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
        (retok (extdecl-fundef new-fundef) table))
      :decl
-     (b* (((erp new-decl table) (dimb-decl extdecl.unwrap table)))
+     (b* (((erp new-decl table) (dimb-decl extdecl.decl table)))
        (retok (extdecl-decl new-decl) table))
      :empty
      (retok (extdecl-fix extdecl) (dimb-table-fix table))
@@ -3875,7 +3875,7 @@
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
-       (tumap (transunit-ensemble->unwrap tuens))
+       (tumap (transunit-ensemble->units tuens))
        ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
