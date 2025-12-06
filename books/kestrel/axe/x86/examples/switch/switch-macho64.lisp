@@ -30,7 +30,11 @@
     :target "_classify_value"
     :extra-rules '(read-of-write-when-disjoint-regions48p-gen-smt
                    read-when-equal-of-read-bytes-and-subregion48p-smt
-                   acl2::bv-array-read-chunk-little-when-multiple-4-8-smt
+                   acl2::bv-array-read-chunk-little-when-multiple
+                   ;; bvmod-of-bvplus-when-multiple-arg1
+                   ;; bvmod-of-bvplus-when-multiple-arg2
+                   ;; bvmod-of-bvplus-when-multiple-arg2
+                   ;; acl2::bvmod-of-bvplus-gen
                    acl2::slice-trim-axe-all
                    acl2::bvplus-trim-arg2-axe-all
                    acl2::bvplus-trim-arg3-axe-all
@@ -38,14 +42,17 @@
                    acl2::bv-array-read-trim-index-axe-all
                    acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                    x86isa::x86-fetch-decode-execute-of-if)
-    :remove-rules '(acl2::bv-array-read-chunk-little-unroll)
+    :remove-rules '(acl2::bv-array-read-chunk-little-unroll
+                    ;; acl2::bvmod-of-power-of-2
+                    )
     :position-independent nil
     :inputs ((x u32))
     :output :rax
     :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
 ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
 ;               bv-array-read-chunk-little-of-bvchop-trim-index
-               ;bv-array-read-chunk-little-when-multiple
+               ;; acl2::bv-array-read-chunk-little-when-multiple
+               ;; bvmod-of-bvplus-when-multiple-arg1
                )
     :stack-slots 10)
 

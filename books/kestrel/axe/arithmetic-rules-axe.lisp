@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also basic-rules.lisp
+
 (defthm equal-of-+-combine-constants-alt
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)))
