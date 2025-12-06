@@ -1169,7 +1169,7 @@
                  (ident-set-fix bound-vars)))
      :statassert
      (mv (decl-statassert
-           (statassert-subst-free (c$::decl-statassert->unwrap decl)
+           (statassert-subst-free (c$::decl-statassert->statassert decl)
                                   subst bound-vars))
          nil))
     :measure (decl-count decl))
@@ -1365,7 +1365,7 @@
                                subst bound-vars)
        :info stmt.info)
      :asm (c$::stmt-asm
-            (asm-stmt-subst-free (c$::stmt-asm->unwrap stmt)
+            (asm-stmt-subst-free (c$::stmt-asm->stmt stmt)
                                  subst bound-vars)))
     :measure (stmt-count stmt))
 
@@ -1390,7 +1390,7 @@
          (ident-set-fix bound-vars))
      :ambig
      (mv (c$::block-item-ambig (amb-decl/stmt-subst-free
-                                 (c$::block-item-ambig->unwrap block-item)
+                                 (c$::block-item-ambig->decl/stmt block-item)
                                  subst bound-vars))
          (ident-set-fix bound-vars)))
     :measure (block-item-count block-item))

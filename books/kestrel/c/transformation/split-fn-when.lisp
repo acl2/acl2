@@ -152,7 +152,7 @@
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (fundef-try-split-fn-when
-                      extdecl.unwrap
+                      extdecl.fundef
                       triggers
                       transunits)))
                 (fundef-option-case
@@ -235,7 +235,7 @@
   (b* (((reterr) nil (irr-transunit-ensemble))
        ((transunit-ensemble tunits) tunits)
        ((erp found map)
-        (filepath-transunit-map-try-split-fn-when tunits.unwrap
+        (filepath-transunit-map-try-split-fn-when tunits.units
                                                   triggers
                                                   tunits)))
     (retok found (transunit-ensemble map))))

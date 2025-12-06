@@ -5769,7 +5769,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert decl.unwrap table ienv)))
+             (valid-statassert decl.statassert table ienv)))
          (retok (decl-statassert new-statassert) types table))))
     :measure (decl-count decl))
 
@@ -6118,7 +6118,7 @@
                 nil
                 table))
        :asm
-       (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table))))
+       (retok (stmt-asm stmt.stmt) nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6780,14 +6780,14 @@
     (extdecl-case
      edecl
      :fundef (b* (((erp new-fundef table)
-                   (valid-fundef edecl.unwrap table ienv)))
+                   (valid-fundef edecl.fundef table ienv)))
                (retok (extdecl-fundef new-fundef) table))
      :decl (b* (((erp new-decl types table)
-                 (valid-decl edecl.unwrap table ienv))
+                 (valid-decl edecl.decl table ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
-                          edecl.unwrap)))
+                          edecl.decl)))
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
@@ -6921,7 +6921,7 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((erp new-map)
         (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
        (- (if keep-going

@@ -56,6 +56,13 @@
   ((unwrap byte-list))
   :pred filedatap)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-filedata
+  :short "An irrelevant file data value."
+  :type filedatap
+  :body (filedata nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap filepath-filedata-map
