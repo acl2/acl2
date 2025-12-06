@@ -18,15 +18,11 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (acl2::controlled-configuration)
 
 (acl2::set-waterfall-parallelism nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Needed by FTY
-(local (in-theory (enable nfix fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3415,6 +3411,8 @@
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix fix))))
 
   ///
 
