@@ -13,6 +13,8 @@
 (include-book "parser-states")
 (include-book "parser-messages")
 (include-book "abstract-syntax-irrelevants")
+(include-book "files")
+(include-book "implementation-environments")
 
 (include-book "kestrel/fty/character-list" :dir :system)
 (include-book "kestrel/fty/nat-option" :dir :system)
