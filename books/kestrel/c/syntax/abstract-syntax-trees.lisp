@@ -19,7 +19,6 @@
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration
   ;; Needed by FTY
   :induction-depth 1)
