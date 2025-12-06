@@ -14,11 +14,7 @@
 
 (include-book "kestrel/fty/nat-option" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,6 +137,7 @@
         (t (msg "the non-ASCII Unicode character with code ~x0" char)))
   :guard-hints (("Goal" :in-theory (enable character-listp
                                            nat-optionp)))
+  :hooks nil
 
   :prepwork
   ((defconst *ascii-control-char-names*
