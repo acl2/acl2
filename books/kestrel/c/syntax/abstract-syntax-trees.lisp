@@ -19,9 +19,7 @@
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
-(acl2::controlled-configuration
-  ;; Needed by FTY
-  :induction-depth 1)
+(acl2::controlled-configuration)
 
 (acl2::set-waterfall-parallelism nil)
 
