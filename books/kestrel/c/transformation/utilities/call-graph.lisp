@@ -497,7 +497,7 @@
    :decl (call-graph-initdeclor-list decl.init fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
-   :statassert (call-graph-statassert decl.unwrap fn-name filepath valid-table call-graph)))
+   :statassert (call-graph-statassert decl.statassert fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -685,7 +685,7 @@
   :returns (call-graph$ call-graphp)
   (extdecl-case
    extdecl
-   :fundef (call-graph-fundef extdecl.unwrap filepath valid-table call-graph)
+   :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
    :decl (call-graph-fix call-graph)
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
@@ -743,7 +743,7 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit ensemble."
   (call-graph-filepath-transunit-map
-   (c$::transunit-ensemble->unwrap ensemble)
+   (c$::transunit-ensemble->units ensemble)
    nil)
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 

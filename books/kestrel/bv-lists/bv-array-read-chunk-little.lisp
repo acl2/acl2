@@ -106,7 +106,7 @@
 (defthmd bv-array-read-chunk-little-alt-def
   (implies (and (posp element-count) ; gen?
                 (posp element-size)                 ;(natp element-size)
-                (unsigned-byte-listp element-size array)
+         ;       (unsigned-byte-listp element-size array)
                 (natp index)
                 (equal array-len (len array))
                 ;(<= element-count array-len)
@@ -114,10 +114,11 @@
            (equal (bv-array-read-chunk-little element-count element-size array-len index array)
                   (packbv-little element-count element-size (take element-count (nthcdr index array)))))
   :hints (("Goal" :induct t
-           :in-theory (enable bv-array-read-chunk-little
-                              packbv-little ; todo
-                              packbv-opener-alt ;packbv
-                              ))))
+                  :in-theory (enable bv-array-read-chunk-little
+                                     bv-array-read
+                                     packbv-little ; todo
+                                     packbv-opener-alt ;packbv
+                                     ))))
 
 ;; (thm
 ;;   (implies (and (posp element-count)

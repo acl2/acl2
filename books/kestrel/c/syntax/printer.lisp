@@ -3638,7 +3638,7 @@
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert
-     (print-statassert decl.unwrap pstate))
+     (print-statassert decl.statassert pstate))
     :measure (two-nats-measure (decl-count decl) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4141,7 +4141,7 @@
           (pstate (print-new-line pstate)))
        pstate)
      :asm
-     (print-asm-stmt stmt.unwrap pstate))
+     (print-asm-stmt stmt.stmt pstate))
     :measure (two-nats-measure (stmt-count stmt) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4360,12 +4360,12 @@
   :short "Print an external declaration."
   (extdecl-case
    extdecl
-   :fundef (print-fundef extdecl.unwrap pstate)
-   :decl (print-decl extdecl.unwrap pstate)
+   :fundef (print-fundef extdecl.fundef pstate)
+   :decl (print-decl extdecl.decl pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
             pstate)
-   :asm (print-asm-stmt extdecl.unwrap pstate))
+   :asm (print-asm-stmt extdecl.stmt pstate))
   :hooks (:fix)
 
   ///
@@ -4487,7 +4487,7 @@
      we print the translation units of the map to files into a file map,
      and we wrap the file map into a file set."))
   (fileset
-   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits)
+   (print-filepath-transunit-map (transunit-ensemble->units tunits)
                                  options
                                  gcc))
   :hooks (:fix)
@@ -4496,4 +4496,4 @@
 
   (defret keys-of-print-fileset
     (equal (omap::keys (fileset->unwrap fileset))
-           (omap::keys (transunit-ensemble->unwrap tunits)))))
+           (omap::keys (transunit-ensemble->units tunits)))))

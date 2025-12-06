@@ -1064,7 +1064,7 @@
    (xdoc::p
     "Together with @(tsee transunit-at-path),
      it can be used as an API to inspect translation unit ensembles."))
-  (omap::keys (transunit-ensemble->unwrap tunits)))
+  (omap::keys (transunit-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1084,6 +1084,6 @@
     "Together with @(tsee transunit-ensemble-paths),
      it can be used an as API to inspect a file set."))
   (transunit-fix
-   (omap::lookup (filepath-fix path) (transunit-ensemble->unwrap tunits)))
+   (omap::lookup (filepath-fix path) (transunit-ensemble->units tunits)))
   :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
                                            transunit-ensemble-paths))))

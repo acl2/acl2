@@ -24,7 +24,7 @@
                (fundef fundefp))
   (extdecl-case
    extdecl
-   :fundef (b* (((fundef fundef) extdecl.unwrap))
+   :fundef (b* (((fundef fundef) extdecl.fundef))
              (if (equal ident (declor->ident fundef.declor))
                  (mv t (c$::fundef-fix fundef))
                (mv nil (c$::irr-fundef))))
