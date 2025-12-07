@@ -3762,7 +3762,11 @@
                   parstate)))
     parstate)
   :guard-hints (("Goal" :in-theory (enable natp)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv unread-to-token
+    :args ((token-index natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3815,7 +3819,11 @@
                   parstate)))
     parstate)
   :guard-hints (("Goal" :in-theory (enable natp)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv reread-to-token
+    :args ((token-index natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
