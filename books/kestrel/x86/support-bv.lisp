@@ -123,31 +123,31 @@
                                    BVAND-LOGTAIL-ARG1 ;looped
                                    )))))
 
-;gen
-(defthm bvchop-of-+-of-*-of-256
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvchop 8 (+ x (* 256 y)))
-                  (bvchop 8 x))))
+;; ;gen
+;; (defthmd bvchop-of-+-of-*-of-256
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (bvchop 8 (+ x (* 256 y)))
+;;                   (bvchop 8 x))))
 
-;go to bvmult first?
-(defthm bvplus-of-*-of-256
-  (implies (and (natp size)
-                (<= 8 size)
-                (unsigned-byte-p 8 byte)
-                (integerp val))
-           (equal (bvplus size byte (* 256 val))
-                  (bvcat (- size 8) val 8 byte)))
-  :hints (("Goal"
-           :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
-                           (x val))
-           :in-theory (e/d (bvcat bvplus
-                                        bvchop-of-sum-cases
-                                        logtail
-                                        EXPT-OF-+)
-                           (bvchop-upper-bound
-                            bvchop-upper-bound-strong
-                            BVCHOP-BOUND-2)))))
+;; ;go to bvmult first?
+;; (defthmd bvplus-of-*-of-256
+;;   (implies (and (natp size)
+;;                 (<= 8 size)
+;;                 (unsigned-byte-p 8 byte)
+;;                 (integerp val))
+;;            (equal (bvplus size byte (* 256 val))
+;;                   (bvcat (- size 8) val 8 byte)))
+;;   :hints (("Goal"
+;;            :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
+;;                            (x val))
+;;            :in-theory (e/d (bvcat bvplus
+;;                                         bvchop-of-sum-cases
+;;                                         logtail
+;;                                         EXPT-OF-+)
+;;                            (bvchop-upper-bound
+;;                             bvchop-upper-bound-strong
+;;                             BVCHOP-BOUND-2)))))
 
 ;; ;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
 ;; (defthmd open-ash-positive-constants
