@@ -13991,20 +13991,79 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore input-arity))
   `(multiple-value-list ,x))
 
+; In raw Lisp, the live version of state is held in the constant
+; *the-live-state* (whose value is actually just a symbol because we don't
+; really represent the live state as an object).  But what is the live version
+; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
+
+(defmacro live-stobjp (name)
+
+; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
+; object is a vector, unless it is a string; nor is any ordinary ACL2 object a
+; hash table (unlike the raw Lisp representation of a single-field stobj whose
+; field is a hash table).
+
+  `(or (and (typep ,name 'vector)
+            (not (stringp ,name)))
+       (typep ,name 'hash-table)))
+
+#-acl2-loop-only
+(declaim (inline swap-stobjs-check))
+#-acl2-loop-only
+(defun swap-stobjs-check (xname x yname y)
+
+; Here is an example (really two examples) illustrating the use of this check.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defstobj st fld)
+;   (defstobj st1 fld1 :congruent-to st)
+;   (defun st-init (st)
+;     (declare (xargs :stobjs (st)))
+;     (with-local-stobj st1
+;       (mv-let (st1 st)
+;         (swap-stobjs st1 st)
+;         st)))
+;   (defwarrant st-init)
+;   ; Error from swap-stobjs-check:
+;   (thm (equal xxx (st-init '(1))))
+;   ; Error from swap-stobjs-check, even within do$:
+;   (thm (equal xxx
+;               (loop$ with x = 1 with y = 'anything
+;                      do
+;                      :guard (natp x)
+;                      :measure (nfix x)
+;                      (if (posp x)
+;                          (progn (setq y (st-init '(1)))
+;                                 (setq x (1- x)))
+;                        (return y)))))
+
+  (unless (iff (live-stobjp x)
+               (live-stobjp y))
+    (error "~s has been called on stobjs named ~s and ~s,~%where the value of ~
+            ~s is a live stobj but the value of ~s is not.~%This is an error, ~
+            as such calls are unsupported; see :DOC swap-stobjs.~%Advanced ~
+            users may find it helpful to evaluate the ~
+            form~%(set-debugger-enable :bt)~%to see a backtrace of calls ~
+            leading to this error;~%see :DOC set-debugger-enable."
+           'swap-stobjs
+           xname yname
+           (if (live-stobjp x) xname yname)
+           (if (live-stobjp y) xname yname)))
+  nil)
+
 (defmacro swap-stobjs (x y)
 
 ; The call (swap-stobjs st1 st2) logically swaps two input stobjs st1 and st2,
-; but with the same stobjs-out as (mv st1 st2).  See translate11
+; but with the same stobjs-out as (mv st1 st2).  See translate11.
 
-; Note that since there are no duplicate live stobjs, it should be fine to call
-; this macro even if one or both inputs are locally-bound (by with-local-stobj,
-; with-global-stobj, or stobj-let).  Ultimately, the user-stobj-alist is put
-; right by the calls of latch-stobjs in raw-ev-fncall.
+; Note that since there are no duplicate live stobjs, it should normally be
+; fine to call this macro even if one or both inputs are locally-bound (by
+; with-local-stobj, with-global-stobj, or stobj-let).  Ultimately, the
+; user-stobj-alist is put right by the calls of latch-stobjs in raw-ev-fncall.
 
-; Trans-eval does not itself manage the user-stobj-alist, so we disallow the
-; use of swap-stobjs at the top level; see translate11 and macroexpand1*-cmp.
-; Before implementing that restriction, the following example illustrated that
-; the user-stobj-alist wasn't being suitably updated by top-level calls.
+; But if evaluation takes place in the top-level loop, raw-ev-fncall may not
+; get a chance to update the user-stobj-alist, as illustrated by the following
+; example, which gave the indicated results through ACL2 Version  8.6.
 
 ;   (defstobj st1 fld1)
 ;   (defstobj st2 fld2 :congruent-to st1)
@@ -14013,14 +14072,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;     (swap-stobjs st1 st2))
 ;   (update-fld1 3 st1)
 ;   (update-fld1 4 st2)
-;   (swap-stobjs st1 st2)
-;   (fld1 st1) ; ERROR: 3, but should be 4
-;   (fld1 st2) ; ERROR: 4, but should be 3
+;   (mv-let (st1 st2) (swap-stobjs st1 st2) (mv st1 st2))
+;   (assert-event (equal (fld1 st1) 3)) ; ERROR: should be 4
+;   (assert-event (equal (fld1 st2) 4)) ; ERROR: should be 3
 ;   (foo st1 st2)
-;   (fld1 st1) ; 4, now as expected
-;   (fld1 st2) ; 3, now as expected
+;   (assert-event (equal (fld1 st1) 4)) ; switched back, as expected
+;   (assert-event (equal (fld1 st2) 3)) ; switched back, as expected
 
-  `(mv ,y ,x))
+; We initially fixed this problem by attempting to disallow calls of
+; swap-stobjs directly in the top-level loop, by disallowing translate on calls
+; of swap-stobj with stobjs-out = :stobjs-out.  That prevented the first
+; swap-stobjs call above when not surrounded by mv-let, but it let that mv-let
+; form slip through.  Our fix is to check that swap-stobjs is called only in
+; the context of a function's body; see translate11.  We could consider
+; permiting swap-stobjs in other contexts as well, in particular guards and
+; measures and even macro bodies, but we don't see any use in doing so.  If
+; such a use becomes apparent, some thought should be put into whether that
+; relaxation is truly appropriate.
+
+; By restricting to function bodies, we gain some confidence that
+; (swap-stobjs-check ',x ,x ',y ,y) will be checked.  Note that we only make
+; this restriction when translating for execution, i.e., when stobjs-out is not
+; t.  In that case, translation will simply macroexpand stobjs-out, so no
+; special consideration of stobjs is necessary.  Note that during proofs we
+; have a different mechanism in place to catch problematic evaluation involving
+; swap-stobjs (within function bodies, when swap-stobjs is not macroexpanded
+; away); see the use of chk-for-live-stobj in raw-ev-fncall.
+
+  `(progn$ #-acl2-loop-only (swap-stobjs-check ',x ,x ',y ,y)
+           (mv ,y ,x)))
 
 (defun update-nth (key val l)
   (declare (xargs :guard (true-listp l))
@@ -14699,6 +14779,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-cbd
     with-current-package
     ec-call
+    swap-stobjs
     ))
 
 (defun untouchable-marker (mac)
