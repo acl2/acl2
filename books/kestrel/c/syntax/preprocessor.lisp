@@ -446,7 +446,7 @@
     :returns (ppstate ppstatep)
     (mbe :logic (if (ppstatep ppstate)
                     ppstate
-                  (create-ppstate))
+                  (non-exec (create-ppstate)))
          :exec ppstate)
     ///
     (defrule ppstate-fix-when-ppstatep

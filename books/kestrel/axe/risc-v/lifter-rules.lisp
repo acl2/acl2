@@ -54,13 +54,6 @@
 (def-constant-opener riscv::get-fields-stype)
 (def-constant-opener riscv::feat->m$inline)
 
-(def-constant-opener logtail$inline)
-(def-constant-opener expt2$inline)
-(def-constant-opener ifloor$inline)
-(def-constant-opener logapp)
-(def-constant-opener binary-logand)
-(def-constant-opener ash)
-
 (def-constant-opener riscv::instr-op-imm)
 (def-constant-opener riscv::op-imm-funct-kind$inline)
 

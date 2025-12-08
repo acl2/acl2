@@ -654,7 +654,7 @@
     :returns (parstate parstatep)
     (mbe :logic (if (parstatep parstate)
                     parstate
-                  (create-parstate))
+                  (non-exec (create-parstate)))
          :exec parstate)
     :inline t
     ///
