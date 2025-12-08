@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "preprocessor-states")
-(include-book "parser-messages")
+(include-book "preprocessor-messages")
 (include-book "abstract-syntax-irrelevants")
 (include-book "files")
 (include-book "implementation-environments")
@@ -68,16 +68,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro utf8-= (x y)
-  `(= (the unsigned-byte ,x)
-      (the unsigned-byte ,y)))
-
-(defmacro utf8-<= (x y)
-  `(<= (the unsigned-byte ,x)
-       (the unsigned-byte ,y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruledl car-of-byte-list-geq-0
   (implies (byte-listp x)
            (>= (car x) 0)))
@@ -118,72 +108,9 @@
    (xdoc::p
     "This preprocessor is very much work in progress."))
   :order-subtopics (preprocessor-states
+                    preprocessor-messages
                     t)
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pchar-to-msg ((char nat-optionp))
-  :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp
-                                                   character-alistp))))
-  :short "Represent an optional character as a message,
-          in the preprocessor."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is almost identical to @(tsee char-to-msg)
-     (see its documentation first)
-     with the difference that we consider LF and CR separately.
-     This matches the fact that @(tsee pread-char), unlike @(tsee read-char),
-     does not normalize the three possible kinds of new lines to LF."))
-  (cond ((not char) "end of file")
-        ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
-                          (nth char *pchar-to-msg-ascii-control-char-names*)
-                          char))
-        ((utf8-= char 32) "the SP (space) character (ASCII code 32)")
-        ((and (utf8-<= 33 char) (utf8-<= char 126))
-         (msg "the ~s0 character (ASCII code ~x1)"
-              (str::implode (list (code-char char))) char))
-        ((utf8-= char 127) "the DEL (delete) character (ASCII code 127)")
-        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
-  :guard-hints (("Goal" :in-theory (enable character-listp
-                                           nat-optionp)))
-
-  :prepwork
-  ((defconst *pchar-to-msg-ascii-control-char-names*
-     '("NUL"
-       "SOH"
-       "STX"
-       "ETX"
-       "EOT"
-       "ENQ"
-       "ACK"
-       "BEL"
-       "BS (backspace)"
-       "HT (horizontal tab)"
-       "LF (line feed)"
-       "VT (vertical tab)"
-       "FF (form feed)"
-       "CR (carriage return)"
-       "SO"
-       "SI"
-       "DLE"
-       "DC1"
-       "DC2"
-       "DC3"
-       "DC4"
-       "NAK"
-       "SYN"
-       "ETB"
-       "CAN"
-       "EM"
-       "SUB"
-       "ESC"
-       "FS"
-       "GS"
-       "RS"
-       "US"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
