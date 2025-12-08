@@ -76,16 +76,13 @@
 
 ;drop?
 (defthm bvsx-of-bvchop
-  (implies (and ;(posp old-size)
-                (natp new-size))
-           (equal (bvsx new-size old-size (bvchop old-size x))
-                  (bvsx new-size old-size x)))
+  (equal (bvsx new-size old-size (bvchop old-size x))
+         (bvsx new-size old-size x))
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvsx-of-bvchop-gen
   (implies (and (<= old-size size)
-                (integerp size)
-                (natp new-size))
+                (integerp size))
            (equal (bvsx new-size old-size (bvchop size x))
                   (bvsx new-size old-size x)))
   :hints (("Goal" :in-theory (enable bvsx))))

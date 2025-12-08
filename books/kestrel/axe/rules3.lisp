@@ -790,6 +790,7 @@
                                         BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
+;todo: gen!
 (defthm bvlt-of-bvchop-tighten
   (implies (and (unsigned-byte-p 31 y)
                 (< 31 size) ;<= would loop
@@ -4195,6 +4196,7 @@
                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;add other cases?
+;; could restrict (e.g., to require x to be a constant and/or y to be a bvcat with low zeros)
 (defthm slice-of-bvplus-cases-no-split-case-no-carry
   (implies (and (equal size (+ 1 high))
                 (equal 0 (bvchop low x))
@@ -5290,6 +5292,7 @@
                                    bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;; 0=y-x  --> x=y
+;; todo: move, and compare to EQUAL-OF-BVPLUS-OF-BVUMINUS-AND-0
 (defthm equal-of-0-and-bvplus-of-bvuminus
   (equal (equal 0 (bvplus size (bvuminus size x) y))
          (equal (bvchop size x)
@@ -5303,12 +5306,14 @@
                                   (;trim-to-n-bits-meta-rule-for-slice ;looped!
                                    bvminus-becomes-bvplus-of-bvuminus)))))
 
+;todo: move
 (defthm equal-of-0-and-bvplus-of-bvuminus-alt
   (equal (equal 0 (bvplus size y (bvuminus size x)))
          (equal (bvchop size x)
                 (bvchop size y)))
   :hints (("Goal" :use (:instance equal-of-0-and-bvplus-of-bvuminus)
-           :in-theory (disable equal-of-0-and-bvplus-of-bvuminus))))
+                  :in-theory (disable equal-of-0-and-bvplus-of-bvuminus
+                                      equal-of-bvplus-of-bvuminus-and-0))))
 
 ;gen the k (i.e., the -1)?
 (defthm bvplus-of-minus-1-tighten
@@ -10744,7 +10749,8 @@
            (UNSIGNED-BYTE-P XSIZE Y))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
 
-(defthm bv-array-read-of-+
+;; todo: compare to bv-array-read-of-+-arg3
+(defthmd bv-array-read-of-+
   (implies (and (power-of-2p len) ;require syntaxp?
                 (integerp x)
                 (integerp y))

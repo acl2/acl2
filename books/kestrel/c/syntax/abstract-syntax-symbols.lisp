@@ -51,7 +51,7 @@
     constp
     const-fix
     const-case
-    const-int->unwrap
+    const-int->iconst
 
     typequal/attribspec-list-listp
 
@@ -436,7 +436,7 @@
     extdecl-fix
     extdecl-case
     extdecl-fundef
-    extdecl-fundef->unwrap
+    extdecl-fundef->fundef
     extdecl-decl
     extdecl-empty
 
@@ -452,7 +452,7 @@
 
     transunit-ensemblep
     transunit-ensemble
-    transunit-ensemble->unwrap
+    transunit-ensemble->units
 
     filepathp
     filepath
@@ -625,8 +625,6 @@
     ;; formalized subset:
 
     ident-formalp
-    expr-pure-formalp
-    expr-asg-formalp
     expr-formalp
     initer-formalp
     dirdeclor-block-formalp

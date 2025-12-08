@@ -15,7 +15,7 @@
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
@@ -30,7 +30,7 @@
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
@@ -44,14 +44,14 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
+(include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
-(include-book "kestrel/lists-light/subrange" :dir :system)
+;(include-book "kestrel/lists-light/subrange-def" :dir :system) ; comes in via defforall
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -59,7 +59,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 

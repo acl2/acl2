@@ -1,8 +1,27 @@
 (in-package "X")
 
-(include-book "kestrel/axe/x86/unroller" :dir :system) ; todo: reduce, or file all these rules
+;; todo: file all these rules
 
-(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
+(include-book "kestrel/axe/axe-syntax" :dir :system) ; for axe-smt
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvmod" :dir :system)
+(include-book "kestrel/bv/bvdiv" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-hack
+(local (include-book "kestrel/bv/rules10" :dir :system))
+(local (include-book "kestrel/lists-light/group" :dir :system)) ; for acl2::*-of-/-same-alt
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/axe/rules3" :dir :system))
+(local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
+
+;(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
+
+(local (in-theory (disable nth len)))
 
 (defthm *-of-4-and-slice-when-multiple
   (implies (and (equal 0 (mod index 4))
@@ -33,11 +52,12 @@
   :hints (("Goal" :in-theory (enable logtail))))
 
 ;todo: gen!
+;; reading a chunk of 4 8-bit bytes
 (defthm bv-array-read-chunk-little-when-multiple-4-8-helper
   (implies (and (equal 0 (bvchop 2 index)) ; index is a multiple of the chunk size
-                (equal 0 (bvchop 2 len))
+                (equal 0 (bvchop 2 len)) ; len is a multiple of the chunk size ; gen?
                 (equal len (len array)) ; todo
-                (< (+ -1 index 4) len)
+                (< (+ -1 index 4) len) ; entire chunk is in bounds
                 (natp index)
                 )
            (equal (bv-array-read-chunk-little 4 8 len index array)
@@ -47,13 +67,11 @@
                                         2
                                         index)
                                  (packbvs-little 4 8 array))))
-  :hints (("Goal" :expand ( ;(slice 6 2 index)
-                           (bvchop 2 (len array))
+  :hints (("Goal" :expand ((bvchop 2 (len array))
                            (bvchop 2 index)
 ;                           (bvlt (ceiling-of-lg len) (bvplus (ceiling-of-lg len) 3 index) len)
  ;                          (bvlt (ceiling-of-lg (len array)) (+ 3 index) (len array))
-                           (slice (+ -1 (ceiling-of-lg (len array)))
-                         2 index))
+                           (slice (+ -1 (ceiling-of-lg (len array))) 2 index))
                   :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (bv-array-read
                                    packbv-little
@@ -93,6 +111,7 @@
                   :in-theory (e/d (bvlt acl2::bvchop-of-sum-cases)
                                   (bv-array-read-chunk-little-when-multiple-4-8-helper)))))
 
+;; SMT version
 (defthm acl2::bv-array-read-chunk-little-when-multiple-4-8-smt
   (implies (and (equal 0 (bvchop 2 index)) ; index is a multiple of the chunk size
                 (equal 0 (bvchop 2 len)) ; len is a multiple of the chunk size
@@ -229,80 +248,127 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; One value is fixed, the other is a list
-(defund map-bvplus-val (size val lst)
-  (if (endp lst)
-      nil
-    (cons (bvplus size val (first lst))
-          (map-bvplus-val size val (rest lst)))))
+;; (defthm packbv-little-of-1
+;;   (equal (packbv-little 1 itemsize items)
+;;          (bvchop itemsize (nth (+ -1 (len items)) items)))
+;;   :hints (("Goal" :in-theory (enable packbv-little))))
 
-(defthm unsigned-byte-listp-of-map-bvplus-val
-  (implies (natp size)
-           (unsigned-byte-listp size (map-bvplus-val size val data)))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
+;;    ;move
+;; (local (include-book "kestrel/lists-light/len" :dir :system))
+;; (defthm packbvs-little-of-1
+;;   (implies (equal 1 (len items))
+;;            (equal (packbvs-little 1 itemsize items)
+;;                   (acl2::bvchop-list itemsize items)))
+;;  :hints (("Goal" :in-theory (enable packbvs-little acl2::bvchop-list))))
 
-(defthm len-of-map-bvplus-val
-  (equal (len (map-bvplus-val high low data))
-         (len data))
-  :hints (("Goal" :in-theory (enable map-bvplus-val))))
+(local
+ (defthmd bv-array-read-chunk-little-when-multiple-helper
+   (implies (and (equal 0 (mod index element-count)) ; index is a multiple of the chunk size
+                 (equal 0 (mod len element-count)) ; len is a multiple of the chunk size ; gen?
+                 (equal len (len array))           ; todo
+                 (< (+ -1 index element-count) len) ; entire chunk is in bounds
+                 (natp index)
+                 (posp element-count)
+                 (posp element-size))
+            (equal (bv-array-read-chunk-little element-count element-size len index array)
+                   (bv-array-read (* element-size element-count)
+                                  (/ len element-count)
+                                  (/ index element-count) ; slice
+                                  (packbvs-little element-count element-size array))))
+   :hints (("Goal" :expand (bv-array-read (* element-size element-count)
+                                          (* (/ element-count) (len array))
+                                          (* (/ element-count) index)
+                                          (packbvs-little element-count element-size array))
+                   :in-theory (e/d (bv-array-read
+                                    acl2::bv-array-read-chunk-little-alt-def)
+                                   (acl2::bvcat-equal-rewrite
+                                    acl2::bvcat-equal-rewrite-alt
+                                    acl2::bvcat-of-nth-arg4 ; todo
+                                    acl2::bv-array-read-chunk-little-unroll))))))
 
-(def-constant-opener map-bvplus-val)
-
-(defthmd bvplus-of-nth
-  (implies (and (natp n)
-                (< n (len data)))
-           (equal (bvplus size val (nth n data))
-                  (nth n (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable map-bvplus-val (:I nth)))))
-
-(defthm bvplus-of-bv-array-read-constant-array
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (or (power-of-2p len)
-                    (bvlt (ceiling-of-lg len) index (len data)))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
-
-(defthm bvplus-of-bv-array-read-constant-array-smt
-  (implies (and (syntaxp (and (quotep data)
-                              (quotep val)
-                              (quotep size)))
-                (natp size)
-                (axe-smt (or (power-of-2p len)
-                             (bvlt (ceiling-of-lg len) index (len data))))
-                (equal len (len data)))
-           (equal (bvplus size val (bv-array-read size len index data))
-                  (bv-array-read size len index (map-bvplus-val size val data))))
-  :hints (("Goal" :in-theory (enable bv-array-read bvplus-of-nth bvlt))))
-
-;; todo: to be more general, support splitting when the bv-array-read is not the entire new rip term.
-;; approach: create an identify function that causes things to be split (and ifs to be lifted)? and propagate it downward through a non-constant set-rip argument when there is something to split.
-(defthm set-rip-of-bv-array-read-split-cases
-  (implies (and (syntaxp (quotep data))
-                (< len 20) ; todo: how many cases do we want to handle?
-                (posp len)
-                (natp index)
+;; This can introduce a call of bv-array-read, which the SMT solver knows about.
+;; improve name?
+;; the bvmod may cause trouble when element-count is not a power of 2
+(defthmd acl2::bv-array-read-chunk-little-when-multiple
+  (implies (and (syntaxp (and (quotep array) ; because we are going to pack the elements
+                              (quotep len)
+                              (quotep element-size)
+                              (quotep element-count)))
+                (equal 0 (bvmod (ceiling-of-lg len) index element-count)) ; index is a multiple of the chunk size, could go to bvchop if power-of-2
+                (equal 0 (mod len element-count)) ; len is a multiple of the chunk size ; gets computed
+                (equal len (len array)) ; gets computed  ; todo?
+                (axe-smt (bvlt (ceiling-of-lg len) index (bvplus (ceiling-of-lg len) (- 1 element-count) len))) ; entire chunk is in bounds
+                ;(natp index)
                 (unsigned-byte-p (ceiling-of-lg len) index)
-                (bvle (ceiling-of-lg len) index (+ -1 len)) ; todo?
-                )
-           (equal (set-rip (bv-array-read size len index data) x86)
-                  (set-rip (bv-array-read-cases (bvchop (ceiling-of-lg len) (+ -1 len)) size len index data) x86)))
-  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))
+                (unsigned-byte-p (ceiling-of-lg len) element-count)
+                (posp element-count)
+                (posp element-size))
+           (equal (bv-array-read-chunk-little element-count element-size len index array)
+                  (bv-array-read (* element-size element-count) ; gets computed
+                                 (/ len element-count) ; gets computed
+                                 (bvdiv (ceiling-of-lg len) index element-count) ; could go got slice if power-of-2
+                                 (packbvs-little element-count element-size array) ; gets computed!
+                                 )))
+  :hints (("Goal" :use (:instance bv-array-read-chunk-little-when-multiple-helper)
+                  :cases ((equal (len array) element-count)
+                          (< (len array) element-count))
+                  :in-theory (enable bvmod bvdiv bvlt bvplus acl2::floor-when-mod-0))))
 
-(defthm set-rip-of-bvif-split
-  (equal (set-rip (bvif size test tp ep) x86)
-         (if test
-             (set-rip (bvchop size tp) x86)
-           (set-rip (bvchop size ep) x86))))
+;;move
+(defthm mod-of-+-of-mod-arg2+
+  (implies (and (rationalp x1)
+                (rationalp x2)
+                (rationalp x3)
+                (rationalp y)
+                (< 0 y))
+           (equal (mod (+ x1 (mod x2 y) x3) y)
+                  (mod (+ x1 x2 x3) y)))
+  :hints (("Goal" :use (:instance acl2::mod-of-+-of-mod-arg2
+                                  (x1 (+ x1 x3)))
+                  :in-theory (disable acl2::mod-of-+-of-mod-arg2))))
 
-(defthm bv-array-read-chunk-little-of-bvchop-arg4
-  (implies (and (equal len (len array))
-                (natp index)
-                (natp size))
-           (equal (bv-array-read-chunk-little count size len (bvchop (ceiling-of-lg len) index) array)
-                  (bv-array-read-chunk-little count size len index array)))
-  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little acl2::bvchop-top-bit-cases))))
+(defthm mod-of-+-of-mod-arg3
+  (implies (and (rationalp x1)
+                (rationalp x2)
+                (rationalp x3)
+                (rationalp y)
+                (< 0 y))
+           (equal (mod (+ x1 x3 (mod x2 y)) y)
+                  (mod (+ x1 x3 x2) y)))
+  :hints (("Goal" :use (:instance acl2::mod-of-+-of-mod-arg2
+                                  (x1 (+ x1 x3)))
+                  :in-theory (disable acl2::mod-of-+-of-mod-arg2))))
+
+(defthm mod-of-+-subst-constant-arg2+
+  (implies (and (syntaxp (not (quotep x))) ; prevent loops
+                (equal k (mod x z))
+                (syntaxp (quotep k))
+                (rationalp x)
+                (rationalp w)
+                (rationalp y)
+                (rationalp z)
+                (< 0 z))
+           (equal (mod (+ y x w) z)
+                  (mod (+ y k w) z))))
+
+(defthm bvmod-of-bvplus-when-multiple-arg1
+  (implies (and (equal 0 (bvmod size x z))
+                (equal 0 (mod (expt 2 size) (bvchop size z))) ; may often get computed ; or say that the bvplus doesn't overflow
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (bvlt size 0 z))
+           (equal (bvmod size (bvplus size x y) z)
+                  (bvmod size y z)))
+  :hints (("Goal" :in-theory (enable bvmod bvplus acl2::bvchop-of-sum-cases bvlt))))
+
+(defthm bvmod-of-bvplus-when-multiple-arg2
+  (implies (and (equal 0 (bvmod size y z))
+                (equal 0 (mod (expt 2 size) (bvchop size z))) ; may often get computed ; or say that the bvplus doesn't overflow
+                (integerp x)
+                (integerp y)
+                (integerp z)
+                (bvlt size 0 z))
+           (equal (bvmod size (bvplus size x y) z)
+                  (bvmod size x z)))
+  :hints (("Goal" :in-theory (enable bvmod bvplus acl2::bvchop-of-sum-cases bvlt))))

@@ -62,6 +62,10 @@
            (unsigned-byte-listp size (bvxor-list size x y)))
   :hints (("Goal" :in-theory (enable bvxor-list unsigned-byte-listp))))
 
+(defthm integer-listp-of-bvxor-list
+  (integer-listp (bvxor-list size x y))
+  :hints (("Goal" :in-theory (enable bvxor-list integer-listp))))
+
 (defthm all-integerp-of-bvxor-list
   (all-integerp (bvxor-list size x y))
   :hints (("Goal" :in-theory (enable bvxor-list))))

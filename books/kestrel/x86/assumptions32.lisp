@@ -15,6 +15,33 @@
 (include-book "support32")
 (include-book "parsers/parsed-executable-tools")
 (include-book "../axe/lifter-common") ; for lifter-targetp ; todo
+(local (include-book "kestrel/typed-lists-light/keyword-listp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local
+ (in-theory (e/d (acl2::acl2-numberp-when-natp
+                  ;; acl2::integerp-when-posp
+                  acl2::integerp-when-natp)
+                 (symbol-alistp ; prevent induction
+                  ))))
+
+;; or move the -1
+(local
+ (defthm <=-of-0-and-+-of--1-when-posp
+   (implies (posp x)
+            (<= 0 (+ -1 x)))))
+
+;; add to arithmetic-light/types !
+(local
+ (defthm integerp-when-posp
+   (implies (posp x)
+            (integerp x))))
+
+;; add to arithmetic-light/types !
+(local
+ (defthm acl2-numberp-when-posp
+   (implies (posp x)
+            (acl2-numberp x))))
 
 ;; TODO: Add assumptions about segments
 (defun standard-state-assumption-32 (x86)
@@ -54,8 +81,9 @@
 
 ;;todo: add more checking
 (defun gen-section-assumptions-pe-32 (entry base-of-code)
-  (declare (xargs :guard (consp entry)
-                  :verify-guards nil))
+  (declare (xargs :guard (and (acl2::pe-sectionp entry)
+                              (natp base-of-code))
+                  :guard-hints (("Goal" :in-theory (enable acl2::pe-sectionp acl2::pe-section-infop acl2::pe-section-headerp)))))
   (let* ( ;; (name (car entry))
          (section-info (cdr entry))
          (header (acl2::lookup-eq-safe :header section-info))
@@ -70,14 +98,23 @@
         (list `(code-segment-assumptions32-for-code ',raw-data ',offset-to-section x86))
       nil)))
 
+(defthm pseudo-term-listp-of-gen-section-assumptions-pe-32
+  (pseudo-term-listp (gen-section-assumptions-pe-32 entry base-of-code))
+  :hints (("Goal" :in-theory (enable gen-section-assumptions-pe-32))))
+
 ;; TODO: Check for contradictions from overlapping segments
 (defun gen-sections-assumptions-pe-32 (sections base-of-code)
-  (declare (xargs :guard (alistp sections)
-                  :verify-guards nil))
+  (declare (xargs :guard (and (acl2::pe-section-listp sections)
+                              (natp base-of-code))
+                  :guard-hints (("Goal" :in-theory (enable acl2::pe-section-listp)))))
   (if (endp sections)
       nil
     (append (gen-section-assumptions-pe-32 (first sections) base-of-code)
             (gen-sections-assumptions-pe-32 (rest sections) base-of-code))))
+
+(defthm pseudo-term-listp-of-gen-sections-assumptions-pe-32
+  (pseudo-term-listp (gen-sections-assumptions-pe-32 sections base-of-code))
+  :hints (("Goal" :in-theory (enable gen-sections-assumptions-pe-32))))
 
 ;; If TARGET is :entry-point or a numeric offset, we take whatever section
 ;; contains that entry point as the .text section, regardless of its actual
@@ -89,9 +126,13 @@
                                        parsed-pe
                                        stack-slots)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
+                              (acl2::parsed-pe-p parsed-pe)
                               (natp stack-slots))
-                  :verify-guards nil ;todo
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p
+                                                           acl2::true-listp-when-pe-section-listp
+                                                           acl2::pe-sectionp
+                                                           acl2::pe-sectionp-consequences
+                                                           acl2::alistp-when-pe-section-headerp)))))
   (b* ((sections (acl2::get-pe-sections parsed-pe))
        (base-of-code (acl2::get-pe-base-of-code parsed-pe)) ; relative to the base of the image
        (- (cw "Base of the code segment is: ~x0.~%" base-of-code))
@@ -111,6 +152,9 @@
                  ;; (section-number (acl2::lookup-eq-safe :section-number symbol-record))
                  (- (cw "Offset to ~x0 in symbol table (for section ~x1) is ~x2.~%" target section-number offset-to-subroutine))
                  (section-entry (nth (- section-number 1) sections)) ;numbering starts at 1?
+                 ((when (not (acl2::pe-sectionp section-entry))) ; todo: do better?
+                  (er hard? 'gen-standard-assumptions-pe-32 "Bad section entry: ~X01." section-entry nil)
+                  0)
                  (section-info (cdr section-entry))
                  (header (acl2::lookup-eq-safe :header section-info))
                  (section-rva (acl2::lookup-eq-safe :virtual-address header)))
@@ -129,16 +173,15 @@
 
 ;; TODO: Add assumptions about the content of sections!
 ;; Note: This function is not very well tested.
-(defun gen-standard-assumptions-mach-o-32 (target
-                                           parsed-macho
-                                           stack-slots)
+(defund gen-standard-assumptions-mach-o-32 (target
+                                            parsed-macho
+                                            stack-slots)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
-                              (natp stack-slots))
-                  :verify-guards nil ;todo
-                  )
+                              (acl2::parsed-mach-o-p parsed-macho)
+                              (natp stack-slots)))
            (ignore target) ;for now
            )
-  (let ((target 0)) ; todo: generalize - use the ignored target arg
+  (let ((target ''0)) ; todo: generalize - use the ignored target arg
     `((standard-state-assumption-32 x86)
       ;; The program counter is at the start of the routine to lift (this is
       ;; relative to the base of the code segment):
@@ -159,3 +202,7 @@
   ;;                           (- subroutine-address text-section-address)
   ;;                           stack-slots
   ;;                           x86)))
+
+(defthm pseudo-term-listp-of-gen-standard-assumptions-mach-o-32
+  (pseudo-term-listp (gen-standard-assumptions-mach-o-32 target parsed-macho stack-slots))
+  :hints (("Goal" :in-theory (enable gen-standard-assumptions-mach-o-32))))

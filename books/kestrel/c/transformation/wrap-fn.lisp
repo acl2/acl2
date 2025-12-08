@@ -83,7 +83,8 @@
                    (param-declon-fix (first params))
                    (declor->ident param-declor.declor))
             :abstract
-            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+            (b* ((ident
+                   (fresh-ident fresh-ident-base blacklist :force-suffix t)))
               (retok (insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
@@ -93,7 +94,8 @@
                                            ident)))
                      ident))
             :none
-            (b* ((ident (fresh-ident fresh-ident-base blacklist)))
+            (b* ((ident
+                   (fresh-ident fresh-ident-base blacklist :force-suffix t)))
               (retok (insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
@@ -301,14 +303,15 @@
                             target-name-str
                           ""))))))
        (wrapper-name (fresh-ident wrapper-base-name blacklist))
-       (arg-base-name
-         (ident (concatenate
-                  'string
-                  (let ((wrapper-name-str (ident->unwrap wrapper-name)))
-                    (if (stringp wrapper-name-str)
-                        wrapper-name-str
-                      ""))
-                  "_arg")))
+       ;; (arg-base-name
+       ;;   (ident (concatenate
+       ;;            'string
+       ;;            (let ((wrapper-name-str (ident->unwrap wrapper-name)))
+       ;;              (if (stringp wrapper-name-str)
+       ;;                  wrapper-name-str
+       ;;                ""))
+       ;;            "_arg")))
+       (arg-base-name (ident "arg"))
        ((mv - found-paramsp can-create-wrapperp wrapper-declor idents)
         (declor-wrap-fn-make-wrapper
           declor wrapper-name arg-base-name blacklist))
@@ -519,9 +522,9 @@
   (extdecl-case
     extdecl
     :fundef (fundef-wrap-fn-add-wrapper-def
-              extdecl.unwrap target-name wrapper-name? blacklist)
+              extdecl.fundef target-name wrapper-name? blacklist)
     :decl (decl-wrap-fn-add-wrapper-def
-            extdecl.unwrap target-name wrapper-name? blacklist)
+            extdecl.decl target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
@@ -655,10 +658,10 @@
   :short "Transform a translation unit ensemble."
   (b* (((reterr) (c$::transunit-ensemble-fix transunits))
        ((transunit-ensemble transunits) transunits)
-       (blacklist (filepath-transunit-map-collect-idents transunits.unwrap))
+       (blacklist (filepath-transunit-map-collect-idents transunits.units))
        ((erp any-foundp map)
         (filepath-transunit-map-wrap-fn
-          transunits.unwrap target-name wrapper-name? blacklist))
+          transunits.units target-name wrapper-name? blacklist))
        (-
          (if any-foundp
              nil
@@ -666,7 +669,7 @@
                (ident->unwrap target-name)))))
     (retok (c$::change-transunit-ensemble
              transunits
-             :unwrap map)))
+             :units map)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define code-ensemble-wrap-fn

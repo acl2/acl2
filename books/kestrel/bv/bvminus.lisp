@@ -14,6 +14,7 @@
 ;; TODO: Consider defining bvminus in terms of bvplus and bvuminus.
 
 (include-book "bvchop")
+(local (include-book "bvplus")) ; move down
 (include-book "bvuminus")
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))

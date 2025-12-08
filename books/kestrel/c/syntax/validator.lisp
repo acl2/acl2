@@ -914,13 +914,13 @@
   (b* (((reterr) (irr-const) (irr-type)))
     (const-case
      const
-     :int (b* (((erp iconst type) (valid-iconst const.unwrap ienv)))
+     :int (b* (((erp iconst type) (valid-iconst const.iconst ienv)))
             (retok (const-int iconst) type))
-     :float (b* ((type (valid-fconst const.unwrap)))
+     :float (b* ((type (valid-fconst const.fconst)))
               (retok (const-fix const) type))
-     :enum (b* (((erp type) (valid-enum-const const.unwrap table)))
+     :enum (b* (((erp type) (valid-enum-const const.ident table)))
              (retok (const-fix const) type))
-     :char (b* (((erp type) (valid-cconst const.unwrap ienv)))
+     :char (b* (((erp type) (valid-cconst const.cconst ienv)))
              (retok (const-fix const) type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1203,10 +1203,34 @@
     (xdoc::li
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
-      See @(tsee valid-binary) for details on these restrictions.")))
+      See @(tsee valid-binary) for details on these restrictions.
+      When validating with GCC extensions enabled,
+      these restrictions are slightly weakened.
+      See the following section."))
+   (xdoc::section
+    "GCC Extensions"
+    (xdoc::p
+     "GCC has a type attribute @('transparent_union')
+      which affects type-checking of arguments against
+      some parameters with union type.
+      The attribute may be attached a union type definition.
+      When a function parameter has such a type,
+      the constraints on the corresponding argument are weakened.
+      In particular, the type of the argument
+      is allowed to be any of the member types of the union,
+      and a null pointer expression or void pointer type is allowed
+      if any of the union members are a pointer.
+      For now, we approximate this by allowing any argument type
+      when the parameter type is a union and GCC extensions are enabled.
+      See "
+     (xdoc::ahref
+       "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
+       "the GCC manual")
+     " for more information on the @('transparent_union') attribute.")))
   (b* (((reterr))
        (types-param (type-list-fix types-param))
        (args (expr-list-fix args))
+       ((ienv ienv) ienv)
        ((when (endp types-param))
         (if (or (endp types-arg) ellipsis)
             nil
@@ -1215,8 +1239,10 @@
         (retmsg$ "Too few arguments."))
        (type-param (first types-param))
        (arg (first args))
-       (type-arg (type-fpconvert (type-apconvert (first types-arg)))))
+       (type-arg (type-fpconvert (type-apconvert (first types-arg))))
+       (gcc (ienv->gcc ienv)))
     (if (or (type-case type-param :unknown)
+            (and gcc (type-case type-param :union))
             (type-case type-arg :unknown)
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
@@ -4441,7 +4467,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor.declor))))
+                   (not (dirdeclor-has-params-p dirdeclor.declor))))
             (table (valid-push-scope table))
             ((erp new-params type-params return-types0 table)
              (b* (((reterr) nil (irr-type-params) nil table)
@@ -4488,7 +4514,7 @@
                       (type-fix type)))
             (outermost-fundef-params-p
               (and fundef-params-p
-                   (not (dirdeclor-has-paramsp dirdeclor))))
+                   (not (dirdeclor-has-params-p dirdeclor))))
             ((erp type table)
              (b* (((reterr) (irr-type) table))
                (if fundef-params-p
@@ -5097,7 +5123,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert structdeclon.unwrap table ienv)))
+             (valid-statassert structdeclon.statassert table ienv)))
          (retok (struct-declon-statassert new-statassert)
                 (ident-list-fix previous)
                 types
@@ -5743,7 +5769,7 @@
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert decl.unwrap table ienv)))
+             (valid-statassert decl.statassert table ienv)))
          (retok (decl-statassert new-statassert) types table))))
     :measure (decl-count decl))
 
@@ -6092,7 +6118,7 @@
                 nil
                 table))
        :asm
-       (retok (stmt-asm stmt.unwrap) nil nil (valid-table-fix table))))
+       (retok (stmt-asm stmt.stmt) nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6754,14 +6780,14 @@
     (extdecl-case
      edecl
      :fundef (b* (((erp new-fundef table)
-                   (valid-fundef edecl.unwrap table ienv)))
+                   (valid-fundef edecl.fundef table ienv)))
                (retok (extdecl-fundef new-fundef) table))
      :decl (b* (((erp new-decl types table)
-                 (valid-decl edecl.unwrap table ienv))
+                 (valid-decl edecl.decl table ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
-                          edecl.unwrap)))
+                          edecl.decl)))
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
@@ -6895,7 +6921,7 @@
      the externally linked identifiers across
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((erp new-map)
         (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
        (- (if keep-going

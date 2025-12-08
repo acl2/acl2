@@ -332,7 +332,8 @@
                               (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                               (natp node-replacement-count)
                               (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                              (symbol-listp known-booleans))))
+                              (symbol-listp known-booleans))
+                  :guard-hints (("Goal" :in-theory (disable bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
   (let ((conjunction (get-axe-conjunction-from-dag-item nodenum 'dag-array dag-array dag-len)))
     (if (quotep conjunction)
         (prog2$ (cw "Warning: Constant assumption, ~x0, encountered.~%" conjunction)
@@ -360,7 +361,7 @@
                   (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                   (bounded-undo-pairsp undo-pairs dag-len)
                   )))
-  :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-node))))
+  :hints (("Goal" :in-theory (e/d (update-node-replacement-array-for-assuming-node) (bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm update-node-replacement-array-for-assuming-node-return-type-corollary
   (implies (and (<= dag-len bound)
@@ -389,9 +390,9 @@
                 )
            (<= (alen1 'node-replacement-array node-replacement-array)
                (alen1 'node-replacement-array (mv-nth 0 (update-node-replacement-array-for-assuming-node nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)))))
-  :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-node
+  :hints (("Goal" :in-theory (e/d (update-node-replacement-array-for-assuming-node
                                      ;; ALL-<-OF-STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS-WHEN-BOUNDED-AXE-CONJUNCTIONP
-                                     ))))
+                                     ) (bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm update-node-replacement-array-for-assuming-node-return-type-alen1-corollary
   (implies (and (<= bound (alen1 'node-replacement-array node-replacement-array))

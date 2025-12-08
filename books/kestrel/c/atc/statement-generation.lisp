@@ -13,8 +13,7 @@
 
 (include-book "expression-generation")
 (include-book "object-tables")
-
-(include-book "../language/pure-expression-execution")
+(include-book "pure-expression-execution")
 
 (include-book "std/system/close-lambdas" :dir :system)
 (include-book "std/system/make-mv-let-call" :dir :system)
@@ -860,6 +859,7 @@
      is retrieved from the called function's information;
      we add 1 to it, to take into account the decrementing of the limit
      to go from @(tsee exec-expr) to @(tsee exec-fun).
+     We also add the limit for executing the (pure) arguments.
      If the called function affects no objects,
      the @('result') term is essentially the untranslation of the input term,
      and @('new-compst') is the same as the computation state variable;
@@ -948,6 +948,12 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              (result-fn-thm (atc-fn-info->result-thm fninfo))
+             (limit `(binary-+ '1 ,limit))
+             ((unless (expr-list-purep args.exprs))
+              (reterr (raise "Internal error: ~
+                              non-pure function call arguments ~x0."
+                             args.exprs)))
+             (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -955,7 +961,7 @@
                      term
                      nil
                      nil
-                     `(binary-+ '1 ,limit)
+                     limit
                      args.events
                      nil
                      gin.inscope
@@ -999,7 +1005,6 @@
               (reterr
                (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                       called-fn called-formals args.terms)))
-             (call-limit `(binary-+ '1 ,limit))
              ((mv result new-compst)
               (atc-gen-call-result-and-endstate out-type
                                                 gin.affect
@@ -1018,7 +1023,7 @@
                                               gin.fn-guard
                                               gin.compst-var
                                               gin.limit-var
-                                              call-limit
+                                              limit
                                               t
                                               wrld))
              ((mv type-formula &)
@@ -1041,6 +1046,8 @@
               `(("Goal"
                  :in-theory
                  '(exec-expr-when-call-value-open
+                   (:e expr-list-purep)
+                   (:e expr-list-pure-limit)
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
                    ,@args.thm-names
@@ -1128,7 +1135,7 @@
                  term
                  result
                  new-compst
-                 `(binary-+ '1 ,limit)
+                 limit
                  (append args.events
                          (list guard-lemma-event
                                call-event))
@@ -1756,15 +1763,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We increase the limit by 1
-     for the theorem about @(tsee exec-expr),
-     because that is what it takes, in @(tsee exec-expr),
-     to go to @(tsee exec-expr) for the right-hand side.")
-   (xdoc::p
-    "We further increase the limit by 1
-     for the theorem about @(tsee exec-stmt),
-     because that is what it takes, in @(tsee exec-stmt),
-     to go to the @(':expr') case and to @(tsee exec-expr)."))
+    "The limit is set to 3 more than the limit for the right expression.
+     We need 1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) to the left and right side.
+     The left side is a variable so it just needs 1,
+     so the limit for the right side, which is always at least 1,
+     covers it."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2023,7 +2028,8 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (symbolp array-write-fn))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2037,10 +2043,18 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 4 more than
+     the sum of the limits needed to execute the index and right expressions:
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left and right sides;
+     the left side is an array subscript expression,
+     so we need 1 more to go to @(tsee exec-expr) on the sub-expressions;
+     the array sub-expression is always a variable so it needs 1 more,
+     which is covered by the limit for the index sub-expression,
+     which is always at least 1, and suffices for the index sub-expression.
+     Instead of adding the limit for the right expression
+     we could take the maximum, but the addition is simpler."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2131,7 +2145,15 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep sub.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." sub.expr)))
+       ((unless (expr-purep elem.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
+       (sub-limit `(quote ,(expr-pure-limit sub.expr)))
+       (right-limit `(quote ,(expr-pure-limit elem.expr)))
+       (sub+right-limit `(binary-+ ,sub-limit ,right-limit))
+       (left+right-limit `(binary-+ '1 ,sub+right-limit))
+       (expr-limit `(binary-+ '1 ,left+right-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
@@ -2315,7 +2337,10 @@
              compustatep-of-update-static-var
              expr-valuep-of-expr-value
              expr-value->value-of-expr-value
-             value-fix-when-valuep))))
+             value-fix-when-valuep
+             (:e expr-pure-limit)
+             (:e expr-purep)
+             max))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2465,7 +2490,8 @@
                (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
                                                  (pseudo-termp member-term)
                                                  (symbolp var)))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2479,10 +2505,15 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
-     1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+    "The limit is set to 3 more than the sum of the limits
+     for the right expression and for the left expression:
+     we need 1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left and right sides;
+     then the sum suffices for both (the maximum would also suffice).
+     The left side is a struct member expression,
+     so we need 1 to go to @(tsee exec-expr) on the sub-expression;
+     the (struct) sub-expression is always a variable so it needs 1 more."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -2561,7 +2592,12 @@
                               :arg2 member.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep member.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." member.expr)))
+       (struct-limit ''1)
+       (left-limit `(binary-+ '1 ,struct-limit))
+       (right-limit `(quote ,(expr-pure-limit member.expr)))
+       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -2670,7 +2706,10 @@
                  compustatep-of-update-object
                  expr-valuep-of-expr-value
                  expr-value->value-of-expr-value
-                 value-fix-when-valuep)))
+                 value-fix-when-valuep
+                 (:e expr-purep)
+                 (:e expr-pure-limit)
+                 max)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -2713,7 +2752,10 @@
                compustatep-of-update-var
                expr-valuep-of-expr-value
                expr-value->value-of-expr-value
-               value-fix-when-valuep)))))
+               value-fix-when-valuep
+               (:e expr-purep)
+               (:e expr-pure-limit)
+               max)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2868,7 +2910,8 @@
                                                  (pseudo-termp index-term)
                                                  (pseudo-termp elem-term)
                                                  (symbolp var)))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2882,10 +2925,17 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 3 more than
+     the sum of the limits for the left and right expression
+     (the maximum would also work):
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
-     1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the assignment,
+     1 to go from there to @(tsee exec-expr) on the left and right sides.
+     The left side is an array subscript expression,
+     so we need 1 to go to @(tsee exec-expr) on the sub-expressions;
+     the array sub-expression is a struct member expression so it needs 1 more;
+     the struct sub-expression is always a variable so it needs 1 more;
+     then we add the limit needed for the index sub-expression."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2988,7 +3038,14 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep index.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." index.expr)))
+       ((unless (expr-purep elem.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
+       (index-limit `(quote ,(expr-pure-limit index.expr)))
+       (left-limit `(binary-+ '3 ,index-limit))
+       (right-limit `(quote ,(expr-pure-limit elem.expr)))
+       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
@@ -3148,7 +3205,10 @@
                  compustatep-of-update-object
                  expr-valuep-of-expr-value
                  expr-value->value-of-expr-value
-                 value-fix-when-valuep)))
+                 value-fix-when-valuep
+                 (:e expr-pure-limit)
+                 (:e expr-purep)
+                 max)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-when-asg-thms
@@ -3199,7 +3259,10 @@
                compustatep-of-update-var
                expr-valuep-of-expr-value
                expr-value->value-of-expr-value
-               value-fix-when-valuep)))))
+               value-fix-when-valuep
+               (:e expr-pure-limit)
+               (:e expr-purep)
+               max)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -3349,7 +3412,8 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (symbolp integer-write-fn))
-               (limit pseudo-termp)
+               (limit pseudo-termp
+                      :hints (("Goal" :in-theory (enable pseudo-termp))))
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3363,10 +3427,16 @@
    (xdoc::p
     "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg).")
    (xdoc::p
-    "The limit is set to 3:
+    "The limit is set to 3 more than
+     the sum of the limits for left and right expressions
+     (the maximum would also work):
      1 to go from @(tsee exec-block-item) to @(tsee exec-stmt),
      1 to go from there to @(tsee exec-expr),
-     and 1 to go from there to @(tsee exec-expr-pure) for both sides."))
+     1 to go from there to @(tsee exec-expr) on the left and right sides.
+     The left side is a unary expression with the indirection operator,
+     so we need 1 to go to the operand expression;
+     the latter is always a variable,
+     so we need 1 more to execute it."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -3432,7 +3502,12 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit ''1)
+       ((unless (expr-purep int.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." int.expr)))
+       (var-limit ''1)
+       (left-limit `(binary-+ '1 ,var-limit))
+       (right-limit `(quote ,(expr-pure-limit int.expr)))
+       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
@@ -3533,7 +3608,10 @@
                         compustatep-of-update-object
                         expr-valuep-of-expr-value
                         expr-value->value-of-expr-value
-                        value-fix-when-valuep))))
+                        value-fix-when-valuep
+                        (:e expr-purep)
+                        (:e expr-pure-limit)
+                        max))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -4656,6 +4734,7 @@
                                 (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
+                                (test-limit pseudo-termp)
                                 (then-limit pseudo-termp)
                                 (else-limit pseudo-termp)
                                 (test-thm symbolp)
@@ -4702,9 +4781,9 @@
      to prevent unwanted case splits in larger terms that may contain this term
      (as we generate C code from those larger terms).
      We use proof builder commands to split on this @(tsee if*).
-     The limit for the conditional statement is
-     one more than the sum of the ones for the branches;
-     we could take one plus the maximum,
+     The limit for the conditional statement is one more than
+     the sum of the ones for the branches and of the one for the test;
+     we could take the maximum instead of the sum,
      but the sum avoids case splits.
      We include the compound recognizer @('booleanp-compound-recognizer')
      for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
@@ -4740,6 +4819,14 @@
                (make-stmt-if :test test-expr
                              :then then-stmt)))
        (term `(if* ,test-term ,then-term ,else-term))
+       (then-stmt-limit `(binary-+ '1 ,then-limit))
+       (else-stmt-limit `(binary-+ '1 ,else-limit))
+       (if-stmt-limit `(binary-+ '1
+                                 (binary-+ ,test-limit
+                                           (binary-+ ,then-stmt-limit
+                                                     ,else-stmt-limit))))
+       (item-limit `(binary-+ '1 ,if-stmt-limit))
+       (items-limit `(binary-+ '1 ,item-limit))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
@@ -4748,13 +4835,7 @@
           :term term
           :context gin.context
           :inscope gin.inscope
-          :limit (pseudo-term-fncall
-                  'binary-+
-                  (list
-                   (pseudo-term-quote 5)
-                   (pseudo-term-fncall
-                    'binary-+
-                    (list then-limit else-limit))))
+          :limit items-limit
           :events (append test-events then-events else-events)
           :thm-name nil
           :thm-index gin.thm-index
@@ -4773,8 +4854,6 @@
          else-stmt-thm nil names-to-avoid wrld))
        (valuep-when-type-pred (and (not voidp)
                                    (atc-type-to-valuep-thm type gin.prec-tags)))
-       (then-stmt-limit `(binary-+ '1 ,then-limit))
-       (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
        ((mv then-stmt-value then-stmt-type-formula &)
@@ -4933,8 +5012,6 @@
        (thm-index (1+ thm-index))
        ((mv if-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
-       (if-stmt-limit
-        `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
        ((mv if-stmt-value if-stmt-type-formula if-stmt-type-thms)
         (atc-gen-stmt-value-term-and-type-formula uterm
@@ -5005,7 +5082,9 @@
                                    ullong-array-length-of-ullong-array-write
                                    sllong-array-length-of-sllong-array-write
                                    mv-nth-of-cons
-                                   (:e zp))))
+                                   (:e zp)
+                                   (:e c::expr-purep)
+                                   (:e c::expr-pure-limit))))
           `(("Goal" :in-theory '(exec-stmt-when-if-and-true
                                  exec-stmt-when-if-and-false
                                  (:e stmt-kind)
@@ -5039,7 +5118,9 @@
                                  ullong-array-length-of-ullong-array-write
                                  sllong-array-length-of-sllong-array-write
                                  mv-nth-of-cons
-                                 (:e zp))))))
+                                 (:e zp)
+                                 (:e c::expr-purep)
+                                 (:e c::expr-pure-limit))))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
@@ -5182,9 +5263,11 @@
    (xdoc::p
     "We also generate a theorem about @(tsee exec-expr)
      applied to the call expression.
-     The limit is 1 more than the function's limit:
-     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-pure-list).
-     Since the limit term for the function is over the function's formal,
+     The limit is obtained by incrementing the function's limit
+     by one plus the limit needed for the (pure) argument list:
+     it takes 1 to go from @(tsee exec-expr) to @(tsee exec-expr-list),
+     and that needs the limit for the arguments.
+     Since the limit term for the function is over the function's formals,
      we need to perform a substitution of the formals with the actuals."))
   (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))
@@ -5238,6 +5321,12 @@
        ((unless fninfo)
         (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+       ((unless (expr-list-purep args.exprs))
+        (reterr (raise "Internal error: ~
+                        non-pure function call arguments ~x0."
+                       args.exprs)))
+       (limit `(binary-+ '1 ,limit))
+       (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)))
         (retok (make-stmt-gout
@@ -5246,7 +5335,7 @@
                 :term term
                 :context gin.context
                 :inscope gin.inscope
-                :limit `(binary-+ '4 ,limit)
+                :limit limit
                 :events args.events
                 :thm-name nil
                 :thm-index args.thm-index
@@ -5286,7 +5375,6 @@
        ((unless (equal (len called-formals) (len args.terms)))
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
-       (call-limit `(binary-+ '1 ,limit))
        ((mv result new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
@@ -5305,7 +5393,7 @@
                                         gin.fn-guard
                                         gin.compst-var
                                         gin.limit-var
-                                        call-limit
+                                        limit
                                         t
                                         wrld))
        ((mv type-formula inscope-thms)
@@ -5329,6 +5417,8 @@
            :in-theory
            '(exec-expr-when-call-value-open
              exec-expr-when-call-novalue-open
+             (:e expr-list-purep)
+             (:e expr-list-pure-limit)
              exec-expr-pure-list-of-nil
              exec-expr-pure-list-when-consp
              ,@args.thm-names
@@ -5453,7 +5543,7 @@
                                                  :hints call-hints
                                                  :enable nil))
        (stmt (stmt-expr call-expr))
-       (stmt-limit `(binary-+ '1 ,call-limit))
+       (stmt-limit `(binary-+ '1 ,limit))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix stmt-thm-name
@@ -5648,7 +5738,8 @@
     :in-theory
     (e/d (length
           acl2::true-listp-when-pseudo-event-form-listp-rewrite
-          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+          alistp-when-atc-symbol-fninfo-alistp-rewrite
+          pseudo-termp)
          ((:e tau-system)))))
   :prepwork
   ((local (in-theory (disable mv-nth-of-cons)))
@@ -5986,11 +6077,15 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context-start
-                 else-context-end))))
+                 else-context-end)))
+             ((unless (expr-purep test.expr))
+              (reterr
+               (raise "Internal error: non-pure expression ~x0." test.expr)))
+             (test.limit `(quote ,(expr-pure-limit test.expr))))
           (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
-                                  then.limit else.limit
+                                  test.limit then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
                                   then-context-start else-context-start
                                   then-context-end else-context-end
@@ -6982,8 +7077,8 @@
     "We return a limit that suffices
      to execute @(tsee exec-stmt-while) on (the test and body of)
      the loop statement, as follows.
-     We need 1 to get to executing the test,
-     which is pure and so does not contribute to the overall limit.
+     We need 1 to get to executing the test.
+     The test is pure and so its limit is obtained via @(tsee expr-pure-limit).
      If the test is true, we need to add the limit to execute the body.
      After that, @(tsee exec-stmt-while) is called recursively,
      decrementing the limit:
@@ -7075,9 +7170,12 @@
        ((when (eq gin.measure-for-fn 'quote))
         (reterr
          (raise "Internal error: the measure function is QUOTE.")))
-       (measure-call (pseudo-term-fncall gin.measure-for-fn
-                                         gin.measure-formals))
-       (limit `(binary-+ '1 (binary-+ ,body.limit ,measure-call))))
+       (measure-call `(,gin.measure-for-fn ,@gin.measure-formals))
+       ((unless (expr-purep test.expr))
+        (reterr (raise "Internal error: non-pure expression ~x0." test.expr)))
+       (limit `(binary-+ '1
+                         (binary-+ ,`(quote ,(expr-pure-limit test.expr))
+                                   (binary-+ ,body.limit ,measure-call)))))
     (retok (make-lstmt-gout :stmt stmt
                             :test-term test-term
                             :body-term then-term
@@ -7089,7 +7187,8 @@
                             :names-to-avoid body.names-to-avoid)))
   :measure (pseudo-term-count term)
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))
+  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p
+                                           pseudo-termp)))
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt

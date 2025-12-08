@@ -525,7 +525,9 @@
                              (equal member (expr-member->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
-                             (not (zp limit))
+                             (expr-purep right)
+                             (integerp limit)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal var (expr-ident->get target))
                              (equal struct (read-var var compst))
                              (,recognizer struct)
@@ -552,7 +554,9 @@
                              (equal member (expr-memberp->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
-                             (not (zp limit))
+                             (expr-purep right)
+                             (integerp limit)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal ptr (read-var (expr-ident->get target)
                                                   compst))
                              (valuep ptr)
@@ -583,7 +587,10 @@
              (hints-member
               `(("Goal"
                  :in-theory
-                 '(exec-expr
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-member-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -626,7 +633,12 @@
                    expr-purep
                    binop-purep
                    (:e member-equal)
-                   (:t exec-expr-pure))
+                   (:t exec-expr-pure)
+                   zp
+                   (:t expr-value))
+                 :expand ((exec-expr expr compst fenv limit)
+                          (exec-expr (expr-binary->arg1 expr)
+                                     compst fenv (+ -1 limit)))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-var (expr-ident->get
@@ -644,7 +656,10 @@
              (hints-memberp
               `(("Goal"
                  :in-theory
-                 '(exec-expr
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-memberp-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -685,7 +700,12 @@
                    expr-purep
                    binop-purep
                    (:e member-equal)
-                   (:t exec-expr-pure))
+                   (:t exec-expr-pure)
+                   zp
+                   (:t expr-value))
+                 :expand ((exec-expr expr compst fenv limit)
+                          (exec-expr (expr-binary->arg1 expr)
+                                     compst fenv (+ -1 limit)))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-object
@@ -793,7 +813,11 @@
                (equal member (expr-member->name array))
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
-               (not (zp limit))
+               (expr-purep index)
+               (expr-purep right)
+               (integerp limit)
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal var (expr-ident->get target))
                (equal struct (read-var var compst))
                (,recognizer struct)
@@ -830,7 +854,11 @@
                (equal member (expr-memberp->name array))
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
-               (not (zp limit))
+               (expr-purep index)
+               (expr-purep right)
+               (integerp limit)
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal ptr (read-var (expr-ident->get target)
                                     compst))
                (valuep ptr)
@@ -863,7 +891,11 @@
           (equal (exec-expr expr compst fenv limit)
                  (mv (expr-value val nil) compst1))))
        (theory-member
-        `(exec-expr
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+          expr-pure-limit
+          zp
+          max
+          (:t expr-value)
           exec-expr-pure-when-arrsub-of-member-no-syntaxp
           exec-expr-pure-when-ident-no-syntaxp
           exec-ident-open-via-object
@@ -905,7 +937,6 @@
           return-type-of-objdesign-member
           return-type-of-objdesign-element
           value-struct-read
-          value-struct-write
           (:e ident)
           (:e ident-fix)
           (:t objdesign-element)
@@ -945,6 +976,7 @@
           (:t exec-expr-pure)))
        (hints-member
         `(("Goal"
+           :expand (exec-expr expr compst fenv limit)
            :use
            ((:instance
              ,reader-return-thm
@@ -976,7 +1008,11 @@
                       compst))))
            :in-theory ',theory-member)))
        (theory-memberp
-        `(exec-expr
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+          expr-pure-limit
+          zp
+          max
+          (:t expr-value)
           not-errorp-when-expr-valuep
           expr-valuep-of-expr-value
           mv-nth-of-cons
@@ -1040,7 +1076,6 @@
           ,elemfixtype-array-fix-when-elemfixtype-arrayp
           ,writer-element
           value-struct-read
-          value-struct-write
           (:e ident)
           (:e ident-fix)
           ,@(and length (list length))
@@ -1054,6 +1089,7 @@
           ,value-kind-when-elemfixtypep))
        (hints-memberp
         `(("Goal"
+           :expand (exec-expr expr compst fenv limit)
            :use
            ((:instance
              ,reader-return-thm

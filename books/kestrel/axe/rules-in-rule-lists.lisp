@@ -15,6 +15,7 @@
 ;; This book is intended to bring in all the rules that are in rule-lists.lisp.
 ;; See also rules-in-rule-lists-jvm.lisp.
 
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/arithmetic-light/mod2" :dir :system)
 (include-book "basic-rules")
 (include-book "if-rules")

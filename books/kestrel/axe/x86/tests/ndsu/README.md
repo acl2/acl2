@@ -98,3 +98,4 @@ gcc -o por.c por.elf64
 gcc -o pxor.c pxor.elf64
 gcc -o mul.c mul.elf64
 gcc -o vpadd128.c vpadd128.elf64
+gcc -o movddup.c movddup.elf64

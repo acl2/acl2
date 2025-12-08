@@ -189,9 +189,6 @@
             not-of-if
 
             fix-when-acl2-numberp
-            acl2-numberp-of-+
-            acl2-numberp-of-fix
-            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -203,7 +200,7 @@
             double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
 
-            not-stringp-of-cons)
+            )
           (mv-nth-rules)
           (boolean-rules-safe)
           (booleanp-rules)))
@@ -252,7 +249,24 @@
     integerp-of--
     integerp-of-+
 
-    integerp-when-unsigned-byte-p-free))
+    integerp-when-unsigned-byte-p-free
+
+    ;; todo: acl2-numberp-when-integerp
+    ;; todo: acl2-numberp-when-natp ?
+    acl2-numberp-of-fix
+    acl2-numberp-of-+
+    acl2-numberp-of-*
+    acl2-numberp-of-unary--
+    acl2-numberp-of-mod
+    acl2-numberp-of-floor
+
+    integerp-of-ifix
+    integerp-of-+
+    integerp-of-*
+    integerp-of-mod
+
+    not-stringp-of-cons
+    ))
 
 (defun safe-trim-rules ()
   (declare (xargs :guard t))
@@ -521,6 +535,8 @@
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
+    bvsx-convert-arg3-to-bv-axe
+
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
@@ -662,7 +678,8 @@
     bvif-trim-arg4-axe
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
-    leftrotate32-trim-arg1-axe-all))
+    leftrotate32-trim-arg1-axe-all
+    bvsx-trim-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
@@ -1107,6 +1124,7 @@
      bvsx-of-bvsx
      bvsx-of-bvchop
      bvsx-when-equal-of-getbit-and-0
+     equal-of-bvsx-and-constant
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -2212,6 +2230,7 @@
 ;;normalize boolif nests that are really ands?
 
 ;; TODO: add many more rules to this?
+; not used?
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2280,10 +2299,10 @@
     bvplus-of-unary-minus
     bvchop-of-+-becomes-bvplus
     ;move these to type-rules:
-    integerp-of-*
-    acl2-numberp-of-+
-    acl2-numberp-of-*
-    acl2-numberp-of-unary--
+    ;; integerp-of-*
+    ;; acl2-numberp-of-+
+    ;; acl2-numberp-of-*
+    ;; acl2-numberp-of-unary--
     fix
     integerp-of-+-when-integerp-1-cheap
     mod-becomes-bvchop-when-power-of-2p

@@ -16,6 +16,7 @@
 (include-book "unsigned-byte-listp-def")
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (local (include-book "../bv/bvcat"))
+(local (include-book "../bv/slice"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why?
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/cons"))
@@ -25,6 +26,10 @@
 
 (defthm all-integerp-of-unpackbv
   (all-integerp (unpackbv num size bv))
+  :hints (("Goal" :in-theory (enable unpackbv))))
+
+(defthm integer-listp-of-unpackbv
+  (integer-listp (unpackbv num size bv))
   :hints (("Goal" :in-theory (enable unpackbv))))
 
 (defthm consp-of-unpackbv

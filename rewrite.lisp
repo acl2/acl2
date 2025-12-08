@@ -2873,7 +2873,7 @@ its attachment is ignored during proofs"))))
 ;                          '((NOT (RATIONALP X))
 ;                            (NOT (RATIONALP Y))
 ;                            (NOT (NOT (EQL Y '0))))
-;                          (w state) NIL 'NEWV)
+;                          (w state) 'NEWV)
 ;   ((((NOT (NOT (EQL Y '0)))
 ;      (NOT (RATIONALP Y))
 ;      (NOT (RATIONALP X))
@@ -8771,12 +8771,32 @@ its attachment is ignored during proofs"))))
                                                      ans)))))
 
 (defun world-to-next-event (wrld)
+
+; See also world-to-next-non-deeper-event.
+
+; This definition may be dead code from the standpoint of ACL2 sources, but
+; this function is called in some books (as of November 2025).
+
   (cond ((null wrld) nil)
         ((and (eq (caar wrld) 'event-landmark)
               (eq (cadar wrld) 'global-value))
          nil)
         (t (cons (car wrld)
                  (world-to-next-event (cdr wrld))))))
+
+(defun world-to-next-non-deeper-event (n wrld)
+
+; We accumulate tuples in wrld, stopping the accumulation when we reach an
+; event tuple of depth at most n.
+
+  (cond ((null wrld) nil)
+        ((and (eq (caar wrld) 'event-landmark)
+              (eq (cadar wrld) 'global-value)
+              (<= (access-event-tuple-depth (cddr (car wrld)))
+                  n))
+         nil)
+        (t (cons (car wrld)
+                 (world-to-next-non-deeper-event n (cdr wrld))))))
 
 (defun actual-props (props seen acc)
 
@@ -8814,10 +8834,11 @@ its attachment is ignored during proofs"))))
 
   (declare (xargs :guard (and (plist-worldp wrld)
                               (runep rune wrld))))
-  (let ((wrld-tail (decode-logical-name (base-symbol rune) wrld)))
+  (let* ((wrld-tail (decode-logical-name (base-symbol rune) wrld))
+         (depth (access-event-tuple-depth (cddr (car wrld-tail)))))
     (find-rules-of-rune1 rune
                          (actual-props
-                          (world-to-next-event (cdr wrld-tail))
+                          (world-to-next-non-deeper-event depth (cdr wrld-tail))
                           'find-rules-of-rune1
                           nil)
                          nil)))

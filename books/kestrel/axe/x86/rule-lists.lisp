@@ -337,22 +337,32 @@
     read-of-set-undef
     read-of-set-mxcsr
 
-    ;; read-when-program-at ; trying just this one
+    ;; read-when-program-at ; drop
     ;; since read-when-program-at / read-when-equal-of-read-bytes-and-subregion48p can introduce bv-array-read-chunk-little
-    ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     acl2::bv-array-read-chunk-little-trim-index-axe
     acl2::packbvs-little-constant-opener
     acl2::packbv-little-constant-opener
+    acl2::map-bvsx-constant-opener
+    acl2::map-bvplus-val-constant-opener
+    acl2::bv-array-read-shorten-when-in-first-half-smt
+    acl2::bv-array-read-shorten-when-in-second-half-smt
+    acl2::bv-array-read-shorten-when-not-max-smt
+    acl2::bv-array-read-shorten-when-not-zero-smt
+
+    ;; these push computation into the array elements:
+    ;; could drop these if we could split bv-array-reads into cases deep within set-rip contexts (and lift the resulting IFs):
+    acl2::bvsx-of-bv-array-read-constant-array
+    acl2::bvplus-of-bv-array-read-constant-array-smt
 
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
     read-of-logext
-    read-when-equal-of-read
-    read-when-equal-of-read-alt
+    ;read-when-equal-of-read ; non-bv, drop?
+    ;read-when-equal-of-read-alt ; non-bv, drop?
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
@@ -487,10 +497,11 @@
     disjoint-regions48p-of-+-arg4
     read-of-+-arg2
     write-of-+-arg2
-    read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp
-    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version?
-    read-when-equal-of-read-and-subregion48p
-    read-when-equal-of-read-and-subregion48p-alt
+
+    ;; move these?
+    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version? ; introduces bv-array-read-chunk-little
+    read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp  ; needed?
+    read-when-equal-of-read-and-subregion48p-alt ; needed?
     ;; todo: move these?:
     acl2::bvchop-of-+-becomes-bvplus
     ;;acl2::bvplus-of-*-arg1
@@ -505,10 +516,10 @@
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
   (append
-  '(read-1-of-write-1-diff
+  '(read-1-of-write-1-diff ; uses 'not equal' in the hyp
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
-    read-of-write-within
+    read-of-write-within ; uses mostly bv hyps
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
@@ -1356,7 +1367,6 @@
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
-    acl2::bvsx-of-logext
     acl2::logext-of-+-of-logext-arg2
 
     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
@@ -1367,6 +1377,8 @@
 
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
+
+    acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
     ))
 
 ;; ;not used?
@@ -1937,6 +1949,10 @@
     run-until-return-or-reach-pc3
     run-until-rsp-is-above-or-reach-pc-opener-axe
     run-until-rsp-is-above-or-reach-pc-base-axe
+    acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check
+    acl2::memberp-of-cons-same ; for resolving the stop-pcs check
+    acl2::memberp-of-nil ; for resolving the stop-pcs check
+    acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
     run-until-rsp-is-above-or-reach-pc-of-if-arg2
     rsp-is-abovep
     acl2::bvminus-of-bvplus-same-arg2
@@ -2058,9 +2074,13 @@
   (declare (xargs :guard t))
   '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
     ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
+
     unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
-    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp only when nothing else works
-    canonical-regionp-of-+-arg2
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp (only when nothing else works)
+    unsigned-canonical-address-p-smt ; calls SMT on the address expression
+
+    canonical-regionp-of-+-arg2 ; todo: general convert rule?
+
     unsigned-canonical-address-p-of-bvif ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-if ; lifts the if ; todo: go to boolif?
     unsigned-canonical-address-p-of-bvsx-64-48 ; always true
@@ -2069,8 +2089,8 @@
     unsigned-canonical-address-p-of-+-when-small
     unsigned-canonical-address-p-of-bvplus-when-small
 
-    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
-    write-of-logext-arg2 ; move?
+    bvsx-64-48-of-bvplus-48-when-unsigned-canonical-address-p
+    write-of-logext-arg2 ; move? use a general trim rule?
     acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
     bvsx-when-unsigned-canonical-address-p))
 
@@ -2250,10 +2270,9 @@
   '(acl2::ash-negative-becomes-slice-axe
     acl2::ash-of-0-arg1
     acl2::ash-of-0-arg2
-    acl2::open-ash-positive-constants
+    common-lisp::ash-constant-opener ; acl2::open-ash-positive-constants
     acl2::bvchop-of-ash-left-shift
     acl2::integerp-of-ash))
-
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
@@ -2719,6 +2738,11 @@
             ;; these can discard bytes from large executable segments:
             acl2::bv-array-read-shorten-when-bvlt
             acl2::bv-array-read-shorten-when-not-bvlt
+
+            acl2::bv-array-read-convert-arg3-to-bv-axe
+            ;;acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
+            ;;acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
+
 
             acl2::integerp-of-if-strong
 
@@ -4224,6 +4248,9 @@
             ;; todo: more like these?:
             set-rip-of-bvchop
             set-rip-of-logext
+            set-rip-of-bvif-split ; we must resolve the RIP to keep going
+            set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
+            acl2::bv-array-read-cases-opener
             )))
 
 (defund new-normal-form-rules64-intro ()
@@ -5463,7 +5490,7 @@
    '(standard-state-assumption
      standard-state-assumption-32
      ;standard-assumptions-core-64 ; only needed by loop lifter?
-     standard-state-assumption-64
+     ;standard-state-assumption-64
      ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
      ;standard-assumptions-elf-64 ; only needed by loop lifter?
      ;standard-assumptions-pe-64 ; only needed by loop lifter?
@@ -5843,10 +5870,9 @@
     acl2::logext-of-+-of-bvplus-same-size
     acl2::logext-of-+-of-+-of-mult-same-size
     ;; acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
-    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
-    acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
-    acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
-    acl2::nth-becomes-bv-array-read-strong2
+
+    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op ; todo: why is nth showing up?
+    acl2::nth-becomes-bv-array-read-strong2 ; todo: why is nth showing up?
     acl2::bvplus-of-*-arg1 ; introduces bvmult
     acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
     ;; not-equal-of-+-and-+-when-separate
@@ -6342,20 +6368,22 @@
     x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
     ))
 
-;; Can't really use the new, nicer normal forms for readers and writers, since
-;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
+;; now same as unroller-rules32!
+;; not really used yet
 (defund loop-lifter-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules32)
-          (old-normal-form-rules)))
+          ;;(old-normal-form-rules)
+          (new-normal-form-rules-common)
+          (new-normal-form-rules32)))
 
-;; compare to unroller-rules64
+;; now same as unroller-rules64!
 (defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
           (new-normal-form-rules64)
-          ;(old-normal-form-rules)
+          ;;(old-normal-form-rules)
           (read-and-write-rules-bv)
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
@@ -6430,7 +6458,7 @@
 
 ;; Try these as a last resort:
 ;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
-(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p-axe-smt 1)
+(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt 1)
 (set-axe-rule-priority unsigned-canonical-address-p-smt 1)
 
 ;; Based on how commonly these rules were used in an example:
@@ -6498,3 +6526,10 @@
 (set-axe-rule-priority read-of-write-becomes-read-of-write-of-clear-flags-extend-axe 1)
 ;; Remove the clear-flags-retract before we try to resolve the read-of-write
 (set-axe-rule-priority read-of-write-of-clear-flags-retract -1)
+
+;; Only unroll if nothing else works
+(set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
+
+;; so these are tried after the rules that discard entire halves of the array:
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-max-smt 1)
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-zero-smt 1)

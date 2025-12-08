@@ -2790,7 +2790,7 @@
                (b* ((parstate (unread-token parstate))
                     (psize (parsize parstate))
                     ((erp prev-expr prev-span parstate)
-                     (parse-compound-literal expr/tyname.unwrap span parstate))
+                     (parse-compound-literal expr/tyname.tyname span parstate))
                     ((unless (mbt (<= (parsize parstate) (1- psize))))
                      (reterr :impossible)))
                  (parse-postfix-expression-rest prev-expr prev-span parstate)))
@@ -2804,7 +2804,7 @@
                      (if token2 (unread-token parstate) parstate))
                     ((erp expr last-span parstate) ; ( tyname ) expr
                      (parse-cast-expression parstate)))
-                 (retok (make-expr-cast :type expr/tyname.unwrap
+                 (retok (make-expr-cast :type expr/tyname.tyname
                                         :arg expr)
                         (span-join span last-span)
                         parstate)))))
@@ -2865,7 +2865,7 @@
                   ((token-punctuatorp token3 ")") ; ( expr/tyname ) [ops] ( )
                    (retok (make-expr-funcall
                            :fun (expr-paren
-                                 (amb-expr/tyname->expr expr/tyname.unwrap))
+                                 (amb-expr/tyname->expr expr/tyname.expr/tyname))
                            :args nil)
                           (span-join span span3)
                           parstate))
@@ -2883,7 +2883,7 @@
                              ;; ( expr/tyname ) [ops] expr
                              (parse-postfix-expression parstate)))
                          (retok (make-expr-cast/call-ambig
-                                 :type/fun expr/tyname.unwrap
+                                 :type/fun expr/tyname.expr/tyname
                                  :inc/dec incdecops
                                  :arg/rest expr)
                                 (span-join span last-span)
@@ -2902,7 +2902,7 @@
                           ;; then we have again the same ambiguity as above.
                           ((expr-postfix/primary-p expr)
                            (retok (make-expr-cast/call-ambig
-                                   :type/fun expr/tyname.unwrap
+                                   :type/fun expr/tyname.expr/tyname
                                    :inc/dec nil
                                    :arg/rest expr)
                                   (span-join span last-span)
@@ -2919,7 +2919,7 @@
                           (t
                            (retok (make-expr-cast
                                    :type (amb-expr/tyname->tyname
-                                          expr/tyname.unwrap)
+                                          expr/tyname.expr/tyname)
                                    :arg expr)
                                   (span-join span last-span)
                                   parstate)))))))))))
@@ -2932,7 +2932,7 @@
                     ((erp expr last-span parstate)
                      (parse-cast-expression parstate)))
                  (retok (make-expr-cast/mul-ambig
-                         :type/arg1 expr/tyname.unwrap
+                         :type/arg1 expr/tyname.expr/tyname
                          :inc/dec incdecops
                          :arg/arg2 expr)
                         (span-join span last-span)
@@ -2954,7 +2954,7 @@
                     ((erp expr last-span parstate)
                      (parse-multiplicative-expression parstate)))
                  (retok (make-expr-cast/add-or-cast/sub-ambig
-                         token2 expr/tyname.unwrap incdecops expr)
+                         token2 expr/tyname.expr/tyname incdecops expr)
                         (span-join span last-span)
                         parstate)))
               ;; If token2 is an ampersand, we have an ambiguity.
@@ -2973,7 +2973,7 @@
                      ;; ( expr/tyname ) [ops] & expr
                      (parse-equality-expression parstate)))
                  (retok (make-expr-cast/and-ambig
-                         :type/arg1 expr/tyname.unwrap
+                         :type/arg1 expr/tyname.expr/tyname
                          :inc/dec incdecops
                          :arg/arg2 expr)
                         (span-join span last-span)
@@ -3006,7 +3006,7 @@
                          ;; ( expr/tyname ) [ops] && expr
                          (parse-inclusive-or-expression parstate)))
                      (retok (make-expr-cast/logand-ambig
-                             :type/arg1 expr/tyname.unwrap
+                             :type/arg1 expr/tyname.expr/tyname
                              :inc/dec incdecops
                              :arg/arg2 expr)
                             (span-join span last-span)
@@ -3050,7 +3050,7 @@
                      (parse-unary-expression parstate))
                     (expr
                      (make-expr-unary-with-preinc/predec-ops incdecops expr))
-                    (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
+                    (tyname (amb-expr/tyname->tyname expr/tyname.expr/tyname)))
                  (retok (make-expr-cast :type tyname :arg expr)
                         (span-join span last-span)
                         parstate)))
@@ -3195,10 +3195,10 @@
                   (amb?-expr/tyname-case
                    expr/tyname
                    :expr (make-expr-unary :op (unop-sizeof)
-                                          :arg expr/tyname.unwrap
+                                          :arg expr/tyname.expr
                                           :info nil)
-                   :tyname (expr-sizeof expr/tyname.unwrap)
-                   :ambig (expr-sizeof-ambig expr/tyname.unwrap))))
+                   :tyname (expr-sizeof expr/tyname.tyname)
+                   :ambig (expr-sizeof-ambig expr/tyname.expr/tyname))))
               (retok expr (span-join span last-span) parstate)))
            ;; If token2 is not an open parenthesis,
            ;; the operand must be a unary expression.
@@ -3264,12 +3264,12 @@
                     (amb?-expr/tyname-case
                      expr/tyname
                      :expr (make-expr-unary :op (unop-alignof uscores)
-                                            :arg expr/tyname.unwrap
+                                            :arg expr/tyname.expr
                                             :info nil)
-                     :tyname (make-expr-alignof :type expr/tyname.unwrap
+                     :tyname (make-expr-alignof :type expr/tyname.tyname
                                                 :uscores uscores)
                      :ambig (make-expr-alignof-ambig
-                             :expr/tyname expr/tyname.unwrap
+                             :expr/tyname expr/tyname.expr/tyname
                              :uscores uscores))))
                 (retok expr (span-join span last-span) parstate)))
              ;; If token2 is not an open parenthesis,
@@ -3480,7 +3480,7 @@
                :tyname
                (b* ((psize (parsize parstate))
                     ((erp prev-expr prev-span parstate)
-                     (parse-compound-literal expr/tyname.unwrap
+                     (parse-compound-literal expr/tyname.tyname
                                              (span-join span close-paren-span)
                                              parstate))
                     ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -3496,7 +3496,7 @@
                ;; because the ADD-PARENS-P flag is T
                ;; in the call above to PARSE-EXPRESSION-OR-TYPE-NAME.
                :expr
-               (b* ((prev-expr expr/tyname.unwrap)
+               (b* ((prev-expr expr/tyname.expr)
                     (prev-span (span-join span close-paren-span)))
                  (parse-postfix-expression-rest prev-expr prev-span parstate))
                ;; If we just parsed an ambiguous type name or expression,
@@ -3513,7 +3513,7 @@
                   ;; so we also attempt to parser that.
                   ((token-punctuatorp token2 "{") ; ( expr/tyname ) {
                    (b* ((parstate (unread-token parstate)) ; ( expr/tyname )
-                        (tyname (amb-expr/tyname->tyname expr/tyname.unwrap))
+                        (tyname (amb-expr/tyname->tyname expr/tyname.expr/tyname))
                         (psize (parsize parstate))
                         ((erp prev-expr prev-span parstate)
                          (parse-compound-literal tyname
@@ -3532,7 +3532,7 @@
                   (t ; ( expr/tyname ) other
                    (b* ((parstate ; ( expr/tyname )
                          (if token2 (unread-token parstate) parstate))
-                        (expr (amb-expr/tyname->expr expr/tyname.unwrap))
+                        (expr (amb-expr/tyname->expr expr/tyname.expr/tyname))
                         (prev-expr (expr-paren expr))
                         (prev-span (span-join span close-paren-span)))
                      (parse-postfix-expression-rest prev-expr
@@ -4874,12 +4874,15 @@
              (tyspec
               (amb?-expr/tyname-case
                expr/tyname
-               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
-                                                 :uscores uscores)
-               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
-                                                   :uscores uscores)
-               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
-                                                   :uscores uscores))))
+               :expr (make-type-spec-typeof-expr
+                      :expr expr/tyname.expr
+                      :uscores uscores)
+               :tyname (make-type-spec-typeof-type
+                        :type expr/tyname.tyname
+                        :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig
+                       :expr/type expr/tyname.expr/tyname
+                       :uscores uscores))))
           (retok (spec/qual-typespec tyspec)
                  (span-join span last-span)
                  parstate)))
@@ -5156,12 +5159,15 @@
              (tyspec
               (amb?-expr/tyname-case
                expr/tyname
-               :expr (make-type-spec-typeof-expr :expr expr/tyname.unwrap
-                                                 :uscores uscores)
-               :tyname (make-type-spec-typeof-type :type expr/tyname.unwrap
-                                                   :uscores uscores)
-               :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
-                                                   :uscores uscores))))
+               :expr (make-type-spec-typeof-expr
+                      :expr expr/tyname.expr
+                      :uscores uscores)
+               :tyname (make-type-spec-typeof-type
+                        :type expr/tyname.tyname
+                        :uscores uscores)
+               :ambig (make-type-spec-typeof-ambig
+                       :expr/type expr/tyname.expr/tyname
+                       :uscores uscores))))
           (retok (decl-spec-typespec tyspec)
                  (span-join span last-span)
                  parstate)))
@@ -5786,17 +5792,17 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
+       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,
        ;; we return an @('_Alignas') with a type name.
-       :tyname (retok (align-spec-alignas-type expr/tyname.unwrap)
+       :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
                       (span-join first-span last-span)
                       parstate)
        ;; If we parsed an ambiguous expression or type name,
        ;; we return an ambiguous @('_Alignas').
-       :ambig (retok (align-spec-alignas-ambig expr/tyname.unwrap)
+       :ambig (retok (align-spec-alignas-ambig expr/tyname.expr/tyname)
                      (span-join first-span last-span)
                      parstate)))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7007,7 +7013,7 @@
            (retok (make-param-declon
                    :specs declspecs
                    :declor (make-param-declor-nonabstract
-                            :declor declor/absdeclor.unwrap
+                            :declor declor/absdeclor.declor
                             :info nil)
                    :attribs attrspecs)
                   (if attrspecs
@@ -7019,7 +7025,7 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-abstract declor/absdeclor.unwrap)
+                   :declor (param-declor-abstract declor/absdeclor.absdeclor)
                    :attribs attrspecs)
                   (if attrspecs
                       (span-join span attrs-span)
@@ -7030,7 +7036,8 @@
            :ambig
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-ambig declor/absdeclor.unwrap)
+                   :declor (param-declor-ambig
+                            declor/absdeclor.declor/absdeclor)
                    :attribs attrspecs)
                   (if attrspecs
                       (span-join span attrs-span)
@@ -9314,7 +9321,7 @@
                ;; If the initialization part is a declaration,
                ;; the 'for' is not ambiguous, and we parse the rest.
                :decl
-               (b* ((decl (amb?-decl/stmt-decl->unwrap decl/stmt))
+               (b* ((decl (amb?-decl/stmt-decl->decl decl/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9423,7 +9430,7 @@
                ;; If the initialization part is an expression,
                ;; the 'for' is not ambiguous, and we parse the rest.
                :stmt
-               (b* ((expr (amb?-decl/stmt-stmt->unwrap decl/stmt))
+               (b* ((expr (amb?-decl/stmt-stmt->expr decl/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9532,7 +9539,7 @@
                ;; If the initialization part is ambiguous,
                ;; we have an ambiguous 'for', and we parse the rest.
                :ambig
-               (b* ((decl/expr (amb?-decl/stmt-ambig->unwrap decl/stmt))
+               (b* ((decl/expr (amb?-decl/stmt-ambig->decl/stmt decl/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9789,21 +9796,23 @@
                ;; If we parse an unambiguous declaration,
                ;; we return a block item that is a declaration.
                :decl
-               (retok (make-block-item-decl :decl decl/stmt.unwrap :info nil)
+               (retok (make-block-item-decl :decl decl/stmt.decl
+                                            :info nil)
                       span
                       parstate)
                ;; If we parse an unambiguous statement,
                ;; we return a block item that is a statement.
                :stmt
                (retok (make-block-item-stmt
-                       :stmt (make-stmt-expr :expr? decl/stmt.unwrap :info nil)
+                       :stmt (make-stmt-expr :expr? decl/stmt.expr
+                                             :info nil)
                        :info nil)
                       span
                       parstate)
                ;; If we parse an ambiguous declaration or statement,
                ;; we return an ambiguous block item.
                :ambig
-               (retok (block-item-ambig decl/stmt.unwrap)
+               (retok (block-item-ambig decl/stmt.decl/stmt)
                       span
                       parstate)))))))
        ;; If token may start a declaration specifier,
@@ -11737,7 +11746,7 @@
      we reject input with zero external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
-     as prescribed in [C17:5.1.1.2/2].
+     as prescribed in [C17:5.1.1.2/1/2].
      We check that the end-of-file position,
      returned by @(tsee parse-*-external-declaration),
      is at column 0:
@@ -11872,5 +11881,5 @@
   (defret filepaths-of-parse-fileset
     (implies (and (not keep-going)
                   (not erp))
-             (equal (omap::keys (transunit-ensemble->unwrap tunits))
+             (equal (omap::keys (transunit-ensemble->units tunits))
                     (omap::keys (fileset->unwrap fileset))))))

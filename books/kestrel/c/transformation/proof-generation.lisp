@@ -279,167 +279,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-expr-pure-thm ((old exprp)
-                           (new exprp)
-                           (vartys c::ident-type-mapp)
-                           (const-new symbolp)
-                           (thm-index posp)
-                           (hints true-listp))
-  :guard (and (expr-unambp old)
-              (expr-annop old)
-              (expr-unambp new)
-              (expr-annop new))
-  :returns (mv (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (updated-thm-index posp))
-  :short "Generate a theorem for the transformation of a pure expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We are in the process of transitioning theorem generation for expressions
-     from this function to @(tsee gen-expr-thm),
-     while at the same time we are extending and generalizing
-     our dynamic semantics of C.
-     When that transition is completed,
-     we will eliminate this function."))
-  (b* ((old (expr-fix old))
-       (new (expr-fix new))
-       ((unless (expr-pure-formalp old))
-        (raise "Internal error: ~x0 is not in the formalized subset." old)
-        (mv '(_) nil 1))
-       ((unless (expr-pure-formalp new))
-        (raise "Internal error: ~x0 is not in the formalized subset." new)
-        (mv '(_) nil 1))
-       (type (expr-type old))
-       ((unless (equal (expr-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new expression ~x1 differs from ~
-                the type ~x2 of the old expression ~x3."
-               (expr-type new) new type old)
-        (mv '(_) nil 1))
-       ((unless (type-formalp type))
-        (raise "Internal error: expression ~x0 has type ~x1." old type)
-        (mv '(_) nil 1))
-       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
-       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
-       (vars-pre (gen-var-assertions vartys 'compst))
-       (formula
-        `(b* ((old-expr ',old-expr)
-              (new-expr ',new-expr)
-              (old-result (c::exec-expr-pure old-expr compst))
-              (new-result (c::exec-expr-pure new-expr compst))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
-           (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-value new-value)
-                         (equal (c::type-of-value old-value) ',ctype)))))
-       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
-       (thm-event `(defrule ,thm-name
-                     ,formula
-                     :rule-classes nil
-                     :hints ,hints)))
-    (mv thm-event thm-name thm-index))
-  ///
-  (fty::deffixequiv gen-expr-pure-thm
-    :args ((old exprp) (new exprp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lift-expr-pure-thm ((old exprp)
-                            (new exprp)
-                            (expr-pure-thm symbolp)
-                            (vartys c::ident-type-mapp)
-                            (const-new symbolp)
-                            (thm-index posp))
-  :guard (and (expr-unambp old)
-              (expr-annop old)
-              (expr-unambp new)
-              (expr-annop new))
-  :returns (mv (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (updated-thm-index posp))
-  :short "Lift a theorem for a pure expression
-          from @(tsee c::exec-expr-pure) to @(tsee c::exec-expr)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As noted in @(tsee gen-expr-pure-thm),
-     we are transitioning from that function to @(tsee gen-expr-thm).
-     When the transition is completed, and that function is eliminated,
-     this function will be eliminated as well."))
-  (b* ((old (expr-fix old))
-       (new (expr-fix new))
-       ((unless (expr-pure-formalp old))
-        (raise "Internal error: ~x0 is not in the formalized subset." old)
-        (mv '(_) nil 1))
-       ((unless (expr-pure-formalp new))
-        (raise "Internal error: ~x0 is not in the formalized subset." new)
-        (mv '(_) nil 1))
-       (type (expr-type old))
-       ((unless (equal (expr-type new)
-                       type))
-        (raise "Internal error: ~
-                the type ~x0 of the new expression ~x1 differs from ~
-                the type ~x2 of the old expression ~x3."
-               (expr-type new) new type old)
-        (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
-       ((unless (type-formalp type))
-        (raise "Internal error: expression ~x0 has type ~x1." old type)
-        (mv '(_) nil 1))
-       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
-       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
-       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
-       (formula
-        `(b* ((old-expr ',old-expr)
-              (new-expr ',new-expr)
-              ((mv old-result old-compst)
-               (c::exec-expr old-expr compst old-fenv limit))
-              ((mv new-result new-compst)
-               (c::exec-expr new-expr compst new-fenv limit))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
-           (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (iff old-result new-result)
-                         (equal old-value new-value)
-                         (equal old-compst new-compst)
-                         old-value
-                         (equal (c::type-of-value old-value) ',ctype)))))
-       (hints `(("Goal"
-                 :use (,expr-pure-thm
-                       (:instance expr-pure-congruence
-                                  (old ',old-expr)
-                                  (new ',new-expr)))
-                 :in-theory '(c::exec-expr
-                              c::exec-expr-pure-when-const
-                              c::errorp-of-error
-                              (:e c::expr-purep)
-                              (:e c::expr-kind)
-                              (:e c::expr-binary->op)
-                              (:e c::binop-kind)
-                              (:e c::type-nonchar-integerp)
-                              (:e c::expr-pure-limit)
-                              (:t c::exec-expr-pure)
-                              (:t c::expr-value->value)))))
-       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
-       (thm-event
-        `(defrule ,thm-name
-           ,formula
-           :rule-classes nil
-           :hints ,hints)))
-    (mv thm-event thm-name thm-index))
-  ///
-  (fty::deffixequiv lift-expr-pure-thm
-    :args ((old exprp) (new exprp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define gen-expr-thm ((old exprp)
                       (new exprp)
                       (vartys c::ident-type-mapp)
@@ -454,17 +293,6 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the transformation of an expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As noted in @(tsee gen-expr-pure-thm),
-     we are transitioning from that function to this function.
-     During the transition, this function generates, as an additional conjunct,
-     the same formula generated by @(tsee gen-expr-pure-thm),
-     if the expression is pure,
-     in order to facilitate the mixed use of this and that function.
-     Once we have completed the transition,
-     we will eliminate the additional conjunct."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
        ((unless (expr-formalp old))
@@ -492,40 +320,26 @@
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
-              ((mv old-result old-compst)
+              ((mv old-eval old-compst)
                (c::exec-expr old-expr compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-eval new-compst)
                (c::exec-expr new-expr compst new-fenv limit))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
+              (old-val (c::expr-value->value old-eval))
+              (new-val (c::expr-value->value new-eval)))
            (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (iff old-result new-result)
-                         (equal old-value new-value)
+                         (not (c::errorp old-eval)))
+                    (and (not (c::errorp new-eval))
+                         (iff old-eval new-eval)
+                         (equal old-val new-val)
                          (equal old-compst new-compst)
                          ,@(if (c::type-case ctype :void)
-                               '((not old-result))
-                             `(old-result
-                               (equal (c::type-of-value old-value) ',ctype)))
+                               '((not old-eval))
+                             `(old-eval
+                               (equal (c::type-of-value old-val) ',ctype)))
                          ,@vars-post))))
-       (formula2 ; additional conjunct (see doc above)
-        `(b* ((old-expr ',old-expr)
-              (new-expr ',new-expr)
-              (old-result (c::exec-expr-pure old-expr compst))
-              (new-result (c::exec-expr-pure new-expr compst))
-              (old-value (c::expr-value->value old-result))
-              (new-value (c::expr-value->value new-result)))
-           (implies (and ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-value new-value)
-                         (equal (c::type-of-value old-value) ',ctype)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
-                     ,(if (expr-purep old)
-                          `(and ,formula ,formula2)
-                        formula)
+                     ,formula
                      :rule-classes nil
                      :hints ,hints)))
     (mv thm-event thm-name thm-index))
@@ -578,17 +392,17 @@
        (formula
         `(b* ((old-initer ',old-initer)
               (new-initer ',new-initer)
-              ((mv old-result old-compst)
+              ((mv old-ival old-compst)
                (c::exec-initer old-initer compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-ival new-compst)
                (c::exec-initer new-initer compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-ival)))
+                    (and (not (c::errorp new-ival))
+                         (equal old-ival new-ival)
                          (equal old-compst new-compst)
-                         (equal (c::init-type-of-init-value old-result)
+                         (equal (c::init-type-of-init-value old-ival)
                                 (c::init-type-single ',ctype))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -642,17 +456,17 @@
        (formula
         `(b* ((old-stmt ',old-stmt)
               (new-stmt ',new-stmt)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-stmt old-stmt compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-stmt new-stmt compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -764,17 +578,17 @@
        (formula
         `(b* ((old-item ',old-item)
               (new-item ',new-item)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-block-item old-item compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-block-item new-item compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -836,17 +650,17 @@
        (formula
         `(b* ((old-items ',old-items)
               (new-items ',new-items)
-              ((mv old-result old-compst)
+              ((mv old-sval old-compst)
                (c::exec-block-item-list old-items compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-sval new-compst)
                (c::exec-block-item-list new-items compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
                          (equal old-compst new-compst)
-                         (set::in (c::type-option-of-stmt-value old-result)
+                         (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -1321,7 +1135,7 @@
        (expr (make-expr-const :const const :info info))
        (gout-no-thm (gout-no-thm gin))
        ((unless (const-case const :int)) (mv expr gout-no-thm))
-       ((iconst iconst) (const-int->unwrap const))
+       ((iconst iconst) (const-int->iconst const))
        ((iconst-info info) iconst.info)
        ((unless (or (and (type-case info.type :sint)
                          (<= info.value (c::sint-max)))
@@ -1345,10 +1159,8 @@
                         (:e c::check-iconst)
                         (:e c::typep)
                         expr-compustate-vars)
-           :use ((:instance expr-const-congruence-pure
-                            (const ',cconst))
-                 (:instance expr-const-congruence
-                            (const ',cconst))))))
+           :use (:instance expr-const-congruence
+                           (const ',cconst)))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr
@@ -1412,21 +1224,6 @@
         (mv expr-new (gout-no-thm gin)))
        ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
        ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
-       ((mv lifted-thm-name thm-index events)
-        (if (and (expr-purep arg)
-                 (not (expr-case arg :ident))
-                 (not (expr-case arg :const))
-                 (not (expr-case arg :unary))
-                 (not (expr-case arg :cast)))
-            (b* (((mv thm-event thm-name thm-index)
-                  (lift-expr-pure-thm arg
-                                      arg-new
-                                      arg-thm-name
-                                      gin.vartys
-                                      gin.const-new
-                                      gin.thm-index)))
-              (mv thm-name thm-index (cons thm-event gin.events)))
-          (mv nil gin.thm-index gin.events)))
        (hints `(("Goal"
                  :in-theory '((:e c::unop-nonpointerp)
                               (:e c::unop-kind)
@@ -1437,10 +1234,8 @@
                               (:e c::type-sint)
                               (:e member-equal)
                               expr-compustate-vars)
-                 :use ((:instance ,(or lifted-thm-name arg-thm-name)
+                 :use ((:instance ,arg-thm-name
                                   (limit (1- limit)))
-                       ,@(and (expr-purep arg)
-                              (list arg-thm-name))
                        (:instance expr-unary-congruence
                                   (op ',(unop-case
                                          op
@@ -1451,17 +1246,6 @@
                                          :otherwise (impossible)))
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
-                       ,@(and (expr-purep arg)
-                              `((:instance expr-unary-congruence-pure
-                                           (op ',(unop-case
-                                                  op
-                                                  :plus (c::unop-plus)
-                                                  :minus (c::unop-minus)
-                                                  :bitnot (c::unop-bitnot)
-                                                  :lognot (c::unop-lognot)
-                                                  :otherwise (impossible)))
-                                           (old-arg ',old-arg)
-                                           (new-arg ',new-arg))))
                        (:instance expr-unary-errors
                                   (op ',(unop-case
                                          op
@@ -1471,26 +1255,16 @@
                                          :lognot (c::unop-lognot)
                                          :otherwise (impossible)))
                                   (arg ',old-arg)
-                                  (fenv old-fenv))
-                       ,@(and (expr-purep arg)
-                              `((:instance expr-unary-errors-pure
-                                           (op ',(unop-case
-                                                  op
-                                                  :plus (c::unop-plus)
-                                                  :minus (c::unop-minus)
-                                                  :bitnot (c::unop-bitnot)
-                                                  :lognot (c::unop-lognot)
-                                                  :otherwise (impossible)))
-                                           (arg ',old-arg))))))))
+                                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr-new
                       gin.vartys
                       gin.const-new
-                      thm-index
+                      gin.thm-index
                       hints)))
     (mv expr-new
-        (make-gout :events (cons thm-event events)
+        (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -1563,56 +1337,30 @@
        ((mv & ctyname) (ldm-tyname type)) ; ERP must be NIL
        ((mv & old-arg) (ldm-expr arg)) ; ERP must be NIL
        ((mv & new-arg) (ldm-expr arg-new)) ; ERP must be NIL
-       ((mv lifted-thm-name thm-index events)
-        (if (and (expr-purep arg)
-                 (not (expr-case arg :ident))
-                 (not (expr-case arg :const))
-                 (not (expr-case arg :unary))
-                 (not (expr-case arg :cast)))
-            (b* (((mv thm-event thm-name thm-index)
-                  (lift-expr-pure-thm arg
-                                      arg-new
-                                      arg-thm-name
-                                      gin.vartys
-                                      gin.const-new
-                                      gin.thm-index)))
-              (mv thm-name thm-index (cons thm-event gin.events)))
-          (mv nil gin.thm-index gin.events)))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-cast)
                               (:e c::tyname-to-type)
                               (:e c::type-nonchar-integerp)
                               expr-compustate-vars)
-                 :use ((:instance ,(or lifted-thm-name arg-thm-name)
+                 :use ((:instance ,arg-thm-name
                                   (limit (1- limit)))
-                       ,@(and (expr-purep arg)
-                              (list arg-thm-name))
                        (:instance expr-cast-congruence
                                   (tyname ',ctyname)
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
-                       ,@(and (expr-purep arg)
-                              `((:instance expr-cast-congruence-pure
-                                           (tyname ',ctyname)
-                                           (old-arg ',old-arg)
-                                           (new-arg ',new-arg))))
                        (:instance expr-cast-errors
                                   (tyname ',ctyname)
                                   (arg ',old-arg)
-                                  (fenv old-fenv))
-                       ,@(and (expr-purep arg)
-                              `((:instance expr-cast-errors-pure
-                                           (tyname ',ctyname)
-                                           (arg ',old-arg))))))))
+                                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr-new
                       gin.vartys
                       gin.const-new
-                      thm-index
+                      gin.thm-index
                       hints)))
     (mv expr-new
-        (make-gout :events (cons thm-event events)
+        (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -1666,11 +1414,9 @@
      both argument expressions are pure,
      since the order of evaluation is unspecified in C.")
    (xdoc::p
-    "For pure non-strict binary operators,
-     for now we also require both argument expressions to be pure
-     in order to generate a theorem.
-     But this could be relaxed, since in this case
-     the order of evaluation is prescribed.")
+    "For non-strict binary operators (which are pure),
+     the argument expressions may be pure or not,
+     because the order of evaluation is always determined.")
    (xdoc::p
     "For the non-pure strict simple assignment operator,
      for theorem generation we require the left expression to be a variable.
@@ -1678,12 +1424,7 @@
      because when the left expression is a variable,
      the order of evaluation does not matter,
      because the (previous) value of the assigned variable does not matter.
-     Note that this supports multiple assignments @('x = y = z = ...').
-     If the right expression is pure (which always is, currently),
-     we lift the theorem about @(tsee c::exec-expr-pure)
-     to a theorem about @(tsee c::exec-expr):
-     this uniformly provides a theorem about @(tsee c::exec-expr)
-     to use in the proof for the assignment expression.")
+     Note that this supports multiple assignments @('x = y = z = ...').")
    (xdoc::p
     "For the remaining (non-pure strict) operators,
      namely compound assignments,
@@ -1697,10 +1438,8 @@
                      arg2-thm-name))
         (mv expr-new gout-no-thm)))
     (cond
-     ((member-eq (binop-kind op)
-                 '(:mul :div :rem :add :sub :shl :shr
-                   :lt :gt :le :ge :eq :ne
-                   :bitand :bitxor :bitior))
+     ((and (c$::binop-purep op)
+           (c$::binop-strictp op))
       (b* (((unless (and (expr-purep arg1)
                          (expr-purep arg2)))
             (mv expr-new gout-no-thm))
@@ -1718,38 +1457,45 @@
                                   (:e c::promote-type)
                                   (:e c::uaconvert-types)
                                   (:e c::type-sint)
-                                  (:e member-equal))
-                     :use (,arg1-thm-name
-                           ,arg2-thm-name
-                           (:instance
-                            expr-binary-pure-strict-congruence
-                            (op ',cop)
-                            (old-arg1 ',old-arg1)
-                            (old-arg2 ',old-arg2)
-                            (new-arg1 ',new-arg1)
-                            (new-arg2 ',new-arg2))
-                           (:instance
-                            expr-binary-pure-strict-errors
-                            (op ',cop)
-                            (arg1 ',old-arg1)
-                            (arg2 ',old-arg2))))))
+                                  (:e member-equal)
+                                  (:e c::expr-purep)
+                                  expr-compustate-vars)
+                     :use ((:instance ,arg1-thm-name
+                                      (limit (1- limit)))
+                           (:instance ,arg2-thm-name
+                                      (compst (mv-nth 1 (c::exec-expr
+                                                         ',old-arg1
+                                                         compst
+                                                         old-fenv
+                                                         (1- limit))))
+                                      (limit (1- limit)))
+                           (:instance ,arg2-thm-name
+                                      (limit (1- limit)))
+                           (:instance expr-binary-pure-strict-congruence
+                                      (op ',cop)
+                                      (old-arg1 ',old-arg1)
+                                      (old-arg2 ',old-arg2)
+                                      (new-arg1 ',new-arg1)
+                                      (new-arg2 ',new-arg2))
+                           (:instance expr-binary-pure-strict-errors
+                                      (op ',cop)
+                                      (arg1 ',old-arg1)
+                                      (arg2 ',old-arg2)
+                                      (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
-            (gen-expr-pure-thm expr
-                               expr-new
-                               gin.vartys
-                               gin.const-new
-                               gin.thm-index
-                               hints)))
+            (gen-expr-thm expr
+                          expr-new
+                          gin.vartys
+                          gin.const-new
+                          gin.thm-index
+                          hints)))
         (mv expr-new
             (make-gout :events (cons thm-event gin.events)
                        :thm-index thm-index
                        :thm-name thm-name
                        :vartys gin.vartys))))
      ((member-eq (binop-kind op) '(:logand :logor))
-      (b* (((unless (and (expr-purep arg1)
-                         (expr-purep arg2)))
-            (mv expr-new gout-no-thm))
-           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+      (b* (((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
@@ -1759,10 +1505,19 @@
                             (:e c::binop-logand)
                             (:e c::binop-logor)
                             (:e c::type-sint)
-                            (:e c::type-nonchar-integerp))
+                            (:e c::type-nonchar-integerp)
+                            (:e c::expr-value->value)
+                            (:e c::type-of-value)
+                            expr-compustate-vars)
                :use
-               (,arg1-thm-name
-                ,arg2-thm-name
+               ((:instance ,arg1-thm-name
+                           (limit (1- limit)))
+                (:instance ,arg2-thm-name
+                           (compst (mv-nth 1 (c::exec-expr ',old-arg1
+                                                           compst
+                                                           old-fenv
+                                                           (1- limit))))
+                           (limit (1- limit)))
                 (:instance
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-first-congruence)
@@ -1784,20 +1539,22 @@
                     (:logand 'expr-binary-logand-first-errors)
                     (:logor 'expr-binary-logor-first-errors))
                  (arg1 ',old-arg1)
-                 (arg2 ',old-arg2))
+                 (arg2 ',old-arg2)
+                 (fenv old-fenv))
                 (:instance
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-second-errors)
                     (:logor 'expr-binary-logor-second-errors))
                  (arg1 ',old-arg1)
-                 (arg2 ',old-arg2))))))
+                 (arg2 ',old-arg2)
+                 (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
-            (gen-expr-pure-thm expr
-                               expr-new
-                               gin.vartys
-                               gin.const-new
-                               gin.thm-index
-                               hints)))
+            (gen-expr-thm expr
+                          expr-new
+                          gin.vartys
+                          gin.const-new
+                          gin.thm-index
+                          hints)))
         (mv expr-new
             (make-gout :events (cons thm-event gin.events)
                        :thm-index thm-index
@@ -1812,21 +1569,6 @@
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
            ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
-           ((mv lifted-thm-name thm-index events)
-            (if (and (expr-purep arg2)
-                     (not (expr-case arg2 :ident))
-                     (not (expr-case arg2 :const))
-                     (not (expr-case arg2 :unary))
-                     (not (expr-case arg2 :cast)))
-                (b* (((mv thm-event thm-name thm-index)
-                      (lift-expr-pure-thm arg2
-                                          arg2-new
-                                          arg2-thm-name
-                                          gin.vartys
-                                          gin.const-new
-                                          gin.thm-index)))
-                  (mv thm-name thm-index (cons thm-event gin.events)))
-              (mv nil gin.thm-index gin.events)))
            (hints
             `(("Goal"
                :in-theory
@@ -1844,10 +1586,8 @@
                  c::not-errorp-when-compustate-has-var-with-type-p
                  expr-compustate-vars)
                :use (,arg1-thm-name
-                     (:instance
-                      ,(or lifted-thm-name
-                           arg2-thm-name)
-                      (limit (1- limit)))
+                     (:instance ,arg2-thm-name
+                                (limit (1- limit)))
                      (:instance
                       expr-binary-asg-congruence
                       (var ',cvar)
@@ -1863,10 +1603,10 @@
                           expr-new
                           gin.vartys
                           gin.const-new
-                          thm-index
+                          gin.thm-index
                           hints)))
         (mv expr-new
-            (make-gout :events (cons thm-event events)
+            (make-gout :events (cons thm-event gin.events)
                        :thm-index thm-index
                        :thm-name thm-name
                        :vartys gin.vartys))))
@@ -1935,10 +1675,7 @@
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)
-                     (expr-option-purep then)
-                     (expr-purep else)))
+                     else-thm-name))
         (mv expr-new (gout-no-thm gin)))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
        ((mv & old-then) (ldm-expr-option then)) ; ERP must be NIL
@@ -1947,49 +1684,64 @@
        ((mv & new-then) (ldm-expr-option then-new)) ; ERP must be NIL
        ((mv & new-else) (ldm-expr else-new)) ; ERP must be NIL
        (hints `(("Goal"
+                 :do-not '(preprocess) ; for speed
                  :in-theory '((:e c::expr-cond)
-                              (:e c::type-nonchar-integerp))
-                 :use (,test-thm-name
-                       ,then-thm-name
-                       ,else-thm-name
-                       (:instance
-                        expr-cond-true-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (old-else ',old-else)
-                        (new-test ',new-test)
-                        (new-then ',new-then)
-                        (new-else ',new-else))
-                       (:instance
-                        expr-cond-false-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (old-else ',old-else)
-                        (new-test ',new-test)
-                        (new-then ',new-then)
-                        (new-else ',new-else))
-                       (:instance
-                        expr-cond-test-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else))
-                       (:instance
-                        expr-cond-then-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else))
-                       (:instance
-                        expr-cond-else-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else))))))
+                              (:e c::type-nonchar-integerp)
+                              (:e c::expr-value->value)
+                              (:e c::type-of-value)
+                              expr-compustate-vars)
+                 :use ((:instance ,test-thm-name
+                                  (limit (1- limit)))
+                       (:instance ,then-thm-name
+                                  (compst (mv-nth 1 (c::exec-expr
+                                                     ',old-test
+                                                     compst
+                                                     old-fenv
+                                                     (1- limit))))
+                                  (limit (1- limit)))
+                       (:instance ,else-thm-name
+                                  (compst (mv-nth 1 (c::exec-expr
+                                                     ',old-test
+                                                     compst
+                                                     old-fenv
+                                                     (1- limit))))
+                                  (limit (1- limit)))
+                       (:instance expr-cond-true-congruence
+                                  (old-test ',old-test)
+                                  (old-then ',old-then)
+                                  (old-else ',old-else)
+                                  (new-test ',new-test)
+                                  (new-then ',new-then)
+                                  (new-else ',new-else))
+                       (:instance expr-cond-false-congruence
+                                  (old-test ',old-test)
+                                  (old-then ',old-then)
+                                  (old-else ',old-else)
+                                  (new-test ',new-test)
+                                  (new-then ',new-then)
+                                  (new-else ',new-else))
+                       (:instance expr-cond-test-errors
+                                  (test ',old-test)
+                                  (then ',old-then)
+                                  (else ',old-else)
+                                  (fenv old-fenv))
+                       (:instance expr-cond-then-errors
+                                  (test ',old-test)
+                                  (then ',old-then)
+                                  (else ',old-else)
+                                  (fenv old-fenv))
+                       (:instance expr-cond-else-errors
+                                  (test ',old-test)
+                                  (then ',old-then)
+                                  (else ',old-else)
+                                  (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
-        (gen-expr-pure-thm expr
-                           expr-new
-                           gin.vartys
-                           gin.const-new
-                           gin.thm-index
-                           hints)))
+        (gen-expr-thm expr
+                      expr-new
+                      gin.vartys
+                      gin.const-new
+                      gin.thm-index
+                      hints)))
     (mv expr-new
         (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
@@ -2032,8 +1784,7 @@
   (b* (((gin gin) gin)
        (initer (initer-single expr))
        (initer-new (initer-single expr-new))
-       ((unless (and expr-thm-name
-                     (expr-purep expr)))
+       ((unless expr-thm-name)
         (mv initer-new (gout-no-thm gin)))
        ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
        ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
@@ -2042,18 +1793,17 @@
            :in-theory '((:e c::initer-kind)
                         (:e c::initer-single)
                         (:e c::initer-single->get)
-                        (:e c::expr-purep)
                         (:e c::expr-kind)
                         (:e c::expr-binary->op)
                         (:e c::binop-kind)
                         (:e c::type-nonchar-integerp)
-                        (:e c::expr-pure-limit)
                         initer-compustate-vars)
-           :use ((:instance ,expr-thm-name)
-                 (:instance initer-single-pure-congruence
+           :use ((:instance ,expr-thm-name
+                            (limit (1- limit)))
+                 (:instance initer-single-congruence
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
-                 (:instance initer-single-pure-errors
+                 (:instance initer-single-errors
                             (expr ',old-expr)
                             (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2105,8 +1855,6 @@
     "We generate a theorem
      if there is no expression (i.e. the null statement),
      or if we have a theorem for a supported expression.
-     If the expression is pure, its theorem refers to @(tsee c::exec-expr-pure),
-     and so we lift that to a theorem that refers to @(tsee c::exec-expr).
      An expression statement does not change the variables in scope,
      so we use the variable-type map from the validation table in the AST
      for both before and after the statement, in the generated theorem."))
@@ -2123,22 +1871,6 @@
        ((unless (or (not expr?)
                     expr?-thm-name))
         (mv stmt-new (gout-no-thm gin)))
-       ((mv lifted-thm-name thm-index events)
-        (if (and expr?
-                 (expr-purep expr?)
-                 (not (expr-case expr? :ident))
-                 (not (expr-case expr? :const))
-                 (not (expr-case expr? :unary))
-                 (not (expr-case expr? :cast)))
-            (b* (((mv thm-event thm-name thm-index)
-                  (lift-expr-pure-thm expr?
-                                      expr?-new
-                                      expr?-thm-name
-                                      gin.vartys
-                                      gin.const-new
-                                      gin.thm-index)))
-              (mv thm-name thm-index (cons thm-event gin.events)))
-          (mv nil gin.thm-index gin.events)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
        (hints
@@ -2150,18 +1882,14 @@
                             (:e set::insert)
                             expr-compustate-vars
                             stmt-compustate-vars)
-               :use ((:instance
-                      ,(or lifted-thm-name
-                           expr?-thm-name)
-                      (limit (1- limit)))
-                     (:instance
-                      stmt-expr-congruence
-                      (old-expr ',old-expr?)
-                      (new-expr ',new-expr?))
-                     (:instance
-                      stmt-expr-errors
-                      (expr ',old-expr?)
-                      (fenv old-fenv)))))
+               :use ((:instance ,expr?-thm-name
+                                (limit (1- limit)))
+                     (:instance stmt-expr-congruence
+                                (old-expr ',old-expr?)
+                                (new-expr ',new-expr?))
+                     (:instance stmt-expr-errors
+                                (expr ',old-expr?)
+                                (fenv old-fenv)))))
           `(("Goal"
              :in-theory '((:e c::stmt-kind)
                           (:e c::stmt-null)
@@ -2175,10 +1903,10 @@
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      thm-index
+                      gin.thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event events)
+        (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -2239,22 +1967,6 @@
         (mv stmt-new (gout-no-thm gin)))
        ((mv & old-expr?) (ldm-expr-option expr?)) ; ERP must be NIL
        ((mv & new-expr?) (ldm-expr-option expr?-new)) ; ERP must be NIL
-       ((mv lifted-thm-name thm-index events)
-        (if (and expr?
-                 (expr-purep expr?)
-                 (not (expr-case expr? :ident))
-                 (not (expr-case expr? :const))
-                 (not (expr-case expr? :unary))
-                 (not (expr-case expr? :cast)))
-            (b* (((mv thm-event thm-name thm-index)
-                  (lift-expr-pure-thm expr?
-                                      expr?-new
-                                      expr?-thm-name
-                                      gin.vartys
-                                      gin.const-new
-                                      gin.thm-index)))
-              (mv thm-name thm-index (cons thm-event gin.events)))
-          (mv nil gin.thm-index gin.events)))
        (hints (if expr?
                   `(("Goal"
                      :in-theory '((:e set::insert)
@@ -2263,7 +1975,7 @@
                                   (:e c::stmt-return->value)
                                   (:e c::type-nonchar-integerp)
                                   stmt-compustate-vars)
-                     :use ((:instance ,(or lifted-thm-name expr?-thm-name)
+                     :use ((:instance ,expr?-thm-name
                                       (limit (1- limit)))
                            (:instance stmt-return-value-congruence
                                       (old-expr ',old-expr?)
@@ -2282,10 +1994,10 @@
                       stmt-new
                       gin.vartys
                       gin.const-new
-                      thm-index
+                      gin.thm-index
                       hints)))
     (mv stmt-new
-        (make-gout :events (cons thm-event events)
+        (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
@@ -2328,8 +2040,7 @@
        (stmt (make-stmt-if :test test :then then))
        (stmt-new (make-stmt-if :test test-new :then then-new))
        ((unless (and test-thm-name
-                     then-thm-name
-                     (expr-purep test)))
+                     then-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
@@ -2337,44 +2048,47 @@
        ((mv & old-then) (ldm-stmt then)) ; ERP must be NIL
        ((mv & new-then) (ldm-stmt then-new)) ; ERP must be NIL
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
-       (hints `(("Goal"
-                 :in-theory
-                 '((:e c::stmt-kind)
-                   (:e c::stmt-if->test)
-                   (:e c::stmt-if->then)
-                   (:e c::stmt-if)
-                   (:e c::type-nonchar-integerp)
-                   (:e set::insert)
-                   (:e set::subset)
-                   set::subset-in
-                   c::compustate-frames-number-of-exec-stmt
-                   c::compustatep-when-compustate-resultp-and-not-errorp
-                   stmt-compustate-vars)
-                 :use (,test-thm-name
-                       (:instance ,then-thm-name (limit (1- limit)))
-                       (:instance
-                        stmt-if-true-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (new-test ',new-test)
-                        (new-then ',new-then)
-                        (types ',then-ctypes))
-                       (:instance
-                        stmt-if-false-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (new-test ',new-test)
-                        (new-then ',new-then))
-                       (:instance
-                        stmt-if-test-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (fenv old-fenv))
-                       (:instance
-                        stmt-if-then-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (fenv old-fenv))))))
+       (hints
+        `(("Goal"
+           :in-theory '((:e c::stmt-kind)
+                        (:e c::stmt-if->test)
+                        (:e c::stmt-if->then)
+                        (:e c::stmt-if)
+                        (:e c::type-nonchar-integerp)
+                        (:e set::insert)
+                        (:e set::subset)
+                        set::subset-in
+                        c::compustate-frames-number-of-exec-expr
+                        c::compustate-frames-number-of-exec-stmt
+                        c::compustatep-when-compustate-resultp-and-not-errorp
+                        stmt-compustate-vars)
+           :use ((:instance ,test-thm-name
+                            (limit (1- limit)))
+                 (:instance ,then-thm-name
+                            (compst (mv-nth 1 (c::exec-expr ',old-test
+                                                            compst
+                                                            old-fenv
+                                                            (1- limit))))
+                            (limit (1- limit)))
+                 (:instance stmt-if-true-congruence
+                            (old-test ',old-test)
+                            (old-then ',old-then)
+                            (new-test ',new-test)
+                            (new-then ',new-then)
+                            (types ',then-ctypes))
+                 (:instance stmt-if-false-congruence
+                            (old-test ',old-test)
+                            (old-then ',old-then)
+                            (new-test ',new-test)
+                            (new-then ',new-then))
+                 (:instance stmt-if-test-errors
+                            (test ',old-test)
+                            (then ',old-then)
+                            (fenv old-fenv))
+                 (:instance stmt-if-then-errors
+                            (test ',old-test)
+                            (then ',old-then)
+                            (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2437,8 +2151,7 @@
         (make-stmt-ifelse :test test-new :then then-new :else else-new))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name
-                     (expr-purep test)))
+                     else-thm-name))
         (mv stmt-new (gout-no-thm gin)))
        (then-types (stmt-types then))
        (else-types (stmt-types else))
@@ -2450,59 +2163,67 @@
        ((mv & new-else) (ldm-stmt else-new)) ; ERP must be NIL
        ((mv & then-ctypes) (ldm-type-option-set then-types)) ; ERP must be NIL
        ((mv & else-ctypes) (ldm-type-option-set else-types)) ; ERP must be NIL
-       (hints `(("Goal"
-                 :in-theory
-                 '((:e c::stmt-kind)
-                   (:e c::stmt-ifelse->test)
-                   (:e c::stmt-ifelse->then)
-                   (:e c::stmt-ifelse->else)
-                   (:e c::stmt-ifelse)
-                   (:e c::type-nonchar-integerp)
-                   (:e set::insert)
-                   (:e set::subset)
-                   set::subset-in
-                   c::compustate-frames-number-of-exec-stmt
-                   c::compustatep-when-compustate-resultp-and-not-errorp
-                   stmt-compustate-vars)
-                 :use (,test-thm-name
-                       (:instance ,then-thm-name (limit (1- limit)))
-                       (:instance ,else-thm-name (limit (1- limit)))
-                       (:instance
-                        stmt-ifelse-true-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (old-else ',old-else)
-                        (new-test ',new-test)
-                        (new-then ',new-then)
-                        (new-else ',new-else)
-                        (types ',then-ctypes))
-                       (:instance
-                        stmt-ifelse-false-congruence
-                        (old-test ',old-test)
-                        (old-then ',old-then)
-                        (old-else ',old-else)
-                        (new-test ',new-test)
-                        (new-then ',new-then)
-                        (new-else ',new-else)
-                        (types ',else-ctypes))
-                       (:instance
-                        stmt-ifelse-test-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else)
-                        (fenv old-fenv))
-                       (:instance
-                        stmt-ifelse-then-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else)
-                        (fenv old-fenv))
-                       (:instance
-                        stmt-ifelse-else-errors
-                        (test ',old-test)
-                        (then ',old-then)
-                        (else ',old-else)
-                        (fenv old-fenv))))))
+       (hints
+        `(("Goal"
+           :in-theory
+           '((:e c::stmt-kind)
+             (:e c::stmt-ifelse->test)
+             (:e c::stmt-ifelse->then)
+             (:e c::stmt-ifelse->else)
+             (:e c::stmt-ifelse)
+             (:e c::type-nonchar-integerp)
+             (:e set::insert)
+             (:e set::subset)
+             set::subset-in
+             c::compustate-frames-number-of-exec-expr
+             c::compustate-frames-number-of-exec-stmt
+             c::compustatep-when-compustate-resultp-and-not-errorp
+             stmt-compustate-vars)
+           :use ((:instance ,test-thm-name
+                            (limit (1- limit)))
+                 (:instance ,then-thm-name
+                            (compst (mv-nth 1 (c::exec-expr ',old-test
+                                                            compst
+                                                            old-fenv
+                                                            (1- limit))))
+                            (limit (1- limit)))
+                 (:instance ,else-thm-name
+                            (compst (mv-nth 1 (c::exec-expr ',old-test
+                                                            compst
+                                                            old-fenv
+                                                            (1- limit))))
+                            (limit (1- limit)))
+                 (:instance stmt-ifelse-true-congruence
+                            (old-test ',old-test)
+                            (old-then ',old-then)
+                            (old-else ',old-else)
+                            (new-test ',new-test)
+                            (new-then ',new-then)
+                            (new-else ',new-else)
+                            (types ',then-ctypes))
+                 (:instance stmt-ifelse-false-congruence
+                            (old-test ',old-test)
+                            (old-then ',old-then)
+                            (old-else ',old-else)
+                            (new-test ',new-test)
+                            (new-then ',new-then)
+                            (new-else ',new-else)
+                            (types ',else-ctypes))
+                 (:instance stmt-ifelse-test-errors
+                            (test ',old-test)
+                            (then ',old-then)
+                            (else ',old-else)
+                            (fenv old-fenv))
+                 (:instance stmt-ifelse-then-errors
+                            (test ',old-test)
+                            (then ',old-then)
+                            (else ',old-else)
+                            (fenv old-fenv))
+                 (:instance stmt-ifelse-else-errors
+                            (test ',old-test)
+                            (then ',old-then)
+                            (else ',old-else)
+                            (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2648,9 +2369,16 @@
                         stmt-compustate-vars)
            :use ((:instance
                   ,test-thm-name
-                  (compst (while-test-hyp-witness ',old-test
-                                                  ',new-test
-                                                  ',gin.vartys)))
+                  (compst (mv-nth 0 (while-test-hyp-witness ',old-test
+                                                            ',new-test
+                                                            old-fenv
+                                                            new-fenv
+                                                            ',gin.vartys)))
+                  (limit (mv-nth 1 (while-test-hyp-witness ',old-test
+                                                           ',new-test
+                                                           old-fenv
+                                                           new-fenv
+                                                           ',gin.vartys))))
                  (:instance
                   ,body-thm-name
                   (compst (mv-nth 0 (while-body-hyp-witness ',old-body
@@ -2665,14 +2393,13 @@
                                                            new-fenv
                                                            ',types
                                                            ',gin.vartys))))
-                 (:instance
-                  stmt-while-theorem
-                  (old-test ',old-test)
-                  (new-test ',new-test)
-                  (old-body ',old-body)
-                  (new-body ',new-body)
-                  (types ',types)
-                  (vartys ',gin.vartys))))))
+                 (:instance stmt-while-theorem
+                            (old-test ',old-test)
+                            (new-test ',new-test)
+                            (old-body ',old-body)
+                            (new-body ',new-body)
+                            (types ',types)
+                            (vartys ',gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2764,17 +2491,23 @@
                                                              ',gin.vartys))))
                  (:instance
                   ,test-thm-name
-                  (compst (dowhile-test-hyp-witness ',old-test
-                                                    ',new-test
-                                                    ',gin.vartys)))
-                 (:instance
-                  stmt-dowhile-theorem
-                  (old-body ',old-body)
-                  (new-body ',new-body)
-                  (old-test ',old-test)
-                  (new-test ',new-test)
-                  (types ',types)
-                  (vartys ',gin.vartys))))))
+                  (compst (mv-nth 0 (dowhile-test-hyp-witness ',old-test
+                                                              ',new-test
+                                                              old-fenv
+                                                              new-fenv
+                                                              ',gin.vartys)))
+                  (limit (mv-nth 1 (dowhile-test-hyp-witness ',old-test
+                                                             ',new-test
+                                                             old-fenv
+                                                             new-fenv
+                                                             ',gin.vartys))))
+                 (:instance stmt-dowhile-theorem
+                            (old-body ',old-body)
+                            (new-body ',new-body)
+                            (old-test ',old-test)
+                            (new-test ',new-test)
+                            (types ',types)
+                            (vartys ',gin.vartys))))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -3427,9 +3160,9 @@
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
               (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-              ((mv old-result old-compst)
+              ((mv old-val old-compst)
                (c::exec-fun fun (list ,@args) compst old-fenv limit))
-              ((mv new-result new-compst)
+              ((mv new-val new-compst)
                (c::exec-fun fun (list ,@args) compst new-fenv limit)))
            (implies (and ,@global-vars-pre
                          ,@arg-types
@@ -3439,11 +3172,11 @@
                          (equal (c::fun-env-lookup fun new-fenv)
                                 (c::fun-info-from-fundef
                                  (mv-nth 1 (ldm-fundef new))))
-                         (not (c::errorp old-result)))
-                    (and (not (c::errorp new-result))
-                         (equal old-result new-result)
+                         (not (c::errorp old-val)))
+                    (and (not (c::errorp new-val))
+                         (equal old-val new-val)
                          (equal old-compst new-compst)
-                         (set::in (c::type-of-value-option old-result)
+                         (set::in (c::type-of-value-option old-val)
                                   (mv-nth 1 (ldm-type-set ',types)))))))
        (hints
         `(("Goal"

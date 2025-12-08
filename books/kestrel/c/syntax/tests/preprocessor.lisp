@@ -1350,3 +1350,560 @@
  :cond (equal ast
               (plexeme-line-comment
                (acl2::string=>nats "/* no special significance */"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-spaces
+
+(test-lex
+ plex-spaces
+ nil
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 1)))
+
+(test-lex
+ plex-spaces
+ "a"
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 1)))
+
+(test-lex
+ plex-spaces
+ "    "
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 5)))
+
+(test-lex
+ plex-spaces
+ "   a"
+ :more-inputs ((position 1 1))
+ :cond (equal ast (plexeme-spaces 4)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; plex-lexer
+
+(defmacro test-lex-lexeme (input &key cond)
+  `(test-lex
+    plex-lexeme
+    ,input
+    :more-inputs (nil)
+    :cond ,cond))
+
+(defmacro test-lex-lexeme-headerp (input &key cond)
+  `(test-lex
+    plex-lexeme
+    ,input
+    :more-inputs (t)
+    :cond ,cond))
+
+(defmacro test-lex-lexeme-fail (input)
+  `(test-lex-fail
+    plex-lexeme
+    ,input
+    :more-inputs (nil)))
+
+(defmacro test-lex-lexeme-headerp-fail (input)
+  `(test-lex-fail
+    plex-lexeme
+    ,input
+    :more-inputs (t)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; no lexeme
+
+(test-lex-lexeme
+ nil
+ :cond (equal ast nil))
+
+(test-lex-lexeme-headerp
+ nil
+ :cond (equal ast nil))
+
+; white space
+
+(test-lex-lexeme
+ " "
+ :cond (equal ast (plexeme-spaces 1)))
+
+(test-lex-lexeme
+ "       "
+ :cond (equal ast (plexeme-spaces 7)))
+
+(test-lex-lexeme
+ (list 9)
+ :cond (equal ast (plexeme-horizontal-tab)))
+
+(test-lex-lexeme
+ (list 11)
+ :cond (equal ast (plexeme-vertical-tab)))
+
+(test-lex-lexeme
+ (list 12)
+ :cond (equal ast (plexeme-form-feed)))
+
+(test-lex-lexeme
+ (list 10)
+ :cond (equal ast (plexeme-newline (newline-lf))))
+
+(test-lex-lexeme
+ (list 13)
+ :cond (equal ast (plexeme-newline (newline-cr))))
+
+(test-lex-lexeme
+ (list 13 (char-code #\a))
+ :cond (equal ast (plexeme-newline (newline-cr))))
+
+(test-lex-lexeme
+ (list 13 10)
+ :cond (equal ast (plexeme-newline (newline-crlf))))
+
+; preprocessing numbers
+
+(test-lex-lexeme
+ "124"
+ :cond (equal ast (plexeme-number
+                   (pnumber-number-digit
+                    (pnumber-number-digit
+                     (pnumber-digit #\1) #\2) #\4))))
+
+(test-lex-lexeme
+ "124e+"
+ :cond (equal ast (plexeme-number
+                   (pnumber-number-locase-e-sign
+                    (pnumber-number-digit
+                     (pnumber-number-digit
+                      (pnumber-digit #\1) #\2) #\4)
+                    (sign-plus)))))
+
+(test-lex-lexeme
+ "124x"
+ :cond (equal ast (plexeme-number
+                   (pnumber-number-nondigit
+                    (pnumber-number-digit
+                     (pnumber-number-digit
+                      (pnumber-digit #\1) #\2) #\4)
+                    #\x))))
+
+(test-lex-lexeme
+ ".5"
+ :cond (equal ast (plexeme-number
+                   (pnumber-dot-digit #\5))))
+
+; identifiers
+
+(test-lex-lexeme
+ "x"
+ :cond (equal ast (plexeme-ident (ident "x"))))
+
+(test-lex-lexeme
+ "an_identifier_88"
+ :cond (equal ast (plexeme-ident (ident "an_identifier_88"))))
+
+(test-lex-lexeme
+ "u"
+ :cond (equal ast (plexeme-ident (ident "u"))))
+
+(test-lex-lexeme
+ "u*"
+ :cond (equal ast (plexeme-ident (ident "u"))))
+
+(test-lex-lexeme
+ "U*"
+ :cond (equal ast (plexeme-ident (ident "U"))))
+
+(test-lex-lexeme
+ "L*"
+ :cond (equal ast (plexeme-ident (ident "L"))))
+
+(test-lex-lexeme
+ "u8*"
+ :cond (equal ast (plexeme-ident (ident "u8"))))
+
+(test-lex-lexeme
+ "u8'"
+ :cond (equal ast (plexeme-ident (ident "u8"))))
+
+; character constants
+
+(test-lex-lexeme
+ "'k'"
+ :cond (equal ast (plexeme-char
+                   (cconst nil (list (c-char-char (char-code #\k)))))))
+
+(test-lex-lexeme
+ "U'\\n'" ; lexer sees just one \
+ :cond (equal ast (plexeme-char
+                   (cconst (cprefix-upcase-u)
+                           (list (c-char-escape
+                                  (escape-simple (simple-escape-n))))))))
+
+; string literals
+
+(test-lex-lexeme
+ "\"hello\""
+ :cond (equal ast (plexeme-string
+                   (stringlit nil (list (s-char-char (char-code #\h))
+                                        (s-char-char (char-code #\e))
+                                        (s-char-char (char-code #\l))
+                                        (s-char-char (char-code #\l))
+                                        (s-char-char (char-code #\o)))))))
+
+(test-lex-lexeme
+ "u8\"a\\123b\"" ; lexer sees just one \ before 123
+ :cond (equal ast (plexeme-string
+                   (stringlit (eprefix-locase-u8)
+                              (list (s-char-char (char-code #\a))
+                                    (s-char-escape
+                                     (escape-oct
+                                      (oct-escape-three #\1 #\2 #\3)))
+                                    (s-char-char (char-code #\b)))))))
+
+; punctuators
+
+(test-lex-lexeme
+ "[ "
+ :cond (equal ast (plexeme-punctuator "[")))
+
+(test-lex-lexeme
+ "] "
+ :cond (equal ast (plexeme-punctuator "]")))
+
+(test-lex-lexeme
+ "( "
+ :cond (equal ast (plexeme-punctuator "(")))
+
+(test-lex-lexeme
+ ") "
+ :cond (equal ast (plexeme-punctuator ")")))
+
+(test-lex-lexeme
+ "{ "
+ :cond (equal ast (plexeme-punctuator "{")))
+
+(test-lex-lexeme
+ "} "
+ :cond (equal ast (plexeme-punctuator "}")))
+
+(test-lex-lexeme
+ ". "
+ :cond (equal ast (plexeme-punctuator ".")))
+
+(test-lex-lexeme
+ ".. "
+ :cond (equal ast (plexeme-punctuator ".")))
+
+(test-lex-lexeme
+ "... "
+ :cond (equal ast (plexeme-punctuator "...")))
+
+(test-lex-lexeme
+ "- "
+ :cond (equal ast (plexeme-punctuator "-")))
+
+(test-lex-lexeme
+ "-- "
+ :cond (equal ast (plexeme-punctuator "--")))
+
+(test-lex-lexeme
+ "-= "
+ :cond (equal ast (plexeme-punctuator "-=")))
+
+(test-lex-lexeme
+ "-> "
+ :cond (equal ast (plexeme-punctuator "->")))
+
+(test-lex-lexeme
+ "-+ "
+ :cond (equal ast (plexeme-punctuator "-")))
+
+(test-lex-lexeme
+ "+ "
+ :cond (equal ast (plexeme-punctuator "+")))
+
+(test-lex-lexeme
+ "++ "
+ :cond (equal ast (plexeme-punctuator "++")))
+
+(test-lex-lexeme
+ "+= "
+ :cond (equal ast (plexeme-punctuator "+=")))
+
+(test-lex-lexeme
+ "+- "
+ :cond (equal ast (plexeme-punctuator "+")))
+
+(test-lex-lexeme
+ "& "
+ :cond (equal ast (plexeme-punctuator "&")))
+
+(test-lex-lexeme
+ "&& "
+ :cond (equal ast (plexeme-punctuator "&&")))
+
+(test-lex-lexeme
+ "&= "
+ :cond (equal ast (plexeme-punctuator "&=")))
+
+(test-lex-lexeme
+ "&| "
+ :cond (equal ast (plexeme-punctuator "&")))
+
+(test-lex-lexeme
+ "* "
+ :cond (equal ast (plexeme-punctuator "*")))
+
+(test-lex-lexeme
+ "*= "
+ :cond (equal ast (plexeme-punctuator "*=")))
+
+(test-lex-lexeme
+ "** "
+ :cond (equal ast (plexeme-punctuator "*")))
+
+(test-lex-lexeme
+ "~ "
+ :cond (equal ast (plexeme-punctuator "~")))
+
+(test-lex-lexeme
+ "! "
+ :cond (equal ast (plexeme-punctuator "!")))
+
+(test-lex-lexeme
+ "!= "
+ :cond (equal ast (plexeme-punctuator "!=")))
+
+(test-lex-lexeme
+ "!! "
+ :cond (equal ast (plexeme-punctuator "!")))
+
+(test-lex-lexeme
+ "/ "
+ :cond (equal ast (plexeme-punctuator "/")))
+
+(test-lex-lexeme
+ "/= "
+ :cond (equal ast (plexeme-punctuator "/=")))
+
+(test-lex-lexeme
+ "/- "
+ :cond (equal ast (plexeme-punctuator "/")))
+
+(test-lex-lexeme
+ "% "
+ :cond (equal ast (plexeme-punctuator "%")))
+
+(test-lex-lexeme
+ "%= "
+ :cond (equal ast (plexeme-punctuator "%=")))
+
+(test-lex-lexeme
+ "%> "
+ :cond (equal ast (plexeme-punctuator "%>")))
+
+(test-lex-lexeme
+ "%: "
+ :cond (equal ast (plexeme-punctuator "%:")))
+
+(test-lex-lexeme
+ "%:%: "
+ :cond (equal ast (plexeme-punctuator "%:%:")))
+
+(test-lex-lexeme
+ "%. "
+ :cond (equal ast (plexeme-punctuator "%")))
+
+(test-lex-lexeme
+ "%:%. "
+ :cond (equal ast (plexeme-punctuator "%:")))
+
+(test-lex-lexeme
+ "< "
+ :cond (equal ast (plexeme-punctuator "<")))
+
+(test-lex-lexeme
+ "<< "
+ :cond (equal ast (plexeme-punctuator "<<")))
+
+(test-lex-lexeme
+ "<= "
+ :cond (equal ast (plexeme-punctuator "<=")))
+
+(test-lex-lexeme
+ "<<= "
+ :cond (equal ast (plexeme-punctuator "<<=")))
+
+(test-lex-lexeme
+ "<: "
+ :cond (equal ast (plexeme-punctuator "<:")))
+
+(test-lex-lexeme
+ "<% "
+ :cond (equal ast (plexeme-punctuator "<%")))
+
+(test-lex-lexeme
+ "<- "
+ :cond (equal ast (plexeme-punctuator "<")))
+
+(test-lex-lexeme
+ "> "
+ :cond (equal ast (plexeme-punctuator ">")))
+
+(test-lex-lexeme
+ ">> "
+ :cond (equal ast (plexeme-punctuator ">>")))
+
+(test-lex-lexeme
+ ">= "
+ :cond (equal ast (plexeme-punctuator ">=")))
+
+(test-lex-lexeme
+ ">>= "
+ :cond (equal ast (plexeme-punctuator ">>=")))
+
+(test-lex-lexeme
+ ">- "
+ :cond (equal ast (plexeme-punctuator ">")))
+
+(test-lex-lexeme
+ "= "
+ :cond (equal ast (plexeme-punctuator "=")))
+
+(test-lex-lexeme
+ "== "
+ :cond (equal ast (plexeme-punctuator "==")))
+
+(test-lex-lexeme
+ "=+ "
+ :cond (equal ast (plexeme-punctuator "=")))
+
+(test-lex-lexeme
+ "^ "
+ :cond (equal ast (plexeme-punctuator "^")))
+
+(test-lex-lexeme
+ "^= "
+ :cond (equal ast (plexeme-punctuator "^=")))
+
+(test-lex-lexeme
+ "^^ "
+ :cond (equal ast (plexeme-punctuator "^")))
+
+(test-lex-lexeme
+ "| "
+ :cond (equal ast (plexeme-punctuator "|")))
+
+(test-lex-lexeme
+ "|| "
+ :cond (equal ast (plexeme-punctuator "||")))
+
+(test-lex-lexeme
+ "|= "
+ :cond (equal ast (plexeme-punctuator "|=")))
+
+(test-lex-lexeme
+ "|& "
+ :cond (equal ast (plexeme-punctuator "|")))
+
+(test-lex-lexeme
+ "? "
+ :cond (equal ast (plexeme-punctuator "?")))
+
+(test-lex-lexeme
+ "?? "
+ :cond (equal ast (plexeme-punctuator "?")))
+
+(test-lex-lexeme
+ ": "
+ :cond (equal ast (plexeme-punctuator ":")))
+
+(test-lex-lexeme
+ ":> "
+ :cond (equal ast (plexeme-punctuator ":>")))
+
+(test-lex-lexeme
+ ":: "
+ :cond (equal ast (plexeme-punctuator ":")))
+
+(test-lex-lexeme
+ "; "
+ :cond (equal ast (plexeme-punctuator ";")))
+
+(test-lex-lexeme
+ ";; "
+ :cond (equal ast (plexeme-punctuator ";")))
+
+(test-lex-lexeme
+ ", "
+ :cond (equal ast (plexeme-punctuator ",")))
+
+(test-lex-lexeme
+ ",, "
+ :cond (equal ast (plexeme-punctuator ",")))
+
+(test-lex-lexeme
+ "# "
+ :cond (equal ast (plexeme-punctuator "#")))
+
+(test-lex-lexeme
+ "## "
+ :cond (equal ast (plexeme-punctuator "##")))
+
+(test-lex-lexeme
+ "#. "
+ :cond (equal ast (plexeme-punctuator "#")))
+
+(test-lex-lexeme
+ "<not-header>"
+ :cond (equal ast (plexeme-punctuator "<")))
+
+; comments
+
+(test-lex-lexeme
+ "/* multi
+   * line
+   * comment
+   */"
+ :cond (equal ast (plexeme-block-comment
+                   (append (acl2::string=>nats " multi")
+                           (list 10)
+                           (acl2::string=>nats "   * line")
+                           (list 10)
+                           (acl2::string=>nats "   * comment")
+                           (list 10)
+                           (acl2::string=>nats "   ")))))
+
+(test-lex-lexeme
+ "// single line comment
+  "
+ :cond (equal ast (plexeme-line-comment
+                   (acl2::string=>nats " single line comment"))))
+
+; header names
+
+(test-lex-lexeme-headerp
+ "\"hello\""
+ :cond (equal ast (plexeme-header
+                   (header-name-quotes
+                    (list (q-char (char-code #\h))
+                          (q-char (char-code #\e))
+                          (q-char (char-code #\l))
+                          (q-char (char-code #\l))
+                          (q-char (char-code #\o)))))))
+
+(test-lex-lexeme-headerp
+ "<hello>"
+ :cond (equal ast (plexeme-header
+                   (header-name-angles
+                    (list (q-char (char-code #\h))
+                          (q-char (char-code #\e))
+                          (q-char (char-code #\l))
+                          (q-char (char-code #\l))
+                          (q-char (char-code #\o)))))))
+
+; other
+
+(test-lex-lexeme
+ (acl2::string=>nats "𝅘𝅥𝅮") ; 4-byte UTF-8 encoding of musical symbol eighth note
+ :cond (equal ast (plexeme-other 119136)))

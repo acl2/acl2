@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
-;; The BV library doesn't use this function very much.  Instead, it uses
-;; all-unsigned-byte-p.  In this book, we provide some rules to connect the two
-;; functions.
+;; Historically, the BV library hasn't used this function very much.  Instead,
+;; it has used all-unsigned-byte-p.  In this book, we provide some rules to
+;; connect the two functions.
 
 (include-book "all-unsigned-byte-p") ; todo: separate out?
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system) ; todo: separate out?
@@ -159,3 +159,8 @@
   (implies (unsigned-byte-listp 8 x)
            (all-integerp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm integer-listp-when-unsigned-byte-list-p
+  (implies (unsigned-byte-listp width x) ; width is a free var
+           (integer-listp x))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))

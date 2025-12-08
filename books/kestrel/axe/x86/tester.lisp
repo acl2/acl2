@@ -172,8 +172,8 @@
 ;; Returns (mv replacement-assumptions type-assumptions).
 ;; TODO: How do these interact with the input-assumptions?
 (defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
-  (declare (xargs :guard (and (symbol-listp vars)
-                              (symbol-listp register-functions))))
+  (declare (xargs :guard (and (symbol-listp register-functions)
+                              (symbol-listp vars))))
   (if (or (endp register-functions) ; additional params will be on the stack
           (endp vars))
       (mv replacement-assumptions-acc type-assumptions-acc)
@@ -183,6 +183,16 @@
                                                (rest vars)
                                                (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
                                                (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
+
+(local
+  (defthm make-register-replacement-assumptions64-return-type
+    (implies (and (symbol-listp register-functions)
+                  (symbol-listp vars)
+                  (pseudo-term-listp replacement-assumptions-acc)
+                  (pseudo-term-listp type-assumptions-acc))
+             (and (pseudo-term-listp (mv-nth 0 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
+                  (pseudo-term-listp (mv-nth 1 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
+    :hints (("Goal" :induct t :in-theory (enable make-register-replacement-assumptions64)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,7 +358,7 @@
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
-          (acl2::real-time-since start-real-time state)
+          (real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
               (progn$ (cw "Test ~s0 passed in " function-name-string)
                       (acl2::print-to-hundredths elapsed)
@@ -374,7 +384,7 @@
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
-          (acl2::real-time-since start-real-time state)
+          (real-time-since start-real-time state)
           (mv :did-not-finish-the-run nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
@@ -406,7 +416,7 @@
                                    rules-to-monitor
                                    t ; normalize-xors
                                    state))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state)))
+       ((mv elapsed state) (real-time-since start-real-time state)))
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
@@ -807,7 +817,7 @@
                                nil ; empty result-alist
                                state))
        (- (cw " Done testing functions in ~s0.)~%" executable)) ;matches "(Testing functions in" above
-       ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
+       ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")

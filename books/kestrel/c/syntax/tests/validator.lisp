@@ -232,10 +232,10 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((transunit (omap::head-val (transunit-ensemble->unwrap ast)))
+ :cond (b* ((transunit (omap::head-val (transunit-ensemble->units ast)))
             (edecls (transunit->decls transunit))
             (edecl (cadr edecls))
-            (fundef (extdecl-fundef->unwrap edecl))
+            (fundef (extdecl-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
@@ -850,14 +850,14 @@ void bar(void) {
   return bar;
 }
 "
-  :cond (b* ((filepath-transunit-map (transunit-ensemble->unwrap ast))
+  :cond (b* ((filepath-transunit-map (transunit-ensemble->units ast))
              (transunit1 (omap::head-val filepath-transunit-map))
              (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
              (edecls1 (transunit->decls transunit1))
-             (foo-init1 (first (decl-decl->init (extdecl-decl->unwrap (first edecls1)))))
+             (foo-init1 (first (decl-decl->init (extdecl-decl->decl (first edecls1)))))
              (foo-init1-uid (initdeclor-info->uid? (initdeclor->info foo-init1)))
              ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
-             (bar-fundef (extdecl-fundef->unwrap (second edecls1)))
+             (bar-fundef (extdecl-fundef->fundef (second edecls1)))
              (bar-fundef-uid (fundef-info->uid (fundef->info bar-fundef)))
              ;; (- (cw "bar-fundef uid: ~x0~%" bar-fundef-uid))
              (bar-params (dirdeclor-function-params->params (declor->direct (fundef->declor bar-fundef))))
@@ -879,10 +879,10 @@ void bar(void) {
              (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
              (edecls2 (transunit->decls transunit2))
-             (bar-init (first (decl-decl->init (extdecl-decl->unwrap (first edecls2)))))
+             (bar-init (first (decl-decl->init (extdecl-decl->decl (first edecls2)))))
              (bar-init-uid (initdeclor-info->uid? (initdeclor->info bar-init)))
              ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
-             (foo-fundef (extdecl-fundef->unwrap (second edecls2)))
+             (foo-fundef (extdecl-fundef->fundef (second edecls2)))
              (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
              ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
              (foo-return-stmt (block-item-stmt->stmt (first (comp-stmt->items (fundef->body foo-fundef)))))
@@ -1142,4 +1142,46 @@ int bar(void) {
   // but it does not violate any constraints under the standard.
   return foo(1, 2, 3);
 }
+")
+
+(test-valid-fail
+ "typedef union
+{
+  int *x;
+  double y;
+} my_union_t;
+
+int foo(my_union_t);
+
+void bar() {
+  int x;
+  double y;
+  foo(&x);
+  foo(y);
+}
+")
+
+(test-valid
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+  double y;
+} my_union_t;
+
+int foo(my_union_t);
+
+void bar() {
+  int x;
+  double y;
+  foo(&x);
+  foo(y);
+}
+"
+ :gcc t)
+
+(test-valid-fail
+ "typedef union __attribute__((transparent_union))
+{
+  int *x;
+} my_union_t;
 ")

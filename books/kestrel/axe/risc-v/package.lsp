@@ -8,9 +8,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-package "ACL2") ; to support LDing this book, since in this dir, ACL2 starts in the "R" package
+
+(include-book "kestrel/axe/imported-symbols" :dir :system)
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/risc-v/specialized/rv32im-le/portcullis" :dir :system)
-(include-book "kestrel/x86/portcullis" :dir :system)
 
 ;; Users of the RISC-V variant of Axe can use this "R" package for their books
 ;; that use Axe to lift/verify RISC-V code.
@@ -135,34 +137,29 @@
 (defconst *risc-v-symbols-in-acl2-package*
   '(ubyte32-list-fix))
 
+(defconst *axe-risc-v-implementation-symbols*
+  '(ensure-risc-v))
+
+;; todo: make consistent with X package
 (defpkg "R"
-  (append '(packbv-little
+    (append *symbols-from-acl2-package*
+            *axe-rule-lists*
+            *apt-symbols*
+            *axe-term-symbols*
+            *bv-list-symbols*
+            *axe-implementation-symbols*
+            *axe-rule-symbols*
+            *arithmetic-symbols*
+            *logops-symbols*
+            *axe-tools*
+            *common-acl2-formals*
+            *memory-region-symbols*
 
-            bv-list-read-chunk-little
+            ;; RISC-V-specific stuff:
+            *risc-v-symbols*
+            *axe-risc-v-implementation-symbols*
+            *risc-v-symbols-in-acl2-package*
 
-            repeat
-
-            smaller-termp
-
-            unsigned-byte-listp
-
-            defpun
-
-            in-region32p ; todo: move to mem package?
-            subregion32p
-            disjoint-regions32p
-            memory-regionp
-            memory-regionsp
-            memory-region-addresses-and-lens
-            )
-          *arithmetic-symbols*
-          *risc-v-symbols*
-          *risc-v-symbols-in-acl2-package*
-          *logops-symbols*
-          *axe-term-symbols*
-          *axe-tools*
-          *axe-implementation-symbols*
-          *axe-rule-symbols*
-          (set-difference-eq *acl2-exports*
-                             '(pc ; we need this name for accessing the program counter
-                               ))))
+            (set-difference-eq *acl2-exports*
+                               '(pc ; we need this name for accessing the program counter
+                                 ))))

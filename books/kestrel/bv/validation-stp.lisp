@@ -19,6 +19,7 @@
 (include-book "bvuminus")
 (include-book "bvminus")
 (include-book "bvnot")
+(local (include-book "bvplus"))
 
 ;; From https://stp.readthedocs.io/en/stable/cvc-input-language.html:
 ;; BVUMINUS(t) is a short-hand for BVPLUS(n,~t,0bin1), where n is the length of t.

@@ -2992,8 +2992,38 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (t
         (when (not (inhibit-er-hard state))
           (let ((*standard-output* *error-output*)
-                (*wormholep* nil))
-            (error-fms t ctx summary str alist state)))
+                (*wormholep* nil)
+                (summary (if (or (null summary)
+                                 (stringp summary))
+                             summary
+                           "Ill-formed summary")))
+            (cond
+             ((and (stringp str)
+                   (character-alistp alist))
+
+; Other than the two conjuncts tested just above, we expect the other conjuncts
+; of the guard for error-fms to be true.
+
+              (error-fms t ctx summary str alist state))
+             ((character-alistp alist) ; and (not (stringp str))
+
+; This is the common bad case, arising for example from (er hard "Ouch" 1).
+
+              (error-fms t ctx summary
+                         "A hard error has been invoked with the argument ~
+                          ~x0, where a string was expected."
+                         (list (cons #\0 str))
+                         state))
+             (t ; alist and perhaps string are ill-formed
+              (error-fms t ctx summary
+                         "A hard error has been invoked with the string and ~
+                          alist arguments displayed below, where ~#0~[both ~
+                          arguments are~/the alist argument is~] ~
+                          ill-formed.~%String:~%  ~x1~|Alist:~%  ~x2"
+                         (list (cons #\0 (if (stringp str) 1 0))
+                               (cons #\1 str)
+                               (cons #\2 alist))
+                         state)))))
 
 ; Here is a historical comment, perhaps no longer directly relevant.
 
@@ -11931,6 +11961,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun translate-declaration-to-guard-gen (x var tflg wrld)
 
+; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
+
 ; This function is typically called on the sort of x you might write in a TYPE
 ; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
 ; something like '(or symbol cons (integer 0 128)) meaning that var is either a
@@ -12360,8 +12392,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     array-total-size-limit))
 
 #-acl2-loop-only
-(defun-one-output chk-make-array$ (dimensions form)
-  (or (let* ((dimensions
+(defun chk-make-array$ (dimensions form &optional quietp)
+
+; If quietp is true, then dimensions and form are not quoted and we return a
+; form to be evaluated.  But if quietp is false (i.e., nil) then we evaluate
+; such a form.
+
+  (if (let* ((dimensions
               (if (integerp dimensions) (list dimensions) dimensions)))
         (and (true-listp dimensions)
              (do ((tl dimensions (cdr tl)))
@@ -12377,20 +12414,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (setq prod (* prod (car dimensions))))
                   prod)
                 *our-array-total-size-limit*)))
-      (illegal 'make-array$
-               "The dimensions of an array must obey restrictions of ~
-                the underlying Common Lisp:  each must be a ~
-                non-negative integer less than the value of ~
-                array-dimension-limit (here, ~x0) and their product ~
-                must be less than the value of array-total-size-limit ~
-                (here, ~x1).  The call ~x2, which has dimensions ~x3, ~
-                is thus illegal."
-               (list (cons #\0
-                           array-dimension-limit)
-                     (cons #\1
-                           array-total-size-limit)
-                     (cons #\2 form)
-                     (cons #\3 dimensions)))))
+      t
+    (let ((str "The dimensions of an array must obey restrictions of the ~
+                underlying Common Lisp:  each must be a non-negative integer ~
+                less than the value of array-dimension-limit (here, ~x0) and ~
+                their product must be less than the value of ~
+                array-total-size-limit (here, ~x1).  The call ~x2, which has ~
+                dimensions ~x3, is thus illegal."))
+      (if quietp
+          `(illegal 'make-array$
+                    ,str
+                    (list (cons #\0
+                                array-dimension-limit)
+                          (cons #\1
+                                array-total-size-limit)
+                          (cons #\2 ',form)
+                          (cons #\3 ',dimensions)))
+        (illegal 'make-array$
+                 str
+                 (list (cons #\0
+                             array-dimension-limit)
+                       (cons #\1
+                             array-total-size-limit)
+                       (cons #\2 form)
+                       (cons #\3 dimensions)))))))
 
 #-acl2-loop-only
 (defmacro make-array$ (&whole form dimensions &rest args)
@@ -12420,13 +12467,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (ignore args))
   (cond ((integerp dimensions)
-         (prog2$ (chk-make-array$ dimensions (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ dimensions form t)
+                  (make-array ,@(cdr form))))
         ((and (true-listp dimensions) ; (quote dims)
               (equal (length dimensions) 2)
               (eq (car dimensions) 'quote))
-         (prog2$ (chk-make-array$ (cadr dimensions) (kwote form))
-                 `(make-array ,@(cdr form))))
+         `(prog2$ ,(chk-make-array$ (cadr dimensions) form t)
+                  (make-array ,@(cdr form))))
         (t `(prog2$ (chk-make-array$ ,dimensions ',form)
                     (make-array ,@(cdr form))))))
 
@@ -13944,20 +13991,79 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore input-arity))
   `(multiple-value-list ,x))
 
+; In raw Lisp, the live version of state is held in the constant
+; *the-live-state* (whose value is actually just a symbol because we don't
+; really represent the live state as an object).  But what is the live version
+; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
+
+(defmacro live-stobjp (name)
+
+; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
+; object is a vector, unless it is a string; nor is any ordinary ACL2 object a
+; hash table (unlike the raw Lisp representation of a single-field stobj whose
+; field is a hash table).
+
+  `(or (and (typep ,name 'vector)
+            (not (stringp ,name)))
+       (typep ,name 'hash-table)))
+
+#-acl2-loop-only
+(declaim (inline swap-stobjs-check))
+#-acl2-loop-only
+(defun swap-stobjs-check (xname x yname y)
+
+; Here is an example (really two examples) illustrating the use of this check.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defstobj st fld)
+;   (defstobj st1 fld1 :congruent-to st)
+;   (defun st-init (st)
+;     (declare (xargs :stobjs (st)))
+;     (with-local-stobj st1
+;       (mv-let (st1 st)
+;         (swap-stobjs st1 st)
+;         st)))
+;   (defwarrant st-init)
+;   ; Error from swap-stobjs-check:
+;   (thm (equal xxx (st-init '(1))))
+;   ; Error from swap-stobjs-check, even within do$:
+;   (thm (equal xxx
+;               (loop$ with x = 1 with y = 'anything
+;                      do
+;                      :guard (natp x)
+;                      :measure (nfix x)
+;                      (if (posp x)
+;                          (progn (setq y (st-init '(1)))
+;                                 (setq x (1- x)))
+;                        (return y)))))
+
+  (unless (iff (live-stobjp x)
+               (live-stobjp y))
+    (error "~s has been called on stobjs named ~s and ~s,~%where the value of ~
+            ~s is a live stobj but the value of ~s is not.~%This is an error, ~
+            as such calls are unsupported; see :DOC swap-stobjs.~%Advanced ~
+            users may find it helpful to evaluate the ~
+            form~%(set-debugger-enable :bt)~%to see a backtrace of calls ~
+            leading to this error;~%see :DOC set-debugger-enable."
+           'swap-stobjs
+           xname yname
+           (if (live-stobjp x) xname yname)
+           (if (live-stobjp y) xname yname)))
+  nil)
+
 (defmacro swap-stobjs (x y)
 
 ; The call (swap-stobjs st1 st2) logically swaps two input stobjs st1 and st2,
-; but with the same stobjs-out as (mv st1 st2).  See translate11
+; but with the same stobjs-out as (mv st1 st2).  See translate11.
 
-; Note that since there are no duplicate live stobjs, it should be fine to call
-; this macro even if one or both inputs are locally-bound (by with-local-stobj,
-; with-global-stobj, or stobj-let).  Ultimately, the user-stobj-alist is put
-; right by the calls of latch-stobjs in raw-ev-fncall.
+; Note that since there are no duplicate live stobjs, it should normally be
+; fine to call this macro even if one or both inputs are locally-bound (by
+; with-local-stobj, with-global-stobj, or stobj-let).  Ultimately, the
+; user-stobj-alist is put right by the calls of latch-stobjs in raw-ev-fncall.
 
-; Trans-eval does not itself manage the user-stobj-alist, so we disallow the
-; use of swap-stobjs at the top level; see translate11 and macroexpand1*-cmp.
-; Before implementing that restriction, the following example illustrated that
-; the user-stobj-alist wasn't being suitably updated by top-level calls.
+; But if evaluation takes place in the top-level loop, raw-ev-fncall may not
+; get a chance to update the user-stobj-alist, as illustrated by the following
+; example, which gave the indicated results through ACL2 Version  8.6.
 
 ;   (defstobj st1 fld1)
 ;   (defstobj st2 fld2 :congruent-to st1)
@@ -13966,14 +14072,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;     (swap-stobjs st1 st2))
 ;   (update-fld1 3 st1)
 ;   (update-fld1 4 st2)
-;   (swap-stobjs st1 st2)
-;   (fld1 st1) ; ERROR: 3, but should be 4
-;   (fld1 st2) ; ERROR: 4, but should be 3
+;   (mv-let (st1 st2) (swap-stobjs st1 st2) (mv st1 st2))
+;   (assert-event (equal (fld1 st1) 3)) ; ERROR: should be 4
+;   (assert-event (equal (fld1 st2) 4)) ; ERROR: should be 3
 ;   (foo st1 st2)
-;   (fld1 st1) ; 4, now as expected
-;   (fld1 st2) ; 3, now as expected
+;   (assert-event (equal (fld1 st1) 4)) ; switched back, as expected
+;   (assert-event (equal (fld1 st2) 3)) ; switched back, as expected
 
-  `(mv ,y ,x))
+; We initially fixed this problem by attempting to disallow calls of
+; swap-stobjs directly in the top-level loop, by disallowing translate on calls
+; of swap-stobj with stobjs-out = :stobjs-out.  That prevented the first
+; swap-stobjs call above when not surrounded by mv-let, but it let that mv-let
+; form slip through.  Our fix is to check that swap-stobjs is called only in
+; the context of a function's body; see translate11.  We could consider
+; permiting swap-stobjs in other contexts as well, in particular guards and
+; measures and even macro bodies, but we don't see any use in doing so.  If
+; such a use becomes apparent, some thought should be put into whether that
+; relaxation is truly appropriate.
+
+; By restricting to function bodies, we gain some confidence that
+; (swap-stobjs-check ',x ,x ',y ,y) will be checked.  Note that we only make
+; this restriction when translating for execution, i.e., when stobjs-out is not
+; t.  In that case, translation will simply macroexpand stobjs-out, so no
+; special consideration of stobjs is necessary.  Note that during proofs we
+; have a different mechanism in place to catch problematic evaluation involving
+; swap-stobjs (within function bodies, when swap-stobjs is not macroexpanded
+; away); see the use of chk-for-live-stobj in raw-ev-fncall.
+
+  `(progn$ #-acl2-loop-only (swap-stobjs-check ',x ,x ',y ,y)
+           (mv ,y ,x)))
 
 (defun update-nth (key val l)
   (declare (xargs :guard (true-listp l))
@@ -14652,6 +14779,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-cbd
     with-current-package
     ec-call
+    swap-stobjs
     ))
 
 (defun untouchable-marker (mac)

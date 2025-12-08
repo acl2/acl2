@@ -23,6 +23,7 @@
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
+(include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 ;(include-book "kestrel/bv/bvplus" :dir :system)
@@ -485,6 +486,26 @@
                   (bv-array-read element-size (ceiling len 2) index (take (ceiling len 2) data))))
   :hints (("Goal" :use bv-array-read-shorten-when-in-first-half)))
 
+;; Here we guess that the index may be > ~half the array size.  if so, we can
+;; discard the first ~half of the values.
+;; This version uses axe-smt.
+(defthmd bv-array-read-shorten-when-in-second-half-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (integerp len) ; prevent loops, because (ceiling-of-lg len) is at least 1, so the length decreases
+                (< 1 len)  ; seems needed
+                (axe-smt (bvle (ceiling-of-lg len) (ceiling len 2) index)) ; index in second half
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (integerp index))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (- len (ceiling len 2)) ; gets computed
+                                 (bvminus (ceiling-of-lg len) index (ceiling len 2))
+                                 (nthcdr (ceiling len 2) data) ; gets computed
+                                 )))
+  :hints (("Goal" :use bv-array-read-shorten-when-in-second-half)))
+
 (defthmd bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
   (implies (and (syntaxp (and (quotep k)
                               (quotep data)
@@ -514,3 +535,45 @@
            (equal (bv-array-read-chunk-little element-count element-size array-len index array)
                   (bv-array-read-chunk-little element-count element-size array-len (trim desired-index-size index) array)))
   :hints (("Goal" :in-theory (enable bv-array-read-chunk-little bvchop-of-sum-cases trim))))
+
+(defthm bvplus-of-bv-array-read-constant-array-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep val)
+                              (quotep size)))
+                (natp size)
+                (axe-smt (or (power-of-2p len)
+                             (bvlt (ceiling-of-lg len) index (len data))))
+                (equal len (len data)))
+           (equal (bvplus size val (bv-array-read size len index data))
+                  (bv-array-read size len index (map-bvplus-val size val data))))
+  :hints (("Goal" :in-theory (enable bv-array-read acl2::bvplus-of-nth bvlt))))
+
+(defthmd bv-array-read-shorten-when-not-max-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) index (+ -1 len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (+ -1 len) index (take (+ -1 len) data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-max
+                  :in-theory (disable bv-array-read-shorten-when-not-max))))
+
+(defthmd bv-array-read-shorten-when-not-zero-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (axe-smt (bvlt (ceiling-of-lg len) 0 index)) ; index is not 0
+                ;; (chopped) index is in bounds:
+                (axe-smt (or (power-of-2p len) ; in this case, the (chopped) index is always in bounds
+                             (bvlt (ceiling-of-lg len) index len)))
+                (equal len (len data))
+                (posp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size
+                                 (+ -1 len)
+                                 ;; this decrements the index (gets simplified a lot since len is constant):
+                                 (bvplus (ceiling-of-lg (+ -1 len))
+                                         (- (expt 2 (ceiling-of-lg (+ -1 len))) 1)
+                                         index)
+                                 (rest data))))
+  :hints (("Goal" :use bv-array-read-shorten-when-not-zero)))

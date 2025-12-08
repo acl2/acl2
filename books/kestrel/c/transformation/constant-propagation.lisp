@@ -273,7 +273,7 @@
   :returns (value? c::value-optionp)
   (const-case
    const
-   :int (iconst-to-value const.unwrap)
+   :int (iconst-to-value const.iconst)
    ;; TODO: support other constants
    :otherwise nil))
 
@@ -1534,9 +1534,9 @@
                         :declors declors
                         :attribs struct-declon.attribs)
                       env))
-        :statassert (b* (((mv unwrap env)
-                          (const-prop-statassert struct-declon.unwrap env)))
-                      (mv (struct-declon-statassert unwrap)
+        :statassert (b* (((mv statassert env)
+                          (const-prop-statassert struct-declon.statassert env)))
+                      (mv (struct-declon-statassert statassert)
                           env))
         :empty (mv (struct-declon-empty) env)))
     :measure (struct-declon-count struct-declon))
@@ -1722,9 +1722,9 @@
                                     :specs specs
                                     :init init)
                     (merge-block-env idents env)))
-        :statassert (b* (((mv unwrap env)
-                          (const-prop-statassert decl.unwrap env)))
-                      (mv (decl-statassert unwrap) env))))
+        :statassert (b* (((mv statassert env)
+                          (const-prop-statassert decl.statassert env)))
+                      (mv (decl-statassert statassert) env))))
     :measure (decl-count decl))
 
   (define const-prop-decl-list
@@ -1973,10 +1973,10 @@
   :returns (new-extdecl extdeclp)
   (extdecl-case
    extdecl
-   :fundef (extdecl-fundef (const-prop-fundef extdecl.unwrap env))
-   :decl (b* (((mv unwrap -)
-               (const-prop-decl extdecl.unwrap env)))
-           (extdecl-decl unwrap))
+   :fundef (extdecl-fundef (const-prop-fundef extdecl.fundef env))
+   :decl (b* (((mv decl -)
+               (const-prop-decl extdecl.decl env)))
+           (extdecl-decl decl))
    :empty (extdecl-empty)
    :asm (extdecl-fix extdecl)))
 
@@ -2018,7 +2018,7 @@
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
-      (const-prop-filepath-transunit-map tunits.unwrap))))
+      (const-prop-filepath-transunit-map tunits.units))))
 
 (define const-prop-code-ensemble
   ((code code-ensemblep))

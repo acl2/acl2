@@ -56,6 +56,7 @@
 (include-book "getbit-list")
 (include-book "map-slice")
 (include-book "map-bvsx")
+(include-book "map-bvplus-val")
 
 (include-book "width-of-widest-int")
 
@@ -93,6 +94,7 @@
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")
 (include-book "bv-array-conversions-gen")
+(include-book "array-patterns")
 
 (include-book "bv-list-read-chunk-little")
 (include-book "bv-array-read-chunk-little")

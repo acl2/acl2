@@ -36,7 +36,7 @@
 
 ;; TODO: Allow the :monitor option to be or include :debug, as we do for other tools.
 
-;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
+;; TODO: Add support for 32-bit mode (use the new normal forms for 32-bit mode)
 
 ;; TODO: Continue adding and verifying guards
 
@@ -311,7 +311,7 @@
 ;;look at RSP)?  I guess we could include subroutine PCs as part of the code
 ;;segment for now...  Or check RBP?
 
-;; TODO: make a version that uses eip for 32-bit mode, or do we always use rip?
+;; TODO: make a version that uses eip for 32-bit mode
 (defp run-until-exit-segment-or-hit-loop-header (starting-rsp
                                                  segment-pcs ; a list of addresses (will not include the header of the current loop), or :all
                                                  loop-headers ; a list of addresses
@@ -800,7 +800,7 @@
 
 ;todo: this is slowing stuff down: ACL2::USE-ALL-HEAPREF-TABLE-ENTRYP-FOR-CAR
 
-;; todo: add zmm support.  and what else?  what about !rflags (may have to spltit that into call of set-flag)?  then what about more exotic flags?
+;; todo: add zmm support.  and what else?  what about !rflags (may have to split that into call of set-flags)?  then what about more exotic flags?
 ;; todo: set-mxcsr?
 ;; todo: make a 32-bit version?
 (defconst *setters-to-getters-alist*
@@ -2683,7 +2683,9 @@
                                        assume-bytes
                                        parsed-executable)
               ;; todo: support other executable types!
-              (mv :unsupported-executable-type nil nil)))))
+              (progn$
+               (er hard? 'lift-subroutine-fn "Unsupported executable type: ~x0.~%" executable-type)
+               (mv :unsupported-executable-type nil nil))))))
        ((when erp) (mv erp nil state))
        (tool-assumptions (acl2::translate-terms tool-assumptions 'lift-subroutine-fn (w state))) ; needed?
        (assumptions (append tool-assumptions extra-assumptions))

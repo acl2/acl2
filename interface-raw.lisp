@@ -5227,7 +5227,7 @@
 ;   ACL2 !>(g 3)
 ;   3
 ;   ACL2 !>:q
-; 
+;
 ;   Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP).
 ;   ? (g 4)
 ;   @@@ HI! @@@
@@ -5244,7 +5244,7 @@
 ;   ? (f$inline 5)
 ;   @@@ HI! @@@
 ;   5
-;   ? 
+;   ?
 
 ;   We believe that the explanation is based on how inlining works in CCL, and
 ;   probably in some other Lisp implementations.  When f$inline is defined, its
@@ -5320,7 +5320,7 @@
 ;   3
 ;   ? (f$inline 3)
 ;   3
-;   ? 
+;   ?
 
 ;   We can see what's going on by evaluating
 
@@ -5517,7 +5517,9 @@
 ;   program-mode and logic-mode functions using the notion of semi-qualified.
 
 ; - We exclude the use of hash tables inside non-trivial encapsulates, i.e.,
-;   encapsulates with non-empty signatures.  This exclusion doesn't interfere
+;   encapsulates with non-empty signatures, when making two passes of the
+;   encapsulate -- that is, when (ld-skip-proofsp state) is t or nil (rather
+;   than include-book or related values).  This exclusion doesn't interfere
 ;   with the use of hash tables by include-book or certify-book because
 ;   ld-skip-proofsp is 'include-book when dealing with hash tables in those
 ;   cases, so we are in the branch of encapsulate-fn that doesn't use
@@ -5537,19 +5539,19 @@
 
 ;   There are two cases to consider when evaluating the outer encapsulate.
 
-;   Case 1: Ld-skip-proofsp is not 'include-book (or the other two values that
-;   are similar to it) when entering the outer encapsulate.  So we are not
-;   inside include-book (whether or not on behalf of certify-book).  Then foo
-;   is considered to be qualified at the end of pass 1 of the outer
+;   Case 1: Ld-skip-proofsp is t or nil, i.e., not 'include-book (or the other
+;   two values that are similar to it) when entering the outer encapsulate.  So
+;   we are not inside include-book (whether or not on behalf of certify-book).
+;   Then foo is considered to be qualified at the end of pass 1 of the outer
 ;   encapsulate, by virtue of not storing into a hash table for the first defun
 ;   of foo (because it's under a non-trivial encapsulate) and storing the
 ;   second defun of foo.  And in pass 2 of that outer encapsulate, the first
 ;   defun of foo doesn't get its value from the hash table, but the second
 ;   defun of foo does, since install-for-add-trip-include-book uses a qualified
 ;   value without worrying about whether or not the defun is reclassifying.
-;  
-;   Case 2: Ld-skip-proofsp is 'include-book when entering the outer
-;   encapsulate.  Then neither encapsulate hits the
+
+;   Case 2: Ld-skip-proofsp is not t or nil, i.e., it is 'include-book when
+;   entering the outer encapsulate.  Then neither encapsulate hits the
 ;   with-hcomp-bindings-encapsulate call in encapsulate-fn, so this issue
 ;   disappears.
 
@@ -5616,7 +5618,7 @@
 ;     for f (let's call it *1*f).  Then the program-mode defun will not receive
 ;     a stored value for *1*f, since no program-mode defun gets a value from
 ;     *hcomp-fn-ht* when it is associated there with a reclassifying value.
- 
+
 ;   + Assume that we store the *1* symbol-function for a program-mode defun D_P
 ;     of f, and then erroneously retrieve that in pass 2 as the *1* function
 ;     for a logic-mode defun D_L of f.  So D_L is non-local (since we're in
@@ -6496,7 +6498,7 @@
 
 ; This case is presumably impossible unless raw mode is used somehow to allow
 ; redefinition.  But we are conservative here.
-                              
+
                              (with-debug (setf (gethash name ht)
                                                *hcomp-fake-value*)
                                          "[~s] Set hash table to ~
@@ -6569,9 +6571,6 @@
 
                              wrld)))
                t)
-              ((in-encapsulatep (global-val 'embedded-event-lst wrld)
-                                t)
-               nil)
               (t
                (let ((ext-gens (and wrld
                                     (global-val 'ext-gens wrld)))

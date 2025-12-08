@@ -498,6 +498,8 @@
   (declare (xargs :guard t))
   nil)
 
+;; TODO: Add an option to always print this (e.g., so we can see which axe-smt
+;; rules are causing lots of SMT queries).
 (defund maybe-print-smt-result (axe-smtp monitoredp hyp-num rule-symbol result)
   (declare (xargs :guard (and (booleanp axe-smtp)
                               ;; (booleanp monitoredp)

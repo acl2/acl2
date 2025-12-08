@@ -44,6 +44,7 @@
 (include-book "../bv-rules-axe0")
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../bv-array-rules-axe") ;reduce?
+(include-book "../logops-rules-axe")
 (include-book "assumptions")
 (include-book "run-until-return")
 (include-book "pc")
@@ -57,6 +58,7 @@
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -156,7 +158,7 @@
           (:byte-array (if (and (= 2 (len (fargs output-indicator)))
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
-                           `(acl2::list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                           `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
                                                                   ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
                                                                   ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
@@ -167,7 +169,7 @@
           ;;                  (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
           ;;                  (natp (farg2 output-indicator)) ; or use posp?
           ;;                  )
-          ;;             `(acl2::list-to-bv-array ',(farg1 output-indicator)
+          ;;             `(list-to-bv-array ',(farg1 output-indicator)
           ;;                                      (read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
           ;;                                                   ',(farg2 output-indicator)
           ;;                                                   ',(/ (farg1 output-indicator) 8)
@@ -186,7 +188,7 @@
           ;;    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
-          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))
+          (:tuple (make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))
           (otherwise (er hard? 'wrap-in-normal-output-extractor "Bad output indicator: ~x0" output-indicator))
           ))))
 
@@ -200,7 +202,7 @@
       (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
             (wrap-in-normal-output-extractors (rest output-indicators) term wrld)))))
 
-;; (local (acl2::make-flag wrap-in-normal-output-extractor))
+;; (local (make-flag wrap-in-normal-output-extractor))
 
 ;; (defthm-flag-wrap-in-normal-output-extractor
 ;;   (defthm pseudo-termp-of-wrap-in-normal-output-extractor
@@ -450,7 +452,7 @@
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
                (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
+               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -508,8 +510,8 @@
                                 max-printed-term-size
                                 untranslatep
                                 state)
-  (declare (xargs :guard (and (acl2::lifter-targetp target)
-                              (acl2::parsed-executablep parsed-executable)
+  (declare (xargs :guard (and (lifter-targetp target)
+                              (parsed-executablep parsed-executable)
                               (true-listp extra-assumptions) ; untranslated terms
                               ;;(booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
@@ -548,16 +550,16 @@
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (state (acl2::widen-margins state))
+       (state (widen-margins state))
        ;; Get and check the executable-type:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        ;; (64-bitp (member-equal executable-type *executable-types64*))
-       (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
+       (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ((when (not (eq :elf-32 executable-type)))
         (er hard? 'unroll-risc-v-code-core "The executable type must be :pe-32, but it is ~x0." executable-type)
         (mv :bad-executable-type nil state))
        ;; Make sure it's a RISC-V executable:
-       (- (acl2::ensure-risc-v parsed-executable))
+       (- (ensure-risc-v parsed-executable))
 
        ;; Handle a :position-independent of :auto:
 
@@ -629,13 +631,13 @@
             state))
        ;; Decide where to start lifting:
        (target-offset (if (eq :entry-point target)
-                          (acl2::parsed-elf-entry-point parsed-executable)
+                          (parsed-elf-entry-point parsed-executable)
                         (if (natp target)
                             target ; explicit address given (relative iff position-independentp)
                           ;; target is the name of a function:
                           (prog2$ ;; Throws an error if the target doesn't exist:
-                            (acl2::ensure-target-exists-in-executable target parsed-executable)
-                            (acl2::subroutine-address-elf target parsed-executable)))))
+                            (ensure-target-exists-in-executable target parsed-executable)
+                            (subroutine-address-elf target parsed-executable)))))
        (target-address-term (if position-independentp
                                 ;; Position-independent, so the target is the base-address-var plus the target-offset:
                                 ;; We posulate that there exists some base var wrt which the executable is loaded.
@@ -645,7 +647,7 @@
                                       base-address-var ; avoids adding 0
                                     `(bvplus '32 ',target-offset ,base-address-var)))
                               ;; Not position-independent, so the target is a concrete address:
-                              (acl2::enquote target-offset)))
+                              (enquote target-offset)))
        (assumptions (append  `((equal (pc stat) ,target-address-term)
                                (stat32p stat)
                                )
@@ -653,11 +655,12 @@
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
-       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (print-level-at-least-tp print)
-                                 (acl2::print-list assumptions)
-                               (acl2::print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
-                                                                 (equal t nil))))
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
+                             (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
+                               (if (print-level-at-least-tp print)
+                                   (print-list assumptions)
+                                 (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
+                                                                         (equal t nil)))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
@@ -673,9 +676,14 @@
        ;;                         '(run-until-return3 x86)
        ;;                       '(run-until-return4 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
+       ((when (not ; (pseudo-termp term-to-simulate)
+                   (termp term-to-simulate (w state))
+                   ))
+        (er hard? 'unroll-risc-v-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
+        (mv :error-wrapping-in-output-extractor nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
+       ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil; nil nil nil nil nil
                        state))
        ((when (quotep dag-to-simulate))
@@ -720,7 +728,7 @@
        ;; Decide which rules to monitor:
        (debug-rules (debug-rules) ; todo (if 64-bitp (debug-rules64) (debug-rules32))
                     )
-       (rules-to-monitor (acl2::maybe-add-debug-rules debug-rules monitor))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
@@ -731,7 +739,7 @@
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
-       (state (acl2::unwiden-margins state))
+       (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Lifting took ")
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
@@ -740,7 +748,7 @@
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
             (progn$ (cw " Lifting produced a dag:~%")
-                    (acl2::print-dag-info result-dag-or-quotep 'result t)
+                    (print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
     (mv (erp-nil) result-dag-or-quotep ; untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate
@@ -785,7 +793,7 @@
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
-                              (acl2::lifter-targetp target)
+                              (lifter-targetp target)
                               ;; executable
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
@@ -808,14 +816,14 @@
                               ;; (symbol-listp extra-assumption-rules)
                               ;; (symbol-listp remove-assumption-rules)
                               (natp step-limit)
-                              (acl2::step-incrementp step-increment)
+                              (step-incrementp step-increment)
                               ;; (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
-                              (acl2::print-levelp print)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
+                              (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
                               (booleanp untranslatep)
@@ -842,14 +850,14 @@
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
        ;; Translate assumptions:
-       (extra-assumptions (acl2::translate-terms extra-assumptions 'def-unrolled-fn (w state)))
+       (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
 
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag ;assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
@@ -884,7 +892,7 @@
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (acl2::dag-or-quotep-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))
@@ -896,7 +904,7 @@
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
        ;; Not valid if (not (< result-dag-size 10000)):
        (maybe-result-term (and (< result-dag-size 10000) ; avoids exploding
-                               (acl2::dag-to-term result-dag)))
+                               (dag-to-term result-dag)))
        ;; Print the result:
        (- (and print
                (if (< result-dag-size 10000)
@@ -906,12 +914,12 @@
                          (cw ")~%")))))
 
        ;; Build the defconst that will contain the result DAG:
-       (defconst-form `(defconst ,(acl2::pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
 
        ;; ;; Possibly produce a defun:
 
        ;; ;; (fn-formals result-dag-vars) ; we could include stat here, even if the dag is a constant
-       ;; (executable-type (acl2::parsed-executable-type parsed-executable))
+       ;; (executable-type (parsed-executable-type parsed-executable))
        ;; (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; ;; Build the defun that will contain the result of lifting:
        ;; ;; Create the list of formals for the function:
@@ -993,13 +1001,13 @@
        (events (cons defconst-form
                      nil ; (append defuns defthms)
                      ))
-       (event-names (acl2::strip-cadrs events))
+       (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (acl2::extend-progn event `(table risc-v-lifter-table ',whole-form ',event)))
-       (event (acl2::extend-progn event `(value-triple '(,@event-names))))
-       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (event (extend-progn event `(table risc-v-lifter-table ',whole-form ',event)))
+       (event (extend-progn event `(value-triple '(,@event-names))))
+       ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s, not including event submission.)~%")))
     (mv nil event state)))
 
@@ -1044,7 +1052,7 @@
                                   ;;(prove-theorem 'nil)
                                   ;;(restrict-theory 't)       ;todo: deprecate
                                   )
-  `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
+  `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
     (acl2-unwind-protect ; enable cleanup on errors/interrupts
       "acl2-unwind-protect for def-unrolled"
       (def-unrolled-fn

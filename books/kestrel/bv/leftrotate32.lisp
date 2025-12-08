@@ -17,6 +17,7 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 
 (local (in-theory (disable unsigned-byte-p)))
 

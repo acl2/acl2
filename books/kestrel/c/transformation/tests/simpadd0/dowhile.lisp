@@ -40,6 +40,8 @@
   do {
     y = y * x;
   } while (y <= 0);
+  do {
+  } while (x = y);
 }
 ")
 

@@ -172,11 +172,11 @@
   (b* (((reterr) (c::const-enum (c::ident "irrelevant"))))
     (const-case
      const
-     :int (retok (c::const-int (ldm-iconst const.unwrap)))
-     :float (reterr (msg "Unsupported floating constant ~x0." const.unwrap))
-     :enum (b* (((erp ident1) (ldm-ident const.unwrap)))
+     :int (retok (c::const-int (ldm-iconst const.iconst)))
+     :float (reterr (msg "Unsupported floating constant ~x0." const.fconst))
+     :enum (b* (((erp ident1) (ldm-ident const.ident)))
              (retok (c::const-enum ident1)))
-     :char (reterr (msg "Unsupported character constant ~x0." const.unwrap))))
+     :char (reterr (msg "Unsupported character constant ~x0." const.cconst))))
   :hooks (:fix)
 
   ///
@@ -813,45 +813,19 @@
   (fty::deffixequiv-mutual ldm-exprs)
 
   (defret-mutual ldm-exprs-ok-when-exprs-formalp
-    (defret ldm-expr-ok-when-expr-pure-formalp
+    (defret ldm-expr-ok-when-expr-formalp
       (not erp)
-      :hyp (expr-pure-formalp expr)
+      :hyp (expr-formalp expr)
       :fn ldm-expr)
-    (defret ldm-expr-list-ok-when-expr-list-pure-formalp
+    (defret ldm-expr-list-ok-when-expr-list-formalp
       (not erp)
-      :hyp (expr-list-pure-formalp exprs)
+      :hyp (expr-list-formalp exprs)
       :fn ldm-expr-list)
     :hints (("Goal"
-             :expand (expr-pure-formalp expr)
-             :in-theory (enable expr-pure-formalp
-                                expr-list-pure-formalp))))
-
-  (defret ldm-expr-ok-when-expr-formalp
-    (not erp)
-    :hyp (expr-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
+             :expand (expr-formalp expr)
              :in-theory (enable expr-formalp
-                                check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-call-formalp
-                                check-expr-ident)
-             :expand (ldm-expr expr))))
-
-  (defret ldm-expr-ok-when-expr-asg-formalp
-    (not erp)
-    :hyp (expr-asg-formalp expr)
-    :fn ldm-expr
-    :hints (("Goal"
-             :in-theory (enable expr-asg-formalp
-                                expr-pure-formalp)
-             :expand (ldm-expr expr)))))
+                                expr-list-formalp
+                                check-expr-ident)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -869,14 +843,9 @@
 
   ///
 
-  (defret ldm-expr-option-ok-when-expr-pure-formalp
+  (defret ldm-expr-option-ok-when-expr-formalp
     (not erp)
-    :hyp (expr-pure-formalp expr?)
-    :hints (("Goal" :in-theory (enable expr-option-some->val))))
-
-  (defret ldm-expr-option-ok-when-expr-call-formalp
-    (not erp)
-    :hyp (expr-call-formalp expr?)
+    :hyp (expr-formalp expr?)
     :hints (("Goal" :in-theory (enable expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1742,9 +1711,9 @@
        ((when (extdecl-case extdecl :asm))
         (reterr (msg "Unsupported assembler statement at the top level.")))
        ((when (extdecl-case extdecl :fundef))
-        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->unwrap extdecl))))
+        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->fundef extdecl))))
           (retok (c::ext-declon-fundef fundef))))
-       (decl (extdecl-decl->unwrap extdecl))
+       (decl (extdecl-decl->decl extdecl))
        ((mv erp fundeclon) (ldm-decl-fun decl))
        ((when (not erp))
         (retok (c::ext-declon-fun-declon fundeclon)))
@@ -1831,7 +1800,7 @@
     "Note that @(tsee c::fileset) is quite different from @(tsee c$::fileset).
      We plan to make the terminology more consistent."))
   (b* (((reterr) (c::fileset "" nil (c::file nil)))
-       (map (transunit-ensemble->unwrap tunits))
+       (map (transunit-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation unit ensemble ~
                       with ~x0 translation units."

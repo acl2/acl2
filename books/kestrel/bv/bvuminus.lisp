@@ -1,7 +1,7 @@
 ; Arithmetic negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "bvplus")
+(include-book "bvplus-def")
 (include-book "bvchop")
+(include-book "getbit-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(include-book "kestrel/utilities/forms" :dir :system) ; for call-of, etc.
 (local (include-book "slice"))
+(local (include-book "bvplus"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -233,3 +236,67 @@
   (equal (bvuminus size (ifix x))
          (bvuminus size x))
   :hints (("Goal" :in-theory (enable ifix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Checks whether y should come before x
+(defun should-commute-bvplus-argsp (x y)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (pseudo-termp y))))
+  (let ((x-core (if (and (call-of 'bvuminus x) ; (bvuminus <size> <x>)
+                         (<= 2 (len (fargs x))))
+                    (farg2 x)
+                  x))
+        (y-core (if (and (call-of 'bvuminus y) ; (bvuminus <size> <x>)
+                         (<= 2 (len (fargs y))))
+                    (farg2 y)
+                  y)))
+    (smaller-termp y-core x-core)))
+
+(defthmd bvplus-commutative-smart
+  (implies (syntaxp (should-commute-bvplus-argsp x y))
+           (equal (bvplus size x y)
+                  (bvplus size y x)))
+  :rule-classes ((:rewrite :loop-stopper nil)))
+
+(defthmd bvplus-commutative-2-smart
+  (implies (syntaxp (should-commute-bvplus-argsp x y))
+           (equal (bvplus size x (bvplus size y z))
+                  (bvplus size y (bvplus size x z))))
+  :rule-classes ((:rewrite :loop-stopper nil)))
+
+;; todo: consider oncommenting this
+;; ;; avoid loops with the smart rules below:
+;; (in-theory (e/d (bvplus-commutative-smart
+;;                  bvplus-commutative-2-smart)
+;;                 (bvplus-commutative
+;;                  bvplus-commutative-2))
+
+;; Test that the smart commutative rules work:
+(thm
+ (equal (bvplus 32 x (bvplus 32 y (bvplus 32 z (bvuminus 32 x))))
+        (bvplus 32 y z))
+ :hints (("Goal" :in-theory (e/d (bvplus-commutative-smart
+                                  bvplus-commutative-2-smart)
+                                 (bvplus-commutative
+                                  bvplus-commutative-2)))))
+
+(defthm equal-of-bvplus-of-bvuminus-and-0
+  (equal (equal (bvplus size (bvuminus size x) y) 0)
+         (equal (bvchop size x) (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases))))
+
+;; likely to loop
+(defthmd equal-of-bvuminus
+  (implies (natp size)
+           (equal (equal (bvuminus size x) y)
+                  (and (unsigned-byte-p size y)
+                       (equal (bvchop size x) (bvuminus size y)))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
+;; fairly aggressive
+(defthmd equal-of-bvuminus-and-bvplus
+  (implies (natp size)
+           (equal (equal (bvuminus size x) (bvplus size y z))
+                  (equal (bvchop size x) (bvplus size (bvuminus size y) (bvuminus size z)))))
+  :hints (("Goal" :use (:instance equal-of-bvuminus (y (bvplus size y z))))))

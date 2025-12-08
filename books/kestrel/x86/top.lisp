@@ -32,6 +32,7 @@
 (include-book "support-x86")
 (include-book "x86-changes")
 (include-book "support32")
+(include-book "support64")
 (include-book "memory32")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
@@ -52,7 +53,7 @@
 (include-book "assumptions-new")
 
 (include-book "run-until-return")
-(include-book "run-until-return2")
+;(include-book "run-until-return2")
 (include-book "run-until-return3")
 (include-book "run-until-return4")
 (include-book "separate")
