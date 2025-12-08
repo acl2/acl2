@@ -17,47 +17,11 @@
 (include-book "files")
 (include-book "implementation-environments")
 
-(include-book "kestrel/fty/character-list" :dir :system)
-(include-book "kestrel/fty/nat-option" :dir :system)
-
-(local (include-book "arithmetic-3/top" :dir :system))
-(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/lists/len" :dir :system))
-(local (include-book "std/lists/update-nth" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration :hooks nil)
 
 ; cert_param: (non-acl2r)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Library extensions.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruledl integerp-when-bytep
-  (implies (bytep x)
-           (integerp x)))
-
-(defruledl rationalp-when-bytep
-  (implies (bytep x)
-           (rationalp x)))
-
-(defruledl acl2-numberp-when-bytep
-  (implies (bytep x)
-           (acl2-numberp x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruledl car-of-byte-list-geq-0
-  (implies (byte-listp x)
-           (>= (car x) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,13 +67,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-token ((headerp booleanp) (ppstate ppstatep))
+(define pread-token ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontokens plexeme-listp)
                (token? plexeme-optionp)
                (token-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a token during preprocessing."
+  :short "read a token during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -124,28 +88,28 @@
        ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens token token-span ppstate) (plex-token headerp ppstate)))
+       ((erp nontokens token token-span ppstate) (pread-token headerp ppstate)))
     (retok (cons lexeme nontokens) token token-span ppstate))
   :measure (ppstate->size ppstate)
 
   ///
 
-  (defret plexeme-list-nontokenp-of-plex-token
+  (defret plexeme-list-nontokenp-of-pread-token
     (plexeme-list-nontokenp nontokens)
     :hints (("Goal" :induct t)))
 
-  (defret plexeme-tokenp-of-plex-token
+  (defret plexeme-tokenp-of-pread-token
     (implies token?
              (plexeme-tokenp token?))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-plex-token-uncond
+  (defret ppstate->size-of-pread-token-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-plexr-token-cond
+  (defret ppstate->size-of-pread-token-cond
     (implies (and (not erp)
                   token?)
              (<= (ppstate->size new-ppstate)
