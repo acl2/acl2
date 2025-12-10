@@ -359,7 +359,7 @@
 (defirrelevant irr-enumer
   :short "An irrelevant enumerator."
   :type enumerp
-  :body (make-enumer :name (irr-ident) :value nil))
+  :body (make-enumer :name (irr-ident) :value? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

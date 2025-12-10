@@ -4642,14 +4642,14 @@
        ((token-punctuatorp token "=") ; ident =
         (b* (((erp cexpr last-span parstate) ; ident = cexpr
               (parse-constant-expression parstate)))
-          (retok (make-enumer :name ident :value cexpr)
+          (retok (make-enumer :name ident :value? cexpr)
                  (span-join span last-span)
                  parstate)))
        ;; If token is not an equal sign, we put it back,
        ;; and the enumerator is just the identifier.
        (t ; ident other
         (b* ((parstate (if token (unread-token parstate) parstate))) ; ident
-          (retok (make-enumer :name ident :value nil)
+          (retok (make-enumer :name ident :value? nil)
                  span
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 0))

@@ -1618,11 +1618,11 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((enumer enumer) enumer)
-         ((mv value env)
-          (const-prop-const-expr-option enumer.value env)))
+         ((mv value? env)
+          (const-prop-const-expr-option enumer.value? env)))
       (mv (make-enumer
             :name enumer.name
-            :value value)
+            :value? value?)
           env))
     :measure (enumer-count enumer))
 

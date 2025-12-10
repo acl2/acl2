@@ -950,7 +950,7 @@
      so they are really just identifiers."))
   (b* (((reterr) (c::ident "irrelevant"))
        ((enumer enumer) enumer)
-       ((when enumer.value)
+       ((when enumer.value?)
         (reterr (msg "Unsupported enumerator ~x0." (enumer-fix enumer)))))
     (ldm-ident enumer.name))
   :hooks (:fix))

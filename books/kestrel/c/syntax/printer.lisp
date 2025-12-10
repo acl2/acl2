@@ -3432,9 +3432,9 @@
     :short "Print an enumerator."
     (b* (((enumer enumer) enumer)
          (pstate (print-ident enumer.name pstate))
-         ((unless (const-expr-option-case enumer.value :some)) pstate)
+         ((unless (const-expr-option-case enumer.value? :some)) pstate)
          (pstate (print-astring " = " pstate))
-         (pstate (print-const-expr (const-expr-option-some->val enumer.value)
+         (pstate (print-const-expr (const-expr-option-some->val enumer.value?)
                                    pstate)))
       pstate)
     :measure (two-nats-measure (enumer-count enumer) 0))

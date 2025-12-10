@@ -2791,7 +2791,7 @@
      (xdoc::p
       "This corresponds to <i>enumerator</i> in the grammar in [C17]."))
     ((name ident)
-     (value const-expr-option))
+     (value? const-expr-option))
     :pred enumerp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))

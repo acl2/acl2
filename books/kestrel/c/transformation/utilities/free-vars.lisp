@@ -708,7 +708,7 @@
                  (bound-vars ident-setp))
     (b* ((bound-vars (ident-set-fix bound-vars))
          ((enumer enumer) enumer))
-      (mv (free-vars-const-expr-option enumer.value bound-vars)
+      (mv (free-vars-const-expr-option enumer.value? bound-vars)
           (insert enumer.name bound-vars)))
     :measure (enumer-count enumer))
 

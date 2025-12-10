@@ -1036,7 +1036,7 @@
                              (bound-vars ident-setp))
     :returns (result enumerp)
     (enumer (c$::enumer->name enumer)
-            (const-expr-option-subst-free (c$::enumer->value enumer)
+            (const-expr-option-subst-free (c$::enumer->value? enumer)
                                           subst bound-vars))
     :measure (enumer-count enumer))
 

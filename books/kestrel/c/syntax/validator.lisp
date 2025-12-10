@@ -5346,14 +5346,14 @@
                     with associated information ~x1."
                    (enumer-fix enumer) info?))
          (table (valid-add-ord enumer.name (valid-ord-info-enumconst) table))
-         ((erp new-value type? types table)
-          (valid-const-expr-option enumer.value table ienv))
+         ((erp new-value? type? types table)
+          (valid-const-expr-option enumer.value? table ienv))
          ((when (and type?
                      (not (type-integerp type?))
                      (not (type-case type? :unknown))))
           (retmsg$ "The value of the numerator ~x0 has type ~x1."
                    (enumer-fix enumer) type?)))
-      (retok (make-enumer :name enumer.name :value new-value) types table))
+      (retok (make-enumer :name enumer.name :value? new-value?) types table))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

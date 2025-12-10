@@ -2753,9 +2753,9 @@
        We also add the name to the disambiguation table."))
     (b* (((reterr) (irr-enumer) (irr-dimb-table))
          ((enumer enumer) enumer)
-         ((erp new-value table) (dimb-const-expr-option enumer.value table))
+         ((erp new-value? table) (dimb-const-expr-option enumer.value? table))
          (table (dimb-add-ident enumer.name (dimb-kind-enumconst) table)))
-      (retok (make-enumer :name enumer.name :value new-value) table))
+      (retok (make-enumer :name enumer.name :value? new-value?) table))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

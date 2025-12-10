@@ -1579,11 +1579,11 @@
     :short "Transform an enumerator."
     (b* (((gin gin) gin)
          ((enumer enumer) enumer)
-         ((mv new-value (gout gout-value))
-          (simpadd0-const-expr-option enumer.value gin))
+         ((mv new-value? (gout gout-value))
+          (simpadd0-const-expr-option enumer.value? gin))
          (gin (gin-update gin gout-value)))
       (mv (make-enumer :name enumer.name
-                       :value new-value)
+                       :value? new-value?)
           (gout-no-thm gin)))
     :measure (enumer-count enumer))
 
