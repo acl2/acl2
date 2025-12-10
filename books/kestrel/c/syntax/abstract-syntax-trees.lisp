@@ -2956,7 +2956,7 @@
     ((declor declor)
      (asm? asm-name-spec-option)
      (attribs attrib-spec-list)
-     (init? initer-option)
+     (initer? initer-option)
      (info any))
     :pred init-declorp
     :layout :fulltree

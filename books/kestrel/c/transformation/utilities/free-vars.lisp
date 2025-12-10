@@ -787,7 +787,7 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((init-declor initdeclor) initdeclor)
-         (free-vars0 (free-vars-initer-option initdeclor.init? bound-vars))
+         (free-vars0 (free-vars-initer-option initdeclor.initer? bound-vars))
          (free-vars1 (free-vars-attrib-spec-list initdeclor.attribs bound-vars))
          ((mv free-vars2 bound-vars -)
           (free-vars-declor initdeclor.declor bound-vars)))

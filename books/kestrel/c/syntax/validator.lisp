@@ -5539,10 +5539,10 @@
          ((erp typedefp linkage lifetime?)
           (valid-stor-spec-list storspecs ident type nil table))
          ((when typedefp)
-          (b* (((when initdeclor.init?)
+          (b* (((when initdeclor.initer?)
                 (retmsg$ "The typedef name ~x0 ~
                           has an initializer ~x1."
-                         ident initdeclor.init?))
+                         ident initdeclor.initer?))
                ((mv info? currentp) (valid-lookup-ord ident table))
                ((when (and info?
                            currentp
@@ -5562,17 +5562,17 @@
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
-                                     :init? nil
+                                     :initer? nil
                                      :info anno-info)
                    types
                    table)))
-         ((when (and initdeclor.init?
+         ((when (and initdeclor.initer?
                      (or (type-case type :function)
                          (type-case type :void))))
           (retmsg$ "The identifier ~x0 has type ~x1, ~
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
-                   ident type initdeclor.init?))
+                   ident type initdeclor.initer?))
          ((mv info? currentp) (valid-lookup-ord ident table))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
@@ -5580,7 +5580,7 @@
                           (if (linkage-case linkage :external)
                               (valid-defstatus-undefined)
                             (valid-defstatus-defined))
-                        (if initdeclor.init?
+                        (if initdeclor.initer?
                             (valid-defstatus-defined)
                           (if (member-equal (stor-spec-extern)
                                             (stor-spec-list-fix storspecs))
@@ -5596,8 +5596,8 @@
          (anno-info (make-init-declor-info :type type
                                            :typedefp nil
                                            :uid? uid))
-         ((erp new-init? more-types table)
-          (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         ((erp new-initer? more-types table)
+          (valid-initer-option initdeclor.initer? type lifetime? table ienv))
          ((when (and (linkage-case linkage :external)
                      (let ((ext-info? (valid-lookup-ext ident table)))
                        (and ext-info?
@@ -5630,7 +5630,7 @@
           (retok (make-init-declor :declor new-declor
                                    :asm? initdeclor.asm?
                                    :attribs initdeclor.attribs
-                                   :init? new-init?
+                                   :initer? new-initer?
                                    :info anno-info)
                  (set::union types more-types)
                  table))
@@ -5644,7 +5644,7 @@
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
-                                     :init? new-init?
+                                     :initer? new-initer?
                                      :info anno-info)
                    (set::union types more-types)
                    table)))
@@ -5659,7 +5659,7 @@
             (retok (make-init-declor :declor new-declor
                                      :asm? initdeclor.asm?
                                      :attribs initdeclor.attribs
-                                     :init? new-init?
+                                     :initer? new-initer?
                                      :info anno-info)
                    (set::union types more-types)
                    table)))
@@ -5686,7 +5686,7 @@
       (retok (make-init-declor :declor new-declor
                                :asm? initdeclor.asm?
                                :attribs initdeclor.attribs
-                               :init? new-init?
+                               :initer? new-initer?
                                :info anno-info)
              (set::union types more-types)
              table))

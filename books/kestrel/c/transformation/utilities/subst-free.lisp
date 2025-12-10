@@ -1118,8 +1118,8 @@
                                   (bound-vars ident-setp))
     :returns (mv (result init-declorp)
                  (bound-vars ident-setp))
-    (b* ((init? (initer-option-subst-free (c$::init-declor->init? initdeclor)
-                                          subst bound-vars))
+    (b* ((initer? (initer-option-subst-free (c$::init-declor->initer? initdeclor)
+                                            subst bound-vars))
          (attribs (attrib-spec-list-subst-free
                    (c$::init-declor->attribs initdeclor)
                    subst bound-vars))
@@ -1129,7 +1129,7 @@
       (mv (init-declor declor
                        (c$::init-declor->asm? initdeclor)
                        attribs
-                       init?
+                       initer?
                        (c$::init-declor->info initdeclor))
           (ident-set-fix bound-vars)))
     :measure (init-declor-count initdeclor))

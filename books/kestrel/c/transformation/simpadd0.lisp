@@ -1650,11 +1650,11 @@
          ((mv new-declor & (gout gout-declor))
           (simpadd0-declor initdeclor.declor nil gin))
          (gin (gin-update gin gout-declor))
-         ((mv new-init? (gout gout-init?))
-          (simpadd0-initer-option initdeclor.init?
+         ((mv new-initer? (gout gout-initer?))
+          (simpadd0-initer-option initdeclor.initer?
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
-         ((gin gin) (gin-update gin gout-init?))
+         ((gin gin) (gin-update gin gout-initer?))
          (type (init-declor-info->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
@@ -1665,17 +1665,17 @@
                    (not (type-case type :char)))
               (b* (((mv & cvar) (ldm-ident ident))
                    ((mv & ctype) (ldm-type type)))
-                (omap::update cvar ctype gout-init?.vartys))
-            gout-init?.vartys)))
+                (omap::update cvar ctype gout-initer?.vartys))
+            gout-initer?.vartys)))
       (mv (make-init-declor :declor new-declor
                             :asm? initdeclor.asm?
                             :attribs initdeclor.attribs
-                            :init? new-init?
+                            :initer? new-initer?
                             :info initdeclor.info)
-          (if gout-init?.thm-name
+          (if gout-initer?.thm-name
               (make-gout :events gin.events
                          :thm-index gin.thm-index
-                         :thm-name gout-init?.thm-name
+                         :thm-name gout-initer?.thm-name
                          :vartys post-vartys)
             (change-gout (gout-no-thm gin)
                          :vartys post-vartys))))

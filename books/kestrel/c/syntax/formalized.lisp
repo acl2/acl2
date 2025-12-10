@@ -526,8 +526,8 @@
     (and (declor-block-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
-         initdeclor.init?
-         (initer-formalp initdeclor.init?)))
+         initdeclor.initer?
+         (initer-formalp initdeclor.initer?)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -725,8 +725,8 @@
     (and (declor-obj-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
-         (or (not initdeclor.init?)
-             (initer-formalp initdeclor.init?))))
+         (or (not initdeclor.initer?)
+             (initer-formalp initdeclor.initer?))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -982,7 +982,7 @@
     (and (declor-fun-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
-         (not initdeclor.init?)))
+         (not initdeclor.initer?)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

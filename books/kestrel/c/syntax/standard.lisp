@@ -188,7 +188,7 @@
    (init-declor (and (declor-standardp (init-declor->declor init-declor))
                      (not (init-declor->asm? init-declor))
                      (endp (init-declor->attribs init-declor))
-                     (initer-option-standardp (init-declor->init? init-declor))))
+                     (initer-option-standardp (init-declor->initer? init-declor))))
    (decl :decl (and (not (decl-decl->extension decl))
                     (decl-spec-list-standardp (decl-decl->specs decl))
                     (init-declor-list-standardp (decl-decl->init decl))))

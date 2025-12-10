@@ -398,7 +398,7 @@
   :body (make-init-declor :declor (irr-declor)
                           :asm? nil
                           :attribs nil
-                          :init? nil))
+                          :initer? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

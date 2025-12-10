@@ -358,7 +358,7 @@
     init-declor
     make-init-declor
     init-declor->declor
-    init-declor->init?
+    init-declor->initer?
 
     init-declor-listp
     init-declor-list-fix

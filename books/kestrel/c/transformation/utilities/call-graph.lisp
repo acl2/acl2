@@ -457,7 +457,7 @@
   :returns (call-graph$ call-graphp)
   (b* (((init-declor initdeclor) initdeclor))
     ;; TODO: need to look at initdeclor.declor?
-    (call-graph-initer-option initdeclor.init? fn-name filepath valid-table call-graph)))
+    (call-graph-initer-option initdeclor.initer? fn-name filepath valid-table call-graph)))
 
 (define call-graph-init-declor-list
   ((initdeclors init-declor-listp)

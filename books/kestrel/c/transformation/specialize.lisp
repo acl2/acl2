@@ -61,7 +61,7 @@
 
 (define param-declon-to-decl
   ((paramdecl param-declonp)
-   (init? initer-optionp))
+   (initer? initer-optionp))
   :short "Convert a parameter declaration to a regular declaration."
   :returns (mv (success booleanp)
                (decl declp))
@@ -73,7 +73,7 @@
           (make-decl-decl
             :extension nil
             :specs paramdecl.specs
-            :init (list (init-declor paramdecl.declor.declor nil nil init? nil))))
+            :init (list (init-declor paramdecl.declor.declor nil nil initer? nil))))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -8111,7 +8111,7 @@
           (retok (make-init-declor :declor declor
                                    :asm? asmspec?
                                    :attribs attrspecs
-                                   :init? initer
+                                   :initer? initer
                                    :info nil)
                  (span-join span last-span)
                  parstate)))
@@ -8122,7 +8122,7 @@
           (retok (make-init-declor :declor declor
                                    :asm? asmspec?
                                    :attribs attrspecs
-                                   :init? nil
+                                   :initer? nil
                                    :info nil)
                  (cond (attrspecs (span-join span attrspecs-span))
                        (asmspec? (span-join span asmspec?-span))
@@ -11536,7 +11536,7 @@
                                                  :declor declor
                                                  :asm? asmspec?
                                                  :attribs attrspecs
-                                                 :init? nil
+                                                 :initer? nil
                                                  :info nil))))
                      (span-join span span3)
                      parstate))
@@ -11552,7 +11552,7 @@
                    (initdeclor (make-init-declor :declor declor
                                                  :asm? asmspec?
                                                  :attribs attrspecs
-                                                 :init? initer
+                                                 :initer? initer
                                                  :info nil))
                    ((erp token4 span4 parstate) (read-token parstate)))
                 (cond
@@ -11601,7 +11601,7 @@
               (b* ((initdeclor (make-init-declor :declor declor
                                                  :asm? asmspec?
                                                  :attribs attrspecs
-                                                 :init? nil
+                                                 :initer? nil
                                                  :info nil))
                    ((erp initdeclors & parstate)
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,

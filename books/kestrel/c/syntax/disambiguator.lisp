@@ -2822,11 +2822,11 @@
          ((init-declor ideclor) ideclor)
          ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
          (table (dimb-add-ident ident kind table))
-         ((erp new-init? table) (dimb-initer-option ideclor.init? table)))
+         ((erp new-initer? table) (dimb-initer-option ideclor.initer? table)))
       (retok (make-init-declor :declor new-declor
                                :asm? ideclor.asm?
                                :attribs ideclor.attribs
-                               :init? new-init?)
+                               :initer? new-initer?)
              table))
     :measure (init-declor-count ideclor))
 

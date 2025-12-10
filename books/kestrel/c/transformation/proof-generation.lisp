@@ -2596,7 +2596,7 @@
        (var (dirdeclor-ident->ident
              (declor->direct
               (init-declor->declor initdeclor))))
-       (initer (init-declor->init? initdeclor))
+       (initer (init-declor->initer? initdeclor))
        (initdeclor-new (car init-new))
        ((unless (equal var (dirdeclor-ident->ident
                             (declor->direct
@@ -2608,7 +2608,7 @@
                  (init-declor->declor initdeclor-new)))
                var)
         (mv decl-new (irr-gout)))
-       (initer-new (init-declor->init? initdeclor-new))
+       (initer-new (init-declor->initer? initdeclor-new))
        ((unless (equal specs specs-new))
         (raise "Internal error: ~
                 new declaration specifiers ~x0 differ from ~

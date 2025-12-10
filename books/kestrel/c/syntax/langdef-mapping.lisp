@@ -1288,10 +1288,10 @@
                       for function declaration."
                      initdeclors)))
        ((init-declor initdeclor) (car initdeclors))
-       ((when initdeclor.init?)
+       ((when initdeclor.initer?)
         (reterr (msg "Unsupported initializer ~x0 ~
                       for function declaration."
-                     initdeclor.init?)))
+                     initdeclor.initer?)))
        ((when initdeclor.asm?)
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for function declaration."
@@ -1438,16 +1438,16 @@
         (reterr (msg "Unsupported attribute specifiers ~x0 ~
                       for function declaration."
                      initdeclor.attribs)))
-       ((when (not initdeclor.init?))
+       ((when (not initdeclor.initer?))
         (retok (c::make-obj-declon :scspec scspecseq
                                    :tyspec tyspecseq
                                    :declor objdeclor
                                    :init? nil)))
-       ((erp init) (ldm-initer initdeclor.init?)))
+       ((erp initer) (ldm-initer initdeclor.initer?)))
     (retok (c::make-obj-declon :scspec scspecseq
                                :tyspec tyspecseq
                                :declor objdeclor
-                               :init? init)))
+                               :init? initer)))
   :hooks (:fix)
 
   ///

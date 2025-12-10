@@ -684,32 +684,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-             (std::make-define-config :no-function nil)
+(encapsulate
+  ()
+  (std::make-define-config :no-function nil)
 
-             (fty::deffold-reduce annop
-               :short "Definition of the predicates that check whether
+  (fty::deffold-reduce annop
+    :short "Definition of the predicates that check whether
             the abstract syntax is annotated with validation information."
-               :long
-               (xdoc::topstring
-                (xdoc::p
-                 "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
-                (xdoc::p
-                 "The @(':default') value is @('t'),
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
+     (xdoc::p
+      "The @(':default') value is @('t'),
        meaning that there are no constraints by default.")
-                (xdoc::p
-                 "The @(':combine') operator is @(tsee and),
+     (xdoc::p
+      "The @(':combine') operator is @(tsee and),
        because we need to check all the constructs, recursively.")
-                (xdoc::p
-                 "We override the predicate for
+     (xdoc::p
+      "We override the predicate for
        the constructs for which the validator adds information.")
-                (xdoc::p
-                 "Since for now the validator accepts GCC attribute and other extensions
+     (xdoc::p
+      "Since for now the validator accepts GCC attribute and other extensions
        without actually checking them and their constituents,
        we also have the annotation predicates accept those constructs,
        by overriding those cases to return @('t').")
-                (xdoc::p
-                 "The validator operates on unambiguous abstract syntax,
+     (xdoc::p
+      "The validator operates on unambiguous abstract syntax,
        which satisfies the @(see unambiguity) predicates.
        Ideally, the annotation predicates should use
        the unambiguity predicates as guards,
@@ -718,100 +719,100 @@
        for the cases in which the unambiguity predicates do not hold;
        note that @(tsee raise) is logically @('nil'),
        so the annotation predicates are false on ambiguous constructs."))
-               :types (ident
-                       ident-list
-                       ident-option
-                       iconst
-                       iconst-option
-                       const
-                       const-option
-                       attrib-name
-                       exprs/decls/stmts
-                       fundef
-                       extdecl
-                       extdecl-list
-                       transunit
-                       filepath-transunit-map
-                       transunit-ensemble
-                       code-ensemble)
-               :result booleanp
-               :default t
-               :combine and
-               :override
-               ((iconst (iconst-infop (iconst->info iconst)))
-                (expr :ident (var-infop expr.info))
-                (expr :const (and (const-annop expr.const)
-                                  (expr-const-infop expr.info)))
-                (expr :string (expr-string-infop expr.info))
-                (expr :arrsub (and (expr-annop expr.arg1)
-                                   (expr-annop expr.arg2)
-                                   (expr-arrsub-infop expr.info)))
-                (expr :funcall (and (expr-annop expr.fun)
-                                    (expr-list-annop expr.args)
-                                    (expr-funcall-infop expr.info)))
-                (expr :unary (and (expr-annop expr.arg)
-                                  (expr-unary-infop expr.info)))
-                (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
-                                           (expr-fix expr)))
-                (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
-                                            (expr-fix expr)))
-                (expr :binary (and (expr-annop expr.arg1)
-                                   (expr-annop expr.arg2)
-                                   (expr-binary-infop expr.info)))
-                (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
-                                              (expr-fix expr)))
-                (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
-                                             (expr-fix expr)))
-                (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
-                                             (expr-fix expr)))
-                (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
-                                             (expr-fix expr)))
-                (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
-                                             (expr-fix expr)))
-                (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
-                                                (expr-fix expr)))
-                (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
-                                                (type-spec-fix type-spec)))
-                (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
-                                                  (align-spec-fix align-spec)))
-                (dirabsdeclor :dummy-base (raise "Internal error: ~
+    :types (ident
+            ident-list
+            ident-option
+            iconst
+            iconst-option
+            const
+            const-option
+            attrib-name
+            exprs/decls/stmts
+            fundef
+            extdecl
+            extdecl-list
+            transunit
+            filepath-transunit-map
+            transunit-ensemble
+            code-ensemble)
+    :result booleanp
+    :default t
+    :combine and
+    :override
+    ((iconst (iconst-infop (iconst->info iconst)))
+     (expr :ident (var-infop expr.info))
+     (expr :const (and (const-annop expr.const)
+                       (expr-const-infop expr.info)))
+     (expr :string (expr-string-infop expr.info))
+     (expr :arrsub (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-arrsub-infop expr.info)))
+     (expr :funcall (and (expr-annop expr.fun)
+                         (expr-list-annop expr.args)
+                         (expr-funcall-infop expr.info)))
+     (expr :unary (and (expr-annop expr.arg)
+                       (expr-unary-infop expr.info)))
+     (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+     (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                                 (expr-fix expr)))
+     (expr :binary (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-binary-infop expr.info)))
+     (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
+                                   (expr-fix expr)))
+     (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                     (expr-fix expr)))
+     (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
+                                     (type-spec-fix type-spec)))
+     (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
+                                       (align-spec-fix align-spec)))
+     (dirabsdeclor :dummy-base (raise "Internal error: ~
                                        dummy base case of ~
                                        direct abstract declarator."))
-                (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                             (absdeclor-option-annop (tyname->declor? tyname))
-                             (tyname-infop (tyname->info tyname))))
-                (param-declor :nonabstract (and (declor-annop
-                                                 (param-declor-nonabstract->declor
-                                                  param-declor))
-                                                (param-declor-nonabstract-infop
-                                                 (param-declor-nonabstract->info
-                                                  param-declor))))
-                (attrib t)
-                (attrib-spec t)
-                (init-declor (and (declor-annop (init-declor->declor init-declor))
-                                  (initer-option-annop (init-declor->init? init-declor))
-                                  (init-declor-infop (init-declor->info init-declor))))
-                (asm-output t)
-                (asm-input t)
-                (asm-stmt t)
-                (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
-                                        (stmt-fix stmt)))
-                (block-item :ambig (raise "Internal error: ambiguous ~x0."
-                                          (block-item-fix block-item)))
-                (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
-                                        (amb-expr/tyname-fix amb-expr/tyname)))
-                (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
-                                             (amb-declor/absdeclor-fix
-                                              amb-declor/absdeclor)))
-                (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                                      (amb-decl/stmt-fix amb-decl/stmt)))
-                (fundef (and (decl-spec-list-annop (fundef->spec fundef))
-                             (declor-annop (fundef->declor fundef))
-                             (decl-list-annop (fundef->decls fundef))
-                             (comp-stmt-annop (fundef->body fundef))
-                             (fundef-infop (fundef->info fundef))))
-                (transunit (and (extdecl-list-annop (transunit->decls transunit))
-                                (transunit-infop (transunit->info transunit)))))))
+     (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                  (absdeclor-option-annop (tyname->declor? tyname))
+                  (tyname-infop (tyname->info tyname))))
+     (param-declor :nonabstract (and (declor-annop
+                                      (param-declor-nonabstract->declor
+                                       param-declor))
+                                     (param-declor-nonabstract-infop
+                                      (param-declor-nonabstract->info
+                                       param-declor))))
+     (attrib t)
+     (attrib-spec t)
+     (init-declor (and (declor-annop (init-declor->declor init-declor))
+                       (initer-option-annop (init-declor->initer? init-declor))
+                       (init-declor-infop (init-declor->info init-declor))))
+     (asm-output t)
+     (asm-input t)
+     (asm-stmt t)
+     (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
+                             (stmt-fix stmt)))
+     (block-item :ambig (raise "Internal error: ambiguous ~x0."
+                               (block-item-fix block-item)))
+     (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
+                             (amb-expr/tyname-fix amb-expr/tyname)))
+     (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
+                                  (amb-declor/absdeclor-fix
+                                   amb-declor/absdeclor)))
+     (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
+                           (amb-decl/stmt-fix amb-decl/stmt)))
+     (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+                  (declor-annop (fundef->declor fundef))
+                  (decl-list-annop (fundef->decls fundef))
+                  (comp-stmt-annop (fundef->body fundef))
+                  (fundef-infop (fundef->info fundef))))
+     (transunit (and (extdecl-list-annop (transunit->decls transunit))
+                     (transunit-infop (transunit->info transunit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -900,11 +901,11 @@
     :enable identity)
 
   (defruled init-declor-annop-of-init-declor
-    (equal (init-declor-annop (init-declor declor asm? attribs init? info))
+    (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
-                (initer-option-annop init?)
+                (initer-option-annop initer?)
                 (init-declor-infop info)))
-    :expand (init-declor-annop (init-declor declor asm? attribs init? info))
+    :expand (init-declor-annop (init-declor declor asm? attribs initer? info))
     :enable identity)
 
   (defruled fundef-annop-of-fundef
@@ -1028,9 +1029,9 @@
              (declor-annop (init-declor->declor init-declor)))
     :enable init-declor-annop)
 
-  (defruled initer-option-annop-of-init-declor->init?
+  (defruled initer-option-annop-of-init-declor->initer?
     (implies (init-declor-annop init-declor)
-             (initer-option-annop (init-declor->init? init-declor)))
+             (initer-option-annop (init-declor->initer? init-declor)))
     :enable init-declor-annop)
 
   (defruled init-declor-infop-of-init-declor->info
@@ -1148,7 +1149,7 @@
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
      declor-annop-of-init-declor->declor
-     initer-option-annop-of-init-declor->init?
+     initer-option-annop-of-init-declor->initer?
      init-declor-infop-of-init-declor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?

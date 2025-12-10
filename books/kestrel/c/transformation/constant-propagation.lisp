@@ -1672,12 +1672,12 @@
          ((init-declor initdeclor) initdeclor)
          ((mv declor env)
           (const-prop-declor initdeclor.declor env))
-         ((mv init? value? env)
-          (const-prop-initer-option initdeclor.init? env)))
+         ((mv initer? value? env)
+          (const-prop-initer-option initdeclor.initer? env)))
       (mv (make-init-declor
             :declor declor
             :asm? initdeclor.asm?
-            :init? init?)
+            :initer? initer?)
           (declor->ident declor)
           value?
           env))

@@ -272,7 +272,7 @@
   ((initdeclors init-declor-listp))
   (declare (xargs :type-prescription (booleanp (all-no-init initdeclors))))
   (or (endp initdeclors)
-      (and (null (c$::init-declor->init? (first initdeclors)))
+      (and (null (c$::init-declor->initer? (first initdeclors)))
            (all-no-init (rest initdeclors)))))
 
 (define dup-split-struct-type-decl
@@ -637,10 +637,10 @@
        ((init-declor initdeclor) initdeclor)
        ((unless (match-simple-declor-ident initdeclor.declor target))
         (retok nil nil nil))
-       ((unless initdeclor.init?)
+       ((unless initdeclor.initer?)
         (retok t nil nil))
        ((erp initer-option1 initer-option2)
-        (split-struct-initer split-members initdeclor.init?)))
+        (split-struct-initer split-members initdeclor.initer?)))
     (retok t initer-option1 initer-option2)))
 
 (define split-struct-init-declors
@@ -719,7 +719,7 @@
                   :init (list (c$::make-init-declor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new1))
-                                :init? initer-option1)))
+                                :initer? initer-option1)))
                 (c$::make-decl-decl
                   :specs (c$::linkage-case
                            linkage
@@ -730,7 +730,7 @@
                   :init (list (c$::make-init-declor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new2))
-                                :init? initer-option2))))))
+                                :initer? initer-option2))))))
       :statassert (retok nil (list (decl-fix decl))))))
 
 (define split-gso-split-object-extdecl
