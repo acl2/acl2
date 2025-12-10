@@ -2732,7 +2732,7 @@
     (b* (((reterr) (irr-enum-spec) (irr-dimb-table))
          ((enum-spec enumspec) enumspec)
          ((erp new-list table) (dimb-enumer-list enumspec.list table)))
-      (retok (make-enum-spec :name enumspec.name
+      (retok (make-enum-spec :name? enumspec.name?
                              :list new-list
                              :final-comma enumspec.final-comma)
              table))

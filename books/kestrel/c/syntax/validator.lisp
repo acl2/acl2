@@ -5301,14 +5301,14 @@
        However, we validate the enumerators, if present."))
     (b* (((reterr) (irr-enum-spec) nil (irr-valid-table))
          ((enum-spec enumspec) enumspec)
-         ((when (and (not enumspec.name)
+         ((when (and (not enumspec.name?)
                      (endp enumspec.list)))
           (retmsg$ "The enumeration specifier ~x0 ~
                     has no name and no enumerators."
                    (enum-spec-fix enumspec)))
          ((erp new-list types table)
           (valid-enumer-list enumspec.list table ienv)))
-      (retok (make-enum-spec :name enumspec.name
+      (retok (make-enum-spec :name? enumspec.name?
                              :list new-list
                              :final-comma enumspec.final-comma)
              types

@@ -3401,15 +3401,15 @@
       "We ensure that the enumeration specifier is not empty,
        i.e. that there is a name or a non-empty list of enumerators."))
     (b* (((enum-spec enumspec) enumspec)
-         ((unless (or (ident-option-case enumspec.name :some)
+         ((unless (or (ident-option-case enumspec.name? :some)
                       enumspec.list))
           (raise "Misusage error: empty enumeration specifiers.")
           (pristate-fix pstate))
          (pstate (ident-option-case
-                  enumspec.name
-                  :some (print-ident enumspec.name.val pstate)
+                  enumspec.name?
+                  :some (print-ident enumspec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and (ident-option-case enumspec.name :some)
+         (pstate (if (and (ident-option-case enumspec.name? :some)
                           enumspec.list)
                      (print-astring " " pstate)
                    pstate))

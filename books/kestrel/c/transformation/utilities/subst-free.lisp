@@ -1025,7 +1025,7 @@
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
     :returns (result enum-specp)
-    (enum-spec (c$::enum-spec->name enumspec)
+    (enum-spec (c$::enum-spec->name? enumspec)
                (enumer-list-subst-free (c$::enum-spec->list enumspec)
                                        subst bound-vars)
                (c$::enum-spec->final-comma enumspec))

@@ -1028,10 +1028,10 @@
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
         (b* (((enum-spec enumspec) (type-spec-enum->spec tyspec))
-             ((unless enumspec.name)
+             ((unless enumspec.name?)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))
-             ((erp name1) (ldm-ident enumspec.name))
+             ((erp name1) (ldm-ident enumspec.name?))
              ((erp idents1) (ldm-enumer-list enumspec.list)))
           (retok (c::make-tag-declon-enum :tag name1 :enumerators idents1)))))
     (reterr (msg "Unsupported type specifier ~x0 ~

@@ -2774,7 +2774,7 @@
       "To make this definition simpler,
        we allow an absent name and no enumerators,
        even though this is disallowed in the concrete syntax."))
-    ((name ident-option)
+    ((name? ident-option)
      (list enumer-list)
      (final-comma bool))
     :pred enum-specp

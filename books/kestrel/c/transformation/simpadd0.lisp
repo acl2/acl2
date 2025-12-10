@@ -1562,7 +1562,7 @@
          ((mv new-list (gout gout-list))
           (simpadd0-enumer-list enumspec.list gin))
          (gin (gin-update gin gout-list)))
-      (mv (make-enum-spec :name enumspec.name
+      (mv (make-enum-spec :name? enumspec.name?
                           :list new-list
                           :final-comma enumspec.final-comma)
           (gout-no-thm gin)))

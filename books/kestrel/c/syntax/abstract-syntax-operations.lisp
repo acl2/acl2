@@ -804,9 +804,9 @@
      because the specifier does not conform to the concrete syntax."))
   (b* (((enum-spec enumspec) enumspec)
        ((when enumspec.list) nil)
-       ((unless enumspec.name)
+       ((unless enumspec.name?)
         (raise "Misusage error: empty enumeration specifier.")))
-    enumspec.name)
+    enumspec.name?)
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
