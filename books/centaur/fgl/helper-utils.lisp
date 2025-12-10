@@ -44,6 +44,8 @@
 (local (in-theory (disable w)))
 
 
+(fancy-ev-add-primitive interp-st-stack-frames$inline t)
+
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
 

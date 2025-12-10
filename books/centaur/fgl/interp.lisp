@@ -141,6 +141,11 @@
     :g-apply t
     :otherwise nil))
 
+(define fgl-hide-term-p ((x pseudo-termp))
+  (pseudo-term-case x
+    :fncall (eq x.fn 'fgl-hide)
+    :otherwise nil))
+
 (define fgl-function-mode-fix! (x)
   :guard-hints(("Goal" :in-theory (enable fgl-function-mode-fix)))
   :enabled t
@@ -4055,7 +4060,13 @@
         (b* (((fgl-interp-value xobj)
               (fgl-interp-term x interp-st state))
              ;; ((when err) (mv nil interp-st state))
-             ((unless (fgl-term-obj-p xobj))
+             ((when (or (not (fgl-term-obj-p xobj))
+                        ;; don't replace if either x is a hide term or we're
+                        ;; inside a hide term. Tricky because if x is a hide
+                        ;; term the hide flag won't be set here, because we're
+                        ;; done rewriting it...
+                        (fgl-hide-term-p x)
+                        (interp-flags->hide (interp-st->flags interp-st))))
               (fgl-interp-value xobj))
              (contexts (interp-st->equiv-contexts interp-st)))
           (stobj-let ((pathcond (interp-st->pathcond interp-st))
