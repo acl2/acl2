@@ -1069,10 +1069,10 @@
     (c$::attrib-case
      attrib
      :name (c$::attrib-fix attrib)
-     :name-param
-     (c$::attrib-name-param (c$::attrib-name-param->name attrib)
-                            (expr-list-subst-free
-                              (c$::attrib-name-param->param attrib)
+     :name-params
+     (c$::attrib-name-params (c$::attrib-name-params->name attrib)
+                             (expr-list-subst-free
+                              (c$::attrib-name-params->params attrib)
                               subst bound-vars)))
     :measure (c$::attrib-count attrib))
 

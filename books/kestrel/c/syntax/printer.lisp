@@ -3491,15 +3491,15 @@
     (attrib-case
      attr
      :name (print-attrib-name attr.name pstate)
-     :name-param
+     :name-params
      (b* ((pstate (print-attrib-name attr.name pstate))
           (pstate (print-astring "(" pstate))
-          ((unless (expr-list-unambp attr.param))
+          ((unless (expr-list-unambp attr.params))
            (raise "Internal error: ambiguous expressions in attribute ~x0."
                   (attrib-fix attr))
            pstate)
-          (pstate (if attr.param
-                      (print-expr-list attr.param pstate)
+          (pstate (if attr.params
+                      (print-expr-list attr.params pstate)
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))

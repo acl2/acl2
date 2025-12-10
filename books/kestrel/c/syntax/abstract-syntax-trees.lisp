@@ -2875,8 +2875,8 @@
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
     (:name ((name attrib-name)))
-    (:name-param ((name attrib-name)
-                  (param expr-list)))
+    (:name-params ((name attrib-name)
+                   (params expr-list)))
     :pred attribp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

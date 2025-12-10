@@ -745,7 +745,7 @@
     (c$::attrib-case
      attrib
      :name nil
-     :name-param (free-vars-expr-list attrib.param bound-vars))
+     :name-params (free-vars-expr-list attrib.params bound-vars))
     :measure (c$::attrib-count attrib))
 
   (define free-vars-attrib-list

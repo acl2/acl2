@@ -7942,7 +7942,7 @@
         (b* ((parstate (unread-token parstate)) ; name
              ((erp exprs span parstate) ; name ( exprs )
               (parse-attribute-parameters parstate)))
-          (retok (make-attrib-name-param :name name :param exprs)
+          (retok (make-attrib-name-params :name name :params exprs)
                  (span-join name-span span)
                  parstate)))
        ;; If token is anything else, the attribute is just a name.
