@@ -1559,11 +1559,11 @@
     :short "Transform an enumeration specifier."
     (b* (((gin gin) gin)
          ((enum-spec enumspec) enumspec)
-         ((mv new-list (gout gout-list))
-          (simpadd0-enumer-list enumspec.list gin))
+         ((mv new-enumers (gout gout-list))
+          (simpadd0-enumer-list enumspec.enumers gin))
          (gin (gin-update gin gout-list)))
       (mv (make-enum-spec :name? enumspec.name?
-                          :list new-list
+                          :enumers new-enumers
                           :final-comma enumspec.final-comma)
           (gout-no-thm gin)))
     :measure (enum-spec-count enumspec))

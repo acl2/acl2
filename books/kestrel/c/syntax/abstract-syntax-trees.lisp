@@ -2775,7 +2775,7 @@
        we allow an absent name and no enumerators,
        even though this is disallowed in the concrete syntax."))
     ((name? ident-option)
-     (list enumer-list)
+     (enumers enumer-list)
      (final-comma bool))
     :pred enum-specp
     :layout :fulltree

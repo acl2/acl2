@@ -5302,14 +5302,14 @@
     (b* (((reterr) (irr-enum-spec) nil (irr-valid-table))
          ((enum-spec enumspec) enumspec)
          ((when (and (not enumspec.name?)
-                     (endp enumspec.list)))
+                     (endp enumspec.enumers)))
           (retmsg$ "The enumeration specifier ~x0 ~
                     has no name and no enumerators."
                    (enum-spec-fix enumspec)))
-         ((erp new-list types table)
-          (valid-enumer-list enumspec.list table ienv)))
+         ((erp new-enumers types table)
+          (valid-enumer-list enumspec.enumers table ienv)))
       (retok (make-enum-spec :name? enumspec.name?
-                             :list new-list
+                             :enumers new-enumers
                              :final-comma enumspec.final-comma)
              types
              table))

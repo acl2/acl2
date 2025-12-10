@@ -1032,7 +1032,7 @@
               (reterr
                (msg "Unsupported enumeration declaration without name.")))
              ((erp name1) (ldm-ident enumspec.name?))
-             ((erp idents1) (ldm-enumer-list enumspec.list)))
+             ((erp idents1) (ldm-enumer-list enumspec.enumers)))
           (retok (c::make-tag-declon-enum :tag name1 :enumerators idents1)))))
     (reterr (msg "Unsupported type specifier ~x0 ~
                   for tag (i.e. structure/union/enumeration) declaration."

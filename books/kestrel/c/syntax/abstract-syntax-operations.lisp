@@ -803,7 +803,7 @@
      we throw a hard error,
      because the specifier does not conform to the concrete syntax."))
   (b* (((enum-spec enumspec) enumspec)
-       ((when enumspec.list) nil)
+       ((when enumspec.enumers) nil)
        ((unless enumspec.name?)
         (raise "Misusage error: empty enumeration specifier.")))
     enumspec.name?)

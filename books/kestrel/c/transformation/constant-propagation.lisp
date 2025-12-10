@@ -1602,10 +1602,10 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((enum-spec enumspec) enumspec)
-         ((mv list env)
-          (const-prop-enumer-list enumspec.list env)))
+         ((mv enumers env)
+          (const-prop-enumer-list enumspec.enumers env)))
       (mv (make-enum-spec :name? enumspec.name?
-                          :list list
+                          :enumers enumers
                           :final-comma enumspec.final-comma)
           env))
     :measure (enum-spec-count enumspec))

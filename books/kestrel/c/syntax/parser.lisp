@@ -5727,7 +5727,7 @@
                  ((erp last-span parstate) ; ident { enumers [,] }
                   (read-punctuator "}" parstate)))
               (retok (make-enum-spec :name? ident
-                                     :list enumers
+                                     :enumers enumers
                                      :final-comma final-comma)
                      (span-join first-span last-span)
                      parstate)))
@@ -5737,7 +5737,7 @@
             (b* ((parstate
                   (if token2 (unread-token parstate) parstate))) ; ident
               (retok (make-enum-spec :name? ident
-                                     :list nil
+                                     :enumers nil
                                      :final-comma nil)
                      (span-join first-span span)
                      parstate))))))
@@ -5750,7 +5750,7 @@
              ((erp last-span parstate) ; { enumers [,] }
               (read-punctuator "}" parstate)))
           (retok (make-enum-spec :name? nil
-                                 :list enumers
+                                 :enumers enumers
                                  :final-comma final-comma)
                  (span-join first-span last-span)
                  parstate)))

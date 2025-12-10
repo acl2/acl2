@@ -2731,9 +2731,9 @@
        the function that disambiguates the enumerators."))
     (b* (((reterr) (irr-enum-spec) (irr-dimb-table))
          ((enum-spec enumspec) enumspec)
-         ((erp new-list table) (dimb-enumer-list enumspec.list table)))
+         ((erp new-enumers table) (dimb-enumer-list enumspec.enumers table)))
       (retok (make-enum-spec :name? enumspec.name?
-                             :list new-list
+                             :enumers new-enumers
                              :final-comma enumspec.final-comma)
              table))
     :measure (enum-spec-count enumspec))

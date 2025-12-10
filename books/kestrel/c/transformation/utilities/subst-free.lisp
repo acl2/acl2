@@ -1026,7 +1026,7 @@
                                 (bound-vars ident-setp))
     :returns (result enum-specp)
     (enum-spec (c$::enum-spec->name? enumspec)
-               (enumer-list-subst-free (c$::enum-spec->list enumspec)
+               (enumer-list-subst-free (c$::enum-spec->enumers enumspec)
                                        subst bound-vars)
                (c$::enum-spec->final-comma enumspec))
     :measure (enum-spec-count enumspec))

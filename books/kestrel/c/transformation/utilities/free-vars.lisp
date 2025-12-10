@@ -694,7 +694,7 @@
     :returns (free-vars ident-setp)
     (b* (((enum-spec enumspec) enumspec)
          ((mv free-vars -)
-          (free-vars-enumer-list enumspec.list bound-vars)))
+          (free-vars-enumer-list enumspec.enumers bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   enum tag to the set of bound variables.
       free-vars)
