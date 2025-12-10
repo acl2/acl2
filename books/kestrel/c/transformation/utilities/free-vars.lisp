@@ -780,23 +780,23 @@
              (free-vars-attrib-spec-list (rest attrib-specs) bound-vars)))
     :measure (c$::attrib-spec-list-count attrib-specs))
 
-  (define free-vars-initdeclor
-    ((initdeclor initdeclorp)
+  (define free-vars-init-declor
+    ((initdeclor init-declorp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in an initializer declarator."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((initdeclor initdeclor) initdeclor)
+    (b* (((init-declor initdeclor) initdeclor)
          (free-vars0 (free-vars-initer-option initdeclor.init? bound-vars))
          (free-vars1 (free-vars-attrib-spec-list initdeclor.attribs bound-vars))
          ((mv free-vars2 bound-vars -)
           (free-vars-declor initdeclor.declor bound-vars)))
       (mv (union free-vars0 (union free-vars1 free-vars2))
           bound-vars))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
-  (define free-vars-initdeclor-list
-    ((initdeclors initdeclor-listp)
+  (define free-vars-init-declor-list
+    ((initdeclors init-declor-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of initializer
             declarators."
@@ -805,12 +805,12 @@
     (b* (((when (endp initdeclors))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-initdeclor (first initdeclors) bound-vars))
+          (free-vars-init-declor (first initdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-initdeclor-list (rest initdeclors) bound-vars)))
+          (free-vars-init-declor-list (rest initdeclors) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (initdeclor-list-count initdeclors))
+    :measure (init-declor-list-count initdeclors))
 
   (define free-vars-decl
     ((decl declp)
@@ -820,7 +820,7 @@
                  (bound-vars ident-setp))
     (decl-case
      decl
-     :decl (free-vars-initdeclor-list decl.init bound-vars)
+     :decl (free-vars-init-declor-list decl.init bound-vars)
      :statassert (mv (free-vars-statassert decl.statassert bound-vars)
                      (ident-set-fix bound-vars)))
     :measure (decl-count decl))

@@ -456,11 +456,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor->ident
-  ((initdeclor initdeclorp))
+(define init-declor->ident
+  ((initdeclor init-declorp))
   :returns (ident identp)
   :short "Identifier of an initializer declarator."
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (declor->ident initdeclor.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

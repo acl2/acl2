@@ -73,7 +73,7 @@
           (make-decl-decl
             :extension nil
             :specs paramdecl.specs
-            :init (list (initdeclor paramdecl.declor.declor nil nil init? nil))))
+            :init (list (init-declor paramdecl.declor.declor nil nil init? nil))))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

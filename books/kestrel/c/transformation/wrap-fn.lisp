@@ -347,13 +347,13 @@
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define initdeclor-list-wrap-fn-add-wrapper-def
-  ((init initdeclor-listp)
+(define init-declor-list-wrap-fn-add-wrapper-def
+  ((init init-declor-listp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp)
    (specs decl-spec-listp))
-  :guard (c$::initdeclor-list-annop init)
+  :guard (c$::init-declor-list-annop init)
   :returns (mv (er? maybe-msgp)
                (uid? c$::uid-optionp)
                (wrapper? fundef-optionp)
@@ -372,7 +372,7 @@
   (b* (((reterr) nil nil nil)
        ((when (endp init))
         (retok nil nil nil))
-       (declor (initdeclor->declor (first init)))
+       (declor (init-declor->declor (first init)))
        ((erp foundp wrapper? wrapper-name?$)
         (declor-wrap-fn-add-wrapper-def declor
                                          target-name
@@ -380,28 +380,28 @@
                                          blacklist
                                          specs))
        ((unless foundp)
-        (initdeclor-list-wrap-fn-add-wrapper-def (rest init)
+        (init-declor-list-wrap-fn-add-wrapper-def (rest init)
                                                 target-name
                                                 wrapper-name?
                                                 blacklist
                                                 specs))
        ((erp uid?)
          (b* (((reterr) nil)
-             ((unless (c$::initdeclor-infop (c$::initdeclor->info (first init))))
+             ((unless (c$::init-declor-infop (c$::init-declor->info (first init))))
               (retmsg$ "Initializer declarator does not have ~
-                        initdeclor-info metadata: ~x0"
-                       (initdeclor-fix (first init)))))
-           (retok (c$::initdeclor-info->uid?
-                    (c$::initdeclor->info (first init)))))))
+                        init-declor-info metadata: ~x0"
+                       (init-declor-fix (first init)))))
+           (retok (c$::init-declor-info->uid?
+                    (c$::init-declor->info (first init)))))))
     (retok uid? wrapper? wrapper-name?$))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-init-declor-list-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper-name?$
+  (defret identp-of-init-declor-list-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))
     :hints (("Goal" :induct t))))
@@ -429,7 +429,7 @@
       unsupported by the current implementation."))
   (decl-case
     decl
-    :decl (initdeclor-list-wrap-fn-add-wrapper-def
+    :decl (init-declor-list-wrap-fn-add-wrapper-def
             decl.init
             target-name
             wrapper-name?

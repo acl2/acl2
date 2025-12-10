@@ -392,13 +392,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-initdeclor
+(defirrelevant irr-init-declor
   :short "An irrelevant initializer declarator."
-  :type initdeclorp
-  :body (make-initdeclor :declor (irr-declor)
-                         :asm? nil
-                         :attribs nil
-                         :init? nil))
+  :type init-declorp
+  :body (make-init-declor :declor (irr-declor)
+                          :asm? nil
+                          :attribs nil
+                          :init? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

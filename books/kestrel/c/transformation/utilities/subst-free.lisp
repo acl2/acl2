@@ -1113,42 +1113,42 @@
                                          subst bound-vars)))
     :measure (c$::attrib-spec-list-count attrib-spec-list))
 
-  (define initdeclor-subst-free ((initdeclor initdeclorp)
-                                 (subst ident-expr-mapp)
-                                 (bound-vars ident-setp))
-    :returns (mv (result initdeclorp)
+  (define init-declor-subst-free ((initdeclor init-declorp)
+                                  (subst ident-expr-mapp)
+                                  (bound-vars ident-setp))
+    :returns (mv (result init-declorp)
                  (bound-vars ident-setp))
-    (b* ((init? (initer-option-subst-free (c$::initdeclor->init? initdeclor)
+    (b* ((init? (initer-option-subst-free (c$::init-declor->init? initdeclor)
                                           subst bound-vars))
          (attribs (attrib-spec-list-subst-free
-                    (c$::initdeclor->attribs initdeclor)
-                    subst bound-vars))
+                   (c$::init-declor->attribs initdeclor)
+                   subst bound-vars))
          ((mv declor bound-vars -)
-          (declor-subst-free (c$::initdeclor->declor initdeclor)
-                           subst bound-vars)))
-      (mv (initdeclor declor
-                      (c$::initdeclor->asm? initdeclor)
-                      attribs
-                      init?
-                      (c$::initdeclor->info initdeclor))
+          (declor-subst-free (c$::init-declor->declor initdeclor)
+                             subst bound-vars)))
+      (mv (init-declor declor
+                       (c$::init-declor->asm? initdeclor)
+                       attribs
+                       init?
+                       (c$::init-declor->info initdeclor))
           (ident-set-fix bound-vars)))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
-  (define initdeclor-list-subst-free
-    ((initdeclor-list initdeclor-listp)
+  (define init-declor-list-subst-free
+    ((init-declor-list init-declor-listp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (mv (result initdeclor-listp)
+    :returns (mv (result init-declor-listp)
                  (bound-vars ident-setp))
-    (b* (((when (endp initdeclor-list))
+    (b* (((when (endp init-declor-list))
           (mv nil (ident-set-fix bound-vars)))
          ((mv first bound-vars)
-          (initdeclor-subst-free (first initdeclor-list) subst bound-vars))
+          (init-declor-subst-free (first init-declor-list) subst bound-vars))
          ((mv rest bound-vars)
-          (initdeclor-list-subst-free (rest initdeclor-list) subst bound-vars)))
+          (init-declor-list-subst-free (rest init-declor-list) subst bound-vars)))
       (mv (cons first rest)
           (ident-set-fix bound-vars)))
-    :measure (initdeclor-list-count initdeclor-list))
+    :measure (init-declor-list-count init-declor-list))
 
   (define decl-subst-free ((decl declp)
                            (subst ident-expr-mapp)
@@ -1160,17 +1160,17 @@
      :decl (b* ((specs (decl-spec-list-subst-free (c$::decl-decl->specs decl)
                                                   subst bound-vars))
                 ((mv init bound-vars)
-                 (initdeclor-list-subst-free (c$::decl-decl->init decl)
-                                             subst bound-vars)))
+                 (init-declor-list-subst-free (c$::decl-decl->init decl)
+                                              subst bound-vars)))
              (mv (c$::decl-decl
-                   (c$::decl-decl->extension decl)
-                   specs
-                   init)
+                  (c$::decl-decl->extension decl)
+                  specs
+                  init)
                  (ident-set-fix bound-vars)))
      :statassert
      (mv (decl-statassert
-           (statassert-subst-free (c$::decl-statassert->statassert decl)
-                                  subst bound-vars))
+          (statassert-subst-free (c$::decl-statassert->statassert decl)
+                                 subst bound-vars))
          nil))
     :measure (decl-count decl))
 

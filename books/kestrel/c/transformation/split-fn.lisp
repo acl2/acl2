@@ -151,12 +151,12 @@
   :prepwork
   ((define decl-to-ident-param-declon-map0
      ((declspecs decl-spec-listp)
-      (initdeclors initdeclor-listp))
+      (initdeclors init-declor-listp))
      :returns
      (map ident-param-declon-mapp)
      (b* (((when (endp initdeclors))
            nil)
-          ((initdeclor initdeclor) (first initdeclors))
+          ((init-declor initdeclor) (first initdeclors))
           (ident (declor->ident initdeclor.declor)))
        (omap::update
          ident

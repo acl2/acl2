@@ -3557,13 +3557,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-initdeclor ((initdeclor initdeclorp) (pstate pristatep))
-    :guard (and (initdeclor-unambp initdeclor)
-                (initdeclor-aidentp initdeclor (pristate->gcc pstate)))
+  (define print-init-declor ((initdeclor init-declorp) (pstate pristatep))
+    :guard (and (init-declor-unambp initdeclor)
+                (init-declor-aidentp initdeclor (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer declarator."
-    (b* (((initdeclor initdeclor) initdeclor)
+    (b* (((init-declor initdeclor) initdeclor)
          (pstate (print-declor initdeclor.declor pstate))
          (pstate (if initdeclor.asm?
                      (b* ((pstate (print-astring " " pstate))
@@ -3581,25 +3581,25 @@
          (pstate (print-initer (initer-option-some->val initdeclor.init?)
                                pstate)))
       pstate)
-    :measure (two-nats-measure (initdeclor-count initdeclor) 0))
+    :measure (two-nats-measure (init-declor-count initdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-initdeclor-list ((initdeclors initdeclor-listp)
+  (define print-init-declor-list ((initdeclors init-declor-listp)
                                  (pstate pristatep))
     :guard (and (consp initdeclors)
-                (initdeclor-list-unambp initdeclors)
-                (initdeclor-list-aidentp initdeclors (pristate->gcc pstate)))
+                (init-declor-list-unambp initdeclors)
+                (init-declor-list-aidentp initdeclors (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more initializer declarators,
             separated by commas."
     (b* (((unless (mbt (consp initdeclors))) (pristate-fix pstate))
-         (pstate (print-initdeclor (car initdeclors) pstate))
+         (pstate (print-init-declor (car initdeclors) pstate))
          ((when (endp (cdr initdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
-      (print-initdeclor-list (cdr initdeclors) pstate))
-    :measure (two-nats-measure (initdeclor-list-count initdeclors) 0))
+      (print-init-declor-list (cdr initdeclors) pstate))
+    :measure (two-nats-measure (init-declor-list-count initdeclors) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3632,7 +3632,7 @@
           (pstate
            (if decl.init
                (b* ((pstate (print-astring " " pstate))
-                    (pstate (print-initdeclor-list decl.init pstate)))
+                    (pstate (print-init-declor-list decl.init pstate)))
                  pstate)
              pstate))
           (pstate (print-astring ";" pstate)))
@@ -4271,8 +4271,8 @@
      print-attrib-list
      print-attrib-spec
      print-attrib-spec-list
-     print-initdeclor
-     print-initdeclor-list
+     print-init-declor
+     print-init-declor-list
      print-decl-inline
      print-decl
      print-decl-list

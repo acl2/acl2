@@ -352,17 +352,17 @@
 
     attrib-spec-listp
 
-    initdeclorp
-    initdeclor-fix
-    initdeclor-count
-    initdeclor
-    make-initdeclor
-    initdeclor->declor
-    initdeclor->init?
+    init-declorp
+    init-declor-fix
+    init-declor-count
+    init-declor
+    make-init-declor
+    init-declor->declor
+    init-declor->init?
 
-    initdeclor-listp
-    initdeclor-list-fix
-    initdeclor-list-count
+    init-declor-listp
+    init-declor-list-fix
+    init-declor-list-count
 
     declp
     decl
@@ -537,8 +537,8 @@
     enumer-unambp
     enumer-list-unambp
     statassert-unambp
-    initdeclor-unambp
-    initdeclor-list-unambp
+    init-declor-unambp
+    init-declor-list-unambp
     decl-unambp
     decl-list-unambp
     label-unambp
@@ -605,8 +605,8 @@
     enumer-list-aidentp
     statassert-aidentp
     attrib-spec-list-aidentp
-    initdeclor-aidentp
-    initdeclor-list-aidentp
+    init-declor-aidentp
+    init-declor-list-aidentp
     decl-aidentp
     decl-list-aidentp
     label-aidentp
@@ -629,7 +629,7 @@
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
-    initdeclor-block-formalp
+    init-declor-block-formalp
     decl-block-formalp
     stmt-formalp
     block-item-formalp
@@ -699,9 +699,9 @@
     param-declor-nonabstract-info
     param-declor-nonabstract-info->type
 
-    initdeclor-info
-    initdeclor-info->type
-    initdeclor-info->typedefp
+    init-declor-info
+    init-declor-info->type
+    init-declor-info->typedefp
 
     fundef-info
     fundef-infop
@@ -771,8 +771,8 @@
     enumer-annop
     enumer-list-annop
     statassert-annop
-    initdeclor-annop
-    initdeclor-list-annop
+    init-declor-annop
+    init-declor-list-annop
     decl-annop
     decl-list-annop
     label-annop

@@ -143,21 +143,21 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(define initdeclor-find-gso-candidate
-  ((initdeclor initdeclorp))
+(define init-declor-find-gso-candidate
+  ((initdeclor init-declorp))
   :returns (ident? ident-optionp)
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (declor-get-simple-ident initdeclor.declor)))
 
-(define initdeclor-list-find-gso-candidate
-  ((initdeclors initdeclor-listp))
+(define init-declor-list-find-gso-candidate
+  ((initdeclors init-declor-listp))
   :returns (ident? ident-optionp)
   ;; Only accepts singletons for now
   ;; TODO: broaden this
   (if (or (endp initdeclors)
           (not (endp (rest initdeclors))))
       nil
-    (initdeclor-find-gso-candidate (first initdeclors))))
+    (init-declor-find-gso-candidate (first initdeclors))))
 
 (define decl-find-gso-candidate
   ((decl declp)
@@ -172,8 +172,8 @@
         (ident?
           (type-spec-case
             type-spec?
-            :struct (initdeclor-list-find-gso-candidate decl.init)
-            :typedef (initdeclor-list-find-gso-candidate decl.init)
+            :struct (init-declor-list-find-gso-candidate decl.init)
+            :typedef (init-declor-list-find-gso-candidate decl.init)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))

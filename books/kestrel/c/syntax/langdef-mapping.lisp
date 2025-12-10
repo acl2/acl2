@@ -1287,7 +1287,7 @@
         (reterr (msg "Unsupported number of declarators ~x0 ~
                       for function declaration."
                      initdeclors)))
-       ((initdeclor initdeclor) (car initdeclors))
+       ((init-declor initdeclor) (car initdeclors))
        ((when initdeclor.init?)
         (reterr (msg "Unsupported initializer ~x0 ~
                       for function declaration."
@@ -1310,7 +1310,7 @@
     (not erp)
     :hyp (decl-fun-formalp decl)
     :hints (("Goal" :in-theory (enable decl-fun-formalp
-                                       initdeclor-fun-formalp)))))
+                                       init-declor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1428,7 +1428,7 @@
         (reterr (msg "Unsupported number of initializer declarators ~x0 ~
                       for object declaration."
                      initdeclors)))
-       ((initdeclor initdeclor) (car initdeclors))
+       ((init-declor initdeclor) (car initdeclors))
        ((erp objdeclor) (ldm-declor-obj initdeclor.declor))
        ((when initdeclor.asm?)
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
@@ -1456,7 +1456,7 @@
     (not erp)
     :hyp (decl-obj-formalp decl)
     :hints (("Goal" :in-theory (enable decl-obj-formalp
-                                       initdeclor-obj-formalp))))
+                                       init-declor-obj-formalp))))
 
   (defret ldm-decl-obj-ok-when-decl-block-formalp
     (not erp)
@@ -1465,7 +1465,7 @@
     (("Goal"
       :in-theory
       (enable decl-block-formalp
-              initdeclor-block-formalp
+              init-declor-block-formalp
               check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

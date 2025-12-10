@@ -1630,10 +1630,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor ((initdeclor initdeclorp) (gin ginp))
-    :guard (and (initdeclor-unambp initdeclor)
-                (initdeclor-annop initdeclor))
-    :returns (mv (new-initdeclor initdeclorp)
+  (define simpadd0-init-declor ((initdeclor init-declorp) (gin ginp))
+    :guard (and (init-declor-unambp initdeclor)
+                (init-declor-annop initdeclor))
+    :returns (mv (new-initdeclor init-declorp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an initializer declarator."
@@ -1646,7 +1646,7 @@
      (xdoc::p
       "If the type of the declared identifier is supported for proof generation,
        we update the variable-type map."))
-    (b* (((initdeclor initdeclor) initdeclor)
+    (b* (((init-declor initdeclor) initdeclor)
          ((mv new-declor & (gout gout-declor))
           (simpadd0-declor initdeclor.declor nil gin))
          (gin (gin-update gin gout-declor))
@@ -1655,10 +1655,10 @@
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
          ((gin gin) (gin-update gin gout-init?))
-         (type (initdeclor-info->type initdeclor.info))
+         (type (init-declor-info->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (initdeclor-info->typedefp initdeclor.info))
+          (if (and (not (init-declor-info->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -1667,11 +1667,11 @@
                    ((mv & ctype) (ldm-type type)))
                 (omap::update cvar ctype gout-init?.vartys))
             gout-init?.vartys)))
-      (mv (make-initdeclor :declor new-declor
-                           :asm? initdeclor.asm?
-                           :attribs initdeclor.attribs
-                           :init? new-init?
-                           :info initdeclor.info)
+      (mv (make-init-declor :declor new-declor
+                            :asm? initdeclor.asm?
+                            :attribs initdeclor.attribs
+                            :init? new-init?
+                            :info initdeclor.info)
           (if gout-init?.thm-name
               (make-gout :events gin.events
                          :thm-index gin.thm-index
@@ -1679,14 +1679,14 @@
                          :vartys post-vartys)
             (change-gout (gout-no-thm gin)
                          :vartys post-vartys))))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-initdeclor-list ((initdeclors initdeclor-listp) (gin ginp))
-    :guard (and (initdeclor-list-unambp initdeclors)
-                (initdeclor-list-annop initdeclors))
-    :returns (mv (new-initdeclors initdeclor-listp)
+  (define simpadd0-init-declor-list ((initdeclors init-declor-listp) (gin ginp))
+    :guard (and (init-declor-list-unambp initdeclors)
+                (init-declor-list-annop initdeclors))
+    :returns (mv (new-initdeclors init-declor-listp)
                  (gout goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of initializer declarators."
@@ -1700,10 +1700,10 @@
     (b* (((when (endp initdeclors))
           (mv nil (gout-no-thm gin)))
          ((mv new-initdeclor (gout gout-initdeclor))
-          (simpadd0-initdeclor (car initdeclors) gin))
+          (simpadd0-init-declor (car initdeclors) gin))
          (gin (gin-update gin gout-initdeclor))
          ((mv new-initdeclors (gout gout-initdeclors))
-          (simpadd0-initdeclor-list (cdr initdeclors)
+          (simpadd0-init-declor-list (cdr initdeclors)
                                     (change-gin
                                      gin :vartys gout-initdeclor.vartys)))
          ((gin gin) (gin-update gin gout-initdeclors)))
@@ -1716,7 +1716,7 @@
                          :vartys gout-initdeclor.vartys)
             (change-gout (gout-no-thm gin)
                          :vartys gout-initdeclors.vartys))))
-    :measure (initdeclor-list-count initdeclors))
+    :measure (init-declor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1740,7 +1740,7 @@
                  (simpadd0-decl-spec-list decl.specs gin))
                 (gin (gin-update gin gout-specs))
                 ((mv new-init (gout gout-init))
-                 (simpadd0-initdeclor-list decl.init gin))
+                 (simpadd0-init-declor-list decl.init gin))
                 ((gin gin) (gin-update gin gout-init)))
              (xeq-decl-decl decl.extension
                             decl.specs
@@ -2184,12 +2184,12 @@
     (defret statassert-unambp-of-simpadd0-statassert
       (statassert-unambp new-statassert)
       :fn simpadd0-statassert)
-    (defret initdeclor-unambp-of-simpadd0-initdeclor
-      (initdeclor-unambp new-initdeclor)
-      :fn simpadd0-initdeclor)
-    (defret initdeclor-list-unambp-of-simpadd0-initdeclor-list
-      (initdeclor-list-unambp new-initdeclors)
-      :fn simpadd0-initdeclor-list)
+    (defret init-declor-unambp-of-simpadd0-init-declor
+      (init-declor-unambp new-initdeclor)
+      :fn simpadd0-init-declor)
+    (defret init-declor-list-unambp-of-simpadd0-init-declor-list
+      (init-declor-list-unambp new-initdeclors)
+      :fn simpadd0-init-declor-list)
     (defret decl-unambp-of-simpadd0-decl
       (decl-unambp new-decl)
       :fn simpadd0-decl)
@@ -2250,8 +2250,8 @@
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
-                                       simpadd0-initdeclor
-                                       simpadd0-initdeclor-list
+                                       simpadd0-init-declor
+                                       simpadd0-init-declor-list
                                        simpadd0-decl
                                        simpadd0-decl-list
                                        simpadd0-label
@@ -2471,16 +2471,16 @@
       :hyp (and (statassert-unambp statassert)
                 (statassert-annop statassert))
       :fn simpadd0-statassert)
-    (defret initdeclor-annop-of-simpadd0-initdeclor
-      (initdeclor-annop new-initdeclor)
-      :hyp (and (initdeclor-unambp initdeclor)
-                (initdeclor-annop initdeclor))
-      :fn simpadd0-initdeclor)
-    (defret initdeclor-list-annop-of-simpadd0-initdeclor-list
-      (initdeclor-list-annop new-initdeclors)
-      :hyp (and (initdeclor-list-unambp initdeclors)
-                (initdeclor-list-annop initdeclors))
-      :fn simpadd0-initdeclor-list)
+    (defret init-declor-annop-of-simpadd0-init-declor
+      (init-declor-annop new-initdeclor)
+      :hyp (and (init-declor-unambp initdeclor)
+                (init-declor-annop initdeclor))
+      :fn simpadd0-init-declor)
+    (defret init-declor-list-annop-of-simpadd0-init-declor-list
+      (init-declor-list-annop new-initdeclors)
+      :hyp (and (init-declor-list-unambp initdeclors)
+                (init-declor-list-annop initdeclors))
+      :fn simpadd0-init-declor-list)
     (defret decl-annop-of-simpadd0-decl
       (decl-annop new-decl)
       :hyp (and (decl-unambp decl)
@@ -2555,8 +2555,8 @@
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
-                                       simpadd0-initdeclor
-                                       simpadd0-initdeclor-list
+                                       simpadd0-init-declor
+                                       simpadd0-init-declor-list
                                        simpadd0-decl
                                        simpadd0-decl-list
                                        simpadd0-label
@@ -2768,16 +2768,16 @@
       :hyp (and (statassert-unambp statassert)
                 (statassert-aidentp statassert gcc))
       :fn simpadd0-statassert)
-    (defret initdeclor-aidentp-of-simpadd0-initdeclor
-      (initdeclor-aidentp new-initdeclor gcc)
-      :hyp (and (initdeclor-unambp initdeclor)
-                (initdeclor-aidentp initdeclor gcc))
-      :fn simpadd0-initdeclor)
-    (defret initdeclor-list-aidentp-of-simpadd0-initdeclor-list
-      (initdeclor-list-aidentp new-initdeclors gcc)
-      :hyp (and (initdeclor-list-unambp initdeclors)
-                (initdeclor-list-aidentp initdeclors gcc))
-      :fn simpadd0-initdeclor-list)
+    (defret init-declor-aidentp-of-simpadd0-init-declor
+      (init-declor-aidentp new-initdeclor gcc)
+      :hyp (and (init-declor-unambp initdeclor)
+                (init-declor-aidentp initdeclor gcc))
+      :fn simpadd0-init-declor)
+    (defret init-declor-list-aidentp-of-simpadd0-init-declor-list
+      (init-declor-list-aidentp new-initdeclors gcc)
+      :hyp (and (init-declor-list-unambp initdeclors)
+                (init-declor-list-aidentp initdeclors gcc))
+      :fn simpadd0-init-declor-list)
     (defret decl-aidentp-of-simpadd0-decl
       (decl-aidentp new-decl gcc)
       :hyp (and (decl-unambp decl)
@@ -2853,8 +2853,8 @@
                                        simpadd0-enumer
                                        simpadd0-enumer-list
                                        simpadd0-statassert
-                                       simpadd0-initdeclor
-                                       simpadd0-initdeclor-list
+                                       simpadd0-init-declor
+                                       simpadd0-init-declor-list
                                        simpadd0-decl
                                        simpadd0-decl-list
                                        simpadd0-label

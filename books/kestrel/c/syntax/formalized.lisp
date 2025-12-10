@@ -510,8 +510,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor-block-formalp ((initdeclor initdeclorp))
-  :guard (initdeclor-unambp initdeclor)
+(define init-declor-block-formalp ((initdeclor init-declorp))
+  :guard (init-declor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of a block item declaration."
@@ -522,7 +522,7 @@
      the initializer must be present and supported.
      The declarator must be supported too.
      There must be no assembler name specifier and no attribute specifiers."))
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (and (declor-block-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
@@ -557,7 +557,7 @@
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-block-formalp (car decl.init)))
+              (init-declor-block-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -709,8 +709,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor-obj-formalp ((initdeclor initdeclorp))
-  :guard (initdeclor-unambp initdeclor)
+(define init-declor-obj-formalp ((initdeclor init-declorp))
+  :guard (init-declor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of an object declaration (not in a block)."
@@ -721,7 +721,7 @@
      see the documentation of that function.
      The initializer is optional, but if present it must be supported.
      There must be no assembler name specifier and no attribute specifiers."))
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (and (declor-obj-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
@@ -739,7 +739,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This complements @(tsee initdeclor-obj-formalp);
+    "This complements @(tsee init-declor-obj-formalp);
      see the documentation of that function.
      The declaration must not be a static assertion declaration.
      We require a single supported initializer declarator.
@@ -758,7 +758,7 @@
                      (stor-spec-list-formalp storspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-obj-formalp (car decl.init)))
+              (init-declor-obj-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -967,8 +967,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor-fun-formalp ((initdeclor initdeclorp))
-  :guard (initdeclor-unambp initdeclor)
+(define init-declor-fun-formalp ((initdeclor init-declorp))
+  :guard (init-declor-unambp initdeclor)
   :returns (yes/no booleanp)
   :short "Check if an initializer declarator has formal dynamic semantics,
           as part of a function declaration."
@@ -978,7 +978,7 @@
     "There must be no initializer,
      and the declarator must be supported.
      There must be no assembler name specifier and no attribute specifiers."))
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (and (declor-fun-formalp initdeclor.declor)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
@@ -1008,7 +1008,7 @@
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
               (endp (cdr decl.init))
-              (initdeclor-fun-formalp (car decl.init)))
+              (init-declor-fun-formalp (car decl.init)))
    :statassert nil)
   :hooks (:fix))
 

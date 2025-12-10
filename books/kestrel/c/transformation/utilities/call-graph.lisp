@@ -448,19 +448,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define call-graph-initdeclor
-  ((initdeclor initdeclorp)
+(define call-graph-init-declor
+  ((initdeclor init-declorp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     ;; TODO: need to look at initdeclor.declor?
     (call-graph-initer-option initdeclor.init? fn-name filepath valid-table call-graph)))
 
-(define call-graph-initdeclor-list
-  ((initdeclors initdeclor-listp)
+(define call-graph-init-declor-list
+  ((initdeclors init-declor-listp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
@@ -468,12 +468,12 @@
   :returns (call-graph$ call-graphp)
   (if (endp initdeclors)
       (call-graph-fix call-graph)
-    (call-graph-initdeclor-list
+    (call-graph-init-declor-list
       (rest initdeclors)
       fn-name
       filepath
       valid-table
-      (call-graph-initdeclor (first initdeclors) fn-name filepath valid-table call-graph))))
+      (call-graph-init-declor (first initdeclors) fn-name filepath valid-table call-graph))))
 
 (define call-graph-statassert
   ((statassert statassertp)
@@ -494,7 +494,7 @@
   :returns (call-graph$ call-graphp)
   (decl-case
    decl
-   :decl (call-graph-initdeclor-list decl.init fn-name filepath valid-table call-graph)
+   :decl (call-graph-init-declor-list decl.init fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
    :statassert (call-graph-statassert decl.statassert fn-name filepath valid-table call-graph)))

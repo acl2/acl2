@@ -8079,7 +8079,7 @@
 
   (define parse-init-declarator ((parstate parstatep))
     :returns (mv erp
-                 (initdeclor initdeclorp)
+                 (initdeclor init-declorp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -8090,7 +8090,7 @@
       "An initializer declarator consists of a declarator,
        optionally followed by an assembler name specifier,
        optionally followed by an equal sign and an initializer."))
-    (b* (((reterr) (irr-initdeclor) (irr-span) parstate)
+    (b* (((reterr) (irr-init-declor) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declor span parstate) (parse-declarator parstate)) ; declor
          ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -8108,22 +8108,22 @@
        ((token-punctuatorp token "=") ; declor [asmspec] =
         (b* (((erp initer last-span parstate) ; declor [asmspec] = initer
               (parse-initializer parstate)))
-          (retok (make-initdeclor :declor declor
-                                  :asm? asmspec?
-                                  :attribs attrspecs
-                                  :init? initer
-                                  :info nil)
+          (retok (make-init-declor :declor declor
+                                   :asm? asmspec?
+                                   :attribs attrspecs
+                                   :init? initer
+                                   :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, there is no initializer.
        (t ; declor [asmspec] other
         (b* ((parstate (if token (unread-token parstate) parstate)))
           ;; declor [asmspec]
-          (retok (make-initdeclor :declor declor
-                                  :asm? asmspec?
-                                  :attribs attrspecs
-                                  :init? nil
-                                  :info nil)
+          (retok (make-init-declor :declor declor
+                                   :asm? asmspec?
+                                   :attribs attrspecs
+                                   :init? nil
+                                   :info nil)
                  (cond (attrspecs (span-join span attrspecs-span))
                        (asmspec? (span-join span asmspec?-span))
                        (t span))
@@ -8134,7 +8134,7 @@
 
   (define parse-init-declarator-list ((parstate parstatep))
     :returns (mv erp
-                 (initdeclors initdeclor-listp)
+                 (initdeclors init-declor-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -11532,7 +11532,7 @@
               (retok (extdecl-decl (make-decl-decl
                                     :extension extension
                                     :specs declspecs
-                                    :init (list (make-initdeclor
+                                    :init (list (make-init-declor
                                                  :declor declor
                                                  :asm? asmspec?
                                                  :attribs attrspecs
@@ -11549,11 +11549,11 @@
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;;   = initer
                     (parse-initializer parstate))
-                   (initdeclor (make-initdeclor :declor declor
-                                                :asm? asmspec?
-                                                :attribs attrspecs
-                                                :init? initer
-                                                :info nil))
+                   (initdeclor (make-init-declor :declor declor
+                                                 :asm? asmspec?
+                                                 :attribs attrspecs
+                                                 :init? initer
+                                                 :info nil))
                    ((erp token4 span4 parstate) (read-token parstate)))
                 (cond
                  ;; If token4 is a semicolon,
@@ -11598,11 +11598,11 @@
              ;; with two or more initializer declarators.
              ((token-punctuatorp token3 ",")
               ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
-              (b* ((initdeclor (make-initdeclor :declor declor
-                                                :asm? asmspec?
-                                                :attribs attrspecs
-                                                :init? nil
-                                                :info nil))
+              (b* ((initdeclor (make-init-declor :declor declor
+                                                 :asm? asmspec?
+                                                 :attribs attrspecs
+                                                 :init? nil
+                                                 :info nil))
                    ((erp initdeclors & parstate)
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
                     ;;   initdeclors

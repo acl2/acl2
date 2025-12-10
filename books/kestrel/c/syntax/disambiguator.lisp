@@ -2795,11 +2795,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-initdeclor ((ideclor initdeclorp)
-                           (kind dimb-kindp)
-                           (table dimb-tablep))
+  (define dimb-init-declor ((ideclor init-declorp)
+                            (kind dimb-kindp)
+                            (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-ideclor initdeclorp)
+                 (new-ideclor init-declorp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an initializer declarator."
@@ -2818,25 +2818,25 @@
        to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
-    (b* (((reterr) (irr-initdeclor) (irr-dimb-table))
-         ((initdeclor ideclor) ideclor)
+    (b* (((reterr) (irr-init-declor) (irr-dimb-table))
+         ((init-declor ideclor) ideclor)
          ((erp new-declor ident table) (dimb-declor ideclor.declor nil table))
          (table (dimb-add-ident ident kind table))
          ((erp new-init? table) (dimb-initer-option ideclor.init? table)))
-      (retok (make-initdeclor :declor new-declor
-                              :asm? ideclor.asm?
-                              :attribs ideclor.attribs
-                              :init? new-init?)
+      (retok (make-init-declor :declor new-declor
+                               :asm? ideclor.asm?
+                               :attribs ideclor.attribs
+                               :init? new-init?)
              table))
-    :measure (initdeclor-count ideclor))
+    :measure (init-declor-count ideclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-initdeclor-list ((ideclors initdeclor-listp)
-                                (kind dimb-kindp)
-                                (table dimb-tablep))
+  (define dimb-init-declor-list ((ideclors init-declor-listp)
+                                 (kind dimb-kindp)
+                                 (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-ideclors initdeclor-listp)
+                 (new-ideclors init-declor-listp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of initializer declarators."
@@ -2849,11 +2849,11 @@
        and passed to this function as input."))
     (b* (((reterr) nil (irr-dimb-table))
          ((when (endp ideclors)) (retok nil (dimb-table-fix table)))
-         ((erp new-ideclor table) (dimb-initdeclor (car ideclors) kind table))
+         ((erp new-ideclor table) (dimb-init-declor (car ideclors) kind table))
          ((erp new-ideclors table)
-          (dimb-initdeclor-list (cdr ideclors) kind table)))
+          (dimb-init-declor-list (cdr ideclors) kind table)))
       (retok (cons new-ideclor new-ideclors) table))
-    :measure (initdeclor-list-count ideclors))
+    :measure (init-declor-list-count ideclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2878,7 +2878,7 @@
        (b* (((erp new-specs kind table)
              (dimb-decl-spec-list decl.specs (dimb-kind-objfun) table))
             ((erp new-init table)
-             (dimb-initdeclor-list decl.init kind table)))
+             (dimb-init-declor-list decl.init kind table)))
          (retok (make-decl-decl :extension decl.extension
                                 :specs new-specs
                                 :init new-init)
@@ -3571,14 +3571,14 @@
       (implies (not erp)
                (statassert-unambp new-statassert))
       :fn dimb-statassert)
-    (defret initdeclor-unambp-of-dimb-initdeclor
+    (defret init-declor-unambp-of-dimb-init-declor
       (implies (not erp)
-               (initdeclor-unambp new-ideclor))
-      :fn dimb-initdeclor)
-    (defret initdeclor-list-unambp-of-dimb-initdeclor-list
+               (init-declor-unambp new-ideclor))
+      :fn dimb-init-declor)
+    (defret init-declor-list-unambp-of-dimb-init-declor-list
       (implies (not erp)
-               (initdeclor-list-unambp new-ideclors))
-      :fn dimb-initdeclor-list)
+               (init-declor-list-unambp new-ideclors))
+      :fn dimb-init-declor-list)
     (defret decl-unambp-of-dimb-decl
       (implies (not erp)
                (decl-unambp new-decl))

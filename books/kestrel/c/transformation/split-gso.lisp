@@ -269,10 +269,10 @@
       (retok (cons struct-declon struct-declons1) struct-declons2))))
 
 (define all-no-init
-  ((initdeclors initdeclor-listp))
+  ((initdeclors init-declor-listp))
   (declare (xargs :type-prescription (booleanp (all-no-init initdeclors))))
   (or (endp initdeclors)
-      (and (null (c$::initdeclor->init? (first initdeclors)))
+      (and (null (c$::init-declor->init? (first initdeclors)))
            (all-no-init (rest initdeclors)))))
 
 (define dup-split-struct-type-decl
@@ -623,10 +623,10 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(define split-struct-initdeclor
+(define split-struct-init-declor
   ((target identp)
    (split-members ident-listp)
-   (initdeclor initdeclorp))
+   (initdeclor init-declorp))
   :returns (mv (er? maybe-msgp)
                ;; TODO: is the generated type-prescription reasonable?
                (match booleanp
@@ -634,7 +634,7 @@
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   (b* (((reterr) nil nil nil)
-       ((initdeclor initdeclor) initdeclor)
+       ((init-declor initdeclor) initdeclor)
        ((unless (match-simple-declor-ident initdeclor.declor target))
         (retok nil nil nil))
        ((unless initdeclor.init?)
@@ -643,10 +643,10 @@
         (split-struct-initer split-members initdeclor.init?)))
     (retok t initer-option1 initer-option2)))
 
-(define split-struct-initdeclors
+(define split-struct-init-declors
   ((target identp)
    (split-members ident-listp)
-   (initdeclors initdeclor-listp))
+   (initdeclors init-declor-listp))
   :returns (mv (er? maybe-msgp)
                (match booleanp
                       :rule-classes :type-prescription)
@@ -660,9 +660,9 @@
        ((unless (endp (rest initdeclors)))
         (retmsg$ "Multiple initializer declarators are not supported: ~x0"
                  initdeclors)))
-    (split-struct-initdeclor target
-                             split-members
-                             (first initdeclors))))
+    (split-struct-init-declor target
+                              split-members
+                              (first initdeclors))))
 
 (define split-gso-split-object-decl
   ((original identp)
@@ -688,8 +688,8 @@
            ((erp match initer-option1 initer-option2)
             (type-spec-case
               type-spec?
-              :struct (split-struct-initdeclors original split-members decl.init)
-              :typedef (split-struct-initdeclors original split-members decl.init)
+              :struct (split-struct-init-declors original split-members decl.init)
+              :typedef (split-struct-init-declors original split-members decl.init)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (decl-fix decl))))
@@ -716,7 +716,7 @@
                                              (c$::stor-spec-static))
                                            decl-new1-type)
                            :otherwise (list decl-new1-type))
-                  :init (list (c$::make-initdeclor
+                  :init (list (c$::make-init-declor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new1))
                                 :init? initer-option1)))
@@ -727,7 +727,7 @@
                                              (c$::stor-spec-static))
                                            decl-new2-type)
                            :otherwise (list decl-new2-type))
-                  :init (list (c$::make-initdeclor
+                  :init (list (c$::make-init-declor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new2))
                                 :init? initer-option2))))))

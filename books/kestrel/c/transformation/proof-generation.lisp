@@ -2544,8 +2544,8 @@
                        (specs decl-spec-listp)
                        (specs-new decl-spec-listp)
                        (specs-thm-name symbolp)
-                       (init initdeclor-listp)
-                       (init-new initdeclor-listp)
+                       (init init-declor-listp)
+                       (init-new init-declor-listp)
                        (init-thm-name symbolp)
                        (vartys-post c::ident-type-mapp)
                        (gin ginp))
@@ -2553,10 +2553,10 @@
               (decl-spec-list-annop specs)
               (decl-spec-list-unambp specs-new)
               (decl-spec-list-annop specs-new)
-              (initdeclor-list-unambp init)
-              (initdeclor-list-annop init)
-              (initdeclor-list-unambp init-new)
-              (initdeclor-list-annop init-new))
+              (init-declor-list-unambp init)
+              (init-declor-list-annop init)
+              (init-declor-list-unambp init-new)
+              (init-declor-list-annop init-new))
   :returns (mv (decl declp) (gout goutp))
   :short "Equality lifting transformation of a non-static-assert declaration."
   :long
@@ -2595,20 +2595,20 @@
        (initdeclor (car init))
        (var (dirdeclor-ident->ident
              (declor->direct
-              (initdeclor->declor initdeclor))))
-       (initer (initdeclor->init? initdeclor))
+              (init-declor->declor initdeclor))))
+       (initer (init-declor->init? initdeclor))
        (initdeclor-new (car init-new))
        ((unless (equal var (dirdeclor-ident->ident
                             (declor->direct
-                             (initdeclor->declor initdeclor-new)))))
+                             (init-declor->declor initdeclor-new)))))
         (raise "Internal error: ~
                 new variable ~x0 differs from old variable ~x1."
                (dirdeclor-ident->ident
                 (declor->direct
-                 (initdeclor->declor initdeclor-new)))
+                 (init-declor->declor initdeclor-new)))
                var)
         (mv decl-new (irr-gout)))
-       (initer-new (initdeclor->init? initdeclor-new))
+       (initer-new (init-declor->init? initdeclor-new))
        ((unless (equal specs specs-new))
         (raise "Internal error: ~
                 new declaration specifiers ~x0 differ from ~
@@ -2667,7 +2667,7 @@
                    :thm-name thm-name
                    :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable decl-block-formalp
-                                           initdeclor-block-formalp
+                                           init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
 
@@ -2676,17 +2676,17 @@
   (defret decl-unambp-of-xeq-decl-decl
     (decl-unambp decl)
     :hyp (and (decl-spec-list-unambp specs-new)
-              (initdeclor-list-unambp init-new)))
+              (init-declor-list-unambp init-new)))
 
   (defret decl-annop-of-xeq-decl-decl
     (decl-annop decl)
     :hyp (and (decl-spec-list-annop specs-new)
-              (initdeclor-list-annop init-new)))
+              (init-declor-list-annop init-new)))
 
   (defret decl-aidentp-of-xeq-decl-decl
     (decl-aidentp decl gcc)
     :hyp (and (decl-spec-list-aidentp specs-new gcc)
-              (initdeclor-list-aidentp init-new gcc))))
+              (init-declor-list-aidentp init-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2820,7 +2820,7 @@
                    :thm-name thm-name
                    :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable decl-block-formalp
-                                           initdeclor-block-formalp
+                                           init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
 

@@ -1660,50 +1660,50 @@
     :measure (statassert-count statassert))
 
   ;; Needs to return identifier and optional value
-  (define const-prop-initdeclor
-    ((initdeclor initdeclorp)
+  (define const-prop-init-declor
+    ((initdeclor init-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::initdeclor)."
-    :returns (mv (new-initdeclor initdeclorp)
+    :short "Propagate a constant through a @(see c$::init-declor)."
+    :returns (mv (new-initdeclor init-declorp)
                  (ident identp)
                  (value? c::value-optionp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((initdeclor initdeclor) initdeclor)
+         ((init-declor initdeclor) initdeclor)
          ((mv declor env)
           (const-prop-declor initdeclor.declor env))
          ((mv init? value? env)
           (const-prop-initer-option initdeclor.init? env)))
-      (mv (make-initdeclor
+      (mv (make-init-declor
             :declor declor
             :asm? initdeclor.asm?
             :init? init?)
           (declor->ident declor)
           value?
           env))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
   ;; Needs to return list of identifiers and optional values
-  (define const-prop-initdeclor-list
-    ((initdeclors initdeclor-listp)
+  (define const-prop-init-declor-list
+    ((initdeclors init-declor-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::initdeclor-list)."
-    :returns (mv (new-initdeclors initdeclor-listp)
+    :short "Propagate a constant through a @(see c$::init-declor-list)."
+    :returns (mv (new-initdeclors init-declor-listp)
                  (idents env-blockp)
                  (new-env envp))
     (b* ((env (env-fix env))
          ((when (endp initdeclors))
           (mv nil nil env))
          ((mv first ident value? env)
-          (const-prop-initdeclor (first initdeclors) env))
+          (const-prop-init-declor (first initdeclors) env))
          ((mv rest idents env)
-          (const-prop-initdeclor-list (cdr initdeclors) env)))
+          (const-prop-init-declor-list (cdr initdeclors) env)))
       (mv (cons first rest)
           (omap::update ident
                         value?
                         idents)
           env))
-    :measure (initdeclor-list-count initdeclors))
+    :measure (init-declor-list-count initdeclors))
 
   (define const-prop-decl
     ((decl declp)
@@ -1717,7 +1717,7 @@
         :decl (b* (((mv specs env)
                     (const-prop-decl-spec-list decl.specs env))
                    ((mv init idents env)
-                    (const-prop-initdeclor-list decl.init env)))
+                    (const-prop-init-declor-list decl.init env)))
                 (mv (make-decl-decl :extension decl.extension
                                     :specs specs
                                     :init init)

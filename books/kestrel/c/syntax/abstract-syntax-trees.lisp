@@ -2937,7 +2937,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod initdeclor
+  (fty::defprod init-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C17:6.7] [C17:A.2.2]."
     :long
@@ -2958,25 +2958,25 @@
      (attribs attrib-spec-list)
      (init? initer-option)
      (info any))
-    :pred initdeclorp
+    :pred init-declorp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist initdeclor-list
+  (fty::deflist init-declor-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of initializer declarators."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Initializer declarators are defined in @(tsee initdeclor).
+      "Initializer declarators are defined in @(tsee init-declor).
        This fixtype corresponds to <i>init-declarator-list</i>
        in the grammar in [C17]."))
-    :elt-type initdeclor
+    :elt-type init-declor
     :true-listp t
     :elementp-of-nil nil
-    :pred initdeclor-listp
+    :pred init-declor-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2994,7 +2994,7 @@
        the keyword is present or absent."))
     (:decl ((extension bool)
             (specs decl-spec-list)
-            (init initdeclor-list)))
+            (init init-declor-list)))
     (:statassert ((statassert statassert)))
     :pred declp
     :base-case-override :statassert
