@@ -1865,19 +1865,19 @@
                                             :next next
                                             :body body)
                         nil))
-        :for-decl (b* (((mv init env)
-                        (const-prop-declon stmt.init env))
-                       ((mv test - env)
-                        (const-prop-expr-option stmt.test env))
-                       ((mv next - env)
-                        (const-prop-expr-option stmt.next env))
-                       ((mv body ?env)
-                        (const-prop-stmt stmt.body env)))
-                    (mv (make-stmt-for-decl :init init
-                                            :test test
-                                            :next next
-                                            :body body)
-                        nil))
+        :for-declon (b* (((mv init env)
+                          (const-prop-declon stmt.init env))
+                         ((mv test - env)
+                          (const-prop-expr-option stmt.test env))
+                         ((mv next - env)
+                          (const-prop-expr-option stmt.next env))
+                         ((mv body ?env)
+                          (const-prop-stmt stmt.body env)))
+                      (mv (make-stmt-for-declon :init init
+                                                :test test
+                                                :next next
+                                                :body body)
+                          nil))
         :for-ambig (prog2$ (raise "Misusage error: ~x0." (stmt-fix stmt))
                            (mv (stmt-fix stmt) env))
         :goto (mv (stmt-fix stmt) nil)

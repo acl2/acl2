@@ -570,27 +570,27 @@
                        filepath
                        valid-table
                        call-graph))))
-     :for-decl (call-graph-stmt
-                 stmt.body
-                 fn-name
-                 filepath
-                 valid-table
-                 (call-graph-expr-option
+     :for-declon (call-graph-stmt
+                  stmt.body
+                  fn-name
+                  filepath
+                  valid-table
+                  (call-graph-expr-option
                    stmt.next
                    fn-name
                    filepath
                    valid-table
                    (call-graph-expr-option
-                     stmt.test
+                    stmt.test
+                    fn-name
+                    filepath
+                    valid-table
+                    (call-graph-declon
+                     stmt.init
                      fn-name
                      filepath
                      valid-table
-                     (call-graph-declon
-                       stmt.init
-                       fn-name
-                       filepath
-                       valid-table
-                       call-graph))))
+                     call-graph))))
      ;; TODO: error on ambiguous constructs
      ;; :for-ambig
      :return (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)

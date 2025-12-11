@@ -9354,10 +9354,10 @@
                             ((erp stmt last-span parstate)
                              ;; for ( ; expr ; expr ) stmt
                              (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test test-expr
-                                                    :next next-expr
-                                                    :body stmt)
+                         (retok (make-stmt-for-declon :init decl
+                                                      :test test-expr
+                                                      :next next-expr
+                                                      :body stmt)
                                 (span-join span last-span)
                                 parstate)))
                       ;; If token4 is a closed parenthesis,
@@ -9366,10 +9366,10 @@
                        (b* (((erp stmt last-span parstate)
                              ;; for ( ; expr ; ) stmt
                              (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test test-expr
-                                                    :next nil
-                                                    :body stmt)
+                         (retok (make-stmt-for-declon :init decl
+                                                      :test test-expr
+                                                      :next nil
+                                                      :body stmt)
                                 (span-join span last-span)
                                 parstate)))
                       ;; If token4 is anything else, it is an error.
@@ -9398,10 +9398,10 @@
                             ((erp stmt last-span parstate)
                              ;; for ( ; ; expr ) stmt
                              (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test nil
-                                                    :next next-expr
-                                                    :body stmt)
+                         (retok (make-stmt-for-declon :init decl
+                                                      :test nil
+                                                      :next next-expr
+                                                      :body stmt)
                                 (span-join span last-span)
                                 parstate)))
                       ;; If token4 is a closed parenthesis,
@@ -9409,10 +9409,10 @@
                       ((token-punctuatorp token4 ")") ; for ( ; ; )
                        (b* (((erp stmt last-span parstate) ; for ( ; ; ) stmt
                              (parse-statement parstate)))
-                         (retok (make-stmt-for-decl :init decl
-                                                    :test nil
-                                                    :next nil
-                                                    :body stmt)
+                         (retok (make-stmt-for-declon :init decl
+                                                      :test nil
+                                                      :next nil
+                                                      :body stmt)
                                 (span-join span last-span)
                                 parstate)))
                       ;; If token4 is anything else, it is an error.

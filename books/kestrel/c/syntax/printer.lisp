@@ -4074,7 +4074,7 @@
               (pstate (print-stmt stmt.body pstate))
               (pstate (dec-pristate-indent pstate)))
            pstate)))
-     :for-decl
+     :for-declon
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
           (pstate (print-declon-inline stmt.init pstate))

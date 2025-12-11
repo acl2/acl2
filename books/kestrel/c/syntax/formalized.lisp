@@ -598,7 +598,7 @@
      :dowhile (and (stmt-formalp stmt.body)
                    (expr-formalp stmt.test))
      :for-expr nil
-     :for-decl nil
+     :for-declon nil
      :for-ambig (impossible)
      :goto nil
      :gotoe nil

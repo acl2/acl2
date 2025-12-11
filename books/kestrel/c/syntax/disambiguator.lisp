@@ -3027,7 +3027,7 @@
                                     :next new-next
                                     :body new-body)
                 table))
-       :for-decl
+       :for-declon
        (b* ((table (dimb-push-scope table))
             ((erp new-init table) (dimb-declon stmt.init table))
             ((erp new-test table) (dimb-expr-option stmt.test table))
@@ -3035,10 +3035,10 @@
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
             (table (dimb-pop-scope table)))
-         (retok (make-stmt-for-decl :init new-init
-                                    :test new-test
-                                    :next new-next
-                                    :body new-body)
+         (retok (make-stmt-for-declon :init new-init
+                                      :test new-test
+                                      :next new-next
+                                      :body new-body)
                 table))
        :for-ambig
        (b* ((table (dimb-push-scope table))
@@ -3050,10 +3050,10 @@
             (table (dimb-pop-scope table)))
          (declon/stmt-case
           decl/expr
-          :declon (retok (make-stmt-for-decl :init decl/expr.declon
-                                             :test new-test
-                                             :next new-next
-                                             :body new-body)
+          :declon (retok (make-stmt-for-declon :init decl/expr.declon
+                                               :test new-test
+                                               :next new-next
+                                               :body new-body)
                          table)
           :stmt (retok (make-stmt-for-expr :init decl/expr.expr
                                            :test new-test

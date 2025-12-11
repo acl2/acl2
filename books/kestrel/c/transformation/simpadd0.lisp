@@ -1928,24 +1928,24 @@
                                            :next new-next
                                            :body new-body)
                        (gout-no-thm gin)))
-       :for-decl (b* (((mv new-init (gout gout-init))
-                       (simpadd0-declon stmt.init gin))
-                      (gin (gin-update gin gout-init))
-                      (gin1 (change-gin gin :vartys gout-init.vartys))
-                      ((mv new-test (gout gout-test))
-                       (simpadd0-expr-option stmt.test gin1))
-                      (gin (gin-update gin gout-test))
-                      ((mv new-next (gout gout-next))
-                       (simpadd0-expr-option stmt.next gin1))
-                      (gin (gin-update gin gout-next))
-                      ((mv new-body (gout gout-body))
-                       (simpadd0-stmt stmt.body gin1))
-                      (gin (gin-update gin gout-body)))
-                   (mv (make-stmt-for-decl :init new-init
-                                           :test new-test
-                                           :next new-next
-                                           :body new-body)
-                       (gout-no-thm gin)))
+       :for-declon (b* (((mv new-init (gout gout-init))
+                         (simpadd0-declon stmt.init gin))
+                        (gin (gin-update gin gout-init))
+                        (gin1 (change-gin gin :vartys gout-init.vartys))
+                        ((mv new-test (gout gout-test))
+                         (simpadd0-expr-option stmt.test gin1))
+                        (gin (gin-update gin gout-test))
+                        ((mv new-next (gout gout-next))
+                         (simpadd0-expr-option stmt.next gin1))
+                        (gin (gin-update gin gout-next))
+                        ((mv new-body (gout gout-body))
+                         (simpadd0-stmt stmt.body gin1))
+                        (gin (gin-update gin gout-body)))
+                     (mv (make-stmt-for-declon :init new-init
+                                               :test new-test
+                                               :next new-next
+                                               :body new-body)
+                         (gout-no-thm gin)))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-gout)))
        :goto (mv (stmt-fix stmt) (gout-no-thm gin))
        :gotoe (b* (((mv new-label gout) (simpadd0-expr stmt.label gin)))

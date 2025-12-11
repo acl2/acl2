@@ -6074,7 +6074,7 @@
                                                     body-types)))
                 nil
                 table))
-       :for-decl
+       :for-declon
        (b* ((table (valid-push-scope table))
             ((erp new-init init-types table) (valid-declon stmt.init table ienv))
             ((erp new-test test-type? test-types table)
@@ -6091,10 +6091,10 @@
              (valid-stmt stmt.body table ienv))
             (table (valid-pop-scope table))
             (table (valid-pop-scope table)))
-         (retok (make-stmt-for-decl :init new-init
-                                    :test new-test
-                                    :next new-next
-                                    :body new-body)
+         (retok (make-stmt-for-declon :init new-init
+                                      :test new-test
+                                      :next new-next
+                                      :body new-body)
                 (set::union init-types
                             (set::union test-types
                                         (set::union next-types

@@ -934,12 +934,12 @@
                       (union (free-vars-expr-option stmt.test bound-vars)
                              (union (free-vars-expr-option stmt.next bound-vars)
                                     (free-vars-stmt stmt.body bound-vars))))
-     :for-decl (b* (((mv free-vars for-bound-vars)
-                     (free-vars-declon stmt.init bound-vars)))
-                 (union free-vars
-                        (union (free-vars-expr-option stmt.test for-bound-vars)
-                               (union (free-vars-expr-option stmt.next for-bound-vars)
-                                      (free-vars-stmt stmt.body for-bound-vars)))))
+     :for-declon (b* (((mv free-vars for-bound-vars)
+                       (free-vars-declon stmt.init bound-vars)))
+                   (union free-vars
+                          (union (free-vars-expr-option stmt.test for-bound-vars)
+                                 (union (free-vars-expr-option stmt.next for-bound-vars)
+                                        (free-vars-stmt stmt.body for-bound-vars)))))
      :goto nil
      :gotoe (free-vars-expr stmt.label bound-vars)
      :continue nil

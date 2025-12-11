@@ -1332,17 +1332,17 @@
                                subst bound-vars)
        (stmt-subst-free (c$::stmt-for-expr->body stmt)
                         subst bound-vars))
-     :for-decl
+     :for-declon
      (b* (((mv init bound-vars)
-           (declon-subst-free (c$::stmt-for-decl->init stmt)
+           (declon-subst-free (c$::stmt-for-declon->init stmt)
                               subst bound-vars)))
-       (c$::stmt-for-decl
+       (c$::stmt-for-declon
          init
-         (expr-option-subst-free (c$::stmt-for-decl->test stmt)
+         (expr-option-subst-free (c$::stmt-for-declon->test stmt)
                                  subst bound-vars)
-         (expr-option-subst-free (c$::stmt-for-decl->next stmt)
+         (expr-option-subst-free (c$::stmt-for-declon->next stmt)
                                  subst bound-vars)
-         (stmt-subst-free (c$::stmt-for-decl->body stmt)
+         (stmt-subst-free (c$::stmt-for-declon->body stmt)
                           subst bound-vars)))
      :for-ambig
      (c$::stmt-for-ambig

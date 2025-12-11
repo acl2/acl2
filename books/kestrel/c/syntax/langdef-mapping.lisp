@@ -1540,9 +1540,9 @@
                                             :test test1
                                             :next next1
                                             :body body1)))
-       :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
-                               with initializing declaration."
-                              (stmt-fix stmt)))
+       :for-declon (reterr (msg "Unsupported 'for' loop ~x0 ~
+                                 with initializing declaration."
+                                (stmt-fix stmt)))
        :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))

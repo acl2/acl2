@@ -1285,7 +1285,7 @@
      :while (set::insert nil (stmt-types stmt.body))
      :dowhile (set::insert nil (stmt-types stmt.body))
      :for-expr nil
-     :for-decl nil
+     :for-declon nil
      :for-ambig (impossible)
      :goto nil
      :gotoe nil

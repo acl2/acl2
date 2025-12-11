@@ -401,7 +401,7 @@
     make-stmt-while
     make-stmt-dowhile
     make-stmt-for-expr
-    make-stmt-for-decl
+    make-stmt-for-declon
     make-stmt-return
     stmt-gotoe
 
