@@ -494,7 +494,7 @@
   :returns (call-graph$ call-graphp)
   (declon-case
    declon
-   :declon (call-graph-init-declor-list declon.init fn-name filepath valid-table call-graph)
+   :declon (call-graph-init-declor-list declon.declors fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
    :statassert (call-graph-statassert declon.statassert fn-name filepath valid-table call-graph)))

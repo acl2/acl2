@@ -3630,9 +3630,9 @@
            pstate)
           (pstate (print-decl-spec-list declon.specs pstate))
           (pstate
-           (if declon.init
+           (if declon.declors
                (b* ((pstate (print-astring " " pstate))
-                    (pstate (print-init-declor-list declon.init pstate)))
+                    (pstate (print-init-declor-list declon.declors pstate)))
                  pstate)
              pstate))
           (pstate (print-astring ";" pstate)))

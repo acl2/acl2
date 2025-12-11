@@ -372,7 +372,7 @@
     make-declon-declon
     declon-declon->extension
     declon-declon->specs
-    declon-declon->init
+    declon-declon->declors
     declon-statassert
 
     declon-listp

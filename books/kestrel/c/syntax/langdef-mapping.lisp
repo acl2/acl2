@@ -989,7 +989,7 @@
                      (declon-fix declon))))
        (extension (declon-declon->extension declon))
        (declspecs (declon-declon->specs declon))
-       (initdeclors (declon-declon->init declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
@@ -1271,7 +1271,7 @@
                      (declon-fix declon))))
        (extension (declon-declon->extension declon))
        (declspecs (declon-declon->specs declon))
-       (initdeclors (declon-declon->init declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
@@ -1410,7 +1410,7 @@
                      (declon-fix declon))))
        (extension (declon-declon->extension declon))
        (declspecs (declon-declon->specs declon))
-       (initdeclors (declon-declon->init declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~

@@ -1159,13 +1159,13 @@
      declon
      :declon (b* ((specs (decl-spec-list-subst-free (c$::declon-declon->specs declon)
                                                     subst bound-vars))
-                  ((mv init bound-vars)
-                   (init-declor-list-subst-free (c$::declon-declon->init declon)
+                  ((mv declors bound-vars)
+                   (init-declor-list-subst-free (c$::declon-declon->declors declon)
                                                 subst bound-vars)))
                (mv (c$::declon-declon
                     (c$::declon-declon->extension declon)
                     specs
-                    init)
+                    declors)
                    (ident-set-fix bound-vars)))
      :statassert
      (mv (declon-statassert

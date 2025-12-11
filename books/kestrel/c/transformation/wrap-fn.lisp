@@ -430,7 +430,7 @@
   (declon-case
    declon
    :declon (init-declor-list-wrap-fn-add-wrapper-def
-            declon.init
+            declon.declors
             target-name
             wrapper-name?
             blacklist

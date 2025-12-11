@@ -8232,7 +8232,7 @@
                   (read-punctuator ";" parstate)))
               (retok (make-declon-declon :extension extension
                                          :specs declspecs
-                                         :init initdeclors)
+                                         :declors initdeclors)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is a semicolon,
@@ -8242,7 +8242,7 @@
            ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
             (retok (make-declon-declon :extension extension
                                        :specs declspecs
-                                       :init nil)
+                                       :declors nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.
@@ -11505,7 +11505,7 @@
          ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
           (retok (extdecl-decl (make-declon-declon :extension extension
                                                    :specs declspecs
-                                                   :init nil))
+                                                   :declors nil))
                  (span-join span span2)
                  parstate))
          ;; If token2 is anything else,
@@ -11532,12 +11532,12 @@
               (retok (extdecl-decl (make-declon-declon
                                     :extension extension
                                     :specs declspecs
-                                    :init (list (make-init-declor
-                                                 :declor declor
-                                                 :asm? asmspec?
-                                                 :attribs attrspecs
-                                                 :initer? nil
-                                                 :info nil))))
+                                    :declors (list (make-init-declor
+                                                    :declor declor
+                                                    :asm? asmspec?
+                                                    :attribs attrspecs
+                                                    :initer? nil
+                                                    :info nil))))
                      (span-join span span3)
                      parstate))
              ;; If token3 is an equal sign,
@@ -11564,7 +11564,7 @@
                   (retok (extdecl-decl (make-declon-declon
                                         :extension extension
                                         :specs declspecs
-                                        :init (list initdeclor)))
+                                        :declors (list initdeclor)))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is a comma,
@@ -11583,7 +11583,7 @@
                     (retok (extdecl-decl (make-declon-declon
                                           :extension extension
                                           :specs declspecs
-                                          :init (cons initdeclor initdeclors)))
+                                          :declors (cons initdeclor initdeclors)))
                            (span-join span last-span)
                            parstate)))
                  ;; If token4 is anything else, it is an error.
@@ -11614,7 +11614,7 @@
                 (retok (extdecl-decl (make-declon-declon
                                       :extension extension
                                       :specs declspecs
-                                      :init (cons initdeclor initdeclors)))
+                                      :declors (cons initdeclor initdeclors)))
                        (span-join span last-span)
                        parstate)))
              ;; If token3 is an open curly brace,

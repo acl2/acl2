@@ -73,7 +73,7 @@
           (make-declon-declon
             :extension nil
             :specs paramdecl.specs
-            :init (list (init-declor paramdecl.declor.declor nil nil initer? nil))))
+            :declors (list (init-declor paramdecl.declor.declor nil nil initer? nil))))
       :otherwise (mv nil (irr-declon)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

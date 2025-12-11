@@ -2877,14 +2877,15 @@
        :declon
        (b* (((erp new-specs kind table)
              (dimb-decl-spec-list declon.specs (dimb-kind-objfun) table))
-            ((erp new-init table)
-             (dimb-init-declor-list declon.init kind table)))
+            ((erp new-declors table)
+             (dimb-init-declor-list declon.declors kind table)))
          (retok (make-declon-declon :extension declon.extension
                                     :specs new-specs
-                                    :init new-init)
+                                    :declors new-declors)
                 table))
        :statassert
-       (b* (((erp new-statassert table) (dimb-statassert declon.statassert table)))
+       (b* (((erp new-statassert table)
+             (dimb-statassert declon.statassert table)))
          (retok (declon-statassert new-statassert) table))))
     :measure (declon-count declon))
 

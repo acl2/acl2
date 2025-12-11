@@ -294,7 +294,7 @@
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
-                               (all-no-init declon.init)))
+                               (all-no-init declon.declors)))
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
@@ -688,8 +688,8 @@
            ((erp match initer-option1 initer-option2)
             (type-spec-case
               type-spec?
-              :struct (split-struct-init-declors original split-members declon.init)
-              :typedef (split-struct-init-declors original split-members declon.init)
+              :struct (split-struct-init-declors original split-members declon.declors)
+              :typedef (split-struct-init-declors original split-members declon.declors)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (declon-fix declon))))
@@ -716,10 +716,10 @@
                                              (c$::stor-spec-static))
                                            decl-new1-type)
                            :otherwise (list decl-new1-type))
-                  :init (list (c$::make-init-declor
-                                :declor (c$::make-declor
-                                          :direct (c$::dirdeclor-ident new1))
-                                :initer? initer-option1)))
+                  :declors (list (c$::make-init-declor
+                                  :declor (c$::make-declor
+                                           :direct (c$::dirdeclor-ident new1))
+                                  :initer? initer-option1)))
                 (c$::make-declon-declon
                   :specs (c$::linkage-case
                            linkage
@@ -727,10 +727,10 @@
                                              (c$::stor-spec-static))
                                            decl-new2-type)
                            :otherwise (list decl-new2-type))
-                  :init (list (c$::make-init-declor
-                                :declor (c$::make-declor
-                                          :direct (c$::dirdeclor-ident new2))
-                                :initer? initer-option2))))))
+                  :declors (list (c$::make-init-declor
+                                  :declor (c$::make-declor
+                                           :direct (c$::dirdeclor-ident new2))
+                                  :initer? initer-option2))))))
       :statassert (retok nil (list (declon-fix declon))))))
 
 (define split-gso-split-object-extdecl

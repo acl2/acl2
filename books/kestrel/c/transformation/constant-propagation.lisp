@@ -1716,11 +1716,11 @@
         declon
         :declon (b* (((mv specs env)
                     (const-prop-decl-spec-list declon.specs env))
-                   ((mv init idents env)
-                    (const-prop-init-declor-list declon.init env)))
+                   ((mv declors idents env)
+                    (const-prop-init-declor-list declon.declors env)))
                 (mv (make-declon-declon :extension declon.extension
                                     :specs specs
-                                    :init init)
+                                    :declors declors)
                     (merge-block-env idents env)))
         :statassert (b* (((mv statassert env)
                           (const-prop-statassert declon.statassert env)))

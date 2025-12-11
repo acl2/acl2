@@ -188,10 +188,12 @@
    (init-declor (and (declor-standardp (init-declor->declor init-declor))
                      (not (init-declor->asm? init-declor))
                      (endp (init-declor->attribs init-declor))
-                     (initer-option-standardp (init-declor->initer? init-declor))))
+                     (initer-option-standardp
+                      (init-declor->initer? init-declor))))
    (declon :declon (and (not (declon-declon->extension declon))
                         (decl-spec-list-standardp (declon-declon->specs declon))
-                        (init-declor-list-standardp (declon-declon->init declon))))
+                        (init-declor-list-standardp
+                         (declon-declon->declors declon))))
    (label :name (endp (label-name->attribs label)))
    (label :casexpr (and (const-expr-standardp (label-casexpr->expr label))
                         (const-expr-option-case

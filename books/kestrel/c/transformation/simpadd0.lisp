@@ -1739,17 +1739,17 @@
      :declon (b* (((mv new-specs (gout gout-specs))
                    (simpadd0-decl-spec-list declon.specs gin))
                   (gin (gin-update gin gout-specs))
-                  ((mv new-init (gout gout-init))
-                   (simpadd0-init-declor-list declon.init gin))
-                  ((gin gin) (gin-update gin gout-init)))
+                  ((mv new-declors (gout gout-declors))
+                   (simpadd0-init-declor-list declon.declors gin))
+                  ((gin gin) (gin-update gin gout-declors)))
                (xeq-declon-declon declon.extension
                                   declon.specs
                                   new-specs
                                   gout-specs.thm-name
-                                  declon.init
-                                  new-init
-                                  gout-init.thm-name
-                                  gout-init.vartys
+                                  declon.declors
+                                  new-declors
+                                  gout-declors.thm-name
+                                  gout-declors.vartys
                                   gin))
      :statassert (b* (((mv new-declon (gout gout-declon))
                        (simpadd0-statassert declon.statassert gin))

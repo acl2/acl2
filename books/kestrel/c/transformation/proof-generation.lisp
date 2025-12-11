@@ -2544,19 +2544,19 @@
                            (specs decl-spec-listp)
                            (specs-new decl-spec-listp)
                            (specs-thm-name symbolp)
-                           (init init-declor-listp)
-                           (init-new init-declor-listp)
-                           (init-thm-name symbolp)
+                           (ideclors init-declor-listp)
+                           (ideclors-new init-declor-listp)
+                           (ideclors-thm-name symbolp)
                            (vartys-post c::ident-type-mapp)
                            (gin ginp))
   :guard (and (decl-spec-list-unambp specs)
               (decl-spec-list-annop specs)
               (decl-spec-list-unambp specs-new)
               (decl-spec-list-annop specs-new)
-              (init-declor-list-unambp init)
-              (init-declor-list-annop init)
-              (init-declor-list-unambp init-new)
-              (init-declor-list-annop init-new))
+              (init-declor-list-unambp ideclors)
+              (init-declor-list-annop ideclors)
+              (init-declor-list-unambp ideclors-new)
+              (init-declor-list-annop ideclors-new))
   :returns (mv (declon declonp) (gout goutp))
   :short "Equality lifting transformation of a non-static-assert declaration."
   :long
@@ -2571,19 +2571,19 @@
   (b* (((gin gin) gin)
        (declon (make-declon-declon :extension extension
                                    :specs specs
-                                   :init init))
+                                   :declors ideclors))
        (declon-new (make-declon-declon :extension extension
                                        :specs specs-new
-                                       :init init-new))
+                                       :declors ideclors-new))
        (gout-no-thm (change-gout (gout-no-thm gin)
                                  :vartys vartys-post))
        ((when specs-thm-name)
         (raise "Internal error: ~
                 new list of initializer declarators ~x0 ~
                 is not in the formalized subset."
-               init)
+               ideclors)
         (mv declon-new (irr-gout)))
-       ((unless (and init-thm-name
+       ((unless (and ideclors-thm-name
                      (declon-block-formalp declon)))
         (mv declon-new gout-no-thm))
        ((unless (declon-block-formalp declon-new))
@@ -2592,12 +2592,12 @@
                 while old declaration ~x1 is."
                declon-new declon)
         (mv declon-new (irr-gout)))
-       (initdeclor (car init))
+       (initdeclor (car ideclors))
        (var (dirdeclor-ident->ident
              (declor->direct
               (init-declor->declor initdeclor))))
        (initer (init-declor->initer? initdeclor))
-       (initdeclor-new (car init-new))
+       (initdeclor-new (car ideclors-new))
        ((unless (equal var (dirdeclor-ident->ident
                             (declor->direct
                              (init-declor->declor initdeclor-new)))))
@@ -2640,7 +2640,7 @@
                    c::compustatep-when-compustate-resultp-and-not-errorp
                    declon-declon-compustate-vars-old
                    declon-declon-compustate-vars-new)
-                 :use ((:instance ,init-thm-name (limit (1- limit)))
+                 :use ((:instance ,ideclors-thm-name (limit (1- limit)))
                        (:instance
                         declon-declon-congruence
                         (var ',cvar)
@@ -2676,17 +2676,17 @@
   (defret declon-unambp-of-xeq-declon-declon
     (declon-unambp declon)
     :hyp (and (decl-spec-list-unambp specs-new)
-              (init-declor-list-unambp init-new)))
+              (init-declor-list-unambp ideclors-new)))
 
   (defret declon-annop-of-xeq-declon-declon
     (declon-annop declon)
     :hyp (and (decl-spec-list-annop specs-new)
-              (init-declor-list-annop init-new)))
+              (init-declor-list-annop ideclors-new)))
 
   (defret declon-aidentp-of-xeq-declon-declon
     (declon-aidentp declon gcc)
     :hyp (and (decl-spec-list-aidentp specs-new gcc)
-              (init-declor-list-aidentp init-new gcc))))
+              (init-declor-list-aidentp ideclors-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

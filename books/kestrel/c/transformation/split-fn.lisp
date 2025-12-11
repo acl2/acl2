@@ -146,7 +146,7 @@
   :returns (map ident-param-declon-mapp)
   (declon-case
    declon
-   :declon (declon-to-ident-param-declon-map0 declon.specs declon.init)
+   :declon (declon-to-ident-param-declon-map0 declon.specs declon.declors)
    :statassert nil)
   :prepwork
   ((define declon-to-ident-param-declon-map0

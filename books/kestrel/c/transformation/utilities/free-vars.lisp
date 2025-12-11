@@ -820,7 +820,7 @@
                  (bound-vars ident-setp))
     (declon-case
      declon
-     :declon (free-vars-init-declor-list declon.init bound-vars)
+     :declon (free-vars-init-declor-list declon.declors bound-vars)
      :statassert (mv (free-vars-statassert declon.statassert bound-vars)
                      (ident-set-fix bound-vars)))
     :measure (declon-count declon))

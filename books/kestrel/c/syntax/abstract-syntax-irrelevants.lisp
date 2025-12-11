@@ -407,7 +407,7 @@
   :type declonp
   :body (make-declon-declon :extension nil
                             :specs nil
-                            :init nil))
+                            :declors nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

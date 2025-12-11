@@ -70,7 +70,7 @@
    declon
    :declon
    (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
-        ((unless (and type-spec? (all-no-init declon.init)))
+        ((unless (and type-spec? (all-no-init declon.declors)))
          nil))
      (type-spec-case
        type-spec?
@@ -172,8 +172,8 @@
         (ident?
           (type-spec-case
             type-spec?
-            :struct (init-declor-list-find-gso-candidate declon.init)
-            :typedef (init-declor-list-find-gso-candidate declon.init)
+            :struct (init-declor-list-find-gso-candidate declon.declors)
+            :typedef (init-declor-list-find-gso-candidate declon.declors)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))

@@ -555,9 +555,9 @@
                       (check-decl-spec-list-all-typespec declon.specs)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp declon.init)
-                (endp (cdr declon.init))
-                (init-declor-block-formalp (car declon.init)))
+                (consp declon.declors)
+                (endp (cdr declon.declors))
+                (init-declor-block-formalp (car declon.declors)))
    :statassert nil)
   :hooks (:fix))
 
@@ -756,9 +756,9 @@
                   (and okp
                        (type-spec-list-formalp tyspecs)
                        (stor-spec-list-formalp storspecs)))
-                (consp declon.init)
-                (endp (cdr declon.init))
-                (init-declor-obj-formalp (car declon.init)))
+                (consp declon.declors)
+                (endp (cdr declon.declors))
+                (init-declor-obj-formalp (car declon.declors)))
    :statassert nil)
   :hooks (:fix))
 
@@ -864,7 +864,7 @@
                   (and (type-spec-case tyspec :struct)
                        (b* ((struni-spec (type-spec-struct->spec tyspec)))
                          (and (struni-spec-formalp struni-spec)
-                              (endp declon.init))))))
+                              (endp declon.declors))))))
    :statassert nil)
   :hooks (:fix))
 
@@ -1006,9 +1006,9 @@
                       (check-decl-spec-list-all-typespec declon.specs)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp declon.init)
-                (endp (cdr declon.init))
-                (init-declor-fun-formalp (car declon.init)))
+                (consp declon.declors)
+                (endp (cdr declon.declors))
+                (init-declor-fun-formalp (car declon.declors)))
    :statassert nil)
   :hooks (:fix))
 

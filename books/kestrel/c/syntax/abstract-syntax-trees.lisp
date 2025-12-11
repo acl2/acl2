@@ -2994,7 +2994,7 @@
        the keyword is present or absent."))
     (:declon ((extension bool)
               (specs decl-spec-list)
-              (init init-declor-list)))
+              (declors init-declor-list)))
     (:statassert ((statassert statassert)))
     :pred declonp
     :base-case-override :statassert

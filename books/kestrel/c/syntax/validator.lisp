@@ -5753,18 +5753,18 @@
        :declon
        (b* (((erp new-specs type storspecs types table)
              (valid-decl-spec-list declon.specs nil nil nil table ienv))
-            ((when (and (endp declon.init)
+            ((when (and (endp declon.declors)
                         (not (type-case type :struct))
                         (not (type-case type :union))
                         (not (type-case type :enum))))
              (retmsg$ "The declaration ~x0 declares ~
                        neither a declarator nor a tag."
                       (declon-fix declon)))
-            ((erp new-init more-types table)
-             (valid-init-declor-list declon.init type storspecs table ienv)))
+            ((erp new-declors more-types table)
+             (valid-init-declor-list declon.declors type storspecs table ienv)))
          (retok (make-declon-declon :extension declon.extension
                                     :specs new-specs
-                                    :init new-init)
+                                    :declors new-declors)
                 (set::union types more-types)
                 table))
        :statassert
