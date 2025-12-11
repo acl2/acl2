@@ -256,14 +256,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist plexeme-list-nontokenp (x)
+(std::deflist plexeme-list-not-tokenp (x)
   :guard (plexeme-listp x)
   :short "Check if no preprocessing lexeme in a list is a token."
   (plexeme-tokenp x)
   :negatedp t
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-nontokenp))
+  (fty::deffixequiv plexeme-list-not-tokenp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
