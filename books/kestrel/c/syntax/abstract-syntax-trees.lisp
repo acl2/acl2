@@ -3178,7 +3178,7 @@
        There is also a third ambiguous form,
        which applies when the initialization part could be
        either an expression or a declaration, syntactically:
-       this is captured exactly by @(tsee amb-decl/stmt),
+       this is captured exactly by @(tsee amb-declon/stmt),
        because the statement in an ambiguous declaration or statement
        is a statement expression,
        which is exactly what
@@ -3213,7 +3213,7 @@
                 (test expr-option)
                 (next expr-option)
                 (body stmt)))
-    (:for-ambig ((init amb-decl/stmt)
+    (:for-ambig ((init amb-declon/stmt)
                  (test expr-option)
                  (next expr-option)
                  (body stmt)))
@@ -3262,12 +3262,12 @@
       "This corresponds to <i>block-item</i> in the grammar in [C17].")
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
-       see @(tsee amb-decl/stmt)."))
+       see @(tsee amb-declon/stmt)."))
     (:declon ((declon declon)
               (info any)))
     (:stmt ((stmt stmt)
             (info any)))
-    (:ambig ((decl/stmt amb-decl/stmt)))
+    (:ambig ((declon/stmt amb-declon/stmt)))
     :pred block-itemp
     :base-case-override :stmt
     :layout :fulltree
@@ -3373,7 +3373,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod amb-decl/stmt
+  (fty::defprod amb-declon/stmt
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of ambiguous declarations or statements."
     :long
@@ -3406,7 +3406,7 @@
        but we do not enforce that in this fixtype definition."))
     ((decl declon)
      (stmt expr))
-    :pred amb-decl/stmt-p
+    :pred amb-declon/stmt-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
@@ -3472,11 +3472,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum decl/stmt
+(fty::deftagsum declon/stmt
   :short "Fixtype of declarations or (expression) statements."
   (:decl ((decl declon)))
   (:stmt ((expr expr)))
-  :pred decl/stmt-p
+  :pred declon/stmt-p
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3523,7 +3523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum amb?-decl/stmt
+(fty::deftagsum amb?-declon/stmt
   :short "Fixtype of possibly ambiguous declarations or statements."
   :long
   (xdoc::topstring
@@ -3536,8 +3536,8 @@
      or an ambiguous declaration or statements."))
   (:decl ((decl declon)))
   (:stmt ((expr expr)))
-  (:ambig ((decl/stmt amb-decl/stmt)))
-  :pred amb?-decl/stmt-p
+  (:ambig ((declon/stmt amb-declon/stmt)))
+  :pred amb?-declon/stmt-p
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

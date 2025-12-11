@@ -70,7 +70,7 @@
       by choosing either a declarator or an abstract declarator.")
     (xdoc::li
      "Some constructs include ambiguous declarations or statements,
-      represented by the type @(tsee amb-decl/stmt).
+      represented by the type @(tsee amb-declon/stmt).
       The disambiguator turns those constructs into unambiguous ones,
       by choosing either a declaration or a statement.")
     (xdoc::li
@@ -3042,13 +3042,13 @@
                 table))
        :for-ambig
        (b* ((table (dimb-push-scope table))
-            ((erp decl/expr table) (dimb-amb-decl/stmt stmt.init table))
+            ((erp decl/expr table) (dimb-amb-declon/stmt stmt.init table))
             ((erp new-test table) (dimb-expr-option stmt.test table))
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
             (table (dimb-pop-scope table)))
-         (decl/stmt-case
+         (declon/stmt-case
           decl/expr
           :decl (retok (make-stmt-for-decl :init decl/expr.decl
                                            :test new-test
@@ -3134,14 +3134,14 @@
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
          (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
        :ambig
-       (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.decl/stmt table)))
-         (decl/stmt-case
-          decl/stmt
-          :decl (retok (make-block-item-declon :declon decl/stmt.decl
+       (b* (((erp declon/stmt table) (dimb-amb-declon/stmt item.declon/stmt table)))
+         (declon/stmt-case
+          declon/stmt
+          :decl (retok (make-block-item-declon :declon declon/stmt.decl
                                                :info nil)
                        table)
           :stmt (retok (make-block-item-stmt
-                        :stmt (make-stmt-expr :expr? decl/stmt.expr
+                        :stmt (make-stmt-expr :expr? declon/stmt.expr
                                               :info nil)
                         :info nil)
                        table)))))
@@ -3349,9 +3349,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-amb-decl/stmt ((decl/stmt amb-decl/stmt-p) (table dimb-tablep))
+  (define dimb-amb-declon/stmt ((declon/stmt amb-declon/stmt-p) (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (decl-or-stmt decl/stmt-p)
+                 (decl-or-stmt declon/stmt-p)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate an ambiguous declaration or statement."
@@ -3369,10 +3369,10 @@
        In valid code, one of them must succeed and the other one must fail:
        then we disambiguate in favor of the one that succeeded.
        If none or both succeed, the code must be invalid."))
-    (b* (((reterr) (irr-decl/stmt) (irr-dimb-table))
-         ((amb-decl/stmt decl/stmt) decl/stmt)
-         ((mv erp-decl new-decl table-decl) (dimb-declon decl/stmt.decl table))
-         ((mv erp-expr new-expr table-expr) (dimb-expr decl/stmt.stmt table)))
+    (b* (((reterr) (irr-declon/stmt) (irr-dimb-table))
+         ((amb-declon/stmt declon/stmt) declon/stmt)
+         ((mv erp-decl new-decl table-decl) (dimb-declon declon/stmt.decl table))
+         ((mv erp-expr new-expr table-expr) (dimb-expr declon/stmt.stmt table)))
       (if erp-decl
           ;; decl fails:
           (if erp-expr
@@ -3384,23 +3384,23 @@
                         because at least one must succeed.~%~%~
                         These are the failures for each:~%~%~
                         ~@1~%~%~@2"
-                       (amb-decl/stmt-fix decl/stmt)
+                       (amb-declon/stmt-fix declon/stmt)
                        erp-decl
                        erp-expr)
             ;; stmt succeeds:
-            (retok (decl/stmt-stmt new-expr) table-expr))
+            (retok (declon/stmt-stmt new-expr) table-expr))
         ;; decl succeeds:
         (if erp-expr
             ;; stmt fails:
-            (retok (decl/stmt-decl new-decl) table-decl)
+            (retok (declon/stmt-decl new-decl) table-decl)
           ;; stmt succeeds:
           (retmsg$ "In the ambiguous declaration or statement ~x0, ~
                     both the declaration and the statement ~
                     are successfully disambiguated. ~
                     The code must be invalid, ~
                     because at most one must succeed."
-                   (amb-decl/stmt-fix decl/stmt)))))
-    :measure (amb-decl/stmt-count decl/stmt))
+                   (amb-declon/stmt-fix declon/stmt)))))
+    :measure (amb-declon/stmt-count declon/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3618,10 +3618,10 @@
       (implies (not erp)
                (declor/absdeclor-unambp declor-or-absdeclor))
       :fn dimb-amb-declor/absdeclor)
-    (defret decl/stmt-unambp-of-dimb-amb-decl/stmt
+    (defret declon/stmt-unambp-of-dimb-amb-declon/stmt
       (implies (not erp)
-               (decl/stmt-unambp decl-or-stmt))
-      :fn dimb-amb-decl/stmt))
+               (declon/stmt-unambp decl-or-stmt))
+      :fn dimb-amb-declon/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -804,8 +804,8 @@
      (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
                                   (amb-declor/absdeclor-fix
                                    amb-declor/absdeclor)))
-     (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                           (amb-decl/stmt-fix amb-decl/stmt)))
+     (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                             (amb-declon/stmt-fix amb-declon/stmt)))
      (fundef (and (decl-spec-list-annop (fundef->spec fundef))
                   (declor-annop (fundef->declor fundef))
                   (declon-list-annop (fundef->decls fundef))

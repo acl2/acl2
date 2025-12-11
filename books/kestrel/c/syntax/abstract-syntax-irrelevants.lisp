@@ -481,10 +481,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl/stmt
+(defirrelevant irr-declon/stmt
   :short "An irrelevant declaration or statement."
-  :type decl/stmt-p
-  :body (decl/stmt-decl (irr-declon)))
+  :type declon/stmt-p
+  :body (declon/stmt-decl (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,10 +502,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-amb?-decl/stmt
+(defirrelevant irr-amb?-declon/stmt
   :short "An irrelevant possibly ambiguous declaration or statement."
-  :type amb?-decl/stmt-p
-  :body (amb?-decl/stmt-stmt (irr-expr)))
+  :type amb?-declon/stmt-p
+  :body (amb?-declon/stmt-stmt (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -8308,7 +8308,7 @@
 
   (define parse-declaration-or-statement ((parstate parstatep))
     :returns (mv erp
-                 (decl/stmt amb?-decl/stmt-p)
+                 (declon/stmt amb?-declon/stmt-p)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -8319,7 +8319,7 @@
       "This is called when a block item
        may be a declaration or an expression statement,
        which have a complex syntactic overlap,
-       as explained in @(tsee amb-decl/stmt).
+       as explained in @(tsee amb-declon/stmt).
        Thus, this parsing function returns
        a possibly ambiguous declaration or statement.")
      (xdoc::p
@@ -8333,7 +8333,7 @@
        If both succeed, there is an ambiguity,
        which we return as such.
        If none succeeds, it is an error."))
-    (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) parstate)
+    (b* (((reterr) (irr-amb?-declon/stmt) (irr-span) parstate)
          (checkpoint (parstate->tokens-read parstate)) ; we will backtrack here
          (psize (parsize parstate))
          ((mv erp expr span-expr parstate) (parse-expression parstate)))
@@ -8354,7 +8354,7 @@
                 (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
-            (retok (amb?-decl/stmt-decl decl) span parstate))
+            (retok (amb?-declon/stmt-decl decl) span parstate))
         ;; If the parsing of an expression succeeds,
         ;; we also need to parse a semicolon.
         ;; Note that an expression may be a prefix of a declaration,
@@ -8427,7 +8427,7 @@
                           (b* ((parstate
                                 (init-parstate nil (c::version-c17) parstate)))
                             (reterr t))))
-                      (retok (amb?-decl/stmt-stmt expr)
+                      (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
                              parstate))
                   ;; If the parsing of a declaration succeeds,
@@ -8441,9 +8441,9 @@
                                 span ~x2 of declaration ~x3."
                                span-stmt expr span-decl decl)
                         (reterr t)))
-                    (retok (amb?-decl/stmt-ambig
-                            (make-amb-decl/stmt :stmt expr
-                                                :decl decl))
+                    (retok (amb?-declon/stmt-ambig
+                            (make-amb-declon/stmt :stmt expr
+                                                  :decl decl))
                            span-stmt ; = span-decl
                            parstate))))
             ;; If a semicolon does not follow the expression,
@@ -8465,7 +8465,7 @@
                         (init-parstate nil (c::version-c17) parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
-              (retok (amb?-decl/stmt-decl decl) span parstate))))))
+              (retok (amb?-declon/stmt-decl decl) span parstate))))))
     :measure (two-nats-measure (parsize parstate) 17))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9312,16 +9312,16 @@
            (t ; for ( other
             (b* ((parstate (if token2 (unread-token parstate) parstate)) ; for (
                  (psize (parsize parstate))
-                 ((erp decl/stmt & parstate) ; for ( decl/stmt
+                 ((erp declon/stmt & parstate) ; for ( declon/stmt
                   (parse-declaration-or-statement parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible)))
-              (amb?-decl/stmt-case
-               decl/stmt
+              (amb?-declon/stmt-case
+               declon/stmt
                ;; If the initialization part is a declaration,
                ;; the 'for' is not ambiguous, and we parse the rest.
                :decl
-               (b* ((decl (amb?-decl/stmt-decl->decl decl/stmt))
+               (b* ((decl (amb?-declon/stmt-decl->decl declon/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9430,7 +9430,7 @@
                ;; If the initialization part is an expression,
                ;; the 'for' is not ambiguous, and we parse the rest.
                :stmt
-               (b* ((expr (amb?-decl/stmt-stmt->expr decl/stmt))
+               (b* ((expr (amb?-declon/stmt-stmt->expr declon/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9539,7 +9539,7 @@
                ;; If the initialization part is ambiguous,
                ;; we have an ambiguous 'for', and we parse the rest.
                :ambig
-               (b* ((decl/expr (amb?-decl/stmt-ambig->decl/stmt decl/stmt))
+               (b* ((decl/expr (amb?-declon/stmt-ambig->declon/stmt declon/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9761,7 +9761,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As explained in @(tsee amb-decl/stmt),
+      "As explained in @(tsee amb-declon/stmt),
        there is a complex syntactic overlap
        between expression statements and declarations,
        which are the two kinds of block items;
@@ -9789,14 +9789,14 @@
            (t ; ident other
             (b* ((parstate (if token2 (unread-token parstate) parstate)) ; ident
                  (parstate (unread-token parstate)) ;
-                 ((erp decl/stmt span parstate) ; decl/stmt
+                 ((erp declon/stmt span parstate) ; declon/stmt
                   (parse-declaration-or-statement parstate)))
-              (amb?-decl/stmt-case
-               decl/stmt
+              (amb?-declon/stmt-case
+               declon/stmt
                ;; If we parse an unambiguous declaration,
                ;; we return a block item that is a declaration.
                :decl
-               (retok (make-block-item-declon :declon decl/stmt.decl
+               (retok (make-block-item-declon :declon declon/stmt.decl
                                               :info nil)
                       span
                       parstate)
@@ -9804,7 +9804,7 @@
                ;; we return a block item that is a statement.
                :stmt
                (retok (make-block-item-stmt
-                       :stmt (make-stmt-expr :expr? decl/stmt.expr
+                       :stmt (make-stmt-expr :expr? declon/stmt.expr
                                              :info nil)
                        :info nil)
                       span
@@ -9812,7 +9812,7 @@
                ;; If we parse an ambiguous declaration or statement,
                ;; we return an ambiguous block item.
                :ambig
-               (retok (block-item-ambig decl/stmt.decl/stmt)
+               (retok (block-item-ambig declon/stmt.declon/stmt)
                       span
                       parstate)))))))
        ;; If token may start a declaration specifier,

@@ -75,7 +75,7 @@
           type-spec-list
           expr/tyname
           declor/absdeclor
-          decl/stmt
+          declon/stmt
           fundef
           fundef-option
           extdecl
@@ -108,7 +108,7 @@
    (block-item :ambig nil)
    (amb-expr/tyname nil)
    (amb-declor/absdeclor nil)
-   (amb-decl/stmt nil)))
+   (amb-declon/stmt nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

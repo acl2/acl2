@@ -214,8 +214,8 @@
    (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
                                 (amb-declor/absdeclor-fix
                                  amb-declor/absdeclor)))
-   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))
+   (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                           (amb-declon/stmt-fix amb-declon/stmt)))
    (fundef (and (not (fundef->extension fundef))
                 (decl-spec-list-standardp (fundef->spec fundef))
                 (declor-standardp (fundef->declor fundef))

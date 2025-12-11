@@ -1346,7 +1346,7 @@
                           subst bound-vars)))
      :for-ambig
      (c$::stmt-for-ambig
-       (amb-decl/stmt-subst-free (c$::stmt-for-ambig->init stmt)
+       (amb-declon/stmt-subst-free (c$::stmt-for-ambig->init stmt)
                                  subst bound-vars)
        (expr-option-subst-free (c$::stmt-for-ambig->test stmt)
                                subst bound-vars)
@@ -1389,8 +1389,8 @@
           :info block-item.info)
          (ident-set-fix bound-vars))
      :ambig
-     (mv (c$::block-item-ambig (amb-decl/stmt-subst-free
-                                 (c$::block-item-ambig->decl/stmt block-item)
+     (mv (c$::block-item-ambig (amb-declon/stmt-subst-free
+                                 (c$::block-item-ambig->declon/stmt block-item)
                                  subst bound-vars))
          (ident-set-fix bound-vars)))
     :measure (block-item-count block-item))
@@ -1452,19 +1452,19 @@
           subst bound-vars)))
     :measure (c$::amb-declor/absdeclor-count amb-declor/absdeclor))
 
-  (define amb-decl/stmt-subst-free
-    ((amb-decl/stmt c$::amb-decl/stmt-p)
+  (define amb-declon/stmt-subst-free
+    ((amb-declon/stmt c$::amb-declon/stmt-p)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    :returns (result c$::amb-decl/stmt-p)
+    :returns (result c$::amb-declon/stmt-p)
     (b* (((mv decl bound-vars)
-          (declon-subst-free (c$::amb-decl/stmt->decl amb-decl/stmt)
+          (declon-subst-free (c$::amb-declon/stmt->decl amb-declon/stmt)
                              subst bound-vars)))
-      (c$::amb-decl/stmt
+      (c$::amb-declon/stmt
         decl
-        (expr-subst-free (c$::amb-decl/stmt->stmt amb-decl/stmt)
+        (expr-subst-free (c$::amb-declon/stmt->stmt amb-declon/stmt)
                          subst bound-vars)))
-    :measure (c$::amb-decl/stmt-count amb-decl/stmt))
+    :measure (c$::amb-declon/stmt-count amb-declon/stmt))
   :verify-guards :after-returns
   :flag-local nil)
 
