@@ -285,7 +285,12 @@
      but conceptually we need our preprocessor to behave as if we did.
      This means that, if we are looking for tokens or newline characters,
      we must also consider line comments,
-     because they are always followed by a newline character."))
+     because they are always followed by a newline character;
+     recall that line comments exclude the ending newline [C17:6.4.9/2].
+     Although block comments may include newlines,
+     those are part of the comment:
+     the whole comment is turned into a space character,
+     and so there are no newlines to consider here."))
   (or (plexeme-tokenp lexeme)
       (plexeme-case lexeme :newline)
       (plexeme-case lexeme :line-comment)))
