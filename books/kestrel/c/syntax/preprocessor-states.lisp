@@ -311,7 +311,7 @@
   ///
   (fty::deffixequiv plexeme-list-not-token/newline-p))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
   :short "Fixtype of preprocessor states."
