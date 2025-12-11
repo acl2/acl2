@@ -1007,7 +1007,7 @@
        (bound-vars (union bound-vars param-bound-vars))
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
-        (free-vars-declon-list fundef.decls bound-vars))
+        (free-vars-declon-list fundef.declons bound-vars))
        ((mv free-vars5 &) (free-vars-comp-stmt fundef.body bound-vars)))
     (union free-vars1
            (union free-vars2

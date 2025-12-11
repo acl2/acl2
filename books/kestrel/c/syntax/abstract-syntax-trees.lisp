@@ -3565,7 +3565,7 @@
    (declor declor)
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
-   (decls declon-list)
+   (declons declon-list)
    (body comp-stmt)
    (info any))
   :pred fundefp

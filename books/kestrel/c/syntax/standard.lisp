@@ -221,7 +221,7 @@
                 (declor-standardp (fundef->declor fundef))
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))
-                (declon-list-standardp (fundef->decls fundef))
+                (declon-list-standardp (fundef->declons fundef))
                 (comp-stmt-standardp (fundef->body fundef))))
    (extdecl :empty nil)
    (extdecl :asm nil)

@@ -1485,7 +1485,7 @@
        (body-bound-vars (union bound-vars param-bound-vars))
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv declons body-bound-vars)
-        (declon-list-subst-free fundef.decls subst body-bound-vars))
+        (declon-list-subst-free fundef.declons subst body-bound-vars))
        ((mv body &) (comp-stmt-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
@@ -1493,7 +1493,7 @@
           :declor declor
           :asm? fundef.asm?
           :attribs attribs
-          :decls declons
+          :declons declons
           :body body
           :info fundef.info)
         bound-vars)))

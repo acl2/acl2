@@ -517,7 +517,7 @@
                      :declor (irr-declor)
                      :asm? nil
                      :attribs nil
-                     :decls nil
+                     :declons nil
                      :body (irr-comp-stmt)
                      :info nil))
 

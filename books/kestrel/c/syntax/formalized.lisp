@@ -1038,7 +1038,7 @@
          (declor-fun-formalp fundef.declor)
          (not fundef.asm?)
          (endp fundef.attribs)
-         (endp fundef.decls)
+         (endp fundef.declons)
          (comp-stmt-formalp fundef.body)))
   :hooks (:fix))
 

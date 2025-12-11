@@ -3714,7 +3714,7 @@
                   This is indicative of invalid code."
                  (fundef-fix fundef)))
        (table (dimb-add-ident-objfun-file-scope ident table))
-       ((erp new-decls table) (dimb-declon-list fundef.decls table))
+       ((erp new-declons table) (dimb-declon-list fundef.declons table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
        (table (if gcc
                   (dimb-add-idents-objfun
@@ -3728,7 +3728,7 @@
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
-                        :decls new-decls
+                        :declons new-declons
                         :body new-body
                         :info fundef.info)
            table))

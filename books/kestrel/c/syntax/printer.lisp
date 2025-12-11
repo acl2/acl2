@@ -4337,9 +4337,9 @@
                         (pstate (print-attrib-spec-list fundef.attribs pstate)))
                      pstate)
                  pstate))
-       (pstate (if fundef.decls
+       (pstate (if fundef.declons
                    (b* ((pstate (print-new-line pstate))
-                        (pstate (print-declon-list fundef.decls pstate)))
+                        (pstate (print-declon-list fundef.declons pstate)))
                      pstate)
                  (print-astring " " pstate)))
        (pstate (print-comp-stmt fundef.body pstate))

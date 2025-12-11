@@ -6710,7 +6710,8 @@
                     :defstatus (valid-defstatus-defined)
                     :uid uid)))
           (retok uid (valid-add-ord-file-scope ident info table))))
-       ((erp new-decls types table) (valid-declon-list fundef.decls table ienv))
+       ((erp new-declons types table)
+        (valid-declon-list fundef.declons table ienv))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
@@ -6752,7 +6753,7 @@
                         :declor new-declor
                         :asm? fundef.asm?
                         :attribs fundef.attribs
-                        :decls new-decls
+                        :declons new-declons
                         :body new-body
                         :info info)
            table))

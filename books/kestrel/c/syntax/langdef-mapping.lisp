@@ -1669,7 +1669,7 @@
         (reterr (msg "Unsupported attribute specifiers ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((when fundef.decls)
+       ((when fundef.declons)
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))

@@ -2922,7 +2922,7 @@
                               (omap::update cvar ctype gout-declor.vartys))
                           gout-declor.vartys))
        ((mv new-declons (gout gout-declons))
-        (simpadd0-declon-list fundef.decls
+        (simpadd0-declon-list fundef.declons
                               (change-gin gin :vartys vartys-with-fun)))
        (gin (gin-update gin gout-declons))
        (vartys-for-body gout-declons.vartys)
@@ -2937,7 +2937,7 @@
                 new-declor
                 fundef.asm?
                 fundef.attribs
-                fundef.decls
+                fundef.declons
                 new-declons
                 fundef.body
                 new-body

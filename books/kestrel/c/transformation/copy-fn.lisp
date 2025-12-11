@@ -95,7 +95,7 @@
                                :declor (dirdeclor-ident new-fn)
                                :params fundef.declor.direct.params
                                :ellipsis fundef.declor.direct.ellipsis))
-            :decls fundef.decls
+            :declons fundef.declons
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
                    :items (block-item-list-rename-fn

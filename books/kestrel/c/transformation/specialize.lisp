@@ -140,7 +140,7 @@
             :declor (make-declor
                      :pointers fundef.declor.pointers
                      :direct dirdeclor-params)
-            :decls fundef.decls
+            :declons fundef.declons
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
                    :items (cons (make-block-item-declon :declon declon :info nil)

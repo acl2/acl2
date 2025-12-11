@@ -1955,15 +1955,15 @@
         (const-prop-decl-spec-list fundef.specs env))
        ((mv declor -)
         (const-prop-declor fundef.declor env))
-       ((mv decls -)
-        (const-prop-declon-list fundef.decls env))
+       ((mv declons -)
+        (const-prop-declon-list fundef.declons env))
        ((mv body -)
         (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
                  :specs specs
                  :declor declor
                  :asm? fundef.asm?
-                 :decls decls
+                 :declons declons
                  :body body
                  :info fundef.info)))
 

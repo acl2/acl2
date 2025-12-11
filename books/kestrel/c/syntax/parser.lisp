@@ -11634,7 +11634,7 @@
                                      :declor declor
                                      :asm? asmspec?
                                      :attribs attrspecs
-                                     :decls nil
+                                     :declons nil
                                      :body cstmt
                                      :info nil))
                        (span-join span last-span)
@@ -11664,7 +11664,7 @@
                                      :declor declor
                                      :asm? asmspec?
                                      :attribs attrspecs
-                                     :decls decls
+                                     :declons decls
                                      :body cstmt
                                      :info nil))
                        (span-join span last-span)

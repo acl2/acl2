@@ -808,7 +808,7 @@
                              (amb-declon/stmt-fix amb-declon/stmt)))
      (fundef (and (decl-spec-list-annop (fundef->specs fundef))
                   (declor-annop (fundef->declor fundef))
-                  (declon-list-annop (fundef->decls fundef))
+                  (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
      (transunit (and (extdecl-list-annop (transunit->decls transunit))
@@ -910,14 +910,14 @@
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
-            (fundef extension specs declor asm? attribs decls body info))
+            (fundef extension specs declor asm? attribs declons body info))
            (and (decl-spec-list-annop specs)
                 (declor-annop declor)
-                (declon-list-annop decls)
+                (declon-list-annop declons)
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension specs declor asm? attribs decls body info))
+             (fundef extension specs declor asm? attribs declons body info))
     :enable identity)
 
   (defruled transunit-annop-of-transunit
@@ -1077,9 +1077,9 @@
              (declor-annop (fundef->declor fundef)))
     :enable fundef-annop)
 
-  (defruled declon-list-annop-of-fundef->decls
+  (defruled declon-list-annop-of-fundef->declons
     (implies (fundef-annop fundef)
-             (declon-list-annop (fundef->decls fundef)))
+             (declon-list-annop (fundef->declons fundef)))
     :enable fundef-annop)
 
   (defruled comp-stmt-annop-of-fundef->body
@@ -1157,7 +1157,7 @@
      declor-annop-of-param-declor-nonabstract->declor
      decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
-     declon-list-annop-of-fundef->decls
+     declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls

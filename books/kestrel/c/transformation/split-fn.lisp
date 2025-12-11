@@ -447,7 +447,7 @@
             :extension fundef.extension
             :specs fundef.specs
             :declor fundef.declor
-            :decls fundef.decls
+            :declons fundef.declons
             :body (make-comp-stmt :labels (comp-stmt->labels fundef.body)
                                   :items truncated-items)
             :info fundef.info))))

@@ -3080,7 +3080,7 @@
                             :declor declor
                             :asm? asm?
                             :attribs attribs
-                            :decls declons
+                            :declons declons
                             :body body
                             :info info))
        (new-fundef (make-fundef :extension extension
@@ -3088,7 +3088,7 @@
                                 :declor declor-new
                                 :asm? asm?
                                 :attribs attribs
-                                :decls declons-new
+                                :declons declons-new
                                 :body body-new
                                 :info info))
        (type (fundef-info->type info))
