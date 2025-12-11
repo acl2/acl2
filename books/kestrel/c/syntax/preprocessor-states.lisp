@@ -267,6 +267,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plexeme-token/newline-p ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a preprocessing lexeme is a token or a newline."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "During preprocessing, newline characters are significant:
+     see grammar rules in [C17:6.10/1].
+     Preprocessing is largely line-oriented.
+     In our preprocessor, newline characters are captured as newline lexemes
+     (see @(tsee plexeme)).")
+   (xdoc::p
+    "[C17:5.1.1.2/3] requires that comments, including line comments,
+     are turned into single space characters;
+     we do not actually do that, to preserve the comment information,
+     but conceptually we need our preprocessor to behave as if we did.
+     This means that, if we are looking for tokens or newline characters,
+     we must also consider line comments,
+     because they are always followed by a newline character."))
+  (or (plexeme-tokenp lexeme)
+      (plexeme-case lexeme :newline)
+      (plexeme-case lexeme :line-comment)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist plexeme-list-token/newline-p (x)
+  :guard (plexeme-listp x)
+  :short "Check if every preprocessing lexeme in a list is a token or newline."
+  (plexeme-token/newline-p x)
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv plexeme-list-token/newline-p))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist plexeme-list-not-token/newline-p (x)
+  :guard (plexeme-listp x)
+  :short "Check if no preprocessing lexeme in a list is a token or newline."
+  (plexeme-token/newline-p x)
+  :negatedp t
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv plexeme-list-not-token/newline-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
