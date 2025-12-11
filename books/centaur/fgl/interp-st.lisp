@@ -127,6 +127,7 @@
       (binder-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (branch-merge-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
+      (id-congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
 
       ;; backing arrays for fgarray primitives -- see fgarrays.lisp
       (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
@@ -214,6 +215,7 @@
                              (interp-st (update-interp-st->binder-rules nil interp-st))
                              (interp-st (update-interp-st->branch-merge-rules nil interp-st))
                              (interp-st (update-interp-st->congruence-rules nil interp-st))
+                             (interp-st (update-interp-st->id-congruence-rules nil interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))
                              (interp-st (update-interp-st->next-fgarray 0 interp-st))
                              (- (fast-alist-free (interp-st->cgraph interp-st))

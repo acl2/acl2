@@ -4159,6 +4159,7 @@
                        (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
                                                                        x.fn (len x.args)
                                                                        (interp-st->congruence-rules interp-st)
+                                                                       (interp-st->id-congruence-rules interp-st)
                                                                        (w state)))
 
                        ((fgl-interp-recursive-call args)
@@ -4854,6 +4855,7 @@
                             (interp-st->equiv-contexts interp-st)
                             form.fn (len form.args)
                             (interp-st->congruence-rules interp-st)
+                            nil ;; ignore id-congruence rules for this purpose
                             (w state))))
              ((fgl-interp-recursive-call argvals)
               (fgl-interp-arglist (cdr form.args) argcontexts interp-st state))
