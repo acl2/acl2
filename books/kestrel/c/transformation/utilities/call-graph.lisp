@@ -677,32 +677,32 @@
                           call-graph))
       :otherwise (call-graph-fix call-graph))))
 
-(define call-graph-extdecl
-  ((extdecl extdeclp)
+(define call-graph-ext-declon
+  ((extdecl ext-declonp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
    :decl (call-graph-fix call-graph)
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
 
-(define call-graph-extdecl-list
-  ((extdecls extdecl-listp)
+(define call-graph-ext-declon-list
+  ((extdecls ext-declon-listp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
   (if (endp extdecls)
       (call-graph-fix call-graph)
-    (call-graph-extdecl-list
+    (call-graph-ext-declon-list
       (rest extdecls)
       filepath
       valid-table
-      (call-graph-extdecl
+      (call-graph-ext-declon
         (first extdecls)
         filepath
         valid-table
@@ -718,7 +718,7 @@
   (b* (((transunit transunit) transunit)
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-extdecl-list transunit.decls filepath valid-table call-graph))
+    (call-graph-ext-declon-list transunit.decls filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
 (define call-graph-filepath-transunit-map

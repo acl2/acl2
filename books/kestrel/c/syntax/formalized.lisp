@@ -1044,8 +1044,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-formalp ((edecl extdeclp))
-  :guard (extdecl-unambp edecl)
+(define ext-declon-formalp ((edecl ext-declonp))
+  :guard (ext-declon-unambp edecl)
   :returns (yes/no booleanp)
   :short "Check if an external declaration has dynamic formal semantics."
   :long
@@ -1069,7 +1069,7 @@
      so our formal dynamic semantics can (and will) be extended
      to handle those explicitly.
      This is why we include them in this predicate."))
-  (extdecl-case
+  (ext-declon-case
    edecl
    :fundef (fundef-formalp edecl.fundef)
    :decl (or (declon-obj-formalp edecl.decl)
@@ -1081,14 +1081,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-list-formalp ((edecls extdecl-listp))
-  :guard (extdecl-list-unambp edecls)
+(define ext-declon-list-formalp ((edecls ext-declon-listp))
+  :guard (ext-declon-list-unambp edecls)
   :returns (yes/no booleanp)
   :short "Check if all the external declarations in a list
           have formal dynamic semantics."
   (or (endp edecls)
-      (and (extdecl-formalp (car edecls))
-           (extdecl-list-formalp (cdr edecls))))
+      (and (ext-declon-formalp (car edecls))
+           (ext-declon-list-formalp (cdr edecls))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1101,7 +1101,7 @@
   (xdoc::topstring
    (xdoc::p
     "All its external declarations must be supported."))
-  (extdecl-list-formalp (transunit->decls tunit))
+  (ext-declon-list-formalp (transunit->decls tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

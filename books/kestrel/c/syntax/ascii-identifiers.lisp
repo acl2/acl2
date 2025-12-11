@@ -116,8 +116,8 @@
           attrib-name
           exprs/decls/stmts
           fundef
-          extdecl
-          extdecl-list
+          ext-declon
+          ext-declon-list
           transunit
           filepath-transunit-map
           transunit-ensemble)

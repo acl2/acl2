@@ -81,32 +81,32 @@
        :otherwise nil))
    :statassert nil))
 
-(define extdecl-find-first-field-name
-  ((extdecl extdeclp)
+(define ext-declon-find-first-field-name
+  ((extdecl ext-declonp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :decl (declon-find-first-field-name extdecl.decl struct-tag)
    :otherwise nil))
 
-(define extdecl-list-find-first-field-name
-  ((extdecls extdecl-listp)
+(define ext-declon-list-find-first-field-name
+  ((extdecls ext-declon-listp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
        (field-name?
-        (extdecl-find-first-field-name (first extdecls) struct-tag)))
+        (ext-declon-find-first-field-name (first extdecls) struct-tag)))
     (or field-name?
-        (extdecl-list-find-first-field-name (rest extdecls) struct-tag))))
+        (ext-declon-list-find-first-field-name (rest extdecls) struct-tag))))
 
 (define transunit-find-first-field-name
   ((tunit transunitp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((transunit tunit) tunit))
-    (extdecl-list-find-first-field-name tunit.decls struct-tag)))
+    (ext-declon-list-find-first-field-name tunit.decls struct-tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,26 +181,26 @@
        ident?))
    :statassert nil))
 
-(define extdecl-find-gso-candidate
-  ((extdecl extdeclp)
+(define ext-declon-find-gso-candidate
+  ((extdecl ext-declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef nil
    :decl (declon-find-gso-candidate extdecl.decl blacklist)
    :empty nil
    :asm nil))
 
-(define extdecl-list-find-gso-candidate
-  ((extdecls extdecl-listp)
+(define ext-declon-list-find-gso-candidate
+  ((extdecls ext-declon-listp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
-       (ident? (extdecl-find-gso-candidate (first extdecls) blacklist)))
+       (ident? (ext-declon-find-gso-candidate (first extdecls) blacklist)))
     (or ident?
-        (extdecl-list-find-gso-candidate (rest extdecls) blacklist))))
+        (ext-declon-list-find-gso-candidate (rest extdecls) blacklist))))
 
 (define transunit-find-gso-candidate
   ((tunit transunitp)
@@ -230,7 +230,7 @@
           ((when (= 0 (mbe :logic (nfix steps)
                            :exec (acl2::the-fixnat steps))))
            (reterr t))
-          (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
+          (gso (ext-declon-list-find-gso-candidate tunit.decls blacklist))
           ((unless gso)
            (reterr t))
           ((mv erp linkage tag?)

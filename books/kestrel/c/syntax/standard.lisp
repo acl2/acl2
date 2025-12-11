@@ -89,8 +89,8 @@
           fun-spec
           exprs/decls/stmts
           fundef
-          extdecl
-          extdecl-list
+          ext-declon
+          ext-declon-list
           transunit
           filepath-transunit-map
           transunit-ensemble)
@@ -223,6 +223,6 @@
                 (endp (fundef->attribs fundef))
                 (declon-list-standardp (fundef->declons fundef))
                 (comp-stmt-standardp (fundef->body fundef))))
-   (extdecl :empty nil)
-   (extdecl :asm nil)
+   (ext-declon :empty nil)
+   (ext-declon :asm nil)
    (transunit (consp (transunit->decls transunit)))))

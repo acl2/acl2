@@ -6767,10 +6767,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-extdecl ((edecl extdeclp) (table valid-tablep) (ienv ienvp))
-  :guard (extdecl-unambp edecl)
+(define valid-ext-declon ((edecl ext-declonp) (table valid-tablep) (ienv ienvp))
+  :guard (ext-declon-unambp edecl)
   :returns (mv (erp maybe-msgp)
-               (new-edecl extdeclp)
+               (new-edecl ext-declonp)
                (new-table valid-tablep))
   :short "Validate an external declaration."
   :long
@@ -6779,37 +6779,37 @@
     "For now we do not do anything with assembler statements.
      The empty external declaration is always valid.
      We check that declarations contain no return statements."))
-  (b* (((reterr) (irr-extdecl) (irr-valid-table)))
-    (extdecl-case
+  (b* (((reterr) (irr-ext-declon) (irr-valid-table)))
+    (ext-declon-case
      edecl
      :fundef (b* (((erp new-fundef table)
                    (valid-fundef edecl.fundef table ienv)))
-               (retok (extdecl-fundef new-fundef) table))
+               (retok (ext-declon-fundef new-fundef) table))
      :decl (b* (((erp new-decl types table)
                  (valid-declon edecl.decl table ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
                           edecl.decl)))
-             (retok (extdecl-decl new-decl) table))
-     :empty (retok (extdecl-empty) (valid-table-fix table))
-     :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
+             (retok (ext-declon-decl new-decl) table))
+     :empty (retok (ext-declon-empty) (valid-table-fix table))
+     :asm (retok (ext-declon-fix edecl) (valid-table-fix table))))
 
   ///
 
-  (defret extdecl-unambp-of-valid-extdecl
+  (defret ext-declon-unambp-of-valid-ext-declon
     (implies (not erp)
-             (extdecl-unambp new-edecl))
-    :hyp (extdecl-unambp edecl)))
+             (ext-declon-unambp new-edecl))
+    :hyp (ext-declon-unambp edecl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-extdecl-list ((edecls extdecl-listp)
-                            (table valid-tablep)
-                            (ienv ienvp))
-  :guard (extdecl-list-unambp edecls)
+(define valid-ext-declon-list ((edecls ext-declon-listp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+  :guard (ext-declon-list-unambp edecls)
   :returns (mv (erp maybe-msgp)
-               (new-edecls extdecl-listp)
+               (new-edecls ext-declon-listp)
                (new-table valid-tablep))
   :short "Validate a list of external declarations."
   :long
@@ -6818,16 +6818,16 @@
     "We validate them in order, threading the validation table through."))
   (b* (((reterr) nil (irr-valid-table))
        ((when (endp edecls)) (retok nil (valid-table-fix table)))
-       ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
-       ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
+       ((erp new-edecl table) (valid-ext-declon (car edecls) table ienv))
+       ((erp new-edecls table) (valid-ext-declon-list (cdr edecls) table ienv)))
     (retok (cons new-edecl new-edecls) table))
 
   ///
 
-  (defret extdecl-list-unambp-of-valid-extdecl-list
+  (defret ext-declon-list-unambp-of-valid-ext-declon-list
     (implies (not erp)
-             (extdecl-list-unambp new-edecls))
-    :hyp (extdecl-list-unambp edecls)
+             (ext-declon-list-unambp new-edecls))
+    :hyp (ext-declon-list-unambp edecls)
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6893,7 +6893,7 @@
                table)
            table))
        ((erp new-edecls table)
-        (valid-extdecl-list (transunit->decls tunit) table ienv))
+        (valid-ext-declon-list (transunit->decls tunit) table ienv))
        (info (make-transunit-info :table-end table)))
     (retok (make-transunit :decls new-edecls :info info)
            table))

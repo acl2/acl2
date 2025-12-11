@@ -108,15 +108,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-extdecl
-  ((extdecl extdeclp)
+(define copy-fn-ext-declon
+  ((extdecl ext-declonp)
    (target-fn identp)
    (new-fn identp))
-  :guard (extdecl-annop extdecl)
+  :guard (ext-declon-annop extdecl)
   :short "Transform an external declaration."
   :returns (mv (found booleanp)
-               (extdecls extdecl-listp))
-  (extdecl-case
+               (extdecls ext-declon-listp))
+  (ext-declon-case
    extdecl
    :fundef (b* ((fundef?
                  (copy-fn-fundef
@@ -124,27 +124,27 @@
                    target-fn
                    new-fn)))
              (if fundef?
-                 (mv t (list (extdecl-fix extdecl) (extdecl-fundef fundef?)))
-               (mv nil (list (extdecl-fix extdecl)))))
-   :decl (mv nil (list (extdecl-fix extdecl)))
-   :empty (mv nil (list (extdecl-fix extdecl)))
-   :asm (mv nil (list (extdecl-fix extdecl)))))
+                 (mv t (list (ext-declon-fix extdecl) (ext-declon-fundef fundef?)))
+               (mv nil (list (ext-declon-fix extdecl)))))
+   :decl (mv nil (list (ext-declon-fix extdecl)))
+   :empty (mv nil (list (ext-declon-fix extdecl)))
+   :asm (mv nil (list (ext-declon-fix extdecl)))))
 
-(define copy-fn-extdecl-list
-  ((extdecls extdecl-listp)
+(define copy-fn-ext-declon-list
+  ((extdecls ext-declon-listp)
    (target-fn identp)
    (new-fn identp))
-  :guard (extdecl-list-annop extdecls)
+  :guard (ext-declon-list-annop extdecls)
   :short "Transform a list of external declarations."
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (b* (((when (endp extdecls))
         nil)
        ((mv found new-extdecls)
-        (copy-fn-extdecl (first extdecls) target-fn new-fn)))
+        (copy-fn-ext-declon (first extdecls) target-fn new-fn)))
     (append new-extdecls
             (if found
-                (extdecl-list-fix (rest extdecls))
-              (copy-fn-extdecl-list (rest extdecls) target-fn new-fn))))
+                (ext-declon-list-fix (rest extdecls))
+              (copy-fn-ext-declon-list (rest extdecls) target-fn new-fn))))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -157,7 +157,7 @@
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (copy-fn-extdecl-list tunit.decls target-fn new-fn)
+    (make-transunit :decls (copy-fn-ext-declon-list tunit.decls target-fn new-fn)
                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

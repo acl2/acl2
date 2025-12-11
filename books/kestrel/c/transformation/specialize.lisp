@@ -153,15 +153,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-extdecl
-  ((extdecl extdeclp)
+(define specialize-ext-declon
+  ((extdecl ext-declonp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform an external declaration."
   :returns (mv (found booleanp)
-               (new-extdecl extdeclp))
-  (extdecl-case
+               (new-extdecl ext-declonp))
+  (ext-declon-case
    extdecl
    :fundef (b* (((mv found fundef)
                  (specialize-fundef
@@ -169,26 +169,26 @@
                    target-fn
                    target-param
                    const)))
-             (mv found (extdecl-fundef fundef)))
-   :decl (mv nil (extdecl-fix extdecl))
-   :empty (mv nil (extdecl-fix extdecl))
-   :asm (mv nil (extdecl-fix extdecl))))
+             (mv found (ext-declon-fundef fundef)))
+   :decl (mv nil (ext-declon-fix extdecl))
+   :empty (mv nil (ext-declon-fix extdecl))
+   :asm (mv nil (ext-declon-fix extdecl))))
 
-(define specialize-extdecl-list
-  ((extdecls extdecl-listp)
+(define specialize-ext-declon-list
+  ((extdecls ext-declon-listp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a list of external declarations."
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (b* (((when (endp extdecls))
         nil)
        ((mv found extdecl)
-        (specialize-extdecl (first extdecls) target-fn target-param const)))
+        (specialize-ext-declon (first extdecls) target-fn target-param const)))
     (cons extdecl
           (if found
-              (extdecl-list-fix (rest extdecls))
-            (specialize-extdecl-list (rest extdecls) target-fn target-param const)))))
+              (ext-declon-list-fix (rest extdecls))
+            (specialize-ext-declon-list (rest extdecls) target-fn target-param const)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +201,7 @@
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
     (make-transunit
-     :decls (specialize-extdecl-list tunit.decls target-fn target-param const)
+     :decls (specialize-ext-declon-list tunit.decls target-fn target-param const)
      :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

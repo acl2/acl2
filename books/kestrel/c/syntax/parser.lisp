@@ -11425,7 +11425,7 @@
 
 (define parse-external-declaration ((parstate parstatep))
   :returns (mv erp
-               (extdecl extdeclp)
+               (extdecl ext-declonp)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse an external declaration."
@@ -11461,20 +11461,20 @@
    (xdoc::p
     "We also handle the GCC extension of allowing assembler statements
      as external declarations, which are easy to recognize."))
-  (b* (((reterr) (irr-extdecl) (irr-span) parstate)
+  (b* (((reterr) (irr-ext-declon) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
     (cond
      ;; If token is a semicolon,
      ;; we have an empty external declaration.
      ((and (token-punctuatorp token ";") ; ;
            (parstate->gcc parstate))
-      (retok (extdecl-empty) span parstate))
+      (retok (ext-declon-empty) span parstate))
      ;; If token is the keyword '_Static_assert',
      ;; we have a static assertion declaration.
      ((token-keywordp token "_Static_assert") ; _Static_assert
       (b* (((erp statassert span parstate) ; statassert
             (parse-static-assert-declaration span parstate)))
-        (retok (extdecl-decl (declon-statassert statassert)) span parstate)))
+        (retok (ext-declon-decl (declon-statassert statassert)) span parstate)))
      ;; If token is the 'asm' or variant keyword
      ;; (which can only happen if GCC extensions are enabled),
      ;; we have an assembler statement.
@@ -11487,7 +11487,7 @@
                   ((token-keywordp token "__asm__") (keyword-uscores-both))))
            ((erp asm span parstate)
             (parse-asm-statement span uscores parstate)))
-        (retok (extdecl-asm asm) span parstate)))
+        (retok (ext-declon-asm asm) span parstate)))
      ;; Otherwise, we must have a list of one or more declaration specifiers,
      ;; possibly preceded by an '__extension__' keyword
      ;; if GCC extensions are supported.
@@ -11505,9 +11505,9 @@
          ;; If token2 is a semicolon,
          ;; we must have a declaration without initialization declarators.
          ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
-          (retok (extdecl-decl (make-declon-declon :extension extension
-                                                   :specs declspecs
-                                                   :declors nil))
+          (retok (ext-declon-decl (make-declon-declon :extension extension
+                                                      :specs declspecs
+                                                      :declors nil))
                  (span-join span span2)
                  parstate))
          ;; If token2 is anything else,
@@ -11531,15 +11531,15 @@
              ;; we have a declaration with one declarator without initializer.
              ((token-punctuatorp token3 ";")
               ;; [__extension__] declspecs declor [asmspec] [attrspecs] ;
-              (retok (extdecl-decl (make-declon-declon
-                                    :extension extension
-                                    :specs declspecs
-                                    :declors (list (make-init-declor
-                                                    :declor declor
-                                                    :asm? asmspec?
-                                                    :attribs attrspecs
-                                                    :initer? nil
-                                                    :info nil))))
+              (retok (ext-declon-decl (make-declon-declon
+                                       :extension extension
+                                       :specs declspecs
+                                       :declors (list (make-init-declor
+                                                       :declor declor
+                                                       :asm? asmspec?
+                                                       :attribs attrspecs
+                                                       :initer? nil
+                                                       :info nil))))
                      (span-join span span3)
                      parstate))
              ;; If token3 is an equal sign,
@@ -11563,10 +11563,10 @@
                  ((token-punctuatorp token4 ";")
                   ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                   ;;   = initer ;
-                  (retok (extdecl-decl (make-declon-declon
-                                        :extension extension
-                                        :specs declspecs
-                                        :declors (list initdeclor)))
+                  (retok (ext-declon-decl (make-declon-declon
+                                           :extension extension
+                                           :specs declspecs
+                                           :declors (list initdeclor)))
                          (span-join span span4)
                          parstate))
                  ;; If token4 is a comma,
@@ -11582,10 +11582,10 @@
                         ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                         ;;   = initer , initdeclors ;
                         (read-punctuator ";" parstate)))
-                    (retok (extdecl-decl (make-declon-declon
-                                          :extension extension
-                                          :specs declspecs
-                                          :declors (cons initdeclor initdeclors)))
+                    (retok (ext-declon-decl (make-declon-declon
+                                             :extension extension
+                                             :specs declspecs
+                                             :declors (cons initdeclor initdeclors)))
                            (span-join span last-span)
                            parstate)))
                  ;; If token4 is anything else, it is an error.
@@ -11613,10 +11613,10 @@
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs] ,
                     ;;   initdeclors ;
                     (read-punctuator ";" parstate)))
-                (retok (extdecl-decl (make-declon-declon
-                                      :extension extension
-                                      :specs declspecs
-                                      :declors (cons initdeclor initdeclors)))
+                (retok (ext-declon-decl (make-declon-declon
+                                         :extension extension
+                                         :specs declspecs
+                                         :declors (cons initdeclor initdeclors)))
                        (span-join span last-span)
                        parstate)))
              ;; If token3 is an open curly brace,
@@ -11628,7 +11628,7 @@
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;; { [labels] [items] }
                     (parse-compound-statement span parstate)))
-                (retok (extdecl-fundef
+                (retok (ext-declon-fundef
                         (make-fundef :extension extension
                                      :specs declspecs
                                      :declor declor
@@ -11658,7 +11658,7 @@
                     ;; [__extension__] declspecs declor [asmspec] [attrspecs]
                     ;;   decls { [labels] [items] }
                     (parse-compound-statement open-curly-span parstate)))
-                (retok (extdecl-fundef
+                (retok (ext-declon-fundef
                         (make-fundef :extension extension
                                      :specs declspecs
                                      :declor declor
@@ -11687,7 +11687,7 @@
 
 (define parse-*-external-declaration ((parstate parstatep))
   :returns (mv erp
-               (extdecls extdecl-listp)
+               (extdecls ext-declon-listp)
                (span spanp)
                (eof-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))

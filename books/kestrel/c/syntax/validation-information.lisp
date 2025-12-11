@@ -729,8 +729,8 @@
             attrib-name
             exprs/decls/stmts
             fundef
-            extdecl
-            extdecl-list
+            ext-declon
+            ext-declon-list
             transunit
             filepath-transunit-map
             transunit-ensemble
@@ -811,7 +811,7 @@
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (extdecl-list-annop (transunit->decls transunit))
+     (transunit (and (ext-declon-list-annop (transunit->decls transunit))
                      (transunit-infop (transunit->info transunit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -922,7 +922,7 @@
 
   (defruled transunit-annop-of-transunit
     (equal (transunit-annop (transunit decls info))
-           (and (extdecl-list-annop decls)
+           (and (ext-declon-list-annop decls)
                 (transunit-infop info)))
     :expand (transunit-annop (transunit decls info))
     :enable identity)
@@ -1092,9 +1092,9 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled extdecl-list-annop-of-transunit->decls
+  (defruled ext-declon-list-annop-of-transunit->decls
     (implies (transunit-annop transunit)
-             (extdecl-list-annop (transunit->decls transunit)))
+             (ext-declon-list-annop (transunit->decls transunit)))
     :enable transunit-annop)
 
   (defruled transunit-infop-of-transunit->info
@@ -1160,7 +1160,7 @@
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     extdecl-list-annop-of-transunit->decls
+     ext-declon-list-annop-of-transunit->decls
      transunit-infop-of-transunit->info
      transunit-ensemble-annop-of-irr-transunit-ensemble
      code-ensemble-annop-of-irr-code-ensemble)))

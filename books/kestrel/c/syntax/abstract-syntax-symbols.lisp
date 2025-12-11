@@ -432,16 +432,16 @@
     fundef-optionp
     fundef-option-case
 
-    extdeclp
-    extdecl-fix
-    extdecl-case
-    extdecl-fundef
-    extdecl-fundef->fundef
-    extdecl-decl
-    extdecl-empty
+    ext-declonp
+    ext-declon-fix
+    ext-declon-case
+    ext-declon-fundef
+    ext-declon-fundef->fundef
+    ext-declon-decl
+    ext-declon-empty
 
-    extdecl-listp
-    extdecl-list-fix
+    ext-declon-listp
+    ext-declon-list-fix
 
     transunitp
     transunit
@@ -547,8 +547,8 @@
     block-item-unambp
     block-item-list-unambp
     fundef-unambp
-    extdecl-unambp
-    extdecl-list-unambp
+    ext-declon-unambp
+    ext-declon-list-unambp
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
@@ -615,8 +615,8 @@
     block-item-aidentp
     block-item-list-aidentp
     fundef-aidentp
-    extdecl-aidentp
-    extdecl-list-aidentp
+    ext-declon-aidentp
+    ext-declon-list-aidentp
     transunit-aidentp
     filepath-transunit-map-aidentp
     transunit-ensemble-aidentp
@@ -781,8 +781,8 @@
     block-item-annop
     block-item-list-annop
     fundef-annop
-    extdecl-annop
-    extdecl-list-annop
+    ext-declon-annop
+    ext-declon-list-annop
     transunit-annop
     filepath-transunit-map-annop
     transunit-ensemble-annop

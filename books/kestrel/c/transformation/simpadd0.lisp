@@ -2963,61 +2963,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-extdecl ((extdecl extdeclp) (gin ginp))
-  :guard (and (extdecl-unambp extdecl)
-              (extdecl-annop extdecl))
-  :returns (mv (new-extdecl extdeclp)
+(define simpadd0-ext-declon ((extdecl ext-declonp) (gin ginp))
+  :guard (and (ext-declon-unambp extdecl)
+              (ext-declon-annop extdecl))
+  :returns (mv (new-extdecl ext-declonp)
                (gout goutp))
   :short "Transform an external declaration."
   (b* (((gin gin) gin))
-    (extdecl-case
+    (ext-declon-case
      extdecl
      :fundef (b* (((mv new-fundef (gout gout-fundef))
                    (simpadd0-fundef extdecl.fundef gin))
                   (gin (gin-update gin gout-fundef)))
-               (mv (extdecl-fundef new-fundef)
+               (mv (ext-declon-fundef new-fundef)
                    (change-gout (gout-no-thm gin)
                                 :vartys gout-fundef.vartys)))
      :decl (b* (((mv new-declon (gout gout-declon))
                  (simpadd0-declon extdecl.decl gin))
                 (gin (gin-update gin gout-declon)))
-             (mv (extdecl-decl new-declon)
+             (mv (ext-declon-decl new-declon)
                  (change-gout (gout-no-thm gin)
                               :vartys gout-declon.vartys)))
-     :empty (mv (extdecl-empty) (gout-no-thm gin))
-     :asm (mv (extdecl-fix extdecl) (gout-no-thm gin))))
+     :empty (mv (ext-declon-empty) (gout-no-thm gin))
+     :asm (mv (ext-declon-fix extdecl) (gout-no-thm gin))))
   :hooks (:fix)
 
   ///
 
-  (defret extdecl-unambp-of-simpadd0-extdecl
-    (extdecl-unambp new-extdecl))
+  (defret ext-declon-unambp-of-simpadd0-ext-declon
+    (ext-declon-unambp new-extdecl))
 
-  (defret extdecl-annop-of-simpadd0-extdecl
-    (extdecl-annop new-extdecl)
-    :hyp (and (extdecl-unambp extdecl)
-              (extdecl-annop extdecl)))
+  (defret ext-declon-annop-of-simpadd0-ext-declon
+    (ext-declon-annop new-extdecl)
+    :hyp (and (ext-declon-unambp extdecl)
+              (ext-declon-annop extdecl)))
 
-  (defret extdecl-aidentp-of-simpadd0-extdecl
-    (extdecl-aidentp new-extdecl gcc)
-    :hyp (and (extdecl-unambp extdecl)
-              (extdecl-aidentp extdecl gcc))))
+  (defret ext-declon-aidentp-of-simpadd0-ext-declon
+    (ext-declon-aidentp new-extdecl gcc)
+    :hyp (and (ext-declon-unambp extdecl)
+              (ext-declon-aidentp extdecl gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-extdecl-list ((extdecls extdecl-listp) (gin ginp))
-  :guard (and (extdecl-list-unambp extdecls)
-              (extdecl-list-annop extdecls))
-  :returns (mv (new-extdecls extdecl-listp)
+(define simpadd0-ext-declon-list ((extdecls ext-declon-listp) (gin ginp))
+  :guard (and (ext-declon-list-unambp extdecls)
+              (ext-declon-list-annop extdecls))
+  :returns (mv (new-extdecls ext-declon-listp)
                (gout goutp))
   :short "Transform a list of external declarations."
   (b* (((gin gin) gin)
        ((when (endp extdecls)) (mv nil (gout-no-thm gin)))
-       ((mv new-edecl (gout gout-edecl)) (simpadd0-extdecl (car extdecls) gin))
+       ((mv new-edecl (gout gout-edecl))
+        (simpadd0-ext-declon (car extdecls) gin))
        (gin (gin-update gin gout-edecl))
        ((mv new-edecls (gout gout-edecls))
-        (simpadd0-extdecl-list (cdr extdecls)
-                               (change-gin gin :vartys gout-edecl.vartys)))
+        (simpadd0-ext-declon-list (cdr extdecls)
+                                  (change-gin gin :vartys gout-edecl.vartys)))
        (gin (gin-update gin gout-edecls)))
     (mv (cons new-edecl new-edecls)
         (change-gout (gout-no-thm gin) :vartys gout-edecls.vartys)))
@@ -3026,20 +3027,20 @@
 
   ///
 
-  (defret extdecl-list-unambp-of-simpadd0-extdecl-list
-    (extdecl-list-unambp new-extdecls)
+  (defret ext-declon-list-unambp-of-simpadd0-ext-declon-list
+    (ext-declon-list-unambp new-extdecls)
     :hints (("Goal" :induct t)))
 
-  (defret extdecl-list-annop-of-simpadd0-extdecl-list
-    (extdecl-list-annop new-extdecls)
-    :hyp (and (extdecl-list-unambp extdecls)
-              (extdecl-list-annop extdecls))
+  (defret ext-declon-list-annop-of-simpadd0-ext-declon-list
+    (ext-declon-list-annop new-extdecls)
+    :hyp (and (ext-declon-list-unambp extdecls)
+              (ext-declon-list-annop extdecls))
     :hints (("Goal" :induct t)))
 
-  (defret extdecl-list-aidentp-of-simpadd0-extdecl-list
-    (extdecl-list-aidentp new-extdecls gcc)
-    :hyp (and (extdecl-list-unambp extdecls)
-              (extdecl-list-aidentp extdecls gcc))
+  (defret ext-declon-list-aidentp-of-simpadd0-ext-declon-list
+    (ext-declon-list-aidentp new-extdecls gcc)
+    :hyp (and (ext-declon-list-unambp extdecls)
+              (ext-declon-list-aidentp extdecls gcc))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3060,7 +3061,7 @@
   (b* (((gin gin) gin)
        ((transunit tunit) tunit)
        ((mv new-decls (gout gout-decls))
-        (simpadd0-extdecl-list tunit.decls gin))
+        (simpadd0-ext-declon-list tunit.decls gin))
        (gin (gin-update gin gout-decls)))
     (mv  (make-transunit :decls new-decls
                          :info tunit.info)

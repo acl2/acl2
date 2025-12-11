@@ -1688,8 +1688,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-extdecl ((extdecl extdeclp))
-  :guard (extdecl-unambp extdecl)
+(define ldm-ext-declon ((extdecl ext-declonp))
+  :guard (ext-declon-unambp extdecl)
   :returns (mv erp (extdecl1 c::ext-declonp))
   :short "Map an external declaration to
           an external declaration in the language definition."
@@ -1706,14 +1706,14 @@
                   (c::fundef (c::tyspecseq-void)
                              (c::fun-declor-base (c::ident "irrelevant") nil)
                              nil)))
-       ((when (extdecl-case extdecl :empty))
+       ((when (ext-declon-case extdecl :empty))
         (reterr (msg "Unsupported empty external declaration.")))
-       ((when (extdecl-case extdecl :asm))
+       ((when (ext-declon-case extdecl :asm))
         (reterr (msg "Unsupported assembler statement at the top level.")))
-       ((when (extdecl-case extdecl :fundef))
-        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->fundef extdecl))))
+       ((when (ext-declon-case extdecl :fundef))
+        (b* (((erp fundef) (ldm-fundef (ext-declon-fundef->fundef extdecl))))
           (retok (c::ext-declon-fundef fundef))))
-       (decl (extdecl-decl->decl extdecl))
+       (decl (ext-declon-decl->decl extdecl))
        ((mv erp fundeclon) (ldm-declon-fun decl))
        ((when (not erp))
         (retok (c::ext-declon-fun-declon fundeclon)))
@@ -1724,35 +1724,35 @@
        ((when (not erp))
         (retok (c::ext-declon-tag-declon tagdeclon))))
     (reterr (msg "Unsupported external declaration ~x0."
-                 (extdecl-fix extdecl))))
+                 (ext-declon-fix extdecl))))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-extdecl-ok-when-extdecl-formalp
+  (defret ldm-ext-declon-ok-when-ext-declon-formalp
     (not erp)
-    :hyp (extdecl-formalp extdecl)
-    :hints (("Goal" :in-theory (enable extdecl-formalp)))))
+    :hyp (ext-declon-formalp extdecl)
+    :hints (("Goal" :in-theory (enable ext-declon-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-extdecl-list ((extdecls extdecl-listp))
-  :guard (extdecl-list-unambp extdecls)
+(define ldm-ext-declon-list ((extdecls ext-declon-listp))
+  :guard (ext-declon-list-unambp extdecls)
   :returns (mv erp (extdecls1 c::ext-declon-listp))
   :short "Map a list of external declarations to the language definition."
   (b* (((reterr) nil)
        ((when (endp extdecls)) (retok nil))
-       ((erp extdecl1) (ldm-extdecl (car extdecls)))
-       ((erp extdecls1) (ldm-extdecl-list (cdr extdecls))))
+       ((erp extdecl1) (ldm-ext-declon (car extdecls)))
+       ((erp extdecls1) (ldm-ext-declon-list (cdr extdecls))))
     (retok (cons extdecl1 extdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-extdecl-list-ok-when-extdecl-list-formalp
+  (defret ldm-ext-declon-list-ok-when-ext-declon-list-formalp
     (not erp)
-    :hyp (extdecl-list-formalp extdecls)
-    :hints (("Goal" :induct t :in-theory (enable extdecl-list-formalp)))))
+    :hyp (ext-declon-list-formalp extdecls)
+    :hints (("Goal" :induct t :in-theory (enable ext-declon-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1769,7 +1769,7 @@
      which we put into a @(tsee c::file)."))
   (b* (((reterr) (c::file nil))
        (extdecls (transunit->decls tunit))
-       ((erp extdecls1) (ldm-extdecl-list extdecls)))
+       ((erp extdecls1) (ldm-ext-declon-list extdecls)))
     (retok (c::make-file :declons extdecls1)))
   :hooks (:fix)
 

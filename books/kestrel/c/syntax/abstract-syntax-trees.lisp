@@ -3584,7 +3584,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum extdecl
+(fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
@@ -3601,23 +3601,23 @@
   (:decl ((decl declon)))
   (:empty ()) ; GCC extension
   (:asm ((stmt asm-stmt))) ; GCC extension
-  :pred extdeclp
+  :pred ext-declonp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist extdecl-list
+(fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "External declarations are defined in @(tsee extdecl).
+    "External declarations are defined in @(tsee ext-declon).
      This fixtype corresponds to <i>external-declaration-list</i>
      in the grammar in [C17]."))
-  :elt-type extdecl
+  :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred extdecl-listp)
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3630,7 +3630,7 @@
    (xdoc::p
     "A translation unit consists of a list of external declarations.
      We also add a slot with additional information, e.g. from validation."))
-  ((decls extdecl-list)
+  ((decls ext-declon-list)
    (info any))
   :pred transunitp
   :layout :fulltree)

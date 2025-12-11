@@ -454,17 +454,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define split-fn-extdecl
+(define split-fn-ext-declon
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecl extdeclp)
+   (extdecl ext-declonp)
    (split-point natp))
   :short "Transform an external declaration."
   :returns (mv (er? maybe-msgp)
                (target-found booleanp)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (split-fn-fundef
@@ -474,33 +474,33 @@
                       split-point)))
                 (fundef-option-case
                   fundef2
-                  :some (retok t (list (extdecl-fundef fundef1)
-                                       (extdecl-fundef fundef2.val)))
-                  :none (retok nil (list (extdecl-fundef fundef1)))))
-      :decl (retok nil (list (extdecl-fix extdecl)))
-      :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl)))))
+                  :some (retok t (list (ext-declon-fundef fundef1)
+                                       (ext-declon-fundef fundef2.val)))
+                  :none (retok nil (list (ext-declon-fundef fundef1)))))
+      :decl (retok nil (list (ext-declon-fix extdecl)))
+      :empty (retok nil (list (ext-declon-fix extdecl)))
+      :asm (retok nil (list (ext-declon-fix extdecl)))))
   ///
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-fn-extdecl-list
+(define split-fn-ext-declon-list
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecls extdecl-listp)
+   (extdecls ext-declon-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
   :returns (mv (er? maybe-msgp)
-               (new-extdecls extdecl-listp))
+               (new-extdecls ext-declon-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
        ((erp target-found extdecls1)
-        (split-fn-extdecl target-fn new-fn-name (first extdecls) split-point))
+        (split-fn-ext-declon target-fn new-fn-name (first extdecls) split-point))
        ((when target-found)
-        (retok (append extdecls1 (extdecl-list-fix (rest extdecls)))))
+        (retok (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
        ((erp extdecls2)
-        (split-fn-extdecl-list target-fn new-fn-name (rest extdecls) split-point)))
+        (split-fn-ext-declon-list target-fn new-fn-name (rest extdecls) split-point)))
     (retok (append extdecls1 extdecls2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -515,7 +515,7 @@
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
-        (split-fn-extdecl-list target-fn new-fn-name tunit.decls split-point)))
+        (split-fn-ext-declon-list target-fn new-fn-name tunit.decls split-point)))
     (mv er (make-transunit :decls extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

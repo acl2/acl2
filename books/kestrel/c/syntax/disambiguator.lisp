@@ -3742,51 +3742,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-extdecl ((extdecl extdeclp) (table dimb-tablep) (gcc booleanp))
-  :returns (mv (erp maybe-msgp) (new-extdecl extdeclp) (new-table dimb-tablep))
+(define dimb-ext-declon ((extdecl ext-declonp)
+                         (table dimb-tablep)
+                         (gcc booleanp))
+  :returns (mv (erp maybe-msgp) (new-extdecl ext-declonp) (new-table dimb-tablep))
   :short "Disambiguate an external declaration."
-  (b* (((reterr) (irr-extdecl) (irr-dimb-table)))
-    (extdecl-case
+  (b* (((reterr) (irr-ext-declon) (irr-dimb-table)))
+    (ext-declon-case
      extdecl
      :fundef
      (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
-       (retok (extdecl-fundef new-fundef) table))
+       (retok (ext-declon-fundef new-fundef) table))
      :decl
      (b* (((erp new-decl table) (dimb-declon extdecl.decl table)))
-       (retok (extdecl-decl new-decl) table))
+       (retok (ext-declon-decl new-decl) table))
      :empty
-     (retok (extdecl-fix extdecl) (dimb-table-fix table))
+     (retok (ext-declon-fix extdecl) (dimb-table-fix table))
      :asm
-     (retok (extdecl-fix extdecl) (dimb-table-fix table))))
+     (retok (ext-declon-fix extdecl) (dimb-table-fix table))))
   :hooks (:fix)
 
   ///
 
-  (defret extdecl-unambp-of-dimb-extdecl
+  (defret ext-declon-unambp-of-dimb-ext-declon
     (implies (not erp)
-             (extdecl-unambp new-extdecl))))
+             (ext-declon-unambp new-extdecl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-extdecl-list ((edecls extdecl-listp)
+(define dimb-ext-declon-list ((edecls ext-declon-listp)
                            (table dimb-tablep)
                            (gcc booleanp))
   :returns (mv (erp maybe-msgp)
-               (new-edecls extdecl-listp)
+               (new-edecls ext-declon-listp)
                (new-table dimb-tablep))
   :short "Disambiguate a list of external declarations."
   (b* (((reterr) nil (irr-dimb-table))
        ((when (endp edecls)) (retok nil (dimb-table-fix table)))
-       ((erp new-edecl table) (dimb-extdecl (car edecls) table gcc))
-       ((erp new-edecls table) (dimb-extdecl-list (cdr edecls) table gcc)))
+       ((erp new-edecl table) (dimb-ext-declon (car edecls) table gcc))
+       ((erp new-edecls table) (dimb-ext-declon-list (cdr edecls) table gcc)))
     (retok (cons new-edecl new-edecls) table))
   :hooks (:fix)
 
   ///
 
-  (defret extdecl-list-unambp-of-dimb-extdecl-list
+  (defret ext-declon-list-unambp-of-dimb-ext-declon-list
     (implies (not erp)
-             (extdecl-list-unambp new-edecls))
+             (ext-declon-list-unambp new-edecls))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3856,7 +3858,7 @@
          (if gcc
              (dimb-add-idents-objfun *gcc-builtin* table)
            table))
-       ((erp new-edecls &) (dimb-extdecl-list edecls table gcc)))
+       ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc)))
     (retok (make-transunit :decls new-edecls :info nil)))
   :hooks (:fix)
 

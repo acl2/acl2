@@ -4353,12 +4353,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-extdecl ((extdecl extdeclp) (pstate pristatep))
-  :guard (and (extdecl-unambp extdecl)
-              (extdecl-aidentp extdecl (pristate->gcc pstate)))
+(define print-ext-declon ((extdecl ext-declonp) (pstate pristatep))
+  :guard (and (ext-declon-unambp extdecl)
+              (ext-declon-aidentp extdecl (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print an external declaration."
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef (print-fundef extdecl.fundef pstate)
    :decl (print-declon extdecl.decl pstate)
@@ -4370,13 +4370,13 @@
 
   ///
 
-  (defret-same-gcc print-extdecl))
+  (defret-same-gcc print-ext-declon))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-extdecl-list ((extdecls extdecl-listp) (pstate pristatep))
-  :guard (and (extdecl-list-unambp extdecls)
-              (extdecl-list-aidentp extdecls (pristate->gcc pstate)))
+(define print-ext-declon-list ((extdecls ext-declon-listp) (pstate pristatep))
+  :guard (and (ext-declon-list-unambp extdecls)
+              (ext-declon-list-aidentp extdecls (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a list of zero or more external declarations."
   :long
@@ -4384,13 +4384,13 @@
    (xdoc::p
     "We separate them with blank lines."))
   (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-extdecl (car extdecls) pstate)))
-    (print-extdecl-list (cdr extdecls) pstate))
+       (pstate (print-ext-declon (car extdecls) pstate)))
+    (print-ext-declon-list (cdr extdecls) pstate))
   :hooks (:fix)
 
   ///
 
-  (defret-rec-same-gcc print-extdecl-list))
+  (defret-rec-same-gcc print-ext-declon-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4400,7 +4400,7 @@
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   (b* (((transunit tunit) tunit))
-    (print-extdecl-list tunit.decls pstate))
+    (print-ext-declon-list tunit.decls pstate))
   :hooks (:fix)
 
   ///

@@ -523,10 +523,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-extdecl
+(defirrelevant irr-ext-declon
   :short "An irrelevant external declaration."
-  :type extdeclp
-  :body (extdecl-decl (irr-declon)))
+  :type ext-declonp
+  :body (ext-declon-decl (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

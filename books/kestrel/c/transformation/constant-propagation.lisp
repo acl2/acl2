@@ -1967,27 +1967,27 @@
                  :body body
                  :info fundef.info)))
 
-(define const-prop-extdecl
-  ((extdecl extdeclp)
+(define const-prop-ext-declon
+  ((extdecl ext-declonp)
    (env envp))
-  :returns (new-extdecl extdeclp)
-  (extdecl-case
+  :returns (new-extdecl ext-declonp)
+  (ext-declon-case
    extdecl
-   :fundef (extdecl-fundef (const-prop-fundef extdecl.fundef env))
+   :fundef (ext-declon-fundef (const-prop-fundef extdecl.fundef env))
    :decl (b* (((mv decl -)
                (const-prop-declon extdecl.decl env)))
-           (extdecl-decl decl))
-   :empty (extdecl-empty)
-   :asm (extdecl-fix extdecl)))
+           (ext-declon-decl decl))
+   :empty (ext-declon-empty)
+   :asm (ext-declon-fix extdecl)))
 
-(define const-prop-extdecl-list
-  ((extdecls extdecl-listp)
+(define const-prop-ext-declon-list
+  ((extdecls ext-declon-listp)
    (env envp))
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (if (endp extdecls)
       nil
-    (cons (const-prop-extdecl (first extdecls) env)
-          (const-prop-extdecl-list (rest extdecls) env)))
+    (cons (const-prop-ext-declon (first extdecls) env)
+          (const-prop-ext-declon-list (rest extdecls) env)))
   :measure (acl2-count extdecls)
   :hints (("Goal" :in-theory nil)))
 
@@ -1995,7 +1995,7 @@
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (const-prop-extdecl-list tunit.decls nil)
+    (make-transunit :decls (const-prop-ext-declon-list tunit.decls nil)
                     :info tunit.info)))
 
 (define const-prop-filepath-transunit-map
