@@ -437,7 +437,7 @@
     ext-declon-case
     ext-declon-fundef
     ext-declon-fundef->fundef
-    ext-declon-decl
+    ext-declon-declon
     ext-declon-empty
 
     ext-declon-listp
@@ -446,7 +446,7 @@
     transunitp
     transunit
     make-transunit
-    transunit->decls
+    transunit->declons
 
     filepath-transunit-mapp
 

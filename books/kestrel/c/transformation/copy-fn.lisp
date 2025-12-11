@@ -126,7 +126,7 @@
              (if fundef?
                  (mv t (list (ext-declon-fix extdecl) (ext-declon-fundef fundef?)))
                (mv nil (list (ext-declon-fix extdecl)))))
-   :decl (mv nil (list (ext-declon-fix extdecl)))
+   :declon (mv nil (list (ext-declon-fix extdecl)))
    :empty (mv nil (list (ext-declon-fix extdecl)))
    :asm (mv nil (list (ext-declon-fix extdecl)))))
 
@@ -157,7 +157,7 @@
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (copy-fn-ext-declon-list tunit.decls target-fn new-fn)
+    (make-transunit :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -49,7 +49,7 @@
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((transunit transunit) transunit))
-    (ext-declon-list-find-fundef ident transunit.decls)))
+    (ext-declon-list-find-fundef ident transunit.declons)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -686,7 +686,7 @@
   (ext-declon-case
    extdecl
    :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
-   :decl (call-graph-fix call-graph)
+   :declon (call-graph-fix call-graph)
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
 
@@ -718,7 +718,7 @@
   (b* (((transunit transunit) transunit)
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-ext-declon-list transunit.decls filepath valid-table call-graph))
+    (call-graph-ext-declon-list transunit.declons filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
 (define call-graph-filepath-transunit-map

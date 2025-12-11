@@ -3753,9 +3753,9 @@
      :fundef
      (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
        (retok (ext-declon-fundef new-fundef) table))
-     :decl
-     (b* (((erp new-decl table) (dimb-declon extdecl.decl table)))
-       (retok (ext-declon-decl new-decl) table))
+     :declon
+     (b* (((erp new-decl table) (dimb-declon extdecl.declon table)))
+       (retok (ext-declon-declon new-decl) table))
      :empty
      (retok (ext-declon-fix extdecl) (dimb-table-fix table))
      :asm
@@ -3852,14 +3852,14 @@
      we should refine our GCC flag with
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
-       (edecls (transunit->decls tunit))
+       (edecls (transunit->declons tunit))
        (table (dimb-init-table))
        (table
          (if gcc
              (dimb-add-idents-objfun *gcc-builtin* table)
            table))
        ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc)))
-    (retok (make-transunit :decls new-edecls :info nil)))
+    (retok (make-transunit :declons new-edecls :info nil)))
   :hooks (:fix)
 
   ///

@@ -170,7 +170,7 @@
                    target-param
                    const)))
              (mv found (ext-declon-fundef fundef)))
-   :decl (mv nil (ext-declon-fix extdecl))
+   :declon (mv nil (ext-declon-fix extdecl))
    :empty (mv nil (ext-declon-fix extdecl))
    :asm (mv nil (ext-declon-fix extdecl))))
 
@@ -201,7 +201,7 @@
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
     (make-transunit
-     :decls (specialize-ext-declon-list tunit.decls target-fn target-param const)
+     :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
      :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4361,7 +4361,7 @@
   (ext-declon-case
    extdecl
    :fundef (print-fundef extdecl.fundef pstate)
-   :decl (print-declon extdecl.decl pstate)
+   :declon (print-declon extdecl.declon pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
             pstate)
@@ -4400,7 +4400,7 @@
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
   (b* (((transunit tunit) tunit))
-    (print-ext-declon-list tunit.decls pstate))
+    (print-ext-declon-list tunit.declons pstate))
   :hooks (:fix)
 
   ///

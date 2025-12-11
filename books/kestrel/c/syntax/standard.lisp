@@ -225,4 +225,4 @@
                 (comp-stmt-standardp (fundef->body fundef))))
    (ext-declon :empty nil)
    (ext-declon :asm nil)
-   (transunit (consp (transunit->decls transunit)))))
+   (transunit (consp (transunit->declons transunit)))))

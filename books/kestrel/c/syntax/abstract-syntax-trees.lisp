@@ -3598,7 +3598,7 @@
     "As a GCC extension, we also allow an assembler statement.
      See the ABNF grammar."))
   (:fundef ((fundef fundef)))
-  (:decl ((decl declon)))
+  (:declon ((declon declon)))
   (:empty ()) ; GCC extension
   (:asm ((stmt asm-stmt))) ; GCC extension
   :pred ext-declonp
@@ -3630,7 +3630,7 @@
    (xdoc::p
     "A translation unit consists of a list of external declarations.
      We also add a slot with additional information, e.g. from validation."))
-  ((decls ext-declon-list)
+  ((declons ext-declon-list)
    (info any))
   :pred transunitp
   :layout :fulltree)

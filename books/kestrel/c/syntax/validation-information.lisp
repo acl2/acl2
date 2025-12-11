@@ -811,7 +811,7 @@
                   (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (ext-declon-list-annop (transunit->decls transunit))
+     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
                      (transunit-infop (transunit->info transunit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -921,10 +921,10 @@
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit decls info))
-           (and (ext-declon-list-annop decls)
+    (equal (transunit-annop (transunit declons info))
+           (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit decls info))
+    :expand (transunit-annop (transunit declons info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -1092,9 +1092,9 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled ext-declon-list-annop-of-transunit->decls
+  (defruled ext-declon-list-annop-of-transunit->declons
     (implies (transunit-annop transunit)
-             (ext-declon-list-annop (transunit->decls transunit)))
+             (ext-declon-list-annop (transunit->declons transunit)))
     :enable transunit-annop)
 
   (defruled transunit-infop-of-transunit->info
@@ -1160,7 +1160,7 @@
      declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     ext-declon-list-annop-of-transunit->decls
+     ext-declon-list-annop-of-transunit->declons
      transunit-infop-of-transunit->info
      transunit-ensemble-annop-of-irr-transunit-ensemble
      code-ensemble-annop-of-irr-code-ensemble)))

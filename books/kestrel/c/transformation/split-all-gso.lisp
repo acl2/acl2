@@ -87,7 +87,7 @@
   :returns (ident? ident-optionp)
   (ext-declon-case
    extdecl
-   :decl (declon-find-first-field-name extdecl.decl struct-tag)
+   :declon (declon-find-first-field-name extdecl.declon struct-tag)
    :otherwise nil))
 
 (define ext-declon-list-find-first-field-name
@@ -106,7 +106,7 @@
    (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((transunit tunit) tunit))
-    (ext-declon-list-find-first-field-name tunit.decls struct-tag)))
+    (ext-declon-list-find-first-field-name tunit.declons struct-tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +188,7 @@
   (ext-declon-case
    extdecl
    :fundef nil
-   :decl (declon-find-gso-candidate extdecl.decl blacklist)
+   :declon (declon-find-gso-candidate extdecl.declon blacklist)
    :empty nil
    :asm nil))
 
@@ -230,7 +230,7 @@
           ((when (= 0 (mbe :logic (nfix steps)
                            :exec (acl2::the-fixnat steps))))
            (reterr t))
-          (gso (ext-declon-list-find-gso-candidate tunit.decls blacklist))
+          (gso (ext-declon-list-find-gso-candidate tunit.declons blacklist))
           ((unless gso)
            (reterr t))
           ((mv erp linkage tag?)

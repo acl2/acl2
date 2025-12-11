@@ -1072,9 +1072,9 @@
   (ext-declon-case
    edecl
    :fundef (fundef-formalp edecl.fundef)
-   :decl (or (declon-obj-formalp edecl.decl)
-             (declon-struct-formalp edecl.decl)
-             (declon-fun-formalp edecl.decl))
+   :declon (or (declon-obj-formalp edecl.declon)
+               (declon-struct-formalp edecl.declon)
+               (declon-fun-formalp edecl.declon))
    :empty nil
    :asm nil)
   :hooks (:fix))
@@ -1101,7 +1101,7 @@
   (xdoc::topstring
    (xdoc::p
     "All its external declarations must be supported."))
-  (ext-declon-list-formalp (transunit->decls tunit))
+  (ext-declon-list-formalp (transunit->declons tunit))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

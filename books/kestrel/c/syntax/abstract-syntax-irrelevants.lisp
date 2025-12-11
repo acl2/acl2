@@ -526,7 +526,7 @@
 (defirrelevant irr-ext-declon
   :short "An irrelevant external declaration."
   :type ext-declonp
-  :body (ext-declon-decl (irr-declon)))
+  :body (ext-declon-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

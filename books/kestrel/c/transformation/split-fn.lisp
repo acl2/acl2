@@ -477,7 +477,7 @@
                   :some (retok t (list (ext-declon-fundef fundef1)
                                        (ext-declon-fundef fundef2.val)))
                   :none (retok nil (list (ext-declon-fundef fundef1)))))
-      :decl (retok nil (list (ext-declon-fix extdecl)))
+      :declon (retok nil (list (ext-declon-fix extdecl)))
       :empty (retok nil (list (ext-declon-fix extdecl)))
       :asm (retok nil (list (ext-declon-fix extdecl)))))
   ///
@@ -515,8 +515,8 @@
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
-        (split-fn-ext-declon-list target-fn new-fn-name tunit.decls split-point)))
-    (mv er (make-transunit :decls extdecls :info tunit.info))))
+        (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
+    (mv er (make-transunit :declons extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

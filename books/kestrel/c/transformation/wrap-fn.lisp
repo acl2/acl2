@@ -523,8 +523,8 @@
     extdecl
     :fundef (fundef-wrap-fn-add-wrapper-def
               extdecl.fundef target-name wrapper-name? blacklist)
-    :decl (declon-wrap-fn-add-wrapper-def
-            extdecl.decl target-name wrapper-name? blacklist)
+    :declon (declon-wrap-fn-add-wrapper-def
+             extdecl.declon target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
@@ -603,7 +603,7 @@
        ((transunit transunit) transunit)
        ((erp foundp found-satp extdecls)
         (ext-declon-list-wrap-fn
-          transunit.decls target-name wrapper-name? blacklist))
+          transunit.declons target-name wrapper-name? blacklist))
        (warnings?
          (if (and foundp (not found-satp))
              (msg$ "Declaration of ~x0 found, but couldn't create a wrapper."
@@ -613,7 +613,7 @@
            foundp
            (c$::change-transunit
              transunit
-             :decls extdecls
+             :declons extdecls
              :info nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

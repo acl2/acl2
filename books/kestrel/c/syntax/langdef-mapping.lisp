@@ -1713,7 +1713,7 @@
        ((when (ext-declon-case extdecl :fundef))
         (b* (((erp fundef) (ldm-fundef (ext-declon-fundef->fundef extdecl))))
           (retok (c::ext-declon-fundef fundef))))
-       (decl (ext-declon-decl->decl extdecl))
+       (decl (ext-declon-declon->declon extdecl))
        ((mv erp fundeclon) (ldm-declon-fun decl))
        ((when (not erp))
         (retok (c::ext-declon-fun-declon fundeclon)))
@@ -1768,7 +1768,7 @@
      obtaining a corresponding list of external declaration,
      which we put into a @(tsee c::file)."))
   (b* (((reterr) (c::file nil))
-       (extdecls (transunit->decls tunit))
+       (extdecls (transunit->declons tunit))
        ((erp extdecls1) (ldm-ext-declon-list extdecls)))
     (retok (c::make-file :declons extdecls1)))
   :hooks (:fix)

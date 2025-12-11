@@ -1974,9 +1974,9 @@
   (ext-declon-case
    extdecl
    :fundef (ext-declon-fundef (const-prop-fundef extdecl.fundef env))
-   :decl (b* (((mv decl -)
-               (const-prop-declon extdecl.decl env)))
-           (ext-declon-decl decl))
+   :declon (b* (((mv declon -)
+                 (const-prop-declon extdecl.declon env)))
+             (ext-declon-declon declon))
    :empty (ext-declon-empty)
    :asm (ext-declon-fix extdecl)))
 
@@ -1995,7 +1995,7 @@
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (const-prop-ext-declon-list tunit.decls nil)
+    (make-transunit :declons (const-prop-ext-declon-list tunit.declons nil)
                     :info tunit.info)))
 
 (define const-prop-filepath-transunit-map

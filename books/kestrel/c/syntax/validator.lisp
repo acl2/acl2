@@ -6785,13 +6785,13 @@
      :fundef (b* (((erp new-fundef table)
                    (valid-fundef edecl.fundef table ienv)))
                (retok (ext-declon-fundef new-fundef) table))
-     :decl (b* (((erp new-decl types table)
-                 (valid-declon edecl.decl table ienv))
-                ((unless (set::emptyp types))
-                 (retmsg$ "The top-level declaration ~x0 ~
+     :declon (b* (((erp new-decl types table)
+                   (valid-declon edecl.declon table ienv))
+                  ((unless (set::emptyp types))
+                   (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."
-                          edecl.decl)))
-             (retok (ext-declon-decl new-decl) table))
+                            edecl.declon)))
+               (retok (ext-declon-declon new-decl) table))
      :empty (retok (ext-declon-empty) (valid-table-fix table))
      :asm (retok (ext-declon-fix edecl) (valid-table-fix table))))
 
@@ -6893,9 +6893,9 @@
                table)
            table))
        ((erp new-edecls table)
-        (valid-ext-declon-list (transunit->decls tunit) table ienv))
+        (valid-ext-declon-list (transunit->declons tunit) table ienv))
        (info (make-transunit-info :table-end table)))
-    (retok (make-transunit :decls new-edecls :info info)
+    (retok (make-transunit :declons new-edecls :info info)
            table))
 
   ///

@@ -221,9 +221,9 @@
              (decl-spec-unambp decl-spec))
     :expand (decl-spec-unambp decl-spec))
 
-  (defruled ext-declon-unambp-when-not-fundef/decl
+  (defruled ext-declon-unambp-when-not-fundef/declon
     (implies (and (not (ext-declon-case ext-declon :fundef))
-                  (not (ext-declon-case ext-declon :decl)))
+                  (not (ext-declon-case ext-declon :declon)))
              (ext-declon-unambp ext-declon))
     :enable ext-declon-unambp)
 
@@ -350,7 +350,7 @@
                     label-unambp-when-name
                     stmt-unambp-of-when-goto
                     stmt-unambp-of-when-asm
-                    ext-declon-unambp-when-not-fundef/decl
+                    ext-declon-unambp-when-not-fundef/declon
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp

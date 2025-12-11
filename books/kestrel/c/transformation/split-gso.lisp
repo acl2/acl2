@@ -345,7 +345,7 @@
   :returns (extdecls ext-declon-listp)
   (if (endp declons)
       nil
-    (cons (c$::ext-declon-decl (first declons))
+    (cons (c$::ext-declon-declon (first declons))
           (declon-list-to-ext-declon-list (rest declons)))))
 
 (define dup-split-struct-type-ext-declon
@@ -363,17 +363,17 @@
     (ext-declon-case
       extdecl
       :fundef (retok nil nil (list (ext-declon-fix extdecl)))
-      :decl (b* (((erp new1 new2 decls)
-                  (dup-split-struct-type-declon
-                    original
-                    new1
-                    new2
-                    blacklist
-                    split-members
-                    extdecl.decl)))
-              (retok new1
+      :declon (b* (((erp new1 new2 decls)
+                    (dup-split-struct-type-declon
+                     original
+                     new1
                      new2
-                     (declon-list-to-ext-declon-list decls)))
+                     blacklist
+                     split-members
+                     extdecl.declon)))
+                (retok new1
+                       new2
+                       (declon-list-to-ext-declon-list decls)))
       :empty (retok nil nil (list (ext-declon-fix extdecl)))
       :asm (retok nil nil (list (ext-declon-fix extdecl)))))
   ///
@@ -451,10 +451,10 @@
           new2
           blacklist
           split-members
-          tunit.decls)))
+          tunit.declons)))
     (retok new1
            new2
-           (make-transunit :decls extdecls :info tunit.info)))
+           (make-transunit :declons extdecls :info tunit.info)))
     ///
 
     (defret identp-of-dup-split-struct-type-transunit.new2$
@@ -750,18 +750,18 @@
     (ext-declon-case
       extdecl
       :fundef (retok nil (list (ext-declon-fix extdecl)))
-      :decl (b* (((erp found declons)
-                  (split-gso-split-object-declon
-                    original
-                    linkage
-                    new1
-                    new2
-                    new1-type
-                    new2-type
-                    split-members
-                    extdecl.decl)))
-              (retok found
-                     (declon-list-to-ext-declon-list declons)))
+      :declon (b* (((erp found declons)
+                    (split-gso-split-object-declon
+                     original
+                     linkage
+                     new1
+                     new2
+                     new1-type
+                     new2-type
+                     split-members
+                     extdecl.declon)))
+                (retok found
+                       (declon-list-to-ext-declon-list declons)))
       :empty (retok nil (list (ext-declon-fix extdecl)))
       :asm (retok nil (list (ext-declon-fix extdecl)))))
   ///
@@ -830,8 +830,8 @@
           new1-type
           new2-type
           split-members
-          tunit.decls)))
-    (retok (make-transunit :decls extdecls :info tunit.info))))
+          tunit.declons)))
+    (retok (make-transunit :declons extdecls :info tunit.info))))
 
 (define split-gso-split-object-filepath-transunit-map
   ((original identp)
