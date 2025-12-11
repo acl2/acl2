@@ -904,7 +904,7 @@
 (test-parse
  parse-external-declaration
  ";"
- :cond (extdecl-case ast :empty)
+ :cond (ext-declon-case ast :empty)
  :gcc t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

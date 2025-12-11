@@ -942,7 +942,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-congruence
+  (defruled declon-declon-congruence
     (b* ((declor (c::obj-declor-ident var))
          (old (c::obj-declon (c::scspecseq-none) tyspecs declor old-initer))
          (new (c::obj-declon (c::scspecseq-none) tyspecs declor new-initer))
@@ -998,7 +998,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-congruence
+  (defruled block-item-declon-congruence
     (b* ((old (c::block-item-declon old-declon))
          (new (c::block-item-declon new-declon))
          (old-declon-compst
@@ -1409,7 +1409,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-errors
+  (defruled declon-declon-errors
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer)))
       (implies (and initer
@@ -1434,7 +1434,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-errors
+  (defruled block-item-declon-errors
     (implies (c::errorp (c::exec-obj-declon declon compst fenv (1- limit)))
              (c::errorp (mv-nth 0 (c::exec-block-item
                                    (c::block-item-declon declon)

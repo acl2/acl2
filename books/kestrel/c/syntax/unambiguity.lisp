@@ -75,11 +75,11 @@
           type-spec-list
           expr/tyname
           declor/absdeclor
-          decl/stmt
+          declon/stmt
           fundef
           fundef-option
-          extdecl
-          extdecl-list
+          ext-declon
+          ext-declon-list
           transunit
           filepath-transunit-map
           transunit-ensemble
@@ -108,7 +108,7 @@
    (block-item :ambig nil)
    (amb-expr/tyname nil)
    (amb-declor/absdeclor nil)
-   (amb-decl/stmt nil)))
+   (amb-declon/stmt nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,11 +221,11 @@
              (decl-spec-unambp decl-spec))
     :expand (decl-spec-unambp decl-spec))
 
-  (defruled extdecl-unambp-when-not-fundef/decl
-    (implies (and (not (extdecl-case extdecl :fundef))
-                  (not (extdecl-case extdecl :decl)))
-             (extdecl-unambp extdecl))
-    :enable extdecl-unambp)
+  (defruled ext-declon-unambp-when-not-fundef/declon
+    (implies (and (not (ext-declon-case ext-declon :fundef))
+                  (not (ext-declon-case ext-declon :declon)))
+             (ext-declon-unambp ext-declon))
+    :enable ext-declon-unambp)
 
   ;; The following theorems exclude certain cases from consideration.
 
@@ -350,7 +350,7 @@
                     label-unambp-when-name
                     stmt-unambp-of-when-goto
                     stmt-unambp-of-when-asm
-                    extdecl-unambp-when-not-fundef/decl
+                    ext-declon-unambp-when-not-fundef/declon
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp

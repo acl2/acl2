@@ -352,14 +352,14 @@
 (defirrelevant irr-enum-spec
   :short "An irrelevant enumeration specifier."
   :type enum-specp
-  :body (make-enum-spec :name nil :list nil :final-comma nil))
+  :body (make-enum-spec :name? nil :enumers nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-enumer
   :short "An irrelevant enumerator."
   :type enumerp
-  :body (make-enumer :name (irr-ident) :value nil))
+  :body (make-enumer :name (irr-ident) :value? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +381,7 @@
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
-  :body (attrib-name-only (irr-attrib-name)))
+  :body (attrib-name (irr-attrib-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,22 +392,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-initdeclor
+(defirrelevant irr-init-declor
   :short "An irrelevant initializer declarator."
-  :type initdeclorp
-  :body (make-initdeclor :declor (irr-declor)
-                         :asm? nil
-                         :attribs nil
-                         :init? nil))
+  :type init-declorp
+  :body (make-init-declor :declor (irr-declor)
+                          :asm? nil
+                          :attribs nil
+                          :initer? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl
+(defirrelevant irr-declon
   :short "An irrelevant declaration."
-  :type declp
-  :body (make-decl-decl :extension nil
-                        :specs nil
-                        :init nil))
+  :type declonp
+  :body (make-declon-declon :extension nil
+                            :specs nil
+                            :declors nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,14 +421,14 @@
 (defirrelevant irr-asm-output
   :short "An irrelevant assembler output operand."
   :type asm-outputp
-  :body (make-asm-output :name nil :constraint nil :lvalue (irr-expr)))
+  :body (make-asm-output :name? nil :constraint nil :lvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-asm-input
   :short "An irrelevant assembler input operand."
   :type asm-inputp
-  :body (make-asm-input :name nil :constraint nil :rvalue (irr-expr)))
+  :body (make-asm-input :name? nil :constraint nil :rvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -481,10 +481,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl/stmt
+(defirrelevant irr-declon/stmt
   :short "An irrelevant declaration or statement."
-  :type decl/stmt-p
-  :body (decl/stmt-decl (irr-decl)))
+  :type declon/stmt-p
+  :body (declon/stmt-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,10 +502,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-amb?-decl/stmt
+(defirrelevant irr-amb?-declon/stmt
   :short "An irrelevant possibly ambiguous declaration or statement."
-  :type amb?-decl/stmt-p
-  :body (amb?-decl/stmt-stmt (irr-expr)))
+  :type amb?-declon/stmt-p
+  :body (amb?-declon/stmt-stmt (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -513,20 +513,20 @@
   :short "An irrelevant function definition."
   :type fundefp
   :body (make-fundef :extension nil
-                     :spec nil
+                     :specs nil
                      :declor (irr-declor)
                      :asm? nil
                      :attribs nil
-                     :decls nil
+                     :declons nil
                      :body (irr-comp-stmt)
                      :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-extdecl
+(defirrelevant irr-ext-declon
   :short "An irrelevant external declaration."
-  :type extdeclp
-  :body (extdecl-decl (irr-decl)))
+  :type ext-declonp
+  :body (ext-declon-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

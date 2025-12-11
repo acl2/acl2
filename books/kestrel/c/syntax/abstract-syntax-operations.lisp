@@ -456,11 +456,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initdeclor->ident
-  ((initdeclor initdeclorp))
+(define init-declor->ident
+  ((initdeclor init-declorp))
   :returns (ident identp)
   :short "Identifier of an initializer declarator."
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (declor->ident initdeclor.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -803,10 +803,10 @@
      we throw a hard error,
      because the specifier does not conform to the concrete syntax."))
   (b* (((enum-spec enumspec) enumspec)
-       ((when enumspec.list) nil)
-       ((unless enumspec.name)
+       ((when enumspec.enumers) nil)
+       ((unless enumspec.name?)
         (raise "Misusage error: empty enumeration specifier.")))
-    enumspec.name)
+    enumspec.name?)
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

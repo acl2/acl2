@@ -482,17 +482,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-decl-thm ((old declp)
-                      (new declp)
-                      (vartys-pre c::ident-type-mapp)
-                      (vartys-post c::ident-type-mapp)
-                      (const-new symbolp)
-                      (thm-index posp)
-                      (hints true-listp))
-  :guard (and (decl-unambp old)
-              (decl-annop old)
-              (decl-unambp new)
-              (decl-annop new))
+(define gen-declon-thm ((old declonp)
+                        (new declonp)
+                        (vartys-pre c::ident-type-mapp)
+                        (vartys-post c::ident-type-mapp)
+                        (const-new symbolp)
+                        (thm-index posp)
+                        (hints true-listp))
+  :guard (and (declon-unambp old)
+              (declon-annop old)
+              (declon-unambp new)
+              (declon-annop new))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp)
                (updated-thm-index posp))
@@ -501,25 +501,25 @@
   (xdoc::topstring
    (xdoc::p
     "The declarations must be of objects in blocks."))
-  (b* ((old (decl-fix old))
-       (new (decl-fix new))
-       ((unless (decl-block-formalp old))
+  (b* ((old (declon-fix old))
+       (new (declon-fix new))
+       ((unless (declon-block-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       ((unless (decl-block-formalp new))
+       ((unless (declon-block-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
        (vars-post (gen-var-assertions vartys-post 'old-compst))
-       ((mv & old-decl) (ldm-decl-obj old)) ; ERP is NIL because FORMALP
-       ((mv & new-decl) (ldm-decl-obj new)) ; ERP is NIL because FORMALP
+       ((mv & old-declon) (ldm-declon-obj old)) ; ERP is NIL because FORMALP
+       ((mv & new-declon) (ldm-declon-obj new)) ; ERP is NIL because FORMALP
        (formula
-        `(b* ((old-decl ',old-decl)
-              (new-decl ',new-decl)
+        `(b* ((old-declon ',old-declon)
+              (new-declon ',new-declon)
               (old-compst
-               (c::exec-obj-declon old-decl compst old-fenv limit))
+               (c::exec-obj-declon old-declon compst old-fenv limit))
               (new-compst
-               (c::exec-obj-declon new-decl compst new-fenv limit)))
+               (c::exec-obj-declon new-declon compst new-fenv limit)))
            (implies (and (> (c::compustate-frames-number compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-compst)))
@@ -534,8 +534,8 @@
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
   ///
-  (fty::deffixequiv gen-decl-thm
-    :args ((old declp) (new declp))))
+  (fty::deffixequiv gen-declon-thm
+    :args ((old declonp) (new declonp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2540,24 +2540,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-decl-decl ((extension booleanp)
-                       (specs decl-spec-listp)
-                       (specs-new decl-spec-listp)
-                       (specs-thm-name symbolp)
-                       (init initdeclor-listp)
-                       (init-new initdeclor-listp)
-                       (init-thm-name symbolp)
-                       (vartys-post c::ident-type-mapp)
-                       (gin ginp))
+(define xeq-declon-declon ((extension booleanp)
+                           (specs decl-spec-listp)
+                           (specs-new decl-spec-listp)
+                           (specs-thm-name symbolp)
+                           (ideclors init-declor-listp)
+                           (ideclors-new init-declor-listp)
+                           (ideclors-thm-name symbolp)
+                           (vartys-post c::ident-type-mapp)
+                           (gin ginp))
   :guard (and (decl-spec-list-unambp specs)
               (decl-spec-list-annop specs)
               (decl-spec-list-unambp specs-new)
               (decl-spec-list-annop specs-new)
-              (initdeclor-list-unambp init)
-              (initdeclor-list-annop init)
-              (initdeclor-list-unambp init-new)
-              (initdeclor-list-annop init-new))
-  :returns (mv (decl declp) (gout goutp))
+              (init-declor-list-unambp ideclors)
+              (init-declor-list-annop ideclors)
+              (init-declor-list-unambp ideclors-new)
+              (init-declor-list-annop ideclors-new))
+  :returns (mv (declon declonp) (gout goutp))
   :short "Equality lifting transformation of a non-static-assert declaration."
   :long
   (xdoc::topstring
@@ -2569,57 +2569,57 @@
     "Currently we do not generate theorems for lists of declaration specifiers.
      We double-check that here."))
   (b* (((gin gin) gin)
-       (decl (make-decl-decl :extension extension
-                             :specs specs
-                             :init init))
-       (decl-new (make-decl-decl :extension extension
-                                 :specs specs-new
-                                 :init init-new))
+       (declon (make-declon-declon :extension extension
+                                   :specs specs
+                                   :declors ideclors))
+       (declon-new (make-declon-declon :extension extension
+                                       :specs specs-new
+                                       :declors ideclors-new))
        (gout-no-thm (change-gout (gout-no-thm gin)
                                  :vartys vartys-post))
        ((when specs-thm-name)
         (raise "Internal error: ~
                 new list of initializer declarators ~x0 ~
                 is not in the formalized subset."
-               init)
-        (mv decl-new (irr-gout)))
-       ((unless (and init-thm-name
-                     (decl-block-formalp decl)))
-        (mv decl-new gout-no-thm))
-       ((unless (decl-block-formalp decl-new))
+               ideclors)
+        (mv declon-new (irr-gout)))
+       ((unless (and ideclors-thm-name
+                     (declon-block-formalp declon)))
+        (mv declon-new gout-no-thm))
+       ((unless (declon-block-formalp declon-new))
         (raise "Internal error: ~
                 new declaration ~x0 is not in the formalized subset ~
                 while old declaration ~x1 is."
-               decl-new decl)
-        (mv decl-new (irr-gout)))
-       (initdeclor (car init))
+               declon-new declon)
+        (mv declon-new (irr-gout)))
+       (initdeclor (car ideclors))
        (var (dirdeclor-ident->ident
              (declor->direct
-              (initdeclor->declor initdeclor))))
-       (initer (initdeclor->init? initdeclor))
-       (initdeclor-new (car init-new))
+              (init-declor->declor initdeclor))))
+       (initer (init-declor->initer? initdeclor))
+       (initdeclor-new (car ideclors-new))
        ((unless (equal var (dirdeclor-ident->ident
                             (declor->direct
-                             (initdeclor->declor initdeclor-new)))))
+                             (init-declor->declor initdeclor-new)))))
         (raise "Internal error: ~
                 new variable ~x0 differs from old variable ~x1."
                (dirdeclor-ident->ident
                 (declor->direct
-                 (initdeclor->declor initdeclor-new)))
+                 (init-declor->declor initdeclor-new)))
                var)
-        (mv decl-new (irr-gout)))
-       (initer-new (initdeclor->init? initdeclor-new))
+        (mv declon-new (irr-gout)))
+       (initer-new (init-declor->initer? initdeclor-new))
        ((unless (equal specs specs-new))
         (raise "Internal error: ~
                 new declaration specifiers ~x0 differ from ~
                 old declaration specifiers ~x1."
                specs-new specs)
-        (mv decl-new (irr-gout)))
+        (mv declon-new (irr-gout)))
        ((mv & tyspecs) (check-decl-spec-list-all-typespec specs))
        ((mv & ctyspecs) (ldm-type-spec-list tyspecs))
        (ctype (c::tyspecseq-to-type ctyspecs))
        ((unless (c::type-nonchar-integerp ctype))
-        (mv decl-new gout-no-thm))
+        (mv declon-new gout-no-thm))
        ((mv & cvar) (ldm-ident var))
        ((mv & old-initer) (ldm-initer initer))
        ((mv & new-initer) (ldm-initer initer-new))
@@ -2638,55 +2638,55 @@
                    (:e c::identp)
                    c::compustate-frames-number-of-exec-initer
                    c::compustatep-when-compustate-resultp-and-not-errorp
-                   decl-decl-compustate-vars-old
-                   decl-decl-compustate-vars-new)
-                 :use ((:instance ,init-thm-name (limit (1- limit)))
+                   declon-declon-compustate-vars-old
+                   declon-declon-compustate-vars-new)
+                 :use ((:instance ,ideclors-thm-name (limit (1- limit)))
                        (:instance
-                        decl-decl-congruence
+                        declon-declon-congruence
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (old-initer ',old-initer)
                         (new-initer ',new-initer))
                        (:instance
-                        decl-decl-errors
+                        declon-declon-errors
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
-        (gen-decl-thm decl
-                      decl-new
-                      gin.vartys
-                      vartys-post
-                      gin.const-new
-                      gin.thm-index
-                      hints)))
-    (mv decl-new
+        (gen-declon-thm declon
+                        declon-new
+                        gin.vartys
+                        vartys-post
+                        gin.const-new
+                        gin.thm-index
+                        hints)))
+    (mv declon-new
         (make-gout :events (cons thm-event gin.events)
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys vartys-post)))
-  :guard-hints (("Goal" :in-theory (enable decl-block-formalp
-                                           initdeclor-block-formalp
+  :guard-hints (("Goal" :in-theory (enable declon-block-formalp
+                                           init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
 
   ///
 
-  (defret decl-unambp-of-xeq-decl-decl
-    (decl-unambp decl)
+  (defret declon-unambp-of-xeq-declon-declon
+    (declon-unambp declon)
     :hyp (and (decl-spec-list-unambp specs-new)
-              (initdeclor-list-unambp init-new)))
+              (init-declor-list-unambp ideclors-new)))
 
-  (defret decl-annop-of-xeq-decl-decl
-    (decl-annop decl)
+  (defret declon-annop-of-xeq-declon-declon
+    (declon-annop declon)
     :hyp (and (decl-spec-list-annop specs-new)
-              (initdeclor-list-annop init-new)))
+              (init-declor-list-annop ideclors-new)))
 
-  (defret decl-aidentp-of-xeq-decl-decl
-    (decl-aidentp decl gcc)
+  (defret declon-aidentp-of-xeq-declon-declon
+    (declon-aidentp declon gcc)
     :hyp (and (decl-spec-list-aidentp specs-new gcc)
-              (initdeclor-list-aidentp init-new gcc))))
+              (init-declor-list-aidentp ideclors-new gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2763,16 +2763,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-block-item-decl ((decl declp)
-                             (decl-new declp)
-                             (decl-thm-name symbolp)
+(define xeq-block-item-declon ((declon declonp)
+                             (declon-new declonp)
+                             (declon-thm-name symbolp)
                              info
                              (vartys-post c::ident-type-mapp)
                              (gin ginp))
-  :guard (and (decl-unambp decl)
-              (decl-annop decl)
-              (decl-unambp decl-new)
-              (decl-annop decl-new))
+  :guard (and (declon-unambp declon)
+              (declon-annop declon)
+              (declon-unambp declon-new)
+              (declon-annop declon-new))
   :returns (mv (item block-itemp) (gout goutp))
   :short "Equality lifting transformation of
           a block item that consists of a declaration."
@@ -2781,13 +2781,13 @@
    (xdoc::p
     "We put the new declaration into a block item."))
   (b* (((gin gin) gin)
-       (item (make-block-item-decl :decl decl :info info))
-       (item-new (make-block-item-decl :decl decl-new :info info))
+       (item (make-block-item-declon :declon declon :info info))
+       (item-new (make-block-item-declon :declon declon-new :info info))
        (gout-no-thm (change-gout (gout-no-thm gin)
                                  :vartys vartys-post))
-       ((unless decl-thm-name) (mv item-new gout-no-thm))
-       ((mv & old-declon) (ldm-decl-obj decl)) ; ERP must be NIL
-       ((mv & new-declon) (ldm-decl-obj decl-new)) ; ERP must be NIL
+       ((unless declon-thm-name) (mv item-new gout-no-thm))
+       ((mv & old-declon) (ldm-declon-obj declon)) ; ERP must be NIL
+       ((mv & new-declon) (ldm-declon-obj declon-new)) ; ERP must be NIL
        (hints `(("Goal"
                  :in-theory
                  '((:e c::block-item-declon)
@@ -2796,14 +2796,14 @@
                    (:e set::insert)
                    c::compustate-frames-number-of-exec-obj-declon
                    c::compustatep-when-compustate-resultp-and-not-errorp
-                   block-item-decl-compustate-vars)
-                 :use ((:instance ,decl-thm-name (limit (1- limit)))
+                   block-item-declon-compustate-vars)
+                 :use ((:instance ,declon-thm-name (limit (1- limit)))
                        (:instance
-                        block-item-decl-congruence
+                        block-item-declon-congruence
                         (old-declon ',old-declon)
                         (new-declon ',new-declon))
                        (:instance
-                        block-item-decl-errors
+                        block-item-declon-errors
                         (declon ',old-declon)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2819,24 +2819,24 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys vartys-post)))
-  :guard-hints (("Goal" :in-theory (enable decl-block-formalp
-                                           initdeclor-block-formalp
+  :guard-hints (("Goal" :in-theory (enable declon-block-formalp
+                                           init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
 
   ///
 
-  (defret block-item-unambp-of-xeq-block-item-decl
+  (defret block-item-unambp-of-xeq-block-item-declon
     (block-item-unambp item)
-    :hyp (decl-unambp decl-new))
+    :hyp (declon-unambp declon-new))
 
-  (defret block-item-annop-of-xeq-block-item-decl
+  (defret block-item-annop-of-xeq-block-item-declon
     (block-item-annop item)
-    :hyp (decl-annop decl-new))
+    :hyp (declon-annop declon-new))
 
-  (defret block-item-aidentp-of-xeq-block-item-decl
+  (defret block-item-aidentp-of-xeq-block-item-declon
     (block-item-aidentp item gcc)
-    :hyp (decl-aidentp decl-new gcc)))
+    :hyp (declon-aidentp declon-new gcc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2998,31 +2998,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xeq-fundef ((extension booleanp)
-                    (spec decl-spec-listp)
-                    (spec-new decl-spec-listp)
+                    (specs decl-spec-listp)
+                    (specs-new decl-spec-listp)
                     (declor declorp)
                     (declor-new declorp)
                     (asm? asm-name-spec-optionp)
                     (attribs attrib-spec-listp)
-                    (decls decl-listp)
-                    (decls-new decl-listp)
+                    (declons declon-listp)
+                    (declons-new declon-listp)
                     (body comp-stmtp)
                     (body-new comp-stmtp)
                     (body-thm-name symbolp)
                     (info fundef-infop)
                     (gin ginp))
-  :guard (and (decl-spec-list-unambp spec)
-              (decl-spec-list-annop spec)
-              (decl-spec-list-unambp spec-new)
-              (decl-spec-list-annop spec-new)
+  :guard (and (decl-spec-list-unambp specs)
+              (decl-spec-list-annop specs)
+              (decl-spec-list-unambp specs-new)
+              (decl-spec-list-annop specs-new)
               (declor-unambp declor)
               (declor-annop declor)
               (declor-unambp declor-new)
               (declor-annop declor-new)
-              (decl-list-unambp decls)
-              (decl-list-annop decls)
-              (decl-list-unambp decls-new)
-              (decl-list-annop decls-new)
+              (declon-list-unambp declons)
+              (declon-list-annop declons)
+              (declon-list-unambp declons-new)
+              (declon-list-annop declons-new)
               (comp-stmt-unambp body)
               (comp-stmt-annop body)
               (comp-stmt-unambp body-new)
@@ -3076,19 +3076,19 @@
      which hide the corresponding global variables."))
   (b* (((gin gin) gin)
        (fundef (make-fundef :extension extension
-                            :spec spec
+                            :specs specs
                             :declor declor
                             :asm? asm?
                             :attribs attribs
-                            :decls decls
+                            :declons declons
                             :body body
                             :info info))
        (new-fundef (make-fundef :extension extension
-                                :spec spec-new
+                                :specs specs-new
                                 :declor declor-new
                                 :asm? asm?
                                 :attribs attribs
-                                :decls decls-new
+                                :declons declons-new
                                 :body body-new
                                 :info info))
        (type (fundef-info->type info))
@@ -3242,27 +3242,27 @@
 
   (defret fundef-unambp-of-xeq-fundef
     (fundef-unambp fundef)
-    :hyp (and (decl-spec-list-unambp spec-new)
+    :hyp (and (decl-spec-list-unambp specs-new)
               (declor-unambp declor-new)
-              (decl-list-unambp decls-new)
+              (declon-list-unambp declons-new)
               (comp-stmt-unambp body-new)))
 
   (defret fundef-annop-of-xeq-fundef
     (fundef-annop fundef)
-    :hyp (and (decl-spec-list-annop spec-new)
+    :hyp (and (decl-spec-list-annop specs-new)
               (declor-annop declor-new)
-              (decl-list-annop decls-new)
+              (declon-list-annop declons-new)
               (comp-stmt-annop body-new)
               (fundef-infop info)))
 
   (defret fundef-aidentp-of-xeq-fundef
     (fundef-aidentp fundef gcc)
-    :hyp (and (decl-spec-list-unambp spec-new)
-              (decl-spec-list-aidentp spec-new gcc)
+    :hyp (and (decl-spec-list-unambp specs-new)
+              (decl-spec-list-aidentp specs-new gcc)
               (declor-unambp declor-new)
               (declor-aidentp declor-new gcc)
               (attrib-spec-list-aidentp attribs gcc)
-              (decl-list-unambp decls-new)
-              (decl-list-aidentp decls-new gcc)
+              (declon-list-unambp declons-new)
+              (declon-list-aidentp declons-new gcc)
               (comp-stmt-unambp body-new)
               (comp-stmt-aidentp body-new gcc))))

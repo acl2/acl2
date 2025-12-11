@@ -332,7 +332,7 @@
              ))))
     (retok t
            (make-fundef
-             :spec (c$::declor-spec-list-make-static specs)
+             :specs (c$::declor-spec-list-make-static specs)
              :declor wrapper-declor
              :body wrapper-body
              :info nil)
@@ -347,13 +347,13 @@
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define initdeclor-list-wrap-fn-add-wrapper-def
-  ((init initdeclor-listp)
+(define init-declor-list-wrap-fn-add-wrapper-def
+  ((init init-declor-listp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp)
    (specs decl-spec-listp))
-  :guard (c$::initdeclor-list-annop init)
+  :guard (c$::init-declor-list-annop init)
   :returns (mv (er? maybe-msgp)
                (uid? c$::uid-optionp)
                (wrapper? fundef-optionp)
@@ -372,7 +372,7 @@
   (b* (((reterr) nil nil nil)
        ((when (endp init))
         (retok nil nil nil))
-       (declor (initdeclor->declor (first init)))
+       (declor (init-declor->declor (first init)))
        ((erp foundp wrapper? wrapper-name?$)
         (declor-wrap-fn-add-wrapper-def declor
                                          target-name
@@ -380,38 +380,38 @@
                                          blacklist
                                          specs))
        ((unless foundp)
-        (initdeclor-list-wrap-fn-add-wrapper-def (rest init)
+        (init-declor-list-wrap-fn-add-wrapper-def (rest init)
                                                 target-name
                                                 wrapper-name?
                                                 blacklist
                                                 specs))
        ((erp uid?)
          (b* (((reterr) nil)
-             ((unless (c$::initdeclor-infop (c$::initdeclor->info (first init))))
+             ((unless (c$::init-declor-infop (c$::init-declor->info (first init))))
               (retmsg$ "Initializer declarator does not have ~
-                        initdeclor-info metadata: ~x0"
-                       (initdeclor-fix (first init)))))
-           (retok (c$::initdeclor-info->uid?
-                    (c$::initdeclor->info (first init)))))))
+                        init-declor-info metadata: ~x0"
+                       (init-declor-fix (first init)))))
+           (retok (c$::init-declor-info->uid?
+                    (c$::init-declor->info (first init)))))))
     (retok uid? wrapper? wrapper-name?$))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-init-declor-list-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-initdeclor-list-wrap-fn-add-wrapper-def.wrapper-name?$
+  (defret identp-of-init-declor-list-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))
     :hints (("Goal" :induct t))))
 
-(define decl-wrap-fn-add-wrapper-def
-  ((decl declp)
+(define declon-wrap-fn-add-wrapper-def
+  ((declon declonp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::decl-annop decl)
+  :guard (c$::declon-annop declon)
   :returns (mv (er? maybe-msgp)
                (uid? c$::uid-optionp)
                (wrapper? fundef-optionp)
@@ -421,29 +421,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+    "The returned @('uid?') value, if it is not @('nil'), is the @(see
       c$::uid) of the matched function.")
    (xdoc::p
-     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+    "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
       that means the declaration matched the target, but some aspect of it is
       unsupported by the current implementation."))
-  (decl-case
-    decl
-    :decl (initdeclor-list-wrap-fn-add-wrapper-def
-            decl.init
+  (declon-case
+   declon
+   :declon (init-declor-list-wrap-fn-add-wrapper-def
+            declon.declors
             target-name
             wrapper-name?
             blacklist
-            decl.specs)
-    :otherwise (retok nil nil nil))
+            declon.specs)
+   :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-decl-wrap-fn-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-declon-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-decl-wrap-fn-add-wrapper-def.wrapper-name?$
+  (defret identp-of-declon-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
@@ -475,7 +475,7 @@
                                         target-name
                                         wrapper-name?
                                         blacklist
-                                        fundef.spec))
+                                        fundef.specs))
        ((erp uid?)
         (b* (((reterr) nil)
              ((unless foundp)
@@ -498,12 +498,12 @@
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
-(define extdecl-wrap-fn-add-wrapper-def
-  ((extdecl extdeclp)
+(define ext-declon-wrap-fn-add-wrapper-def
+  ((extdecl ext-declonp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::extdecl-annop extdecl)
+  :guard (c$::ext-declon-annop extdecl)
   :returns (mv (er? maybe-msgp)
                (uid? c$::uid-optionp)
                (wrapper? fundef-optionp)
@@ -519,62 +519,62 @@
      "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
       that means the external declaration matched the target, but some aspect
       of it is unsupported by the current implementation."))
-  (extdecl-case
+  (ext-declon-case
     extdecl
     :fundef (fundef-wrap-fn-add-wrapper-def
               extdecl.fundef target-name wrapper-name? blacklist)
-    :decl (decl-wrap-fn-add-wrapper-def
-            extdecl.decl target-name wrapper-name? blacklist)
+    :declon (declon-wrap-fn-add-wrapper-def
+             extdecl.declon target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-extdecl-wrap-fn-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-ext-declon-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-extdecl-wrap-fn-add-wrapper-def.wrapper-name?$
+  (defret identp-of-ext-declon-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-list-wrap-fn
-  ((extdecls extdecl-listp)
+(define ext-declon-list-wrap-fn
+  ((extdecls ext-declon-listp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::extdecl-list-annop extdecls)
+  :guard (c$::ext-declon-list-annop extdecls)
   :returns (mv (er? maybe-msgp)
                (foundp booleanp :rule-classes :type-prescription)
                (found-satp booleanp :rule-classes :type-prescription)
-               (extdecls$ extdecl-listp))
+               (extdecls$ ext-declon-listp))
   :short "Transform an external declaration list."
   :long
   (xdoc::topstring
    (xdoc::p
-     "This searches for an external declaration matching the target function.
+    "This searches for an external declaration matching the target function.
       When it finds one, it creates the function wrapper. It then substitutes
       the wrapper function for the original function in direct function calls
       occurring in the remainder of the translation unit."))
   (b* (((reterr) nil nil nil)
        ((when (endp extdecls))
         (retok nil nil nil))
-       (extdecl (extdecl-fix (first extdecls)))
+       (extdecl (ext-declon-fix (first extdecls)))
        ((erp uid? wrapper? wrapper-name?$)
-        (extdecl-wrap-fn-add-wrapper-def
-          extdecl target-name wrapper-name? blacklist))
+        (ext-declon-wrap-fn-add-wrapper-def
+         extdecl target-name wrapper-name? blacklist))
        ((when (and uid? wrapper?))
         (retok t
                t
                (list* extdecl
-                      (extdecl-fundef wrapper?)
-                      (extdecl-list-rename-fn (rest extdecls)
-                                              uid?
-                                              wrapper-name?$))))
+                      (ext-declon-fundef wrapper?)
+                      (ext-declon-list-rename-fn (rest extdecls)
+                                                 uid?
+                                                 wrapper-name?$))))
        ((erp foundp$ found-satp extdecls$)
-        (extdecl-list-wrap-fn
-          (rest extdecls) target-name wrapper-name? blacklist)))
+        (ext-declon-list-wrap-fn
+         (rest extdecls) target-name wrapper-name? blacklist)))
     (retok (if uid?
                t
              foundp$)
@@ -602,8 +602,8 @@
   (b* (((reterr) nil nil (c$::transunit-fix transunit))
        ((transunit transunit) transunit)
        ((erp foundp found-satp extdecls)
-        (extdecl-list-wrap-fn
-          transunit.decls target-name wrapper-name? blacklist))
+        (ext-declon-list-wrap-fn
+          transunit.declons target-name wrapper-name? blacklist))
        (warnings?
          (if (and foundp (not found-satp))
              (msg$ "Declaration of ~x0 found, but couldn't create a wrapper."
@@ -613,7 +613,7 @@
            foundp
            (c$::change-transunit
              transunit
-             :decls extdecls
+             :declons extdecls
              :info nil)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

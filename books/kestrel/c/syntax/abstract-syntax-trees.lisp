@@ -2774,8 +2774,8 @@
       "To make this definition simpler,
        we allow an absent name and no enumerators,
        even though this is disallowed in the concrete syntax."))
-    ((name ident-option)
-     (list enumer-list)
+    ((name? ident-option)
+     (enumers enumer-list)
      (final-comma bool))
     :pred enum-specp
     :layout :fulltree
@@ -2791,7 +2791,7 @@
      (xdoc::p
       "This corresponds to <i>enumerator</i> in the grammar in [C17]."))
     ((name ident)
-     (value const-expr-option))
+     (value? const-expr-option))
     :pred enumerp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
@@ -2874,9 +2874,9 @@
        and an attributed that consists of a name and zero parameters:
        in concrete syntax, the latter would include open and closed parentheses,
        without anything in between (except white space or comments)."))
-    (:name-only ((name attrib-name)))
-    (:name-param ((name attrib-name)
-                  (param expr-list)))
+    (:name ((name attrib-name)))
+    (:name-params ((name attrib-name)
+                   (params expr-list)))
     :pred attribp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2937,7 +2937,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod initdeclor
+  (fty::defprod init-declor
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of initializer declarators [C17:6.7] [C17:A.2.2]."
     :long
@@ -2956,32 +2956,32 @@
     ((declor declor)
      (asm? asm-name-spec-option)
      (attribs attrib-spec-list)
-     (init? initer-option)
+     (initer? initer-option)
      (info any))
-    :pred initdeclorp
+    :pred init-declorp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist initdeclor-list
+  (fty::deflist init-declor-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of initializer declarators."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Initializer declarators are defined in @(tsee initdeclor).
+      "Initializer declarators are defined in @(tsee init-declor).
        This fixtype corresponds to <i>init-declarator-list</i>
        in the grammar in [C17]."))
-    :elt-type initdeclor
+    :elt-type init-declor
     :true-listp t
     :elementp-of-nil nil
-    :pred initdeclor-listp
+    :pred init-declor-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum decl
+  (fty::deftagsum declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of declarations [C17:6.7] [C17:A.2.2]."
     :long
@@ -2992,31 +2992,31 @@
        the declaration starts with the @('__extension__') GCC keyword.
        We model this as a boolean saying whether
        the keyword is present or absent."))
-    (:decl ((extension bool)
-            (specs decl-spec-list)
-            (init initdeclor-list)))
+    (:declon ((extension bool)
+              (specs decl-spec-list)
+              (declors init-declor-list)))
     (:statassert ((statassert statassert)))
-    :pred declp
+    :pred declonp
     :base-case-override :statassert
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist decl-list
+  (fty::deflist declon-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Declarations are defined in @(tsee decl).
+      "Declarations are defined in @(tsee declon).
        This fixtype corresponds to <i>declaration-list</i>
        in the grammar in [C17],
        which is under external definitions [C17:6.9.1] [C17:A.2.4]."))
-    :elt-type decl
+    :elt-type declon
     :true-listp t
     :elementp-of-nil nil
-    :pred decl-listp
+    :pred declon-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3060,7 +3060,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are a GCC extension; see ABNF grammar."))
-    ((name ident-option)
+    ((name? ident-option)
      (constraint stringlit-list)
      (lvalue expr))
     :pred asm-outputp
@@ -3091,7 +3091,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are a GCC extension; see ABNF grammar."))
-    ((name ident-option)
+    ((name? ident-option)
      (constraint stringlit-list)
      (rvalue expr))
     :pred asm-inputp
@@ -3178,7 +3178,7 @@
        There is also a third ambiguous form,
        which applies when the initialization part could be
        either an expression or a declaration, syntactically:
-       this is captured exactly by @(tsee amb-decl/stmt),
+       this is captured exactly by @(tsee amb-declon/stmt),
        because the statement in an ambiguous declaration or statement
        is a statement expression,
        which is exactly what
@@ -3209,11 +3209,11 @@
                 (test expr-option)
                 (next expr-option)
                 (body stmt)))
-    (:for-decl ((init decl)
-                (test expr-option)
-                (next expr-option)
-                (body stmt)))
-    (:for-ambig ((init amb-decl/stmt)
+    (:for-declon ((init declon)
+                  (test expr-option)
+                  (next expr-option)
+                  (body stmt)))
+    (:for-ambig ((init amb-declon/stmt)
                  (test expr-option)
                  (next expr-option)
                  (body stmt)))
@@ -3262,12 +3262,12 @@
       "This corresponds to <i>block-item</i> in the grammar in [C17].")
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
-       see @(tsee amb-decl/stmt)."))
-    (:decl ((decl decl)
-            (info any)))
+       see @(tsee amb-declon/stmt)."))
+    (:declon ((declon declon)
+              (info any)))
     (:stmt ((stmt stmt)
             (info any)))
-    (:ambig ((decl/stmt amb-decl/stmt)))
+    (:ambig ((declon/stmt amb-declon/stmt)))
     :pred block-itemp
     :base-case-override :stmt
     :layout :fulltree
@@ -3373,7 +3373,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod amb-decl/stmt
+  (fty::defprod amb-declon/stmt
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of ambiguous declarations or statements."
     :long
@@ -3404,9 +3404,9 @@
        (since the only ambiguity is with expression statements).
      These two components should look the same in concrete syntax,
        but we do not enforce that in this fixtype definition."))
-    ((decl decl)
-     (stmt expr))
-    :pred amb-decl/stmt-p
+    ((declon declon)
+     (expr expr))
+    :pred amb-declon/stmt-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
 
@@ -3472,11 +3472,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum decl/stmt
+(fty::deftagsum declon/stmt
   :short "Fixtype of declarations or (expression) statements."
-  (:decl ((decl decl)))
+  (:declon ((declon declon)))
   (:stmt ((expr expr)))
-  :pred decl/stmt-p
+  :pred declon/stmt-p
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3523,7 +3523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum amb?-decl/stmt
+(fty::deftagsum amb?-declon/stmt
   :short "Fixtype of possibly ambiguous declarations or statements."
   :long
   (xdoc::topstring
@@ -3534,10 +3534,10 @@
      a declaration,
      an (expression) statement,
      or an ambiguous declaration or statements."))
-  (:decl ((decl decl)))
+  (:declon ((declon declon)))
   (:stmt ((expr expr)))
-  (:ambig ((decl/stmt amb-decl/stmt)))
-  :pred amb?-decl/stmt-p
+  (:ambig ((declon/stmt amb-declon/stmt)))
+  :pred amb?-declon/stmt-p
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3561,11 +3561,11 @@
      as GCC extensions;
      see the ABNF grammar."))
   ((extension bool) ; GCC extension
-   (spec decl-spec-list)
+   (specs decl-spec-list)
    (declor declor)
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
-   (decls decl-list)
+   (declons declon-list)
    (body comp-stmt)
    (info any))
   :pred fundefp
@@ -3584,7 +3584,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum extdecl
+(fty::deftagsum ext-declon
   :short "Fixtype of external declarations [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
@@ -3598,26 +3598,26 @@
     "As a GCC extension, we also allow an assembler statement.
      See the ABNF grammar."))
   (:fundef ((fundef fundef)))
-  (:decl ((decl decl)))
+  (:declon ((declon declon)))
   (:empty ()) ; GCC extension
   (:asm ((stmt asm-stmt))) ; GCC extension
-  :pred extdeclp
+  :pred ext-declonp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist extdecl-list
+(fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "External declarations are defined in @(tsee extdecl).
+    "External declarations are defined in @(tsee ext-declon).
      This fixtype corresponds to <i>external-declaration-list</i>
      in the grammar in [C17]."))
-  :elt-type extdecl
+  :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred extdecl-listp)
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3630,7 +3630,7 @@
    (xdoc::p
     "A translation unit consists of a list of external declarations.
      We also add a slot with additional information, e.g. from validation."))
-  ((decls extdecl-list)
+  ((declons ext-declon-list)
    (info any))
   :pred transunitp
   :layout :fulltree)
