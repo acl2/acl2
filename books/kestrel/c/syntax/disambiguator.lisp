@@ -3050,11 +3050,11 @@
             (table (dimb-pop-scope table)))
          (declon/stmt-case
           decl/expr
-          :decl (retok (make-stmt-for-decl :init decl/expr.decl
-                                           :test new-test
-                                           :next new-next
-                                           :body new-body)
-                       table)
+          :declon (retok (make-stmt-for-decl :init decl/expr.declon
+                                             :test new-test
+                                             :next new-next
+                                             :body new-body)
+                         table)
           :stmt (retok (make-stmt-for-expr :init decl/expr.expr
                                            :test new-test
                                            :next new-next
@@ -3134,11 +3134,12 @@
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
          (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
        :ambig
-       (b* (((erp declon/stmt table) (dimb-amb-declon/stmt item.declon/stmt table)))
+       (b* (((erp declon/stmt table)
+             (dimb-amb-declon/stmt item.declon/stmt table)))
          (declon/stmt-case
           declon/stmt
-          :decl (retok (make-block-item-declon :declon declon/stmt.decl
-                                               :info nil)
+          :declon (retok (make-block-item-declon :declon declon/stmt.declon
+                                                 :info nil)
                        table)
           :stmt (retok (make-block-item-stmt
                         :stmt (make-stmt-expr :expr? declon/stmt.expr
@@ -3349,7 +3350,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-amb-declon/stmt ((declon/stmt amb-declon/stmt-p) (table dimb-tablep))
+  (define dimb-amb-declon/stmt ((declon/stmt amb-declon/stmt-p)
+                                (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
                  (decl-or-stmt declon/stmt-p)
                  (new-table dimb-tablep))
@@ -3371,9 +3373,11 @@
        If none or both succeed, the code must be invalid."))
     (b* (((reterr) (irr-declon/stmt) (irr-dimb-table))
          ((amb-declon/stmt declon/stmt) declon/stmt)
-         ((mv erp-decl new-decl table-decl) (dimb-declon declon/stmt.decl table))
-         ((mv erp-expr new-expr table-expr) (dimb-expr declon/stmt.expr table)))
-      (if erp-decl
+         ((mv erp-declon new-declon table-decl)
+          (dimb-declon declon/stmt.declon table))
+         ((mv erp-expr new-expr table-expr)
+          (dimb-expr declon/stmt.expr table)))
+      (if erp-declon
           ;; decl fails:
           (if erp-expr
               ;; stmt fails:
@@ -3385,14 +3389,14 @@
                         These are the failures for each:~%~%~
                         ~@1~%~%~@2"
                        (amb-declon/stmt-fix declon/stmt)
-                       erp-decl
+                       erp-declon
                        erp-expr)
             ;; stmt succeeds:
             (retok (declon/stmt-stmt new-expr) table-expr))
         ;; decl succeeds:
         (if erp-expr
             ;; stmt fails:
-            (retok (declon/stmt-decl new-decl) table-decl)
+            (retok (declon/stmt-declon new-declon) table-decl)
           ;; stmt succeeds:
           (retmsg$ "In the ambiguous declaration or statement ~x0, ~
                     both the declaration and the statement ~

@@ -3404,7 +3404,7 @@
        (since the only ambiguity is with expression statements).
      These two components should look the same in concrete syntax,
        but we do not enforce that in this fixtype definition."))
-    ((decl declon)
+    ((declon declon)
      (expr expr))
     :pred amb-declon/stmt-p
     :layout :fulltree
@@ -3474,7 +3474,7 @@
 
 (fty::deftagsum declon/stmt
   :short "Fixtype of declarations or (expression) statements."
-  (:decl ((decl declon)))
+  (:declon ((declon declon)))
   (:stmt ((expr expr)))
   :pred declon/stmt-p
   :layout :fulltree)
@@ -3534,7 +3534,7 @@
      a declaration,
      an (expression) statement,
      or an ambiguous declaration or statements."))
-  (:decl ((decl declon)))
+  (:declon ((declon declon)))
   (:stmt ((expr expr)))
   (:ambig ((declon/stmt amb-declon/stmt)))
   :pred amb?-declon/stmt-p

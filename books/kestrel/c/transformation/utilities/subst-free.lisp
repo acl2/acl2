@@ -1458,7 +1458,7 @@
      (bound-vars ident-setp))
     :returns (result c$::amb-declon/stmt-p)
     (b* (((mv decl bound-vars)
-          (declon-subst-free (c$::amb-declon/stmt->decl amb-declon/stmt)
+          (declon-subst-free (c$::amb-declon/stmt->declon amb-declon/stmt)
                              subst bound-vars)))
       (c$::amb-declon/stmt
         decl

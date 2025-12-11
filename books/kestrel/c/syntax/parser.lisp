@@ -8354,7 +8354,7 @@
                 (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
-            (retok (amb?-declon/stmt-decl decl) span parstate))
+            (retok (amb?-declon/stmt-declon decl) span parstate))
         ;; If the parsing of an expression succeeds,
         ;; we also need to parse a semicolon.
         ;; Note that an expression may be a prefix of a declaration,
@@ -8442,7 +8442,7 @@
                                span-stmt expr span-decl decl)
                         (reterr t)))
                     (retok (amb?-declon/stmt-ambig
-                            (make-amb-declon/stmt :decl decl
+                            (make-amb-declon/stmt :declon decl
                                                   :expr expr))
                            span-stmt ; = span-decl
                            parstate))))
@@ -8465,7 +8465,7 @@
                         (init-parstate nil (c::version-c17) parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
-              (retok (amb?-declon/stmt-decl decl) span parstate))))))
+              (retok (amb?-declon/stmt-declon decl) span parstate))))))
     :measure (two-nats-measure (parsize parstate) 17))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9320,8 +9320,8 @@
                declon/stmt
                ;; If the initialization part is a declaration,
                ;; the 'for' is not ambiguous, and we parse the rest.
-               :decl
-               (b* ((decl (amb?-declon/stmt-decl->decl declon/stmt))
+               :declon
+               (b* ((decl (amb?-declon/stmt-declon->declon declon/stmt))
                     ((erp token3 span3 parstate) (read-token parstate)))
                  (cond
                   ;; If token3 may start an expression,
@@ -9795,8 +9795,8 @@
                declon/stmt
                ;; If we parse an unambiguous declaration,
                ;; we return a block item that is a declaration.
-               :decl
-               (retok (make-block-item-declon :declon declon/stmt.decl
+               :declon
+               (retok (make-block-item-declon :declon declon/stmt.declon
                                               :info nil)
                       span
                       parstate)

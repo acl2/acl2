@@ -484,7 +484,7 @@
 (defirrelevant irr-declon/stmt
   :short "An irrelevant declaration or statement."
   :type declon/stmt-p
-  :body (declon/stmt-decl (irr-declon)))
+  :body (declon/stmt-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
