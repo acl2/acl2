@@ -513,7 +513,7 @@
   :short "An irrelevant function definition."
   :type fundefp
   :body (make-fundef :extension nil
-                     :spec nil
+                     :specs nil
                      :declor (irr-declor)
                      :asm? nil
                      :attribs nil

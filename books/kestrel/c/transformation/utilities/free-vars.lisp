@@ -1001,7 +1001,7 @@
   :short "Collect free variables appearing in a function definition."
   :returns (free-vars ident-setp)
   (b* (((fundef fundef) fundef)
-       (free-vars1 (free-vars-decl-spec-list fundef.spec bound-vars))
+       (free-vars1 (free-vars-decl-spec-list fundef.specs bound-vars))
        ((mv free-vars2 bound-vars param-bound-vars)
         (free-vars-declor fundef.declor bound-vars))
        (bound-vars (union bound-vars param-bound-vars))

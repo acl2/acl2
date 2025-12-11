@@ -1479,7 +1479,7 @@
   :returns (mv (result fundefp)
                (bound-vars ident-setp))
   (b* (((fundef fundef) fundef)
-       (spec (decl-spec-list-subst-free fundef.spec subst bound-vars))
+       (specs (decl-spec-list-subst-free fundef.specs subst bound-vars))
        ((mv declor bound-vars param-bound-vars)
         (declor-subst-free fundef.declor subst bound-vars))
        (body-bound-vars (union bound-vars param-bound-vars))
@@ -1489,7 +1489,7 @@
        ((mv body &) (comp-stmt-subst-free fundef.body subst body-bound-vars)))
     (mv (make-fundef
           :extension fundef.extension
-          :spec spec
+          :specs specs
           :declor declor
           :asm? fundef.asm?
           :attribs attribs

@@ -3561,7 +3561,7 @@
      as GCC extensions;
      see the ABNF grammar."))
   ((extension bool) ; GCC extension
-   (spec decl-spec-list)
+   (specs decl-spec-list)
    (declor declor)
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension

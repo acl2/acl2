@@ -6617,8 +6617,8 @@
   (b* (((reterr) (irr-fundef) (irr-valid-table))
        ((fundef fundef) fundef)
        ((valid-table table) table)
-       ((erp new-spec type storspecs types table)
-        (valid-decl-spec-list fundef.spec nil nil nil table ienv))
+       ((erp new-specs type storspecs types table)
+        (valid-decl-spec-list fundef.specs nil nil nil table ienv))
        ((erp new-declor type ident more-types table)
         (valid-declor fundef.declor t type table ienv))
        ((unless (and (set::emptyp types)
@@ -6748,7 +6748,7 @@
        (info (make-fundef-info :type type
                                :uid fundef-uid)))
     (retok (make-fundef :extension fundef.extension
-                        :spec new-spec
+                        :specs new-specs
                         :declor new-declor
                         :asm? fundef.asm?
                         :attribs fundef.attribs

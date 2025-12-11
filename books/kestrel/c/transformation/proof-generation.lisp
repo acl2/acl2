@@ -2998,8 +2998,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xeq-fundef ((extension booleanp)
-                    (spec decl-spec-listp)
-                    (spec-new decl-spec-listp)
+                    (specs decl-spec-listp)
+                    (specs-new decl-spec-listp)
                     (declor declorp)
                     (declor-new declorp)
                     (asm? asm-name-spec-optionp)
@@ -3011,10 +3011,10 @@
                     (body-thm-name symbolp)
                     (info fundef-infop)
                     (gin ginp))
-  :guard (and (decl-spec-list-unambp spec)
-              (decl-spec-list-annop spec)
-              (decl-spec-list-unambp spec-new)
-              (decl-spec-list-annop spec-new)
+  :guard (and (decl-spec-list-unambp specs)
+              (decl-spec-list-annop specs)
+              (decl-spec-list-unambp specs-new)
+              (decl-spec-list-annop specs-new)
               (declor-unambp declor)
               (declor-annop declor)
               (declor-unambp declor-new)
@@ -3076,7 +3076,7 @@
      which hide the corresponding global variables."))
   (b* (((gin gin) gin)
        (fundef (make-fundef :extension extension
-                            :spec spec
+                            :specs specs
                             :declor declor
                             :asm? asm?
                             :attribs attribs
@@ -3084,7 +3084,7 @@
                             :body body
                             :info info))
        (new-fundef (make-fundef :extension extension
-                                :spec spec-new
+                                :specs specs-new
                                 :declor declor-new
                                 :asm? asm?
                                 :attribs attribs
@@ -3242,14 +3242,14 @@
 
   (defret fundef-unambp-of-xeq-fundef
     (fundef-unambp fundef)
-    :hyp (and (decl-spec-list-unambp spec-new)
+    :hyp (and (decl-spec-list-unambp specs-new)
               (declor-unambp declor-new)
               (declon-list-unambp declons-new)
               (comp-stmt-unambp body-new)))
 
   (defret fundef-annop-of-xeq-fundef
     (fundef-annop fundef)
-    :hyp (and (decl-spec-list-annop spec-new)
+    :hyp (and (decl-spec-list-annop specs-new)
               (declor-annop declor-new)
               (declon-list-annop declons-new)
               (comp-stmt-annop body-new)
@@ -3257,8 +3257,8 @@
 
   (defret fundef-aidentp-of-xeq-fundef
     (fundef-aidentp fundef gcc)
-    :hyp (and (decl-spec-list-unambp spec-new)
-              (decl-spec-list-aidentp spec-new gcc)
+    :hyp (and (decl-spec-list-unambp specs-new)
+              (decl-spec-list-aidentp specs-new gcc)
               (declor-unambp declor-new)
               (declor-aidentp declor-new gcc)
               (attrib-spec-list-aidentp attribs gcc)

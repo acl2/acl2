@@ -1951,8 +1951,8 @@
    (env envp))
   :returns (new-fundef fundefp)
   (b* (((fundef fundef) fundef)
-       ((mv spec -)
-        (const-prop-decl-spec-list fundef.spec env))
+       ((mv specs -)
+        (const-prop-decl-spec-list fundef.specs env))
        ((mv declor -)
         (const-prop-declor fundef.declor env))
        ((mv decls -)
@@ -1960,7 +1960,7 @@
        ((mv body -)
         (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
-                 :spec spec
+                 :specs specs
                  :declor declor
                  :asm? fundef.asm?
                  :decls decls

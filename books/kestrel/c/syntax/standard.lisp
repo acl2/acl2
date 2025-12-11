@@ -217,7 +217,7 @@
    (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
                            (amb-declon/stmt-fix amb-declon/stmt)))
    (fundef (and (not (fundef->extension fundef))
-                (decl-spec-list-standardp (fundef->spec fundef))
+                (decl-spec-list-standardp (fundef->specs fundef))
                 (declor-standardp (fundef->declor fundef))
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))

@@ -88,7 +88,7 @@
           ;; Return
           (make-fundef
             :extension fundef.extension
-            :spec fundef.spec
+            :specs fundef.specs
             :declor (make-declor
                       :pointers fundef.declor.pointers
                       :direct (make-dirdeclor-function-params

@@ -1654,7 +1654,7 @@
                             (c::fun-declor-base (c::ident "irrelevant") nil)
                             nil))
        ((fundef fundef) fundef)
-       ((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.spec))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.specs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifiers ~
                       in function definition ~x0."

@@ -3702,8 +3702,8 @@
      so that it is available in the rest of the translation unit."))
   (b* (((reterr) (irr-fundef) (irr-dimb-table))
        ((fundef fundef) fundef)
-       ((erp new-spec & table)
-        (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
+       ((erp new-specs & table)
+        (dimb-decl-spec-list fundef.specs (dimb-kind-objfun) table))
        (nscopes (len table)) ; for checking it below
        ((erp new-declor ident table)
         (dimb-declor fundef.declor t table))
@@ -3726,7 +3726,7 @@
        (table (dimb-pop-scope table))
        (table (dimb-add-ident ident (dimb-kind-objfun) table)))
     (retok (make-fundef :extension fundef.extension
-                        :spec new-spec
+                        :specs new-specs
                         :declor new-declor
                         :decls new-decls
                         :body new-body

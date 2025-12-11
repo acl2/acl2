@@ -806,7 +806,7 @@
                                    amb-declor/absdeclor)))
      (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
                              (amb-declon/stmt-fix amb-declon/stmt)))
-     (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+     (fundef (and (decl-spec-list-annop (fundef->specs fundef))
                   (declor-annop (fundef->declor fundef))
                   (declon-list-annop (fundef->decls fundef))
                   (comp-stmt-annop (fundef->body fundef))
@@ -910,14 +910,14 @@
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
-            (fundef extension spec declor asm? attribs decls body info))
-           (and (decl-spec-list-annop spec)
+            (fundef extension specs declor asm? attribs decls body info))
+           (and (decl-spec-list-annop specs)
                 (declor-annop declor)
                 (declon-list-annop decls)
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension spec declor asm? attribs decls body info))
+             (fundef extension specs declor asm? attribs decls body info))
     :enable identity)
 
   (defruled transunit-annop-of-transunit
@@ -1067,9 +1067,9 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
-  (defruled decl-spec-list-annop-of-fundef->spec
+  (defruled decl-spec-list-annop-of-fundef->specs
     (implies (fundef-annop fundef)
-             (decl-spec-list-annop (fundef->spec fundef)))
+             (decl-spec-list-annop (fundef->specs fundef)))
     :enable fundef-annop)
 
   (defruled declor-annop-of-fundef->declor
@@ -1155,7 +1155,7 @@
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
      declor-annop-of-param-declor-nonabstract->declor
-     decl-spec-list-annop-of-fundef->spec
+     decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
      declon-list-annop-of-fundef->decls
      comp-stmt-annop-of-fundef->body

@@ -11630,7 +11630,7 @@
                     (parse-compound-statement span parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
-                                     :spec declspecs
+                                     :specs declspecs
                                      :declor declor
                                      :asm? asmspec?
                                      :attribs attrspecs
@@ -11660,7 +11660,7 @@
                     (parse-compound-statement open-curly-span parstate)))
                 (retok (extdecl-fundef
                         (make-fundef :extension extension
-                                     :spec declspecs
+                                     :specs declspecs
                                      :declor declor
                                      :asm? asmspec?
                                      :attribs attrspecs

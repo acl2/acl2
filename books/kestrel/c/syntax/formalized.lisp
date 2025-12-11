@@ -1031,7 +1031,8 @@
      whose block items are all supported."))
   (b* (((fundef fundef) fundef))
     (and (not fundef.extension)
-         (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.spec)))
+         (b* (((mv okp tyspecs)
+               (check-decl-spec-list-all-typespec fundef.specs)))
            (and okp
                 (type-spec-list-formalp tyspecs)))
          (declor-fun-formalp fundef.declor)

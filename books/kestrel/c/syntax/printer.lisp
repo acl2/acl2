@@ -4321,10 +4321,10 @@
        (pstate (if fundef.extension
                    (print-astring "__extension__ " pstate)
                  (pristate-fix pstate)))
-       ((unless fundef.spec)
+       ((unless fundef.specs)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       (pstate (print-decl-spec-list fundef.spec pstate))
+       (pstate (print-decl-spec-list fundef.specs pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?

@@ -2905,9 +2905,9 @@
      (no addition currently, as explained above,
      but the code is more general for future extensions)."))
   (b* (((fundef fundef) fundef)
-       ((mv new-spec (gout gout-spec))
-        (simpadd0-decl-spec-list fundef.spec gin))
-       (gin (gin-update gin gout-spec))
+       ((mv new-specs (gout gout-specs))
+        (simpadd0-decl-spec-list fundef.specs gin))
+       (gin (gin-update gin gout-specs))
        ((mv new-declor & (gout gout-declor))
         (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
@@ -2931,8 +2931,8 @@
                             (change-gin gin :vartys vartys-for-body)))
        ((gin gin) (gin-update gin gout-body)))
     (xeq-fundef fundef.extension
-                fundef.spec
-                new-spec
+                fundef.specs
+                new-specs
                 fundef.declor
                 new-declor
                 fundef.asm?

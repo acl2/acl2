@@ -276,7 +276,7 @@
 
 (define abstract-fn
   ((new-fn-name identp)
-   (spec decl-spec-listp)
+   (specs decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
    (decls ident-param-declon-mapp))
@@ -313,7 +313,7 @@
     (mv
       idents
       (make-fundef
-        :spec spec
+        :specs specs
         :declor (make-declor
                   :pointers pointers
                   :direct (make-dirdeclor-function-params
@@ -347,7 +347,7 @@
 (define split-fn-block-item-list
   ((new-fn-name identp)
    (items block-item-listp)
-   (spec decl-spec-listp)
+   (specs decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (decls ident-param-declon-mapp)
    (split-point natp))
@@ -370,7 +370,7 @@
        ((reterr) (c$::irr-fundef) items)
        ((when (zp split-point))
         (b* (((mv idents new-fn)
-              (abstract-fn new-fn-name spec pointers items decls)))
+              (abstract-fn new-fn-name specs pointers items decls)))
           (retok new-fn
                  (list
                    (make-block-item-stmt
@@ -393,11 +393,11 @@
           :otherwise decls))
        ((erp new-fn truncated-items)
         (split-fn-block-item-list new-fn-name
-                              (rest items)
-                              spec
-                              pointers
-                              decls
-                              (- split-point 1))))
+                                  (rest items)
+                                  specs
+                                  pointers
+                                  decls
+                                  (- split-point 1))))
     (retok new-fn
            (cons (first items)
                  truncated-items)))
@@ -438,14 +438,14 @@
         (split-fn-block-item-list
          new-fn-name
          (comp-stmt->items fundef.body)
-         fundef.spec
+         fundef.specs
          fundef.declor.pointers
          (param-declon-list-to-ident-param-declon-map params)
          split-point)))
     (retok new-fn
            (make-fundef
             :extension fundef.extension
-            :spec fundef.spec
+            :specs fundef.specs
             :declor fundef.declor
             :decls fundef.decls
             :body (make-comp-stmt :labels (comp-stmt->labels fundef.body)

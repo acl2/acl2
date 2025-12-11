@@ -332,7 +332,7 @@
              ))))
     (retok t
            (make-fundef
-             :spec (c$::declor-spec-list-make-static specs)
+             :specs (c$::declor-spec-list-make-static specs)
              :declor wrapper-declor
              :body wrapper-body
              :info nil)
@@ -475,7 +475,7 @@
                                         target-name
                                         wrapper-name?
                                         blacklist
-                                        fundef.spec))
+                                        fundef.specs))
        ((erp uid?)
         (b* (((reterr) nil)
              ((unless foundp)
