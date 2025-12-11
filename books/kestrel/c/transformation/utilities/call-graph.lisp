@@ -606,7 +606,7 @@
     :returns (call-graph$ call-graphp)
     (block-item-case
      item
-     :decl (call-graph-declon item.decl fn-name filepath valid-table call-graph)
+     :declon (call-graph-declon item.declon fn-name filepath valid-table call-graph)
      :stmt (call-graph-stmt item.stmt fn-name filepath valid-table call-graph)
      ;; TODO: error on ambiguous constructs
      :ambig (call-graph-fix call-graph))

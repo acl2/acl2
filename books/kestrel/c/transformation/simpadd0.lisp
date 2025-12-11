@@ -1996,15 +1996,15 @@
     (b* (((gin gin) gin))
       (block-item-case
        item
-       :decl (b* (((mv new-decl (gout gout-decl))
-                   (simpadd0-declon item.decl gin))
-                  (gin (gin-update gin gout-decl)))
-               (xeq-block-item-decl item.decl
-                                    new-decl
-                                    gout-decl.thm-name
-                                    item.info
-                                    gout-decl.vartys
-                                    gin))
+       :declon (b* (((mv new-declon (gout gout-declon))
+                     (simpadd0-declon item.declon gin))
+                    (gin (gin-update gin gout-declon)))
+                 (xeq-block-item-declon item.declon
+                                        new-declon
+                                        gout-declon.thm-name
+                                        item.info
+                                        gout-declon.vartys
+                                        gin))
        :stmt (b* (((mv new-stmt (gout gout-stmt))
                    (simpadd0-stmt item.stmt gin))
                   (gin (gin-update gin gout-stmt)))

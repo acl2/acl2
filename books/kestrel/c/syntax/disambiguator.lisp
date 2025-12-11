@@ -3126,9 +3126,10 @@
     (b* (((reterr) (irr-block-item) (irr-dimb-table)))
       (block-item-case
        item
-       :decl
-       (b* (((erp new-decl table) (dimb-declon item.decl table)))
-         (retok (make-block-item-decl :decl new-decl :info item.info) table))
+       :declon
+       (b* (((erp new-declon table) (dimb-declon item.declon table)))
+         (retok (make-block-item-declon :declon new-declon :info item.info)
+                table))
        :stmt
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
          (retok (make-block-item-stmt :stmt new-stmt :info item.info) table))
@@ -3136,8 +3137,8 @@
        (b* (((erp decl/stmt table) (dimb-amb-decl/stmt item.decl/stmt table)))
          (decl/stmt-case
           decl/stmt
-          :decl (retok (make-block-item-decl :decl decl/stmt.decl
-                                             :info nil)
+          :decl (retok (make-block-item-declon :declon decl/stmt.decl
+                                               :info nil)
                        table)
           :stmt (retok (make-block-item-stmt
                         :stmt (make-stmt-expr :expr? decl/stmt.expr

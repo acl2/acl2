@@ -374,7 +374,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-compustate-vars
+  (defruled block-item-declon-compustate-vars
     (b* ((declon (c::block-item-declon->get item))
          (compst0 (c::exec-obj-declon declon compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))

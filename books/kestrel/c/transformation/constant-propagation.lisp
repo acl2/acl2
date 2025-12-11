@@ -1901,9 +1901,9 @@
     (b* ((env (env-fix env)))
       (block-item-case
         item
-        :decl (b* (((mv decl env)
-                    (const-prop-declon item.decl env)))
-                (mv (make-block-item-decl :decl decl :info item.info) env))
+        :declon (b* (((mv declon env)
+                      (const-prop-declon item.declon env)))
+                  (mv (make-block-item-declon :declon declon :info item.info) env))
         :stmt (b* (((mv stmt env)
                     (const-prop-stmt item.stmt env)))
                 (mv (make-block-item-stmt :stmt stmt :info item.info) env))

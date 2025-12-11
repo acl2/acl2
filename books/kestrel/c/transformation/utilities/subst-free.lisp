@@ -1376,11 +1376,11 @@
                  (bound-vars ident-setp))
     (block-item-case
      block-item
-     :decl
-     (b* (((mv decl bound-vars)
-           (declon-subst-free (c$::block-item-decl->decl block-item)
+     :declon
+     (b* (((mv declon bound-vars)
+           (declon-subst-free (c$::block-item-declon->declon block-item)
                               subst bound-vars)))
-       (mv (make-block-item-decl :decl decl :info block-item.info)
+       (mv (make-block-item-declon :declon declon :info block-item.info)
            (ident-set-fix bound-vars)))
      :stmt
      (mv (make-block-item-stmt

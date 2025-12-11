@@ -6199,12 +6199,12 @@
     (b* (((reterr) (irr-block-item) nil nil (irr-valid-table)))
       (block-item-case
        item
-       :decl (b* (((erp new-decl types table)
-                   (valid-declon item.decl table ienv)))
-               (retok (make-block-item-decl :decl new-decl :info nil)
-                      types
-                      nil
-                      table))
+       :declon (b* (((erp new-declon types table)
+                     (valid-declon item.declon table ienv)))
+                 (retok (make-block-item-declon :declon new-declon :info nil)
+                        types
+                        nil
+                        table))
        :stmt (b* (((erp new-stmt types last-expr-type? table)
                    (valid-stmt item.stmt table ienv)))
                (retok (make-block-item-stmt :stmt new-stmt :info nil)

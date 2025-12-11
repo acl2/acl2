@@ -998,7 +998,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-congruence
+  (defruled block-item-declon-congruence
     (b* ((old (c::block-item-declon old-declon))
          (new (c::block-item-declon new-declon))
          (old-declon-compst
@@ -1434,7 +1434,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-errors
+  (defruled block-item-declon-errors
     (implies (c::errorp (c::exec-obj-declon declon compst fenv (1- limit)))
              (c::errorp (mv-nth 0 (c::exec-block-item
                                    (c::block-item-declon declon)

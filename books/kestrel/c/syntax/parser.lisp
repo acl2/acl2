@@ -9796,8 +9796,8 @@
                ;; If we parse an unambiguous declaration,
                ;; we return a block item that is a declaration.
                :decl
-               (retok (make-block-item-decl :decl decl/stmt.decl
-                                            :info nil)
+               (retok (make-block-item-declon :declon decl/stmt.decl
+                                              :info nil)
                       span
                       parstate)
                ;; If we parse an unambiguous statement,
@@ -9822,9 +9822,11 @@
        ((or (token-declaration-specifier-start-p token) ; declspec...
             (token-keywordp token "_Static_assert")) ; _Static_assert
         (b* ((parstate (unread-token parstate)) ;
-             ((erp decl span parstate) ; decl
+             ((erp declon span parstate) ; declon
               (parse-declaration parstate)))
-          (retok (make-block-item-decl :decl decl :info nil) span parstate)))
+          (retok (make-block-item-declon :declon declon :info nil)
+                 span
+                 parstate)))
        ;; Otherwise, we must have a statement.
        (t ; other
         (b* ((parstate (if token (unread-token parstate) parstate)) ;

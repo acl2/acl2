@@ -1583,8 +1583,8 @@
     (b* (((reterr) (c::block-item-stmt (c::stmt-null))))
       (block-item-case
        item
-       :decl (b* (((erp objdeclon) (ldm-declon-obj item.decl)))
-               (retok (c::block-item-declon objdeclon)))
+       :declon (b* (((erp objdeclon) (ldm-declon-obj item.declon)))
+                 (retok (c::block-item-declon objdeclon)))
        :stmt (b* (((erp stmt) (ldm-stmt item.stmt)))
                (retok (c::block-item-stmt stmt)))
        :ambig (prog2$ (impossible) (reterr t))))

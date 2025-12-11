@@ -630,7 +630,7 @@
       "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
-     :decl (declon-block-formalp item.decl)
+     :declon (declon-block-formalp item.declon)
      :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))

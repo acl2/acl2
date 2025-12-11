@@ -2763,7 +2763,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xeq-block-item-decl ((declon declonp)
+(define xeq-block-item-declon ((declon declonp)
                              (declon-new declonp)
                              (declon-thm-name symbolp)
                              info
@@ -2781,8 +2781,8 @@
    (xdoc::p
     "We put the new declaration into a block item."))
   (b* (((gin gin) gin)
-       (item (make-block-item-decl :decl declon :info info))
-       (item-new (make-block-item-decl :decl declon-new :info info))
+       (item (make-block-item-declon :declon declon :info info))
+       (item-new (make-block-item-declon :declon declon-new :info info))
        (gout-no-thm (change-gout (gout-no-thm gin)
                                  :vartys vartys-post))
        ((unless declon-thm-name) (mv item-new gout-no-thm))
@@ -2796,14 +2796,14 @@
                    (:e set::insert)
                    c::compustate-frames-number-of-exec-obj-declon
                    c::compustatep-when-compustate-resultp-and-not-errorp
-                   block-item-decl-compustate-vars)
+                   block-item-declon-compustate-vars)
                  :use ((:instance ,declon-thm-name (limit (1- limit)))
                        (:instance
-                        block-item-decl-congruence
+                        block-item-declon-congruence
                         (old-declon ',old-declon)
                         (new-declon ',new-declon))
                        (:instance
-                        block-item-decl-errors
+                        block-item-declon-errors
                         (declon ',old-declon)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2826,15 +2826,15 @@
 
   ///
 
-  (defret block-item-unambp-of-xeq-block-item-decl
+  (defret block-item-unambp-of-xeq-block-item-declon
     (block-item-unambp item)
     :hyp (declon-unambp declon-new))
 
-  (defret block-item-annop-of-xeq-block-item-decl
+  (defret block-item-annop-of-xeq-block-item-declon
     (block-item-annop item)
     :hyp (declon-annop declon-new))
 
-  (defret block-item-aidentp-of-xeq-block-item-decl
+  (defret block-item-aidentp-of-xeq-block-item-declon
     (block-item-aidentp item gcc)
     :hyp (declon-aidentp declon-new gcc)))
 

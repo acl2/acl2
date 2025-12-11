@@ -143,7 +143,7 @@
             :decls fundef.decls
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
-                   :items (cons (make-block-item-decl :decl declon :info nil)
+                   :items (cons (make-block-item-declon :declon declon :info nil)
                                 (comp-stmt->items fundef.body)))
             :info fundef.info)))
      :otherwise

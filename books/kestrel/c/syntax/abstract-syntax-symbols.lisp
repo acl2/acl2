@@ -409,7 +409,7 @@
     block-item-fix
     block-item-count
     block-item-case
-    make-block-item-decl
+    make-block-item-declon
     make-block-item-stmt
 
     block-item-listp

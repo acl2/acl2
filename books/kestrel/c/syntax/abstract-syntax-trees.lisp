@@ -3263,8 +3263,8 @@
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
        see @(tsee amb-decl/stmt)."))
-    (:decl ((decl declon)
-            (info any)))
+    (:declon ((declon declon)
+              (info any)))
     (:stmt ((stmt stmt)
             (info any)))
     (:ambig ((decl/stmt amb-decl/stmt)))

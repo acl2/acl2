@@ -1320,7 +1320,7 @@
        see the documentation of that function for a rationale."))
     (block-item-case
      item
-     :decl (set::insert nil nil)
+     :declon (set::insert nil nil)
      :stmt (stmt-types item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
