@@ -942,7 +942,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-congruence
+  (defruled declon-declon-congruence
     (b* ((declor (c::obj-declor-ident var))
          (old (c::obj-declon (c::scspecseq-none) tyspecs declor old-initer))
          (new (c::obj-declon (c::scspecseq-none) tyspecs declor new-initer))
@@ -1409,7 +1409,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-errors
+  (defruled declon-declon-errors
     (b* ((declor (c::obj-declor-ident var))
          (declon (c::obj-declon (c::scspecseq-none) tyspecs declor initer)))
       (implies (and initer

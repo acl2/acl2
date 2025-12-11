@@ -5726,10 +5726,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-decl ((decl declp) (table valid-tablep) (ienv ienvp))
-    :guard (decl-unambp decl)
+  (define valid-declon ((declon declonp) (table valid-tablep) (ienv ienvp))
+    :guard (declon-unambp declon)
     :returns (mv (erp maybe-msgp)
-                 (new-decl declp)
+                 (new-declon declonp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5747,38 +5747,40 @@
        or the declaration specifiers declare a tag,
        as required in [C17:6.7/2].
        We ignore the GCC extension for now."))
-    (b* (((reterr) (irr-decl) nil (irr-valid-table)))
-      (decl-case
-       decl
-       :decl
+    (b* (((reterr) (irr-declon) nil (irr-valid-table)))
+      (declon-case
+       declon
+       :declon
        (b* (((erp new-specs type storspecs types table)
-             (valid-decl-spec-list decl.specs nil nil nil table ienv))
-            ((when (and (endp decl.init)
+             (valid-decl-spec-list declon.specs nil nil nil table ienv))
+            ((when (and (endp declon.init)
                         (not (type-case type :struct))
                         (not (type-case type :union))
                         (not (type-case type :enum))))
              (retmsg$ "The declaration ~x0 declares ~
                        neither a declarator nor a tag."
-                      (decl-fix decl)))
+                      (declon-fix declon)))
             ((erp new-init more-types table)
-             (valid-init-declor-list decl.init type storspecs table ienv)))
-         (retok (make-decl-decl :extension decl.extension
-                                :specs new-specs
-                                :init new-init)
+             (valid-init-declor-list declon.init type storspecs table ienv)))
+         (retok (make-declon-declon :extension declon.extension
+                                    :specs new-specs
+                                    :init new-init)
                 (set::union types more-types)
                 table))
        :statassert
        (b* (((erp new-statassert types table)
-             (valid-statassert decl.statassert table ienv)))
-         (retok (decl-statassert new-statassert) types table))))
-    :measure (decl-count decl))
+             (valid-statassert declon.statassert table ienv)))
+         (retok (declon-statassert new-statassert) types table))))
+    :measure (declon-count declon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-decl-list ((decls decl-listp) (table valid-tablep) (ienv ienvp))
-    :guard (decl-list-unambp decls)
+  (define valid-declon-list ((declons declon-listp)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (declon-list-unambp declons)
     :returns (mv (erp maybe-msgp)
-                 (new-decls decl-listp)
+                 (new-declons declon-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5788,12 +5790,12 @@
      (xdoc::p
       "We validate each one in turn."))
     (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp decls)) (retok nil nil (valid-table-fix table)))
-         ((erp new-decl types table) (valid-decl (car decls) table ienv))
-         ((erp new-decls more-types table)
-          (valid-decl-list (cdr decls) table ienv)))
-      (retok (cons new-decl new-decls) (set::union types more-types) table))
-    :measure (decl-list-count decls))
+         ((when (endp declons)) (retok nil nil (valid-table-fix table)))
+         ((erp new-declon types table) (valid-declon (car declons) table ienv))
+         ((erp new-declons more-types table)
+          (valid-declon-list (cdr declons) table ienv)))
+      (retok (cons new-declon new-declons) (set::union types more-types) table))
+    :measure (declon-list-count declons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6074,7 +6076,7 @@
                 table))
        :for-decl
        (b* ((table (valid-push-scope table))
-            ((erp new-init init-types table) (valid-decl stmt.init table ienv))
+            ((erp new-init init-types table) (valid-declon stmt.init table ienv))
             ((erp new-test test-type? test-types table)
              (valid-expr-option stmt.test table ienv))
             ((when (and test-type?
@@ -6198,7 +6200,7 @@
       (block-item-case
        item
        :decl (b* (((erp new-decl types table)
-                   (valid-decl item.decl table ienv)))
+                   (valid-declon item.decl table ienv)))
                (retok (make-block-item-decl :decl new-decl :info nil)
                       types
                       nil
@@ -6484,16 +6486,16 @@
                (init-declor-list-unambp new-initdeclors))
       :hyp (init-declor-list-unambp initdeclors)
       :fn valid-init-declor-list)
-    (defret decl-unambp-of-valid-decl
+    (defret declon-unambp-of-valid-declon
       (implies (not erp)
-               (decl-unambp new-decl))
-      :hyp (decl-unambp decl)
-      :fn valid-decl)
-    (defret decl-list-unambp-of-valid-decl-list
+               (declon-unambp new-declon))
+      :hyp (declon-unambp declon)
+      :fn valid-declon)
+    (defret declon-list-unambp-of-valid-declon-list
       (implies (not erp)
-               (decl-list-unambp new-decls))
-      :hyp (decl-list-unambp decls)
-      :fn valid-decl-list)
+               (declon-list-unambp new-declons))
+      :hyp (declon-list-unambp declons)
+      :fn valid-declon-list)
     (defret label-unambp-of-valid-label
       (implies (not erp)
                (label-unambp new-label))
@@ -6708,7 +6710,7 @@
                     :defstatus (valid-defstatus-defined)
                     :uid uid)))
           (retok uid (valid-add-ord-file-scope ident info table))))
-       ((erp new-decls types table) (valid-decl-list fundef.decls table ienv))
+       ((erp new-decls types table) (valid-declon-list fundef.decls table ienv))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
@@ -6783,7 +6785,7 @@
                    (valid-fundef edecl.fundef table ienv)))
                (retok (extdecl-fundef new-fundef) table))
      :decl (b* (((erp new-decl types table)
-                 (valid-decl edecl.decl table ienv))
+                 (valid-declon edecl.decl table ienv))
                 ((unless (set::emptyp types))
                  (retmsg$ "The top-level declaration ~x0 ~
                            contains return statements."

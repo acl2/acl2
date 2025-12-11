@@ -485,19 +485,19 @@
   (b* (((statassert statassert) statassert))
     (call-graph-const-expr statassert.test fn-name filepath valid-table call-graph)))
 
-(define call-graph-decl
-  ((decl declp)
+(define call-graph-declon
+  ((declon declonp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (decl-case
-   decl
-   :decl (call-graph-init-declor-list decl.init fn-name filepath valid-table call-graph)
+  (declon-case
+   declon
+   :declon (call-graph-init-declor-list declon.init fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
-   :statassert (call-graph-statassert decl.statassert fn-name filepath valid-table call-graph)))
+   :statassert (call-graph-statassert declon.statassert fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,7 +585,7 @@
                      fn-name
                      filepath
                      valid-table
-                     (call-graph-decl
+                     (call-graph-declon
                        stmt.init
                        fn-name
                        filepath
@@ -606,7 +606,7 @@
     :returns (call-graph$ call-graphp)
     (block-item-case
      item
-     :decl (call-graph-decl item.decl fn-name filepath valid-table call-graph)
+     :decl (call-graph-declon item.decl fn-name filepath valid-table call-graph)
      :stmt (call-graph-stmt item.stmt fn-name filepath valid-table call-graph)
      ;; TODO: error on ambiguous constructs
      :ambig (call-graph-fix call-graph))

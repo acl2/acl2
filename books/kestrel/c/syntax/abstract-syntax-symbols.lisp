@@ -364,19 +364,19 @@
     init-declor-list-fix
     init-declor-list-count
 
-    declp
-    decl
-    decl-fix
-    decl-count
-    decl-case
-    make-decl-decl
-    decl-decl->extension
-    decl-decl->specs
-    decl-decl->init
-    decl-statassert
+    declonp
+    declon
+    declon-fix
+    declon-count
+    declon-case
+    make-declon-declon
+    declon-declon->extension
+    declon-declon->specs
+    declon-declon->init
+    declon-statassert
 
-    decl-listp
-    decl-list-count
+    declon-listp
+    declon-list-count
 
     labelp
     label-fix
@@ -486,7 +486,7 @@
     irr-dirabsdeclor
     irr-param-declon
     irr-param-declor
-    irr-decl
+    irr-declon
     irr-stmt
     irr-comp-stmt
     irr-block-item
@@ -539,8 +539,8 @@
     statassert-unambp
     init-declor-unambp
     init-declor-list-unambp
-    decl-unambp
-    decl-list-unambp
+    declon-unambp
+    declon-list-unambp
     label-unambp
     stmt-unambp
     comp-stmt-unambp
@@ -607,8 +607,8 @@
     attrib-spec-list-aidentp
     init-declor-aidentp
     init-declor-list-aidentp
-    decl-aidentp
-    decl-list-aidentp
+    declon-aidentp
+    declon-list-aidentp
     label-aidentp
     stmt-aidentp
     comp-stmt-aidentp
@@ -630,7 +630,7 @@
     dirdeclor-block-formalp
     declor-block-formalp
     init-declor-block-formalp
-    decl-block-formalp
+    declon-block-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
@@ -645,7 +645,7 @@
     ldm-expr-option
     ldm-initer
     ldm-type-spec-list
-    ldm-decl-obj
+    ldm-declon-obj
     ldm-stmt
     ldm-comp-stmt
     ldm-block-item
@@ -773,8 +773,8 @@
     statassert-annop
     init-declor-annop
     init-declor-list-annop
-    decl-annop
-    decl-list-annop
+    declon-annop
+    declon-list-annop
     label-annop
     stmt-annop
     comp-stmt-annop

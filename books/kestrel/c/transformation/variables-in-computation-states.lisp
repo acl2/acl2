@@ -320,7 +320,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-compustate-vars-old
+  (defruled declon-declon-compustate-vars-old
     (b* ((declor (c::obj-declon->declor declon))
          (var (c::obj-declor-ident->get declor))
          (initer (c::obj-declon->init? declon))
@@ -341,7 +341,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-compustate-vars-new
+  (defruled declon-declon-compustate-vars-new
     (b* ((declor (c::obj-declon->declor declon))
          (tyspecs (c::obj-declon->tyspec declon))
          (compst1 (c::exec-obj-declon declon compst fenv limit)))

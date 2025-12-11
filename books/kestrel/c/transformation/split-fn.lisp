@@ -121,8 +121,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-to-ident-param-declon-map
-  ((decl declp))
+(define declon-to-ident-param-declon-map
+  ((declon declonp))
   :short "Convert a regular declaration into an omap of identifiers to
           parameter declarations."
   :long
@@ -144,12 +144,12 @@
       create parameters for the newly generated function (with the subset of
       declared variables which are used)."))
   :returns (map ident-param-declon-mapp)
-  (decl-case
-   decl
-   :decl (decl-to-ident-param-declon-map0 decl.specs decl.init)
+  (declon-case
+   declon
+   :declon (declon-to-ident-param-declon-map0 declon.specs declon.init)
    :statassert nil)
   :prepwork
-  ((define decl-to-ident-param-declon-map0
+  ((define declon-to-ident-param-declon-map0
      ((declspecs decl-spec-listp)
       (initdeclors init-declor-listp))
      :returns
@@ -165,17 +165,17 @@
            :declor (make-param-declor-nonabstract :declor initdeclor.declor
                                                   :info nil)
            :attribs nil)
-         (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
+         (declon-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
-(define decl-list-to-ident-param-declon-map
-  ((decls decl-listp))
-  :short "Fold @(tsee decl-to-ident-param-declon-map) over a list."
+(define declon-list-to-ident-param-declon-map
+  ((declons declon-listp))
+  :short "Fold @(tsee declon-to-ident-param-declon-map) over a list."
   :returns (map ident-param-declon-mapp)
-  (if (endp decls)
+  (if (endp declons)
         nil
-    (omap::update* (decl-to-ident-param-declon-map (first decls))
-                   (decl-list-to-ident-param-declon-map (rest decls))))
+    (omap::update* (declon-to-ident-param-declon-map (first declons))
+                   (declon-list-to-ident-param-declon-map (rest declons))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -388,7 +388,7 @@
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
+          :decl (omap::update* (declon-to-ident-param-declon-map item.decl)
                                (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)

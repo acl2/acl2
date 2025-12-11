@@ -402,12 +402,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl
+(defirrelevant irr-declon
   :short "An irrelevant declaration."
-  :type declp
-  :body (make-decl-decl :extension nil
-                        :specs nil
-                        :init nil))
+  :type declonp
+  :body (make-declon-declon :extension nil
+                            :specs nil
+                            :init nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,7 +484,7 @@
 (defirrelevant irr-decl/stmt
   :short "An irrelevant declaration or statement."
   :type decl/stmt-p
-  :body (decl/stmt-decl (irr-decl)))
+  :body (decl/stmt-decl (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -526,7 +526,7 @@
 (defirrelevant irr-extdecl
   :short "An irrelevant external declaration."
   :type extdeclp
-  :body (extdecl-decl (irr-decl)))
+  :body (extdecl-decl (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

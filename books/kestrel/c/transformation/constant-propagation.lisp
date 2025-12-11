@@ -1705,44 +1705,44 @@
           env))
     :measure (init-declor-list-count initdeclors))
 
-  (define const-prop-decl
-    ((decl declp)
+  (define const-prop-declon
+    ((declon declonp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::decl)."
-    :returns (mv (new-decl declp)
+    :short "Propagate a constant through a @(see c$::declon)."
+    :returns (mv (new-declon declonp)
                  (new-env envp))
     (b* ((env (env-fix env)))
-      (decl-case
-        decl
-        :decl (b* (((mv specs env)
-                    (const-prop-decl-spec-list decl.specs env))
+      (declon-case
+        declon
+        :declon (b* (((mv specs env)
+                    (const-prop-decl-spec-list declon.specs env))
                    ((mv init idents env)
-                    (const-prop-init-declor-list decl.init env)))
-                (mv (make-decl-decl :extension decl.extension
+                    (const-prop-init-declor-list declon.init env)))
+                (mv (make-declon-declon :extension declon.extension
                                     :specs specs
                                     :init init)
                     (merge-block-env idents env)))
         :statassert (b* (((mv statassert env)
-                          (const-prop-statassert decl.statassert env)))
-                      (mv (decl-statassert statassert) env))))
-    :measure (decl-count decl))
+                          (const-prop-statassert declon.statassert env)))
+                      (mv (declon-statassert statassert) env))))
+    :measure (declon-count declon))
 
-  (define const-prop-decl-list
-    ((decls decl-listp)
+  (define const-prop-declon-list
+    ((declons declon-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::decl-list)."
-    :returns (mv (new-decls decl-listp)
+    :short "Propagate a constant through a @(see c$::declon-list)."
+    :returns (mv (new-declons declon-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((when (endp decls))
+         ((when (endp declons))
           (mv nil env))
          ((mv first env)
-          (const-prop-decl (first decls) env))
+          (const-prop-declon (first declons) env))
          ((mv rest env)
-          (const-prop-decl-list (rest decls) env)))
+          (const-prop-declon-list (rest declons) env)))
       (mv (cons first rest)
           env))
-    :measure (decl-list-count decls))
+    :measure (declon-list-count declons))
 
   (define const-prop-label
     ((label labelp)
@@ -1866,7 +1866,7 @@
                                             :body body)
                         nil))
         :for-decl (b* (((mv init env)
-                        (const-prop-decl stmt.init env))
+                        (const-prop-declon stmt.init env))
                        ((mv test - env)
                         (const-prop-expr-option stmt.test env))
                        ((mv next - env)
@@ -1902,7 +1902,7 @@
       (block-item-case
         item
         :decl (b* (((mv decl env)
-                    (const-prop-decl item.decl env)))
+                    (const-prop-declon item.decl env)))
                 (mv (make-block-item-decl :decl decl :info item.info) env))
         :stmt (b* (((mv stmt env)
                     (const-prop-stmt item.stmt env)))
@@ -1956,7 +1956,7 @@
        ((mv declor -)
         (const-prop-declor fundef.declor env))
        ((mv decls -)
-        (const-prop-decl-list fundef.decls env))
+        (const-prop-declon-list fundef.decls env))
        ((mv body -)
         (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
@@ -1975,7 +1975,7 @@
    extdecl
    :fundef (extdecl-fundef (const-prop-fundef extdecl.fundef env))
    :decl (b* (((mv decl -)
-               (const-prop-decl extdecl.decl env)))
+               (const-prop-declon extdecl.decl env)))
            (extdecl-decl decl))
    :empty (extdecl-empty)
    :asm (extdecl-fix extdecl)))

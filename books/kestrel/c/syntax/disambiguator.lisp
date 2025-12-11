@@ -2857,8 +2857,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-decl ((decl declp) (table dimb-tablep))
-    :returns (mv (erp maybe-msgp) (new-decl declp) (new-table dimb-tablep))
+  (define dimb-declon ((declon declonp) (table dimb-tablep))
+    :returns (mv (erp maybe-msgp) (new-declon declonp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a declaration."
     :long
@@ -2871,28 +2871,28 @@
        denote @('typedef') names or objects/functions.
        We pass the returned kind to the code that disambiguates
        the initializer declarators."))
-    (b* (((reterr) (irr-decl) (irr-dimb-table)))
-      (decl-case
-       decl
-       :decl
+    (b* (((reterr) (irr-declon) (irr-dimb-table)))
+      (declon-case
+       declon
+       :declon
        (b* (((erp new-specs kind table)
-             (dimb-decl-spec-list decl.specs (dimb-kind-objfun) table))
+             (dimb-decl-spec-list declon.specs (dimb-kind-objfun) table))
             ((erp new-init table)
-             (dimb-init-declor-list decl.init kind table)))
-         (retok (make-decl-decl :extension decl.extension
-                                :specs new-specs
-                                :init new-init)
+             (dimb-init-declor-list declon.init kind table)))
+         (retok (make-declon-declon :extension declon.extension
+                                    :specs new-specs
+                                    :init new-init)
                 table))
        :statassert
-       (b* (((erp new-statassert table) (dimb-statassert decl.statassert table)))
-         (retok (decl-statassert new-statassert) table))))
-    :measure (decl-count decl))
+       (b* (((erp new-statassert table) (dimb-statassert declon.statassert table)))
+         (retok (declon-statassert new-statassert) table))))
+    :measure (declon-count declon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-decl-list ((decls decl-listp) (table dimb-tablep))
+  (define dimb-declon-list ((declons declon-listp) (table dimb-tablep))
     :returns (mv (erp maybe-msgp)
-                 (new-decls decl-listp)
+                 (new-declons declon-listp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of declarations."
@@ -2901,11 +2901,11 @@
      (xdoc::p
       "The disambiguation table is threaded through."))
     (b* (((reterr) nil (dimb-table-fix table))
-         ((when (endp decls)) (retok nil (dimb-table-fix table)))
-         ((erp new-decl table) (dimb-decl (car decls) table))
-         ((erp new-decls table) (dimb-decl-list (cdr decls) table)))
-      (retok (cons new-decl new-decls) table))
-    :measure (decl-list-count decls))
+         ((when (endp declons)) (retok nil (dimb-table-fix table)))
+         ((erp new-declon table) (dimb-declon (car declons) table))
+         ((erp new-declons table) (dimb-declon-list (cdr declons) table)))
+      (retok (cons new-declon new-declons) table))
+    :measure (declon-list-count declons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3028,7 +3028,7 @@
                 table))
        :for-decl
        (b* ((table (dimb-push-scope table))
-            ((erp new-init table) (dimb-decl stmt.init table))
+            ((erp new-init table) (dimb-declon stmt.init table))
             ((erp new-test table) (dimb-expr-option stmt.test table))
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
@@ -3126,7 +3126,7 @@
       (block-item-case
        item
        :decl
-       (b* (((erp new-decl table) (dimb-decl item.decl table)))
+       (b* (((erp new-decl table) (dimb-declon item.decl table)))
          (retok (make-block-item-decl :decl new-decl :info item.info) table))
        :stmt
        (b* (((erp new-stmt table) (dimb-stmt item.stmt table)))
@@ -3369,7 +3369,7 @@
        If none or both succeed, the code must be invalid."))
     (b* (((reterr) (irr-decl/stmt) (irr-dimb-table))
          ((amb-decl/stmt decl/stmt) decl/stmt)
-         ((mv erp-decl new-decl table-decl) (dimb-decl decl/stmt.decl table))
+         ((mv erp-decl new-decl table-decl) (dimb-declon decl/stmt.decl table))
          ((mv erp-expr new-expr table-expr) (dimb-expr decl/stmt.stmt table)))
       (if erp-decl
           ;; decl fails:
@@ -3579,14 +3579,14 @@
       (implies (not erp)
                (init-declor-list-unambp new-ideclors))
       :fn dimb-init-declor-list)
-    (defret decl-unambp-of-dimb-decl
+    (defret declon-unambp-of-dimb-declon
       (implies (not erp)
-               (decl-unambp new-decl))
-      :fn dimb-decl)
-    (defret decl-list-unambp-of-dimb-decl-list
+               (declon-unambp new-declon))
+      :fn dimb-declon)
+    (defret declon-list-unambp-of-dimb-declon-list
       (implies (not erp)
-               (decl-list-unambp new-decls))
-      :fn dimb-decl-list)
+               (declon-list-unambp new-declons))
+      :fn dimb-declon-list)
     (defret label-unambp-of-dimb-label
       (implies (not erp)
                (label-unambp new-label))
@@ -3708,7 +3708,7 @@
                   This is indicative of invalid code."
                  (fundef-fix fundef)))
        (table (dimb-add-ident-objfun-file-scope ident table))
-       ((erp new-decls table) (dimb-decl-list fundef.decls table))
+       ((erp new-decls table) (dimb-declon-list fundef.decls table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
        (table (if gcc
                   (dimb-add-idents-objfun
@@ -3746,7 +3746,7 @@
      (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
        (retok (extdecl-fundef new-fundef) table))
      :decl
-     (b* (((erp new-decl table) (dimb-decl extdecl.decl table)))
+     (b* (((erp new-decl table) (dimb-declon extdecl.decl table)))
        (retok (extdecl-decl new-decl) table))
      :empty
      (retok (extdecl-fix extdecl) (dimb-table-fix table))

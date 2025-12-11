@@ -62,15 +62,15 @@
     (or ident?
         (struct-declons-find-first-field-name (rest struct-declons)))))
 
-(define decl-find-first-field-name
-  ((decl declp)
+(define declon-find-first-field-name
+  ((declon declonp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
-        ((unless (and type-spec? (all-no-init decl.init)))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
+        ((unless (and type-spec? (all-no-init declon.init)))
          nil))
      (type-spec-case
        type-spec?
@@ -87,7 +87,7 @@
   :returns (ident? ident-optionp)
   (extdecl-case
    extdecl
-   :decl (decl-find-first-field-name extdecl.decl struct-tag)
+   :decl (declon-find-first-field-name extdecl.decl struct-tag)
    :otherwise nil))
 
 (define extdecl-list-find-first-field-name
@@ -159,21 +159,21 @@
       nil
     (init-declor-find-gso-candidate (first initdeclors))))
 
-(define decl-find-gso-candidate
-  ((decl declp)
+(define declon-find-gso-candidate
+  ((declon declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
         ((unless type-spec?)
          nil)
         (ident?
           (type-spec-case
             type-spec?
-            :struct (init-declor-list-find-gso-candidate decl.init)
-            :typedef (init-declor-list-find-gso-candidate decl.init)
+            :struct (init-declor-list-find-gso-candidate declon.init)
+            :typedef (init-declor-list-find-gso-candidate declon.init)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))
@@ -188,7 +188,7 @@
   (extdecl-case
    extdecl
    :fundef nil
-   :decl (decl-find-gso-candidate extdecl.decl blacklist)
+   :decl (declon-find-gso-candidate extdecl.decl blacklist)
    :empty nil
    :asm nil))
 

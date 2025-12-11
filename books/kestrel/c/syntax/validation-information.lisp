@@ -808,7 +808,7 @@
                            (amb-decl/stmt-fix amb-decl/stmt)))
      (fundef (and (decl-spec-list-annop (fundef->spec fundef))
                   (declor-annop (fundef->declor fundef))
-                  (decl-list-annop (fundef->decls fundef))
+                  (declon-list-annop (fundef->decls fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
      (transunit (and (extdecl-list-annop (transunit->decls transunit))
@@ -913,7 +913,7 @@
             (fundef extension spec declor asm? attribs decls body info))
            (and (decl-spec-list-annop spec)
                 (declor-annop declor)
-                (decl-list-annop decls)
+                (declon-list-annop decls)
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
@@ -1077,9 +1077,9 @@
              (declor-annop (fundef->declor fundef)))
     :enable fundef-annop)
 
-  (defruled decl-list-annop-of-fundef->decls
+  (defruled declon-list-annop-of-fundef->decls
     (implies (fundef-annop fundef)
-             (decl-list-annop (fundef->decls fundef)))
+             (declon-list-annop (fundef->decls fundef)))
     :enable fundef-annop)
 
   (defruled comp-stmt-annop-of-fundef->body
@@ -1157,7 +1157,7 @@
      declor-annop-of-param-declor-nonabstract->declor
      decl-spec-list-annop-of-fundef->spec
      declor-annop-of-fundef->declor
-     decl-list-annop-of-fundef->decls
+     declon-list-annop-of-fundef->decls
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      extdecl-list-annop-of-transunit->decls

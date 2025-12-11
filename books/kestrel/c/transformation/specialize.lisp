@@ -59,22 +59,22 @@
       :nonabstract (declor->ident paramdecl.declor.declor)
       :otherwise nil)))
 
-(define param-declon-to-decl
+(define param-declon-to-declon
   ((paramdecl param-declonp)
    (initer? initer-optionp))
   :short "Convert a parameter declaration to a regular declaration."
   :returns (mv (success booleanp)
-               (decl declp))
+               (declon declonp))
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
       :nonabstract
       (mv t
-          (make-decl-decl
+          (make-declon-declon
             :extension nil
             :specs paramdecl.specs
             :init (list (init-declor paramdecl.declor.declor nil nil initer? nil))))
-      :otherwise (mv nil (irr-decl)))))
+      :otherwise (mv nil (irr-declon)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,8 +131,8 @@
             :declor fundef.declor.direct.declor
             :params new-params
             :ellipsis fundef.declor.direct.ellipsis))
-          ((mv - decl)
-           (param-declon-to-decl removed-param (initer-single const))))
+          ((mv - declon)
+           (param-declon-to-declon removed-param (initer-single const))))
        (mv t
            (make-fundef
             :extension fundef.extension
@@ -143,7 +143,7 @@
             :decls fundef.decls
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
-                   :items (cons (make-block-item-decl :decl decl :info nil)
+                   :items (cons (make-block-item-decl :decl declon :info nil)
                                 (comp-stmt->items fundef.body)))
             :info fundef.info)))
      :otherwise

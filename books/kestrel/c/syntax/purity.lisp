@@ -116,7 +116,7 @@
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (param-declon nil)
-   (decl nil)
+   (declon nil)
    (asm-stmt nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))

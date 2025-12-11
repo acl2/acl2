@@ -3603,9 +3603,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-inline ((decl declp) (pstate pristatep))
-    :guard (and (decl-unambp decl)
-                (decl-aidentp decl (pristate->gcc pstate)))
+  (define print-declon-inline ((declon declonp) (pstate pristatep))
+    :guard (and (declon-unambp declon)
+                (declon-aidentp declon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, inline."
@@ -3617,59 +3617,59 @@
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
        as required by the grammar."))
-    (decl-case
-     decl
-     :decl
-     (b* ((pstate (if decl.extension
+    (declon-case
+     declon
+     :declon
+     (b* ((pstate (if declon.extension
                       (print-astring "__extension__ " pstate)
                     (pristate-fix pstate)))
-          ((unless decl.specs)
+          ((unless declon.specs)
            (raise "Misusage error: ~
                  no declaration specifiers in declaration ~x0."
-                  decl)
+                  declon)
            pstate)
-          (pstate (print-decl-spec-list decl.specs pstate))
+          (pstate (print-decl-spec-list declon.specs pstate))
           (pstate
-           (if decl.init
+           (if declon.init
                (b* ((pstate (print-astring " " pstate))
-                    (pstate (print-init-declor-list decl.init pstate)))
+                    (pstate (print-init-declor-list declon.init pstate)))
                  pstate)
              pstate))
           (pstate (print-astring ";" pstate)))
        pstate)
      :statassert
-     (print-statassert decl.statassert pstate))
-    :measure (two-nats-measure (decl-count decl) 0))
+     (print-statassert declon.statassert pstate))
+    :measure (two-nats-measure (declon-count declon) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl ((decl declp) (pstate pristatep))
-    :guard (and (decl-unambp decl)
-                (decl-aidentp decl (pristate->gcc pstate)))
+  (define print-declon ((declon declonp) (pstate pristatep))
+    :guard (and (declon-unambp declon)
+                (declon-aidentp declon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration, in its own indented line."
     (b* ((pstate (print-indent pstate))
-         (pstate (print-decl-inline decl pstate))
+         (pstate (print-declon-inline declon pstate))
          (pstate (print-new-line pstate)))
       pstate)
-    :measure (two-nats-measure (decl-count decl) 1))
+    :measure (two-nats-measure (declon-count declon) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-list ((decls decl-listp) (pstate pristatep))
-    :guard (and (consp decls)
-                (decl-list-unambp decls)
-                (decl-list-aidentp decls (pristate->gcc pstate)))
+  (define print-declon-list ((declons declon-listp) (pstate pristatep))
+    :guard (and (consp declons)
+                (declon-list-unambp declons)
+                (declon-list-aidentp declons (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
           one per line, all with the same indentation."
-    (b* (((unless (mbt (consp decls))) (pristate-fix pstate))
-         (pstate (print-decl (car decls) pstate))
-         ((when (endp (cdr decls))) pstate))
-      (print-decl-list (cdr decls) pstate))
-    :measure (two-nats-measure (decl-list-count decls) 0))
+    (b* (((unless (mbt (consp declons))) (pristate-fix pstate))
+         (pstate (print-declon (car declons) pstate))
+         ((when (endp (cdr declons))) pstate))
+      (print-declon-list (cdr declons) pstate))
+    :measure (two-nats-measure (declon-list-count declons) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4077,7 +4077,7 @@
      :for-decl
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
-          (pstate (print-decl-inline stmt.init pstate))
+          (pstate (print-declon-inline stmt.init pstate))
           (pstate (print-astring " " pstate))
           (pstate (expr-option-case
                    stmt.test
@@ -4191,7 +4191,7 @@
     :short "Print a block item."
     (block-item-case
      item
-     :decl (print-decl item.decl pstate)
+     :decl (print-declon item.decl pstate)
      :stmt (print-stmt item.stmt pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
     :measure (two-nats-measure (block-item-count item) 0))
@@ -4273,9 +4273,9 @@
      print-attrib-spec-list
      print-init-declor
      print-init-declor-list
-     print-decl-inline
-     print-decl
-     print-decl-list
+     print-declon-inline
+     print-declon
+     print-declon-list
      print-label
      print-asm-output
      print-asm-output-list
@@ -4286,7 +4286,7 @@
      print-comp-stmt
      print-block-item
      print-block-item-list)
-    :hints (("Goal" :expand ((print-decl-inline decl pstate)
+    :hints (("Goal" :expand ((print-declon-inline declon pstate)
                              (print-struct-declon structdeclon pstate)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4339,7 +4339,7 @@
                  pstate))
        (pstate (if fundef.decls
                    (b* ((pstate (print-new-line pstate))
-                        (pstate (print-decl-list fundef.decls pstate)))
+                        (pstate (print-declon-list fundef.decls pstate)))
                      pstate)
                  (print-astring " " pstate)))
        (pstate (print-comp-stmt fundef.body pstate))
@@ -4361,7 +4361,7 @@
   (extdecl-case
    extdecl
    :fundef (print-fundef extdecl.fundef pstate)
-   :decl (print-decl extdecl.decl pstate)
+   :decl (print-declon extdecl.decl pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
             pstate)

@@ -406,12 +406,12 @@
            (fundefp wrapper?))
     :hints (("Goal" :induct t))))
 
-(define decl-wrap-fn-add-wrapper-def
-  ((decl declp)
+(define declon-wrap-fn-add-wrapper-def
+  ((declon declonp)
    (target-name identp)
    (wrapper-name? ident-optionp)
    (blacklist ident-setp))
-  :guard (c$::decl-annop decl)
+  :guard (c$::declon-annop declon)
   :returns (mv (er? maybe-msgp)
                (uid? c$::uid-optionp)
                (wrapper? fundef-optionp)
@@ -421,29 +421,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "The returned @('uid?') value, if it is not @('nil'), is the @(see
+    "The returned @('uid?') value, if it is not @('nil'), is the @(see
       c$::uid) of the matched function.")
    (xdoc::p
-     "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
+    "If @('uid?') return value is non-@('nil') but @('wrapper?') is @('nil'),
       that means the declaration matched the target, but some aspect of it is
       unsupported by the current implementation."))
-  (decl-case
-    decl
-    :decl (init-declor-list-wrap-fn-add-wrapper-def
-            decl.init
+  (declon-case
+   declon
+   :declon (init-declor-list-wrap-fn-add-wrapper-def
+            declon.init
             target-name
             wrapper-name?
             blacklist
-            decl.specs)
-    :otherwise (retok nil nil nil))
+            declon.specs)
+   :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
   ///
 
-  (defret fundefp-of-decl-wrap-fn-add-wrapper-def.wrapper?-under-iff
+  (defret fundefp-of-declon-wrap-fn-add-wrapper-def.wrapper?-under-iff
     (iff (fundefp wrapper?)
          wrapper?))
 
-  (defret identp-of-decl-wrap-fn-add-wrapper-def.wrapper-name?$
+  (defret identp-of-declon-wrap-fn-add-wrapper-def.wrapper-name?$
     (equal (identp wrapper-name?$)
            (fundefp wrapper?))))
 
@@ -523,7 +523,7 @@
     extdecl
     :fundef (fundef-wrap-fn-add-wrapper-def
               extdecl.fundef target-name wrapper-name? blacklist)
-    :decl (decl-wrap-fn-add-wrapper-def
+    :decl (declon-wrap-fn-add-wrapper-def
             extdecl.decl target-name wrapper-name? blacklist)
     :otherwise (retok nil nil nil))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))

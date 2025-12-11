@@ -532,8 +532,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-block-formalp ((decl declp))
-  :guard (decl-unambp decl)
+(define declon-block-formalp ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as a block item."
@@ -548,16 +548,16 @@
      does not support storage class specifiers;
      the type specifier sequence must be a supported one.
      There must be exactly one supported initializer declarator."))
-  (decl-case
-   decl
-   :decl (and (not decl.extension)
-              (b* (((mv okp tyspecs)
-                    (check-decl-spec-list-all-typespec decl.specs)))
-                (and okp
-                     (type-spec-list-formalp tyspecs)))
-              (consp decl.init)
-              (endp (cdr decl.init))
-              (init-declor-block-formalp (car decl.init)))
+  (declon-case
+   declon
+   :declon (and (not declon.extension)
+                (b* (((mv okp tyspecs)
+                      (check-decl-spec-list-all-typespec declon.specs)))
+                  (and okp
+                       (type-spec-list-formalp tyspecs)))
+                (consp declon.init)
+                (endp (cdr declon.init))
+                (init-declor-block-formalp (car declon.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -630,7 +630,7 @@
       "This reduces to checking the underlying statement or declarations."))
     (block-item-case
      item
-     :decl (decl-block-formalp item.decl)
+     :decl (declon-block-formalp item.decl)
      :stmt (stmt-formalp item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
@@ -731,8 +731,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-obj-formalp ((decl declp))
-  :guard (decl-unambp decl)
+(define declon-obj-formalp ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as an object declaration (not in a block)."
@@ -748,17 +748,17 @@
      the former must form a supported sequence,
      and the latter must be either absent or a single @('extern').
      We do not support GCC extensions."))
-  (decl-case
-   decl
-   :decl (and (not decl.extension)
-              (b* (((mv okp tyspecs storspecs)
-                    (check-decl-spec-list-all-typespec/stoclass decl.specs)))
-                (and okp
-                     (type-spec-list-formalp tyspecs)
-                     (stor-spec-list-formalp storspecs)))
-              (consp decl.init)
-              (endp (cdr decl.init))
-              (init-declor-obj-formalp (car decl.init)))
+  (declon-case
+   declon
+   :declon (and (not declon.extension)
+                (b* (((mv okp tyspecs storspecs)
+                      (check-decl-spec-list-all-typespec/stoclass declon.specs)))
+                  (and okp
+                       (type-spec-list-formalp tyspecs)
+                       (stor-spec-list-formalp storspecs)))
+                (consp declon.init)
+                (endp (cdr declon.init))
+                (init-declor-obj-formalp (car declon.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -841,8 +841,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-struct-formalp ((decl declp))
-  :guard (decl-unambp decl)
+(define declon-struct-formalp ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (yes/no booleanp)
   :short "Check if a declaration has formal dynamic semantics,
           as a declaration for a structure type."
@@ -854,17 +854,17 @@
      The type specifier must be for a structure type,
      and have a supported structure or union specifier.
      There must be no GCC extensions."))
-  (decl-case
-   decl
-   :decl (and (not decl.extension)
-              (consp decl.specs)
-              (endp (cdr decl.specs))
-              (decl-spec-case (car decl.specs) :typespec)
-              (b* ((tyspec (decl-spec-typespec->spec (car decl.specs))))
-                (and (type-spec-case tyspec :struct)
-                     (b* ((struni-spec (type-spec-struct->spec tyspec)))
-                       (and (struni-spec-formalp struni-spec)
-                            (endp decl.init))))))
+  (declon-case
+   declon
+   :declon (and (not declon.extension)
+                (consp declon.specs)
+                (endp (cdr declon.specs))
+                (decl-spec-case (car declon.specs) :typespec)
+                (b* ((tyspec (decl-spec-typespec->spec (car declon.specs))))
+                  (and (type-spec-case tyspec :struct)
+                       (b* ((struni-spec (type-spec-struct->spec tyspec)))
+                         (and (struni-spec-formalp struni-spec)
+                              (endp declon.init))))))
    :statassert nil)
   :hooks (:fix))
 
@@ -987,8 +987,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-fun-formalp ((decl declp))
-  :guard (decl-unambp decl)
+(define declon-fun-formalp ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (yes/no booleanp)
   :short "Check if a declaration has dynamic formal semantics,
           as a function declaration."
@@ -999,16 +999,16 @@
      and there must be no GCC extensions.
      There may be only type specifiers, for a supported type.
      There must a single supported initializer declarator."))
-  (decl-case
-   decl
-   :decl (and (not decl.extension)
-              (b* (((mv okp tyspecs)
-                    (check-decl-spec-list-all-typespec decl.specs)))
-                (and okp
-                     (type-spec-list-formalp tyspecs)))
-              (consp decl.init)
-              (endp (cdr decl.init))
-              (init-declor-fun-formalp (car decl.init)))
+  (declon-case
+   declon
+   :declon (and (not declon.extension)
+                (b* (((mv okp tyspecs)
+                      (check-decl-spec-list-all-typespec declon.specs)))
+                  (and okp
+                       (type-spec-list-formalp tyspecs)))
+                (consp declon.init)
+                (endp (cdr declon.init))
+                (init-declor-fun-formalp (car declon.init)))
    :statassert nil)
   :hooks (:fix))
 
@@ -1071,9 +1071,9 @@
   (extdecl-case
    edecl
    :fundef (fundef-formalp edecl.fundef)
-   :decl (or (decl-obj-formalp edecl.decl)
-             (decl-struct-formalp edecl.decl)
-             (decl-fun-formalp edecl.decl))
+   :decl (or (declon-obj-formalp edecl.decl)
+             (declon-struct-formalp edecl.decl)
+             (declon-fun-formalp edecl.decl))
    :empty nil
    :asm nil)
   :hooks (:fix))

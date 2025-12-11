@@ -2981,7 +2981,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum decl
+  (fty::deftagsum declon
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of declarations [C17:6.7] [C17:A.2.2]."
     :long
@@ -2992,31 +2992,31 @@
        the declaration starts with the @('__extension__') GCC keyword.
        We model this as a boolean saying whether
        the keyword is present or absent."))
-    (:decl ((extension bool)
-            (specs decl-spec-list)
-            (init init-declor-list)))
+    (:declon ((extension bool)
+              (specs decl-spec-list)
+              (init init-declor-list)))
     (:statassert ((statassert statassert)))
-    :pred declp
+    :pred declonp
     :base-case-override :statassert
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist decl-list
+  (fty::deflist declon-list
     :parents (abstract-syntax-trees exprs/decls/stmts)
     :short "Fixtype of lists of declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Declarations are defined in @(tsee decl).
+      "Declarations are defined in @(tsee declon).
        This fixtype corresponds to <i>declaration-list</i>
        in the grammar in [C17],
        which is under external definitions [C17:6.9.1] [C17:A.2.4]."))
-    :elt-type decl
+    :elt-type declon
     :true-listp t
     :elementp-of-nil nil
-    :pred decl-listp
+    :pred declon-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3209,7 +3209,7 @@
                 (test expr-option)
                 (next expr-option)
                 (body stmt)))
-    (:for-decl ((init decl)
+    (:for-decl ((init declon)
                 (test expr-option)
                 (next expr-option)
                 (body stmt)))
@@ -3263,7 +3263,7 @@
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
        see @(tsee amb-decl/stmt)."))
-    (:decl ((decl decl)
+    (:decl ((decl declon)
             (info any)))
     (:stmt ((stmt stmt)
             (info any)))
@@ -3404,7 +3404,7 @@
        (since the only ambiguity is with expression statements).
      These two components should look the same in concrete syntax,
        but we do not enforce that in this fixtype definition."))
-    ((decl decl)
+    ((decl declon)
      (stmt expr))
     :pred amb-decl/stmt-p
     :layout :fulltree
@@ -3474,7 +3474,7 @@
 
 (fty::deftagsum decl/stmt
   :short "Fixtype of declarations or (expression) statements."
-  (:decl ((decl decl)))
+  (:decl ((decl declon)))
   (:stmt ((expr expr)))
   :pred decl/stmt-p
   :layout :fulltree)
@@ -3534,7 +3534,7 @@
      a declaration,
      an (expression) statement,
      or an ambiguous declaration or statements."))
-  (:decl ((decl decl)))
+  (:decl ((decl declon)))
   (:stmt ((expr expr)))
   (:ambig ((decl/stmt amb-decl/stmt)))
   :pred amb?-decl/stmt-p
@@ -3565,7 +3565,7 @@
    (declor declor)
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension
-   (decls decl-list)
+   (decls declon-list)
    (body comp-stmt)
    (info any))
   :pred fundefp
@@ -3598,7 +3598,7 @@
     "As a GCC extension, we also allow an assembler statement.
      See the ABNF grammar."))
   (:fundef ((fundef fundef)))
-  (:decl ((decl decl)))
+  (:decl ((decl declon)))
   (:empty ()) ; GCC extension
   (:asm ((stmt asm-stmt))) ; GCC extension
   :pred extdeclp
