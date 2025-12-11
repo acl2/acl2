@@ -3060,7 +3060,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are a GCC extension; see ABNF grammar."))
-    ((name ident-option)
+    ((name? ident-option)
      (constraint stringlit-list)
      (lvalue expr))
     :pred asm-outputp
@@ -3091,7 +3091,7 @@
     (xdoc::topstring
      (xdoc::p
       "These are a GCC extension; see ABNF grammar."))
-    ((name ident-option)
+    ((name? ident-option)
      (constraint stringlit-list)
      (rvalue expr))
     :pred asm-inputp

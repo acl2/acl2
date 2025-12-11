@@ -421,14 +421,14 @@
 (defirrelevant irr-asm-output
   :short "An irrelevant assembler output operand."
   :type asm-outputp
-  :body (make-asm-output :name nil :constraint nil :lvalue (irr-expr)))
+  :body (make-asm-output :name? nil :constraint nil :lvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-asm-input
   :short "An irrelevant assembler input operand."
   :type asm-inputp
-  :body (make-asm-input :name nil :constraint nil :rvalue (irr-expr)))
+  :body (make-asm-input :name? nil :constraint nil :rvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

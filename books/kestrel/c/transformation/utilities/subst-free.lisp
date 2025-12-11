@@ -1211,7 +1211,7 @@
                                  (bound-vars ident-setp))
     :returns (result c$::asm-outputp)
     (c$::asm-output
-     (c$::asm-output->name asm-output)
+     (c$::asm-output->name? asm-output)
      (c$::asm-output->constraint asm-output)
      (expr-subst-free (c$::asm-output->lvalue asm-output)
                       subst bound-vars))
@@ -1235,7 +1235,7 @@
                                 (bound-vars ident-setp))
     :returns (result c$::asm-inputp)
     (c$::asm-input
-     (c$::asm-input->name asm-input)
+     (c$::asm-input->name? asm-input)
      (c$::asm-input->constraint asm-input)
      (expr-subst-free (c$::asm-input->rvalue asm-input)
                       subst bound-vars))

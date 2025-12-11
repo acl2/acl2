@@ -8502,7 +8502,7 @@
               (parse-expression parstate))
              ((erp last-span parstate) ; [ name ] constraint ( expr )
               (read-punctuator ")" parstate)))
-          (retok (make-asm-output :name name
+          (retok (make-asm-output :name? name
                                   :constraint constraint
                                   :lvalue lvalue)
                  (span-join span last-span)
@@ -8527,7 +8527,7 @@
               (parse-expression parstate))
              ((erp last-span parstate) ; constraint ( expr )
               (read-punctuator ")" parstate)))
-          (retok (make-asm-output :name nil
+          (retok (make-asm-output :name? nil
                                   :constraint constraint
                                   :lvalue lvalue)
                  (span-join span last-span)
@@ -8632,7 +8632,7 @@
               (parse-expression parstate))
              ((erp last-span parstate) ; [ name ] constraint ( expr )
               (read-punctuator ")" parstate)))
-          (retok (make-asm-input :name name
+          (retok (make-asm-input :name? name
                                  :constraint constraint
                                  :rvalue rvalue)
                  (span-join span last-span)
@@ -8657,7 +8657,7 @@
               (parse-expression parstate))
              ((erp last-span parstate) ; constraint ( expr )
               (read-punctuator ")" parstate)))
-          (retok (make-asm-input :name nil
+          (retok (make-asm-input :name? nil
                                  :constraint constraint
                                  :rvalue rvalue)
                  (span-join span last-span)

@@ -3708,9 +3708,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler output operand."
     (b* (((asm-output output) output)
-         (pstate (if output.name
+         (pstate (if output.name?
                      (b* ((pstate (print-astring "[" pstate))
-                          (pstate (print-ident output.name pstate))
+                          (pstate (print-ident output.name? pstate))
                           (pstate (print-astring "] " pstate)))
                        pstate)
                    pstate))
@@ -3756,9 +3756,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print an assembler input operand."
     (b* (((asm-input input) input)
-         (pstate (if input.name
+         (pstate (if input.name?
                      (b* ((pstate (print-astring "[" pstate))
-                          (pstate (print-ident input.name pstate))
+                          (pstate (print-ident input.name? pstate))
                           (pstate (print-astring "] " pstate)))
                        pstate)
                    pstate))
