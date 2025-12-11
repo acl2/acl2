@@ -37,15 +37,20 @@
      with the (preprocessed) contents of the referenced files,
      but it otherwise performs the rest of the preprocessing.")
    (xdoc::p
-    "Our preprocessor maps a file set to a file set (see @(see files)).
-     It reads characters and lexes them into lexemes,
+    "Our preprocessor maps a list of file paths
+     to a file set (see @(see files)):
+     it preprocesses all the files with the given file paths,
+     as well as all the files directly and indirectly included.
+     The resulting file set contains entries for all such files,
+     not only the ones with the given file paths.")
+   (xdoc::p
+    "Our preprocessor reads characters and lexes them into lexemes,
      while executing the preprocessing directives.
      The resulting sequence of lexemes is then turned into characters
      that are written into files.
      The resulting file set is amenable to our parser
      (more precisely, it will be, once we have extended our parser
-     to accept @('#include') directives in certain places,
-     which we plan to do).
+     to accept @('#include') directives in certain places).
      Our preprocessor preserves white space, in order to preserve the layout
      (modulo the inherent layout changes caused by preprocessing).
      Our preprocessor also preserves comments,
@@ -55,9 +60,9 @@
     "Currently some of this preprocessor's code duplicates, at some level,
      some of the code in the @(see parser)
      (including the @(see lexer) and the @(see reader)).
-     At some point we should integrate the preprocessor into the parser.")
+     At some point we should integrate the preprocessor with the parser.")
    (xdoc::p
-    "This preprocessor is very much work in progress."))
+    "This preprocessor is still work in progress."))
   :order-subtopics (preprocessor-states
                     preprocessor-messages
                     preprocessor-reader
@@ -94,8 +99,8 @@
 
   ///
 
-  (defret plexeme-list-nontokenp-of-pread-token
-    (plexeme-list-nontokenp nontokens)
+  (defret plexeme-list-not-tokenp-of-pread-token
+    (plexeme-list-not-tokenp nontokens)
     :hints (("Goal" :induct t)))
 
   (defret plexeme-tokenp-of-pread-token
