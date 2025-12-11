@@ -122,6 +122,57 @@
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pread-token/newline ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (nontokens-nonnewlines plexeme-listp)
+               (token/newline? plexeme-optionp)
+               (token/newline-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Read a token or newline during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee plexeme-token/newline-p),
+     we also include line comments as newlines."))
+  (b* (((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontokens-nonnewlines token/newline token/newline-span ppstate)
+        (pread-token/newline headerp ppstate)))
+    (retok (cons lexeme nontokens-nonnewlines)
+           token/newline
+           token/newline-span
+           ppstate))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-list-not-token/newline-p-of-pread-token/newline
+    (plexeme-list-not-token/newline-p nontokens-nonnewlines)
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-token/newline-p-of-pread-token/newline
+    (implies token?
+             (plexeme-token/newline-p token/newline?))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-pread-token/newline-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-pread-token/newline-cond
+    (implies (and (not erp)
+                  token/newline?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; TODO: continue
