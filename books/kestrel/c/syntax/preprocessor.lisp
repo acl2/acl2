@@ -73,7 +73,7 @@
                (token? plexeme-optionp)
                (token-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "read a token during preprocessing."
+  :short "Read a token during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
