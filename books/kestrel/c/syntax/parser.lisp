@@ -8442,8 +8442,8 @@
                                span-stmt expr span-decl decl)
                         (reterr t)))
                     (retok (amb?-declon/stmt-ambig
-                            (make-amb-declon/stmt :stmt expr
-                                                  :decl decl))
+                            (make-amb-declon/stmt :decl decl
+                                                  :expr expr))
                            span-stmt ; = span-decl
                            parstate))))
             ;; If a semicolon does not follow the expression,

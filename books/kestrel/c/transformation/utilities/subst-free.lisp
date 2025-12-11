@@ -1462,7 +1462,7 @@
                              subst bound-vars)))
       (c$::amb-declon/stmt
         decl
-        (expr-subst-free (c$::amb-declon/stmt->stmt amb-declon/stmt)
+        (expr-subst-free (c$::amb-declon/stmt->expr amb-declon/stmt)
                          subst bound-vars)))
     :measure (c$::amb-declon/stmt-count amb-declon/stmt))
   :verify-guards :after-returns

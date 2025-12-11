@@ -3372,7 +3372,7 @@
     (b* (((reterr) (irr-declon/stmt) (irr-dimb-table))
          ((amb-declon/stmt declon/stmt) declon/stmt)
          ((mv erp-decl new-decl table-decl) (dimb-declon declon/stmt.decl table))
-         ((mv erp-expr new-expr table-expr) (dimb-expr declon/stmt.stmt table)))
+         ((mv erp-expr new-expr table-expr) (dimb-expr declon/stmt.expr table)))
       (if erp-decl
           ;; decl fails:
           (if erp-expr

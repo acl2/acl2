@@ -3405,7 +3405,7 @@
      These two components should look the same in concrete syntax,
        but we do not enforce that in this fixtype definition."))
     ((decl declon)
-     (stmt expr))
+     (expr expr))
     :pred amb-declon/stmt-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 4))
