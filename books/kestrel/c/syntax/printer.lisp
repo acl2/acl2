@@ -294,6 +294,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The character is supplied as its code.")
+   (xdoc::p
     "We UTF-8-encode the character code into one, two, three, or four bytes.")
    (xdoc::p
     "This is the most basic printing function in our printer.
