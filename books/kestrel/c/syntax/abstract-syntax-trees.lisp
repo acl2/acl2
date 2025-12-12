@@ -494,7 +494,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod dec-expo
+(fty::defprod dexpo
   :short "Fixtype of decimal exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -506,19 +506,19 @@
   ((prefix dexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred dec-expop
+  :pred dexpop
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption dec-expo-option
-  dec-expo
+(fty::defoption dexpo-option
+  dexpo
   :short "Fixtype of optional decimal exponents."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Decimal exponents are defined in @(tsee dec-expo)."))
-  :pred dec-expo-optionp)
+    "Decimal exponents are defined in @(tsee dexpo)."))
+  :pred dexpo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -604,9 +604,9 @@
      The first two possibilities are modeled as
      a fractional significand with an optional exponent."))
   (:frac ((significand dec-frac-const)
-          (expo? dec-expo-option)))
+          (expo? dexpo-option)))
   (:int ((significand dec-digit-char-list)
-         (expo dec-expo)))
+         (expo dexpo)))
   :pred dec-core-fconstp
   :layout :fulltree)
 

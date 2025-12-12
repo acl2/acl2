@@ -1034,33 +1034,33 @@
  lex-?-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dexprefix-locase-e)
-                        nil
-                        (list #\1 #\0))))
+              (dexpo (dexprefix-locase-e)
+                     nil
+                     (list #\1 #\0))))
 
 (test-lex
  lex-?-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dexprefix-upcase-e)
-                        nil
-                        (list #\0 #\2 #\2 #\3))))
+              (dexpo (dexprefix-upcase-e)
+                     nil
+                     (list #\0 #\2 #\2 #\3))))
 
 (test-lex
  lex-?-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dexprefix-locase-e)
-                        (sign-plus)
-                        (list #\5))))
+              (dexpo (dexprefix-locase-e)
+                     (sign-plus)
+                     (list #\5))))
 
 (test-lex
  lex-?-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dexprefix-upcase-e)
-                        (sign-minus)
-                        (list #\5 #\0 #\0))))
+              (dexpo (dexprefix-upcase-e)
+                     (sign-minus)
+                     (list #\5 #\0 #\0))))
 
 (test-lex
  lex-?-exponent-part
@@ -1083,33 +1083,33 @@
  lex-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dexprefix-locase-e)
-                        nil
-                        (list #\1 #\0))))
+              (dexpo (dexprefix-locase-e)
+                     nil
+                     (list #\1 #\0))))
 
 (test-lex
  lex-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dexprefix-upcase-e)
-                        nil
-                        (list #\0 #\2 #\2 #\3))))
+              (dexpo (dexprefix-upcase-e)
+                     nil
+                     (list #\0 #\2 #\2 #\3))))
 
 (test-lex
  lex-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dexprefix-locase-e)
-                        (sign-plus)
-                        (list #\5))))
+              (dexpo (dexprefix-locase-e)
+                     (sign-plus)
+                     (list #\5))))
 
 (test-lex
  lex-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dexprefix-upcase-e)
-                        (sign-minus)
-                        (list #\5 #\0 #\0))))
+              (dexpo (dexprefix-upcase-e)
+                     (sign-minus)
+                     (list #\5 #\0 #\0))))
 
 (test-lex-fail
  lex-exponent-part

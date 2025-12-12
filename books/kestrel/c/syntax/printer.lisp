@@ -902,14 +902,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo ((expo dec-expop) (pstate pristatep))
+(define print-dexpo ((expo dexpop) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a decimal exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "We ensure that there is at least one digit."))
-  (b* (((dec-expo expo) expo)
+  (b* (((dexpo expo) expo)
        (pstate (print-dexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
@@ -922,26 +922,26 @@
 
   ///
 
-  (defret-same-gcc print-dec-expo))
+  (defret-same-gcc print-dexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo-option ((expo? dec-expo-optionp) (pstate pristatep))
+(define print-dexpo-option ((expo? dexpo-optionp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an optional decimal exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "If there is no decimal exponent, we print nothing."))
-  (dec-expo-option-case
+  (dexpo-option-case
    expo?
-   :some (print-dec-expo expo?.val pstate)
+   :some (print-dexpo expo?.val pstate)
    :none (pristate-fix pstate))
   :hooks (:fix)
 
   ///
 
-  (defret-same-gcc print-dec-expo-option))
+  (defret-same-gcc print-dexpo-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1033,7 +1033,7 @@
   (dec-core-fconst-case
    fconst
    :frac (b* ((pstate (print-dec-frac-const fconst.significand pstate))
-              (pstate (print-dec-expo-option fconst.expo? pstate)))
+              (pstate (print-dexpo-option fconst.expo? pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
@@ -1041,7 +1041,7 @@
                       has no digits in the significand.")
               (pristate-fix pstate))
              (pstate (print-dec-digit-achars fconst.significand pstate))
-             (pstate (print-dec-expo fconst.expo pstate)))
+             (pstate (print-dexpo fconst.expo pstate)))
           pstate))
   :hooks (:fix)
 

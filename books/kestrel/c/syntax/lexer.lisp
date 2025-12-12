@@ -1445,7 +1445,7 @@
 
 (define lex-?-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo? dec-expo-optionp)
+               (expo? dexpo-optionp)
                (last/next-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent, if present."
@@ -1484,9 +1484,9 @@
                   (if sign? (unread-char parstate) parstate)) ; put back sign
                  (parstate (unread-char parstate))) ; put back e/E
               (retok nil pos parstate))))
-        (retok (make-dec-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-dexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                last-pos
                parstate)))
      (t ; other
@@ -1512,7 +1512,7 @@
 
 (define lex-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo dec-expop)
+               (expo dexpop)
                (last-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent."
@@ -1524,7 +1524,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-dec-expo) (irr-position) parstate)
+  (b* (((reterr) (irr-dexpo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -1544,9 +1544,9 @@
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
                         :found "none")))
-        (retok (make-dec-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-dexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                digits-last-pos
                parstate)))
      (t ; other
@@ -1931,10 +1931,10 @@
                 (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
                ((erp parstate) (check-full-ppnumber (and
-                                                   (member (car (last hexdigs))
-                                                           '(#\e #\E))
-                                                   t)
-                                                  parstate)))
+                                                     (member (car (last hexdigs))
+                                                             '(#\e #\E))
+                                                     t)
+                                                    parstate)))
             (retok (const-int
                     (make-iconst
                      :core (make-dec/oct/hex-const-hex

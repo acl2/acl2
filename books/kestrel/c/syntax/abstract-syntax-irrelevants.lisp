@@ -84,12 +84,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo
+(defirrelevant irr-dexpo
   :short "An irrelevant decimal exponent."
-  :type dec-expop
-  :body (make-dec-expo :prefix (irr-dexprefix)
-                       :sign? nil
-                       :digits nil))
+  :type dexpop
+  :body (make-dexpo :prefix (irr-dexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
