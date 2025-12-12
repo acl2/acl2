@@ -3985,6 +3985,11 @@
      (interp-st->stack interp-st))))
 
 
+(define is-fncall ((fnname pseudo-fnsym-p)
+                   (x pseudo-termp))
+  (pseudo-term-case x
+    :fncall (eq x.fn (pseudo-fnsym-fix fnname))
+    :otherwise nil))
 
 
 (progn
@@ -4012,13 +4017,14 @@
         (b* (((interp-st-bind
                (equiv-contexts (fgl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
               (was-fncall-p (pseudo-term-case x :call))
+              (left-to-rightp (pseudo-term-case x :fncall (eq x.fn 'left-to-right) :otherwise nil))
               ((fgl-interp-recursive-call xobj)
                (fgl-interp-term-equivs x interp-st state))))
           ;; already-rewritten: xobj has probably already been rewritten under
           ;; IFF if x was a function/lambda call, otherwise probably not.
           ;; E.g. if x was a variable, it was probably not bound in an IFF
           ;; context.
-          (fgl-interp-simplify-if-test was-fncall-p xobj interp-st state)))
+          (fgl-interp-simplify-if-test was-fncall-p left-to-rightp xobj interp-st state)))
 
       (define fgl-interp-test-under-pathcond ((x pseudo-termp)
                                               (interp-st interp-st-bfrs-ok)
@@ -4097,7 +4103,8 @@
              ((fgl-interp-recursive-call xobj)
               (fgl-interp-term-equivs x interp-st state))
              ((when (interp-st-boolean-fncall-p xobj interp-st (w state)))
-              (b* (((fgl-interp-value xbfr) (fgl-interp-simplify-if-test nil xobj interp-st state)))
+              (b* (((fgl-interp-value xbfr) (fgl-interp-simplify-if-test
+                                             nil nil xobj interp-st state)))
                 (fgl-interp-value (mk-g-boolean xbfr)))))
           (fgl-interp-value xobj)))
 
@@ -4345,7 +4352,7 @@
              ((fgl-interp-recursive-call testbfr)
               ;; already-rewritten: presumably since it already ended up as the
               ;; test of an IF.
-              (fgl-interp-simplify-if-test t test interp-st state))
+              (fgl-interp-simplify-if-test t nil test interp-st state))
              ((mv then-args interp-st) (interp-st-pop-scratch-fgl-objlist interp-st))
              ((mv else-args interp-st) (interp-st-pop-scratch-fgl-objlist interp-st)))
           (fgl-interp-fncall-casesplit-branches testbfr fn then-args else-args interp-st state)))
@@ -5172,7 +5179,7 @@
                ;; Already rewritten under IFF/unequiv if original contexts
                ;; contained IFF/unequiv.
                (fgl-interp-or-test-already-rewrittenp equiv-contexts)
-               testval interp-st state))
+               (is-fncall 'left-to-right test) testval interp-st state))
              (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              ((fgl-interp-recursive-call else-unreachable elseval)
               (fgl-maybe-interp (interp-st-bfr-not testbfr) else interp-st state))
@@ -5362,7 +5369,7 @@
                  ((interp-st-bind
                    (reclimit (1- reclimit) reclimit))
                   ((fgl-interp-value ans)
-                   (fgl-interp-simplify-if-test nil xobj interp-st state))))
+                   (fgl-interp-simplify-if-test nil nil xobj interp-st state))))
               (fgl-interp-value nil ans))
           ;; Harder cases.
           (b* (((mv contra interp-st)
@@ -5380,7 +5387,7 @@
                ((interp-st-bind
                  (reclimit (1- reclimit) reclimit))
                 ((fgl-interp-value ans)
-                 (fgl-interp-simplify-if-test nil xobj interp-st state)))
+                 (fgl-interp-simplify-if-test nil nil xobj interp-st state)))
                (interp-st (interp-st-pathcond-rewind interp-st))
                ((when (eq (interp-st->errmsg interp-st) :unreachable))
                 (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
@@ -5388,6 +5395,7 @@
             (fgl-interp-value nil ans))))
 
       (define fgl-interp-simplify-if-test1 ((already-rewrittenp)
+                                            (left-to-rightp)
                                             (xobj fgl-object-p)
                                             (interp-st interp-st-bfrs-ok)
                                             state)
@@ -5407,11 +5415,12 @@
           :g-var (b* (((mv ans interp-st) (interp-st-add-term-bvar-unique xobj interp-st state)))
                    (fgl-interp-value ans))
           :g-ite (fgl-interp-simplify-if-test-ite xobj interp-st state)
-          :g-apply (fgl-interp-simplify-if-test-fncall already-rewrittenp xobj interp-st state)
+          :g-apply (fgl-interp-simplify-if-test-fncall already-rewrittenp left-to-rightp xobj interp-st state)
           :g-map (fgl-interp-value (bool-fix xobj.alist))))
 
 
       (define fgl-interp-simplify-if-test ((already-rewrittenp)
+                                           (left-to-rightp)
                                            (xobj fgl-object-p)
                                            (interp-st interp-st-bfrs-ok)
                                            state)
@@ -5423,7 +5432,7 @@
                        2000
                        (fgl-object-count xobj)
                        40)
-        (b* (((mv ans1 interp-st state) (fgl-interp-simplify-if-test1 already-rewrittenp xobj interp-st state))
+        (b* (((mv ans1 interp-st state) (fgl-interp-simplify-if-test1 already-rewrittenp left-to-rightp xobj interp-st state))
              ((mv ans interp-st) (interp-st-pathcond-fix-bfr ans1 interp-st)))
           (mv ans interp-st state)))
 
@@ -5447,7 +5456,7 @@
              (interp-st (interp-st-push-scratch-fgl-obj xobj.then interp-st))
              ;; scratch: xobj.then, xobj.else
              ((fgl-interp-recursive-call test-bfr)
-              (fgl-interp-simplify-if-test t xobj.test interp-st state))
+              (fgl-interp-simplify-if-test t nil xobj.test interp-st state))
              (xobj.then (interp-st-top-scratch-fgl-obj interp-st))
              (interp-st (interp-st-update-scratch-bfr 0 test-bfr interp-st))
              ;; scratch: test-bfr, xobj.else
@@ -5470,9 +5479,10 @@
            test-bfr then-bfr else-bfr then-unreachable else-unreachable interp-st state)))
 
       (define fgl-interp-simplify-if-test-fncall ((already-rewrittenp)
-                                                 (xobj fgl-object-p)
-                                                 (interp-st interp-st-bfrs-ok)
-                                                 state)
+                                                  (left-to-rightp)
+                                                  (xobj fgl-object-p)
+                                                  (interp-st interp-st-bfrs-ok)
+                                                  state)
         :guard (and (fgl-object-case xobj :g-apply)
                     (interp-st-bfr-listp (fgl-object-bfrlist xobj)))
 
@@ -5489,7 +5499,7 @@
               (fgl-apply-match-not xobj))
              ((when not-matched)
               (b* (((fgl-interp-value bfr)
-                    (fgl-interp-simplify-if-test nil neg-arg interp-st state))
+                    (fgl-interp-simplify-if-test nil nil neg-arg interp-st state))
                    ;; ((when err)
                    ;;  (mv nil interp-st state))
                    )
@@ -5534,7 +5544,7 @@
               (b* (((interp-st-bind
                      (reclimit (1- reclimit) reclimit))
                     ((fgl-interp-value ans)
-                     (fgl-interp-simplify-if-test t ans interp-st state))))
+                     (fgl-interp-simplify-if-test t left-to-rightp ans interp-st state))))
                 (fgl-interp-value ans)))
 
              (xobj (hons-copy xobj))
@@ -5560,7 +5570,7 @@
                 (fgl-interp-value nil)))
 
              ((mv bfr interp-st)
-              (interp-st-add-term-bvar xobj interp-st state))
+              (interp-st-add-term-bvar left-to-rightp xobj interp-st state))
 
              (interp-st (interp-st-push-scratch-bfr bfr interp-st))
 
@@ -9411,24 +9421,18 @@
   (local (in-theory (enable fgl-apply fgl-objectlist-eval)))
   (defret check-equiv-replacement-correct
     (implies (and ok
-                  (xor negp (fgl-object-eval equiv-term env)))
+                  (fgl-object-eval equiv-term env))
              (equal (fgl-ev-context-fix contexts (fgl-object-eval equiv env))
-                    (fgl-ev-context-fix contexts (fgl-object-eval x env)))))
+                    (fgl-ev-context-fix contexts (fgl-object-eval x env))))))
 
-  (defretd check-equiv-replacement-iff-equiv-correct
-    (implies iff-equiv-p
-             (equal (fgl-ev-context-fix contexts (fgl-object-eval x env))
-                    (fgl-ev-context-fix contexts (and (fgl-object-eval equiv-term env) t)))))
-  )
 
-(defsection try-equivalences-correct
-  (local (std::set-define-current-function try-equivalences))
-  (local (in-theory (enable try-equivalences
-                            check-equiv-replacement-iff-equiv-correct)))
+(defsection try-equivalence-correct
+  (local (std::set-define-current-function try-equivalence))
+  (local (in-theory (enable try-equivalence)))
 
-  (defthm try-equivalences-of-pathcond-fix
-    (equal (try-equivalences x bvars contexts (pathcond-fix pathcond) bvar-db logicman state)
-           (try-equivalences x bvars contexts pathcond bvar-db logicman state)))
+  (defthm try-equivalence-of-pathcond-fix
+    (equal (try-equivalence x bvars contexts (pathcond-fix pathcond) bvar-db logicman state)
+           (try-equivalence x bvars contexts pathcond bvar-db logicman state)))
 
   ;; (local (in-theory (e/d (eval-equal-bit-of-logicman-pathcond-implies)
   ;;                        (eval-when-logicman-pathcond-implies))))
@@ -9439,6 +9443,53 @@
            :hints(("Goal" :in-theory (enable gobj-bfr-eval)))))
 
   (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
+
+  ;; (local (in-theory (enable interp-st-bvar-db-ok-necc)))
+
+  (defret try-equivalence-correct
+    :pre-bind ((logicman (interp-st->logicman interp-st))
+               (bvar-db (interp-st->bvar-db interp-st))
+               (pathcond (interp-st->pathcond interp-st)))
+    (implies (and ok
+                  (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                          (interp-st->pathcond interp-st)
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bvar-db-ok interp-st env)
+                  (interp-st-bfrs-ok interp-st)
+                  (<= (base-bvar (interp-st->bvar-db interp-st)) (nfix bvar))
+                  (< (nfix bvar) (next-bvar (interp-st->bvar-db interp-st))))
+             (equal (fgl-ev-context-fix
+                     contexts
+                     (fgl-object-eval new-x env))
+                    (fgl-ev-context-fix
+                     contexts
+                     (fgl-object-eval x env))))
+    :hints (("goal" :use ((:instance eval-when-logicman-pathcond-implies
+                           (x (bfr-var (nfix bvar) (interp-st->logicman interp-st)))
+                           (pathcond (interp-st->pathcond interp-st))
+                           (logicman (interp-st->logicman interp-st))
+                           (env (fgl-env->bfr-vals env))))
+             :in-theory (e/d (bool->bit)
+                             (eval-when-logicman-pathcond-implies))
+             :do-not-induct t))))
+
+(defsection try-equivalences-correct
+  (local (std::set-define-current-function try-equivalences))
+  (local (in-theory (enable try-equivalences)))
+
+  (defthm try-equivalences-of-pathcond-fix
+    (equal (try-equivalences x bvars contexts (pathcond-fix pathcond) bvar-db logicman state)
+           (try-equivalences x bvars contexts pathcond bvar-db logicman state)))
+
+  ;; ;; (local (in-theory (e/d (eval-equal-bit-of-logicman-pathcond-implies)
+  ;; ;;                        (eval-when-logicman-pathcond-implies))))
+
+  ;; (local (defthm bfr-eval-of-fgl-env->bfr-vars
+  ;;          (equal (bfr-eval bfr (fgl-env->bfr-vals env))
+  ;;                 (gobj-bfr-eval bfr env))
+  ;;          :hints(("Goal" :in-theory (enable gobj-bfr-eval)))))
+
+  ;; (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
   ;; (local (in-theory (enable interp-st-bvar-db-ok-necc)))
 
@@ -9461,16 +9512,7 @@
                      (fgl-object-eval x env))))
     :hints (("goal" :induct (len bvars)
              :in-theory (enable (:i len) bvar-list-okp$c)
-             :expand ((:free (logicman pathcond bvar-db) <call>)))
-            (and stable-under-simplificationp
-                 '(:use ((:instance eval-when-logicman-pathcond-implies
-                          (x (bfr-var (nfix (car bvars)) (interp-st->logicman interp-st)))
-                          (pathcond (interp-st->pathcond interp-st))
-                          (logicman (interp-st->logicman interp-st))
-                          (env (fgl-env->bfr-vals env))))
-                   :in-theory (e/d (bool->bit)
-                                   (eval-when-logicman-pathcond-implies))
-                   :do-not-induct t)))))
+             :expand ((:free (logicman pathcond bvar-db) <call>))))))
 
 
 (defsection try-equivalences-loop-correct

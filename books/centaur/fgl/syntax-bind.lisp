@@ -327,6 +327,42 @@ test of the IF should not be included in the path condition while rewriting the
  branch."
   x)
 
+(define left-to-right (x)
+  :parents (fgl-rewrite-rule)
+  :short "Identity function that directs replacements due to an equivalence to prefer replacing the left-hand side with the right-hand side."
+  :long "<p>When this identity function is wrapped around an equivalence term, then when
+that term is assumed true (as in a hypothesis or path condition element), the symbolic object resulting from the first argument of the equivalence will be replaced by that resulting from the second argument whenever it occurs under a matching equivalence context.</p>
+
+<p>In other cases, replacement might still occur, but whether left by right or
+right by left will be governed according to heuristics.</p>
+
+<p>Example:
+@({
+ (fgl::def-fgl-rewrite signed-byte-assumption-to-logext
+    (iff (signed-byte-p n x)
+         (and (posp n)
+              ;; Causes x to be replaced with the result of rewriting (logext n x)
+              ;; when this assumption is in the path condition.
+              (left-to-right (equal x (logext n x))))))
+ })
+
+<p>Note that if the inner term does not evaluate to an equivalence, or if the
+left- and right-hand-sides are switched due to some rewrite rule, then
+left-to-right may not have the desired effect. It functions as follows:</p>
+
+<p>If:</p>
+<ul>
+<li>we are rewriting a term in a Boolean context (under IFF equivalence),</li>
+<li>the original term is a call of @('left-to-right'),</li>
+<li>the rewritten object is a call of an equivalence relation (known by ACL2 --
+see @(see acl2::equivalence)),</li>
+</ul>
+
+<p>then the object will be added to the equivalence database such that the
+first argument of the rewritten object will be replaced with the second
+argument when under the equivalence.</p>"
+  x)
+
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 
 ;; (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))

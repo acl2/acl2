@@ -722,38 +722,101 @@
 ;;       :define t)))
 
 
+
+
+
 (define check-equiv-replacement ((x fgl-object-p)
                                  (equiv-term fgl-object-p)
                                  (contexts equiv-contextsp)
                                  state)
-  :returns (mv ok
-               (equiv fgl-object-p)
-               negp
-               iff-equiv-p)
+  :returns (mv ok 
+               (equiv fgl-object-p))
   (declare (ignorable state))
   ;; BOZO fix these to work with context fixing terms, refinements, negated equivs, etc
-  (b* (((when (hons-equal (fgl-object-fix x)
-                          (fgl-object-fix equiv-term)))
-        (mv t nil t (member-eq 'iff (equiv-contexts-fix contexts))))
-       ((unless (fgl-object-case equiv-term :g-apply))
-        (mv nil nil nil nil))
+  (b* (((unless (fgl-object-case equiv-term :g-apply))
+        (mv nil nil))
        (equiv (g-apply->fn equiv-term))
        ((unless (or (eq equiv 'equal)
                     (member-eq equiv (equiv-contexts-fix contexts))))
-        (mv nil nil nil nil))
+        (mv nil nil))
        (args (g-apply->args equiv-term))
        ((unless (equal (len args) 2))
-        (mv nil nil nil nil))
+        (mv nil nil))
        ((when (hons-equal (car args) (fgl-object-fix x)))
-        (mv t (cadr args) nil nil))
+        (mv t (cadr args)))
        ((when (hons-equal (cadr args) (fgl-object-fix x)))
-        (mv t (car args) nil nil)))
-    (mv nil nil nil nil))
+        (mv t (car args))))
+    (mv nil nil))
   ///
   (defret fgl-object-bfrlist-of-<fn>
     (implies (not (member v (fgl-object-bfrlist equiv-term)))
              (not (member v (fgl-object-bfrlist equiv))))))
 
+
+
+;; Cases for replacement:
+;;  - * The Boolean variable is known true
+;;    * it is associated to an equivalence function call
+;;    * one argument of the equivalence equals the object
+;;    * the equivalence is in the current equiv contexts
+;;    -> replace the object with the other argument of the equivalence
+;;  - * The Boolean variable is known false
+;;    * it is associated to the object itself
+;;    -> replace the object with NIL
+;;  - * The Boolean variable is known true
+;;    * it is associated to the object itself
+;;    * the current equiv contexts include IFF
+;;    -> replace the object with T
+;; NOTE: this would violate the property that the result has to have its bfrlist
+;;       a subset of the bvar-db-bfrlist, so we don't do this for now:
+;;  - * The Boolean variable is not known true or false
+;;    * it is associated to the object itself
+;;    * the current equiv contexts include IFF
+;;    -> replace the object with the Boolean variable.
+
+(define try-equivalence ((x fgl-object-p)
+                         (bvar natp)
+                         (contexts equiv-contextsp)
+                         pathcond
+                         bvar-db
+                         logicman
+                         state)
+  :guard (and (<= (base-bvar bvar-db) bvar)
+              (< bvar (next-bvar bvar-db))
+              (equal (next-bvar bvar-db) (bfr-nvars)))
+  :guard-hints (("goal" :in-theory (enable bfr-varname-p)))
+  :returns (mv ok (new-x fgl-object-p)
+               (new-pathcond (equal new-pathcond (pathcond-fix pathcond))))
+  (b* ((bvar-obj (get-bvar->term bvar bvar-db))
+       (bfr-var (bfr-var bvar logicman))
+       ((mv known-bit pathcond) (logicman-pathcond-implies bfr-var pathcond logicman))
+       ((when (hons-equal (fgl-object-fix x) bvar-obj))
+        (b* (((when (eql known-bit 0))
+              (mv t nil pathcond))
+             ((unless (member-eq 'iff (equiv-contexts-fix contexts)))
+              (mv nil nil pathcond))
+             ((when (eql known-bit 1))
+              (mv t t pathcond)))
+          ;; (mv t (g-boolean bfr-var) pathcond)
+          (mv nil nil pathcond)))
+       ((unless (eql known-bit 1))
+        (mv nil nil pathcond))
+       ((mv ok new-x)
+        (check-equiv-replacement x bvar-obj contexts state)))
+    (mv ok new-x pathcond))
+  ///
+  (local (defthm fgl-object-bfrlist-of-boolean
+           (implies (booleanp x)
+                    (equal (fgl-object-bfrlist x) nil))
+           :hints(("Goal" :in-theory (enable booleanp)))))
+  (defret fgl-object-bfrlist-of-<fn>
+    (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+                  (<= (base-bvar bvar-db) (nfix bvar))
+                  (< (nfix bvar) (next-bvar bvar-db)))
+             (not (member v (fgl-object-bfrlist new-x))))
+    :hints(("Goal" :in-theory (enable bvar-list-okp$c)))))
+    
+                           
 
 
 (define try-equivalences ((x fgl-object-p)
@@ -773,19 +836,11 @@
                        :in-theory (enable bfr-varname-p))))
   (b* ((pathcond (pathcond-fix pathcond))
        ((when (atom bvars)) (mv nil nil pathcond))
-       (bvar (lnfix (car bvars)))
-       (bfr-var (bfr-var bvar logicman))
-       (equiv-term (get-bvar->term bvar bvar-db))
-       ((mv check-ok repl negp iff-equiv-p)
-        (check-equiv-replacement x equiv-term contexts state))
-       ((unless check-ok)
-        (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
-       ((mv ans pathcond) (logicman-pathcond-implies bfr-var pathcond logicman))
-       ((when (if negp (eql ans 0) (eql ans 1)))
-        (mv t repl pathcond))
-       ((when (and iff-equiv-p ans))
-        (mv t (eql ans 1) pathcond)))
-      (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
+       ((mv check-ok repl pathcond)
+        (try-equivalence x (car bvars) contexts pathcond bvar-db logicman state))
+       ((when check-ok)
+        (mv t repl pathcond)))
+    (try-equivalences x (cdr bvars) contexts pathcond bvar-db logicman state))
   ///
   (local (defthm fgl-object-bfrlist-of-boolean
            (implies (booleanp x)
@@ -827,7 +882,21 @@
              (not (member v (fgl-object-bfrlist replacement))))))
 
 
-(define maybe-add-equiv-term ((test-obj fgl-object-p)
+(define equivalence-relationp ((x pseudo-fnsym-p)
+                               (w plist-worldp))
+  (acl2::equivalence-relationp (pseudo-fnsym-fix x) w))
+    
+  
+(define length-is-2 ((args true-listp))
+  :enabled t
+  (mbe :logic (equal (len args) 2)
+       :exec (and (consp args)
+                  (let ((cdr (cdr args)))
+                    (and (consp cdr)
+                         (not (cdr cdr)))))))
+
+(define maybe-add-equiv-term (left-to-rightp
+                              (test-obj fgl-object-p)
                               (bvar natp)
                               bvar-db
                               state)
@@ -848,12 +917,16 @@
     :g-apply (b* ((fn test-obj.fn)
                   (args test-obj.args)
 
-                  ((unless (and (eq fn 'equal)
-                                (equal (len args) 2)))
+                  ((unless (and (length-is-2 args)
+                                (equivalence-relationp fn (w state))))
                    (add-term-equiv test-obj bvar bvar-db))
                   ((list a b) args)
                   ;; The rest is just a heuristic determination of which should rewrite to
                   ;; the other. Note: in many cases we don't rewrite either way!
+                  
+                  ;; Heuristic 0: when left-to-rightp, replace a with b.
+                  ((when left-to-rightp)
+                   (add-term-equiv a bvar bvar-db))
 
                   ;; Heuristic 1: when a variable is equated with anything else, normalize var -> other.
                   ;; (Note this could loop, up to the user to prevent this)
@@ -883,7 +956,7 @@
   
 
   (defthm bvar-db-bfrlist-of-maybe-add-equiv-term
-    (equal (bvar-db-bfrlist (maybe-add-equiv-term obj bvar bvar-db state))
+    (equal (bvar-db-bfrlist (maybe-add-equiv-term l2r obj bvar bvar-db state))
            (bvar-db-bfrlist bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term
                                       bvar-db-bfrlist
@@ -891,29 +964,29 @@
 
   (defthm bvar-db-boundedp-of-maybe-add-equiv-term
     (implies (bvar-db-boundedp bvar-db logicman)
-             (bvar-db-boundedp (maybe-add-equiv-term obj bvar bvar-db state) logicman))
-    :hints (("goal" :expand ((bvar-db-boundedp (maybe-add-equiv-term obj bvar bvar-db state) logicman))
+             (bvar-db-boundedp (maybe-add-equiv-term l2r obj bvar bvar-db state) logicman))
+    :hints (("goal" :expand ((bvar-db-boundedp (maybe-add-equiv-term l2r obj bvar bvar-db state) logicman))
              :use ((:instance bvar-db-boundedp-necc
                     (var (bvar-db-boundedp-witness
-                          (maybe-add-equiv-term obj bvar bvar-db state) logicman))))
+                          (maybe-add-equiv-term l2r obj bvar bvar-db state) logicman))))
              :in-theory (enable add-term-equiv))))
 
   (defthm next-bvar$c-of-maybe-add-equiv-term
-    (equal (next-bvar$c (maybe-add-equiv-term x bvar bvar-db state))
+    (equal (next-bvar$c (maybe-add-equiv-term l2r x bvar bvar-db state))
            (next-bvar$c bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term))))
 
   (defthm base-bvar$c-of-maybe-add-equiv-term
-    (equal (base-bvar$c (maybe-add-equiv-term x bvar bvar-db state))
+    (equal (base-bvar$c (maybe-add-equiv-term l2r x bvar bvar-db state))
            (base-bvar$c bvar-db))
     :hints(("Goal" :in-theory (enable maybe-add-equiv-term))))
 
   (defthm get-bvar->term$c-of-maybe-add-equiv-term
-    (equal (get-bvar->term$c n (maybe-add-equiv-term x bvar bvar-db state))
+    (equal (get-bvar->term$c n (maybe-add-equiv-term l2r x bvar bvar-db state))
            (get-bvar->term$c n bvar-db)))
 
   (defthm get-term->bvar$c-of-maybe-add-equiv-term
-    (equal (get-term->bvar$c obj (maybe-add-equiv-term x bvar bvar-db state))
+    (equal (get-term->bvar$c obj (maybe-add-equiv-term l2r x bvar bvar-db state))
            (get-term->bvar$c obj bvar-db))))
 
 
