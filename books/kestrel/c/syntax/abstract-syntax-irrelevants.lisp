@@ -70,10 +70,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo-prefix
+(defirrelevant irr-dexprefix
   :short "An irrelevant decimal exponent prefix."
-  :type dec-expo-prefixp
-  :body (dec-expo-prefix-locase-e))
+  :type dexprefixp
+  :body (dexprefix-locase-e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,7 +87,7 @@
 (defirrelevant irr-dec-expo
   :short "An irrelevant decimal exponent."
   :type dec-expop
-  :body (make-dec-expo :prefix (irr-dec-expo-prefix)
+  :body (make-dec-expo :prefix (irr-dexprefix)
                        :sign? nil
                        :digits nil))
 

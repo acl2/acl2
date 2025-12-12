@@ -1473,8 +1473,8 @@
      ((or (utf8-= char (char-code #\e)) ; e
           (utf8-= char (char-code #\E))) ; E
       (b* ((prefix (if (utf8-= char (char-code #\e))
-                       (dec-expo-prefix-locase-e)
-                     (dec-expo-prefix-upcase-e)))
+                       (dexprefix-locase-e)
+                     (dexprefix-upcase-e)))
            ((erp sign? sign-pos parstate) (lex-?-sign parstate))
            (pos-so-far (if sign? sign-pos pos))
            ((erp digits last-pos & parstate)
@@ -1534,8 +1534,8 @@
      ((or (utf8-= char (char-code #\e)) ; e
           (utf8-= char (char-code #\E))) ; E
       (b* ((prefix (if (utf8-= char (char-code #\e))
-                       (dec-expo-prefix-locase-e)
-                     (dec-expo-prefix-upcase-e)))
+                       (dexprefix-locase-e)
+                     (dexprefix-upcase-e)))
            ((erp sign? sign-last-pos parstate)
             (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)

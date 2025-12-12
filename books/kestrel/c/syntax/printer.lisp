@@ -872,10 +872,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo-prefix ((prefix dec-expo-prefixp) (pstate pristatep))
+(define print-dexprefix ((prefix dexprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a decimal exponent prefix."
-  (dec-expo-prefix-case
+  (dexprefix-case
    prefix
    :locase-e (print-astring "e" pstate)
    :upcase-e (print-astring "E" pstate))
@@ -883,7 +883,7 @@
 
   ///
 
-  (defret-same-gcc print-dec-expo-prefix))
+  (defret-same-gcc print-dexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -910,7 +910,7 @@
    (xdoc::p
     "We ensure that there is at least one digit."))
   (b* (((dec-expo expo) expo)
-       (pstate (print-dec-expo-prefix expo.prefix pstate))
+       (pstate (print-dexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~

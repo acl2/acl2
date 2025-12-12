@@ -466,7 +466,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum dec-expo-prefix
+(fty::deftagsum dexprefix
   :short "Fixtype of decimal exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -475,7 +475,7 @@
      in <i>exponent-part</i> in the grammar in [C17]."))
   (:locase-e ())
   (:upcase-e ())
-  :pred dec-expo-prefixp
+  :pred dexprefixp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -503,7 +503,7 @@
      It consists of a prefix,
      an optional sign,
      and a list of (decimal) digits (which should be non-empty)."))
-  ((prefix dec-expo-prefix)
+  ((prefix dexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
   :pred dec-expop

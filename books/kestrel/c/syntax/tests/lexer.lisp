@@ -1034,7 +1034,7 @@
  lex-?-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
+              (dec-expo (dexprefix-locase-e)
                         nil
                         (list #\1 #\0))))
 
@@ -1042,7 +1042,7 @@
  lex-?-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
+              (dec-expo (dexprefix-upcase-e)
                         nil
                         (list #\0 #\2 #\2 #\3))))
 
@@ -1050,7 +1050,7 @@
  lex-?-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
+              (dec-expo (dexprefix-locase-e)
                         (sign-plus)
                         (list #\5))))
 
@@ -1058,7 +1058,7 @@
  lex-?-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
+              (dec-expo (dexprefix-upcase-e)
                         (sign-minus)
                         (list #\5 #\0 #\0))))
 
@@ -1083,7 +1083,7 @@
  lex-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
+              (dec-expo (dexprefix-locase-e)
                         nil
                         (list #\1 #\0))))
 
@@ -1091,7 +1091,7 @@
  lex-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
+              (dec-expo (dexprefix-upcase-e)
                         nil
                         (list #\0 #\2 #\2 #\3))))
 
@@ -1099,7 +1099,7 @@
  lex-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
+              (dec-expo (dexprefix-locase-e)
                         (sign-plus)
                         (list #\5))))
 
@@ -1107,7 +1107,7 @@
  lex-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
+              (dec-expo (dexprefix-upcase-e)
                         (sign-minus)
                         (list #\5 #\0 #\0))))
 
