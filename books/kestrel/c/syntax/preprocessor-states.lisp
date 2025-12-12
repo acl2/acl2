@@ -13,15 +13,28 @@
 (include-book "parser-states")
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
 (acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruledl assoc-equal-iff-member-equal-of-strip-cars
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (member-equal key (strip-cars alist))))
+  :induct t
+  :enable (assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,6 +329,255 @@
   ///
   (fty::deffixequiv plexeme-list-not-token/newline-p))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-token/space-p ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a preprocessing lexeme is a token or a (single) space."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to represent, and facilitate comparison of,
+     replacement lists of macros, as explained in more detail elsewhere."))
+  (or (plexeme-tokenp lexeme)
+      (and (plexeme-case lexeme :spaces)
+           (equal (plexeme-spaces->count lexeme) 1))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist plexeme-list-token/space-p (x)
+  :guard (plexeme-listp x)
+  :short "Check if every preprocessing lexeme in a list
+          is a token or (single) space."
+  (plexeme-token/space-p x)
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv plexeme-list-token/space-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum macro-info
+  :short "Fixtype of information about a macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not include the name, which we represent separately:
+     see @(tsee macro-table).")
+   (xdoc::p
+    "Aside from the name, an object-like macro [C17:6.10.3/9]
+     consists of its replacement list,
+     which is a sequence of zero or more preprocessing tokens.
+     To facilitate comparisons with multiple definitions of the same macro
+     [C17:6.10.3/1] [C17:6.10.3/2],
+     we also keep track of whitespace separating tokens,
+     in the form of a single space between two tokens.
+     The invariant @(tsee plexeme-list-token/space-p) captures
+     the fact that we only have tokens and single spaces,
+     but does not capture the fact that the single spaces
+     only occur between two tokens;
+     however, that is also an invariant.
+     The list of lexemes does not include
+     the (mandatory [C17:6.10.3/3]) whitespace
+     between the name and the replacement list,
+     as well as the whitespace after the replacement list,
+     including the closing newline
+     [C17:6.10.3/7].")
+   (xdoc::p
+    "For a function-like macro [C17:6.10.3/10],
+     besides the replacement list,
+     which we model as for object-like macros (see above),
+     we have zero or more parameters, which are identifiers,
+     and an optional ellipsis parameter,
+     whose presence or absence we model as a boolean.
+     The list of lexemes does not include any whitespace between
+     the closing parenthesis of the parameters and the replacement list,
+     as well as the whitespace after the replacement list,
+     including the closing newline
+     [C17:6.10.3/7]."))
+  (:object ((replace plexeme-list
+                     :reqfix (if (plexeme-list-token/space-p replace)
+                                 replace
+                               nil)))
+   :require (plexeme-list-token/space-p replace))
+  (:function ((params ident-list)
+              (ellipsis bool)
+              (replace plexeme-list
+                       :reqfix (if (plexeme-list-token/space-p replace)
+                                   replace
+                                 nil)))
+   :require (plexeme-list-token/space-p replace))
+  :pred macro-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption macro-info-option
+  macro-info
+  :short "Fixtype of optional information about a macro."
+  :pred macro-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist ident-macroinfo-alist
+  :short "Fixtype of alists from identifiers to macro information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The keys represent the names of the macros,
+     with the values representing the associated information.
+     The names are identifiers [C17:6.10.3/9] [C17:6.10.3/10],
+     and they are unique [C17:6.10.3/2]."))
+  :key-type ident
+  :val-type macro-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred ident-macroinfo-alistp
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled macro-infop-of-cdr-of-assoc-equal-when-ident-macroinfo-alistp
+    (implies (and (ident-macroinfo-alistp alist)
+                  (assoc-equal key alist))
+             (macro-infop (cdr (assoc-equal key alist))))
+    :induct t
+    :enable ident-macroinfo-alistp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod macro-table
+  :short "Fixtype of macro tables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A macro table maps macro names to the associated information.")
+   (xdoc::p
+    "This wraps an alist with unique keys."))
+  ((alist ident-macroinfo-alist
+          :reqfix (if (no-duplicatesp-equal (strip-cars alist))
+                      alist
+                    nil)))
+  :require (no-duplicatesp-equal (strip-cars alist))
+  :pred macro-tablep
+  :prepwork
+  ((local (in-theory (enable alistp-when-ident-macroinfo-alistp-rewrite)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-macro-table
+  :short "An irrelevant macro table."
+  :type macro-tablep
+  :body (macro-table nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-table-init ()
+  :returns (table macro-tablep)
+  :short "Initial macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the table at the beginning of a file to preprocess.
+     For now this is empty, but we must extend it
+     with the necessary predefined macros [C17:6.10.8],
+     which in general depend on the implementation environment."))
+  (macro-table nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-lookup ((name identp) (table macro-tablep))
+  :returns
+  (info? macro-info-optionp
+         :hints
+         (("Goal"
+           :in-theory
+           (enable
+            macro-info-optionp
+            macro-infop-of-cdr-of-assoc-equal-when-ident-macroinfo-alistp))))
+  :short "Look up a macro in a macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return @('nil') if the macro is not in the table."))
+  (cdr (assoc-equal (ident-fix name) (macro-table->alist table)))
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-ident-macroinfo-alistp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-add ((name identp) (info macro-infop) (table macro-tablep))
+  :returns (mv erp (new-table macro-tablep))
+  :short "Add a macro to the macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the table already contains a macro with the given name,
+     the associated information must be the same:
+     this realizes the requirement in [C17:6.10.3/2],
+     namely that multiple definitions are allowed so long as
+     they are of the same kind (both object-like or both function-like),
+     they have the same parameters if both function-like,
+     and they have identical replacement list.
+     The latter notion [C17:6.10.3/1] amounts to equality for us,
+     because, as explained in @(tsee macro-info),
+     we normalize all whitespace to single spaces.
+     If all these conditions are satisfied, the table does not change;
+     otherwise, we return an error.")
+   (xdoc::p
+    "If the table does not already contain a macro with the given name,
+     it is added to the table."))
+  (b* (((reterr) (irr-macro-table))
+       (name (ident-fix name))
+       (info (macro-info-fix info))
+       (alist (macro-table->alist table))
+       (name+info (assoc-equal name alist)))
+    (if name+info
+        (if (equal info (cdr name+info))
+            (retok (macro-table-fix table))
+          (reterr (msg "Duplicate macro ~x0 ~
+                        with incompatible definitions ~x1 and ~x2."
+                       name info (cdr name+info))))
+      (retok (macro-table (acons name info alist)))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable acons
+                       alistp-when-ident-macroinfo-alistp-rewrite
+                       acl2::assoc-equal-iff-member-equal-of-strip-cars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-add-all ((toadd macro-tablep) (table macro-tablep))
+  :returns (mv erp (new-table macro-table))
+  :short "Add all the macros in a table to a macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the macros of the first table
+     and we add each of them to the second table.")
+   (xdoc::p
+    "Since @(tsee macro-table) has the invariant that keys are unique,
+     as we go through the alist of the first table
+     we never find any shadowed associations."))
+  (macro-add-all-loop (macro-table->alist toadd) table)
+  :prepwork
+  ((define macro-add-all-loop ((alist ident-macroinfo-alistp)
+                               (table macro-tablep))
+     :guard (no-duplicatesp-equal (strip-cars alist))
+     :returns (mv erp (new-table macro-table))
+     :parents nil
+     (b* (((reterr) (irr-macro-table))
+          ((when (endp alist)) (retok (macro-table-fix table)))
+          ((cons name info) (car alist))
+          ((erp table) (macro-add name info table)))
+       (macro-add-all-loop (cdr alist) table))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable alistp-when-ident-macroinfo-alistp-rewrite)))
+     :hooks nil
+     ///
+     (fty::deffixequiv macro-add-all-loop
+       :args ((table macro-tablep))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
@@ -334,12 +596,16 @@
      conceptually,
      the preprocessor state could be defined as a @(tsee fty::defprod).")
    (xdoc::p
-    "The components of the preprocessor state
+    "Most of the components of the preprocessor state
      are analogous to the ones of the parser state:
      see the documentation of @(tsee parstate) first.
-     The only difference is that the processor state
-     contains (preprocessing) lexemes instead of tokens,
-     because our preprocessor preserves comments and white space."))
+     The only difference in those components is that
+     the processor state contains (preprocessing) lexemes instead of tokens,
+     because our preprocessor preserves comments and white space.")
+   (xdoc::p
+    "The preprocessor state includes an additional component
+     (not found in the parser state),
+     namely a macro table that consists of all the macros in scope."))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -373,6 +639,8 @@
                :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
+      (macros :type (satisfies macro-tablep)
+              :initially ,(macro-table-init))
       :renaming (;; field recognizers:
                  (bytesp raw-ppstate->bytes-p)
                  (positionp raw-ppstate->position-p)
@@ -384,6 +652,7 @@
                  (lexemes-unreadp raw-ppstate->lexemes-unread-p)
                  (versionp raw-ppstate->version-p)
                  (sizep raw-ppstate->size-p)
+                 (macrosp raw-ppstate->macros-p)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
                  (position raw-ppstate->position)
@@ -397,6 +666,7 @@
                  (lexemes-unread raw-ppstate->lexemes-unread)
                  (version raw-ppstate->version)
                  (size raw-ppstate->size)
+                 (macros raw-ppstate->macros)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
                  (update-position raw-update-ppstate->position)
@@ -409,7 +679,8 @@
                  (update-lexemes-read raw-update-ppstate->lexemes-read)
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
                  (update-version raw-update-ppstate->version)
-                 (update-size raw-update-ppstate->size))))
+                 (update-size raw-update-ppstate->size)
+                 (update-macros raw-update-ppstate->macros))))
 
   ;; fixer:
 
@@ -559,6 +830,13 @@
                   0)
          :exec (raw-ppstate->size ppstate)))
 
+  (define ppstate->macros (ppstate)
+    :returns (macros macro-tablep)
+    (mbe :logic (if (ppstatep ppstate)
+                    (raw-ppstate->macros ppstate)
+                  (macro-table-init))
+         :exec (raw-ppstate->macros ppstate)))
+
   ;; writers:
 
   (define update-ppstate->bytes ((bytes byte-listp) ppstate)
@@ -665,6 +943,11 @@
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->size (lnfix size) ppstate)))
+
+  (define update-ppstate->macros ((macros macro-tablep) ppstate)
+    :returns (ppstate ppstatep)
+    (b* ((ppstate (ppstate-fix ppstate)))
+      (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
 
   ;; readers over writers:
 
@@ -814,5 +1097,6 @@
        (ppstate (update-ppstate->lexemes-read 0 ppstate))
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
        (ppstate (update-ppstate->version version ppstate))
-       (ppstate (update-ppstate->size (len data) ppstate)))
+       (ppstate (update-ppstate->size (len data) ppstate))
+       (ppstate (update-ppstate->macros (macro-table-init) ppstate)))
     ppstate))

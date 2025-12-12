@@ -25,6 +25,7 @@
                                    position
                                    read-char
                                    read-files
+                                   replace
                                    schar
                                    standardp
                                    type

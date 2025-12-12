@@ -13,8 +13,6 @@
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 
-(include-book "std/util/error-value-tuples" :dir :system)
-
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
