@@ -93,12 +93,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo
+(defirrelevant irr-bexpo
   :short "An irrelevant binary exponent."
-  :type bin-expop
-  :body (make-bin-expo :prefix (irr-bexprefix)
-                       :sign? nil
-                       :digits nil))
+  :type bexpop
+  :body (make-bexpo :prefix (irr-bexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

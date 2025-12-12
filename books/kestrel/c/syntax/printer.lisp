@@ -945,14 +945,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-bin-expo ((expo bin-expop) (pstate pristatep))
+(define print-bexpo ((expo bexpop) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a binary exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "We ensure that there is at least one digit."))
-  (b* (((bin-expo expo) expo)
+  (b* (((bexpo expo) expo)
        (pstate (print-bexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
@@ -965,7 +965,7 @@
 
   ///
 
-  (defret-same-gcc print-bin-expo))
+  (defret-same-gcc print-bexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1063,7 +1063,7 @@
   (hex-core-fconst-case
    fconst
    :frac (b* ((pstate (print-hex-frac-const fconst.significand pstate))
-              (pstate (print-bin-expo fconst.expo pstate)))
+              (pstate (print-bexpo fconst.expo pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
@@ -1071,7 +1071,7 @@
                       has no digits in the significand.")
               (pristate-fix pstate))
              (pstate (print-hex-digit-achars fconst.significand pstate))
-             (pstate (print-bin-expo fconst.expo pstate)))
+             (pstate (print-bexpo fconst.expo pstate)))
           pstate))
   :hooks (:fix)
 

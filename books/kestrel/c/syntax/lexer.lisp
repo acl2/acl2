@@ -1573,7 +1573,7 @@
 
 (define lex-binary-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo bin-expop)
+               (expo bexpop)
                (last-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a binary exponent."
@@ -1585,7 +1585,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-bin-expo) (irr-position) parstate)
+  (b* (((reterr) (irr-bexpo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -1605,9 +1605,9 @@
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
                         :found "none")))
-        (retok (make-bin-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-bexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                digits-last-pos
                parstate)))
      (t ; other

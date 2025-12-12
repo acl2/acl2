@@ -522,7 +522,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod bin-expo
+(fty::defprod bexpo
   :short "Fixtype of binary exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -536,7 +536,7 @@
   ((prefix bexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred bin-expop
+  :pred bexpop
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -626,9 +626,9 @@
      (i) a (hexadecimal) fractional significand with a (binary) exponent and
      (iii) a (hexadecimal integer significand with a (binary) exponent."))
   (:frac ((significand hex-frac-const)
-          (expo bin-expo)))
+          (expo bexpo)))
   (:int ((significand hex-digit-char-list)
-         (expo bin-expop)))
+         (expo bexpop)))
   :pred hex-core-fconstp
   :layout :fulltree)
 
