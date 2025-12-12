@@ -872,10 +872,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo-prefix ((prefix dec-expo-prefixp) (pstate pristatep))
+(define print-dexprefix ((prefix dexprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a decimal exponent prefix."
-  (dec-expo-prefix-case
+  (dexprefix-case
    prefix
    :locase-e (print-astring "e" pstate)
    :upcase-e (print-astring "E" pstate))
@@ -883,14 +883,14 @@
 
   ///
 
-  (defret-same-gcc print-dec-expo-prefix))
+  (defret-same-gcc print-dexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-bin-expo-prefix ((prefix bin-expo-prefixp) (pstate pristatep))
+(define print-bexprefix ((prefix bexprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a binary exponent prefix."
-  (bin-expo-prefix-case
+  (bexprefix-case
    prefix
    :locase-p (print-astring "p" pstate)
    :upcase-p (print-astring "P" pstate))
@@ -898,19 +898,19 @@
 
   ///
 
-  (defret-same-gcc print-bin-expo-prefix))
+  (defret-same-gcc print-bexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo ((expo dec-expop) (pstate pristatep))
+(define print-dexpo ((expo dexpop) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a decimal exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "We ensure that there is at least one digit."))
-  (b* (((dec-expo expo) expo)
-       (pstate (print-dec-expo-prefix expo.prefix pstate))
+  (b* (((dexpo expo) expo)
+       (pstate (print-dexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
@@ -922,38 +922,38 @@
 
   ///
 
-  (defret-same-gcc print-dec-expo))
+  (defret-same-gcc print-dexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-expo-option ((expo? dec-expo-optionp) (pstate pristatep))
+(define print-dexpo-option ((expo? dexpo-optionp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an optional decimal exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "If there is no decimal exponent, we print nothing."))
-  (dec-expo-option-case
+  (dexpo-option-case
    expo?
-   :some (print-dec-expo expo?.val pstate)
+   :some (print-dexpo expo?.val pstate)
    :none (pristate-fix pstate))
   :hooks (:fix)
 
   ///
 
-  (defret-same-gcc print-dec-expo-option))
+  (defret-same-gcc print-dexpo-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-bin-expo ((expo bin-expop) (pstate pristatep))
+(define print-bexpo ((expo bexpop) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a binary exponent."
   :long
   (xdoc::topstring
    (xdoc::p
     "We ensure that there is at least one digit."))
-  (b* (((bin-expo expo) expo)
-       (pstate (print-bin-expo-prefix expo.prefix pstate))
+  (b* (((bexpo expo) expo)
+       (pstate (print-bexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
@@ -965,7 +965,7 @@
 
   ///
 
-  (defret-same-gcc print-bin-expo))
+  (defret-same-gcc print-bexpo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1033,7 +1033,7 @@
   (dec-core-fconst-case
    fconst
    :frac (b* ((pstate (print-dec-frac-const fconst.significand pstate))
-              (pstate (print-dec-expo-option fconst.expo? pstate)))
+              (pstate (print-dexpo-option fconst.expo? pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
@@ -1041,7 +1041,7 @@
                       has no digits in the significand.")
               (pristate-fix pstate))
              (pstate (print-dec-digit-achars fconst.significand pstate))
-             (pstate (print-dec-expo fconst.expo pstate)))
+             (pstate (print-dexpo fconst.expo pstate)))
           pstate))
   :hooks (:fix)
 
@@ -1063,7 +1063,7 @@
   (hex-core-fconst-case
    fconst
    :frac (b* ((pstate (print-hex-frac-const fconst.significand pstate))
-              (pstate (print-bin-expo fconst.expo pstate)))
+              (pstate (print-bexpo fconst.expo pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
@@ -1071,7 +1071,7 @@
                       has no digits in the significand.")
               (pristate-fix pstate))
              (pstate (print-hex-digit-achars fconst.significand pstate))
-             (pstate (print-bin-expo fconst.expo pstate)))
+             (pstate (print-bexpo fconst.expo pstate)))
           pstate))
   :hooks (:fix)
 

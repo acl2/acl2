@@ -1034,33 +1034,33 @@
  lex-?-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
-                        nil
-                        (list #\1 #\0))))
+              (dexpo (dexprefix-locase-e)
+                     nil
+                     (list #\1 #\0))))
 
 (test-lex
  lex-?-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
-                        nil
-                        (list #\0 #\2 #\2 #\3))))
+              (dexpo (dexprefix-upcase-e)
+                     nil
+                     (list #\0 #\2 #\2 #\3))))
 
 (test-lex
  lex-?-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
-                        (sign-plus)
-                        (list #\5))))
+              (dexpo (dexprefix-locase-e)
+                     (sign-plus)
+                     (list #\5))))
 
 (test-lex
  lex-?-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
-                        (sign-minus)
-                        (list #\5 #\0 #\0))))
+              (dexpo (dexprefix-upcase-e)
+                     (sign-minus)
+                     (list #\5 #\0 #\0))))
 
 (test-lex
  lex-?-exponent-part
@@ -1083,33 +1083,33 @@
  lex-exponent-part
  "e10"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
-                        nil
-                        (list #\1 #\0))))
+              (dexpo (dexprefix-locase-e)
+                     nil
+                     (list #\1 #\0))))
 
 (test-lex
  lex-exponent-part
  "E0223"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
-                        nil
-                        (list #\0 #\2 #\2 #\3))))
+              (dexpo (dexprefix-upcase-e)
+                     nil
+                     (list #\0 #\2 #\2 #\3))))
 
 (test-lex
  lex-exponent-part
  "e+5"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-locase-e)
-                        (sign-plus)
-                        (list #\5))))
+              (dexpo (dexprefix-locase-e)
+                     (sign-plus)
+                     (list #\5))))
 
 (test-lex
  lex-exponent-part
  "E-500"
  :cond (equal ast
-              (dec-expo (dec-expo-prefix-upcase-e)
-                        (sign-minus)
-                        (list #\5 #\0 #\0))))
+              (dexpo (dexprefix-upcase-e)
+                     (sign-minus)
+                     (list #\5 #\0 #\0))))
 
 (test-lex-fail
  lex-exponent-part
@@ -1131,33 +1131,33 @@
  lex-binary-exponent-part
  "p10"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-locase-p)
-                        nil
-                        (list #\1 #\0))))
+              (bexpo (bexprefix-locase-p)
+                     nil
+                     (list #\1 #\0))))
 
 (test-lex
  lex-binary-exponent-part
  "P0223"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-upcase-p)
-                        nil
-                        (list #\0 #\2 #\2 #\3))))
+              (bexpo (bexprefix-upcase-p)
+                     nil
+                     (list #\0 #\2 #\2 #\3))))
 
 (test-lex
  lex-binary-exponent-part
  "p+5"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-locase-p)
-                        (sign-plus)
-                        (list #\5))))
+              (bexpo (bexprefix-locase-p)
+                     (sign-plus)
+                     (list #\5))))
 
 (test-lex
  lex-binary-exponent-part
  "P-500"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-upcase-p)
-                        (sign-minus)
-                        (list #\5 #\0 #\0))))
+              (bexpo (bexprefix-upcase-p)
+                     (sign-minus)
+                     (list #\5 #\0 #\0))))
 
 (test-lex-fail
  lex-binary-exponent-part

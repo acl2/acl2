@@ -70,35 +70,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo-prefix
+(defirrelevant irr-dexprefix
   :short "An irrelevant decimal exponent prefix."
-  :type dec-expo-prefixp
-  :body (dec-expo-prefix-locase-e))
+  :type dexprefixp
+  :body (dexprefix-locase-e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo-prefix
+(defirrelevant irr-bexprefix
   :short "An irrelevant binary exponent prefix."
-  :type bin-expo-prefixp
-  :body (bin-expo-prefix-locase-p))
+  :type bexprefixp
+  :body (bexprefix-locase-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo
+(defirrelevant irr-dexpo
   :short "An irrelevant decimal exponent."
-  :type dec-expop
-  :body (make-dec-expo :prefix (irr-dec-expo-prefix)
-                       :sign? nil
-                       :digits nil))
+  :type dexpop
+  :body (make-dexpo :prefix (irr-dexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo
+(defirrelevant irr-bexpo
   :short "An irrelevant binary exponent."
-  :type bin-expop
-  :body (make-bin-expo :prefix (irr-bin-expo-prefix)
-                       :sign? nil
-                       :digits nil))
+  :type bexpop
+  :body (make-bexpo :prefix (irr-bexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

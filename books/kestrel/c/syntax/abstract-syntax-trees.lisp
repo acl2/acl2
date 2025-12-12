@@ -466,7 +466,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum dec-expo-prefix
+(fty::deftagsum dexprefix
   :short "Fixtype of decimal exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -475,12 +475,12 @@
      in <i>exponent-part</i> in the grammar in [C17]."))
   (:locase-e ())
   (:upcase-e ())
-  :pred dec-expo-prefixp
+  :pred dexprefixp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum bin-expo-prefix
+(fty::deftagsum bexprefix
   :short "Fixtype of binary exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -489,12 +489,12 @@
      in <i>binary-exponent-part</i> in the grammar in [C17]."))
   (:locase-p ())
   (:upcase-p ())
-  :pred bin-expo-prefixp
+  :pred bexprefixp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod dec-expo
+(fty::defprod dexpo
   :short "Fixtype of decimal exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -503,26 +503,26 @@
      It consists of a prefix,
      an optional sign,
      and a list of (decimal) digits (which should be non-empty)."))
-  ((prefix dec-expo-prefix)
+  ((prefix dexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred dec-expop
+  :pred dexpop
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption dec-expo-option
-  dec-expo
+(fty::defoption dexpo-option
+  dexpo
   :short "Fixtype of optional decimal exponents."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Decimal exponents are defined in @(tsee dec-expo)."))
-  :pred dec-expo-optionp)
+    "Decimal exponents are defined in @(tsee dexpo)."))
+  :pred dexpo-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod bin-expo
+(fty::defprod bexpo
   :short "Fixtype of binary exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -533,10 +533,10 @@
      and a list of (decimal) digits (which should be non-empty).
      The digits are decimal, not binary or hexadecimal;
      but the implicit base of the exponent is binary [C17:6.4.4.2/3]."))
-  ((prefix bin-expo-prefix)
+  ((prefix bexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
-  :pred bin-expop
+  :pred bexpop
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -604,9 +604,9 @@
      The first two possibilities are modeled as
      a fractional significand with an optional exponent."))
   (:frac ((significand dec-frac-const)
-          (expo? dec-expo-option)))
+          (expo? dexpo-option)))
   (:int ((significand dec-digit-char-list)
-         (expo dec-expo)))
+         (expo dexpo)))
   :pred dec-core-fconstp
   :layout :fulltree)
 
@@ -626,9 +626,9 @@
      (i) a (hexadecimal) fractional significand with a (binary) exponent and
      (iii) a (hexadecimal integer significand with a (binary) exponent."))
   (:frac ((significand hex-frac-const)
-          (expo bin-expo)))
+          (expo bexpo)))
   (:int ((significand hex-digit-char-list)
-         (expo bin-expop)))
+         (expo bexpop)))
   :pred hex-core-fconstp
   :layout :fulltree)
 
