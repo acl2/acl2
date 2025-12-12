@@ -544,40 +544,6 @@
                        alistp-when-ident-macroinfo-alistp-rewrite
                        acl2::assoc-equal-iff-member-equal-of-strip-cars))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-add-all ((toadd macro-tablep) (table macro-tablep))
-  :returns (mv erp (new-table macro-table))
-  :short "Add all the macros in a table to a macro table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through the macros of the first table
-     and we add each of them to the second table.")
-   (xdoc::p
-    "Since @(tsee macro-table) has the invariant that keys are unique,
-     as we go through the alist of the first table
-     we never find any shadowed associations."))
-  (macro-add-all-loop (macro-table->alist toadd) table)
-  :prepwork
-  ((define macro-add-all-loop ((alist ident-macroinfo-alistp)
-                               (table macro-tablep))
-     :guard (no-duplicatesp-equal (strip-cars alist))
-     :returns (mv erp (new-table macro-table))
-     :parents nil
-     (b* (((reterr) (irr-macro-table))
-          ((when (endp alist)) (retok (macro-table-fix table)))
-          ((cons name info) (car alist))
-          ((erp table) (macro-add name info table)))
-       (macro-add-all-loop (cdr alist) table))
-     :guard-hints
-     (("Goal"
-       :in-theory (enable alistp-when-ident-macroinfo-alistp-rewrite)))
-     :hooks nil
-     ///
-     (fty::deffixequiv macro-add-all-loop
-       :args ((table macro-tablep))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
