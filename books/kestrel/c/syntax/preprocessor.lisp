@@ -14,6 +14,7 @@
 (include-book "preprocessor-messages")
 (include-book "preprocessor-reader")
 (include-book "preprocessor-lexer")
+(include-book "preprocessor-printer")
 (include-book "files")
 (include-book "implementation-environments")
 
@@ -67,6 +68,7 @@
                     preprocessor-messages
                     preprocessor-reader
                     preprocessor-lexer
+                    preprocessor-printer
                     t)
   :default-parent t)
 
@@ -216,7 +218,8 @@
      obtaining the file datas."))
   (b* (((when (endp alist)) nil)
        ((cons filepath lexemes) (car alist))
-       (filedata (prog2$ lexemes (filedata nil))) ; TODO
+       (bytes (plexemes-to-bytes lexemes))
+       (filedata (filedata bytes))
        (map (filepath-plexeme-list-alist-to-filepath-filedata-map (cdr alist))))
     (omap::update (filepath-fix filepath)
                   filedata
