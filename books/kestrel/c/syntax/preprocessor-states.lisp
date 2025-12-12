@@ -53,8 +53,6 @@
   :order-subtopics t
   :default-parent t)
 
-; cert_param: (non-acl2r)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum pnumber
