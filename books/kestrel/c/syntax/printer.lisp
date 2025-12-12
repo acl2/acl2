@@ -419,7 +419,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This provides the convenience to use use ACL2 strings,
+    "This provides the convenience to use ACL2 strings,
      instead of using character codes.")
    (xdoc::p
     "Since most of the C syntax is ASCII,
