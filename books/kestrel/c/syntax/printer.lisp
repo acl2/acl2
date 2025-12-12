@@ -1493,7 +1493,7 @@
      (line feed alone,
      carriage return alone,
      or line feed followed by carriage return)."))
-  (b* ((code (h-char->char hchar))
+  (b* ((code (h-char->code hchar))
        ((unless (and (grammar-character-p code)
                      (not (= code (char-code #\<))) ; <
                      (not (= code 10))              ; LF
@@ -1545,7 +1545,7 @@
      (line feed alone,
      carriage return alone,
      or line feed followed by carriage return)."))
-  (b* ((code (q-char->char qchar))
+  (b* ((code (q-char->code qchar))
        ((unless (and (grammar-character-p code)
                      (not (= code (char-code #\"))) ; "
                      (not (= code 10))              ; LF

@@ -975,7 +975,7 @@
      and to facilitate the addition of restrictions on the number,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((char nat))
+  ((code nat))
   :pred h-char-p
   :layout :fulltree)
 
@@ -1010,7 +1010,7 @@
      and to facilitate the addition of restrictions on the number,
      namely that the character cannot be @('>') or a new-line,
      but for now we do not capture this restriction."))
-  ((char nat))
+  ((code nat))
   :pred q-char-p
   :layout :fulltree)
 
