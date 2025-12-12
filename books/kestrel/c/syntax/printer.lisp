@@ -887,10 +887,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-bin-expo-prefix ((prefix bin-expo-prefixp) (pstate pristatep))
+(define print-bexprefix ((prefix bexprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a binary exponent prefix."
-  (bin-expo-prefix-case
+  (bexprefix-case
    prefix
    :locase-p (print-astring "p" pstate)
    :upcase-p (print-astring "P" pstate))
@@ -898,7 +898,7 @@
 
   ///
 
-  (defret-same-gcc print-bin-expo-prefix))
+  (defret-same-gcc print-bexprefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -953,7 +953,7 @@
    (xdoc::p
     "We ensure that there is at least one digit."))
   (b* (((bin-expo expo) expo)
-       (pstate (print-bin-expo-prefix expo.prefix pstate))
+       (pstate (print-bexprefix expo.prefix pstate))
        (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~

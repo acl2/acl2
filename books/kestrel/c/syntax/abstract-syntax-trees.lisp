@@ -480,7 +480,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum bin-expo-prefix
+(fty::deftagsum bexprefix
   :short "Fixtype of binary exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
@@ -489,7 +489,7 @@
      in <i>binary-exponent-part</i> in the grammar in [C17]."))
   (:locase-p ())
   (:upcase-p ())
-  :pred bin-expo-prefixp
+  :pred bexprefixp
   :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -533,7 +533,7 @@
      and a list of (decimal) digits (which should be non-empty).
      The digits are decimal, not binary or hexadecimal;
      but the implicit base of the exponent is binary [C17:6.4.4.2/3]."))
-  ((prefix bin-expo-prefix)
+  ((prefix bexprefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
   :pred bin-expop

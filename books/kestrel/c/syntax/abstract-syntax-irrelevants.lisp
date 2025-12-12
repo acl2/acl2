@@ -77,10 +77,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo-prefix
+(defirrelevant irr-bexprefix
   :short "An irrelevant binary exponent prefix."
-  :type bin-expo-prefixp
-  :body (bin-expo-prefix-locase-p))
+  :type bexprefixp
+  :body (bexprefix-locase-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,7 +96,7 @@
 (defirrelevant irr-bin-expo
   :short "An irrelevant binary exponent."
   :type bin-expop
-  :body (make-bin-expo :prefix (irr-bin-expo-prefix)
+  :body (make-bin-expo :prefix (irr-bexprefix)
                        :sign? nil
                        :digits nil))
 

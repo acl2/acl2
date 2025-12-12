@@ -1595,8 +1595,8 @@
      ((or (utf8-= char (char-code #\p)) ; p
           (utf8-= char (char-code #\P))) ; P
       (b* ((prefix (if (= char (char-code #\p))
-                       (bin-expo-prefix-locase-p)
-                     (bin-expo-prefix-upcase-p)))
+                       (bexprefix-locase-p)
+                     (bexprefix-upcase-p)))
            ((erp sign? sign-last-pos parstate)
             (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)

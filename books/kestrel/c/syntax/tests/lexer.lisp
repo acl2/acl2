@@ -1131,7 +1131,7 @@
  lex-binary-exponent-part
  "p10"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-locase-p)
+              (bin-expo (bexprefix-locase-p)
                         nil
                         (list #\1 #\0))))
 
@@ -1139,7 +1139,7 @@
  lex-binary-exponent-part
  "P0223"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-upcase-p)
+              (bin-expo (bexprefix-upcase-p)
                         nil
                         (list #\0 #\2 #\2 #\3))))
 
@@ -1147,7 +1147,7 @@
  lex-binary-exponent-part
  "p+5"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-locase-p)
+              (bin-expo (bexprefix-locase-p)
                         (sign-plus)
                         (list #\5))))
 
@@ -1155,7 +1155,7 @@
  lex-binary-exponent-part
  "P-500"
  :cond (equal ast
-              (bin-expo (bin-expo-prefix-upcase-p)
+              (bin-expo (bexprefix-upcase-p)
                         (sign-minus)
                         (list #\5 #\0 #\0))))
 
