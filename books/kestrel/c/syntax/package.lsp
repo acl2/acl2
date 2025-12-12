@@ -23,6 +23,7 @@
                                  '(block
                                    newline
                                    position
+                                   pprint-newline
                                    read-char
                                    read-files
                                    replace
