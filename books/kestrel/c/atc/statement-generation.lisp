@@ -948,12 +948,12 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              (result-fn-thm (atc-fn-info->result-thm fninfo))
-             (limit `(binary-+ '1 ,limit))
+             (limit `(+ '1 ,limit))
              ((unless (expr-list-purep args.exprs))
               (reterr (raise "Internal error: ~
                               non-pure function call arguments ~x0."
                              args.exprs)))
-             (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
+             (limit `(+ ',(expr-list-pure-limit args.exprs) ,limit))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -1319,7 +1319,7 @@
        (wrld (w state))
        (item (block-item-stmt stmt))
        (item-limit (pseudo-term-fncall
-                    'binary-+
+                    '+
                     (list (pseudo-term-quote 1)
                           stmt-limit)))
        (name (pack gin.fn '-correct- gin.thm-index))
@@ -1433,7 +1433,7 @@
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(binary-+ '3 ,expr-limit))
+       (item-limit `(+ '3 ,expr-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1681,7 +1681,7 @@
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
-       (stmt-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(+ '1 ,asg-limit))
        (stmt-formula `(equal (exec-stmt ',stmt
                                         ,gin.compst-var
                                         ,gin.fenv-var
@@ -1818,9 +1818,9 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit `(binary-+ '1 ,rhs.limit))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit))
+       (expr-limit `(+ '1 ,rhs.limit))
+       (stmt-limit `(+ '1 ,expr-limit))
+       (item-limit `(+ '1 ,stmt-limit))
        ((when (not rhs.thm-name))
         (retok item
                rhs.term
@@ -2151,11 +2151,11 @@
         (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
        (sub-limit `(quote ,(expr-pure-limit sub.expr)))
        (right-limit `(quote ,(expr-pure-limit elem.expr)))
-       (sub+right-limit `(binary-+ ,sub-limit ,right-limit))
-       (left+right-limit `(binary-+ '1 ,sub+right-limit))
-       (expr-limit `(binary-+ '1 ,left+right-limit))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit))
+       (sub+right-limit `(+ ,sub-limit ,right-limit))
+       (left+right-limit `(+ '1 ,sub+right-limit))
+       (expr-limit `(+ '1 ,left+right-limit))
+       (stmt-limit `(+ '1 ,expr-limit))
+       (item-limit `(+ '1 ,stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
@@ -2595,11 +2595,11 @@
        ((unless (expr-purep member.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." member.expr)))
        (struct-limit ''1)
-       (left-limit `(binary-+ '1 ,struct-limit))
+       (left-limit `(+ '1 ,struct-limit))
        (right-limit `(quote ,(expr-pure-limit member.expr)))
-       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit))
+       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
+       (stmt-limit `(+ '1 ,expr-limit))
+       (item-limit `(+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
         (reterr (raise "Internal error: structure writer is QUOTE.")))
        (struct-write-term `(,struct-write-fn ,member.term ,var))
@@ -3043,11 +3043,11 @@
        ((unless (expr-purep elem.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
        (index-limit `(quote ,(expr-pure-limit index.expr)))
-       (left-limit `(binary-+ '3 ,index-limit))
+       (left-limit `(+ '3 ,index-limit))
        (right-limit `(quote ,(expr-pure-limit elem.expr)))
-       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit))
+       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
+       (stmt-limit `(+ '1 ,expr-limit))
+       (item-limit `(+ '1 ,stmt-limit))
        ((when (eq struct-write-fn 'quote))
         (reterr (raise "Internal error: structure writer is QUOTE.")))
        (struct-write-term `(,struct-write-fn ,index.term ,elem.term ,var))
@@ -3505,11 +3505,11 @@
        ((unless (expr-purep int.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." int.expr)))
        (var-limit ''1)
-       (left-limit `(binary-+ '1 ,var-limit))
+       (left-limit `(+ '1 ,var-limit))
        (right-limit `(quote ,(expr-pure-limit int.expr)))
-       (expr-limit `(binary-+ '1 (binary-+ ,left-limit ,right-limit)))
-       (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit))
+       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
+       (stmt-limit `(+ '1 ,expr-limit))
+       (item-limit `(+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
         (reterr (raise "Internal error: integer writer is QUOTE.")))
        (integer-write-term `(,integer-write-fn ,int.term))
@@ -3884,7 +3884,7 @@
        (wrld (w state))
        (items (list item))
        (items-limit (pseudo-term-fncall
-                     'binary-+
+                     '+
                      (list (pseudo-term-quote 1)
                            item-limit)))
        ((when (not gin.proofs))
@@ -4037,7 +4037,7 @@
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
-       (all-items-limit `(binary-+ '1 (binary-+ ,item-limit ,items-limit)))
+       (all-items-limit `(+ '1 (+ ,item-limit ,items-limit)))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items all-items
@@ -4179,7 +4179,7 @@
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (items (append items1 items2))
-       (items-limit `(binary-+ '1 (binary-+ ,items1-limit ,items2-limit)))
+       (items-limit `(+ '1 (+ ,items1-limit ,items2-limit)))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items items
@@ -4441,7 +4441,7 @@
                 :context gin.context
                 :inscope gin.inscope
                 :limit (pseudo-term-fncall
-                        'binary-+
+                        '+
                         (list (pseudo-term-quote 3)
                               expr.limit))
                 :events expr.events
@@ -4449,7 +4449,7 @@
                 :thm-index expr.thm-index
                 :names-to-avoid expr.names-to-avoid)))
        (stmt-limit (pseudo-term-fncall
-                    'binary-+
+                    '+
                     (list (pseudo-term-quote 1)
                           expr.limit)))
        (thm-index expr.thm-index)
@@ -4819,14 +4819,14 @@
                (make-stmt-if :test test-expr
                              :then then-stmt)))
        (term `(if* ,test-term ,then-term ,else-term))
-       (then-stmt-limit `(binary-+ '1 ,then-limit))
-       (else-stmt-limit `(binary-+ '1 ,else-limit))
-       (if-stmt-limit `(binary-+ '1
-                                 (binary-+ ,test-limit
-                                           (binary-+ ,then-stmt-limit
-                                                     ,else-stmt-limit))))
-       (item-limit `(binary-+ '1 ,if-stmt-limit))
-       (items-limit `(binary-+ '1 ,item-limit))
+       (then-stmt-limit `(+ '1 ,then-limit))
+       (else-stmt-limit `(+ '1 ,else-limit))
+       (if-stmt-limit `(+ '1
+                          (+ ,test-limit
+                             (+ ,then-stmt-limit
+                                ,else-stmt-limit))))
+       (item-limit `(+ '1 ,if-stmt-limit))
+       (items-limit `(+ '1 ,item-limit))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
@@ -5325,8 +5325,8 @@
         (reterr (raise "Internal error: ~
                         non-pure function call arguments ~x0."
                        args.exprs)))
-       (limit `(binary-+ '1 ,limit))
-       (limit `(binary-+ ',(expr-list-pure-limit args.exprs) ,limit))
+       (limit `(+ '1 ,limit))
+       (limit `(+ ',(expr-list-pure-limit args.exprs) ,limit))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)))
         (retok (make-stmt-gout
@@ -5543,7 +5543,7 @@
                                                  :hints call-hints
                                                  :enable nil))
        (stmt (stmt-expr call-expr))
-       (stmt-limit `(binary-+ '1 ,limit))
+       (stmt-limit `(+ '1 ,limit))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix stmt-thm-name
@@ -6201,10 +6201,10 @@
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
-                           'binary-+
+                           '+
                            (list (pseudo-term-quote 3)
                                  (pseudo-term-fncall
-                                  'binary-+
+                                  '+
                                   (list init.limit body.limit))))))
                 (retok (make-stmt-gout
                         :items (cons item body.items)
@@ -6291,10 +6291,10 @@
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
-                           'binary-+
+                           '+
                            (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
-                                  'binary-+
+                                  '+
                                   (list rhs.limit body.limit))))))
                 (retok (make-stmt-gout
                         :items (cons item body.items)
@@ -6373,7 +6373,7 @@
                      mv-var all-vars indices xform.term body.term)))
              (items (append xform.items body.items))
              (type body.type)
-             (limit (pseudo-term-fncall 'binary-+
+             (limit (pseudo-term-fncall '+
                                         (list xform.limit body.limit))))
           (retok (make-stmt-gout
                   :items items
@@ -6877,7 +6877,7 @@
                      given that the code is guard-verified."
                     loop-fn in-types formals types)))
              (limit (pseudo-term-fncall
-                     'binary-+
+                     '+
                      (list (pseudo-term-quote 3)
                            loop-limit))))
           (retok (make-stmt-gout
@@ -7173,9 +7173,9 @@
        (measure-call `(,gin.measure-for-fn ,@gin.measure-formals))
        ((unless (expr-purep test.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." test.expr)))
-       (limit `(binary-+ '1
-                         (binary-+ ,`(quote ,(expr-pure-limit test.expr))
-                                   (binary-+ ,body.limit ,measure-call)))))
+       (limit `(+ '1
+                  (+ ,`(quote ,(expr-pure-limit test.expr))
+                     (+ ,body.limit ,measure-call)))))
     (retok (make-lstmt-gout :stmt stmt
                             :test-term test-term
                             :body-term then-term

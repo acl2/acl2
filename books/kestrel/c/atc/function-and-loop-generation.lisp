@@ -3047,7 +3047,7 @@
        (result-var (if (type-case body-type :void)
                        nil
                      (genvar$ 'atc "RESULT" nil formals state)))
-       (limit `(binary-+ '1 ,body-limit))
+       (limit `(+ '1 ,body-limit))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (and result-var
                                 (list result-var))
@@ -3348,7 +3348,7 @@
                                                           :params params)
                             :body body.items))
        (finfo (fun-info-from-fundef fundef))
-       (limit `(binary-+ '2 ,body.limit))
+       (limit `(+ '2 ,body.limit))
        (fn-fun-env-event
         (atc-gen-cfun-fun-env-thm fn
                                   fn-fun-env-thm
