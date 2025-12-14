@@ -38,12 +38,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel byte-listp-of-read-file-into-byte-list
-  (byte-listp (mv-nth 1 (acl2::read-file-into-byte-list filename state)))
-  :enable (acl2::byte-listp-rewrite-unsigned-byte-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ input-files-implementation
   :parents (input-files)
   :short "Implementation of @(tsee input-files)."

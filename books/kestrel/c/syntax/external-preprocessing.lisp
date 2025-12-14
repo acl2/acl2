@@ -66,12 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel byte-listp-of-read-file-into-byte-list
-  (byte-listp (mv-nth 1 (acl2::read-file-into-byte-list filename state)))
-  :enable (acl2::byte-listp-rewrite-unsigned-byte-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file stringp
          "The file path of the C file to preprocess.")
