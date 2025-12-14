@@ -19,6 +19,7 @@
 (include-book "implementation-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration :hooks nil)
 
@@ -177,14 +178,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist filepath-plexeme-list-alist
-  :short "Fixtype of alists from file paths to lists of preprocessing lexemes."
+(fty::defalist string-plexeme-list-alist
+  :short "Fixtype of alists from strings to lists of preprocessing lexemes."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use these alists to keep track of which files
      have been already preprocessed,
-     namely the ones whose paths are the keys of the alist.
+     namely the ones whose paths are specified by the keys of the alist.
      The values associated to the keys are
      the lexemes resulting from the preprocessing.")
    (xdoc::p
@@ -193,101 +194,106 @@
      This is not enforced in this fixtype,
      but we could consider wrapping the alist
      into a @(tsee fty::defprod) with the invariant."))
-  :key-type filepath
+  :key-type string
   :val-type plexeme-list
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :pred filepath-plexeme-list-alistp
+  :pred string-plexeme-list-alistp
   :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define filepath-plexeme-list-alist-to-filepath-filedata-map
-  ((alist filepath-plexeme-list-alistp))
+(define string-plexeme-list-alist-to-filepath-filedata-map
+  ((alist string-plexeme-list-alistp))
   :returns (map filepath-filedata-mapp)
-  :short "Turn an alist from file paths to lists of preprocessing lexemes
-          into a map from file paths to file data."
+  :short "Turn (1) an alist from string to lists of preprocessing lexemes
+          into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file paths are copied unchanged;
-     as mentioned in @(tsee filepath-plexeme-list-alist),
+    "The strings are wrapped into file paths;
+     as mentioned in @(tsee string-plexeme-list-alist),
      the alist has unique keys, so the order of the alist is immaterial.
      The lists of lexemes are printed to bytes,
      obtaining the file datas."))
   (b* (((when (endp alist)) nil)
-       ((cons filepath lexemes) (car alist))
+       ((cons string lexemes) (car alist))
        (bytes (plexemes-to-bytes lexemes))
+       (filepath (filepath string))
        (filedata (filedata bytes))
-       (map (filepath-plexeme-list-alist-to-filepath-filedata-map (cdr alist))))
-    (omap::update (filepath-fix filepath)
-                  filedata
-                  map))
+       (map (string-plexeme-list-alist-to-filepath-filedata-map (cdr alist))))
+    (omap::update filepath filedata map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pproc-file ((path filepathp)
-                    (preprocessed filepath-plexeme-list-alistp)
+(define pproc-file ((path stringp)
+                    (file stringp)
+                    (preprocessed string-plexeme-list-alistp)
                     (ienv ienvp)
                     state)
-  :returns (mv erp (new-preprocessed filepath-plexeme-list-alistp))
+  :returns (mv erp (new-preprocessed string-plexeme-list-alistp))
   :short "Preprocess a file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file is specified by the path.
-     If the path is found in the alist of already preprocessed files,
+    "The file is specified by the @('file') string,
+     which must be either a path relative to the @('path') string,
+     or an absolure path with no relation to @('path').
+     If @('file') is found in the alist of already preprocessed files,
      the alist is returned unchanged.
      Otherwise, we read the file from the file system and preprocess it,
      which may involve the recursive preprocessing of more files.
      This code needs to be fleshed out."))
-  (declare (ignore ienv state))
+  (declare (ignore path ienv state))
   (b* (((reterr) nil)
-       (preprocessed (filepath-plexeme-list-alist-fix preprocessed))
-       (filepath+lexemes (assoc-equal (filepath-fix path) preprocessed))
-       ((when filepath+lexemes) (retok preprocessed))
+       (preprocessed (string-plexeme-list-alist-fix preprocessed))
+       (file+lexemes (assoc-equal (str-fix file) preprocessed))
+       ((when file+lexemes) (retok preprocessed))
        ;; TODO: read file & preprocess it
       )
     (reterr :todo))
   :guard-hints
   (("Goal"
-    :in-theory (enable alistp-when-filepath-plexeme-list-alistp-rewrite))))
+    :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pproc-files ((paths filepath-listp) (ienv ienvp) state)
+(define pproc-files ((path stringp) (files string-listp) (ienv ienvp) state)
   :returns (mv erp (fileset filesetp))
   :short "Preprocess zero or more files."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the top-level function of the preprocessor.
-     The files are identified by paths,
-     organized in a list,
-     whose elements are preprocessed in order.
-     For each path, the file is read from the file system and preprocessed.
+     The files are identified by the @('files') strings,
+     which must be all paths relative to the @('path') string
+     (as in @(tsee input-files)).
+     The elements of @('files') are preprocessed in order.
+     Each file is read from the file system and preprocessed.
      The result of this function is a file set,
      whose paths are generally a superset of the input ones:
-     the files specified by the input paths may include, directly or indirectly,
-     files whose paths are not in the input list, e.g. files from the C library.
+     the files specified by @('files') may include, directly or indirectly,
+     files whose paths are not in @('files'), e.g. files from the C library.
      The resulting file set is ``closed'' with respect to @('#include')."))
   (b* (((reterr) (irr-fileset))
-       ((erp preprocessed) (pproc-files-loop paths nil ienv state)))
+       ((erp preprocessed) (pproc-files-loop path files nil ienv state)))
     (retok
      (fileset
-      (filepath-plexeme-list-alist-to-filepath-filedata-map preprocessed))))
+      (string-plexeme-list-alist-to-filepath-filedata-map preprocessed))))
 
   :prepwork
-  ((define pproc-files-loop ((paths filepath-listp)
-                             (preprocessed filepath-plexeme-list-alistp)
+  ((define pproc-files-loop ((path stringp)
+                             (files string-listp)
+                             (preprocessed string-plexeme-list-alistp)
                              (ienv ienvp)
                              state)
-     :returns (mv erp (new-preprocessed filepath-plexeme-list-alistp))
+     :returns (mv erp (new-preprocessed string-plexeme-list-alistp))
      :parents nil
      (b* (((reterr) nil)
-          ((when (endp paths))
-           (retok (filepath-plexeme-list-alist-fix preprocessed)))
-          ((erp preprocessed) (pproc-file (car paths) preprocessed ienv state)))
-       (pproc-files-loop (cdr paths) preprocessed ienv state)))))
+          ((when (endp files))
+           (retok (string-plexeme-list-alist-fix preprocessed)))
+          ((erp preprocessed)
+           (pproc-file path (car files) preprocessed ienv state)))
+       (pproc-files-loop path (cdr files) preprocessed ienv state)))))
