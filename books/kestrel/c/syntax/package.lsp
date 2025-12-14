@@ -83,4 +83,5 @@
                 str::oct-digit-char-p
                 str::oct-digit-char-list
                 str::oct-digit-char-listp
-                str::str-fix)))
+                str::str-fix
+                str::string-list-fix)))
