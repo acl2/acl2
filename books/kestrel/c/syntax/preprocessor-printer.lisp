@@ -234,8 +234,7 @@
   :short "Print a punctuator after preprocessing."
   (b* ((chars (acl2::string=>nats punctuator))
        ((unless (grammar-character-listp chars))
-        (raise "Internal error: bad punctuator ~x0."
-               (str::str-fix punctuator))))
+        (raise "Internal error: bad punctuator ~x0." (str-fix punctuator))))
     (pprint-chars chars bytes))
   :no-function nil)
 
