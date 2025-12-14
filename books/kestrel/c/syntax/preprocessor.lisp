@@ -18,6 +18,8 @@
 (include-book "files")
 (include-book "implementation-environments")
 
+(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -178,6 +180,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-input-file-to-preproc ((path stringp) (file stringp) state)
+  :returns (mv erp (bytes byte-listp) state)
+  :short "Read a file to preprocess, explicitly specified as user input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for the files
+     whose paths are explicitly passed to @(tsee pproc-files).
+     We concatenate the path prefix to the file path suffix,
+     with a slash in between (this is for Unix-like systems).
+     We read the bytes from the file system, and return them."))
+  (b* (((reterr) nil state)
+       (path-to-read (str::cat path "/" file))
+       ((mv erp bytes state)
+        (acl2::read-file-into-byte-list path-to-read state))
+       ((when erp)
+        (reterr (msg "Reading ~x0 failed." path-to-read))))
+    (retok bytes state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defalist string-plexeme-list-alist
   :short "Fixtype of alists from strings to lists of preprocessing lexemes."
   :long
@@ -231,29 +254,43 @@
 (define pproc-file ((path stringp)
                     (file stringp)
                     (preprocessed string-plexeme-list-alistp)
+                    (preprocessing string-listp)
                     (ienv ienvp)
                     state)
-  :returns (mv erp (new-preprocessed string-plexeme-list-alistp))
+  :returns (mv erp
+               (new-preprocessed string-plexeme-list-alistp
+                                 :hints (("Goal" :in-theory (enable acons))))
+               state)
   :short "Preprocess a file."
   :long
   (xdoc::topstring
    (xdoc::p
     "The file is specified by the @('file') string,
      which must be either a path relative to the @('path') string,
-     or an absolure path with no relation to @('path').
+     or an absolute path with no relation to @('path').
+     If @('file') is found in the list of the files under preprocessing,
+     we stop with an error, because there is a circularity.
      If @('file') is found in the alist of already preprocessed files,
      the alist is returned unchanged.
      Otherwise, we read the file from the file system and preprocess it,
      which may involve the recursive preprocessing of more files.
-     This code needs to be fleshed out."))
-  (declare (ignore path ienv state))
-  (b* (((reterr) nil)
+     Before preprocessing the file,
+     we add it to the list of files under preprocessing."))
+  (declare (ignore ienv))
+  (b* (((reterr) nil state)
+       (file (str-fix file))
+       (preprocessing (string-list-fix preprocessing))
        (preprocessed (string-plexeme-list-alist-fix preprocessed))
-       (file+lexemes (assoc-equal (str-fix file) preprocessed))
-       ((when file+lexemes) (retok preprocessed))
-       ;; TODO: read file & preprocess it
-      )
-    (reterr :todo))
+       ((when (member-equal file preprocessing))
+        (reterr (msg "Circular file dependencies involving ~&0."
+                     preprocessing)))
+       (file+lexemes (assoc-equal file preprocessed))
+       ((when file+lexemes) (retok preprocessed state))
+       ((erp bytes state) (read-input-file-to-preproc path file state))
+       (preprocessing (cons file (string-list-fix preprocessing)))
+       (lexemes (prog2$ (list bytes preprocessing) nil)) ; TODO
+       (preprocessed (acons file lexemes preprocessed)))
+    (retok preprocessed state))
   :guard-hints
   (("Goal"
     :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite))))
@@ -261,7 +298,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pproc-files ((path stringp) (files string-listp) (ienv ienvp) state)
-  :returns (mv erp (fileset filesetp))
+  :returns (mv erp (fileset filesetp) state)
   :short "Preprocess zero or more files."
   :long
   (xdoc::topstring
@@ -272,28 +309,33 @@
      (as in @(tsee input-files)).
      The elements of @('files') are preprocessed in order.
      Each file is read from the file system and preprocessed.
+     We keep track of the files under preprocessing in a list (initially empty),
+     to detect and avoid circularities.
      The result of this function is a file set,
      whose paths are generally a superset of the input ones:
      the files specified by @('files') may include, directly or indirectly,
      files whose paths are not in @('files'), e.g. files from the C library.
      The resulting file set is ``closed'' with respect to @('#include')."))
-  (b* (((reterr) (irr-fileset))
-       ((erp preprocessed) (pproc-files-loop path files nil ienv state)))
+  (b* (((reterr) (irr-fileset) state)
+       ((erp preprocessed state)
+        (pproc-files-loop path files nil nil ienv state)))
     (retok
-     (fileset
-      (string-plexeme-list-alist-to-filepath-filedata-map preprocessed))))
+     (fileset (string-plexeme-list-alist-to-filepath-filedata-map preprocessed))
+     state))
 
   :prepwork
   ((define pproc-files-loop ((path stringp)
                              (files string-listp)
                              (preprocessed string-plexeme-list-alistp)
+                             (preprocessing string-listp)
                              (ienv ienvp)
                              state)
-     :returns (mv erp (new-preprocessed string-plexeme-list-alistp))
+     :returns (mv erp (new-preprocessed string-plexeme-list-alistp) state)
      :parents nil
-     (b* (((reterr) nil)
+     (b* (((reterr) nil state)
           ((when (endp files))
-           (retok (string-plexeme-list-alist-fix preprocessed)))
-          ((erp preprocessed)
-           (pproc-file path (car files) preprocessed ienv state)))
-       (pproc-files-loop path (cdr files) preprocessed ienv state)))))
+           (retok (string-plexeme-list-alist-fix preprocessed) state))
+          ((erp preprocessed state)
+           (pproc-file path (car files) preprocessed preprocessing ienv state)))
+       (pproc-files-loop
+        path (cdr files) preprocessed preprocessing ienv state)))))
