@@ -3666,7 +3666,7 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
-          one per line, all with the same indentation."
+            one per line, all with the same indentation."
     (b* (((unless (mbt (consp declons))) (pristate-fix pstate))
          (pstate (print-declon (car declons) pstate))
          ((when (endp (cdr declons))) pstate))
