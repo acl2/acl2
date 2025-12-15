@@ -3256,14 +3256,16 @@
                    pstate))
          ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
-         (pstate (print-struct-declon-list struni-spec.members pstate))
+         (pstate (print-struct-declon-list struni-spec.members t pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
     :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-struct-declon ((structdeclon struct-declonp) (pstate pristatep))
+  (define print-struct-declon ((structdeclon struct-declonp)
+                               (inlinep booleanp)
+                               (pstate pristatep))
     :guard (and (struct-declon-unambp structdeclon)
                 (struct-declon-aidentp structdeclon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
@@ -3272,41 +3274,54 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "The @('inlinep') flag says whether the structure declaration
+       should be printed as part of the current line
+       or as its own indented line.")
+     (xdoc::p
       "For the case of a member, we ensure that
        the list of specifiers and qualifiers is not empty,
        as required in the grammar."))
-    (struct-declon-case
-     structdeclon
-     :member
-     (b* ((pstate (if structdeclon.extension
-                      (print-astring "__extension__ " pstate)
-                    (pristate-fix pstate)))
-          ((unless structdeclon.specquals)
-           (raise "Misusage error: empty specifier/qualifier list.")
-           pstate)
-          (pstate (print-spec/qual-list structdeclon.specquals pstate))
-          (pstate (if structdeclon.declors
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate
-                            (print-struct-declor-list structdeclon.declors
-                                                      pstate)))
-                        pstate)
-                    pstate))
-          (pstate (if structdeclon.attribs
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-attrib-spec-list structdeclon.attribs
-                                                           pstate)))
-                        pstate)
-                    pstate))
-          (pstate (print-astring ";" pstate)))
-       pstate)
-     :statassert (print-statassert structdeclon.statassert pstate)
-     :empty (print-astring ";" pstate))
+    (b* ((pstate (if inlinep
+                     pstate
+                   (print-indent pstate)))
+         (pstate
+          (struct-declon-case
+           structdeclon
+           :member
+           (b* ((pstate (if structdeclon.extension
+                            (print-astring "__extension__ " pstate)
+                          (pristate-fix pstate)))
+                ((unless structdeclon.specquals)
+                 (raise "Misusage error: empty specifier/qualifier list.")
+                 pstate)
+                (pstate (print-spec/qual-list structdeclon.specquals pstate))
+                (pstate (if structdeclon.declors
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate
+                                  (print-struct-declor-list structdeclon.declors
+                                                            pstate)))
+                              pstate)
+                          pstate))
+                (pstate (if structdeclon.attribs
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate (print-attrib-spec-list
+                                          structdeclon.attribs pstate)))
+                              pstate)
+                          pstate))
+                (pstate (print-astring ";" pstate)))
+             pstate)
+           :statassert (print-statassert structdeclon.statassert pstate)
+           :empty (print-astring ";" pstate)))
+         (pstate (if inlinep
+                     pstate
+                   (print-new-line pstate))))
+      pstate)
     :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-struct-declon-list ((structdeclons struct-declon-listp)
+                                    (inlinep booleanp)
                                     (pstate pristatep))
     :guard (and (consp structdeclons)
                 (struct-declon-list-unambp structdeclons)
@@ -3318,18 +3333,16 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As mentioned in @(tsee print-struni-spec),
-       for now we print all of them in one line,
-       since a structure or union specifier may occur
-       in the middle of a list of declaration specifiers,
-       but we plan to print these in multiple lines,
-       at least under certain conditions
-       (e.g. when the structure or union specifier is at the top level."))
+      "The @('inlinep') flag says whether the structure declarations
+       should be printed as part of the current line
+       or in a new indented line for each."))
     (b* (((unless (mbt (consp structdeclons))) (pristate-fix pstate))
-         (pstate (print-struct-declon (car structdeclons) pstate))
+         (pstate (print-struct-declon (car structdeclons) inlinep pstate))
          ((when (endp (cdr structdeclons))) pstate)
-         (pstate (print-astring " " pstate)))
-      (print-struct-declon-list (cdr structdeclons) pstate))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   pstate)))
+      (print-struct-declon-list (cdr structdeclons) inlinep pstate))
     :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4282,7 +4295,7 @@
      print-block-item
      print-block-item-list)
     :hints (("Goal" :expand ((print-declon declon t pstate)
-                             (print-struct-declon structdeclon pstate)))))
+                             (print-struct-declon structdeclon t pstate)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
