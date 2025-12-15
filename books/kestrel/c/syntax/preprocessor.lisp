@@ -251,78 +251,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pproc-*-group-part ((path stringp)
-                            (file stringp)
-                            (preprocessed string-plexeme-list-alistp)
-                            (preprocessing string-listp)
-                            (ppstate ppstatep)
-                            state)
-  :returns (mv erp
-               (lexemes plexeme-listp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate))
-               (new-preprocessed string-plexeme-list-alistp)
-               state)
-  :short "Preprocess zero or more group parts."
-  (declare (ignore path file preprocessing))
-  (b* (((reterr) nil ppstate state))
-    ;; TODO
-    (retok nil ppstate (string-plexeme-list-alist-fix preprocessed) state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pproc-file ((path stringp)
-                    (file stringp)
-                    (preprocessed string-plexeme-list-alistp)
-                    (preprocessing string-listp)
-                    (ienv ienvp)
-                    state)
-  :returns (mv erp
-               (new-preprocessed string-plexeme-list-alistp
-                                 :hints (("Goal" :in-theory (enable acons))))
-               state)
-  :short "Preprocess a file."
+(defines pproc
+  :short "Preprocess files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file is specified by the @('file') string,
-     which must be either a path relative to the @('path') string,
-     or an absolute path with no relation to @('path').
-     If @('file') is found in the list of the files under preprocessing,
-     we stop with an error, because there is a circularity.
-     If @('file') is found in the alist of already preprocessed files,
-     the alist is returned unchanged.
-     Otherwise, we read the file from the file system and preprocess it,
-     which may involve the recursive preprocessing of more files.
-     Before preprocessing the file,
-     we add it to the list of files under preprocessing."))
-  (b* (((reterr) nil state)
-       (file (str-fix file))
-       (preprocessing (string-list-fix preprocessing))
-       (preprocessed (string-plexeme-list-alist-fix preprocessed))
-       ((when (member-equal file preprocessing))
-        (reterr (msg "Circular file dependencies involving ~&0."
-                     preprocessing)))
-       (file+lexemes (assoc-equal file preprocessed))
-       ((when file+lexemes) (retok preprocessed state))
-       ((erp bytes state) (read-input-file-to-preproc path file state))
-       (preprocessing (cons file (string-list-fix preprocessing)))
-       ((erp lexemes preprocessed state)
-        (with-local-stobj
-          ppstate
-          (mv-let (erp lexemes ppstate preprocessed state)
-              (b* ((ppstate (init-ppstate bytes (ienv->version ienv) ppstate)))
-                (pproc-*-group-part path
-                                    file
-                                    preprocessed
-                                    preprocessing
-                                    ppstate
-                                    state))
-            (mv erp lexemes preprocessed state))))
-       (preprocessed (acons file lexemes preprocessed)))
-    (retok preprocessed state))
+    "All these functions are mutually recursive because,
+     as we preprocess a file,
+     we may need to recursively preprocess files that it includes."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-file ((path stringp)
+                      (file stringp)
+                      (preprocessed string-plexeme-list-alistp)
+                      (preprocessing string-listp)
+                      (ienv ienvp)
+                      state)
+    :returns (mv erp
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :short "Preprocess a file."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The file is specified by the @('file') string,
+       which must be either a path relative to the @('path') string,
+       or an absolute path with no relation to @('path').
+       If @('file') is found in the list of the files under preprocessing,
+       we stop with an error, because there is a circularity.
+       If @('file') is found in the alist of already preprocessed files,
+       the alist is returned unchanged.
+       Otherwise, we read the file from the file system and preprocess it,
+       which may involve the recursive preprocessing of more files.
+       Before preprocessing the file,
+       we add it to the list of files under preprocessing."))
+    (b* (((reterr) nil state)
+         (file (str-fix file))
+         (preprocessing (string-list-fix preprocessing))
+         (preprocessed (string-plexeme-list-alist-fix preprocessed))
+         ((when (member-equal file preprocessing))
+          (reterr (msg "Circular file dependencies involving ~&0."
+                       preprocessing)))
+         (file+lexemes (assoc-equal file preprocessed))
+         ((when file+lexemes) (retok preprocessed state))
+         ((erp bytes state) (read-input-file-to-preproc path file state))
+         (preprocessing (cons file (string-list-fix preprocessing)))
+         ((erp lexemes preprocessed state)
+          (with-local-stobj
+            ppstate
+            (mv-let (erp lexemes ppstate preprocessed state)
+                (b* ((ppstate
+                      (init-ppstate bytes (ienv->version ienv) ppstate)))
+                  (pproc-*-group-part path
+                                      file
+                                      preprocessed
+                                      preprocessing
+                                      ppstate
+                                      state))
+              (mv erp lexemes preprocessed state))))
+         (preprocessed (acons file lexemes preprocessed)))
+      (retok preprocessed state))
+    :measure 1)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-*-group-part ((path stringp)
+                              (file stringp)
+                              (preprocessed string-plexeme-list-alistp)
+                              (preprocessing string-listp)
+                              (ppstate ppstatep)
+                              state)
+    :returns (mv erp
+                 (lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :short "Preprocess zero or more group parts."
+    (declare (ignore path file preprocessing))
+    (b* (((reterr) nil ppstate state))
+      ;; TODO
+      (retok nil ppstate (string-plexeme-list-alist-fix preprocessed) state))
+    :measure 0)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :returns-hints (("Goal" :in-theory (enable acons)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
   :guard-hints
-  (("Goal"
-    :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite))))
+  (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t))) ; temporary
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
