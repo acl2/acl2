@@ -251,6 +251,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pproc-*-group-part ((path stringp)
+                            (file stringp)
+                            (preprocessed string-plexeme-list-alistp)
+                            (preprocessing string-listp)
+                            (ppstate ppstatep)
+                            state)
+  :returns (mv erp
+               (lexemes plexeme-listp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate))
+               (new-preprocessed string-plexeme-list-alistp)
+               state)
+  :short "Preprocess zero or more group parts."
+  (declare (ignore path file preprocessing))
+  (b* (((reterr) nil ppstate state))
+    ;; TODO
+    (retok nil ppstate (string-plexeme-list-alist-fix preprocessed) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pproc-file ((path stringp)
                     (file stringp)
                     (preprocessed string-plexeme-list-alistp)
@@ -276,7 +295,6 @@
      which may involve the recursive preprocessing of more files.
      Before preprocessing the file,
      we add it to the list of files under preprocessing."))
-  (declare (ignore ienv))
   (b* (((reterr) nil state)
        (file (str-fix file))
        (preprocessing (string-list-fix preprocessing))
@@ -288,7 +306,18 @@
        ((when file+lexemes) (retok preprocessed state))
        ((erp bytes state) (read-input-file-to-preproc path file state))
        (preprocessing (cons file (string-list-fix preprocessing)))
-       (lexemes (prog2$ (list bytes preprocessing) nil)) ; TODO
+       ((erp lexemes preprocessed state)
+        (with-local-stobj
+          ppstate
+          (mv-let (erp lexemes ppstate preprocessed state)
+              (b* ((ppstate (init-ppstate bytes (ienv->version ienv) ppstate)))
+                (pproc-*-group-part path
+                                    file
+                                    preprocessed
+                                    preprocessing
+                                    ppstate
+                                    state))
+            (mv erp lexemes preprocessed state))))
        (preprocessed (acons file lexemes preprocessed)))
     (retok preprocessed state))
   :guard-hints
