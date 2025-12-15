@@ -286,7 +286,12 @@
      takes an implementation environment,
      from which it constructs a local preprocessing state stobj @(tsee ppstate),
      which is passed to and returned from all the other functions.
-     There is one such stobj for each file being preprocessed."))
+     There is one such stobj for each file being preprocessed.")
+   (xdoc::p
+    "All the functions except the top-level @(tsee pproc-file)
+     return the list of lexemes resulting from their preprocessing,
+     in reverse for efficiency.
+     They are reversed into the right order by @(tsee pproc-file)."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,7 +331,7 @@
          ((when file+lexemes) (retok preprocessed state))
          ((erp bytes state) (read-input-file-to-preproc path file state))
          (preprocessing (cons file (string-list-fix preprocessing)))
-         ((erp lexemes preprocessed state)
+         ((erp rev-lexemes preprocessed state)
           (with-local-stobj
             ppstate
             (mv-let (erp lexemes ppstate preprocessed state)
@@ -339,6 +344,7 @@
                                       ppstate
                                       state))
               (mv erp lexemes preprocessed state))))
+         (lexemes (rev rev-lexemes))
          (preprocessed (acons file lexemes preprocessed)))
       (retok preprocessed state))
     :measure 1)
@@ -352,7 +358,7 @@
                               (ppstate ppstatep)
                               state)
     :returns (mv erp
-                 (lexemes plexeme-listp)
+                 (rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-plexeme-list-alistp)
                  state)
