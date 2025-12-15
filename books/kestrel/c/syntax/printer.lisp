@@ -3250,11 +3250,10 @@
                   struni-spec.name?
                   :some (print-ident struni-spec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and struni-spec.name?
-                          struni-spec.members)
+         ((when (not struni-spec.members)) pstate)
+         (pstate (if struni-spec.name?
                      (print-astring " " pstate)
                    pstate))
-         ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
          (pstate (print-struct-declon-list struni-spec.members t pstate))
          (pstate (print-astring " }" pstate)))
