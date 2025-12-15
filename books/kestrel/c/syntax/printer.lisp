@@ -2498,10 +2498,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-struni-spec tyspec.spec pstate)))
+                  (pstate (print-struni-spec tyspec.spec t pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-struni-spec tyspec.spec pstate)))
+                 (pstate (print-struni-spec tyspec.spec t pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enum-spec tyspec.spec pstate)))
@@ -3208,7 +3208,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
+  (define print-struni-spec ((struni-spec struni-specp)
+                             (inlinep booleanp)
+                             (pstate pristatep))
     :guard (and (struni-spec-unambp struni-spec)
                 (struni-spec-aidentp struni-spec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
@@ -3221,20 +3223,13 @@
        the @('struct') or @('union') keyword followed by a space.
        Here we print what comes after that keyword.")
      (xdoc::p
-      "We ensure that this is not empty, i.e. that there is at least
-       the identifier or a non-empty member list.")
+      "The @('inlinep') flag says whether
+       the members (if any) of structure or union specifier
+       should be printed as part of the current line,
+       or in multiple lines with identantation.")
      (xdoc::p
-      "For now we print all the members in the same line,
-       but we should print them in different lines and with identation,
-       at least in certain cases.
-       Note that a structure or union specifier
-       is not necessarily a top-level construct:
-       it may occur in the middle of a sequence of declaration specifiers,
-       so it is not so straightforward to always print it on multiple lines,
-       because we may need to consider what surrounds it.
-       Nonetheless, under certain conditions,
-       e.g. when it is a lone top-level construct,
-       we should print it on multiple lines."))
+      "We ensure that this is not empty, i.e. that there is at least
+       the identifier or a non-empty member list."))
     (b* (((struni-spec struni-spec) struni-spec)
          (pstate (if (consp struni-spec.attribs)
                      (b* ((pstate (print-attrib-spec-list struni-spec.attribs
@@ -3254,9 +3249,19 @@
          (pstate (if struni-spec.name?
                      (print-astring " " pstate)
                    pstate))
-         (pstate (print-astring "{ " pstate))
-         (pstate (print-struct-declon-list struni-spec.members t pstate))
-         (pstate (print-astring " }" pstate)))
+         (pstate (print-astring "{" pstate))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   (b* ((pstate (print-new-line pstate))
+                        (pstate (inc-pristate-indent pstate)))
+                     pstate)))
+         (pstate (print-struct-declon-list struni-spec.members inlinep pstate))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   (b* ((pstate (print-new-line pstate))
+                        (pstate (dec-pristate-indent pstate)))
+                     pstate)))
+         (pstate (print-astring "}" pstate)))
       pstate)
     :measure (struni-spec-count struni-spec))
 
