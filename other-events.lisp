@@ -34710,10 +34710,11 @@
     (pprogn
      (cond
       (quiet state)
-      (t (fms "Iteration ~x0 is dropping the ~x1 wrapper:~|~x2~|----------~|"
+      (t (fms "Iteration ~x0 is dropping the ~x1 wrapper:~|~X23~|----------~|"
               (list (cons #\0 iter)
                     (cons #\1 (car form))
-                    (cons #\2 (car (last form))))
+                    (cons #\2 (car (last form)))
+                    (cons #\3 (term-evisc-tuple nil state)))
               (standard-co state) state nil)))
      (value (cons t (car (last form))))))
    (t
@@ -34748,10 +34749,11 @@
          (cond
           (quiet state)
           (t (fms "Iteration ~x0 produces (by ~#1~[expansion~/make-event ~
-                   expansion~/translation~]):~|~x2~|----------~|"
+                   expansion~/translation~]):~|~X23~|----------~|"
                   (list (cons #\0 iter)
                         (cons #\1 (if macrop 0 (if make-event-case 1 2)))
-                        (cons #\2 next))
+                        (cons #\2 next)
+                        (cons #\3 (term-evisc-tuple nil state)))
                   (standard-co state) state nil)))
          (value (cons (or make-event-case macrop) next))))))))
 
