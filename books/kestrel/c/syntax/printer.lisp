@@ -3237,9 +3237,9 @@
        we should print it on multiple lines."))
     (b* (((struni-spec struni-spec) struni-spec)
          (pstate (if (consp struni-spec.attribs)
-                     (b* ((pstate (print-astring " " pstate))
-                          (pstate (print-attrib-spec-list struni-spec.attribs
-                                                          pstate)))
+                     (b* ((pstate (print-attrib-spec-list struni-spec.attribs
+                                                          pstate))
+                          (pstate (print-astring " " pstate)))
                        pstate)
                    pstate))
          ((unless (or (ident-option-case struni-spec.name? :some)
