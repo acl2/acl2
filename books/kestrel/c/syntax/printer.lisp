@@ -2470,12 +2470,22 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-type-spec ((tyspec type-specp) (pstate pristatep))
+  (define print-type-spec ((tyspec type-specp)
+                           (inlinep booleanp)
+                           (pstate pristatep))
     :guard (and (type-spec-unambp tyspec)
                 (type-spec-aidentp tyspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag says whether the type specifier
+       should be printed as part of the current line or on multiple lines.
+       The latter is currently used only when
+       the type specifier is a structure or union specifier,
+       and only under additional conditions."))
     (type-spec-case
      tyspec
      :void (print-astring "void" pstate)
@@ -2498,10 +2508,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-struni-spec tyspec.spec t pstate)))
+                  (pstate (print-struni-spec tyspec.spec inlinep pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-struni-spec tyspec.spec t pstate)))
+                 (pstate (print-struni-spec tyspec.spec inlinep pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enum-spec tyspec.spec pstate)))
@@ -2568,7 +2578,7 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :typespec (print-type-spec specqual.spec pstate)
+     :typespec (print-type-spec specqual.spec t pstate)
      :typequal (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.spec pstate))
@@ -2621,7 +2631,7 @@
     (decl-spec-case
      declspec
      :stoclass (print-stor-spec declspec.spec pstate)
-     :typespec (print-type-spec declspec.spec pstate)
+     :typespec (print-type-spec declspec.spec t pstate)
      :typequal (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
