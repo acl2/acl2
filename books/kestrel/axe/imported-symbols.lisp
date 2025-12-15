@@ -370,6 +370,7 @@
     subroutine-address-elf
 
     ensure-target-exists-in-executable
+    make-flag
     ))
 
 (defconst *arithmetic-symbols*

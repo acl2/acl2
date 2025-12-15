@@ -269,32 +269,32 @@
       (retok (cons struct-declon struct-declons1) struct-declons2))))
 
 (define all-no-init
-  ((initdeclors initdeclor-listp))
+  ((initdeclors init-declor-listp))
   (declare (xargs :type-prescription (booleanp (all-no-init initdeclors))))
   (or (endp initdeclors)
-      (and (null (c$::initdeclor->init? (first initdeclors)))
+      (and (null (c$::init-declor->initer? (first initdeclors)))
            (all-no-init (rest initdeclors)))))
 
-(define dup-split-struct-type-decl
+(define dup-split-struct-type-declon
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (decl declp))
+   (declon declonp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (decls decl-listp))
+               (declons declon-listp))
   (b* (((reterr) nil nil nil))
-    (decl-case
-      decl
-      :decl
-      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
+    (declon-case
+      declon
+      :declon
+      (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
-                               (all-no-init decl.init)))
+                               (all-no-init declon.declors)))
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
@@ -314,94 +314,94 @@
                           (retok t new1 new2 remanining-struct-decls split-struct-decls))
                 :otherwise (retok nil nil nil nil nil))))
            ((unless type-match)
-            (retok nil nil (list (decl-fix decl)))))
+            (retok nil nil (list (declon-fix declon)))))
         ;; TODO: get struct-type
         (retok new1
                new2
-               (list (decl-fix decl)
-                     (c$::make-decl-decl
+               (list (declon-fix declon)
+                     (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new1
                                           :members remanining-struct-decls)))))
-                     (c$::make-decl-decl
+                     (c$::make-declon-declon
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
                                           :attribs nil
                                           :name? new2
                                           :members split-struct-decls))))))))
-      :statassert (retok nil nil (list (decl-fix decl)))))
+      :statassert (retok nil nil (list (declon-fix declon)))))
   ///
 
-  (defret identp-of-dup-split-struct-type-decl.new2$
+  (defret identp-of-dup-split-struct-type-declon.new2$
     (equal (identp new2$)
            (identp new1$))))
 
-(define decl-list-to-extdecl-list
-  ((decls decl-listp))
-  :returns (extdecls extdecl-listp)
-  (if (endp decls)
+(define declon-list-to-ext-declon-list
+  ((declons declon-listp))
+  :returns (extdecls ext-declon-listp)
+  (if (endp declons)
       nil
-    (cons (c$::extdecl-decl (first decls))
-          (decl-list-to-extdecl-list (rest decls)))))
+    (cons (c$::ext-declon-declon (first declons))
+          (declon-list-to-ext-declon-list (rest declons)))))
 
-(define dup-split-struct-type-extdecl
+(define dup-split-struct-type-ext-declon
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (extdecl extdeclp))
+   (extdecl ext-declonp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
-      :fundef (retok nil nil (list (extdecl-fix extdecl)))
-      :decl (b* (((erp new1 new2 decls)
-                  (dup-split-struct-type-decl
-                    original
-                    new1
-                    new2
-                    blacklist
-                    split-members
-                    extdecl.decl)))
-              (retok new1
+      :fundef (retok nil nil (list (ext-declon-fix extdecl)))
+      :declon (b* (((erp new1 new2 decls)
+                    (dup-split-struct-type-declon
+                     original
+                     new1
                      new2
-                     (decl-list-to-extdecl-list decls)))
-      :empty (retok nil nil (list (extdecl-fix extdecl)))
-      :asm (retok nil nil (list (extdecl-fix extdecl)))))
+                     blacklist
+                     split-members
+                     extdecl.declon)))
+                (retok new1
+                       new2
+                       (declon-list-to-ext-declon-list decls)))
+      :empty (retok nil nil (list (ext-declon-fix extdecl)))
+      :asm (retok nil nil (list (ext-declon-fix extdecl)))))
   ///
 
-  (defret identp-of-dup-split-struct-type-extdecl.new2$
+  (defret identp-of-dup-split-struct-type-ext-declon.new2$
     (equal (identp new2$)
            (identp new1$)))
 
-  (defret dup-split-struct-type-extdecl.extdecls-type-prescription
+  (defret dup-split-struct-type-extdecl.ext-declons-type-prescription
     (true-listp extdecls)
     :rule-classes :type-prescription))
 
-(define dup-split-struct-type-extdecl-list
+(define dup-split-struct-type-ext-declon-list
   ((original identp)
    (new1 ident-optionp)
    (new2 ident-optionp)
    (blacklist ident-setp)
    (split-members ident-listp)
-   (extdecls extdecl-listp))
+   (extdecls ext-declon-listp))
   :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
-               (extdecls$ extdecl-listp))
+               (extdecls$ ext-declon-listp))
   (b* (((reterr) nil nil nil)
        ((when (endp extdecls))
         (retok nil nil nil))
        ((erp new1$ new2$ new-extdecls1)
-        (dup-split-struct-type-extdecl
+        (dup-split-struct-type-ext-declon
           original
           new1
           new2
@@ -412,9 +412,9 @@
         (retok new1$
                new2$
                (append new-extdecls1
-                       (extdecl-list-fix (rest extdecls)))))
+                       (ext-declon-list-fix (rest extdecls)))))
        ((erp new1 new2 new-extdecls2)
-        (dup-split-struct-type-extdecl-list
+        (dup-split-struct-type-ext-declon-list
           original
           new1
           new2
@@ -426,7 +426,7 @@
   :measure (acl2-count extdecls)
   ///
 
-  (defret identp-of-dup-split-struct-type-extdecl-list.new2$
+  (defret identp-of-dup-split-struct-type-ext-declon-list.new2$
     (equal (identp new2$)
            (identp new1$))
     :hints (("Goal" :induct t))))
@@ -445,16 +445,16 @@
   (b* (((reterr) nil nil (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp new1 new2 extdecls)
-        (dup-split-struct-type-extdecl-list
+        (dup-split-struct-type-ext-declon-list
           original
           new1
           new2
           blacklist
           split-members
-          tunit.decls)))
+          tunit.declons)))
     (retok new1
            new2
-           (make-transunit :decls extdecls :info tunit.info)))
+           (make-transunit :declons extdecls :info tunit.info)))
     ///
 
     (defret identp-of-dup-split-struct-type-transunit.new2$
@@ -623,10 +623,10 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(define split-struct-initdeclor
+(define split-struct-init-declor
   ((target identp)
    (split-members ident-listp)
-   (initdeclor initdeclorp))
+   (initdeclor init-declorp))
   :returns (mv (er? maybe-msgp)
                ;; TODO: is the generated type-prescription reasonable?
                (match booleanp
@@ -634,19 +634,19 @@
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   (b* (((reterr) nil nil nil)
-       ((initdeclor initdeclor) initdeclor)
+       ((init-declor initdeclor) initdeclor)
        ((unless (match-simple-declor-ident initdeclor.declor target))
         (retok nil nil nil))
-       ((unless initdeclor.init?)
+       ((unless initdeclor.initer?)
         (retok t nil nil))
        ((erp initer-option1 initer-option2)
-        (split-struct-initer split-members initdeclor.init?)))
+        (split-struct-initer split-members initdeclor.initer?)))
     (retok t initer-option1 initer-option2)))
 
-(define split-struct-initdeclors
+(define split-struct-init-declors
   ((target identp)
    (split-members ident-listp)
-   (initdeclors initdeclor-listp))
+   (initdeclors init-declor-listp))
   :returns (mv (er? maybe-msgp)
                (match booleanp
                       :rule-classes :type-prescription)
@@ -660,11 +660,11 @@
        ((unless (endp (rest initdeclors)))
         (retmsg$ "Multiple initializer declarators are not supported: ~x0"
                  initdeclors)))
-    (split-struct-initdeclor target
-                             split-members
-                             (first initdeclors))))
+    (split-struct-init-declor target
+                              split-members
+                              (first initdeclors))))
 
-(define split-gso-split-object-decl
+(define split-gso-split-object-declon
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -672,27 +672,27 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (decl declp))
+   (declon declonp))
   :returns (mv (er? maybe-msgp)
                (found booleanp
                       :rule-classes :type-prescription)
-               (decls decl-listp))
+               (declons declon-listp))
   (b* (((reterr) nil nil))
-    (decl-case
-      decl
-      :decl
-      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
+    (declon-case
+      declon
+      :declon
+      (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
            ((unless type-spec?)
-            (retok nil (list (decl-fix decl))))
+            (retok nil (list (declon-fix declon))))
            ;; TODO: check that the object is indeed file-scope, as assumed
            ((erp match initer-option1 initer-option2)
             (type-spec-case
               type-spec?
-              :struct (split-struct-initdeclors original split-members decl.init)
-              :typedef (split-struct-initdeclors original split-members decl.init)
+              :struct (split-struct-init-declors original split-members declon.declors)
+              :typedef (split-struct-init-declors original split-members declon.declors)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
-            (retok nil (list (decl-fix decl))))
+            (retok nil (list (declon-fix declon))))
            (decl-new1-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
@@ -709,31 +709,31 @@
                    :members nil)))))
         (retok
           t
-          (list (c$::make-decl-decl
+          (list (c$::make-declon-declon
                   :specs (c$::linkage-case
                            linkage
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new1-type)
                            :otherwise (list decl-new1-type))
-                  :init (list (c$::make-initdeclor
-                                :declor (c$::make-declor
-                                          :direct (c$::dirdeclor-ident new1))
-                                :init? initer-option1)))
-                (c$::make-decl-decl
+                  :declors (list (c$::make-init-declor
+                                  :declor (c$::make-declor
+                                           :direct (c$::dirdeclor-ident new1))
+                                  :initer? initer-option1)))
+                (c$::make-declon-declon
                   :specs (c$::linkage-case
                            linkage
                            :internal (list (c$::decl-spec-stoclass
                                              (c$::stor-spec-static))
                                            decl-new2-type)
                            :otherwise (list decl-new2-type))
-                  :init (list (c$::make-initdeclor
-                                :declor (c$::make-declor
-                                          :direct (c$::dirdeclor-ident new2))
-                                :init? initer-option2))))))
-      :statassert (retok nil (list (decl-fix decl))))))
+                  :declors (list (c$::make-init-declor
+                                  :declor (c$::make-declor
+                                           :direct (c$::dirdeclor-ident new2))
+                                  :initer? initer-option2))))))
+      :statassert (retok nil (list (declon-fix declon))))))
 
-(define split-gso-split-object-extdecl
+(define split-gso-split-object-ext-declon
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -741,35 +741,35 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (extdecl extdeclp))
+   (extdecl ext-declonp))
   :returns (mv (er? maybe-msgp)
                (found booleanp
                       :rule-classes :type-prescription)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
-      :fundef (retok nil (list (extdecl-fix extdecl)))
-      :decl (b* (((erp found decls)
-                  (split-gso-split-object-decl
-                    original
-                    linkage
-                    new1
-                    new2
-                    new1-type
-                    new2-type
-                    split-members
-                    extdecl.decl)))
-              (retok found
-                     (decl-list-to-extdecl-list decls)))
-      :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl)))))
+      :fundef (retok nil (list (ext-declon-fix extdecl)))
+      :declon (b* (((erp found declons)
+                    (split-gso-split-object-declon
+                     original
+                     linkage
+                     new1
+                     new2
+                     new1-type
+                     new2-type
+                     split-members
+                     extdecl.declon)))
+                (retok found
+                       (declon-list-to-ext-declon-list declons)))
+      :empty (retok nil (list (ext-declon-fix extdecl)))
+      :asm (retok nil (list (ext-declon-fix extdecl)))))
   ///
 
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-gso-split-object-extdecl-list
+(define split-gso-split-object-ext-declon-list
   ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
@@ -777,14 +777,14 @@
    (new1-type identp)
    (new2-type identp)
    (split-members ident-listp)
-   (extdecls extdecl-listp))
+   (extdecls ext-declon-listp))
   :returns (mv (er? maybe-msgp)
-               (extdecls$ extdecl-listp))
+               (extdecls$ ext-declon-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
        ((erp found new-extdecls1)
-        (split-gso-split-object-extdecl
+        (split-gso-split-object-ext-declon
           original
           linkage
           new1
@@ -795,9 +795,9 @@
           (first extdecls)))
        ((when found)
         (retok (append new-extdecls1
-                       (extdecl-list-fix (rest extdecls)))))
+                       (ext-declon-list-fix (rest extdecls)))))
        ((erp new-extdecls2)
-        (split-gso-split-object-extdecl-list
+        (split-gso-split-object-ext-declon-list
           original
           linkage
           new1
@@ -822,7 +822,7 @@
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
-        (split-gso-split-object-extdecl-list
+        (split-gso-split-object-ext-declon-list
           original
           linkage
           new1
@@ -830,8 +830,8 @@
           new1-type
           new2-type
           split-members
-          tunit.decls)))
-    (retok (make-transunit :decls extdecls :info tunit.info))))
+          tunit.declons)))
+    (retok (make-transunit :declons extdecls :info tunit.info))))
 
 (define split-gso-split-object-filepath-transunit-map
   ((original identp)
@@ -887,8 +887,8 @@
   (fty::deffold-map replace-field-access
     :types #!c$(exprs/decls/stmts
                 fundef
-                extdecl
-                extdecl-list
+                ext-declon
+                ext-declon-list
                 transunit
                 filepath-transunit-map)
     :extra-args

@@ -17,12 +17,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-find-fundef
+(define ext-declon-find-fundef
   ((ident identp)
-   (extdecl extdeclp))
+   (extdecl ext-declonp))
   :returns (mv (found booleanp)
                (fundef fundefp))
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef (b* (((fundef fundef) extdecl.fundef))
              (if (equal ident (declor->ident fundef.declor))
@@ -30,18 +30,18 @@
                (mv nil (c$::irr-fundef))))
    :otherwise (mv nil (c$::irr-fundef))))
 
-(define extdecl-list-find-fundef
+(define ext-declon-list-find-fundef
   ((ident identp)
-   (extdecls extdecl-listp))
+   (extdecls ext-declon-listp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((reterr) (c$::irr-fundef))
        ((when (endp extdecls))
         (reterr t))
-       ((mv found fundef) (extdecl-find-fundef ident (first extdecls)))
+       ((mv found fundef) (ext-declon-find-fundef ident (first extdecls)))
        ((when found)
         (retok fundef)))
-    (extdecl-list-find-fundef ident (rest extdecls))))
+    (ext-declon-list-find-fundef ident (rest extdecls))))
 
 (define transunit-find-fundef
   ((ident identp)
@@ -49,7 +49,7 @@
   :returns (mv (erp booleanp)
                (fundef fundefp))
   (b* (((transunit transunit) transunit))
-    (extdecl-list-find-fundef ident transunit.decls)))
+    (ext-declon-list-find-fundef ident transunit.declons)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -62,15 +62,15 @@
     (or ident?
         (struct-declons-find-first-field-name (rest struct-declons)))))
 
-(define decl-find-first-field-name
-  ((decl declp)
+(define declon-find-first-field-name
+  ((declon declonp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
-        ((unless (and type-spec? (all-no-init decl.init)))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
+        ((unless (and type-spec? (all-no-init declon.declors)))
          nil))
      (type-spec-case
        type-spec?
@@ -81,32 +81,32 @@
        :otherwise nil))
    :statassert nil))
 
-(define extdecl-find-first-field-name
-  ((extdecl extdeclp)
+(define ext-declon-find-first-field-name
+  ((extdecl ext-declonp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
-   :decl (decl-find-first-field-name extdecl.decl struct-tag)
+   :declon (declon-find-first-field-name extdecl.declon struct-tag)
    :otherwise nil))
 
-(define extdecl-list-find-first-field-name
-  ((extdecls extdecl-listp)
+(define ext-declon-list-find-first-field-name
+  ((extdecls ext-declon-listp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
        (field-name?
-        (extdecl-find-first-field-name (first extdecls) struct-tag)))
+        (ext-declon-find-first-field-name (first extdecls) struct-tag)))
     (or field-name?
-        (extdecl-list-find-first-field-name (rest extdecls) struct-tag))))
+        (ext-declon-list-find-first-field-name (rest extdecls) struct-tag))))
 
 (define transunit-find-first-field-name
   ((tunit transunitp)
    (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((transunit tunit) tunit))
-    (extdecl-list-find-first-field-name tunit.decls struct-tag)))
+    (ext-declon-list-find-first-field-name tunit.declons struct-tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,37 +143,37 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(define initdeclor-find-gso-candidate
-  ((initdeclor initdeclorp))
+(define init-declor-find-gso-candidate
+  ((initdeclor init-declorp))
   :returns (ident? ident-optionp)
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (declor-get-simple-ident initdeclor.declor)))
 
-(define initdeclor-list-find-gso-candidate
-  ((initdeclors initdeclor-listp))
+(define init-declor-list-find-gso-candidate
+  ((initdeclors init-declor-listp))
   :returns (ident? ident-optionp)
   ;; Only accepts singletons for now
   ;; TODO: broaden this
   (if (or (endp initdeclors)
           (not (endp (rest initdeclors))))
       nil
-    (initdeclor-find-gso-candidate (first initdeclors))))
+    (init-declor-find-gso-candidate (first initdeclors))))
 
-(define decl-find-gso-candidate
-  ((decl declp)
+(define declon-find-gso-candidate
+  ((declon declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
         ((unless type-spec?)
          nil)
         (ident?
           (type-spec-case
             type-spec?
-            :struct (initdeclor-list-find-gso-candidate decl.init)
-            :typedef (initdeclor-list-find-gso-candidate decl.init)
+            :struct (init-declor-list-find-gso-candidate declon.declors)
+            :typedef (init-declor-list-find-gso-candidate declon.declors)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))
@@ -181,26 +181,26 @@
        ident?))
    :statassert nil))
 
-(define extdecl-find-gso-candidate
-  ((extdecl extdeclp)
+(define ext-declon-find-gso-candidate
+  ((extdecl ext-declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef nil
-   :decl (decl-find-gso-candidate extdecl.decl blacklist)
+   :declon (declon-find-gso-candidate extdecl.declon blacklist)
    :empty nil
    :asm nil))
 
-(define extdecl-list-find-gso-candidate
-  ((extdecls extdecl-listp)
+(define ext-declon-list-find-gso-candidate
+  ((extdecls ext-declon-listp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
-       (ident? (extdecl-find-gso-candidate (first extdecls) blacklist)))
+       (ident? (ext-declon-find-gso-candidate (first extdecls) blacklist)))
     (or ident?
-        (extdecl-list-find-gso-candidate (rest extdecls) blacklist))))
+        (ext-declon-list-find-gso-candidate (rest extdecls) blacklist))))
 
 (define transunit-find-gso-candidate
   ((tunit transunitp)
@@ -230,7 +230,7 @@
           ((when (= 0 (mbe :logic (nfix steps)
                            :exec (acl2::the-fixnat steps))))
            (reterr t))
-          (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
+          (gso (ext-declon-list-find-gso-candidate tunit.declons blacklist))
           ((unless gso)
            (reterr t))
           ((mv erp linkage tag?)

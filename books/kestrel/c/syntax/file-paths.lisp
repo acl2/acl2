@@ -13,6 +13,9 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ file-paths

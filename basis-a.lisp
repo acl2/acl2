@@ -8400,22 +8400,6 @@
                            (the fixnum (1+ i))
                            n))))
 
-; In raw Lisp, the live version of state is held in the constant
-; *the-live-state* (whose value is actually just a symbol because we don't
-; really represent the live state as an object).  But what is the live version
-; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
-
-(defmacro live-stobjp (name)
-
-; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
-; object is a vector, unless it is a string; nor is any ordinary ACL2 object a
-; hash table (unlike the raw Lisp representation of a single-field stobj whose
-; field is a hash table).
-
-  `(or (and (typep ,name 'vector)
-            (not (stringp ,name)))
-       (typep ,name 'hash-table)))
-
 (defun absstobj-name (name type)
 
 ; Warning: The (absstobj-name name :CREATOR) should equal (defstobj-fnname name

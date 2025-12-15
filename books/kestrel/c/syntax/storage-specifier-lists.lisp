@@ -12,10 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,8 +29,7 @@
   :short "Check if a list of storage class specifiers
           has the form @('typedef')."
   (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-typedef)))
-  :hooks (:fix))
+         (list (stor-spec-typedef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,8 +38,7 @@
   :short "Check if a list of storage class specifiers
           has the form @('extern')."
   (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-extern)))
-  :hooks (:fix))
+         (list (stor-spec-extern))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,8 +47,7 @@
   :short "Check if a list of storage class specifiers
           has the form @('static')."
   (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-static)))
-  :hooks (:fix))
+         (list (stor-spec-static))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,8 +58,7 @@
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-thread nil)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread t))))
-  :hooks (:fix))
+             (list (stor-spec-thread t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,8 +67,7 @@
   :short "Check if a list of storage class specifiers
           has the form @('auto')."
   (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-auto)))
-  :hooks (:fix))
+         (list (stor-spec-auto))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,8 +76,7 @@
   :short "Check if a list of storage class specifiers
           has the form @('register')."
   (equal (stor-spec-list-fix storspecs)
-         (list (stor-spec-register)))
-  :hooks (:fix))
+         (list (stor-spec-register))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,8 +96,7 @@
                    (stor-spec-thread t)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-thread t)
-                   (stor-spec-extern))))
-  :hooks (:fix))
+                   (stor-spec-extern)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,5 +116,4 @@
                    (stor-spec-thread t)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-thread t)
-                   (stor-spec-static))))
-  :hooks (:fix))
+                   (stor-spec-static)))))

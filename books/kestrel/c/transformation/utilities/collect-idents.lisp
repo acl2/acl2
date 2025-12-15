@@ -51,8 +51,8 @@
           c$::exprs/decls/stmts
           fundef
           c$::fundef-option
-          c$::extdecl
-          c$::extdecl-list
+          c$::ext-declon
+          c$::ext-declon-list
           transunit
           c$::filepath-transunit-map
           transunit-ensemble)

@@ -950,7 +950,7 @@
      so they are really just identifiers."))
   (b* (((reterr) (c::ident "irrelevant"))
        ((enumer enumer) enumer)
-       ((when enumer.value)
+       ((when enumer.value?)
         (reterr (msg "Unsupported enumerator ~x0." (enumer-fix enumer)))))
     (ldm-ident enumer.name))
   :hooks (:fix))
@@ -971,8 +971,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-decl-tag ((decl declp))
-  :guard (decl-unambp decl)
+(define ldm-declon-tag ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (mv erp (tagdeclon c::tag-declonp))
   :short "Map a declaration to
           a tag declaration in the language definition."
@@ -984,12 +984,12 @@
      The type specifier must be a structure, union, or enumeration specifier
      with members/elements."))
   (b* (((reterr) (c::tag-declon-enum (c::ident "irrelevant") nil))
-       ((when (decl-case decl :statassert))
+       ((when (declon-case declon :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
-                     (decl-fix decl))))
-       (extension (decl-decl->extension decl))
-       (declspecs (decl-decl->specs decl))
-       (initdeclors (decl-decl->init decl))
+                     (declon-fix declon))))
+       (extension (declon-declon->extension declon))
+       (declspecs (declon-declon->specs declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
@@ -1028,11 +1028,11 @@
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
         (b* (((enum-spec enumspec) (type-spec-enum->spec tyspec))
-             ((unless enumspec.name)
+             ((unless enumspec.name?)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))
-             ((erp name1) (ldm-ident enumspec.name))
-             ((erp idents1) (ldm-enumer-list enumspec.list)))
+             ((erp name1) (ldm-ident enumspec.name?))
+             ((erp idents1) (ldm-enumer-list enumspec.enumers)))
           (retok (c::make-tag-declon-enum :tag name1 :enumerators idents1)))))
     (reterr (msg "Unsupported type specifier ~x0 ~
                   for tag (i.e. structure/union/enumeration) declaration."
@@ -1041,10 +1041,10 @@
 
   ///
 
-  (defret ldm-decl-tag-ok-when-decl-struct-formalp
+  (defret ldm-declon-tag-ok-when-declon-struct-formalp
     (not erp)
-    :hyp (decl-struct-formalp decl)
-    :hints (("Goal" :in-theory (enable decl-struct-formalp
+    :hyp (declon-struct-formalp declon)
+    :hints (("Goal" :in-theory (enable declon-struct-formalp
                                        struni-spec-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1247,8 +1247,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-decl-fun ((decl declp))
-  :guard (decl-unambp decl)
+(define ldm-declon-fun ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (mv erp (fundeclon c::fun-declonp))
   :short "Map a declaration to
           a function declaration in the language definition."
@@ -1266,12 +1266,12 @@
   (b* (((reterr) (c::fun-declon (c::tyspecseq-void)
                                 (c::fun-declor-base
                                  (c::ident "irrelevant") nil)))
-       ((when (decl-case decl :statassert))
+       ((when (declon-case declon :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
-                     (decl-fix decl))))
-       (extension (decl-decl->extension decl))
-       (declspecs (decl-decl->specs decl))
-       (initdeclors (decl-decl->init decl))
+                     (declon-fix declon))))
+       (extension (declon-declon->extension declon))
+       (declspecs (declon-declon->specs declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
@@ -1280,18 +1280,18 @@
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
                       in declaration ~x0 for function."
-                     (decl-fix decl))))
+                     (declon-fix declon))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((unless (and (consp initdeclors)
                      (endp (cdr initdeclors))))
         (reterr (msg "Unsupported number of declarators ~x0 ~
                       for function declaration."
                      initdeclors)))
-       ((initdeclor initdeclor) (car initdeclors))
-       ((when initdeclor.init?)
+       ((init-declor initdeclor) (car initdeclors))
+       ((when initdeclor.initer?)
         (reterr (msg "Unsupported initializer ~x0 ~
                       for function declaration."
-                     initdeclor.init?)))
+                     initdeclor.initer?)))
        ((when initdeclor.asm?)
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
                       for function declaration."
@@ -1306,11 +1306,11 @@
 
   ///
 
-  (defret ldm-decl-fun-ok-when-decl-fun-formalp
+  (defret ldm-declon-fun-ok-when-decl-fun-formalp
     (not erp)
-    :hyp (decl-fun-formalp decl)
-    :hints (("Goal" :in-theory (enable decl-fun-formalp
-                                       initdeclor-fun-formalp)))))
+    :hyp (declon-fun-formalp declon)
+    :hints (("Goal" :in-theory (enable declon-fun-formalp
+                                       init-declor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1386,8 +1386,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-decl-obj ((decl declp))
-  :guard (decl-unambp decl)
+(define ldm-declon-obj ((declon declonp))
+  :guard (declon-unambp declon)
   :returns (mv erp (objdeclon c::obj-declonp))
   :short "Map a declaration to
           an object declaration in the language definition."
@@ -1405,12 +1405,12 @@
                                 (c::tyspecseq-void)
                                 (c::obj-declor-ident (c::ident "irrelevant"))
                                 nil))
-       ((when (decl-case decl :statassert))
+       ((when (declon-case declon :statassert))
         (reterr (msg "Unsupported static assertion declaration ~x0."
-                     (decl-fix decl))))
-       (extension (decl-decl->extension decl))
-       (declspecs (decl-decl->specs decl))
-       (initdeclors (decl-decl->init decl))
+                     (declon-fix declon))))
+       (extension (declon-declon->extension declon))
+       (declspecs (declon-declon->specs declon))
+       (initdeclors (declon-declon->declors declon))
        ((when extension)
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
@@ -1428,7 +1428,7 @@
         (reterr (msg "Unsupported number of initializer declarators ~x0 ~
                       for object declaration."
                      initdeclors)))
-       ((initdeclor initdeclor) (car initdeclors))
+       ((init-declor initdeclor) (car initdeclors))
        ((erp objdeclor) (ldm-declor-obj initdeclor.declor))
        ((when initdeclor.asm?)
         (reterr (msg "Unsupported assembler name specifier ~x0 ~
@@ -1438,34 +1438,34 @@
         (reterr (msg "Unsupported attribute specifiers ~x0 ~
                       for function declaration."
                      initdeclor.attribs)))
-       ((when (not initdeclor.init?))
+       ((when (not initdeclor.initer?))
         (retok (c::make-obj-declon :scspec scspecseq
                                    :tyspec tyspecseq
                                    :declor objdeclor
                                    :init? nil)))
-       ((erp init) (ldm-initer initdeclor.init?)))
+       ((erp initer) (ldm-initer initdeclor.initer?)))
     (retok (c::make-obj-declon :scspec scspecseq
                                :tyspec tyspecseq
                                :declor objdeclor
-                               :init? init)))
+                               :init? initer)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-decl-obj-ok-when-decl-obj-formalp
+  (defret ldm-declon-obj-ok-when-declon-obj-formalp
     (not erp)
-    :hyp (decl-obj-formalp decl)
-    :hints (("Goal" :in-theory (enable decl-obj-formalp
-                                       initdeclor-obj-formalp))))
+    :hyp (declon-obj-formalp declon)
+    :hints (("Goal" :in-theory (enable declon-obj-formalp
+                                       init-declor-obj-formalp))))
 
-  (defret ldm-decl-obj-ok-when-decl-block-formalp
+  (defret ldm-declon-obj-ok-when-declon-block-formalp
     (not erp)
-    :hyp (decl-block-formalp decl)
+    :hyp (declon-block-formalp declon)
     :hints
     (("Goal"
       :in-theory
-      (enable decl-block-formalp
-              initdeclor-block-formalp
+      (enable declon-block-formalp
+              init-declor-block-formalp
               check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1540,9 +1540,9 @@
                                             :test test1
                                             :next next1
                                             :body body1)))
-       :for-decl (reterr (msg "Unsupported 'for' loop ~x0 ~
-                               with initializing declaration."
-                              (stmt-fix stmt)))
+       :for-declon (reterr (msg "Unsupported 'for' loop ~x0 ~
+                                 with initializing declaration."
+                                (stmt-fix stmt)))
        :for-ambig (prog2$ (impossible) (reterr t))
        :goto (b* (((erp ident1) (ldm-ident stmt.label)))
                (retok (c::make-stmt-goto :target ident1)))
@@ -1583,8 +1583,8 @@
     (b* (((reterr) (c::block-item-stmt (c::stmt-null))))
       (block-item-case
        item
-       :decl (b* (((erp objdeclon) (ldm-decl-obj item.decl)))
-               (retok (c::block-item-declon objdeclon)))
+       :declon (b* (((erp objdeclon) (ldm-declon-obj item.declon)))
+                 (retok (c::block-item-declon objdeclon)))
        :stmt (b* (((erp stmt) (ldm-stmt item.stmt)))
                (retok (c::block-item-stmt stmt)))
        :ambig (prog2$ (impossible) (reterr t))))
@@ -1654,7 +1654,7 @@
                             (c::fun-declor-base (c::ident "irrelevant") nil)
                             nil))
        ((fundef fundef) fundef)
-       ((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.spec))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.specs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifiers ~
                       in function definition ~x0."
@@ -1669,7 +1669,7 @@
         (reterr (msg "Unsupported attribute specifiers ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
-       ((when fundef.decls)
+       ((when fundef.declons)
         (reterr (msg "Unsupported declarations ~
                       in function definition ~x0."
                      (fundef-fix fundef))))
@@ -1688,8 +1688,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-extdecl ((extdecl extdeclp))
-  :guard (extdecl-unambp extdecl)
+(define ldm-ext-declon ((extdecl ext-declonp))
+  :guard (ext-declon-unambp extdecl)
   :returns (mv erp (extdecl1 c::ext-declonp))
   :short "Map an external declaration to
           an external declaration in the language definition."
@@ -1706,53 +1706,53 @@
                   (c::fundef (c::tyspecseq-void)
                              (c::fun-declor-base (c::ident "irrelevant") nil)
                              nil)))
-       ((when (extdecl-case extdecl :empty))
+       ((when (ext-declon-case extdecl :empty))
         (reterr (msg "Unsupported empty external declaration.")))
-       ((when (extdecl-case extdecl :asm))
+       ((when (ext-declon-case extdecl :asm))
         (reterr (msg "Unsupported assembler statement at the top level.")))
-       ((when (extdecl-case extdecl :fundef))
-        (b* (((erp fundef) (ldm-fundef (extdecl-fundef->fundef extdecl))))
+       ((when (ext-declon-case extdecl :fundef))
+        (b* (((erp fundef) (ldm-fundef (ext-declon-fundef->fundef extdecl))))
           (retok (c::ext-declon-fundef fundef))))
-       (decl (extdecl-decl->decl extdecl))
-       ((mv erp fundeclon) (ldm-decl-fun decl))
+       (decl (ext-declon-declon->declon extdecl))
+       ((mv erp fundeclon) (ldm-declon-fun decl))
        ((when (not erp))
         (retok (c::ext-declon-fun-declon fundeclon)))
-       ((mv erp objdeclon) (ldm-decl-obj decl))
+       ((mv erp objdeclon) (ldm-declon-obj decl))
        ((when (not erp))
         (retok (c::ext-declon-obj-declon objdeclon)))
-       ((mv erp tagdeclon) (ldm-decl-tag decl))
+       ((mv erp tagdeclon) (ldm-declon-tag decl))
        ((when (not erp))
         (retok (c::ext-declon-tag-declon tagdeclon))))
     (reterr (msg "Unsupported external declaration ~x0."
-                 (extdecl-fix extdecl))))
+                 (ext-declon-fix extdecl))))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-extdecl-ok-when-extdecl-formalp
+  (defret ldm-ext-declon-ok-when-ext-declon-formalp
     (not erp)
-    :hyp (extdecl-formalp extdecl)
-    :hints (("Goal" :in-theory (enable extdecl-formalp)))))
+    :hyp (ext-declon-formalp extdecl)
+    :hints (("Goal" :in-theory (enable ext-declon-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-extdecl-list ((extdecls extdecl-listp))
-  :guard (extdecl-list-unambp extdecls)
+(define ldm-ext-declon-list ((extdecls ext-declon-listp))
+  :guard (ext-declon-list-unambp extdecls)
   :returns (mv erp (extdecls1 c::ext-declon-listp))
   :short "Map a list of external declarations to the language definition."
   (b* (((reterr) nil)
        ((when (endp extdecls)) (retok nil))
-       ((erp extdecl1) (ldm-extdecl (car extdecls)))
-       ((erp extdecls1) (ldm-extdecl-list (cdr extdecls))))
+       ((erp extdecl1) (ldm-ext-declon (car extdecls)))
+       ((erp extdecls1) (ldm-ext-declon-list (cdr extdecls))))
     (retok (cons extdecl1 extdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-extdecl-list-ok-when-extdecl-list-formalp
+  (defret ldm-ext-declon-list-ok-when-ext-declon-list-formalp
     (not erp)
-    :hyp (extdecl-list-formalp extdecls)
-    :hints (("Goal" :induct t :in-theory (enable extdecl-list-formalp)))))
+    :hyp (ext-declon-list-formalp extdecls)
+    :hints (("Goal" :induct t :in-theory (enable ext-declon-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1768,8 +1768,8 @@
      obtaining a corresponding list of external declaration,
      which we put into a @(tsee c::file)."))
   (b* (((reterr) (c::file nil))
-       (extdecls (transunit->decls tunit))
-       ((erp extdecls1) (ldm-extdecl-list extdecls)))
+       (extdecls (transunit->declons tunit))
+       ((erp extdecls1) (ldm-ext-declon-list extdecls)))
     (retok (c::make-file :declons extdecls1)))
   :hooks (:fix)
 

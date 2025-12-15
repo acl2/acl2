@@ -44,6 +44,7 @@
 (include-book "../bv-rules-axe0")
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../bv-array-rules-axe") ;reduce?
+(include-book "../logops-rules-axe")
 (include-book "assumptions")
 (include-book "run-until-return")
 (include-book "pc")
@@ -201,7 +202,7 @@
       (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
             (wrap-in-normal-output-extractors (rest output-indicators) term wrld)))))
 
-;; (local (acl2::make-flag wrap-in-normal-output-extractor))
+;; (local (make-flag wrap-in-normal-output-extractor))
 
 ;; (defthm-flag-wrap-in-normal-output-extractor
 ;;   (defthm pseudo-termp-of-wrap-in-normal-output-extractor
@@ -558,7 +559,7 @@
         (er hard? 'unroll-risc-v-code-core "The executable type must be :pe-32, but it is ~x0." executable-type)
         (mv :bad-executable-type nil state))
        ;; Make sure it's a RISC-V executable:
-       (- (acl2::ensure-risc-v parsed-executable))
+       (- (ensure-risc-v parsed-executable))
 
        ;; Handle a :position-independent of :auto:
 

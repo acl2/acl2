@@ -294,9 +294,9 @@
  return (char *) (a) - b;
 }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((edecls (transunit->declons ast))
             (edecl (car edecls))
-            (fundef (extdecl-fundef->fundef edecl))
+            (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
@@ -310,9 +310,9 @@
  return a + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((edecls (transunit->declons ast))
             (edecl (car edecls))
-            (fundef (extdecl-fundef->fundef edecl))
+            (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
@@ -341,9 +341,9 @@
   return (a) + (b) + c;
 }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((edecls (transunit->declons ast))
             (edecl (car edecls))
-            (fundef (extdecl-fundef->fundef edecl))
+            (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
@@ -374,9 +374,9 @@
   return a + (b) + (c) + d;
 }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((edecls (transunit->declons ast))
             (edecl (car edecls))
-            (fundef (extdecl-fundef->fundef edecl))
+            (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
@@ -413,9 +413,9 @@
   return ~ (a) + b;
 }
 "
- :cond (b* ((edecls (transunit->decls ast))
+ :cond (b* ((edecls (transunit->declons ast))
             (edecl (car edecls))
-            (fundef (extdecl-fundef->fundef edecl))
+            (fundef (ext-declon-fundef->fundef edecl))
             (cstmt (fundef->body fundef))
             (items (comp-stmt->items cstmt))
             (item (car items))
