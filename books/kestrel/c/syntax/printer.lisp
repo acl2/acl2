@@ -2354,7 +2354,7 @@
                      (print-astring ")" pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (expr-count expr) 0))
+    :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2385,7 +2385,7 @@
          ((when (endp (cdr exprs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-expr-list (cdr exprs) pstate))
-    :measure (two-nats-measure (expr-list-count exprs) 0))
+    :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2402,7 +2402,7 @@
        a synonym of a conditional expression in the grammar,
        so we use that as priority."))
     (print-expr (const-expr->expr cexpr) (expr-priority-cond) pstate)
-    :measure (two-nats-measure (const-expr-count cexpr) 0))
+    :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2423,7 +2423,7 @@
      (b* ((pstate (print-astring "default: " pstate))
           (pstate (print-expr genassoc.expr (expr-priority-asg) pstate)))
        pstate))
-    :measure (two-nats-measure (genassoc-count genassoc) 0))
+    :measure (genassoc-count genassoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2445,7 +2445,7 @@
          ((when (endp (cdr genassocs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-genassoc-list (cdr genassocs) pstate))
-    :measure (two-nats-measure (genassoc-list-count genassocs) 0))
+    :measure (genassoc-list-count genassocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2466,7 +2466,7 @@
                (pstate (print-astring "[" pstate))
                (pstate (print-expr memdes.index (expr-priority-expr) pstate)))
             pstate))
-    :measure (two-nats-measure (member-designor-count memdes) 0))
+    :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2556,7 +2556,7 @@
        pstate)
      :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
      :auto-type (print-astring "__auto_type" pstate))
-    :measure (two-nats-measure (type-spec-count tyspec) 0))
+    :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2572,7 +2572,7 @@
      :typequal (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.spec pstate))
-    :measure (two-nats-measure (spec/qual-count specqual) 0))
+    :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2589,7 +2589,7 @@
          ((when (endp (cdr specquals))) pstate)
          (pstate (print-astring " " pstate)))
       (print-spec/qual-list (cdr specquals) pstate))
-    :measure (two-nats-measure (spec/qual-list-count specquals) 0))
+    :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2608,7 +2608,7 @@
            :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (align-spec-count alignspec) 0))
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2631,7 +2631,7 @@
                     (pstate (print-ident declspec.arg pstate))
                     (pstate (print-astring ")" pstate)))
                  pstate))
-    :measure (two-nats-measure (decl-spec-count declspec) 0))
+    :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2648,7 +2648,7 @@
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-decl-spec-list (cdr declspecs) pstate))
-    :measure (two-nats-measure (decl-spec-list-count declspecs) 0))
+    :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2662,7 +2662,7 @@
      tyqualattrib
      :type (print-type-qual tyqualattrib.qual pstate)
      :attrib (print-attrib-spec tyqualattrib.spec pstate))
-    :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
+    :measure (typequal/attribspec-count tyqualattrib))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2682,7 +2682,7 @@
          ((when (endp (cdr tyqualattribs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-typequal/attribspec-list (cdr tyqualattribs) pstate))
-    :measure (two-nats-measure (typequal/attribspec-list-count tyqualattribs) 0))
+    :measure (typequal/attribspec-list-count tyqualattribs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2736,8 +2736,7 @@
                    pstate))
          ((when (endp (cdr tyqualattribss))) pstate))
       (print-typequal/attribspec-list-list (cdr tyqualattribss) pstate))
-    :measure (two-nats-measure
-              (typequal/attribspec-list-list-count tyqualattribss) 0))
+    :measure (typequal/attribspec-list-list-count tyqualattribss))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2768,7 +2767,7 @@
                             (print-astring ", }" pstate)
                           (print-astring "}" pstate))))
              pstate))
-    :measure (two-nats-measure (initer-count initer) 0))
+    :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2787,7 +2786,7 @@
                    pstate))
          (pstate (print-initer desiniter.initer pstate)))
       pstate)
-    :measure (two-nats-measure (desiniter-count desiniter) 0))
+    :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2805,7 +2804,7 @@
          ((when (endp (cdr desiniters))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-desiniter-list (cdr desiniters) pstate))
-    :measure (two-nats-measure (desiniter-list-count desiniters) 0))
+    :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2832,7 +2831,7 @@
      :dot (b* ((pstate (print-astring "." pstate))
                (pstate (print-ident designor.name pstate)))
             pstate))
-    :measure (two-nats-measure (designor-count designor) 0))
+    :measure (designor-count designor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2852,7 +2851,7 @@
          (pstate (print-designor (car designors) pstate))
          ((when (endp (cdr designors))) pstate))
       (print-designor-list (cdr designors) pstate))
-    :measure (two-nats-measure (designor-list-count designors) 0))
+    :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2869,7 +2868,7 @@
                    pstate))
          (pstate (print-dirdeclor declor.direct pstate)))
       pstate)
-    :measure (two-nats-measure (declor-count declor) 0))
+    :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2976,7 +2975,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (dirdeclor-count dirdeclor) 0))
+    :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3008,7 +3007,7 @@
                                          pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (absdeclor-count absdeclor) 0))
+    :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3108,7 +3107,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (dirabsdeclor-count dirabsdeclor) 0))
+    :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3135,7 +3134,7 @@
                        pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (param-declon-count param) 0))
+    :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3153,7 +3152,7 @@
          ((when (endp (cdr params))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-param-declon-list (cdr params) pstate))
-    :measure (two-nats-measure (param-declon-list-count params) 0))
+    :measure (param-declon-list-count params))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3181,7 +3180,7 @@
                  pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (param-declor-count paramdeclor) 0))
+    :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3205,7 +3204,7 @@
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.declor?)
                                   pstate)))
       pstate)
-    :measure (two-nats-measure (tyname-count tyname) 0))
+    :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3260,7 +3259,7 @@
          (pstate (print-struct-declon-list struni-spec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
-    :measure (two-nats-measure (struni-spec-count struni-spec) 0))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3303,7 +3302,7 @@
        pstate)
      :statassert (print-statassert structdeclon.statassert pstate)
      :empty (print-astring ";" pstate))
-    :measure (two-nats-measure (struct-declon-count structdeclon) 0))
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3331,7 +3330,7 @@
          ((when (endp (cdr structdeclons))) pstate)
          (pstate (print-astring " " pstate)))
       (print-struct-declon-list (cdr structdeclons) pstate))
-    :measure (two-nats-measure (struct-declon-list-count structdeclons) 0))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3368,7 +3367,7 @@
                           pstate)
                   :none pstate)))
       pstate)
-    :measure (two-nats-measure (struct-declor-count structdeclor) 0))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3387,7 +3386,7 @@
          ((when (endp (cdr structdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-struct-declor-list (cdr structdeclors) pstate))
-    :measure (two-nats-measure (struct-declor-list-count structdeclors) 0))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3422,7 +3421,7 @@
                      (print-astring ", }" pstate)
                    (print-astring "}" pstate))))
       pstate)
-    :measure (two-nats-measure (enum-spec-count enumspec) 0))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3439,7 +3438,7 @@
          (pstate (print-const-expr (const-expr-option-some->val enumer.value?)
                                    pstate)))
       pstate)
-    :measure (two-nats-measure (enumer-count enumer) 0))
+    :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3455,7 +3454,7 @@
          ((when (endp (cdr enumers))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-enumer-list (cdr enumers) pstate))
-    :measure (two-nats-measure (enumer-list-count enumers) 0))
+    :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3476,7 +3475,7 @@
          (pstate (print-stringlit-list statassert.message pstate))
          (pstate (print-astring ");" pstate)))
       pstate)
-    :measure (two-nats-measure (statassert-count statassert) 0))
+    :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3505,7 +3504,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (attrib-count attr) 0))
+    :measure (attrib-count attr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3520,7 +3519,7 @@
          ((when (endp (cdr attrs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-attrib-list (cdr attrs) pstate))
-    :measure (two-nats-measure (attrib-list-count attrs) 0))
+    :measure (attrib-list-count attrs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3538,7 +3537,7 @@
                    pstate))
          (pstate (print-astring "))" pstate)))
       pstate)
-    :measure (two-nats-measure (attrib-spec-count attrspec) 0))
+    :measure (attrib-spec-count attrspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3555,7 +3554,7 @@
          ((when (endp (cdr attrspecs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-attrib-spec-list (cdr attrspecs) pstate))
-    :measure (two-nats-measure (attrib-spec-list-count attrspecs) 0))
+    :measure (attrib-spec-list-count attrspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3583,7 +3582,7 @@
          (pstate (print-initer (initer-option-some->val initdeclor.initer?)
                                pstate)))
       pstate)
-    :measure (two-nats-measure (init-declor-count initdeclor) 0))
+    :measure (init-declor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3601,7 +3600,7 @@
          ((when (endp (cdr initdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-init-declor-list (cdr initdeclors) pstate))
-    :measure (two-nats-measure (init-declor-list-count initdeclors) 0))
+    :measure (init-declor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3650,7 +3649,7 @@
                      pstate
                    (print-new-line pstate))))
       pstate)
-    :measure (two-nats-measure (declon-count declon) 0))
+    :measure (declon-count declon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3666,7 +3665,7 @@
          (pstate (print-declon (car declons) nil pstate))
          ((when (endp (cdr declons))) pstate))
       (print-declon-list (cdr declons) pstate))
-    :measure (two-nats-measure (declon-list-count declons) 0))
+    :measure (declon-list-count declons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3695,7 +3694,7 @@
                          pstate)
                  :none pstate))
      :default (print-astring "default" pstate))
-    :measure (two-nats-measure (label-count label) 0))
+    :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3727,7 +3726,7 @@
          (pstate (print-expr output.lvalue (expr-priority-expr) pstate))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (asm-output-count output) 0))
+    :measure (asm-output-count output))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3743,7 +3742,7 @@
          ((when (endp (cdr outputs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-asm-output-list (cdr outputs) pstate))
-    :measure (two-nats-measure (asm-output-list-count outputs) 0))
+    :measure (asm-output-list-count outputs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3775,7 +3774,7 @@
          (pstate (print-expr input.rvalue (expr-priority-expr) pstate))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (asm-input-count input) 0))
+    :measure (asm-input-count input))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3791,7 +3790,7 @@
          ((when (endp (cdr inputs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-asm-input-list (cdr inputs) pstate))
-    :measure (two-nats-measure (asm-input-list-count inputs) 0))
+    :measure (asm-input-list-count inputs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3886,7 +3885,7 @@
          (pstate (print-astring " );" pstate))
          (pstate (print-new-line pstate)))
       pstate)
-    :measure (two-nats-measure (asm-stmt-count asm) 0))
+    :measure (asm-stmt-count asm))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4139,7 +4138,7 @@
        pstate)
      :asm
      (print-asm-stmt stmt.stmt pstate))
-    :measure (two-nats-measure (stmt-count stmt) 0))
+    :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4176,7 +4175,7 @@
          (pstate (print-indent pstate))
          (pstate (print-astring "}" pstate)))
       pstate)
-    :measure (two-nats-measure (comp-stmt-count cstmt) 1))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4191,7 +4190,7 @@
      :declon (print-declon item.declon nil pstate)
      :stmt (print-stmt item.stmt pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (block-item-count item) 0))
+    :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4204,7 +4203,7 @@
     (b* (((when (endp items)) (pristate-fix pstate))
          (pstate (print-block-item (car items) pstate)))
       (print-block-item-list (cdr items) pstate))
-    :measure (two-nats-measure (block-item-list-count items) 0))
+    :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
