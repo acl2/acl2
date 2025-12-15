@@ -258,7 +258,35 @@
    (xdoc::p
     "All these functions are mutually recursive because,
      as we preprocess a file,
-     we may need to recursively preprocess files that it includes."))
+     we may need to recursively preprocess files that it includes.")
+   (xdoc::p
+    "The top-level function of the clique is @(tsee pproc-file),
+     which is called by @(tsee pproc-files) outside the clique.
+     But it is also called when encoutering files to be included,
+     which is why it is mutually recursive with the other functions.")
+   (xdoc::p
+    "All the functions take and return state,
+     since they (indirectly) read files.")
+   (xdoc::p
+    "All the functions take as inputs
+     the path prefix @('path') and the path rest @('file')
+     of the file being preprocessed.
+     These are needed to recursively find and read included files.")
+   (xdoc::p
+    "All the functions take and return the @('preprocessed') alist,
+     which is extended not only with the file indicated in @(tsee pproc-file),
+     but also possibly with other files included along the way.
+     See @(tsee pproc-file) and @(tsee pproc-files).")
+   (xdoc::p
+    "All the functions also take the @('preprocessing') list,
+     to detect and avoid circularities;
+     see @(tsee pproc-file) and @(tsee pproc-files).")
+   (xdoc::p
+    "The top-level function @(tsee pproc-file)
+     takes an implementation environment,
+     from which it constructs a local preprocessing state stobj @(tsee ppstate),
+     which is passed to and returned from all the other functions.
+     There is one such stobj for each file being preprocessed."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,6 +299,7 @@
     :returns (mv erp
                  (new-preprocessed string-plexeme-list-alistp)
                  state)
+    :parents (preprocessor pproc)
     :short "Preprocess a file."
     :long
     (xdoc::topstring
@@ -327,6 +356,7 @@
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-plexeme-list-alistp)
                  state)
+    :parents (preprocessor pproc)
     :short "Preprocess zero or more group parts."
     (declare (ignore path file preprocessing))
     (b* (((reterr) nil ppstate state))
@@ -347,7 +377,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t))) ; temporary
+  :prepwork ((set-bogus-mutual-recursion-ok t))) ; TODO: remove eventually
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
