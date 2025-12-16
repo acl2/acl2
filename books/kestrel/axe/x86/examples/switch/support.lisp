@@ -80,6 +80,7 @@
                                    bvplus
                                    nfix
                                    ;bvlt
+                                   bv-array-read-chunk-little
                                    )
                                   (acl2::bvcat-of-nth-arg4 ;loop
                                    acl2::bvcat-of-nth-arg2 ; loop!
@@ -184,6 +185,7 @@
                                    bvplus
                                    nfix
                                    ;bvlt
+                                   bv-array-read-chunk-little
                                    )
                                   (acl2::bvcat-of-nth-arg4 ;loop
                                    acl2::bvcat-of-nth-arg2 ; loop!
@@ -214,8 +216,6 @@
                                   (bv-array-read-chunk-little-when-multiple-8-8-helper
                                    bv-array-read-chunk-little-when-multiple-4-8-helper ; fires in this case too?
                                    acl2::bvcat-equal-rewrite-alt)))))
-
-(in-theory (disable acl2::bv-array-read-chunk-little-unroll))
 
 (defthm acl2::bv-array-read-chunk-little-when-multiple-8-8-smt
   (implies (and (equal 0 (bvchop 3 index)) ; index is a multiple of the chunk size

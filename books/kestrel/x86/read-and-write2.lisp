@@ -475,6 +475,7 @@
                             in-region48p read-becomes-read-byte
                             ifix
                             acl2::bvchop-of-sum-cases
+                            bv-array-read-chunk-little
                             )
                            (;distributivity
                             acl2::+-of-minus-constant-version ; fixme disable

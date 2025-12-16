@@ -886,7 +886,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion32p-alt
@@ -971,7 +970,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 ;; flips the equality in hyp 1
