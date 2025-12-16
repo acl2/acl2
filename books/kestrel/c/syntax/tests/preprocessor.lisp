@@ -62,3 +62,12 @@
                                           9 10 ; HT
                                           11 10 ; VT
                                           12 10))) ; FF
+
+(test-preproc '("comments.c")
+              :expected (fileset-of "comments.c"
+                                    "/* block
+ * comment
+ */
+
+// line comment
+"))
