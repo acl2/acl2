@@ -494,7 +494,7 @@
                       :expected "a token or newline"
                       :found token/newline)))
       (cond
-       ((plexeme-case token/newline :newline)
+       ((plexeme-case token/newline :newline) ; ... newline
         (retok (cons token/newline
                      (revappend nontokens-nonnewlines
                                 (plexeme-list-fix rev-lexemes)))
