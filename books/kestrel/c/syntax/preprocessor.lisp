@@ -523,12 +523,16 @@
       "If we find a newline, it means that
        we have a text line (see grammar) without tokens.
        In this case we have finished the group part
-       and we return all the lexemes.")
+       and we return all the lexemes.
+       For example, this could contain comments, which we therefore preserve.")
      (xdoc::p
       "If we find a hash, we have a directive,
        which we handle in a separate function.
-       If we do not find a hash, we have a text line with tokens:
-       we put back the token and we call a separate function."))
+       We pass any preceding whitespace and comments to that function.")
+     (xdoc::p
+      "If we do not find a hash, we have a text line with tokens:
+       we put back the token and we call a separate function.
+       We pass any preceding whitespace and comments to that function."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
@@ -547,12 +551,16 @@
                (string-plexeme-list-alist-fix preprocessed)
                state))
        ((plexeme-hashp token/newline) ; ... #
-        (pproc-directive
-         path file preprocessed preprocessing rev-lexemes ppstate state))
+        (pproc-directive nontokens-nonnewlines
+                         path file
+                         preprocessed preprocessing
+                         rev-lexemes ppstate state))
        (t ; ... token
         (b* ((ppstate (punread-token ppstate)))
-          (pproc-text-line
-           path file preprocessed preprocessing rev-lexemes ppstate state)))))
+          (pproc-text-line nontokens-nonnewlines
+                           path file
+                           preprocessed preprocessing
+                           rev-lexemes ppstate state)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
@@ -562,7 +570,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-directive ((path stringp)
+  (define pproc-directive ((nontokens-nonnewlines plexeme-listp)
+                           (path stringp)
                            (file stringp)
                            (preprocessed string-plexeme-list-alistp)
                            (preprocessing string-listp)
@@ -604,6 +613,7 @@
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
        Thus, the use of @(tsee pread-token/newline) is justified here."))
+    (declare (ignore nontokens-nonnewlines))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
@@ -621,7 +631,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-text-line ((path stringp)
+  (define pproc-text-line ((nontokens-nonnewlines plexeme-listp)
+                           (path stringp)
                            (file stringp)
                            (preprocessed string-plexeme-list-alistp)
                            (preprocessing string-listp)
@@ -647,6 +658,7 @@
        Recall that empty text lines,
        i.e. with no tokens (but possibly with some whitespace and comments),
        are already handlede in @(tsee pproc-group-part)."))
+    (declare (ignore nontokens-nonnewlines))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible)))
