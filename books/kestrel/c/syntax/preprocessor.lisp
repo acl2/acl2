@@ -20,6 +20,7 @@
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -177,6 +178,45 @@
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-token ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move the token from the sequence of read lexemes
+     to the sequence of unread lexemes.")
+   (xdoc::p
+    "It is an internal error if @('lexemes-read') is 0.
+     It means that the calling code is wrong.
+     In this case, after raising the hard error,
+     logically we still increment @('lexemes-read')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((ppstate.lexemes-read (ppstate->lexemes-read ppstate))
+       (ppstate.lexemes-unread (ppstate->lexemes-unread ppstate))
+       (ppstate.size (ppstate->size ppstate))
+       ((unless (> ppstate.lexemes-read 0))
+        (raise "Internal error: no token to unread.")
+        (b* ((ppstate (update-ppstate->lexemes-unread
+                       (1+ ppstate.lexemes-unread) ppstate))
+             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+          ppstate))
+       (ppstate (update-ppstate->lexemes-unread
+                 (1+ ppstate.lexemes-unread) ppstate))
+       (ppstate (update-ppstate->lexemes-read
+                 (1- ppstate.lexemes-read) ppstate))
+       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+    ppstate)
+  :no-function nil
+
+  ///
+
+  (defret ppstate->size-of-unread-token
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -451,7 +491,7 @@
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     1))) ; > pproc-group-part
+                                     2))) ; > pproc-group-part
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,8 +525,10 @@
        In this case we have finished the group part
        and we return all the lexemes.")
      (xdoc::p
-      "If we find a hash, we have a directive;
-       otherwise, we have a text line with tokens."))
+      "If we find a hash, we have a directive,
+       which we handle in a separate function.
+       If we do not find a hash, we have a text line with tokens:
+       we put back the token and we call a separate function."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
@@ -508,12 +550,14 @@
         (pproc-directive
          path file preprocessed preprocessing rev-lexemes ppstate state))
        (t ; ... token
-        (reterr (list :todo path file preprocessing)))))
+        (b* ((ppstate (punread-token ppstate)))
+          (pproc-text-line
+           path file preprocessed preprocessing rev-lexemes ppstate state)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     0))
+                                     1)) ; > pproc-text-line
     :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,6 +605,44 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define pproc-text-line ((path stringp)
+                           (file stringp)
+                           (preprocessed string-plexeme-list-alistp)
+                           (preprocessing string-listp)
+                           (rev-lexemes plexeme-listp)
+                           (ppstate ppstatep)
+                           state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a (non-empty) text line."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "That is, preprocess a line that does not start with a hash
+       (possibly after some whitespace and comments).
+       This is called after putting back the first token of the line,
+       but without having put back any leading whitespace or comments,
+       since those do not matter for the purpose of preprocessing the text line.
+       Recall that empty text lines,
+       i.e. with no tokens (but possibly with some whitespace and comments),
+       are already handlede in @(tsee pproc-group-part)."))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible)))
+      (reterr (list :todo path file preprocessing rev-lexemes)))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
              (local (in-theory (enable acons))))
 
@@ -594,6 +676,10 @@
     (defret len-of-new-preprocessed-of-pproc-directive-upper-bound
       (<= (len new-preprocessed) *pproc-files-max*)
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-text-line-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-text-line
       :rule-classes :linear)
     :hints
     (("Goal"
@@ -635,6 +721,12 @@
       :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-directive
       :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-text-line-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-text-line
+      :rule-classes :linear)
     :hints (("Goal" :in-theory (enable len))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -658,6 +750,11 @@
       (<= (ppstate->size new-ppstate)
           (ppstate->size ppstate))
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-text-line-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-text-line
       :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -682,6 +779,12 @@
                (<= (ppstate->size new-ppstate)
                    (1- (ppstate->size ppstate))))
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-text-line-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-text-line
       :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
