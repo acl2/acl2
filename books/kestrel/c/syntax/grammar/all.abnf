@@ -1551,9 +1551,8 @@ translation-unit = *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration
-                     ; GCC extensions:
-                     / ";"
-                     / asm-statement
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
