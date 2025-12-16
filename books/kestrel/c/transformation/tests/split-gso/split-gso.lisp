@@ -546,7 +546,11 @@ int main(void) {
 
   (assert-file-contents
     :file "new/typedef2.c"
-    :content "typedef struct myStruct { int foo; _Bool bar; unsigned long int baz; } myStruct_t;
+    :content "typedef struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+} myStruct_t;
 struct myStruct_0 {
   int foo;
   _Bool bar;

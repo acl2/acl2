@@ -3656,15 +3656,15 @@
     (xdoc::topstring
      (xdoc::p
       "The @('inlinep') flag says whether the declaration should be printed
-       as part of the current line or as its own indented line.")
+       as part of the current line or as its own indented line.
+       This flag is passed to @(tsee print-decl-spec-list),
+       so that structure or union specifiers with members
+       are printed on multiple lines
+       (and thus, the declaration is printed on multiple lines),
+       as idiomatic.")
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
-       as required by the grammar.")
-     (xdoc::p
-      "If the @('inlinep') flag is @('nil'),
-       and the declaration consists of a single structure or union specifier,
-       we set the @('inlinep') flag of @(tsee print-decl-spec-list) to @('nil'),
-       so that the members, if any, are printed on separate indented lines."))
+       as required by the grammar."))
     (b* ((pstate (if inlinep
                      pstate
                    (print-indent pstate)))
@@ -3680,16 +3680,6 @@
                          no declaration specifiers in declaration ~x0."
                         declon)
                  pstate)
-                (one-struni-p
-                 (and (consp declon.specs)
-                      (endp (cdr declon.specs))
-                      (b* ((dspec (car declon.specs)))
-                        (and (decl-spec-case dspec :typespec)
-                             (b* ((tspec (decl-spec-typespec->spec dspec)))
-                               (or (type-spec-case tspec :struct)
-                                   (type-spec-case tspec :union)))))
-                      (endp declon.declors)))
-                (inlinep (not (and (not inlinep) one-struni-p)))
                 (pstate (print-decl-spec-list declon.specs inlinep pstate))
                 (pstate
                  (if declon.declors
