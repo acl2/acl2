@@ -3672,7 +3672,6 @@
                   (1- parstate.tokens-read) parstate))
        (parstate (update-parstate->size (1+ parstate.size) parstate)))
     parstate)
-  :guard-hints (("Goal" :in-theory (enable natp len fix)))
 
   ///
 
