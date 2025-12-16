@@ -606,21 +606,37 @@
        to conceptually replace non-new-line white space
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
-       Thus, the use of @(tsee pread-token/newline) is justified here."))
+       Thus, the use of @(tsee pread-token/newline) is justified here.")
+     (xdoc::p
+      "If we find no token or new line, it is an error.")
+     (xdoc::p
+      "If we find a new line, we have the null directive [C17:6.10.7].
+       We simplify replace it with a blank line consisting of the new line,
+       without comments or white space before the new line."))
     (declare (ignore nontoknls))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       (t (reterr (list :todo
+       ((not toknl) ; ... # ... EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token or new line"
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :newline) ; ... # ... newline
+        (retok (cons toknl (plexeme-list-fix rev-lexemes))
+               ppstate
+               (string-plexeme-list-alist-fix preprocessed)
+               state))
+       (t (reterr (list :todo ; handle the other directives
                         path file preprocessing rev-lexemes
                         nontoknls toknl span)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     0)))
+                                     0))
+    :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
