@@ -55,6 +55,8 @@
 (test-preproc '("empty.c")
               :expected (fileset-of "empty.c" ""))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test-preproc '("whitespace.c")
               :expected (fileset-of "whitespace.c"
                                     (list 10
@@ -63,6 +65,8 @@
                                           11 10 ; VT
                                           12 10))) ; FF
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test-preproc '("comments.c")
               :expected (fileset-of "comments.c"
                                     "/* block
@@ -70,4 +74,15 @@
  */
 
 // line comment
+"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc '("null-directive.c")
+              :expected (fileset-of "null-directive.c"
+                                    "
+
+
+
+
 "))
