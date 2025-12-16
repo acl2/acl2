@@ -812,6 +812,7 @@
 ;; Extends ACC.
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
 ;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
+;; See also refine-assumption-for-matching.
 (defun term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
@@ -841,7 +842,7 @@
                    (acons x y acc) ; replace x with y since y is a constant and x is not
                  ;; Neither is a constant, so replace x with y (we interpret the assumption as a directed equality):
                  (acons x y acc)
-                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexoected forms):
+                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexpected forms):
                  ;; ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
                  ;; ;; We add the fact that the equality oriented either way is true.
                  ;; ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
