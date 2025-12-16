@@ -624,11 +624,16 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; ... # ... newline
-        (retok (cons toknl (plexeme-list-fix rev-lexemes))
-               ppstate
-               (string-plexeme-list-alist-fix preprocessed)
-               state))
+       ((or (plexeme-case toknl :newline) ; ... # ... newline
+            (plexeme-case toknl :line-comment)) ; ... # ... // ...
+        (b* ((newline (if (plexeme-case toknl :newline)
+                          toknl
+                        (plexeme-newline
+                         (plexeme-line-comment->newline toknl)))))
+          (retok (cons newline (plexeme-list-fix rev-lexemes))
+                 ppstate
+                 (string-plexeme-list-alist-fix preprocessed)
+                 state)))
        (t (reterr (list :todo ; handle the other directives
                         path file preprocessing rev-lexemes
                         nontoknls toknl span)))))
