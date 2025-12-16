@@ -186,7 +186,15 @@
   :elt-type plexeme
   :true-listp t
   :elementp-of-nil nil
-  :pred plexeme-listp)
+  :pred plexeme-listp
+
+  ///
+
+  (defruled true-listp-when-plexeme-listp
+    (implies (plexeme-listp x)
+             (true-listp x))
+    :induct t
+    :enable plexeme-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
