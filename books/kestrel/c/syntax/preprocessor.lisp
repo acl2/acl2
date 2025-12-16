@@ -505,7 +505,8 @@
                (string-plexeme-list-alist-fix preprocessed)
                state))
        ((plexeme-hashp token/newline) ; ... #
-        (reterr (list :todo path file preprocessing)))
+        (pproc-directive
+         path file preprocessed preprocessing rev-lexemes ppstate state))
        (t ; ... token
         (reterr (list :todo path file preprocessing)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
@@ -514,6 +515,49 @@
                                      (ppstate->size ppstate)
                                      0))
     :no-function nil)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-directive ((path stringp)
+                           (file stringp)
+                           (preprocessed string-plexeme-list-alistp)
+                           (preprocessing string-listp)
+                           (rev-lexemes plexeme-listp)
+                           (ppstate ppstatep)
+                           state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "With reference to the grammar,
+       a directive is a group part that starts with @('#');
+       this function is called just after the @('#') has been encountered.
+       A directive may be an @('if') group (which spans multiple lines),
+       a control line (which spans one line),
+       or a non-directive (which spans one line);
+       the latter, despite the name, is considered a directive
+       (see footnote 175 in [C17:6.10.3/11]."))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible))
+         ((erp nontokens-nonnewlines token/newline span ppstate)
+          (pread-token/newline nil ppstate)))
+      (cond
+       (t (reterr (list :todo
+                        path file preprocessing rev-lexemes
+                        nontokens-nonnewlines token/newline span)))))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -526,11 +570,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards :after-returns
-
-  :guard-hints
-  (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite
-                              true-listp-when-plexeme-listp)))
+  :verify-guards nil ; done below
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -538,13 +578,42 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual len-of-new-preprocessed-of-pproc-bound
-    (defret len-of-new-preprocessed-of-pproc-file-bound
+  (defret-mutual len-of-new-preprocessed-of-pproc-upper-bound
+    (defret len-of-new-preprocessed-of-pproc-file-upper-bound
       (<= (len new-preprocessed) *pproc-files-max*)
       :fn pproc-file
       :rule-classes :linear)
-    (defret len-of-new-preprocessed-of-pproc-*-group-part-bound
+    (defret len-of-new-preprocessed-of-pproc-*-group-part-upper-bound
       (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-*-group-part
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-group-part-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-group-part
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-directive-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-directive
+      :rule-classes :linear)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable len
+              len-of-string-plexeme-list-alist-fix-upper-bound-len))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual len-of-new-preprocessed-of-pproc-lower-bound
+    (defret len-of-new-preprocessed-of-pproc-file-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-file
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-*-group-part-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-*-group-part
       :rule-classes :linear
       :hints ('(:expand (pproc-*-group-part path
@@ -554,18 +623,78 @@
                                             rev-lexemes
                                             ppstate
                                             state))))
-    (defret len-of-new-preprocessed-of-pproc-group-part-bound
-      (<= (len new-preprocessed) *pproc-files-max*)
+    (defret len-of-new-preprocessed-of-pproc-group-part-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-group-part
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-directive-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-directive
       :rule-classes :linear)
     :hints
     (("Goal"
       :in-theory
-      (enable pproc-file
-              pproc-*-group-part
-              pproc-group-part
-              len
-              len-of-string-plexeme-list-alist-fix-upper-bound-len)))))
+      (enable len))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual ppstate->size-of-pproc-uncond
+    (defret ppstate->size-of-pproc-file-uncond
+      t
+      :fn pproc-file
+      :rule-classes nil)
+    (defret ppstate->size-of-pproc-*-group-part-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-*-group-part
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-group-part-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-group-part
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-directive-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-directive
+      :rule-classes :linear)
+    :hints (("Goal" :in-theory (enable ))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual ppstate->size-of-pproc-cond
+    (defret ppstate->size-of-pproc-file-cond
+      t
+      :fn pproc-file
+      :rule-classes nil)
+    (defret ppstate->size-of-pproc-*-group-part-cond
+      t
+      :fn pproc-*-group-part
+      :rule-classes nil)
+    (defret ppstate->size-of-pproc-group-part-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-group-part
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-directive-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-directive
+      :rule-classes :linear)
+    :hints (("Goal" :in-theory (enable ))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards pproc-file
+    :hints
+    (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite
+                                true-listp-when-plexeme-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
