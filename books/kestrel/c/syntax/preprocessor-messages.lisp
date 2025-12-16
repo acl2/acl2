@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "parser-messages")
+(include-book "preprocessor-states")
 
 (include-book "kestrel/fty/nat-option" :dir :system)
 
@@ -112,3 +113,33 @@
        "GS"
        "RS"
        "US"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-to-msg ((lexeme plexeme-optionp))
+  :returns (msg msgp
+                :hints (("Goal" :in-theory (enable msgp character-alistp))))
+  :short "Represent a preprocessing lexeme as a message."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in preprocessor error messages.
+     It is similar to @(tsee token-to-msg) for the parser."))
+  (if lexeme
+      (plexeme-case
+       lexeme
+       :header "a header name"
+       :ident "an identifier"
+       :number "a preprocessing number"
+       :char "a character constant"
+       :string "a string literal"
+       :punctuator "a punctuator"
+       :other "some other character"
+       :block-comment "a block comment"
+       :line-comment "a line comment"
+       :newline "a newline"
+       :spaces "one ore more spaces"
+       :horizontal-tab "a horizontal tab"
+       :vertical-tab "a vertical tab"
+       :form-feed "a form feed")
+    "end of file"))

@@ -186,7 +186,15 @@
   :elt-type plexeme
   :true-listp t
   :elementp-of-nil nil
-  :pred plexeme-listp)
+  :pred plexeme-listp
+
+  ///
+
+  (defruled true-listp-when-plexeme-listp
+    (implies (plexeme-listp x)
+             (true-listp x))
+    :induct t
+    :enable plexeme-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -351,6 +359,21 @@
   :elementp-of-nil t
   ///
   (fty::deffixequiv plexeme-list-token/space-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-hashp ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a hash @('#')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the lexeme is the punctuator @('#'),
+     or also if the lexeme is the digraph @('%:') [C17:6.4.6/3]."))
+  (and (plexeme-case lexeme :punctuator)
+       (b* ((string (plexeme-punctuator->punctuator lexeme)))
+         (or (equal string "#")
+             (equal string "%:")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
