@@ -45,7 +45,8 @@
          ((mv erp fileset state) (pproc-files path files ienv state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
-            (equal fileset ,expected))
+            (or (equal fileset ,expected)
+                (cw "Actual:~%~x0" fileset))) ; CW returns nil (see above)
           state))
     state))
 
@@ -56,7 +57,8 @@
 
 (test-preproc '("whitespace.c")
               :expected (fileset-of "whitespace.c"
-                                    (list 32 32 32 10 ; SP SP SP
+                                    (list 10
+                                          32 32 32 10 ; SP SP SP
                                           9 10 ; HT
                                           11 10 ; VT
                                           12 10))) ; FF
