@@ -58,6 +58,7 @@
                 nat-list
                 nat-list-fix
                 nat-optionp
+                nat-list-measure
                 nats=>string
                 packn-pos
                 pos
