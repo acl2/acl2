@@ -3285,9 +3285,7 @@
          (pstate (print-struct-declon-list struni-spec.members inlinep pstate))
          (pstate (if inlinep
                      (print-astring " " pstate)
-                   (b* ((pstate (print-new-line pstate))
-                        (pstate (dec-pristate-indent pstate)))
-                     pstate)))
+                   (dec-pristate-indent pstate)))
          (pstate (print-astring "}" pstate)))
       pstate)
     :measure (struni-spec-count struni-spec))
@@ -3661,7 +3659,12 @@
        as part of the current line or as its own indented line.")
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
-       as required by the grammar."))
+       as required by the grammar.")
+     (xdoc::p
+      "If the @('inlinep') flag is @('nil'),
+       and the declaration consists of a single structure or union specifier,
+       we set the @('inlinep') flag of @(tsee print-decl-spec-list) to @('nil'),
+       so that the members, if any, are printed on separate indented lines."))
     (b* ((pstate (if inlinep
                      pstate
                    (print-indent pstate)))
@@ -3674,10 +3677,20 @@
                           (pristate-fix pstate)))
                 ((unless declon.specs)
                  (raise "Misusage error: ~
-                 no declaration specifiers in declaration ~x0."
+                         no declaration specifiers in declaration ~x0."
                         declon)
                  pstate)
-                (pstate (print-decl-spec-list declon.specs t pstate))
+                (one-struni-p
+                 (and (consp declon.specs)
+                      (endp (cdr declon.specs))
+                      (b* ((dspec (car declon.specs)))
+                        (and (decl-spec-case dspec :typespec)
+                             (b* ((tspec (decl-spec-typespec->spec dspec)))
+                               (or (type-spec-case tspec :struct)
+                                   (type-spec-case tspec :union)))))
+                      (endp declon.declors)))
+                (inlinep (not (and (not inlinep) one-struni-p)))
+                (pstate (print-decl-spec-list declon.specs inlinep pstate))
                 (pstate
                  (if declon.declors
                      (b* ((pstate (print-astring " " pstate))
