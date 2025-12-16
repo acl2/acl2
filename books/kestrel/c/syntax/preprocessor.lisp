@@ -470,16 +470,44 @@
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a group part."
-    (declare (ignore path file preprocessing rev-lexemes))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We read the next token or newline, skipping over whitespace and comments.
+       If we find no token or newline, it is an error,
+       because it means that the file has some whitespace or comments
+       without a terminating newline;
+       this function is called (by @(tsee pproc-*-group-part))
+       only if we are not at the end of file.")
+     (xdoc::p
+      "If we find a newline, it means that
+       we have a text line (see grammar) without tokens.
+       In this case we have finished the group part
+       and we return all the lexemes."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
-          (reterr :impossible)))
-      (reterr :todo))
+          (reterr :impossible))
+         ((erp nontokens-nonnewlines token/newline span ppstate)
+          (pread-token/newline nil ppstate))
+         ((unless token/newline)
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "a token or newline"
+                      :found "end of file")))
+      (cond
+       ((plexeme-case token/newline :newline)
+        (retok (cons token/newline
+                     (revappend nontokens-nonnewlines
+                                (plexeme-list-fix rev-lexemes)))
+               ppstate
+               (string-plexeme-list-alist-fix preprocessed)
+               state))
+       (t (reterr (list :todo path file preprocessing)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     0)))
+                                     0))
+    :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -495,7 +523,8 @@
   :verify-guards :after-returns
 
   :guard-hints
-  (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite)))
+  (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite
+                              true-listp-when-plexeme-listp)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
