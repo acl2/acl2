@@ -223,7 +223,16 @@
   :keyp-of-nil nil
   :valp-of-nil t
   :pred string-plexeme-list-alistp
-  :prepwork ((set-induction-depth-limit 1)))
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled len-of-string-plexeme-list-alist-fix-upper-bound-len
+    (<= (len (string-plexeme-list-alist-fix x))
+        (len x))
+    :rule-classes :linear
+    :induct t
+    :enable (string-plexeme-list-alist-fix len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,6 +257,33 @@
        (map (string-plexeme-list-alist-to-filepath-filedata-map (cdr alist))))
     (omap::update filepath filedata map))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *pproc-files-max*
+  :short "Maximum number of files being preprocessed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the absence of explicit checks, preprocessing may not terminate:
+     @('file1.h') may include @('file2.h'),
+     which may include @('file3.h'),
+     and so on.
+     In practice, the file system is finite,
+     but nontermination is the default, mathematically speaking.
+     So we impose an artificial limit on the number of files being preprocessed,
+     specifically on the length of the @(tsee string-plexeme-list-alistp) alists
+     that are manipulated by our preprocessor.
+     The GCC preprocessor imposes an @('#include') nesting limit of 200,
+     according to "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Implementation-limits.html"
+                 "Section 12.2 of the GNU C Preprocessor Manual")
+    ". For simplicity, instead of keeping track of nesting,
+     we impose a limit on the total number of files.
+     We pick a very large limit that is unlikely to reach in practice
+     (it may take too much time to reach,
+     even if those many files could be found/generated)."))
+  1000000000) ; 1 billion files
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,8 +325,8 @@
      There is one such stobj for each file being preprocessed.")
    (xdoc::p
     "All the functions except the top-level @(tsee pproc-file)
-     return the list of lexemes resulting from their preprocessing,
-     in reverse for efficiency.
+     take and return the list of lexemes resulting from preprocessing,
+     in reverse order for efficiency.
      They are reversed into the right order by @(tsee pproc-file)."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,6 +337,7 @@
                       (preprocessing string-listp)
                       (ienv ienvp)
                       state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
     :returns (mv erp
                  (new-preprocessed string-plexeme-list-alistp)
                  state)
@@ -311,24 +348,31 @@
      (xdoc::p
       "The file is specified by the @('file') string,
        which must be either a path relative to the @('path') string,
-       or an absolute path with no relation to @('path').
-       If @('file') is found in the list of the files under preprocessing,
+       or an absolute path with no relation to @('path').")
+     (xdoc::p
+      "If @('file') is found in the list of the files under preprocessing,
        we stop with an error, because there is a circularity.
        If @('file') is found in the alist of already preprocessed files,
-       the alist is returned unchanged.
-       Otherwise, we read the file from the file system and preprocess it,
+       the alist is returned unchanged.")
+     (xdoc::p
+      "Otherwise, we read the file from the file system and preprocess it,
        which may involve the recursive preprocessing of more files.
        Before preprocessing the file,
-       we add it to the list of files under preprocessing."))
+       we add it to the list of files under preprocessing.
+       We create a local preprocessing state stobj for the file,
+       with information from the implementation environment."))
     (b* (((reterr) nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
-         (preprocessed (string-plexeme-list-alist-fix preprocessed))
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
-         (file+lexemes (assoc-equal file preprocessed))
-         ((when file+lexemes) (retok preprocessed state))
+         (file+lexemes
+          (assoc-equal file (string-plexeme-list-alist-fix preprocessed)))
+         ((when file+lexemes)
+          (retok (string-plexeme-list-alist-fix preprocessed) state))
          ((erp bytes state) (read-input-file-to-preproc path file state))
          (preprocessing (cons file (string-list-fix preprocessing)))
          ((erp rev-lexemes preprocessed state)
@@ -341,13 +385,20 @@
                                       file
                                       preprocessed
                                       preprocessing
+                                      nil
                                       ppstate
                                       state))
               (mv erp lexemes preprocessed state))))
          (lexemes (rev rev-lexemes))
+         ((when (= (len preprocessed) *pproc-files-max*))
+          (reterr (msg "Exceeded ~x0 file limit." *pproc-files-max*)))
          (preprocessed (acons file lexemes preprocessed)))
       (retok preprocessed state))
-    :measure 1)
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     1 ; > all other pproc-... functions
+                                     0 ; irrelevant
+                                     0))) ; irrelevant
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -355,24 +406,89 @@
                               (file stringp)
                               (preprocessed string-plexeme-list-alistp)
                               (preprocessing string-listp)
+                              (rev-lexemes plexeme-listp)
                               (ppstate ppstatep)
                               state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
     :returns (mv erp
-                 (rev-lexemes plexeme-listp)
+                 (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-plexeme-list-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess zero or more group parts."
-    (declare (ignore path file preprocessing))
-    (b* (((reterr) nil ppstate state))
-      ;; TODO
-      (retok nil ppstate (string-plexeme-list-alist-fix preprocessed) state))
-    :measure 0)
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "According to the grammar,
+       a preprocessing-file consists of zero or more group-parts.
+       Each group part ends with a new line,
+       and non-empty files must end with new line [C17:5.1.1.2/1, phase 4].
+       Thus, we can detect whether there is a group part or not
+       by checking for end of file
+       (this may need to be relaxed at some point,
+       since GCC is more lenient on this front)."))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible))
+         ((when (= (ppstate->size ppstate) 0)) ; EOF
+          (retok (plexeme-list-fix rev-lexemes)
+                 ppstate
+                 (string-plexeme-list-alist-fix preprocessed)
+                 state))
+         (psize (ppstate->size ppstate))
+         (plen (len preprocessed))
+         ((erp rev-lexemes ppstate preprocessed state) ; group-part
+          (pproc-group-part
+           path file preprocessed preprocessing rev-lexemes ppstate state))
+         ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
+          (reterr :impossible))
+         ((unless (mbt (>= (len preprocessed) plen)))
+          (reterr :impossible)))
+      (pproc-*-group-part ; group-part group-part
+       path file preprocessed preprocessing rev-lexemes ppstate state))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     1))) ; > pproc-group-part
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :returns-hints (("Goal" :in-theory (enable acons)))
+  (define pproc-group-part ((path stringp)
+                            (file stringp)
+                            (preprocessed string-plexeme-list-alistp)
+                            (preprocessing string-listp)
+                            (rev-lexemes plexeme-listp)
+                            (ppstate ppstatep)
+                            state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a group part."
+    (declare (ignore path file preprocessing rev-lexemes))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible)))
+      (reterr :todo))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
+             (local (in-theory (enable acons))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable len nfix fix)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,7 +499,38 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t))) ; TODO: remove eventually
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual len-of-new-preprocessed-of-pproc-bound
+    (defret len-of-new-preprocessed-of-pproc-file-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-file
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-*-group-part-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-*-group-part
+      :rule-classes :linear
+      :hints ('(:expand (pproc-*-group-part path
+                                            file
+                                            preprocessed
+                                            preprocessing
+                                            rev-lexemes
+                                            ppstate
+                                            state))))
+    (defret len-of-new-preprocessed-of-pproc-group-part-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-group-part
+      :rule-classes :linear)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable pproc-file
+              pproc-*-group-part
+              pproc-group-part
+              len
+              len-of-string-plexeme-list-alist-fix-upper-bound-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -420,6 +567,7 @@
                              (preprocessing string-listp)
                              (ienv ienvp)
                              state)
+     :guard (<= (len preprocessed) *pproc-files-max*)
      :returns (mv erp (new-preprocessed string-plexeme-list-alistp) state)
      :parents nil
      (b* (((reterr) nil state)
