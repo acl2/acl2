@@ -543,7 +543,8 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; ... newline
+       ((or (plexeme-case toknl :newline) ; ... newline
+            (plexeme-case toknl :line-comment)) ; ... // ...
         (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
                (string-plexeme-list-alist-fix preprocessed)
