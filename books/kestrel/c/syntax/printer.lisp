@@ -2354,7 +2354,7 @@
                      (print-astring ")" pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (expr-count expr) 0))
+    :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2385,7 +2385,7 @@
          ((when (endp (cdr exprs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-expr-list (cdr exprs) pstate))
-    :measure (two-nats-measure (expr-list-count exprs) 0))
+    :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2402,7 +2402,7 @@
        a synonym of a conditional expression in the grammar,
        so we use that as priority."))
     (print-expr (const-expr->expr cexpr) (expr-priority-cond) pstate)
-    :measure (two-nats-measure (const-expr-count cexpr) 0))
+    :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2423,7 +2423,7 @@
      (b* ((pstate (print-astring "default: " pstate))
           (pstate (print-expr genassoc.expr (expr-priority-asg) pstate)))
        pstate))
-    :measure (two-nats-measure (genassoc-count genassoc) 0))
+    :measure (genassoc-count genassoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2445,7 +2445,7 @@
          ((when (endp (cdr genassocs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-genassoc-list (cdr genassocs) pstate))
-    :measure (two-nats-measure (genassoc-list-count genassocs) 0))
+    :measure (genassoc-list-count genassocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2466,16 +2466,24 @@
                (pstate (print-astring "[" pstate))
                (pstate (print-expr memdes.index (expr-priority-expr) pstate)))
             pstate))
-    :measure (two-nats-measure (member-designor-count memdes) 0))
+    :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-type-spec ((tyspec type-specp) (pstate pristatep))
+  (define print-type-spec ((tyspec type-specp)
+                           (inlinep booleanp)
+                           (pstate pristatep))
     :guard (and (type-spec-unambp tyspec)
                 (type-spec-aidentp tyspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a type specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag is always @('t') except when
+       the type specifier is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (type-spec-case
      tyspec
      :void (print-astring "void" pstate)
@@ -2498,10 +2506,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-struni-spec tyspec.spec pstate)))
+                  (pstate (print-struni-spec tyspec.spec inlinep pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-struni-spec tyspec.spec pstate)))
+                 (pstate (print-struni-spec tyspec.spec inlinep pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enum-spec tyspec.spec pstate)))
@@ -2556,7 +2564,7 @@
        pstate)
      :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
      :auto-type (print-astring "__auto_type" pstate))
-    :measure (two-nats-measure (type-spec-count tyspec) 0))
+    :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2568,11 +2576,11 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :typespec (print-type-spec specqual.spec pstate)
+     :typespec (print-type-spec specqual.spec t pstate)
      :typequal (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.spec pstate))
-    :measure (two-nats-measure (spec/qual-count specqual) 0))
+    :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2589,7 +2597,7 @@
          ((when (endp (cdr specquals))) pstate)
          (pstate (print-astring " " pstate)))
       (print-spec/qual-list (cdr specquals) pstate))
-    :measure (two-nats-measure (spec/qual-list-count specquals) 0))
+    :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2608,20 +2616,29 @@
            :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (align-spec-count alignspec) 0))
+    :measure (align-spec-count alignspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
+  (define print-decl-spec ((declspec decl-specp)
+                           (inlinep booleanp)
+                           (pstate pristatep))
     :guard (and (decl-spec-unambp declspec)
                 (decl-spec-aidentp declspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag is always @('t') except when
+       the declaration is a type specifier
+       that is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (decl-spec-case
      declspec
      :stoclass (print-stor-spec declspec.spec pstate)
-     :typespec (print-type-spec declspec.spec pstate)
+     :typespec (print-type-spec declspec.spec inlinep pstate)
      :typequal (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
@@ -2631,11 +2648,13 @@
                     (pstate (print-ident declspec.arg pstate))
                     (pstate (print-astring ")" pstate)))
                  pstate))
-    :measure (two-nats-measure (decl-spec-count declspec) 0))
+    :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
+  (define print-decl-spec-list ((declspecs decl-spec-listp)
+                                (inlinep booleanp)
+                                (pstate pristatep))
     :guard (and (consp declspecs)
                 (decl-spec-list-unambp declspecs)
                 (decl-spec-list-aidentp declspecs (pristate->gcc pstate)))
@@ -2643,12 +2662,19 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
             separated by spaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag is always @('t') except when
+       the list consists of one declaration specifier
+       that is a type specifier that is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (b* (((unless (mbt (consp declspecs))) (pristate-fix pstate))
-         (pstate (print-decl-spec (car declspecs) pstate))
+         (pstate (print-decl-spec (car declspecs) inlinep pstate))
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-decl-spec-list (cdr declspecs) pstate))
-    :measure (two-nats-measure (decl-spec-list-count declspecs) 0))
+      (print-decl-spec-list (cdr declspecs) inlinep pstate))
+    :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2662,7 +2688,7 @@
      tyqualattrib
      :type (print-type-qual tyqualattrib.qual pstate)
      :attrib (print-attrib-spec tyqualattrib.spec pstate))
-    :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
+    :measure (typequal/attribspec-count tyqualattrib))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2682,7 +2708,7 @@
          ((when (endp (cdr tyqualattribs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-typequal/attribspec-list (cdr tyqualattribs) pstate))
-    :measure (two-nats-measure (typequal/attribspec-list-count tyqualattribs) 0))
+    :measure (typequal/attribspec-list-count tyqualattribs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2736,8 +2762,7 @@
                    pstate))
          ((when (endp (cdr tyqualattribss))) pstate))
       (print-typequal/attribspec-list-list (cdr tyqualattribss) pstate))
-    :measure (two-nats-measure
-              (typequal/attribspec-list-list-count tyqualattribss) 0))
+    :measure (typequal/attribspec-list-list-count tyqualattribss))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2768,7 +2793,7 @@
                             (print-astring ", }" pstate)
                           (print-astring "}" pstate))))
              pstate))
-    :measure (two-nats-measure (initer-count initer) 0))
+    :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2787,7 +2812,7 @@
                    pstate))
          (pstate (print-initer desiniter.initer pstate)))
       pstate)
-    :measure (two-nats-measure (desiniter-count desiniter) 0))
+    :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2805,7 +2830,7 @@
          ((when (endp (cdr desiniters))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-desiniter-list (cdr desiniters) pstate))
-    :measure (two-nats-measure (desiniter-list-count desiniters) 0))
+    :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2832,7 +2857,7 @@
      :dot (b* ((pstate (print-astring "." pstate))
                (pstate (print-ident designor.name pstate)))
             pstate))
-    :measure (two-nats-measure (designor-count designor) 0))
+    :measure (designor-count designor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2852,7 +2877,7 @@
          (pstate (print-designor (car designors) pstate))
          ((when (endp (cdr designors))) pstate))
       (print-designor-list (cdr designors) pstate))
-    :measure (two-nats-measure (designor-list-count designors) 0))
+    :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2869,7 +2894,7 @@
                    pstate))
          (pstate (print-dirdeclor declor.direct pstate)))
       pstate)
-    :measure (two-nats-measure (declor-count declor) 0))
+    :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2976,7 +3001,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (dirdeclor-count dirdeclor) 0))
+    :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3008,7 +3033,7 @@
                                          pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (absdeclor-count absdeclor) 0))
+    :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3108,7 +3133,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (dirabsdeclor-count dirabsdeclor) 0))
+    :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3126,7 +3151,7 @@
          ((unless param.specs)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-decl-spec-list param.specs pstate))
+         (pstate (print-decl-spec-list param.specs t pstate))
          (pstate (print-param-declor param.declor pstate))
          (pstate (if (consp param.attribs)
                      (b* ((pstate (print-astring " " pstate))
@@ -3135,7 +3160,7 @@
                        pstate)
                    pstate)))
       pstate)
-    :measure (two-nats-measure (param-declon-count param) 0))
+    :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3153,7 +3178,7 @@
          ((when (endp (cdr params))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-param-declon-list (cdr params) pstate))
-    :measure (two-nats-measure (param-declon-list-count params) 0))
+    :measure (param-declon-list-count params))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3181,7 +3206,7 @@
                  pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (param-declor-count paramdeclor) 0))
+    :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3205,11 +3230,13 @@
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.declor?)
                                   pstate)))
       pstate)
-    :measure (two-nats-measure (tyname-count tyname) 0))
+    :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
+  (define print-struni-spec ((struni-spec struni-specp)
+                             (inlinep booleanp)
+                             (pstate pristatep))
     :guard (and (struni-spec-unambp struni-spec)
                 (struni-spec-aidentp struni-spec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
@@ -3222,25 +3249,19 @@
        the @('struct') or @('union') keyword followed by a space.
        Here we print what comes after that keyword.")
      (xdoc::p
-      "We ensure that this is not empty, i.e. that there is at least
-       the identifier or a non-empty member list.")
+      "The @('inlinep') flag says whether
+       the members (if any) of structure or union specifier
+       should be printed as part of the current line,
+       or in multiple lines with identantation.
+       This is always @('t') except under some conditions (see callers).")
      (xdoc::p
-      "For now we print all the members in the same line,
-       but we should print them in different lines and with identation,
-       at least in certain cases.
-       Note that a structure or union specifier
-       is not necessarily a top-level construct:
-       it may occur in the middle of a sequence of declaration specifiers,
-       so it is not so straightforward to always print it on multiple lines,
-       because we may need to consider what surrounds it.
-       Nonetheless, under certain conditions,
-       e.g. when it is a lone top-level construct,
-       we should print it on multiple lines."))
+      "We ensure that this is not empty, i.e. that there is at least
+       the identifier or a non-empty member list."))
     (b* (((struni-spec struni-spec) struni-spec)
          (pstate (if (consp struni-spec.attribs)
-                     (b* ((pstate (print-astring " " pstate))
-                          (pstate (print-attrib-spec-list struni-spec.attribs
-                                                          pstate)))
+                     (b* ((pstate (print-attrib-spec-list struni-spec.attribs
+                                                          pstate))
+                          (pstate (print-astring " " pstate)))
                        pstate)
                    pstate))
          ((unless (or (ident-option-case struni-spec.name? :some)
@@ -3251,20 +3272,29 @@
                   struni-spec.name?
                   :some (print-ident struni-spec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and struni-spec.name?
-                          struni-spec.members)
+         ((when (not struni-spec.members)) pstate)
+         (pstate (if struni-spec.name?
                      (print-astring " " pstate)
                    pstate))
-         ((when (not struni-spec.members)) pstate)
-         (pstate (print-astring "{ " pstate))
-         (pstate (print-struct-declon-list struni-spec.members pstate))
-         (pstate (print-astring " }" pstate)))
+         (pstate (print-astring "{" pstate))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   (b* ((pstate (print-new-line pstate))
+                        (pstate (inc-pristate-indent pstate)))
+                     pstate)))
+         (pstate (print-struct-declon-list struni-spec.members inlinep pstate))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   (dec-pristate-indent pstate)))
+         (pstate (print-astring "}" pstate)))
       pstate)
-    :measure (two-nats-measure (struni-spec-count struni-spec) 0))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-struct-declon ((structdeclon struct-declonp) (pstate pristatep))
+  (define print-struct-declon ((structdeclon struct-declonp)
+                               (inlinep booleanp)
+                               (pstate pristatep))
     :guard (and (struct-declon-unambp structdeclon)
                 (struct-declon-aidentp structdeclon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
@@ -3273,41 +3303,54 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "The @('inlinep') flag says whether the structure declaration
+       should be printed as part of the current line
+       or as its own indented line.")
+     (xdoc::p
       "For the case of a member, we ensure that
        the list of specifiers and qualifiers is not empty,
        as required in the grammar."))
-    (struct-declon-case
-     structdeclon
-     :member
-     (b* ((pstate (if structdeclon.extension
-                      (print-astring "__extension__ " pstate)
-                    (pristate-fix pstate)))
-          ((unless structdeclon.specquals)
-           (raise "Misusage error: empty specifier/qualifier list.")
-           pstate)
-          (pstate (print-spec/qual-list structdeclon.specquals pstate))
-          (pstate (if structdeclon.declors
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate
-                            (print-struct-declor-list structdeclon.declors
-                                                      pstate)))
-                        pstate)
-                    pstate))
-          (pstate (if structdeclon.attribs
-                      (b* ((pstate (print-astring " " pstate))
-                           (pstate (print-attrib-spec-list structdeclon.attribs
-                                                           pstate)))
-                        pstate)
-                    pstate))
-          (pstate (print-astring ";" pstate)))
-       pstate)
-     :statassert (print-statassert structdeclon.statassert pstate)
-     :empty (print-astring ";" pstate))
-    :measure (two-nats-measure (struct-declon-count structdeclon) 0))
+    (b* ((pstate (if inlinep
+                     pstate
+                   (print-indent pstate)))
+         (pstate
+          (struct-declon-case
+           structdeclon
+           :member
+           (b* ((pstate (if structdeclon.extension
+                            (print-astring "__extension__ " pstate)
+                          (pristate-fix pstate)))
+                ((unless structdeclon.specquals)
+                 (raise "Misusage error: empty specifier/qualifier list.")
+                 pstate)
+                (pstate (print-spec/qual-list structdeclon.specquals pstate))
+                (pstate (if structdeclon.declors
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate
+                                  (print-struct-declor-list structdeclon.declors
+                                                            pstate)))
+                              pstate)
+                          pstate))
+                (pstate (if structdeclon.attribs
+                            (b* ((pstate (print-astring " " pstate))
+                                 (pstate (print-attrib-spec-list
+                                          structdeclon.attribs pstate)))
+                              pstate)
+                          pstate))
+                (pstate (print-astring ";" pstate)))
+             pstate)
+           :statassert (print-statassert structdeclon.statassert pstate)
+           :empty (print-astring ";" pstate)))
+         (pstate (if inlinep
+                     pstate
+                   (print-new-line pstate))))
+      pstate)
+    :measure (struct-declon-count structdeclon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define print-struct-declon-list ((structdeclons struct-declon-listp)
+                                    (inlinep booleanp)
                                     (pstate pristatep))
     :guard (and (consp structdeclons)
                 (struct-declon-list-unambp structdeclons)
@@ -3319,19 +3362,17 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As mentioned in @(tsee print-struni-spec),
-       for now we print all of them in one line,
-       since a structure or union specifier may occur
-       in the middle of a list of declaration specifiers,
-       but we plan to print these in multiple lines,
-       at least under certain conditions
-       (e.g. when the structure or union specifier is at the top level."))
+      "The @('inlinep') flag says whether the structure declarations
+       should be printed as part of the current line
+       or in a new indented line for each."))
     (b* (((unless (mbt (consp structdeclons))) (pristate-fix pstate))
-         (pstate (print-struct-declon (car structdeclons) pstate))
+         (pstate (print-struct-declon (car structdeclons) inlinep pstate))
          ((when (endp (cdr structdeclons))) pstate)
-         (pstate (print-astring " " pstate)))
-      (print-struct-declon-list (cdr structdeclons) pstate))
-    :measure (two-nats-measure (struct-declon-list-count structdeclons) 0))
+         (pstate (if inlinep
+                     (print-astring " " pstate)
+                   pstate)))
+      (print-struct-declon-list (cdr structdeclons) inlinep pstate))
+    :measure (struct-declon-list-count structdeclons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3368,7 +3409,7 @@
                           pstate)
                   :none pstate)))
       pstate)
-    :measure (two-nats-measure (struct-declor-count structdeclor) 0))
+    :measure (struct-declor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3387,7 +3428,7 @@
          ((when (endp (cdr structdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-struct-declor-list (cdr structdeclors) pstate))
-    :measure (two-nats-measure (struct-declor-list-count structdeclors) 0))
+    :measure (struct-declor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3422,7 +3463,7 @@
                      (print-astring ", }" pstate)
                    (print-astring "}" pstate))))
       pstate)
-    :measure (two-nats-measure (enum-spec-count enumspec) 0))
+    :measure (enum-spec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3439,7 +3480,7 @@
          (pstate (print-const-expr (const-expr-option-some->val enumer.value?)
                                    pstate)))
       pstate)
-    :measure (two-nats-measure (enumer-count enumer) 0))
+    :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3455,7 +3496,7 @@
          ((when (endp (cdr enumers))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-enumer-list (cdr enumers) pstate))
-    :measure (two-nats-measure (enumer-list-count enumers) 0))
+    :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3476,7 +3517,7 @@
          (pstate (print-stringlit-list statassert.message pstate))
          (pstate (print-astring ");" pstate)))
       pstate)
-    :measure (two-nats-measure (statassert-count statassert) 0))
+    :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3505,7 +3546,7 @@
                     pstate))
           (pstate (print-astring ")" pstate)))
        pstate))
-    :measure (two-nats-measure (attrib-count attr) 0))
+    :measure (attrib-count attr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3520,7 +3561,7 @@
          ((when (endp (cdr attrs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-attrib-list (cdr attrs) pstate))
-    :measure (two-nats-measure (attrib-list-count attrs) 0))
+    :measure (attrib-list-count attrs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3538,7 +3579,7 @@
                    pstate))
          (pstate (print-astring "))" pstate)))
       pstate)
-    :measure (two-nats-measure (attrib-spec-count attrspec) 0))
+    :measure (attrib-spec-count attrspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3555,7 +3596,7 @@
          ((when (endp (cdr attrspecs))) pstate)
          (pstate (print-astring " " pstate)))
       (print-attrib-spec-list (cdr attrspecs) pstate))
-    :measure (two-nats-measure (attrib-spec-list-count attrspecs) 0))
+    :measure (attrib-spec-list-count attrspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3583,7 +3624,7 @@
          (pstate (print-initer (initer-option-some->val initdeclor.initer?)
                                pstate)))
       pstate)
-    :measure (two-nats-measure (init-declor-count initdeclor) 0))
+    :measure (init-declor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3601,61 +3642,61 @@
          ((when (endp (cdr initdeclors))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-init-declor-list (cdr initdeclors) pstate))
-    :measure (two-nats-measure (init-declor-list-count initdeclors) 0))
+    :measure (init-declor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-declon-inline ((declon declonp) (pstate pristatep))
+  (define print-declon ((declon declonp) (inlinep booleanp) (pstate pristatep))
     :guard (and (declon-unambp declon)
                 (declon-aidentp declon (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
-    :short "Print a declaration, inline."
+    :short "Print a declaration."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Here `inline' means that we print it as part of the current line,
-       without adding new lines or indentation.")
+      "The @('inlinep') flag says whether the declaration should be printed
+       as part of the current line or as its own indented line.
+       This flag is passed to @(tsee print-decl-spec-list),
+       so that structure or union specifiers with members
+       are printed on multiple lines
+       (and thus, the declaration is printed on multiple lines),
+       as idiomatic.")
      (xdoc::p
       "We ensure that there is at least one declaration specifier,
        as required by the grammar."))
-    (declon-case
-     declon
-     :declon
-     (b* ((pstate (if declon.extension
-                      (print-astring "__extension__ " pstate)
-                    (pristate-fix pstate)))
-          ((unless declon.specs)
-           (raise "Misusage error: ~
-                 no declaration specifiers in declaration ~x0."
-                  declon)
-           pstate)
-          (pstate (print-decl-spec-list declon.specs pstate))
-          (pstate
-           (if declon.declors
-               (b* ((pstate (print-astring " " pstate))
-                    (pstate (print-init-declor-list declon.declors pstate)))
+    (b* ((pstate (if inlinep
+                     pstate
+                   (print-indent pstate)))
+         (pstate
+          (declon-case
+           declon
+           :declon
+           (b* ((pstate (if declon.extension
+                            (print-astring "__extension__ " pstate)
+                          (pristate-fix pstate)))
+                ((unless declon.specs)
+                 (raise "Misusage error: ~
+                         no declaration specifiers in declaration ~x0."
+                        declon)
                  pstate)
-             pstate))
-          (pstate (print-astring ";" pstate)))
-       pstate)
-     :statassert
-     (print-statassert declon.statassert pstate))
-    :measure (two-nats-measure (declon-count declon) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define print-declon ((declon declonp) (pstate pristatep))
-    :guard (and (declon-unambp declon)
-                (declon-aidentp declon (pristate->gcc pstate)))
-    :returns (new-pstate pristatep)
-    :parents (printer print-exprs/decls/stmts)
-    :short "Print a declaration, in its own indented line."
-    (b* ((pstate (print-indent pstate))
-         (pstate (print-declon-inline declon pstate))
-         (pstate (print-new-line pstate)))
+                (pstate (print-decl-spec-list declon.specs inlinep pstate))
+                (pstate
+                 (if declon.declors
+                     (b* ((pstate (print-astring " " pstate))
+                          (pstate (print-init-declor-list declon.declors
+                                                          pstate)))
+                       pstate)
+                   pstate))
+                (pstate (print-astring ";" pstate)))
+             pstate)
+           :statassert
+           (print-statassert declon.statassert pstate)))
+         (pstate (if inlinep
+                     pstate
+                   (print-new-line pstate))))
       pstate)
-    :measure (two-nats-measure (declon-count declon) 1))
+    :measure (declon-count declon))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3666,12 +3707,12 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declarations,
-          one per line, all with the same indentation."
+            one per line, all with the same indentation."
     (b* (((unless (mbt (consp declons))) (pristate-fix pstate))
-         (pstate (print-declon (car declons) pstate))
+         (pstate (print-declon (car declons) nil pstate))
          ((when (endp (cdr declons))) pstate))
       (print-declon-list (cdr declons) pstate))
-    :measure (two-nats-measure (declon-list-count declons) 0))
+    :measure (declon-list-count declons))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3700,7 +3741,7 @@
                          pstate)
                  :none pstate))
      :default (print-astring "default" pstate))
-    :measure (two-nats-measure (label-count label) 0))
+    :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3732,7 +3773,7 @@
          (pstate (print-expr output.lvalue (expr-priority-expr) pstate))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (asm-output-count output) 0))
+    :measure (asm-output-count output))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3748,7 +3789,7 @@
          ((when (endp (cdr outputs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-asm-output-list (cdr outputs) pstate))
-    :measure (two-nats-measure (asm-output-list-count outputs) 0))
+    :measure (asm-output-list-count outputs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3780,7 +3821,7 @@
          (pstate (print-expr input.rvalue (expr-priority-expr) pstate))
          (pstate (print-astring ")" pstate)))
       pstate)
-    :measure (two-nats-measure (asm-input-count input) 0))
+    :measure (asm-input-count input))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3796,7 +3837,7 @@
          ((when (endp (cdr inputs))) pstate)
          (pstate (print-astring ", " pstate)))
       (print-asm-input-list (cdr inputs) pstate))
-    :measure (two-nats-measure (asm-input-list-count inputs) 0))
+    :measure (asm-input-list-count inputs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3891,7 +3932,7 @@
          (pstate (print-astring " );" pstate))
          (pstate (print-new-line pstate)))
       pstate)
-    :measure (two-nats-measure (asm-stmt-count asm) 0))
+    :measure (asm-stmt-count asm))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4079,7 +4120,7 @@
      :for-declon
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "for (" pstate))
-          (pstate (print-declon-inline stmt.init pstate))
+          (pstate (print-declon stmt.init t pstate))
           (pstate (print-astring " " pstate))
           (pstate (expr-option-case
                    stmt.test
@@ -4144,7 +4185,7 @@
        pstate)
      :asm
      (print-asm-stmt stmt.stmt pstate))
-    :measure (two-nats-measure (stmt-count stmt) 0))
+    :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4181,7 +4222,7 @@
          (pstate (print-indent pstate))
          (pstate (print-astring "}" pstate)))
       pstate)
-    :measure (two-nats-measure (comp-stmt-count cstmt) 1))
+    :measure (comp-stmt-count cstmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4193,10 +4234,10 @@
     :short "Print a block item."
     (block-item-case
      item
-     :declon (print-declon item.declon pstate)
+     :declon (print-declon item.declon nil pstate)
      :stmt (print-stmt item.stmt pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (block-item-count item) 0))
+    :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4209,7 +4250,7 @@
     (b* (((when (endp items)) (pristate-fix pstate))
          (pstate (print-block-item (car items) pstate)))
       (print-block-item-list (cdr items) pstate))
-    :measure (two-nats-measure (block-item-list-count items) 0))
+    :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4275,7 +4316,6 @@
      print-attrib-spec-list
      print-init-declor
      print-init-declor-list
-     print-declon-inline
      print-declon
      print-declon-list
      print-label
@@ -4288,8 +4328,8 @@
      print-comp-stmt
      print-block-item
      print-block-item-list)
-    :hints (("Goal" :expand ((print-declon-inline declon pstate)
-                             (print-struct-declon structdeclon pstate)))))
+    :hints (("Goal" :expand ((print-declon declon t pstate)
+                             (print-struct-declon structdeclon t pstate)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4326,7 +4366,7 @@
        ((unless fundef.specs)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       (pstate (print-decl-spec-list fundef.specs pstate))
+       (pstate (print-decl-spec-list fundef.specs t pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?
@@ -4363,7 +4403,7 @@
   (ext-declon-case
    extdecl
    :fundef (print-fundef extdecl.fundef pstate)
-   :declon (print-declon extdecl.declon pstate)
+   :declon (print-declon extdecl.declon nil pstate)
    :empty (b* ((pstate (print-astring ";" pstate))
                (pstate (print-new-line pstate)))
             pstate)

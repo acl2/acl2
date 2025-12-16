@@ -24291,7 +24291,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro add-macro-fn (macro macro-fn &optional right-associate-p)
   `(progn (add-macro-alias ,macro ,macro-fn)
-          (table untrans-table ',macro-fn '(,macro . ,right-associate-p))))
+          (table untrans-table
+                 (deref-macro-name ',macro-fn (macro-aliases world))
+                 '(,macro . ,right-associate-p))))
 
 (defmacro add-binop (macro macro-fn)
   `(add-macro-fn ,macro ,macro-fn t))
@@ -24750,27 +24752,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (set-table-guard macro-aliases-table
                  (and (symbolp key)
                       (not (eq (getpropc key 'macro-args t world) t))
-                      (symbolp val)
-
-; We no longer (as of August 2012) require that val be a function symbol, so
-; that we can support recursive definition with defun-inline.  It would be nice
-; to use the following code as a replacement.  However,
-; chk-all-but-new-name-cmp is not defined at this point, and we don't think
-; it's worth the trouble to fight this boot-strapping battle.  If we decide
-; later to strengthen the guard this, then we will need to update :doc
-; macro-aliases-table to require that the value is a function symbol, not just
-; a symbol.
-
-;           (mv-let (erp val)
-;                   (chk-all-but-new-name-cmp
-;                    val
-;                    "guard for macro-aliases-table"
-;                    'function
-;                    world)
-;                   (declare (ignore val))
-;                   (null erp)))
-
-                      ))
+                      (symbolp val)))
 
 (table macro-aliases-table nil
        '((+ . binary-+)
@@ -24798,7 +24780,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (table-alist 'macro-aliases-table wrld))
 
 (defmacro add-macro-alias (macro-name fn-name)
-  `(table macro-aliases-table ',macro-name ',fn-name))
+  `(table macro-aliases-table
+          ',macro-name
+          (deref-macro-name ',fn-name (macro-aliases world))))
+
+(defun deref-macro-name (macro-name macro-aliases)
+  (declare (xargs :guard (if (symbolp macro-name)
+                             (alistp macro-aliases)
+                           (symbol-alistp macro-aliases))))
+  (let ((entry (assoc-eq macro-name macro-aliases)))
+    (if entry
+        (cdr entry)
+      macro-name)))
 
 (add-macro-alias real/rationalp
                  #+:non-standard-analysis realp

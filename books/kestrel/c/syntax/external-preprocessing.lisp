@@ -66,22 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; byte-listp rules
-
-(defruledl byte-listp-becomes-unsigned-byte-listp-8
-  (equal (byte-listp x)
-         (unsigned-byte-listp 8 x))
-  :enable (unsigned-byte-listp
-           byte-listp
-           bytep)
-  :induct (byte-listp x))
-
-(defrulel byte-listp-of-read-file-into-byte-list
-  (byte-listp (mv-nth 1 (acl2::read-file-into-byte-list filename state)))
-  :enable (byte-listp-becomes-unsigned-byte-listp-8))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file stringp
          "The file path of the C file to preprocess.")

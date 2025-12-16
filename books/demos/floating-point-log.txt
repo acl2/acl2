@@ -608,7 +608,8 @@ MACRO-ALIASES-TABLE
 
 
 ACL2 !>>>(TABLE UNTRANS-TABLE
-           'DF-2PI$INLINE
+           (DEREF-MACRO-NAME 'DF-2PI$INLINE
+                             (MACRO-ALIASES WORLD))
            '(DF-2PI))
 
 Summary
