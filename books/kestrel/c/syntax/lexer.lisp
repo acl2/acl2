@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -3678,7 +3679,7 @@
   (defret parsize-of-unread-token
     (equal (parsize new-parstate)
            (1+ (parsize parstate)))
-    :hints (("Goal" :in-theory (enable parsize len nfix)))))
+    :hints (("Goal" :in-theory (enable parsize)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
