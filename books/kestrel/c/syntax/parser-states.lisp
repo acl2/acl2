@@ -21,11 +21,7 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,8 +120,12 @@
        (token-case token :keyword)
        (equal (the string (token-keyword->unwrap token))
               (the string keyword)))
+  :hooks nil
 
   ///
+
+  (fty::deffixequiv token-keywordp
+    :args ((token token-optionp)))
 
   (defrule non-nil-when-token-keywordp
     (implies (token-keywordp token keyword)
@@ -146,8 +146,12 @@
        (token-case token :punctuator)
        (equal (the string (token-punctuator->unwrap token))
               (the string punctuator)))
+  :hooks nil
 
   ///
+
+  (fty::deffixequiv token-punctuatorp
+    :args ((token token-optionp)))
 
   (defrule non-nil-when-token-punctuatorp
     (implies (token-punctuatorp token punctuator)
@@ -194,8 +198,7 @@
    (xdoc::p
     "This is at line 1 and column 0."))
   (make-position :line 1 :column 0)
-  :inline t
-  :no-function t)
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +212,12 @@
   (change-position pos :column (+ (the unsigned-byte (position->column pos))
                                   (the unsigned-byte columns)))
   :inline t
-  :no-function t)
+  :hooks nil
+
+  ///
+
+  (fty::deffixequiv position-inc-column
+    :args ((pos positionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,7 +232,12 @@
                           (the (integer 1 *) lines))
                  :column 0)
   :inline t
-  :no-function t)
+  :hooks nil
+
+  ///
+
+  (fty::deffixequiv position-inc-line
+    :args ((pos positionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -644,7 +657,6 @@
                   (non-exec (create-parstate)))
          :exec parstate)
     :inline t
-    :no-function t
     ///
     (defrule parstate-fix-when-parstatep
       (implies (parstatep parstate)
@@ -689,8 +701,6 @@
                   nil)
          :exec (raw-parstate->bytes parstate))
     :inline t
-    :no-function t
-    :hooks (:fix)
     ///
     (more-returns
      (bytes true-listp :rule-classes :type-prescription)))
@@ -702,7 +712,7 @@
                   (irr-position))
          :exec (raw-parstate->position parstate))
     :inline t
-    :no-function t)
+    :hooks nil)
 
   (define parstate->chars-length (parstate)
     :returns (length natp)
@@ -710,9 +720,7 @@
                     (raw-parstate->chars-length parstate)
                   1)
          :exec (raw-parstate->chars-length parstate))
-    :inline t
-    :no-function t
-    :hooks (:fix))
+    :inline t)
 
   (define parstate->char ((i natp) parstate)
     :guard (< i (parstate->chars-length parstate))
@@ -725,9 +733,9 @@
                   (make-char+position :char 0
                                       :position (irr-position)))
          :exec (raw-parstate->char i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length))))
+    :hooks nil)
 
   (define parstate->chars-read (parstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
@@ -736,8 +744,7 @@
                   0)
          :exec (raw-parstate->chars-read parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->chars-unread (parstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
@@ -746,8 +753,7 @@
                   0)
          :exec (raw-parstate->chars-unread parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->tokens-length (parstate)
     :returns (length natp)
@@ -756,8 +762,7 @@
                   1)
          :exec (raw-parstate->tokens-length parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->token ((i natp) parstate)
     :guard (< i (parstate->tokens-length parstate))
@@ -770,9 +775,9 @@
                   (make-token+span :token (irr-token)
                                    :span (irr-position)))
          :exec (raw-parstate->token i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length))))
+    :hooks nil)
 
   (define parstate->tokens-read (parstate)
     :returns (tokens-read natp :rule-classes (:rewrite :type-prescription))
@@ -781,8 +786,7 @@
                   0)
          :exec (raw-parstate->tokens-read parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->tokens-unread (parstate)
     :returns (tokens-unread natp :rule-classes (:rewrite :type-prescription))
@@ -791,8 +795,7 @@
                   0)
          :exec (raw-parstate->tokens-unread parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->version (parstate)
     :returns (version c::versionp)
@@ -801,8 +804,7 @@
                   (c::version-c23))
          :exec (raw-parstate->version parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->size (parstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
@@ -811,8 +813,7 @@
                   0)
          :exec (raw-parstate->size parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   ;; writers:
 
@@ -821,16 +822,14 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->bytes (byte-list-fix bytes) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->position ((position positionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->position (position-fix position) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->chars-length ((length natp) parstate)
     :returns (parstate parstatep
@@ -844,8 +843,7 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-length (nfix length) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->char ((i natp)
                                  (char+pos char+position-p)
@@ -865,25 +863,23 @@
                                                  parstate)
                     parstate)
            :exec (raw-update-parstate->char i char+pos parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix))))
+    :hooks nil)
 
   (define update-parstate->chars-read ((chars-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-read (nfix chars-read) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->chars-unread ((chars-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-unread (nfix chars-unread) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->tokens-length ((length natp) parstate)
     :returns (parstate parstatep
@@ -896,8 +892,7 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-length (nfix length) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->token ((i natp)
                                   (token+span token+span-p)
@@ -917,41 +912,37 @@
                                                   parstate)
                     parstate)
            :exec (raw-update-parstate->token i token+span parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix))))
+    :hooks nil)
 
   (define update-parstate->tokens-read ((tokens-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-read (nfix tokens-read) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->tokens-unread ((tokens-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->version ((version c::versionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->version (c::version-fix version) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->size ((size natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->size (lnfix size) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   ;; readers over writers:
 
@@ -1058,7 +1049,7 @@
   :returns (gcc booleanp)
   :short "Flag saying whether GCC extensions are supported or not."
   (c::version-gccp (parstate->version parstate))
-  :hooks (:fix))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1095,7 +1086,7 @@
        (parstate (update-parstate->version version parstate))
        (parstate (update-parstate->size (len data) parstate)))
     parstate)
-  :hooks (:fix))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1110,8 +1101,7 @@
      @(tsee parstate) was defined via @(tsee fty::defprod)."))
   (parstate->size parstate)
   :inline t
-  :no-function t
-  :hooks (:fix)
+  :hooks nil
 
   ///
 
@@ -1151,6 +1141,7 @@
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
    :version (parstate->version parstate))
+  :hooks nil
 
   :prepwork
 
@@ -1162,7 +1153,9 @@
            (raise "Internal error: chars-read index ~x0 out of bound ~x1."
                   i (parstate->chars-length parstate))))
        (cons (parstate->char i parstate)
-             (to-parstate$-chars-read (1- n) parstate))))
+             (to-parstate$-chars-read (1- n) parstate)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-chars-unread ((n natp) parstate)
      :returns (chars char+position-listp)
@@ -1178,7 +1171,9 @@
                   i (parstate->chars-length parstate))))
        (cons (parstate->char i parstate)
              (to-parstate$-chars-unread (1- n) parstate)))
-     :guard-hints (("Goal" :in-theory (enable natp zp))))
+     :guard-hints (("Goal" :in-theory (enable natp zp)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-tokens-read ((n natp) parstate)
      :returns (tokens token+span-listp)
@@ -1188,7 +1183,9 @@
            (raise "Internal error: tokens-read index ~x0 out of bound ~x1."
                   i (parstate->tokens-length parstate))))
        (cons (parstate->token i parstate)
-             (to-parstate$-tokens-read (1- n) parstate))))
+             (to-parstate$-tokens-read (1- n) parstate)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-tokens-unread ((n natp) parstate)
      :returns (tokens token+span-listp)
@@ -1204,4 +1201,6 @@
                   i (parstate->tokens-length parstate))))
        (cons (parstate->token i parstate)
              (to-parstate$-tokens-unread (1- n) parstate)))
-     :guard-hints (("Goal" :in-theory (enable natp zp))))))
+     :guard-hints (("Goal" :in-theory (enable natp zp)))
+     :no-function nil
+     :hooks nil)))

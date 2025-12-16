@@ -17718,15 +17718,6 @@
                                (cons (car stobjs-out2) acc)))
         (t nil)))
 
-(defun deref-macro-name (macro-name macro-aliases)
-  (declare (xargs :guard (if (symbolp macro-name)
-                             (alistp macro-aliases)
-                           (symbol-alistp macro-aliases))))
-  (let ((entry (assoc-eq macro-name macro-aliases)))
-    (if entry
-        (cdr entry)
-      macro-name)))
-
 (defun corresponding-inline-fn (fn wrld)
   (let ((macro-body (getpropc fn 'macro-body t wrld)))
     (and (not (eq macro-body t))

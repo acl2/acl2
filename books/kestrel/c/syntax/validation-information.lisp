@@ -351,9 +351,9 @@
      with both internal and external linkage in the same translation unit
      [C17:6.2.2/7].")
    (xdoc::p
-     "Finally, we store a "
-     (xdoc::seetopic "uid" "unique identifier")
-     " for the object.
+    "Finally, we store a "
+    (xdoc::seetopic "uid" "unique identifier")
+    " for the object.
       All identifiers of the same name with external linkage
       refer to the same object and therefore possess
       the same unique identifier.")
@@ -624,14 +624,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod initdeclor-info
+(fty::defprod init-declor-info
   :short "Fixtype of validation information for initializer declarators."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
      the validator adds to initializer declarators,
-     i.e. the @(tsee initdeclor) fixtype.")
+     i.e. the @(tsee init-declor) fixtype.")
    (xdoc::p
     "The information for an initializer declarator consists of
      the type of (or denoted by) the declared identifier,
@@ -648,7 +648,7 @@
   ((type type)
    (typedefp bool)
    (uid? uid-option))
-  :pred initdeclor-infop)
+  :pred init-declor-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,7 +684,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
+(encapsulate
+  ()
   (std::make-define-config :no-function nil)
 
   (fty::deffold-reduce annop
@@ -728,8 +729,8 @@
             attrib-name
             exprs/decls/stmts
             fundef
-            extdecl
-            extdecl-list
+            ext-declon
+            ext-declon-list
             transunit
             filepath-transunit-map
             transunit-ensemble
@@ -788,9 +789,9 @@
                                        param-declor))))
      (attrib t)
      (attrib-spec t)
-     (initdeclor (and (declor-annop (initdeclor->declor initdeclor))
-                      (initer-option-annop (initdeclor->init? initdeclor))
-                      (initdeclor-infop (initdeclor->info initdeclor))))
+     (init-declor (and (declor-annop (init-declor->declor init-declor))
+                       (initer-option-annop (init-declor->initer? init-declor))
+                       (init-declor-infop (init-declor->info init-declor))))
      (asm-output t)
      (asm-input t)
      (asm-stmt t)
@@ -803,14 +804,14 @@
      (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
                                   (amb-declor/absdeclor-fix
                                    amb-declor/absdeclor)))
-     (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                           (amb-decl/stmt-fix amb-decl/stmt)))
-     (fundef (and (decl-spec-list-annop (fundef->spec fundef))
+     (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                             (amb-declon/stmt-fix amb-declon/stmt)))
+     (fundef (and (decl-spec-list-annop (fundef->specs fundef))
                   (declor-annop (fundef->declor fundef))
-                  (decl-list-annop (fundef->decls fundef))
+                  (declon-list-annop (fundef->declons fundef))
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
-     (transunit (and (extdecl-list-annop (transunit->decls transunit))
+     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
                      (transunit-infop (transunit->info transunit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -899,31 +900,31 @@
     :expand (param-declor-annop (param-declor-nonabstract declor info))
     :enable identity)
 
-  (defruled initdeclor-annop-of-initdeclor
-    (equal (initdeclor-annop (initdeclor declor asm? attribs init? info))
+  (defruled init-declor-annop-of-init-declor
+    (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
-                (initer-option-annop init?)
-                (initdeclor-infop info)))
-    :expand (initdeclor-annop (initdeclor declor asm? attribs init? info))
+                (initer-option-annop initer?)
+                (init-declor-infop info)))
+    :expand (init-declor-annop (init-declor declor asm? attribs initer? info))
     :enable identity)
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
-            (fundef extension spec declor asm? attribs decls body info))
-           (and (decl-spec-list-annop spec)
+            (fundef extension specs declor asm? attribs declons body info))
+           (and (decl-spec-list-annop specs)
                 (declor-annop declor)
-                (decl-list-annop decls)
+                (declon-list-annop declons)
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension spec declor asm? attribs decls body info))
+             (fundef extension specs declor asm? attribs declons body info))
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit decls info))
-           (and (extdecl-list-annop decls)
+    (equal (transunit-annop (transunit declons info))
+           (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit decls info))
+    :expand (transunit-annop (transunit declons info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -1023,20 +1024,20 @@
              (expr-binary-infop (expr-binary->info expr)))
     :enable expr-annop)
 
-  (defruled declor-annop-of-initdeclor->declor
-    (implies (initdeclor-annop initdeclor)
-             (declor-annop (initdeclor->declor initdeclor)))
-    :enable initdeclor-annop)
+  (defruled declor-annop-of-init-declor->declor
+    (implies (init-declor-annop init-declor)
+             (declor-annop (init-declor->declor init-declor)))
+    :enable init-declor-annop)
 
-  (defruled initer-option-annop-of-initdeclor->init?
-    (implies (initdeclor-annop initdeclor)
-             (initer-option-annop (initdeclor->init? initdeclor)))
-    :enable initdeclor-annop)
+  (defruled initer-option-annop-of-init-declor->initer?
+    (implies (init-declor-annop init-declor)
+             (initer-option-annop (init-declor->initer? init-declor)))
+    :enable init-declor-annop)
 
-  (defruled initdeclor-infop-of-initdeclor->info
-    (implies (initdeclor-annop initdeclor)
-             (initdeclor-infop (initdeclor->info initdeclor)))
-    :enable initdeclor-annop)
+  (defruled init-declor-infop-of-init-declor->info
+    (implies (init-declor-annop init-declor)
+             (init-declor-infop (init-declor->info init-declor)))
+    :enable init-declor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
     (implies (tyname-annop tyname)
@@ -1066,9 +1067,9 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
-  (defruled decl-spec-list-annop-of-fundef->spec
+  (defruled decl-spec-list-annop-of-fundef->specs
     (implies (fundef-annop fundef)
-             (decl-spec-list-annop (fundef->spec fundef)))
+             (decl-spec-list-annop (fundef->specs fundef)))
     :enable fundef-annop)
 
   (defruled declor-annop-of-fundef->declor
@@ -1076,9 +1077,9 @@
              (declor-annop (fundef->declor fundef)))
     :enable fundef-annop)
 
-  (defruled decl-list-annop-of-fundef->decls
+  (defruled declon-list-annop-of-fundef->declons
     (implies (fundef-annop fundef)
-             (decl-list-annop (fundef->decls fundef)))
+             (declon-list-annop (fundef->declons fundef)))
     :enable fundef-annop)
 
   (defruled comp-stmt-annop-of-fundef->body
@@ -1091,9 +1092,9 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled extdecl-list-annop-of-transunit->decls
+  (defruled ext-declon-list-annop-of-transunit->declons
     (implies (transunit-annop transunit)
-             (extdecl-list-annop (transunit->decls transunit)))
+             (ext-declon-list-annop (transunit->declons transunit)))
     :enable transunit-annop)
 
   (defruled transunit-infop-of-transunit->info
@@ -1128,7 +1129,7 @@
      tyname-annop-of-tyname
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
-     initdeclor-annop-of-initdeclor
+     init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
      iconst-infop-of-iconst->info
@@ -1147,19 +1148,19 @@
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
-     declor-annop-of-initdeclor->declor
-     initer-option-annop-of-initdeclor->init?
-     initdeclor-infop-of-initdeclor->info
+     declor-annop-of-init-declor->declor
+     initer-option-annop-of-init-declor->initer?
+     init-declor-infop-of-init-declor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
      declor-annop-of-param-declor-nonabstract->declor
-     decl-spec-list-annop-of-fundef->spec
+     decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
-     decl-list-annop-of-fundef->decls
+     declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     extdecl-list-annop-of-transunit->decls
+     ext-declon-list-annop-of-transunit->declons
      transunit-infop-of-transunit->info
      transunit-ensemble-annop-of-irr-transunit-ensemble
      code-ensemble-annop-of-irr-code-ensemble)))
@@ -1284,7 +1285,7 @@
      :while (set::insert nil (stmt-types stmt.body))
      :dowhile (set::insert nil (stmt-types stmt.body))
      :for-expr nil
-     :for-decl nil
+     :for-declon nil
      :for-ambig (impossible)
      :goto nil
      :gotoe nil
@@ -1319,7 +1320,7 @@
        see the documentation of that function for a rationale."))
     (block-item-case
      item
-     :decl (set::insert nil nil)
+     :declon (set::insert nil nil)
      :stmt (stmt-types item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))

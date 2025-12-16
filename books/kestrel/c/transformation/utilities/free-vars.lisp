@@ -694,7 +694,7 @@
     :returns (free-vars ident-setp)
     (b* (((enum-spec enumspec) enumspec)
          ((mv free-vars -)
-          (free-vars-enumer-list enumspec.list bound-vars)))
+          (free-vars-enumer-list enumspec.enumers bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   enum tag to the set of bound variables.
       free-vars)
@@ -708,7 +708,7 @@
                  (bound-vars ident-setp))
     (b* ((bound-vars (ident-set-fix bound-vars))
          ((enumer enumer) enumer))
-      (mv (free-vars-const-expr-option enumer.value bound-vars)
+      (mv (free-vars-const-expr-option enumer.value? bound-vars)
           (insert enumer.name bound-vars)))
     :measure (enumer-count enumer))
 
@@ -744,8 +744,8 @@
     :returns (free-vars ident-setp)
     (c$::attrib-case
      attrib
-     :name-only nil
-     :name-param (free-vars-expr-list attrib.param bound-vars))
+     :name nil
+     :name-params (free-vars-expr-list attrib.params bound-vars))
     :measure (c$::attrib-count attrib))
 
   (define free-vars-attrib-list
@@ -780,23 +780,23 @@
              (free-vars-attrib-spec-list (rest attrib-specs) bound-vars)))
     :measure (c$::attrib-spec-list-count attrib-specs))
 
-  (define free-vars-initdeclor
-    ((initdeclor initdeclorp)
+  (define free-vars-init-declor
+    ((initdeclor init-declorp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in an initializer declarator."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((initdeclor initdeclor) initdeclor)
-         (free-vars0 (free-vars-initer-option initdeclor.init? bound-vars))
+    (b* (((init-declor initdeclor) initdeclor)
+         (free-vars0 (free-vars-initer-option initdeclor.initer? bound-vars))
          (free-vars1 (free-vars-attrib-spec-list initdeclor.attribs bound-vars))
          ((mv free-vars2 bound-vars -)
           (free-vars-declor initdeclor.declor bound-vars)))
       (mv (union free-vars0 (union free-vars1 free-vars2))
           bound-vars))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
-  (define free-vars-initdeclor-list
-    ((initdeclors initdeclor-listp)
+  (define free-vars-init-declor-list
+    ((initdeclors init-declor-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of initializer
             declarators."
@@ -805,41 +805,41 @@
     (b* (((when (endp initdeclors))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-initdeclor (first initdeclors) bound-vars))
+          (free-vars-init-declor (first initdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-initdeclor-list (rest initdeclors) bound-vars)))
+          (free-vars-init-declor-list (rest initdeclors) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (initdeclor-list-count initdeclors))
+    :measure (init-declor-list-count initdeclors))
 
-  (define free-vars-decl
-    ((decl declp)
+  (define free-vars-declon
+    ((declon declonp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a declaration."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (decl-case
-     decl
-     :decl (free-vars-initdeclor-list decl.init bound-vars)
-     :statassert (mv (free-vars-statassert decl.statassert bound-vars)
+    (declon-case
+     declon
+     :declon (free-vars-init-declor-list declon.declors bound-vars)
+     :statassert (mv (free-vars-statassert declon.statassert bound-vars)
                      (ident-set-fix bound-vars)))
-    :measure (decl-count decl))
+    :measure (declon-count declon))
 
-  (define free-vars-decl-list
-    ((decls decl-listp)
+  (define free-vars-declon-list
+    ((declons declon-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of declarations."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((when (endp decls))
+    (b* (((when (endp declons))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-decl (first decls) bound-vars))
+          (free-vars-declon (first declons) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-decl-list (rest decls) bound-vars)))
+          (free-vars-declon-list (rest declons) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (decl-list-count decls))
+    :measure (declon-list-count declons))
 
   (define free-vars-label
     ((label labelp)
@@ -934,12 +934,12 @@
                       (union (free-vars-expr-option stmt.test bound-vars)
                              (union (free-vars-expr-option stmt.next bound-vars)
                                     (free-vars-stmt stmt.body bound-vars))))
-     :for-decl (b* (((mv free-vars for-bound-vars)
-                     (free-vars-decl stmt.init bound-vars)))
-                 (union free-vars
-                        (union (free-vars-expr-option stmt.test for-bound-vars)
-                               (union (free-vars-expr-option stmt.next for-bound-vars)
-                                      (free-vars-stmt stmt.body for-bound-vars)))))
+     :for-declon (b* (((mv free-vars for-bound-vars)
+                       (free-vars-declon stmt.init bound-vars)))
+                   (union free-vars
+                          (union (free-vars-expr-option stmt.test for-bound-vars)
+                                 (union (free-vars-expr-option stmt.next for-bound-vars)
+                                        (free-vars-stmt stmt.body for-bound-vars)))))
      :goto nil
      :gotoe (free-vars-expr stmt.label bound-vars)
      :continue nil
@@ -959,7 +959,7 @@
     (b* ((bound-vars (ident-set-fix bound-vars)))
       (block-item-case
         item
-        :decl (free-vars-decl item.decl bound-vars)
+        :declon (free-vars-declon item.declon bound-vars)
         :stmt (mv (free-vars-stmt item.stmt bound-vars)
                   bound-vars)
         :ambig (mv nil bound-vars)))
@@ -1001,13 +1001,13 @@
   :short "Collect free variables appearing in a function definition."
   :returns (free-vars ident-setp)
   (b* (((fundef fundef) fundef)
-       (free-vars1 (free-vars-decl-spec-list fundef.spec bound-vars))
+       (free-vars1 (free-vars-decl-spec-list fundef.specs bound-vars))
        ((mv free-vars2 bound-vars param-bound-vars)
         (free-vars-declor fundef.declor bound-vars))
        (bound-vars (union bound-vars param-bound-vars))
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
-        (free-vars-decl-list fundef.decls bound-vars))
+        (free-vars-declon-list fundef.declons bound-vars))
        ((mv free-vars5 &) (free-vars-comp-stmt fundef.body bound-vars)))
     (union free-vars1
            (union free-vars2

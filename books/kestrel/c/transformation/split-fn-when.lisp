@@ -140,15 +140,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-try-split-fn-when
-  ((extdecl extdeclp)
+(define ext-declon-try-split-fn-when
+  ((extdecl ext-declonp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (fundef-try-split-fn-when
@@ -157,30 +157,30 @@
                       transunits)))
                 (fundef-option-case
                   fundef2
-                  :some (retok t (list (extdecl-fundef fundef1)
-                                       (extdecl-fundef fundef2.val)))
-                  :none (retok nil (list (extdecl-fundef fundef1)))))
-      :otherwise (retok nil (list (extdecl-fix extdecl)))))
+                  :some (retok t (list (ext-declon-fundef fundef1)
+                                       (ext-declon-fundef fundef2.val)))
+                  :none (retok nil (list (ext-declon-fundef fundef1)))))
+      :otherwise (retok nil (list (ext-declon-fix extdecl)))))
   ///
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define extdecl-list-try-split-fn-when
-  ((extdecls extdecl-listp)
+(define ext-declon-list-try-split-fn-when
+  ((extdecls ext-declon-listp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (extdecls$ extdecl-listp))
+               (extdecls$ ext-declon-listp))
   (b* (((reterr) nil nil)
        ((when (endp extdecls))
         (retok nil nil))
        ((erp found extdecls1)
-        (extdecl-try-split-fn-when (first extdecls) triggers transunits))
+        (ext-declon-try-split-fn-when (first extdecls) triggers transunits))
        ((when found)
-        (retok t (append extdecls1 (extdecl-list-fix (rest extdecls)))))
+        (retok t (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
        ((erp found extdecls2)
-        (extdecl-list-try-split-fn-when (rest extdecls) triggers transunits)))
+        (ext-declon-list-try-split-fn-when (rest extdecls) triggers transunits)))
     (retok found (append extdecls1 extdecls2)))
   ///
   (more-returns
@@ -196,9 +196,9 @@
   (b* (((reterr) nil (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp found extdecls)
-        (extdecl-list-try-split-fn-when tunit.decls triggers transunits)))
+        (ext-declon-list-try-split-fn-when tunit.declons triggers transunits)))
     (retok found
-           (make-transunit :decls extdecls :info tunit.info))))
+           (make-transunit :declons extdecls :info tunit.info))))
 
 (define filepath-transunit-map-try-split-fn-when
   ((map filepath-transunit-mapp)

@@ -1445,7 +1445,7 @@
 
 (define lex-?-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo? dec-expo-optionp)
+               (expo? dexpo-optionp)
                (last/next-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent, if present."
@@ -1473,8 +1473,8 @@
      ((or (utf8-= char (char-code #\e)) ; e
           (utf8-= char (char-code #\E))) ; E
       (b* ((prefix (if (utf8-= char (char-code #\e))
-                       (dec-expo-prefix-locase-e)
-                     (dec-expo-prefix-upcase-e)))
+                       (dexprefix-locase-e)
+                     (dexprefix-upcase-e)))
            ((erp sign? sign-pos parstate) (lex-?-sign parstate))
            (pos-so-far (if sign? sign-pos pos))
            ((erp digits last-pos & parstate)
@@ -1484,9 +1484,9 @@
                   (if sign? (unread-char parstate) parstate)) ; put back sign
                  (parstate (unread-char parstate))) ; put back e/E
               (retok nil pos parstate))))
-        (retok (make-dec-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-dexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                last-pos
                parstate)))
      (t ; other
@@ -1512,7 +1512,7 @@
 
 (define lex-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo dec-expop)
+               (expo dexpop)
                (last-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a decimal exponent."
@@ -1524,7 +1524,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-dec-expo) (irr-position) parstate)
+  (b* (((reterr) (irr-dexpo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -1534,8 +1534,8 @@
      ((or (utf8-= char (char-code #\e)) ; e
           (utf8-= char (char-code #\E))) ; E
       (b* ((prefix (if (utf8-= char (char-code #\e))
-                       (dec-expo-prefix-locase-e)
-                     (dec-expo-prefix-upcase-e)))
+                       (dexprefix-locase-e)
+                     (dexprefix-upcase-e)))
            ((erp sign? sign-last-pos parstate)
             (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
@@ -1544,9 +1544,9 @@
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
                         :found "none")))
-        (retok (make-dec-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-dexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                digits-last-pos
                parstate)))
      (t ; other
@@ -1573,7 +1573,7 @@
 
 (define lex-binary-exponent-part ((parstate parstatep))
   :returns (mv erp
-               (expo bin-expop)
+               (expo bexpop)
                (last-pos positionp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Lex a binary exponent."
@@ -1585,7 +1585,7 @@
      Then we read an optional sign.
      Then we read zero or more decimal digits,
      of which there must be at least one."))
-  (b* (((reterr) (irr-bin-expo) (irr-position) parstate)
+  (b* (((reterr) (irr-bexpo) (irr-position) parstate)
        ((erp char pos parstate) (read-char parstate)))
     (cond
      ((not char)
@@ -1595,8 +1595,8 @@
      ((or (utf8-= char (char-code #\p)) ; p
           (utf8-= char (char-code #\P))) ; P
       (b* ((prefix (if (= char (char-code #\p))
-                       (bin-expo-prefix-locase-p)
-                     (bin-expo-prefix-upcase-p)))
+                       (bexprefix-locase-p)
+                     (bexprefix-upcase-p)))
            ((erp sign? sign-last-pos parstate)
             (lex-?-sign parstate))
            ((erp digits digits-last-pos digits-next-pos parstate)
@@ -1605,9 +1605,9 @@
             (reterr-msg :where (position-to-msg digits-next-pos)
                         :expected "one or more digits"
                         :found "none")))
-        (retok (make-bin-expo :prefix prefix
-                              :sign? sign?
-                              :digits digits)
+        (retok (make-bexpo :prefix prefix
+                           :sign? sign?
+                           :digits digits)
                digits-last-pos
                parstate)))
      (t ; other
@@ -1931,10 +1931,10 @@
                 (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
                ((erp parstate) (check-full-ppnumber (and
-                                                   (member (car (last hexdigs))
-                                                           '(#\e #\E))
-                                                   t)
-                                                  parstate)))
+                                                     (member (car (last hexdigs))
+                                                             '(#\e #\E))
+                                                     t)
+                                                    parstate)))
             (retok (const-int
                     (make-iconst
                      :core (make-dec/oct/hex-const-hex
@@ -3762,7 +3762,11 @@
                   parstate)))
     parstate)
   :guard-hints (("Goal" :in-theory (enable natp)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv unread-to-token
+    :args ((token-index natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3815,7 +3819,11 @@
                   parstate)))
     parstate)
   :guard-hints (("Goal" :in-theory (enable natp)))
-  :hooks (:fix))
+
+  ///
+
+  (fty::deffixequiv reread-to-token
+    :args ((token-index natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

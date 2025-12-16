@@ -57,8 +57,8 @@
   :types #!c$(exprs/decls/stmts
               fundef
               fundef-option
-              extdecl
-              extdecl-list)
+              ext-declon
+              ext-declon-list)
   :extra-args ((uid c$::uidp) (new-fn identp))
   :override
   ((c$::expr

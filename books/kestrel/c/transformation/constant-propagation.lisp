@@ -1602,10 +1602,10 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((enum-spec enumspec) enumspec)
-         ((mv list env)
-          (const-prop-enumer-list enumspec.list env)))
-      (mv (make-enum-spec :name enumspec.name
-                          :list list
+         ((mv enumers env)
+          (const-prop-enumer-list enumspec.enumers env)))
+      (mv (make-enum-spec :name? enumspec.name?
+                          :enumers enumers
                           :final-comma enumspec.final-comma)
           env))
     :measure (enum-spec-count enumspec))
@@ -1618,11 +1618,11 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((enumer enumer) enumer)
-         ((mv value env)
-          (const-prop-const-expr-option enumer.value env)))
+         ((mv value? env)
+          (const-prop-const-expr-option enumer.value? env)))
       (mv (make-enumer
             :name enumer.name
-            :value value)
+            :value? value?)
           env))
     :measure (enumer-count enumer))
 
@@ -1660,89 +1660,89 @@
     :measure (statassert-count statassert))
 
   ;; Needs to return identifier and optional value
-  (define const-prop-initdeclor
-    ((initdeclor initdeclorp)
+  (define const-prop-init-declor
+    ((initdeclor init-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::initdeclor)."
-    :returns (mv (new-initdeclor initdeclorp)
+    :short "Propagate a constant through a @(see c$::init-declor)."
+    :returns (mv (new-initdeclor init-declorp)
                  (ident identp)
                  (value? c::value-optionp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((initdeclor initdeclor) initdeclor)
+         ((init-declor initdeclor) initdeclor)
          ((mv declor env)
           (const-prop-declor initdeclor.declor env))
-         ((mv init? value? env)
-          (const-prop-initer-option initdeclor.init? env)))
-      (mv (make-initdeclor
+         ((mv initer? value? env)
+          (const-prop-initer-option initdeclor.initer? env)))
+      (mv (make-init-declor
             :declor declor
             :asm? initdeclor.asm?
-            :init? init?)
+            :initer? initer?)
           (declor->ident declor)
           value?
           env))
-    :measure (initdeclor-count initdeclor))
+    :measure (init-declor-count initdeclor))
 
   ;; Needs to return list of identifiers and optional values
-  (define const-prop-initdeclor-list
-    ((initdeclors initdeclor-listp)
+  (define const-prop-init-declor-list
+    ((initdeclors init-declor-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::initdeclor-list)."
-    :returns (mv (new-initdeclors initdeclor-listp)
+    :short "Propagate a constant through a @(see c$::init-declor-list)."
+    :returns (mv (new-initdeclors init-declor-listp)
                  (idents env-blockp)
                  (new-env envp))
     (b* ((env (env-fix env))
          ((when (endp initdeclors))
           (mv nil nil env))
          ((mv first ident value? env)
-          (const-prop-initdeclor (first initdeclors) env))
+          (const-prop-init-declor (first initdeclors) env))
          ((mv rest idents env)
-          (const-prop-initdeclor-list (cdr initdeclors) env)))
+          (const-prop-init-declor-list (cdr initdeclors) env)))
       (mv (cons first rest)
           (omap::update ident
                         value?
                         idents)
           env))
-    :measure (initdeclor-list-count initdeclors))
+    :measure (init-declor-list-count initdeclors))
 
-  (define const-prop-decl
-    ((decl declp)
+  (define const-prop-declon
+    ((declon declonp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::decl)."
-    :returns (mv (new-decl declp)
+    :short "Propagate a constant through a @(see c$::declon)."
+    :returns (mv (new-declon declonp)
                  (new-env envp))
     (b* ((env (env-fix env)))
-      (decl-case
-        decl
-        :decl (b* (((mv specs env)
-                    (const-prop-decl-spec-list decl.specs env))
-                   ((mv init idents env)
-                    (const-prop-initdeclor-list decl.init env)))
-                (mv (make-decl-decl :extension decl.extension
+      (declon-case
+        declon
+        :declon (b* (((mv specs env)
+                    (const-prop-decl-spec-list declon.specs env))
+                   ((mv declors idents env)
+                    (const-prop-init-declor-list declon.declors env)))
+                (mv (make-declon-declon :extension declon.extension
                                     :specs specs
-                                    :init init)
+                                    :declors declors)
                     (merge-block-env idents env)))
         :statassert (b* (((mv statassert env)
-                          (const-prop-statassert decl.statassert env)))
-                      (mv (decl-statassert statassert) env))))
-    :measure (decl-count decl))
+                          (const-prop-statassert declon.statassert env)))
+                      (mv (declon-statassert statassert) env))))
+    :measure (declon-count declon))
 
-  (define const-prop-decl-list
-    ((decls decl-listp)
+  (define const-prop-declon-list
+    ((declons declon-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::decl-list)."
-    :returns (mv (new-decls decl-listp)
+    :short "Propagate a constant through a @(see c$::declon-list)."
+    :returns (mv (new-declons declon-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((when (endp decls))
+         ((when (endp declons))
           (mv nil env))
          ((mv first env)
-          (const-prop-decl (first decls) env))
+          (const-prop-declon (first declons) env))
          ((mv rest env)
-          (const-prop-decl-list (rest decls) env)))
+          (const-prop-declon-list (rest declons) env)))
       (mv (cons first rest)
           env))
-    :measure (decl-list-count decls))
+    :measure (declon-list-count declons))
 
   (define const-prop-label
     ((label labelp)
@@ -1865,19 +1865,19 @@
                                             :next next
                                             :body body)
                         nil))
-        :for-decl (b* (((mv init env)
-                        (const-prop-decl stmt.init env))
-                       ((mv test - env)
-                        (const-prop-expr-option stmt.test env))
-                       ((mv next - env)
-                        (const-prop-expr-option stmt.next env))
-                       ((mv body ?env)
-                        (const-prop-stmt stmt.body env)))
-                    (mv (make-stmt-for-decl :init init
-                                            :test test
-                                            :next next
-                                            :body body)
-                        nil))
+        :for-declon (b* (((mv init env)
+                          (const-prop-declon stmt.init env))
+                         ((mv test - env)
+                          (const-prop-expr-option stmt.test env))
+                         ((mv next - env)
+                          (const-prop-expr-option stmt.next env))
+                         ((mv body ?env)
+                          (const-prop-stmt stmt.body env)))
+                      (mv (make-stmt-for-declon :init init
+                                                :test test
+                                                :next next
+                                                :body body)
+                          nil))
         :for-ambig (prog2$ (raise "Misusage error: ~x0." (stmt-fix stmt))
                            (mv (stmt-fix stmt) env))
         :goto (mv (stmt-fix stmt) nil)
@@ -1901,9 +1901,9 @@
     (b* ((env (env-fix env)))
       (block-item-case
         item
-        :decl (b* (((mv decl env)
-                    (const-prop-decl item.decl env)))
-                (mv (make-block-item-decl :decl decl :info item.info) env))
+        :declon (b* (((mv declon env)
+                      (const-prop-declon item.declon env)))
+                  (mv (make-block-item-declon :declon declon :info item.info) env))
         :stmt (b* (((mv stmt env)
                     (const-prop-stmt item.stmt env)))
                 (mv (make-block-item-stmt :stmt stmt :info item.info) env))
@@ -1951,43 +1951,43 @@
    (env envp))
   :returns (new-fundef fundefp)
   (b* (((fundef fundef) fundef)
-       ((mv spec -)
-        (const-prop-decl-spec-list fundef.spec env))
+       ((mv specs -)
+        (const-prop-decl-spec-list fundef.specs env))
        ((mv declor -)
         (const-prop-declor fundef.declor env))
-       ((mv decls -)
-        (const-prop-decl-list fundef.decls env))
+       ((mv declons -)
+        (const-prop-declon-list fundef.declons env))
        ((mv body -)
         (const-prop-comp-stmt fundef.body (push-scope-env env))))
     (make-fundef :extension fundef.extension
-                 :spec spec
+                 :specs specs
                  :declor declor
                  :asm? fundef.asm?
-                 :decls decls
+                 :declons declons
                  :body body
                  :info fundef.info)))
 
-(define const-prop-extdecl
-  ((extdecl extdeclp)
+(define const-prop-ext-declon
+  ((extdecl ext-declonp)
    (env envp))
-  :returns (new-extdecl extdeclp)
-  (extdecl-case
+  :returns (new-extdecl ext-declonp)
+  (ext-declon-case
    extdecl
-   :fundef (extdecl-fundef (const-prop-fundef extdecl.fundef env))
-   :decl (b* (((mv decl -)
-               (const-prop-decl extdecl.decl env)))
-           (extdecl-decl decl))
-   :empty (extdecl-empty)
-   :asm (extdecl-fix extdecl)))
+   :fundef (ext-declon-fundef (const-prop-fundef extdecl.fundef env))
+   :declon (b* (((mv declon -)
+                 (const-prop-declon extdecl.declon env)))
+             (ext-declon-declon declon))
+   :empty (ext-declon-empty)
+   :asm (ext-declon-fix extdecl)))
 
-(define const-prop-extdecl-list
-  ((extdecls extdecl-listp)
+(define const-prop-ext-declon-list
+  ((extdecls ext-declon-listp)
    (env envp))
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (if (endp extdecls)
       nil
-    (cons (const-prop-extdecl (first extdecls) env)
-          (const-prop-extdecl-list (rest extdecls) env)))
+    (cons (const-prop-ext-declon (first extdecls) env)
+          (const-prop-ext-declon-list (rest extdecls) env)))
   :measure (acl2-count extdecls)
   :hints (("Goal" :in-theory nil)))
 
@@ -1995,7 +1995,7 @@
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (const-prop-extdecl-list tunit.decls nil)
+    (make-transunit :declons (const-prop-ext-declon-list tunit.declons nil)
                     :info tunit.info)))
 
 (define const-prop-filepath-transunit-map

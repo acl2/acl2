@@ -121,8 +121,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-to-ident-param-declon-map
-  ((decl declp))
+(define declon-to-ident-param-declon-map
+  ((declon declonp))
   :short "Convert a regular declaration into an omap of identifiers to
           parameter declarations."
   :long
@@ -144,19 +144,19 @@
       create parameters for the newly generated function (with the subset of
       declared variables which are used)."))
   :returns (map ident-param-declon-mapp)
-  (decl-case
-   decl
-   :decl (decl-to-ident-param-declon-map0 decl.specs decl.init)
+  (declon-case
+   declon
+   :declon (declon-to-ident-param-declon-map0 declon.specs declon.declors)
    :statassert nil)
   :prepwork
-  ((define decl-to-ident-param-declon-map0
+  ((define declon-to-ident-param-declon-map0
      ((declspecs decl-spec-listp)
-      (initdeclors initdeclor-listp))
+      (initdeclors init-declor-listp))
      :returns
      (map ident-param-declon-mapp)
      (b* (((when (endp initdeclors))
            nil)
-          ((initdeclor initdeclor) (first initdeclors))
+          ((init-declor initdeclor) (first initdeclors))
           (ident (declor->ident initdeclor.declor)))
        (omap::update
          ident
@@ -165,17 +165,17 @@
            :declor (make-param-declor-nonabstract :declor initdeclor.declor
                                                   :info nil)
            :attribs nil)
-         (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
+         (declon-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
-(define decl-list-to-ident-param-declon-map
-  ((decls decl-listp))
-  :short "Fold @(tsee decl-to-ident-param-declon-map) over a list."
+(define declon-list-to-ident-param-declon-map
+  ((declons declon-listp))
+  :short "Fold @(tsee declon-to-ident-param-declon-map) over a list."
   :returns (map ident-param-declon-mapp)
-  (if (endp decls)
+  (if (endp declons)
         nil
-    (omap::update* (decl-to-ident-param-declon-map (first decls))
-                   (decl-list-to-ident-param-declon-map (rest decls))))
+    (omap::update* (declon-to-ident-param-declon-map (first declons))
+                   (declon-list-to-ident-param-declon-map (rest declons))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,7 +276,7 @@
 
 (define abstract-fn
   ((new-fn-name identp)
-   (spec decl-spec-listp)
+   (specs decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
    (decls ident-param-declon-mapp))
@@ -313,7 +313,7 @@
     (mv
       idents
       (make-fundef
-        :spec spec
+        :specs specs
         :declor (make-declor
                   :pointers pointers
                   :direct (make-dirdeclor-function-params
@@ -347,7 +347,7 @@
 (define split-fn-block-item-list
   ((new-fn-name identp)
    (items block-item-listp)
-   (spec decl-spec-listp)
+   (specs decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (decls ident-param-declon-mapp)
    (split-point natp))
@@ -370,7 +370,7 @@
        ((reterr) (c$::irr-fundef) items)
        ((when (zp split-point))
         (b* (((mv idents new-fn)
-              (abstract-fn new-fn-name spec pointers items decls)))
+              (abstract-fn new-fn-name specs pointers items decls)))
           (retok new-fn
                  (list
                    (make-block-item-stmt
@@ -388,16 +388,16 @@
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-param-declon-map item.decl)
-                               (ident-param-declon-map-fix decls))
+          :declon (omap::update* (declon-to-ident-param-declon-map item.declon)
+                                 (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
         (split-fn-block-item-list new-fn-name
-                              (rest items)
-                              spec
-                              pointers
-                              decls
-                              (- split-point 1))))
+                                  (rest items)
+                                  specs
+                                  pointers
+                                  decls
+                                  (- split-point 1))))
     (retok new-fn
            (cons (first items)
                  truncated-items)))
@@ -438,33 +438,33 @@
         (split-fn-block-item-list
          new-fn-name
          (comp-stmt->items fundef.body)
-         fundef.spec
+         fundef.specs
          fundef.declor.pointers
          (param-declon-list-to-ident-param-declon-map params)
          split-point)))
     (retok new-fn
            (make-fundef
             :extension fundef.extension
-            :spec fundef.spec
+            :specs fundef.specs
             :declor fundef.declor
-            :decls fundef.decls
+            :declons fundef.declons
             :body (make-comp-stmt :labels (comp-stmt->labels fundef.body)
                                   :items truncated-items)
             :info fundef.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define split-fn-extdecl
+(define split-fn-ext-declon
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecl extdeclp)
+   (extdecl ext-declonp)
    (split-point natp))
   :short "Transform an external declaration."
   :returns (mv (er? maybe-msgp)
                (target-found booleanp)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (split-fn-fundef
@@ -474,33 +474,33 @@
                       split-point)))
                 (fundef-option-case
                   fundef2
-                  :some (retok t (list (extdecl-fundef fundef1)
-                                       (extdecl-fundef fundef2.val)))
-                  :none (retok nil (list (extdecl-fundef fundef1)))))
-      :decl (retok nil (list (extdecl-fix extdecl)))
-      :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl)))))
+                  :some (retok t (list (ext-declon-fundef fundef1)
+                                       (ext-declon-fundef fundef2.val)))
+                  :none (retok nil (list (ext-declon-fundef fundef1)))))
+      :declon (retok nil (list (ext-declon-fix extdecl)))
+      :empty (retok nil (list (ext-declon-fix extdecl)))
+      :asm (retok nil (list (ext-declon-fix extdecl)))))
   ///
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define split-fn-extdecl-list
+(define split-fn-ext-declon-list
   ((target-fn identp)
    (new-fn-name identp)
-   (extdecls extdecl-listp)
+   (extdecls ext-declon-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
   :returns (mv (er? maybe-msgp)
-               (new-extdecls extdecl-listp))
+               (new-extdecls ext-declon-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
        ((erp target-found extdecls1)
-        (split-fn-extdecl target-fn new-fn-name (first extdecls) split-point))
+        (split-fn-ext-declon target-fn new-fn-name (first extdecls) split-point))
        ((when target-found)
-        (retok (append extdecls1 (extdecl-list-fix (rest extdecls)))))
+        (retok (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
        ((erp extdecls2)
-        (split-fn-extdecl-list target-fn new-fn-name (rest extdecls) split-point)))
+        (split-fn-ext-declon-list target-fn new-fn-name (rest extdecls) split-point)))
     (retok (append extdecls1 extdecls2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -515,8 +515,8 @@
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
-        (split-fn-extdecl-list target-fn new-fn-name tunit.decls split-point)))
-    (mv er (make-transunit :decls extdecls :info tunit.info))))
+        (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
+    (mv er (make-transunit :declons extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
