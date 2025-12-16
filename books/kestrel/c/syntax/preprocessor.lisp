@@ -492,7 +492,7 @@
          ((unless token/newline)
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "a token or newline"
-                      :found "end of file")))
+                      :found token/newline)))
       (cond
        ((plexeme-case token/newline :newline)
         (retok (cons token/newline
