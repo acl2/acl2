@@ -132,9 +132,9 @@
 
 (define pread-token/newline ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
-               (nontokens-nonnewlines plexeme-listp)
-               (token/newline? plexeme-optionp)
-               (token/newline-span spanp)
+               (nontoknls plexeme-listp)
+               (toknl? plexeme-optionp)
+               (toknl-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
   :short "Read a token or new line during preprocessing."
   :long
@@ -146,23 +146,23 @@
        ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens-nonnewlines token/newline token/newline-span ppstate)
+       ((erp nontoknls toknl toknl-span ppstate)
         (pread-token/newline headerp ppstate)))
-    (retok (cons lexeme nontokens-nonnewlines)
-           token/newline
-           token/newline-span
+    (retok (cons lexeme nontoknls)
+           toknl
+           toknl-span
            ppstate))
   :measure (ppstate->size ppstate)
 
   ///
 
   (defret plexeme-list-not-token/newline-p-of-pread-token/newline
-    (plexeme-list-not-token/newline-p nontokens-nonnewlines)
+    (plexeme-list-not-token/newline-p nontoknls)
     :hints (("Goal" :induct t)))
 
   (defret plexeme-token/newline-p-of-pread-token/newline
     (implies token?
-             (plexeme-token/newline-p token/newline?))
+             (plexeme-token/newline-p toknl?))
     :hints (("Goal" :induct t)))
 
   (defret ppstate->size-of-pread-token/newline-uncond
@@ -173,7 +173,7 @@
 
   (defret ppstate->size-of-pread-token/newline-cond
     (implies (and (not erp)
-                  token/newline?)
+                  toknl?)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
@@ -537,30 +537,23 @@
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontokens-nonnewlines token/newline span ppstate)
-          (pread-token/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       ((not token/newline) ; ... EOF
+       ((not toknl) ; ... EOF
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
-                    :found token/newline))
-       ((plexeme-case token/newline :newline) ; ... newline
-        (retok (cons token/newline
-                     (revappend nontokens-nonnewlines
-                                (plexeme-list-fix rev-lexemes)))
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :newline) ; ... newline
+        (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
                (string-plexeme-list-alist-fix preprocessed)
                state))
-       ((plexeme-hashp token/newline) ; ... #
-        (pproc-directive nontokens-nonnewlines
-                         path file
-                         preprocessed preprocessing
+       ((plexeme-hashp toknl) ; ... #
+        (pproc-directive nontoknls path file preprocessed preprocessing
                          rev-lexemes ppstate state))
-       (t ; ... token
-        (b* ((ppstate (punread-token ppstate)))
-          (pproc-text-line nontokens-nonnewlines
-                           path file
-                           preprocessed preprocessing
+       (t ; ... non-#-token
+        (b* ((ppstate (punread-token ppstate))) ; ...
+          (pproc-text-line nontoknls path file preprocessed preprocessing
                            rev-lexemes ppstate state)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
@@ -571,7 +564,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-directive ((nontokens-nonnewlines plexeme-listp)
+  (define pproc-directive ((nontoknls plexeme-listp)
                            (path stringp)
                            (file stringp)
                            (preprocessed string-plexeme-list-alistp)
@@ -614,16 +607,15 @@
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
        Thus, the use of @(tsee pread-token/newline) is justified here."))
-    (declare (ignore nontokens-nonnewlines))
+    (declare (ignore nontoknls))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontokens-nonnewlines token/newline span ppstate)
-          (pread-token/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
        (t (reterr (list :todo
                         path file preprocessing rev-lexemes
-                        nontokens-nonnewlines token/newline span)))))
+                        nontoknls toknl span)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
@@ -632,7 +624,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-text-line ((nontokens-nonnewlines plexeme-listp)
+  (define pproc-text-line ((nontoknls plexeme-listp)
                            (path stringp)
                            (file stringp)
                            (preprocessed string-plexeme-list-alistp)
@@ -659,7 +651,7 @@
        Recall that empty text lines,
        i.e. with no tokens (but possibly with some white space and comments),
        are already handlede in @(tsee pproc-group-part)."))
-    (declare (ignore nontokens-nonnewlines))
+    (declare (ignore nontoknls))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible)))
