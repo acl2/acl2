@@ -587,7 +587,23 @@
        a control line (which spans one line),
        or a non-directive (which spans one line);
        the latter, despite the name, is considered a directive
-       (see footnote 175 in [C17:6.10.3/11]."))
+       (see footnote 175 in [C17:6.10.3/11].")
+     (xdoc::p
+      "We read the next token or newline, and dispatch accordingly.
+       Although [C17:6.10/5] only allows spaces and horizontal tabs
+       as whitespace within preprocessing directives,
+       [C17:5.1.1.2/1] in phase 3 (which precedes preprocessing, i.e. phase 4)
+       requires comments to be replaced by spaces
+       and allows other non-newline whitespace to be replaced by spaces.
+       Although we do not carry out such replacements,
+       we must act as if we did,
+       i.e. at least as if we had replaced comments with spaces:
+       thus we must accept comments.
+       We also choose, as allowed,
+       to conceptually replace non-newline whitespace
+       (i.e. horizontal tab, vertical tab, and form feed)
+       with spaces, for maximal liberality.
+       Thus, the use of @(tsee pread-token/newline) is justified here."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
