@@ -424,14 +424,14 @@
             x86))))
 
 (defthm bv-array-read-of-read-bytes
-  (implies (and (< ad1 len)
-                (natp ad1)
+  (implies (and (< index len)
+                (natp index)
                 (natp len)
-                (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 x86))
-                  (read-byte (bvplus 48 ad1 ad2) x86)))
-  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes len ad2 x86)
-           ;(read-induct-two-sizes len ad1 ad2 x86)
+                (integerp ad))
+           (equal (bv-array-read 8 len index (read-bytes len ad x86))
+                  (read-byte (bvplus 48 index ad) x86)))
+  :hints (("Goal" :induct (indf len index ad x86) ; (read-bytes len ad x86)
+           ;(read-induct-two-sizes len index ad x86)
            :in-theory (enable read-bytes))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion48p
