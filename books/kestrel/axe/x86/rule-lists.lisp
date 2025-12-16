@@ -499,7 +499,8 @@
     write-of-+-arg2
 
     ;; move these?
-    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp todo: add alt version? ; introduces bv-array-read-chunk-little
+    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp ; introduces bv-array-read-chunk-little
+    read-when-equal-of-read-bytes-and-subregion48p-alt
     read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp  ; needed?
     read-when-equal-of-read-and-subregion48p-alt ; needed?
     ;; todo: move these?:
