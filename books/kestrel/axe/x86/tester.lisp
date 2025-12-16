@@ -545,8 +545,9 @@
                          function-name-string
                          executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
                          &key
-                         (param-names ':none)
-                         (assumptions 'nil)
+                         (param-names ':none) ; specific to test-function
+                         (assumptions 'nil) ; different form compared to test-file?
+
                          (extra-rules 'nil)
                          (extra-assumption-rules 'nil)
                          (extra-lift-rules 'nil)
@@ -565,13 +566,15 @@
                          (prune-precise '10000) ; t, nil, or a max size
                          (prune-approx 't)      ; t, nil, or a max size
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (expected-result ':pass)
+                         (max-conflicts '1000000)
                          (inputs-disjoint-from ':code)
                          (assume-bytes ':all)
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000))
+
+                         (expected-result ':pass) ; todo: use :auto (look at the name)
+                         )
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-function"
@@ -925,6 +928,7 @@
                      &key
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
+                     (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      (extra-rules 'nil)
                      (extra-assumption-rules 'nil)
                      (extra-lift-rules 'nil)
@@ -949,9 +953,8 @@
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
                      (position-independent ':auto)
-                     (expected-failures ':auto)
-                     (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     )
+
+                     (expected-failures ':auto))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-file"
