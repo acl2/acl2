@@ -120,6 +120,13 @@
   (:crlf ())
   :pred newlinep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-newline
+  :short "An irrelevant new line."
+  :type newlinep
+  :body (newline-lf))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum plexeme
@@ -142,7 +149,9 @@
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
-     from just after the opening @('//') to just before the closing new-line.")
+     from just after the opening @('//') to just before the closing new line.
+     For line comments, we also include the final new-line character,
+     to preserve the exact kind of new line.")
    (xdoc::p
     "We keep the information about the three possible kinds of new-line,
      and of all other white space characters,
@@ -157,7 +166,7 @@
   (:punctuator ((punctuator string)))
   (:other ((char nat)))
   (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list)))
+  (:line-comment ((content nat-list) (newline newline)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())
