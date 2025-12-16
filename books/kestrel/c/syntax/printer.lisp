@@ -2481,11 +2481,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The @('inlinep') flag says whether the type specifier
-       should be printed as part of the current line or on multiple lines.
-       The latter is currently used only when
-       the type specifier is a structure or union specifier,
-       and only under additional conditions."))
+      "The @('inlinep') flag is always @('t') except when
+       the type specifier is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (type-spec-case
      tyspec
      :void (print-astring "void" pstate)
@@ -2622,16 +2620,25 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
+  (define print-decl-spec ((declspec decl-specp)
+                           (inlinep booleanp)
+                           (pstate pristatep))
     :guard (and (decl-spec-unambp declspec)
                 (decl-spec-aidentp declspec (pristate->gcc pstate)))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag is always @('t') except when
+       the declaration is a type specifier
+       that is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (decl-spec-case
      declspec
      :stoclass (print-stor-spec declspec.spec pstate)
-     :typespec (print-type-spec declspec.spec t pstate)
+     :typespec (print-type-spec declspec.spec inlinep pstate)
      :typequal (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
@@ -2645,7 +2652,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
+  (define print-decl-spec-list ((declspecs decl-spec-listp)
+                                (inlinep booleanp)
+                                (pstate pristatep))
     :guard (and (consp declspecs)
                 (decl-spec-list-unambp declspecs)
                 (decl-spec-list-aidentp declspecs (pristate->gcc pstate)))
@@ -2653,11 +2662,18 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
             separated by spaces."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('inlinep') flag is always @('t') except when
+       the list consists of one declaration specifier
+       that is a type specifier that is a structure or union specifier
+       and additional conditions are satisfied (see callers)."))
     (b* (((unless (mbt (consp declspecs))) (pristate-fix pstate))
-         (pstate (print-decl-spec (car declspecs) pstate))
+         (pstate (print-decl-spec (car declspecs) inlinep pstate))
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-decl-spec-list (cdr declspecs) pstate))
+      (print-decl-spec-list (cdr declspecs) inlinep pstate))
     :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3135,7 +3151,7 @@
          ((unless param.specs)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-decl-spec-list param.specs pstate))
+         (pstate (print-decl-spec-list param.specs t pstate))
          (pstate (print-param-declor param.declor pstate))
          (pstate (if (consp param.attribs)
                      (b* ((pstate (print-astring " " pstate))
@@ -3236,7 +3252,8 @@
       "The @('inlinep') flag says whether
        the members (if any) of structure or union specifier
        should be printed as part of the current line,
-       or in multiple lines with identantation.")
+       or in multiple lines with identantation.
+       This is always @('t') except under some conditions (see callers).")
      (xdoc::p
       "We ensure that this is not empty, i.e. that there is at least
        the identifier or a non-empty member list."))
@@ -3660,7 +3677,7 @@
                  no declaration specifiers in declaration ~x0."
                         declon)
                  pstate)
-                (pstate (print-decl-spec-list declon.specs pstate))
+                (pstate (print-decl-spec-list declon.specs t pstate))
                 (pstate
                  (if declon.declors
                      (b* ((pstate (print-astring " " pstate))
@@ -4346,7 +4363,7 @@
        ((unless fundef.specs)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       (pstate (print-decl-spec-list fundef.specs pstate))
+       (pstate (print-decl-spec-list fundef.specs t pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?
