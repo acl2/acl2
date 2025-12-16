@@ -483,17 +483,20 @@
       "If we find a newline, it means that
        we have a text line (see grammar) without tokens.
        In this case we have finished the group part
-       and we return all the lexemes."))
+       and we return all the lexemes.")
+     (xdoc::p
+      "If we find a hash, we have a directive;
+       otherwise, we have a text line with tokens."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
          ((erp nontokens-nonnewlines token/newline span ppstate)
-          (pread-token/newline nil ppstate))
-         ((unless token/newline)
-          (reterr-msg :where (position-to-msg (span->start span))
-                      :expected "a token or newline"
-                      :found token/newline)))
+          (pread-token/newline nil ppstate)))
       (cond
+       ((not token/newline) ; ... EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token or newline"
+                    :found token/newline))
        ((plexeme-case token/newline :newline) ; ... newline
         (retok (cons token/newline
                      (revappend nontokens-nonnewlines
@@ -501,7 +504,10 @@
                ppstate
                (string-plexeme-list-alist-fix preprocessed)
                state))
-       (t (reterr (list :todo path file preprocessing)))))
+       ((plexeme-hashp token/newline) ; ... #
+        (reterr (list :todo path file preprocessing)))
+       (t ; ... token
+        (reterr (list :todo path file preprocessing)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
