@@ -1,0 +1,62 @@
+; C Library
+;
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C$")
+
+(include-book "../preprocessor")
+
+(include-book "std/testing/assert-bang-stobj" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Build a fileset from alternating paths and contents,
+; e.g. (fileset-of "file1.c" "void f() {}" "file2.c" "int g(int x);").
+
+(defmacro fileset-of (&rest paths+contents)
+  `(fileset (fileset-map (list ,@paths+contents))))
+
+(defun fileset-map (paths+contents)
+  (b* (((when (endp paths+contents)) nil)
+       (path (car paths+contents))
+       (content (cadr paths+contents))
+       (content (if (stringp content)
+                    (acl2::string=>nats content)
+                  content)))
+    (omap::update (filepath path)
+                  (filedata content)
+                  (fileset-map (cddr paths+contents)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Check result of preprocessing against expectation.
+
+(defmacro test-preproc (files &key expected)
+  `(assert!-stobj
+    (b* ((path ".")
+         (files ,files)
+         (ienv (ienv-default))
+         ((mv erp fileset state) (pproc-files path files ienv state)))
+      (mv (if erp
+              (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
+            (equal fileset ,expected))
+          state))
+    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc '("empty.c")
+              :expected (fileset-of "empty.c" ""))
+
+(test-preproc '("whitespace.c")
+              :expected (fileset-of "whitespace.c"
+                                    (list 32 32 32 10 ; SP SP SP
+                                          9 10 ; HT
+                                          11 10 ; VT
+                                          12 10))) ; FF
