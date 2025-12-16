@@ -635,10 +635,7 @@
       :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-directive
       :rule-classes :linear)
-    :hints
-    (("Goal"
-      :in-theory
-      (enable len))))
+    :hints (("Goal" :in-theory (enable len))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,8 +658,7 @@
       (<= (ppstate->size new-ppstate)
           (ppstate->size ppstate))
       :fn pproc-directive
-      :rule-classes :linear)
-    :hints (("Goal" :in-theory (enable ))))
+      :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -686,8 +682,7 @@
                (<= (ppstate->size new-ppstate)
                    (1- (ppstate->size ppstate))))
       :fn pproc-directive
-      :rule-classes :linear)
-    :hints (("Goal" :in-theory (enable ))))
+      :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
