@@ -1142,7 +1142,7 @@
      and it returns the content of the comment as part of the lexeme.")
    (xdoc::p
     "Collecting the content of the comment,
-     i.e. the characters between @('//') and newline (excluding both),
+     i.e. the characters between @('//') and new line (excluding both),
      requires some additional code here."))
   (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp content last-pos ppstate)

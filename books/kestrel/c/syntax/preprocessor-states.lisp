@@ -288,28 +288,28 @@
 
 (define plexeme-token/newline-p ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a preprocessing lexeme is a token or a newline."
+  :short "Check if a preprocessing lexeme is a token or a new line."
   :long
   (xdoc::topstring
    (xdoc::p
-    "During preprocessing, newline characters are significant:
+    "During preprocessing, new-line characters are significant:
      see grammar rules in [C17:6.10/1].
      Preprocessing is largely line-oriented.
-     In our preprocessor, newline characters are captured as newline lexemes
+     In our preprocessor, new-line characters are captured as new-line lexemes
      (see @(tsee plexeme)).")
    (xdoc::p
     "[C17:5.1.1.2/3] requires that comments, including line comments,
      are turned into single space characters;
      we do not actually do that, to preserve the comment information,
      but conceptually we need our preprocessor to behave as if we did.
-     This means that, if we are looking for tokens or newline characters,
+     This means that, if we are looking for tokens or new-line characters,
      we must also consider line comments,
-     because they are always followed by a newline character;
-     recall that line comments exclude the ending newline [C17:6.4.9/2].
-     Although block comments may include newlines,
+     because they are always followed by a new-line character;
+     recall that line comments exclude the ending new line [C17:6.4.9/2].
+     Although block comments may include new lines,
      those are part of the comment:
      the whole comment is turned into a space character,
-     and so there are no newlines to consider here."))
+     and so there are no new lines to consider here."))
   (or (plexeme-tokenp lexeme)
       (plexeme-case lexeme :newline)
       (plexeme-case lexeme :line-comment)))
@@ -318,7 +318,7 @@
 
 (std::deflist plexeme-list-token/newline-p (x)
   :guard (plexeme-listp x)
-  :short "Check if every preprocessing lexeme in a list is a token or newline."
+  :short "Check if every preprocessing lexeme in a list is a token or new line."
   (plexeme-token/newline-p x)
   :elementp-of-nil t
   ///
@@ -328,7 +328,7 @@
 
 (std::deflist plexeme-list-not-token/newline-p (x)
   :guard (plexeme-listp x)
-  :short "Check if no preprocessing lexeme in a list is a token or newline."
+  :short "Check if no preprocessing lexeme in a list is a token or new line."
   (plexeme-token/newline-p x)
   :negatedp t
   :elementp-of-nil t
@@ -390,7 +390,7 @@
      which is a sequence of zero or more preprocessing tokens.
      To facilitate comparisons with multiple definitions of the same macro
      [C17:6.10.3/1] [C17:6.10.3/2],
-     we also keep track of whitespace separating tokens,
+     we also keep track of white space separating tokens,
      in the form of a single space between two tokens.
      The invariant @(tsee plexeme-list-token/space-p) captures
      the fact that we only have tokens and single spaces,
@@ -398,10 +398,10 @@
      only occur between two tokens;
      however, that is also an invariant.
      The list of lexemes does not include
-     the (mandatory [C17:6.10.3/3]) whitespace
+     the (mandatory [C17:6.10.3/3]) white space
      between the name and the replacement list,
-     as well as the whitespace after the replacement list,
-     including the closing newline
+     as well as the white space after the replacement list,
+     including the closing new line
      [C17:6.10.3/7].")
    (xdoc::p
     "For a function-like macro [C17:6.10.3/10],
@@ -410,10 +410,10 @@
      we have zero or more parameters, which are identifiers,
      and an optional ellipsis parameter,
      whose presence or absence we model as a boolean.
-     The list of lexemes does not include any whitespace between
+     The list of lexemes does not include any white space between
      the closing parenthesis of the parameters and the replacement list,
-     as well as the whitespace after the replacement list,
-     including the closing newline
+     as well as the white space after the replacement list,
+     including the closing new line
      [C17:6.10.3/7]."))
   (:object ((replace plexeme-list
                      :reqfix (if (plexeme-list-token/space-p replace)
@@ -541,7 +541,7 @@
      and they have identical replacement list.
      The latter notion [C17:6.10.3/1] amounts to equality for us,
      because, as explained in @(tsee macro-info),
-     we normalize all whitespace to single spaces.
+     we normalize all white space to single spaces.
      If all these conditions are satisfied, the table does not change;
      otherwise, we return an error.")
    (xdoc::p

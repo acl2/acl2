@@ -77,7 +77,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>lexeme</i> in our ABNF grammar,
-     but since for now we just skip over comments and whitespace,
+     but since for now we just skip over comments and white space,
      we have no additional information about them here.")
    (xdoc::p
     "Like @(tsee token), this is abstract-syntax-like,
@@ -2798,12 +2798,12 @@
 
 (define only-whitespace-backward-through-line ((parstate parstatep))
   :returns (only-whitespace booleanp)
-  :short "Check that the only preceding characters on the line are whitespace."
+  :short "Check that the only preceding characters on the line are white space."
   :long
   (xdoc::topstring
    (xdoc::p
     "We begin with the character immediately before the last read character,
-     and check that every character is whitespace until we reach either
+     and check that every character is white space until we reach either
      a new-line or the start of the file.")
    (xdoc::p
     "Since @(tsee read-char) converts all recognized new-line sequences

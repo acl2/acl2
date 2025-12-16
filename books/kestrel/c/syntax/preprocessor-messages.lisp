@@ -137,7 +137,7 @@
        :other "some other character"
        :block-comment "a block comment"
        :line-comment "a line comment"
-       :newline "a newline"
+       :newline "a new line"
        :spaces "one ore more spaces"
        :horizontal-tab "a horizontal tab"
        :vertical-tab "a vertical tab"

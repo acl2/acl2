@@ -48,9 +48,9 @@
      The preprocessing of the files results in a list of lexemes,
      which we turn into bytes via this printer.")
    (xdoc::p
-    "Since our preprocessing lexemes include whitespace,
+    "Since our preprocessing lexemes include white space,
      the printing is relatively easy.
-     We do not need to add whitespace, keep track of indentation, etc.
+     We do not need to add white space, keep track of indentation, etc.
      Compare this with the @(see printer).")
    (xdoc::p
     "Our printing functions take as input and return as output a list of bytes,
@@ -180,7 +180,7 @@
 
 (define pprint-newline ((newline newlinep) (bytes byte-listp))
   :returns (new-bytes byte-listp)
-  :short "Print a newline after preprocessing."
+  :short "Print a new line after preprocessing."
   (newline-case newline
                 :lf (pprint-char 10 bytes)
                 :cr (pprint-char 13 bytes)

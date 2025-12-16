@@ -136,12 +136,12 @@
                (token/newline? plexeme-optionp)
                (token/newline-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token or newline during preprocessing."
+  :short "Read a token or new line during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "As explained in @(tsee plexeme-token/newline-p),
-     we also include line comments as newlines."))
+     we also include line comments as new lines."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
@@ -513,14 +513,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We read the next token or newline, skipping over whitespace and comments.
-       If we find no token or newline, it is an error,
-       because it means that the file has some whitespace or comments
-       without a terminating newline;
+      "We read the next token or new line,
+       skipping over white space and comments.
+       If we find no token or new line, it is an error,
+       because it means that the file has some white space or comments
+       without a terminating new line;
        this function is called (by @(tsee pproc-*-group-part))
        only if we are not at the end of file.")
      (xdoc::p
-      "If we find a newline, it means that
+      "If we find a new line, it means that
        we have a text line (see grammar) without tokens.
        In this case we have finished the group part
        and we return all the lexemes.
@@ -528,11 +529,11 @@
      (xdoc::p
       "If we find a hash, we have a directive,
        which we handle in a separate function.
-       We pass any preceding whitespace and comments to that function.")
+       We pass any preceding white space and comments to that function.")
      (xdoc::p
       "If we do not find a hash, we have a text line with tokens:
        we put back the token and we call a separate function.
-       We pass any preceding whitespace and comments to that function."))
+       We pass any preceding white space and comments to that function."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
@@ -541,7 +542,7 @@
       (cond
        ((not token/newline) ; ... EOF
         (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or newline"
+                    :expected "a token or new line"
                     :found token/newline))
        ((plexeme-case token/newline :newline) ; ... newline
         (retok (cons token/newline
@@ -598,18 +599,18 @@
        the latter, despite the name, is considered a directive
        (see footnote 175 in [C17:6.10.3/11].")
      (xdoc::p
-      "We read the next token or newline, and dispatch accordingly.
+      "We read the next token or new line, and dispatch accordingly.
        Although [C17:6.10/5] only allows spaces and horizontal tabs
-       as whitespace within preprocessing directives,
+       as white space within preprocessing directives,
        [C17:5.1.1.2/1] in phase 3 (which precedes preprocessing, i.e. phase 4)
        requires comments to be replaced by spaces
-       and allows other non-newline whitespace to be replaced by spaces.
+       and allows other non-new-line white space to be replaced by spaces.
        Although we do not carry out such replacements,
        we must act as if we did,
        i.e. at least as if we had replaced comments with spaces:
        thus we must accept comments.
        We also choose, as allowed,
-       to conceptually replace non-newline whitespace
+       to conceptually replace non-new-line white space
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
        Thus, the use of @(tsee pread-token/newline) is justified here."))
@@ -651,12 +652,12 @@
     (xdoc::topstring
      (xdoc::p
       "That is, preprocess a line that does not start with a hash
-       (possibly after some whitespace and comments).
+       (possibly after some white space and comments).
        This is called after putting back the first token of the line,
-       but without having put back any leading whitespace or comments,
+       but without having put back any leading white space or comments,
        since those do not matter for the purpose of preprocessing the text line.
        Recall that empty text lines,
-       i.e. with no tokens (but possibly with some whitespace and comments),
+       i.e. with no tokens (but possibly with some white space and comments),
        are already handlede in @(tsee pproc-group-part)."))
     (declare (ignore nontokens-nonnewlines))
     (b* (((reterr) nil ppstate nil state)
