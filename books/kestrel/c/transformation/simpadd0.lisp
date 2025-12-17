@@ -3063,7 +3063,8 @@
        ((mv new-declons (gout gout-decls))
         (simpadd0-ext-declon-list tunit.declons gin))
        (gin (gin-update gin gout-decls)))
-    (mv  (make-transunit :declons new-declons
+    (mv  (make-transunit :comment nil
+                         :declons new-declons
                          :info tunit.info)
          (gout-no-thm gin)))
   :hooks (:fix)

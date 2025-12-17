@@ -3628,9 +3628,21 @@
    (xdoc::p
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
-    "A translation unit consists of a list of external declarations.
-     We also add a slot with additional information, e.g. from validation."))
-  ((declons ext-declon-list)
+    "A translation unit consists of a list of external declarations,
+     optionally preceded by a line comment,
+     which we represent as its content, namely a list of character codes;
+     the comment is absent if the list is empty.
+     This is useful when generating code:
+     the comment can convey information about the generation.
+     We may eventually generalize this to allow
+     both line and block comments at the top level,
+     intermixed with external declarations,
+     also extending our parser to recognize and preserve those comments
+     (now the tokenizer skips over all comments.")
+   (xdoc::p
+    "We also add a slot with additional information, e.g. from validation."))
+  ((comment nat-list)
+   (declons ext-declon-list)
    (info any))
   :pred transunitp
   :layout :fulltree)

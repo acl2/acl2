@@ -1995,7 +1995,8 @@
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :declons (const-prop-ext-declon-list tunit.declons nil)
+    (make-transunit :comment nil
+                    :declons (const-prop-ext-declon-list tunit.declons nil)
                     :info tunit.info)))
 
 (define const-prop-filepath-transunit-map
