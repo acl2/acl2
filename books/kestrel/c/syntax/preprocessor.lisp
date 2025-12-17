@@ -37,10 +37,13 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
-     preserves the information about the @('#include') directives.
+     preserves the information about the @('#include') directives in some cases.
      That is, it does not replace such directives
      with the (preprocessed) contents of the referenced files,
-     but it otherwise performs the rest of the preprocessing.")
+     but it otherwise performs the rest of the preprocessing.
+     This is only done under certain conditions;
+     in general, the C preprocessor operates at a low lexical level,
+     making it difficult to preserve code structure in general.")
    (xdoc::p
     "Our preprocessor maps a list of file paths
      to a file set (see @(see files)):
