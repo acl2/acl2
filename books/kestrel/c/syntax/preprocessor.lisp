@@ -20,6 +20,7 @@
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -36,10 +37,13 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
-     preserves the information about the @('#include') directives.
+     preserves the information about the @('#include') directives in some cases.
      That is, it does not replace such directives
      with the (preprocessed) contents of the referenced files,
-     but it otherwise performs the rest of the preprocessing.")
+     but it otherwise performs the rest of the preprocessing.
+     This is only done under certain conditions;
+     in general, the C preprocessor operates at a low lexical level,
+     making it difficult to preserve code structure in general.")
    (xdoc::p
     "Our preprocessor maps a list of file paths
      to a file set (see @(see files)):
@@ -131,37 +135,37 @@
 
 (define pread-token/newline ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
-               (nontokens-nonnewlines plexeme-listp)
-               (token/newline? plexeme-optionp)
-               (token/newline-span spanp)
+               (nontoknls plexeme-listp)
+               (toknl? plexeme-optionp)
+               (toknl-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token or newline during preprocessing."
+  :short "Read a token or new line during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "As explained in @(tsee plexeme-token/newline-p),
-     we also include line comments as newlines."))
+     we also include line comments as new lines."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens-nonnewlines token/newline token/newline-span ppstate)
+       ((erp nontoknls toknl toknl-span ppstate)
         (pread-token/newline headerp ppstate)))
-    (retok (cons lexeme nontokens-nonnewlines)
-           token/newline
-           token/newline-span
+    (retok (cons lexeme nontoknls)
+           toknl
+           toknl-span
            ppstate))
   :measure (ppstate->size ppstate)
 
   ///
 
   (defret plexeme-list-not-token/newline-p-of-pread-token/newline
-    (plexeme-list-not-token/newline-p nontokens-nonnewlines)
+    (plexeme-list-not-token/newline-p nontoknls)
     :hints (("Goal" :induct t)))
 
   (defret plexeme-token/newline-p-of-pread-token/newline
     (implies token?
-             (plexeme-token/newline-p token/newline?))
+             (plexeme-token/newline-p toknl?))
     :hints (("Goal" :induct t)))
 
   (defret ppstate->size-of-pread-token/newline-uncond
@@ -172,11 +176,50 @@
 
   (defret ppstate->size-of-pread-token/newline-cond
     (implies (and (not erp)
-                  token/newline?)
+                  toknl?)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define punread-token ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We move the token from the sequence of read lexemes
+     to the sequence of unread lexemes.")
+   (xdoc::p
+    "It is an internal error if @('lexemes-read') is 0.
+     It means that the calling code is wrong.
+     In this case, after raising the hard error,
+     logically we still increment @('lexemes-read')
+     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
+  (b* ((ppstate.lexemes-read (ppstate->lexemes-read ppstate))
+       (ppstate.lexemes-unread (ppstate->lexemes-unread ppstate))
+       (ppstate.size (ppstate->size ppstate))
+       ((unless (> ppstate.lexemes-read 0))
+        (raise "Internal error: no token to unread.")
+        (b* ((ppstate (update-ppstate->lexemes-unread
+                       (1+ ppstate.lexemes-unread) ppstate))
+             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+          ppstate))
+       (ppstate (update-ppstate->lexemes-unread
+                 (1+ ppstate.lexemes-unread) ppstate))
+       (ppstate (update-ppstate->lexemes-read
+                 (1- ppstate.lexemes-read) ppstate))
+       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+    ppstate)
+  :no-function nil
+
+  ///
+
+  (defret ppstate->size-of-unread-token
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -451,7 +494,7 @@
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     1))) ; > pproc-group-part
+                                     2))) ; > pproc-group-part
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,47 +516,54 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We read the next token or newline, skipping over whitespace and comments.
-       If we find no token or newline, it is an error,
-       because it means that the file has some whitespace or comments
-       without a terminating newline;
+      "We read the next token or new line,
+       skipping over white space and comments.
+       If we find no token or new line, it is an error,
+       because it means that the file has some white space or comments
+       without a terminating new line;
        this function is called (by @(tsee pproc-*-group-part))
        only if we are not at the end of file.")
      (xdoc::p
-      "If we find a newline, it means that
+      "If we find a new line, it means that
        we have a text line (see grammar) without tokens.
        In this case we have finished the group part
-       and we return all the lexemes.")
+       and we return all the lexemes.
+       For example, this could contain comments, which we therefore preserve.")
      (xdoc::p
-      "If we find a hash, we have a directive;
-       otherwise, we have a text line with tokens."))
+      "If we find a hash, we have a directive,
+       which we handle in a separate function.
+       We discard any white space and comments preceding the hash.")
+     (xdoc::p
+      "If we do not find a hash, we have a text line with tokens:
+       we put back the token and we call a separate function.
+       We pass any preceding white space and comments to that function."))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontokens-nonnewlines token/newline span ppstate)
-          (pread-token/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       ((not token/newline) ; ... EOF
+       ((not toknl) ; EOF
         (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or newline"
-                    :found token/newline))
-       ((plexeme-case token/newline :newline) ; ... newline
-        (retok (cons token/newline
-                     (revappend nontokens-nonnewlines
-                                (plexeme-list-fix rev-lexemes)))
+                    :expected "a token or new line"
+                    :found (plexeme-to-msg toknl)))
+       ((or (plexeme-case toknl :newline) ; newline
+            (plexeme-case toknl :line-comment)) ; // ...
+        (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
                (string-plexeme-list-alist-fix preprocessed)
                state))
-       ((plexeme-hashp token/newline) ; ... #
+       ((plexeme-hashp toknl) ; #
         (pproc-directive
          path file preprocessed preprocessing rev-lexemes ppstate state))
-       (t ; ... token
-        (reterr (list :todo path file preprocessing)))))
+       (t ; non-#-token
+        (b* ((ppstate (punread-token ppstate)))
+          (pproc-text-line nontoknls path file preprocessed preprocessing
+                           rev-lexemes ppstate state)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
-                                     0))
+                                     1)) ; > pproc-text-line
     :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -543,16 +593,211 @@
        a control line (which spans one line),
        or a non-directive (which spans one line);
        the latter, despite the name, is considered a directive
-       (see footnote 175 in [C17:6.10.3/11]."))
+       (see footnote 175 in [C17:6.10.3/11].")
+     (xdoc::p
+      "We read the next token or new line, and dispatch accordingly.
+       Although [C17:6.10/5] only allows spaces and horizontal tabs
+       as white space within preprocessing directives,
+       [C17:5.1.1.2/1] in phase 3 (which precedes preprocessing, i.e. phase 4)
+       requires comments to be replaced by spaces
+       and allows other non-new-line white space to be replaced by spaces.
+       Although we do not carry out such replacements,
+       we must act as if we did,
+       i.e. at least as if we had replaced comments with spaces:
+       thus we must accept comments.
+       We also choose, as allowed,
+       to conceptually replace non-new-line white space
+       (i.e. horizontal tab, vertical tab, and form feed)
+       with spaces, for maximal liberality.
+       Thus, the use of @(tsee pread-token/newline) is justified here.")
+     (xdoc::p
+      "If we find no token or new line, it is an error.")
+     (xdoc::p
+      "If we find a new line, we have the null directive [C17:6.10.7].
+       We simplify replace it with a blank line consisting of the new line,
+       without comments or white space before the new line.")
+     (xdoc::p
+      "If we find an identifier,
+       we check to see if it is the name of a know directive,
+       and we handle the directive accordingly if that is the case.
+       If it is not a directive name, or if it is not even an identifier,
+       we have a non-directive [C17:6.10/9],
+       which renders the behavior undefined;
+       we stop with an error in this case.
+       (We may extend this in the future,
+       e.g. to accommodate non-standard directives.)"))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontokens-nonnewlines token/newline span ppstate)
-          (pread-token/newline nil ppstate)))
+         ((erp & toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       (t (reterr (list :todo
-                        path file preprocessing rev-lexemes
-                        nontokens-nonnewlines token/newline span)))))
+       ((not toknl) ; # EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token or new line"
+                    :found (plexeme-to-msg toknl)))
+       ((or (plexeme-case toknl :newline) ; # newline
+            (plexeme-case toknl :line-comment)) ; # // ...
+        ;; null directive
+        (b* ((newline (if (plexeme-case toknl :newline)
+                          toknl
+                        (plexeme-newline
+                         (plexeme-line-comment->newline toknl)))))
+          (retok (cons newline (plexeme-list-fix rev-lexemes))
+                 ppstate
+                 (string-plexeme-list-alist-fix preprocessed)
+                 state)))
+       ((plexeme-case toknl :ident) ; # ident
+        (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
+          (cond
+           ((equal dirname "if") ; # if
+            (reterr :todo))
+           ((equal dirname "ifdef") ; # ifdef
+            (reterr :todo))
+           ((equal dirname "ifndef") ; # ifndef
+            (reterr :todo))
+           ((equal dirname "include") ; # include
+            (pproc-include-directive
+             path file preprocessed preprocessing rev-lexemes ppstate state))
+           ((equal dirname "define") ; # define
+            (reterr :todo))
+           ((equal dirname "undef") ; # undef
+            (reterr :todo))
+           ((equal dirname "line") ; # line
+            (reterr :todo))
+           ((equal dirname "error") ; # error
+            (reterr :todo))
+           ((equal dirname "pragma") ; # pragma
+            (reterr :todo))
+           (t ;  # non-directive
+            (reterr-msg :where (span->start span)
+                        :expected "a directive name among ~
+                                   'if', ~
+                                   'ifdef', ~
+                                   'ifndef', ~
+                                   'include', ~
+                                   'define', ~
+                                   'undef', ~
+                                   'line', ~
+                                   'error', and ~
+                                   'pragma'"
+                        :found (plexeme-to-msg toknl))))))
+       (t ; # non-directive
+        (reterr-msg :where (span->start span)
+                    :expected "a directive name among ~
+                               'if', ~
+                               'ifdef', ~
+                               'ifndef', ~
+                               'include', ~
+                               'define', ~
+                               'undef', ~
+                               'line', ~
+                               'error', and ~
+                               'pragma'"
+                    :found (plexeme-to-msg toknl)))))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0))
+    :no-function nil)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-include-directive ((path stringp)
+                                   (file stringp)
+                                   (preprocessed string-plexeme-list-alistp)
+                                   (preprocessing string-listp)
+                                   (rev-lexemes plexeme-listp)
+                                   (ppstate ppstatep)
+                                   state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a @('#include') directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called just after the @('include') identifier has been parsed.")
+     (xdoc::p
+      "If we do not find a token or new line,
+       it is an error, because there is no header name.")
+     (xdoc::p
+      "If we find a new line,
+       it is an error, because there is no header name.")
+     (xdoc::p
+      "If we find a header name,
+       we find the file referenced by it
+       and we recursively preprocess it.
+       Note that we pass @('t') as the @('headerp') flag.")
+     (xdoc::p
+      "If we find any other token,
+       for now we return an error,
+       but we should preprocess that token and any subsequent tokens,
+       and see if they result in a header name."))
+    (declare (ignore path file preprocessing rev-lexemes))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible))
+         ((erp & toknl span ppstate) (pread-token/newline t ppstate)))
+      (cond
+       ((not toknl) ; # include EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((or (plexeme-case toknl :newline)
+            (plexeme-case toknl :line-comment)) ; # include // ...
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :header) ; # include headername
+        (reterr :todo))
+       (t ; # include token
+        (reterr (msg "Non-direct #include not yet supported.")))))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0))
+    :no-function nil)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-text-line ((nontoknls plexeme-listp)
+                           (path stringp)
+                           (file stringp)
+                           (preprocessed string-plexeme-list-alistp)
+                           (preprocessing string-listp)
+                           (rev-lexemes plexeme-listp)
+                           (ppstate ppstatep)
+                           state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a (non-empty) text line."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "That is, preprocess a line that does not start with a hash
+       (possibly after some white space and comments).
+       This is called after putting back the first token of the line,
+       but without having put back any leading white space or comments,
+       since those do not matter for the purpose of preprocessing the text line.
+       Recall that empty text lines,
+       i.e. with no tokens (but possibly with some white space and comments),
+       are already handlede in @(tsee pproc-group-part)."))
+    (declare (ignore nontoknls))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible)))
+      (reterr (list :todo path file preprocessing rev-lexemes)))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
@@ -595,6 +840,14 @@
       (<= (len new-preprocessed) *pproc-files-max*)
       :fn pproc-directive
       :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-include-directive-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-include-directive
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-text-line-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-text-line
+      :rule-classes :linear)
     :hints
     (("Goal"
       :in-theory
@@ -635,6 +888,18 @@
       :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-directive
       :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-include-directive-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-include-directive
+      :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-text-line-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-text-line
+      :rule-classes :linear)
     :hints (("Goal" :in-theory (enable len))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -658,6 +923,16 @@
       (<= (ppstate->size new-ppstate)
           (ppstate->size ppstate))
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-include-directive-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-include-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-text-line-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-text-line
       :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -682,6 +957,18 @@
                (<= (ppstate->size new-ppstate)
                    (1- (ppstate->size ppstate))))
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-include-directive-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-include-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-text-line-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-text-line
       :rule-classes :linear))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

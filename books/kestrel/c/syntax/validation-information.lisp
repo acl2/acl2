@@ -921,10 +921,10 @@
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit declons info))
+    (equal (transunit-annop (transunit comment declons info))
            (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit declons info))
+    :expand (transunit-annop (transunit comment declons info))
     :enable identity)
 
   ;; theorems about accessors:

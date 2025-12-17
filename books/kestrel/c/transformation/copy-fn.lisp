@@ -157,7 +157,8 @@
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
+    (make-transunit :comment nil
+                    :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

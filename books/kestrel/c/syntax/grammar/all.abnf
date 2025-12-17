@@ -316,6 +316,10 @@ pp-number = digit
 ; [C17] does not provide grammar rules for comments;
 ; it describes them informally in [C17:6.4.9].
 ; Here we provide ABNF grammar rules that capture the syntax of comments.
+; [C17:6.4.9/2] says that the ending new line is not part of the line comment,
+; but we interpret it as not being part of the content of the comment;
+; grammatically, we consider it part of the line comment,
+; along with the opening double slash.
 
 comment = block-comment
         / line-comment
@@ -331,7 +335,7 @@ rest-of-block-comment-after-star =
     / "*" rest-of-block-comment-after-star
     / character-not-star-or-slash rest-of-block-comment
 
-line-comment = "//" *character-not-new-line
+line-comment = "//" *character-not-new-line new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1551,9 +1555,8 @@ translation-unit = *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration
-                     ; GCC extensions:
-                     / ";"
-                     / asm-statement
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers

@@ -39,6 +39,7 @@
     :content "int bar(int *x, int *y) {
   return (*x) + (*y);
 }
+
 int foo(int y) {
   int x = 5;
   return bar(&x, &y);
@@ -70,6 +71,7 @@ int foo(int y) {
   }
   return (unsigned long) (*total);
 }
+
 unsigned long add_and_sub_all(long arr[], unsigned int len) {
   long total = 0l;
   for (unsigned int i = 0; i < len; i++) {
@@ -100,10 +102,12 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
   (assert-file-contents
     :file "new/test3.c"
     :content "int w = 42;
+
 int baz(int *x, long *y, long *z) {
   (*y) = bar((*x));
   return (*x) + (*y) + (*z);
 }
+
 int foo(int x) {
   long y = 0, z = 5;
   return baz(&x, &y, &z);
@@ -131,10 +135,12 @@ int foo(int x) {
   (assert-file-contents
     :file "new/test4.c"
     :content "int bar(void);
+
 int baz(int (* const (*arr)[])(void)) {
   int ret = (*arr)[0]();
   return ret;
 }
+
 int foo(int x) {
   int (* const arr[])(void) = {bar};
   return baz(&arr);
@@ -164,6 +170,7 @@ int foo(int x) {
   int y = 0;
   return (*x) + y;
 }
+
 int foo() {
   int x = 5;
   return bar(&x);
@@ -194,6 +201,7 @@ int foo() {
   (*x)++;
   return *(*y);
 }
+
 int main(void) {
   int x = 0;
   int *y = &x;
