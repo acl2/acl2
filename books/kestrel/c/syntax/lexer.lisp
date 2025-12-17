@@ -2908,7 +2908,7 @@
       If there is none, we lex the identifier @('u8').
       If there is one and is double quote,
       then we attempt to lex a string literal with the appropriate prefix,
-      which again is the only possibilty,
+      which again is the only possibility,
       and again we can immediately fail if this fails.
       If the character after @('u8') is not a double quote,
       we put back that character and @('8'),
