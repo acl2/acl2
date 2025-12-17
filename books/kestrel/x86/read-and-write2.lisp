@@ -424,18 +424,18 @@
             x86))))
 
 (defthm bv-array-read-of-read-bytes
-  (implies (and (< ad1 len)
-                (natp ad1)
+  (implies (and (< index len)
+                (natp index)
                 (natp len)
-                (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 x86))
-                  (read-byte (bvplus 48 ad1 ad2) x86)))
-  :hints (("Goal" :induct (indf len ad1 ad2 x86) ; (read-bytes len ad2 x86)
-           ;(read-induct-two-sizes len ad1 ad2 x86)
+                (integerp ad))
+           (equal (bv-array-read 8 len index (read-bytes len ad x86))
+                  (read-byte (bvplus 48 index ad) x86)))
+  :hints (("Goal" :induct (indf len index ad x86) ; (read-bytes len ad x86)
+           ;(read-induct-two-sizes len index ad x86)
            :in-theory (enable read-bytes))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion48p
-  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
+  (implies (and (equal bytes (read-bytes n2 ad2 x86)) ; n2, ad2, and bytes are free vars ; note that refine-assumption-for-matching puts the constant first (todo: change that?)
                 (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
@@ -464,8 +464,6 @@
           ;;                   (addr ad2)))
           ;;  :in-theory (e/d (bvuminus) (slice-of-read)))
           ("Goal"
-           :do-not '(generalize eliminate-destructors)
-;           :expand (read n1 ad1 x86)
            :induct (read n1 ad1 x86)
            ;(read-induct-two-sizes n1 ad1 ad2 x86)
            :in-theory (e/d ((:i read)
@@ -475,12 +473,29 @@
                             in-region48p read-becomes-read-byte
                             ifix
                             acl2::bvchop-of-sum-cases
+                            bv-array-read-chunk-little
                             )
                            (;distributivity
                             acl2::+-of-minus-constant-version ; fixme disable
 ;                            (:e expt)
-                            ))))
-  )
+                            )))))
+
+;; This variant is for when BYTES is not a constant (so the first hyp is a
+;; directed equality that doesn't get turned around by
+;; refine-assumption-for-matching)
+(defthm read-when-equal-of-read-bytes-and-subregion48p-alt
+  (implies (and (equal (read-bytes n2 ad2 x86) bytes) ; n2, ad2, and bytes are free vars ; note the orientation of this
+                (subregion48p n1 ad1 n2 ad2)
+                (natp n1)
+                (< n1 (expt 2 48)) ; allow equal?
+                (unsigned-byte-p 48 n2) ; allow 2^48?
+                (integerp ad1) ; todo
+                (integerp ad2) ; todo
+                )
+           (equal (read n1 ad1 x86)
+                  (bv-array-read-chunk-little n1 8 (len bytes) (bvminus 48 ad1 ad2) bytes)))
+  :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion48p
+           :in-theory (disable read-when-equal-of-read-bytes-and-subregion48p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -71,7 +71,7 @@
 
 ;; we can usually unroll this into a bvcat if we can't do better
 ;; todo: try last?
-(defopeners bv-array-read-chunk-little) ; do we want this if the index is not constant?
+(defopeners bv-array-read-chunk-little :disable t) ; do we want this if the index is not constant?
 (def-constant-opener bv-array-read-chunk-little)
 
 (defthm unsigned-byte-p-of-bv-array-read-chunk-little
@@ -171,7 +171,8 @@
            (equal (bvchop element-size (bv-array-read-chunk-little element-count element-size array-len index array))
                   (if (posp element-count)
                       (bv-array-read element-size array-len index array)
-                    0))))
+                    0)))
+  :hints (("Goal" :in-theory (enable bv-array-read-chunk-little))))
 
 (defthm bv-array-read-chunk-little-of-+-of-expt2-of-ceiling-of-lg
   (implies (integerp i)
