@@ -961,14 +961,15 @@
  (list 10)
  :more-inputs ((position 1 2))
  :cond (equal ast
-              (plexeme-line-comment nil)))
+              (plexeme-line-comment nil (newline-lf))))
 
 (test-lex
  plex-line-comment
  (append (acl2::string=>nats "comment") (list 10 13))
  :more-inputs ((position 1 2))
  :cond (equal ast
-              (plexeme-line-comment (acl2::string=>nats "comment"))))
+              (plexeme-line-comment (acl2::string=>nats "comment")
+                                    (newline-lf))))
 
 (test-lex
  plex-line-comment
@@ -976,7 +977,8 @@
  :more-inputs ((position 1 2))
  :cond (equal ast
               (plexeme-line-comment
-               (acl2::string=>nats "/* no special significance */"))))
+               (acl2::string=>nats "/* no special significance */")
+               (newline-cr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1505,7 +1507,8 @@
  "// single line comment
   "
  :cond (equal ast (plexeme-line-comment
-                   (acl2::string=>nats " single line comment"))))
+                   (acl2::string=>nats " single line comment")
+                   (newline-lf))))
 
 ; header names
 

@@ -201,6 +201,7 @@
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
     (make-transunit
+     :comment nil
      :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
      :info tunit.info)))
 

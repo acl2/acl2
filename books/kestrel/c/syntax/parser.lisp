@@ -11766,7 +11766,7 @@
                       but GCC extensions (which allow that) are not enabled.")))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :declons extdecls :info nil) parstate))
+    (retok (make-transunit :comment nil :declons extdecls :info nil) parstate))
 
   ///
 

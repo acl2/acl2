@@ -48,9 +48,9 @@
      The preprocessing of the files results in a list of lexemes,
      which we turn into bytes via this printer.")
    (xdoc::p
-    "Since our preprocessing lexemes include whitespace,
+    "Since our preprocessing lexemes include white space,
      the printing is relatively easy.
-     We do not need to add whitespace, keep track of indentation, etc.
+     We do not need to add white space, keep track of indentation, etc.
      Compare this with the @(see printer).")
    (xdoc::p
     "Our printing functions take as input and return as output a list of bytes,
@@ -180,7 +180,7 @@
 
 (define pprint-newline ((newline newlinep) (bytes byte-listp))
   :returns (new-bytes byte-listp)
-  :short "Print a newline after preprocessing."
+  :short "Print a new line after preprocessing."
   (newline-case newline
                 :lf (pprint-char 10 bytes)
                 :cr (pprint-char 13 bytes)
@@ -188,14 +188,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pprint-line-comment ((content nat-listp) (bytes byte-listp))
+(define pprint-line-comment ((content nat-listp)
+                             (newline newlinep)
+                             (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a line comment after preprocessing."
   (b* ((bytes (pprint-astring "//" bytes))
        ((unless (grammar-character-listp content))
         (raise "Internal error: bad line comment content ~x0."
                (nat-list-fix content)))
-       (bytes (pprint-chars content bytes)))
+       (bytes (pprint-chars content bytes))
+       (bytes (pprint-newline newline bytes)))
     bytes)
   :no-function nil)
 
@@ -619,7 +622,7 @@
    :punctuator (pprint-punctuator lexeme.punctuator bytes)
    :other (pprint-other lexeme.char bytes)
    :block-comment (pprint-block-comment lexeme.content bytes)
-   :line-comment (pprint-line-comment lexeme.content bytes)
+   :line-comment (pprint-line-comment lexeme.content lexeme.newline bytes)
    :newline (pprint-newline lexeme.chars bytes)
    :spaces (pprint-spaces lexeme.count bytes)
    :horizontal-tab (pprint-horizontal-tab bytes)

@@ -181,7 +181,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *cc-options-space-sep*
-  :short "C flags whose value follows after a whitespace separator."
+  :short "C flags whose value follows after a white-space separator."
   '("-o" "-include" "-idirafter" "-imacros" "-imultilib" "-iprefix" "-iquote"
     "-isysroot" "-isystem" "-iwithprefix" "-iwithprefixbefore"
     ;; NOTE: `-I` is accepted as both space-separated and a conventional short

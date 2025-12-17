@@ -198,7 +198,7 @@
        ((erp found extdecls)
         (ext-declon-list-try-split-fn-when tunit.declons triggers transunits)))
     (retok found
-           (make-transunit :declons extdecls :info tunit.info))))
+           (make-transunit :comment nil :declons extdecls :info tunit.info))))
 
 (define filepath-transunit-map-try-split-fn-when
   ((map filepath-transunit-mapp)
