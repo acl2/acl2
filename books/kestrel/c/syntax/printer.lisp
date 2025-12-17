@@ -4426,7 +4426,9 @@
    (xdoc::p
     "We separate them with blank lines."))
   (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-ext-declon (car extdecls) pstate)))
+       (pstate (print-ext-declon (car extdecls) pstate))
+       ((when (endp (cdr extdecls))) pstate)
+       (pstate (print-new-line pstate)))
     (print-ext-declon-list (cdr extdecls) pstate))
   :hooks (:fix)
 
@@ -4441,9 +4443,31 @@
               (transunit-aidentp tunit (pristate->gcc pstate)))
   :returns (new-pstate pristatep)
   :short "Print a translation unit."
-  (b* (((transunit tunit) tunit))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is a line comment, we print it in one line,
+     followed by a blank line if there are external declarations."))
+  (b* (((transunit tunit) tunit)
+       (pstate
+        (if tunit.comment
+            (if (grammar-character-listp tunit.comment)
+                (b* ((pstate (print-astring "// " pstate))
+                     (pstate (print-chars tunit.comment pstate))
+                     (pstate (print-new-line pstate))
+                     (pstate (if tunit.declons
+                                 (print-new-line pstate) ; blank line
+                               pstate)))
+                  pstate)
+              (prog2$
+               (raise "Internal error: ~
+                       non-grammatical line comment ~x0."
+                      tunit.comment)
+               pstate))
+          pstate)))
     (print-ext-declon-list tunit.declons pstate))
   :hooks (:fix)
+  :no-function nil
 
   ///
 

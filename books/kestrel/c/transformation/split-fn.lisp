@@ -516,7 +516,7 @@
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
         (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
-    (mv er (make-transunit :declons extdecls :info tunit.info))))
+    (mv er (make-transunit :comment nil :declons extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
