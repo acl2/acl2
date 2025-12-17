@@ -539,21 +539,21 @@
           (reterr :impossible))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       ((not toknl) ; ... EOF
+       ((not toknl) ; EOF
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; ... newline
-            (plexeme-case toknl :line-comment)) ; ... // ...
+       ((or (plexeme-case toknl :newline) ; newline
+            (plexeme-case toknl :line-comment)) ; // ...
         (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
                (string-plexeme-list-alist-fix preprocessed)
                state))
-       ((plexeme-hashp toknl) ; ... #
+       ((plexeme-hashp toknl) ; #
         (pproc-directive
          path file preprocessed preprocessing rev-lexemes ppstate state))
-       (t ; ... non-#-token
-        (b* ((ppstate (punread-token ppstate))) ; ...
+       (t ; non-#-token
+        (b* ((ppstate (punread-token ppstate)))
           (pproc-text-line nontoknls path file preprocessed preprocessing
                            rev-lexemes ppstate state)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
@@ -623,18 +623,17 @@
        we stop with an error in this case.
        (We may extend this in the future,
        e.g. to accommodate non-standard directives.)"))
-    (declare (ignore path file preprocessing))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
          ((erp & toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
-       ((not toknl) ; ... # ... EOF
+       ((not toknl) ; # EOF
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; ... # ... newline
-            (plexeme-case toknl :line-comment)) ; ... # ... // ...
+       ((or (plexeme-case toknl :newline) ; # newline
+            (plexeme-case toknl :line-comment)) ; # // ...
         ;; null directive
         (b* ((newline (if (plexeme-case toknl :newline)
                           toknl
@@ -644,28 +643,29 @@
                  ppstate
                  (string-plexeme-list-alist-fix preprocessed)
                  state)))
-       ((plexeme-case toknl :ident) ; ... # ... ident
+       ((plexeme-case toknl :ident) ; # ident
         (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
           (cond
-           ((equal dirname "if") ; ... # ... if
+           ((equal dirname "if") ; # if
             (reterr :todo))
-           ((equal dirname "ifdef") ; ... # ... ifdef
+           ((equal dirname "ifdef") ; # ifdef
             (reterr :todo))
-           ((equal dirname "ifndef") ; ... # ... ifndef
+           ((equal dirname "ifndef") ; # ifndef
             (reterr :todo))
-           ((equal dirname "include") ; ... # ... include
+           ((equal dirname "include") ; # include
+            (pproc-include-directive
+             path file preprocessed preprocessing rev-lexemes ppstate state))
+           ((equal dirname "define") ; # define
             (reterr :todo))
-           ((equal dirname "define") ; ... # ... define
+           ((equal dirname "undef") ; # undef
             (reterr :todo))
-           ((equal dirname "undef") ; ... # ... undef
+           ((equal dirname "line") ; # line
             (reterr :todo))
-           ((equal dirname "line") ; ... # ... line
+           ((equal dirname "error") ; # error
             (reterr :todo))
-           ((equal dirname "error") ; ... # error
+           ((equal dirname "pragma") ; # pragma
             (reterr :todo))
-           ((equal dirname "pragma") ; ... # pragma
-            (reterr :todo))
-           (t ;  ... # ... non-directive
+           (t ;  # non-directive
             (reterr-msg :where (span->start span)
                         :expected "a directive name among ~
                                    'if', ~
@@ -678,7 +678,7 @@
                                    'error', and ~
                                    'pragma'"
                         :found (plexeme-to-msg toknl))))))
-       (t ; ... # ... non-directive
+       (t ; # non-directive
         (reterr-msg :where (span->start span)
                     :expected "a directive name among ~
                                'if', ~
@@ -691,6 +691,69 @@
                                'error', and ~
                                'pragma'"
                     :found (plexeme-to-msg toknl)))))
+    :measure (nat-list-measure (list (nfix (- *pproc-files-max*
+                                              (len preprocessed)))
+                                     0 ; < pproc-file
+                                     (ppstate->size ppstate)
+                                     0))
+    :no-function nil)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-include-directive ((path stringp)
+                                   (file stringp)
+                                   (preprocessed string-plexeme-list-alistp)
+                                   (preprocessing string-listp)
+                                   (rev-lexemes plexeme-listp)
+                                   (ppstate ppstatep)
+                                   state)
+    :guard (<= (len preprocessed) *pproc-files-max*)
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
+                 (new-preprocessed string-plexeme-list-alistp)
+                 state)
+    :parents (preprocessor pproc)
+    :short "Preprocess a @('#include') directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called just after the @('include') identifier has been parsed.")
+     (xdoc::p
+      "If we do not find a token or new line,
+       it is an error, because there is no header name.")
+     (xdoc::p
+      "If we find a new line,
+       it is an error, because there is no header name.")
+     (xdoc::p
+      "If we find a header name,
+       we find the file referenced by it
+       and we recursively preprocess it.
+       Note that we pass @('t') as the @('headerp') flag.")
+     (xdoc::p
+      "If we find any other token,
+       for now we return an error,
+       but we should preprocess that token and any subsequent tokens,
+       and see if they result in a header name."))
+    (declare (ignore path file preprocessing rev-lexemes))
+    (b* (((reterr) nil ppstate nil state)
+         ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
+          (reterr :impossible))
+         ((erp & toknl span ppstate) (pread-token/newline t ppstate)))
+      (cond
+       ((not toknl) ; # include EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((or (plexeme-case toknl :newline)
+            (plexeme-case toknl :line-comment)) ; # include // ...
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :header) ; # include headername
+        (reterr :todo))
+       (t ; # include token
+        (reterr (msg "Non-direct #include not yet supported.")))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
@@ -774,6 +837,10 @@
       (<= (len new-preprocessed) *pproc-files-max*)
       :fn pproc-directive
       :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-include-directive-upper-bound
+      (<= (len new-preprocessed) *pproc-files-max*)
+      :fn pproc-include-directive
+      :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-text-line-upper-bound
       (<= (len new-preprocessed) *pproc-files-max*)
       :fn pproc-text-line
@@ -818,6 +885,12 @@
       :hyp (string-plexeme-list-alistp preprocessed)
       :fn pproc-directive
       :rule-classes :linear)
+    (defret len-of-new-preprocessed-of-pproc-include-directive-lower-bound
+      (implies (not erp)
+               (>= (len new-preprocessed) (len preprocessed)))
+      :hyp (string-plexeme-list-alistp preprocessed)
+      :fn pproc-include-directive
+      :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-text-line-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
@@ -848,6 +921,11 @@
           (ppstate->size ppstate))
       :fn pproc-directive
       :rule-classes :linear)
+    (defret ppstate->size-of-pproc-include-directive-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-include-directive
+      :rule-classes :linear)
     (defret ppstate->size-of-pproc-text-line-uncond
       (<= (ppstate->size new-ppstate)
           (ppstate->size ppstate))
@@ -876,6 +954,12 @@
                (<= (ppstate->size new-ppstate)
                    (1- (ppstate->size ppstate))))
       :fn pproc-directive
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-include-directive-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-include-directive
       :rule-classes :linear)
     (defret ppstate->size-of-pproc-text-line-cond
       (implies (not erp)
