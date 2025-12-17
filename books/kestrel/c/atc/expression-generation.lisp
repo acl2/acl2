@@ -2506,7 +2506,7 @@
              at a point where ~
              an expression term returning boolean is expected, ~
              the term ~x1 is encountered instead, ~
-             which is not a C epxression term returning boolean; ~
+             which is not a C expression term returning boolean; ~
              see the ATC user documentation."
             gin.fn term)))
     :measure (pseudo-term-count term))
