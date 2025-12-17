@@ -529,7 +529,7 @@
      (xdoc::p
       "If we find a hash, we have a directive,
        which we handle in a separate function.
-       We pass any preceding white space and comments to that function.")
+       We discard any white space and comments preceding the hash.")
      (xdoc::p
       "If we do not find a hash, we have a text line with tokens:
        we put back the token and we call a separate function.
@@ -550,8 +550,8 @@
                (string-plexeme-list-alist-fix preprocessed)
                state))
        ((plexeme-hashp toknl) ; ... #
-        (pproc-directive nontoknls path file preprocessed preprocessing
-                         rev-lexemes ppstate state))
+        (pproc-directive
+         path file preprocessed preprocessing rev-lexemes ppstate state))
        (t ; ... non-#-token
         (b* ((ppstate (punread-token ppstate))) ; ...
           (pproc-text-line nontoknls path file preprocessed preprocessing
@@ -565,8 +565,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-directive ((nontoknls plexeme-listp)
-                           (path stringp)
+  (define pproc-directive ((path stringp)
                            (file stringp)
                            (preprocessed string-plexeme-list-alistp)
                            (preprocessing string-listp)
@@ -624,12 +623,11 @@
        we stop with an error in this case.
        (We may extend this in the future,
        e.g. to accommodate non-standard directives.)"))
-    (declare (ignore nontoknls path file preprocessing))
+    (declare (ignore path file preprocessing))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate))
-         (?todo-remove nontoknls))
+         ((erp & toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
        ((not toknl) ; ... # ... EOF
         (reterr-msg :where (position-to-msg (span->start span))
