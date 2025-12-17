@@ -43,11 +43,25 @@
 
   (assert-file-contents
     :file "new/test1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
-struct s1 { int foo; _Bool bar; };
-struct s2 { unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
+struct s1 {
+  int foo;
+  _Bool bar;
+};
+
+struct s2 {
+  unsigned long int baz;
+};
+
 static struct s1 my1;
+
 static struct s2 my2;
+
 int main(void) {
   return my1.foo + (-my1.bar);
 }
@@ -75,11 +89,25 @@ int main(void) {
 
   (assert-file-contents
     :file "new/test1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
-struct s { int foo; _Bool bar; };
-struct s_0 { unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
+struct s {
+  int foo;
+  _Bool bar;
+};
+
+struct s_0 {
+  unsigned long int baz;
+};
+
 static struct s my_0;
+
 static struct s_0 my_1;
+
 int main(void) {
   return my_0.foo + (-my_0.bar);
 }
@@ -103,11 +131,25 @@ int main(void) {
 
   (assert-file-contents
     :file "new/test1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
-struct myStruct_0 { int foo; _Bool bar; };
-struct myStruct_1 { unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
+struct myStruct_0 {
+  int foo;
+  _Bool bar;
+};
+
+struct myStruct_1 {
+  unsigned long int baz;
+};
+
 static struct myStruct_0 my_0;
+
 static struct myStruct_1 my_1;
+
 int main(void) {
   return my_0.foo + (-my_0.bar);
 }
@@ -135,11 +177,25 @@ int main(void) {
 
   (assert-file-contents
     :file "new/test2.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
-struct s1 { int foo; _Bool bar; };
-struct s2 { unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
+struct s1 {
+  int foo;
+  _Bool bar;
+};
+
+struct s2 {
+  unsigned long int baz;
+};
+
 static struct s1 my1 = {.foo = 0, .bar = 0};
+
 static struct s2 my2 = {.baz = 42};
+
 int main(void) {
   int x = my1.foo + (-my2.baz);
   struct myStruct my;
@@ -155,8 +211,8 @@ int main(void) {
 
 (acl2::must-succeed*
   (c$::input-files :files '("static-struct1.c"
-                           "static-struct2.c"
-                           "extern-struct.c")
+                            "static-struct2.c"
+                            "extern-struct.c")
                    :const *old*)
 
   (split-gso *old*
@@ -174,8 +230,14 @@ int main(void) {
 
   (assert-file-contents
     :file "new/static-struct1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+
 int main(void) {
   int x = my.foo + (-my.baz);
   struct myStruct my;
@@ -184,13 +246,27 @@ int main(void) {
 ")
   (assert-file-contents
     :file "new/static-struct2.c"
-    :content "struct myStruct { int a; int b; };
+    :content "struct myStruct {
+  int a;
+  int b;
+};
+
 static struct myStruct my = {.a = 0, .b = 0, };
-struct S { int x; };
+
+struct S {
+  int x;
+};
+
 struct S1;
-struct S2 { int x; };
+
+struct S2 {
+  int x;
+};
+
 struct S1 s1;
+
 struct S2 s2;
+
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
@@ -202,10 +278,21 @@ int foo(void) {
 ")
   (assert-file-contents
     :file "new/extern-struct.c"
-    :content "struct S { unsigned int x; unsigned int y; };
-struct S1 { unsigned int y; };
-struct S2 { unsigned int x; };
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
 struct S1 s1;
+
 struct S2 s2 = {.x = 0};
 ")
 
@@ -236,8 +323,14 @@ struct S2 s2 = {.x = 0};
 
   (assert-file-contents
     :file "new/static-struct1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+
 int main(void) {
   int x = my.foo + (-my.baz);
   struct myStruct my;
@@ -246,13 +339,27 @@ int main(void) {
 ")
   (assert-file-contents
     :file "new/static-struct2.c"
-    :content "struct myStruct { int a; int b; };
+    :content "struct myStruct {
+  int a;
+  int b;
+};
+
 static struct myStruct my = {.a = 0, .b = 0, };
-struct S { int x; };
+
+struct S {
+  int x;
+};
+
 struct S1;
-struct S2 { int x; };
+
+struct S2 {
+  int x;
+};
+
 struct S1 s1;
+
 struct S2 s2;
+
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
@@ -264,10 +371,21 @@ int foo(void) {
 ")
   (assert-file-contents
     :file "new/extern-struct.c"
-    :content "struct S { unsigned int x; unsigned int y; };
-struct S1 { unsigned int y; };
-struct S2 { unsigned int x; };
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
 struct S1 s1;
+
 struct S2 s2 = {.x = 0};
 ")
 
@@ -296,8 +414,14 @@ struct S2 s2 = {.x = 0};
 
   (assert-file-contents
     :file "new/static-struct1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+
 int main(void) {
   int x = my.foo + (-my.baz);
   struct myStruct my;
@@ -306,13 +430,29 @@ int main(void) {
 ")
   (assert-file-contents
     :file "new/static-struct2.c"
-    :content "struct myStruct { int a; int b; };
-struct myStruct1 { int a; };
-struct myStruct2 { int b; };
+    :content "struct myStruct {
+  int a;
+  int b;
+};
+
+struct myStruct1 {
+  int a;
+};
+
+struct myStruct2 {
+  int b;
+};
+
 static struct myStruct1 my1 = {.a = 0, };
+
 static struct myStruct2 my2 = {.b = 0, };
-struct S { int x; };
+
+struct S {
+  int x;
+};
+
 extern struct S s;
+
 int foo(void) {
   int x = my1.a + (-my2.b);
   struct myStruct my;
@@ -324,7 +464,11 @@ int foo(void) {
 ")
   (assert-file-contents
     :file "new/extern-struct.c"
-    :content "struct S { unsigned int x; unsigned int y; };
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
 struct S s = {.x = 0};
 ")
 
@@ -348,8 +492,14 @@ struct S s = {.x = 0};
 
   (assert-file-contents
     :file "new/static-struct1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+
 int main(void) {
   int x = my.foo + (-my.baz);
   struct myStruct my;
@@ -358,13 +508,27 @@ int main(void) {
 ")
   (assert-file-contents
     :file "new/static-struct2.c"
-    :content "struct myStruct { int a; int b; };
+    :content "struct myStruct {
+  int a;
+  int b;
+};
+
 static struct myStruct my = {.a = 0, .b = 0, };
-struct S { int x; };
+
+struct S {
+  int x;
+};
+
 struct S_0;
-struct S_1 { int x; };
+
+struct S_1 {
+  int x;
+};
+
 struct S_0 s_0;
+
 struct S_1 s_1;
+
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
@@ -376,10 +540,21 @@ int foo(void) {
 ")
   (assert-file-contents
     :file "new/extern-struct.c"
-    :content "struct S { unsigned int x; unsigned int y; };
-struct S_0 { unsigned int y; };
-struct S_1 { unsigned int x; };
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S_0 {
+  unsigned int y;
+};
+
+struct S_1 {
+  unsigned int x;
+};
+
 struct S_0 s_0;
+
 struct S_1 s_1 = {.x = 0};
 ")
 
@@ -402,12 +577,27 @@ struct S_1 s_1 = {.x = 0};
   ;; No definitions of my_0 and my_1!
   (assert-file-contents
     :file "new/typedef1.c"
-    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
-struct myStruct_0 { int foo; _Bool bar; };
-struct myStruct_1 { unsigned long int baz; };
+    :content "struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+};
+
+struct myStruct_0 {
+  int foo;
+  _Bool bar;
+};
+
+struct myStruct_1 {
+  unsigned long int baz;
+};
+
 typedef struct myStruct myStruct_t;
+
 static struct myStruct_0 my_0;
+
 static struct myStruct_1 my_1;
+
 int main(void) {
   return my_0.foo + (-my_1.baz);
 }
@@ -431,11 +621,25 @@ int main(void) {
 
   (assert-file-contents
     :file "new/typedef2.c"
-    :content "typedef struct myStruct { int foo; _Bool bar; unsigned long int baz; } myStruct_t;
-struct myStruct_0 { int foo; _Bool bar; };
-struct myStruct_1 { unsigned long int baz; };
+    :content "typedef struct myStruct {
+  int foo;
+  _Bool bar;
+  unsigned long int baz;
+} myStruct_t;
+
+struct myStruct_0 {
+  int foo;
+  _Bool bar;
+};
+
+struct myStruct_1 {
+  unsigned long int baz;
+};
+
 static struct myStruct_0 my_0;
+
 static struct myStruct_1 my_1;
+
 int main(void) {
   return my_0.foo + (-my_1.baz);
 }

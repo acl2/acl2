@@ -76,6 +76,7 @@
 ;the refined assumptions should not be quoteps or vars (might we ever want to assume a var?)?
 ;this could return an indication of when an assumption is known to be false (e.g., equality of two constants)?
 ;; todo: verify that this preserves the meaning of terms, perhaps using meta-extract for the known-boolean-fns
+;; See also term-replacement-alist-for-assumption.
 (defund refine-assumption-for-matching (assumption known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-boolean-fns))))

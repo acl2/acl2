@@ -1142,12 +1142,13 @@
      and it returns the content of the comment as part of the lexeme.")
    (xdoc::p
     "Collecting the content of the comment,
-     i.e. the characters between @('//') and newline (excluding both),
+     i.e. the characters between @('//') and new line (excluding both),
      requires some additional code here."))
   (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
-       ((erp content last-pos ppstate)
+       ((erp content last-pos newline ppstate)
         (plex-line-comment-loop first-pos ppstate)))
-    (retok (plexeme-line-comment content)
+    (retok (make-plexeme-line-comment :content content
+                                      :newline newline)
            (make-span :start first-pos :end last-pos)
            ppstate))
 
@@ -1157,9 +1158,10 @@
      :returns (mv erp
                   (content nat-listp)
                   (last-pos positionp)
+                  (newline newlinep)
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
-     (b* (((reterr) nil (irr-position) ppstate)
+     (b* (((reterr) nil (irr-position) (irr-newline) ppstate)
           ((erp char pos ppstate) (pread-char ppstate)))
        (cond
         ((not char) ; EOF
@@ -1170,21 +1172,21 @@
                                   never ends."
                                  (position-to-msg first-pos))))
         ((utf8-= char 10) ; LF
-         (retok nil pos ppstate))
+         (retok nil pos (newline-lf) ppstate))
         ((utf8-= char 13) ; CR
          (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
            (cond
             ((not char2) ; CR EOF
-             (retok nil pos ppstate))
+             (retok nil pos (newline-cr) ppstate))
             ((utf8-= char2 10) ; CR LF
-             (retok nil pos2 ppstate))
+             (retok nil pos2 (newline-crlf) ppstate))
             (t ; LF other
              (b* ((ppstate (punread-char ppstate))) ; LF
-               (retok nil pos ppstate))))))
+               (retok nil pos (newline-lf) ppstate))))))
         (t ; other
-         (b* (((erp content last-pos ppstate)
+         (b* (((erp content last-pos newline ppstate)
                (plex-line-comment-loop first-pos ppstate)))
-           (retok (cons char content) last-pos ppstate)))))
+           (retok (cons char content) last-pos newline ppstate)))))
      :measure (ppstate->size ppstate)
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
      :no-function nil

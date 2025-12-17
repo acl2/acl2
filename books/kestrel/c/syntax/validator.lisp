@@ -6895,7 +6895,9 @@
        ((erp new-edecls table)
         (valid-ext-declon-list (transunit->declons tunit) table ienv))
        (info (make-transunit-info :table-end table)))
-    (retok (make-transunit :declons new-edecls :info info)
+    (retok (make-transunit :comment (transunit->comment tunit)
+                           :declons new-edecls
+                           :info info)
            table))
 
   ///

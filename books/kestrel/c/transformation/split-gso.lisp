@@ -454,7 +454,7 @@
           tunit.declons)))
     (retok new1
            new2
-           (make-transunit :declons extdecls :info tunit.info)))
+           (make-transunit :comment nil :declons extdecls :info tunit.info)))
     ///
 
     (defret identp-of-dup-split-struct-type-transunit.new2$
@@ -831,7 +831,7 @@
           new2-type
           split-members
           tunit.declons)))
-    (retok (make-transunit :declons extdecls :info tunit.info))))
+    (retok (make-transunit :comment nil :declons extdecls :info tunit.info))))
 
 (define split-gso-split-object-filepath-transunit-map
   ((original identp)

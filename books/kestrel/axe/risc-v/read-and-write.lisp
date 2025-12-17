@@ -461,27 +461,27 @@
 
 ;; prove from nth-of-read-bytes?
 (defthm bv-array-read-of-read-bytes-helper
-  (implies (and (< ad1 len) ;(force (< ad1 len))
-                (natp ad1)
+  (implies (and (< index len) ;(force (< index len))
+                (natp index)
                 (natp len)
-                (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
-                  (read-byte (bvplus 32 ad1 ad2) stat)))
-  :hints (("Goal" :induct (dec-dec-inc-induct len ad1 ad2) ; (read-bytes len ad2 stat)
-           :expand (read-bytes len ad2 stat)
-           ;(read-induct-two-sizes len ad1 ad2 stat)
+                (integerp ad))
+           (equal (bv-array-read 8 len index (read-bytes len ad stat))
+                  (read-byte (bvplus 32 index ad) stat)))
+  :hints (("Goal" :induct (dec-dec-inc-induct len index ad) ; (read-bytes len ad stat)
+           :expand (read-bytes len ad stat)
+           ;(read-induct-two-sizes len index ad stat)
            :in-theory (enable read-bytes read-byte-of-+
                               acl2::bvplus-of-+-arg2
                               acl2::bvplus-of-+-arg3))))
 
 ;;  ; todo: different from the version for x86
 ;; (defthm bv-array-read-of-read-bytes
-;;   (implies (and (natp ad1)
+;;   (implies (and (natp index)
 ;;                 (natp len)
-;;                 (integerp ad2))
-;;            (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
-;;                   (if (< ad1 len)
-;;                       (read-byte (bvplus 32 ad1 ad2) stat)
+;;                 (integerp ad))
+;;            (equal (bv-array-read 8 len index (read-bytes len ad stat))
+;;                   (if (< index len)
+;;                       (read-byte (bvplus 32 index ad) stat)
 ;;                     0)))
 ;;   :hints (("Goal" :use (:instance bv-array-read-of-read-bytes-helper)
 ;;            :in-theory (disable bv-array-read-of-read-bytes-helper))))
@@ -887,7 +887,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion32p-alt
@@ -972,7 +971,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 ;; flips the equality in hyp 1

@@ -58,6 +58,7 @@
                 nat-list
                 nat-list-fix
                 nat-optionp
+                nat-list-measure
                 nats=>string
                 packn-pos
                 pos
@@ -82,4 +83,6 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp)))
+                str::oct-digit-char-listp
+                str::str-fix
+                str::string-list-fix)))

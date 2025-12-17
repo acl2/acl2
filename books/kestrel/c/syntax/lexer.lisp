@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -76,7 +77,7 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>lexeme</i> in our ABNF grammar,
-     but since for now we just skip over comments and whitespace,
+     but since for now we just skip over comments and white space,
      we have no additional information about them here.")
    (xdoc::p
     "Like @(tsee token), this is abstract-syntax-like,
@@ -2797,12 +2798,12 @@
 
 (define only-whitespace-backward-through-line ((parstate parstatep))
   :returns (only-whitespace booleanp)
-  :short "Check that the only preceding characters on the line are whitespace."
+  :short "Check that the only preceding characters on the line are white space."
   :long
   (xdoc::topstring
    (xdoc::p
     "We begin with the character immediately before the last read character,
-     and check that every character is whitespace until we reach either
+     and check that every character is white space until we reach either
      a new-line or the start of the file.")
    (xdoc::p
     "Since @(tsee read-char) converts all recognized new-line sequences
@@ -3672,14 +3673,13 @@
                   (1- parstate.tokens-read) parstate))
        (parstate (update-parstate->size (1+ parstate.size) parstate)))
     parstate)
-  :guard-hints (("Goal" :in-theory (enable natp len fix)))
 
   ///
 
   (defret parsize-of-unread-token
     (equal (parsize new-parstate)
            (1+ (parsize parstate)))
-    :hints (("Goal" :in-theory (enable parsize len nfix)))))
+    :hints (("Goal" :in-theory (enable parsize)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

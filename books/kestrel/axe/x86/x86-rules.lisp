@@ -840,8 +840,6 @@
   :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
                                      x86-operation-mode))))
 
-(defopeners bv-array-read-chunk-little) ; restrict?
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A scheme for removing shadowed writes

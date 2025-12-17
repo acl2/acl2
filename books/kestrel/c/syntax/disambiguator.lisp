@@ -3859,7 +3859,9 @@
              (dimb-add-idents-objfun *gcc-builtin* table)
            table))
        ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc)))
-    (retok (make-transunit :declons new-edecls :info nil)))
+    (retok (make-transunit :comment (transunit->comment tunit)
+                           :declons new-edecls
+                           :info nil)))
   :hooks (:fix)
 
   ///

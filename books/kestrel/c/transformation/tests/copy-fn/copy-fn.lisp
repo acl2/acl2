@@ -40,6 +40,7 @@
   int x = 5;
   return x + y - z;
 }
+
 int bar(int y, int z) {
   int x = 5;
   return x + y - z;
@@ -75,6 +76,7 @@ int bar(int y, int z) {
     return foo(x);
   }
 }
+
 int bar(int x) {
   if (x) {
     return bar(x - 1);
@@ -109,6 +111,7 @@ int bar(int x) {
   }
   return fibonacci(x - 1) + fibonacci(x - 2);
 }
+
 int fib(int x) {
   if (x <= 1) {
     return x;
@@ -151,6 +154,7 @@ int fib(int x) {
     foo;
   }));
 }
+
 int bar(int x) {
   if (x == 0) {
     return x;
