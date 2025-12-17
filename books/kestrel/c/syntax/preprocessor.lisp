@@ -613,12 +613,23 @@
      (xdoc::p
       "If we find a new line, we have the null directive [C17:6.10.7].
        We simplify replace it with a blank line consisting of the new line,
-       without comments or white space before the new line."))
-    (declare (ignore nontoknls))
+       without comments or white space before the new line.")
+     (xdoc::p
+      "If we find an identifier,
+       we check to see if it is the name of a know directive,
+       and we handle the directive accordingly if that is the case.
+       If it is not a directive name, or if it is not even an identifier,
+       we have a non-directive [C17:6.10/9],
+       which renders the behavior undefined;
+       we stop with an error in this case.
+       (We may extend this in the future,
+       e.g. to accommodate non-standard directives.)"))
+    (declare (ignore nontoknls path file preprocessing))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
           (reterr :impossible))
-         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate))
+         (?todo-remove nontoknls))
       (cond
        ((not toknl) ; ... # ... EOF
         (reterr-msg :where (position-to-msg (span->start span))
@@ -626,6 +637,7 @@
                     :found (plexeme-to-msg toknl)))
        ((or (plexeme-case toknl :newline) ; ... # ... newline
             (plexeme-case toknl :line-comment)) ; ... # ... // ...
+        ;; null directive
         (b* ((newline (if (plexeme-case toknl :newline)
                           toknl
                         (plexeme-newline
@@ -634,9 +646,53 @@
                  ppstate
                  (string-plexeme-list-alist-fix preprocessed)
                  state)))
-       (t (reterr (list :todo ; handle the other directives
-                        path file preprocessing rev-lexemes
-                        nontoknls toknl span)))))
+       ((plexeme-case toknl :ident) ; ... # ... ident
+        (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
+          (cond
+           ((equal dirname "if") ; ... # ... if
+            (reterr :todo))
+           ((equal dirname "ifdef") ; ... # ... ifdef
+            (reterr :todo))
+           ((equal dirname "ifndef") ; ... # ... ifndef
+            (reterr :todo))
+           ((equal dirname "include") ; ... # ... include
+            (reterr :todo))
+           ((equal dirname "define") ; ... # ... define
+            (reterr :todo))
+           ((equal dirname "undef") ; ... # ... undef
+            (reterr :todo))
+           ((equal dirname "line") ; ... # ... line
+            (reterr :todo))
+           ((equal dirname "error") ; ... # error
+            (reterr :todo))
+           ((equal dirname "pragma") ; ... # pragma
+            (reterr :todo))
+           (t ;  ... # ... non-directive
+            (reterr-msg :where (span->start span)
+                        :expected "a directive name among ~
+                                   'if', ~
+                                   'ifdef', ~
+                                   'ifndef', ~
+                                   'include', ~
+                                   'define', ~
+                                   'undef', ~
+                                   'line', ~
+                                   'error', and ~
+                                   'pragma'"
+                        :found (plexeme-to-msg toknl))))))
+       (t ; ... # ... non-directive
+        (reterr-msg :where (span->start span)
+                    :expected "a directive name among ~
+                               'if', ~
+                               'ifdef', ~
+                               'ifndef', ~
+                               'include', ~
+                               'define', ~
+                               'undef', ~
+                               'line', ~
+                               'error', and ~
+                               'pragma'"
+                    :found (plexeme-to-msg toknl)))))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
                                      0 ; < pproc-file
