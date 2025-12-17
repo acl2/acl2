@@ -35,9 +35,11 @@
   (assert-file-contents
     :file "new/test1.c"
     :content "extern double foo(int x, int y);
+
 static double wrapper_foo(int x, int y) {
   return foo(x, y);
 }
+
 int main(void) {
   wrapper_foo(0, 1);
 }
@@ -63,9 +65,11 @@ int main(void) {
     :content "extern double foo(int x, int y) {
   return 0;
 }
+
 static double wrapper_foo(int x, int y) {
   return foo(x, y);
 }
+
 int main(void) {
   int (*foo)(double, double) = 0;
   return foo(0.0, 1.0);
@@ -90,9 +94,11 @@ int main(void) {
   (assert-file-contents
     :file "new/test3.c"
     :content "double foo(int, int *);
+
 static double wrapper_foo(int arg_0, int *arg_1) {
   return foo(arg_0, arg_1);
 }
+
 int main(void) {
   return wrapper_foo(0, 0);
 }

@@ -39,6 +39,7 @@
   else
     return 2;
 }
+
 void g(int z, int w) {
   if (z = w)
     return 1;

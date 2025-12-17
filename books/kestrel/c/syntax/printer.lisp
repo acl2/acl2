@@ -4426,7 +4426,9 @@
    (xdoc::p
     "We separate them with blank lines."))
   (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-ext-declon (car extdecls) pstate)))
+       (pstate (print-ext-declon (car extdecls) pstate))
+       ((when (endp (cdr extdecls))) pstate)
+       (pstate (print-new-line pstate)))
     (print-ext-declon-list (cdr extdecls) pstate))
   :hooks (:fix)
 

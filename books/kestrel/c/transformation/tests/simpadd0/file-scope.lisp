@@ -34,6 +34,7 @@
 (assert-file-contents
  :file "new/file_scope.c"
  :content "int x;
+
 int y = x;
 ")
 

@@ -34,6 +34,7 @@
 (assert-file-contents
  :file "new/global.c"
  :content "int x;
+
 int global() {
   return x;
 }
