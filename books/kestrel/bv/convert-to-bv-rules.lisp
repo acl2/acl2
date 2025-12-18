@@ -16,7 +16,7 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvplus")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "bvnot")
 (include-book "bvshr-def")
 (include-book "bvmult-def")
@@ -35,6 +35,7 @@
 (local (include-book "bvshr"))
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))
+(local (include-book "bvuminus"))
 
 ;; The rules in this book convert certain arguments of BV functions to be calls
 ;; of BV operators.  The approach has 2 steps:

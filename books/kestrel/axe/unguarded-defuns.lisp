@@ -26,7 +26,7 @@
 (include-book "kestrel/bv/bitor" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitand" :dir :system)
-(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
@@ -35,7 +35,7 @@
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
-(include-book "kestrel/bv/bvminus" :dir :system)
+(include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
@@ -63,6 +63,8 @@
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
@@ -355,7 +357,7 @@
 (defund map-ifix (x)
   (declare (xargs :guard t))
   (if (atom x)
-      x
+      nil
     (cons (ifix (first x))
           (map-ifix (rest x)))))
 

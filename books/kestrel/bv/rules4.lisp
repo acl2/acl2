@@ -11,10 +11,18 @@
 
 (in-package "ACL2")
 
-(include-book "rules") ;drop? for signed-byte-p-when-top-bit-0
+(local (include-book "rules")) ;drop? for signed-byte-p-when-top-bit-0
 (local (include-book "unsigned-byte-p"))
+(include-book "logapp-def")
+(include-book "bvcat-def")
 (include-book "getbit")
 (include-book "repeatbit")
+(include-book "bvlt")
+(include-book "trim")
+(include-book "sbvlt-def")
+(include-book "bvsx-def")
+(include-book "kestrel/booleans/boolor" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
