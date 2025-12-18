@@ -23,7 +23,7 @@
    (cons a b)
    (if test x y)))
 
-;BOZO verify gaurds?
+;BOZO verify guards?
 ;returns a list of equalities equivalent to the claim (equal CONS-NEST1 CONS-NEST2)
 ;perhaps don't include equalities that are trivially true?
 (defun cons-equal-meta-function-helper (cons-nest1 cons-nest2)
@@ -304,4 +304,3 @@ how do we handle backchaining?
 
 (in-theory (disable cons-equal))
 (in-theory (enable cons-equal-smart-meta))
-

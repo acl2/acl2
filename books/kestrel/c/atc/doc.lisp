@@ -1123,7 +1123,7 @@
        (xdoc::li "@('ulong')")
        (xdoc::li "@('sllong')")
        (xdoc::li "@('ullong')"))
-      "@('T') is the C type correponding to @('<type>'),
+      "@('T') is the C type corresponding to @('<type>'),
        @('U') is the array type of element type @('T'), and
        @('V') is a C integer type.
        This represents an array subscripting expression.
