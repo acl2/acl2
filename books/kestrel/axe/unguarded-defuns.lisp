@@ -357,7 +357,7 @@
 (defund map-ifix (x)
   (declare (xargs :guard t))
   (if (atom x)
-      x
+      nil
     (cons (ifix (first x))
           (map-ifix (rest x)))))
 
