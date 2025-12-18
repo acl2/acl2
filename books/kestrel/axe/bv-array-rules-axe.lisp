@@ -12,7 +12,9 @@
 
 (in-package "ACL2")
 
-;this book uses the axe-syntaxp functions
+;; The book contains bv-array rules that either are Axe-specific (e.g., because
+;; they mention axe-syntaxp or the like) or are not needed apart from Axe
+;; (e.g., type facts that ACL2 "knows" using type reasoning).
 
 ;reduce?:
 ;(include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
