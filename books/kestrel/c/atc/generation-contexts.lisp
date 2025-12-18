@@ -42,7 +42,7 @@
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
      We call these tests and bindings `premises',
      which is not ideal terminology because
-     it is essentially synonmous of `hypotheses',
+     it is essentially synonymous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
      we may find a better nomenclature in the future.")
