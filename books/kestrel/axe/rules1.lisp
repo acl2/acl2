@@ -1125,13 +1125,14 @@
 ;go get the length of the lists (using a binding hyp??)
 (defthmd nth-becomes-bv-array-read
   (implies (and (syntaxp (quotep vals))
-                (all-natp vals)
+                (all-natp vals) ; use nat-listp?
                 (< index (len vals))
                 (natp index))
            (equal (nth index vals)
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
   :hints (("Goal" :in-theory (enable BV-ARRAY-READ ;bvnth
-                                     ceiling-of-lg))))
+                                     ceiling-of-lg
+                                     unsigned-byte-p-of-width-of-widest-int-nth))))
 
 ;compare to nth-becomes-bv-array-read-strong
 (defthmd nth-becomes-bv-array-read-strong2
