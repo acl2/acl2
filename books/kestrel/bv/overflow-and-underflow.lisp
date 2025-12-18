@@ -15,12 +15,13 @@
 (include-book "sbvlt")
 (include-book "bvlt")
 (include-book "bvplus")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "rules") ;reduce? for getbit-of-+
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "bvuminus"))
 
 ;;;
 ;;; signed-addition-overflowsp

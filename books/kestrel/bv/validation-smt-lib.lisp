@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "bvminus")
 (include-book "bvnot")
 (include-book "bvand")

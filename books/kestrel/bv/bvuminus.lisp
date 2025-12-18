@@ -11,8 +11,9 @@
 
 (in-package "ACL2")
 
+(include-book "bvuminus-def")
 (include-book "bvplus-def")
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "getbit-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of, etc.
@@ -22,13 +23,6 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
-;; "bit-vector unary minus"
-;; Compute the (modular) negation / additive inverse of X.
-(defund bvuminus (size x)
-  (declare (type (integer 0 *) size))
-  ;; (bvminus size 0 x)
-  (bvchop size (- (ifix x))))
 
 (defthm integerp-of-bvuminus
   (integerp (bvuminus size x))
@@ -265,7 +259,10 @@
                   (bvplus size y (bvplus size x z))))
   :rule-classes ((:rewrite :loop-stopper nil)))
 
-;; todo: consider oncommenting this
+(theory-invariant (incompatible (:rewrite bvplus-commutative-2) (:rewrite bvplus-commutative-2-smart)))
+(theory-invariant (incompatible (:rewrite bvplus-commutative) (:rewrite bvplus-commutative-smart)))
+
+;; todo: consider uncommenting this
 ;; ;; avoid loops with the smart rules below:
 ;; (in-theory (e/d (bvplus-commutative-smart
 ;;                  bvplus-commutative-2-smart)
@@ -280,6 +277,8 @@
                                   bvplus-commutative-2-smart)
                                  (bvplus-commutative
                                   bvplus-commutative-2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm equal-of-bvplus-of-bvuminus-and-0
   (equal (equal (bvplus size (bvuminus size x) y) 0)

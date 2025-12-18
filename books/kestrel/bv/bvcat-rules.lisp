@@ -22,7 +22,7 @@
 (include-book "bvplus")
 (include-book "bvmult")
 (include-book "bvminus")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "bvif")
 (local (include-book "logapp"))
 (local (include-book "logand-b"))
