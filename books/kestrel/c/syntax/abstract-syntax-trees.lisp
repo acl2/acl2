@@ -555,7 +555,7 @@
      (iii) the point at the end (with just a left digit sequence);
      it also covers a fourth possibility, disalowed in the grammar in [C17],
      namely when there are no digits before or after the point.
-     This fourth possibilty makes the definition of this fixtype simpler,
+     This fourth possibility makes the definition of this fixtype simpler,
      and can be ruled out by predicates over this abstract syntax."))
   ((before dec-digit-char-list)
    (after dec-digit-char-list))
@@ -578,7 +578,7 @@
      (iii) the point at the end (with just a left digit sequence);
      it also covers a fourth possibility, disalowed in the grammar in [C17],
      namely when there are no digits before or after the point.
-     This fourth possibilty makes the definition of this fixtype simpler,
+     This fourth possibility makes the definition of this fixtype simpler,
      and can be ruled out by predicates over this abstract syntax."))
   ((before hex-digit-char-list)
    (after hex-digit-char-list))

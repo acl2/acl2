@@ -431,7 +431,7 @@
 
     (xdoc::p
      "The @(':alpha-image') applicability condition (always present)
-      and the @(':alpha-of-beta') applicabilty condition (when present)
+      and the @(':alpha-of-beta') applicability condition (when present)
       imply the surjectivity of @($\\alpha$).
       See the @($\\alpha{}s$) and @($\\alpha{}s'$) theorems in the "
      *defmapping-design-notes*
@@ -439,7 +439,7 @@
 
     (xdoc::p
      "The @(':beta-image') applicability condition (always present)
-      and the @(':beta-of-alpha') applicabilty condition (when present)
+      and the @(':beta-of-alpha') applicability condition (when present)
       imply the surjectivity of @($\\beta$).
       See the @($\\beta{}s$) and @($\\beta{}s'$) theorems in the "
      *defmapping-design-notes*
