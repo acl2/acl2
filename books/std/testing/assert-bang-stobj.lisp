@@ -34,7 +34,7 @@
  assert-event), which has more options.  In particular, with @('assert-event')
  the assertion may evaluate to a single value or to any number of multiple
  values, with no limit on the number of stobjs retured, and a keyword option
- @(':STOBJS-OUT :auto') that makes it unnessary to specify the shape of the
+ @(':STOBJS-OUT :auto') that makes it unnecessary to specify the shape of the
  return.</p>
 
  <p>See @(see assert$) and @(see assert*) for assertion-checking utilities to
