@@ -312,13 +312,13 @@
 ; The function sync-ephemeral-whs-with-persistent-whs does what its name
 ; suggests and restores coherence.  The code for system wormholes like brr is
 ; careful to maintain coherence, e.g., :monitor uses wormhole-eval to change
-; the persistent-whs and then sync-ephemeral-whs-with-persistent-whs to to
-; restore coherence.  But users implementing wormholes of their own have to
-; decide whether they care about coherence or not.  (Note: if all reads and
-; writes to a wormhole's status are done with wormhole-eval, you needn't even
-; think about coherence.  There is never an ephemeral-whs; all operations are
-; done at a single location, the persistent-whs.  It's only when interaction is
-; allowed that one might need to worry about two copies of ``the'' status.)
+; the persistent-whs and then sync-ephemeral-whs-with-persistent-whs to restore
+; coherence.  But users implementing wormholes of their own have to decide
+; whether they care about coherence or not.  (Note: if all reads and writes to
+; a wormhole's status are done with wormhole-eval, you needn't even think about
+; coherence.  There is never an ephemeral-whs; all operations are done at a
+; single location, the persistent-whs.  It's only when interaction is allowed
+; that one might need to worry about two copies of ``the'' status.)
 
 ; A better way, from within a wormhole, to change the status is to change both,
 ; using set-persistent-whs-and-ephemeral-whs.

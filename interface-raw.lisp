@@ -4902,7 +4902,7 @@
 ; symbol unqualified.  The consequence is likely small for those who build ACL2
 ; on CCL or SBCL, since they compile on-the-fly, so the marking of an add-trip
 ; symbol as unqualified will not result in interpreted code.  A future
-; optimization might be to to avoid disqualification due to memoization in
+; optimization might be to avoid disqualification due to memoization in
 ; suitable cases, perhaps by tracking raw-mode or trust tags, or perhaps by
 ; somehow taking advantage of the 'old-fn field of the *memoize-info-ht* entry.
 

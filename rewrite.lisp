@@ -15115,7 +15115,7 @@ its attachment is ignored during proofs"))))
 
 ; At one time we asserted here that recs is non-nil.  Perhaps that is a valid
 ; assertion, but given the comment above about changes in the ttree, we are no
-; longer all that confident about it.  Since it seems harmless to to this
+; longer all that confident about it.  Since it seems harmless to this
 ; extension when recs is nil, we no longer assert recs.
 
     (extend-tag-tree

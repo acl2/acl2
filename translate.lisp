@@ -7009,10 +7009,10 @@
 ; generally in selecting the equiv relation to be used by rewrite.
 
 ; Note: The ``-fr'' suffix stands for ``failure-reason''.  If (one-way-unify1
-; pat term alist) fails, this function will attempt to find the the subterm of
-; pat that failed to unify.  This function is part of a tool the user may
-; invoke to find out why a monitored rule triggered a near-miss break.  Because
-; of the intended usage, this function does not try to explain why
+; pat term alist) fails, this function will attempt to find the subterm of pat
+; that failed to unify.  This function is part of a tool the user may invoke to
+; find out why a monitored rule triggered a near-miss break.  Because of the
+; intended usage, this function does not try to explain why
 ; one-way-unify1-term-alist failed.  (We'll wait until some user complains that
 ; rewrite didn't select an allowable equivalence relation!)  Ideally, all three
 ; cliques will be kept in sync.
