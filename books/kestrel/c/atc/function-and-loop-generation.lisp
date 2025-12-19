@@ -3205,9 +3205,8 @@
     "We use the type of the value returned by the statement for the body
      as the result type of the C function.")
    (xdoc::p
-    "For the limit, we need 1 to go from @(tsee exec-fun) to @(tsee exec-stmt),
-     another 1 from there to @(tsee exec-block-item-list)
-     in the @(':compound') case,
+    "For the limit,
+     we need 1 to go from @(tsee exec-fun) to @(tsee exec-block-item-list),
      and then we use the limit for the block."))
   (b* (((reterr) (irr-fundef) nil nil nil)
        (wrld (w state))
@@ -3348,7 +3347,7 @@
                                                           :params params)
                             :body body.items))
        (finfo (fun-info-from-fundef fundef))
-       (limit `(+ '2 ,body.limit))
+       (limit `(+ '1 ,body.limit))
        (fn-fun-env-event
         (atc-gen-cfun-fun-env-thm fn
                                   fn-fun-env-thm
