@@ -53,20 +53,14 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; required, no default"
-     "             :path              ...  ; default \".\""
-     "             :preprocess        ...  ; default nil"
-     "             :preprocess-args   ...  ; default nil"
-     "             :process           ...  ; default :validate"
-     "             :const             ...  ; required, no default"
-     "             :keep-going        ...  ; default nil"
-     "             :std               ...  ; default 17"
-     "             :gcc               ...  ; default nil"
-     "             :short-bytes       ...  ; default 2"
-     "             :int-bytes         ...  ; default 4"
-     "             :long-bytes        ...  ; default 8"
-     "             :long-long-bytes   ...  ; default 8"
-     "             :plain-char-signed ...  ; default nil"
+     "(input-files :files           ...  ; required, no default"
+     "             :path            ...  ; default \".\""
+     "             :preprocess      ...  ; default nil"
+     "             :preprocess-args ...  ; default nil"
+     "             :process         ...  ; default :validate"
+     "             :const           ...  ; required, no default"
+     "             :keep-going      ...  ; default nil"
+     "             :ienv            ...  ; default (ienv-default)"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,18 +128,20 @@
       "If @(':preprocess') is not @('nil'), the input files are preprocessed.
        For each file, we provide the @('-E') flag to the preprocessor,
        as well as some instantiation of the @('-std=') flag.
-       This latter flag is based on the combination of the
-       @(':std') and @(':gcc') inputs,
-       as indicated by the following table.")
+       This latter flag is based on the @('version') field of the "
+      (xdoc::seetopic "implementation-environments"
+                      "implementation environment")
+       ", as indicated by the following table.")
      (xdoc::table_
-      (xdoc::tr (xdoc::th)
-                (xdoc::th "@(':gcc nil')")
-                (xdoc::th "@(':gcc t')"))
-      (xdoc::tr (xdoc::th "@(':std 17')")
-                (xdoc::td "@('-std=c17')")
+      (xdoc::tr (xdoc::th "@(see c::Version)")
+                (xdoc::th "Standard Flag"))
+      (xdoc::tr (xdoc::td "@('(c::version-c17)')")
+                (xdoc::td "@('-std=c17')"))
+      (xdoc::tr (xdoc::td "@('(c::version-c23)')")
+                (xdoc::td "@('-std=c23')"))
+      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)')")
                 (xdoc::td "@('-std=gnu17')"))
-      (xdoc::tr (xdoc::th "@(':std 23')")
-                (xdoc::td "@('-std=c23')")
+      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)')")
                 (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
       "The @(':preprocess-args') input specifies additional arguments
@@ -271,75 +267,16 @@
        against the dropped files."))
 
     (xdoc::desc
-     "@(':std') &mdash; default 17"
+     "@(':ienv') &mdash; default @('(ienv-default)')"
      (xdoc::p
-      "Either 17 or 23 saying which C standard should be used,
-       namely C17 or C23.")
+      "Specifies the "
+      (xdoc::seetopic "implementation-environments"
+                      "implementation environment")
+      ". This affects which standard and dialect of C used,
+       and implementation details such as the size and signedness of types.")
      (xdoc::p
-      "Currently support for C23 is very limited,
-       but it is being extended."))
-
-    (xdoc::desc
-     "@(':gcc') &mdash; default @('nil')"
-     (xdoc::p
-      "Boolean flag saying whether certain GCC extensions
-       should be accepted or not."))
-
-    (xdoc::desc
-     "@(':short-bytes') &mdash; default 2"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed short int') and @('unsigned short int').")
-     (xdoc::p
-      "This must be at least 2."))
-
-    (xdoc::desc
-     "@(':int-bytes') &mdash; default 4"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed int') and @('unsigned int').")
-     (xdoc::p
-      "This must be at least 2,
-       and not less than @(':short-bytes')."))
-
-    (xdoc::desc
-     "@(':long-bytes') &mdash; default 8"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed long int') and @('unsigned long int').")
-     (xdoc::p
-      "This must be at least 4,
-       and not less than @(':int-bytes')."))
-
-    (xdoc::desc
-     "@(':long-long-bytes') &mdash; default 8"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed long long int') and @('unsigned long long int').")
-     (xdoc::p
-      "This must be at least 8,
-       and not less than @(':long-bytes')."))
-
-    (xdoc::desc
-     "@(':plain-char-signed') &mdash; default nil"
-     (xdoc::p
-      "Boolean saying whether the plain @('char') type consists of
-       the same value as the @('signed char') or @('unsigned char') type."))
-
-    (xdoc::p
-     "Together, the inputs
-      @(':std'),
-      @(':gcc'),
-      @(':short-bytes'),
-      @(':int-bytes'),
-      @(':long-bytes'),
-      @(':long-long-bytes'), and
-      @(':plain-char-signed')
-      determine an "
-     (xdoc::seetopic "implementation-environments"
-                     "implementation environment")
-     ". This is part of the code ensemble
-      that is the value of the constant @('*const*')."))
+      "The implementation environment becomes part of the code ensemble
+       that is the value of the constant @('*const*').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -122,7 +122,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :gcc ,gcc)
+                        :ienv (c$::ienv-default :gcc ,gcc))
        (c2c::split-gso *old-const*
                        *new-const*
                        ;; Pass through all other args:
@@ -152,7 +152,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :gcc ,gcc)
+                        :ienv (c$::ienv-default :gcc ,gcc))
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
                       ;; Pass through all other args (currently, none):
@@ -182,7 +182,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :gcc ,gcc)
+                        :ienv (c$::ienv-default :gcc ,gcc))
        (c2c::split-fn *old-const*
                       *new-const*
                       ;; Pass through all other args (currently, none):
@@ -212,7 +212,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :gcc ,gcc)
+                        :ienv (c$::ienv-default :gcc ,gcc))
        (c2c::wrap-fn *old-const*
                      *new-const*
                      ;; Pass through all other args (currently, :targets):

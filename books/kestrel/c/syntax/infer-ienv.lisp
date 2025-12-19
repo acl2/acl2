@@ -96,7 +96,7 @@
 (define ienv-c-out-to-ienv ((lines string-listp))
   :returns (mv (er? maybe-msgp)
                (ienv ienvp))
-  (b* (((reterr) (ienv-default))
+  (b* (((reterr) (irr-ienv))
        ((unless (= (len lines) 7))
         (retmsg$ "Ill-formed ienv.c output"))
        ((list std-c-str
@@ -182,7 +182,7 @@
   :returns (mv (er? maybe-msgp)
                (ienv ienvp)
                state)
-  (b* (((reterr) (ienv-default) state)
+  (b* (((reterr) (irr-ienv) state)
        ((erp lines state) (compile-run-read-ienv-c cc args state))
        ((erp ienv) (ienv-c-out-to-ienv lines)))
     (retok ienv state)))
