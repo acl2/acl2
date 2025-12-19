@@ -10,6 +10,8 @@
 
 (in-package "C$")
 
+(include-book "std/util/defirrelevant" :dir :system)
+
 (include-book "../language/implementation-environments/top")
 
 (local (include-book "arithmetic/top" :dir :system))
@@ -133,6 +135,27 @@
                 (<= 8 llong-bytes))
   :pred ienvp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-ienv
+  :short "An irrelevant implementation environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This has no particular significance,
+     but we set all the byte sizes to their minima,
+     and the plain @('char') flag to @('nil') (i.e. unsigned);
+     we also disable GCC extensions.")
+   (xdoc::p
+    "This can be used as a dummy value of the type."))
+  :type ienvp
+  :body (make-ienv :version (c::version-c17)
+                   :short-bytes 2
+                   :int-bytes 2
+                   :long-bytes 4
+                   :llong-bytes 8
+                   :plain-char-signedp nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-ienv ((ienv ienvp))
@@ -207,24 +230,6 @@
               c::bool-format-wfp
               fix)
      :disable ienv-requirements)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ienv-default ()
-  :short "A default implementation environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This has no particular significance,
-     but we set all the byte sizes to their minima,
-     and the plain @('char') flag to @('nil') (i.e. unsigned);
-     we also disable GCC extensions."))
-  (make-ienv :version (c::version-c17)
-             :short-bytes 2
-             :int-bytes 2
-             :long-bytes 4
-             :llong-bytes 8
-             :plain-char-signedp nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
