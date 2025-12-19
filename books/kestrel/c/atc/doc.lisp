@@ -1222,7 +1222,7 @@
        (xdoc::li "@(tsee and)")
        (xdoc::li "@(tsee or)"))
       "This represents the corresponding C logical operator
-       conjunction @('&&') or disjunction @('||'));
+       conjunction @('&&') or disjunction @('||');
        conjunctions and disjunctions are represented non-strictly."))
 
     (xdoc::p
