@@ -16,6 +16,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/system/pseudo-event-formp" :dir :system)
@@ -35,13 +36,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event
-  (value `(defconst *infer-ienv-c-path*
-            ;; Absolute path of ienv.c
-            ,(concatenate 'string (cbd) "ienv.c"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define compile-run-read-ienv-c
   ((cc stringp)
    (args string-listp)
@@ -60,14 +54,14 @@
                        compiled-ienv-base)))
           (retok temp state)))
        (- (acl2::tshell-ensure))
+       (ienv-c-path (ec-call (extend-pathname :system "kestrel/c/syntax/ienv.c" state)))
        (compile-cmd
          (str::join (list* cc
-                           *infer-ienv-c-path*
+                           ienv-c-path
                            "-o"
                            compiled-ienv
                            args)
                     " "))
-       (- (cw "Compile command ~x0~%" compile-cmd))
        ((mv exit-status lines state)
         (acl2::tshell-call compile-cmd :print nil))
        ((unless (int= exit-status 0))
