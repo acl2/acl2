@@ -17,6 +17,7 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
+(local (include-book "bvuminus"))
 (local (include-book "slice"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))

@@ -1879,6 +1879,7 @@
 
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (local (include-book "kestrel/bv/rules4" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system))
 
 (local (in-theory (disable take-opener-alt remove-equal)))
 

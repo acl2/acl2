@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "tea")
+(local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for the bvmult-of-bvplus rules
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
