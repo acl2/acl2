@@ -777,7 +777,7 @@
               It is @('nil') if no theorem was generated,
               because modular proof generation is not yet available
               for some constructs;
-              eventually this will be never @('nil'),
+              eventually this will never be @('nil'),
               when modular proof generation covers
               all the ATC-generated code.")
    (thm-index pos
