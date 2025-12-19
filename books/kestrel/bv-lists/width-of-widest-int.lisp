@@ -11,23 +11,20 @@
 
 (in-package "ACL2")
 
-(include-book "../typed-lists-light/all-integerp")
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "all-unsigned-byte-p")
+(include-book "unsigned-byte-listp-def")
+(local (include-book "unsigned-byte-listp"))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
 (local (in-theory (disable unsigned-byte-p)))
-
-;;
-;; width-of-widest-int
-;;
 
 ;; TODO: Strengthen guard to requite that ints have at least one element?
 ;; TODO: Consider renaming this to match the (perhaps unfortunate) terminology
 ;; implicit in the name integer-length (that the number of bits in an integer
 ;; is its "length" rather than its "width").
 (defund width-of-widest-int (ints)
-  (declare (xargs :guard (all-integerp ints)))
+  (declare (xargs :guard (integer-listp ints)))
   (if (atom ints)
       0 ;error?
     (max (integer-length (car ints))
@@ -39,18 +36,32 @@
               (width-of-widest-int b)))
   :hints (("Goal" :in-theory (enable width-of-widest-int))))
 
-(defthm all-unsigned-byte-p-of-width-of-widest-int
+;drop?
+(defthmd all-unsigned-byte-p-of-width-of-widest-int
   (implies (all-natp vals)
            (all-unsigned-byte-p (width-of-widest-int vals)
                                  vals))
   :hints (("Goal"
            :in-theory (enable all-natp all-unsigned-byte-p width-of-widest-int unsigned-byte-p-of-integer-length-gen))))
 
+(defthmd unsigned-byte-listp-of-width-of-widest-int
+  (implies (nat-listp vals)
+           (unsigned-byte-listp (width-of-widest-int vals) vals))
+  :hints (("Goal"
+           :in-theory (enable all-natp unsigned-byte-listp width-of-widest-int unsigned-byte-p-of-integer-length-gen))))
+
 ;rename
 ;drop?
-(defthm unsigned-byte-p-of-width-of-widest-int-nth
+(defthmd unsigned-byte-p-of-width-of-widest-int-nth
   (implies (and (natp index)
                 (all-natp vals)
                 (< index (len vals)))
            (unsigned-byte-p (width-of-widest-int vals) (nth index vals)))
-  :hints (("Goal" :in-theory (enable width-of-widest-int nth))))
+  :hints (("Goal" :in-theory (enable width-of-widest-int nth all-unsigned-byte-p-of-width-of-widest-int))))
+
+(defthm unsigned-byte-p-of-width-of-widest-int-nth-2
+  (implies (and (natp index)
+                (nat-listp vals)
+                (< index (len vals)))
+           (unsigned-byte-p (width-of-widest-int vals) (nth index vals)))
+  :hints (("Goal" :in-theory (enable width-of-widest-int nth all-unsigned-byte-p-of-width-of-widest-int))))

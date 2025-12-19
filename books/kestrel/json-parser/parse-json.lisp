@@ -30,7 +30,7 @@
 
 ;; This parser does not check that its input is valid UTF-8.  So characters,
 ;; and sequences of characters, that are not allowed in UTF-8 (such as any
-;; occurence of the character whose code is 255) are just passed through.
+;; occurrence of the character whose code is 255) are just passed through.
 
 ;; TODO: If whitespace is optional, what if it occurs between digits?
 
@@ -1022,7 +1022,7 @@
 ;;; parse-json
 ;;;
 
-;; Returns (mv erp parsed-value), where ERP is nil iff no error occured and
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occurred and
 ;; PARSED-VALUE is a parsed-json-valuep.
 (defund parse-json (chars)
   (declare (xargs :guard (character-listp chars)))
@@ -1046,7 +1046,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp parsed-value), where ERP is nil iff no error occured.
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occurred.
 (defund parse-string-as-json (string)
   (declare (xargs :guard (stringp string)))
   (parse-json (coerce string 'list)))

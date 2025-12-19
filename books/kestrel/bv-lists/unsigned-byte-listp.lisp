@@ -20,6 +20,7 @@
 (include-book "unsigned-byte-listp-def")
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "../utilities/equal-of-booleans"))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (defthmd unsigned-byte-listp-rewrite
   (equal (unsigned-byte-listp n x)
@@ -164,3 +165,10 @@
   (implies (unsigned-byte-listp width x) ; width is a free var
            (integer-listp x))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm unsigned-byte-listp-when-unsigned-byte-listp-and-<=
+  (implies (and (unsigned-byte-listp size2 x) ; size2 is a free var
+                (<= size2 size)
+                (integerp size))
+           (unsigned-byte-listp size x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))

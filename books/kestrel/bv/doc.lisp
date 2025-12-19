@@ -75,13 +75,13 @@ the behavior of the ACL2 predicate signed-byte-p.)"))
 
 ;; (depends-on "bvminus.lisp")
 (gen-xdoc-for-file
- "bvminus.lisp"
+ "bvminus-def.lisp"
  ((bvminus "Bit-vector difference."))
  (bv))
 
-;; (depends-on "bvuminus.lisp")
+;; (depends-on "bvuminus-def.lisp")
 (gen-xdoc-for-file
- "bvuminus.lisp"
+ "bvuminus-def.lisp"
  ((bvuminus "Bit-vector additive inverse"))
  (bv))
 

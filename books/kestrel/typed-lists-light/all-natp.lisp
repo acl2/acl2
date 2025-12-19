@@ -33,6 +33,13 @@
            (all-natp lst))
   :hints (("Goal" :in-theory (enable all-natp nat-listp))))
 
+(defthm nat-listp-when-all-natp-cheap
+  (implies (all-natp lst)
+           (equal (nat-listp lst)
+                  (true-listp lst)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable all-natp nat-listp))))
+
 (defthm all-natp-of-set-difference-equal
   (implies (all-natp x)
            (all-natp (set-difference-equal x y))))
