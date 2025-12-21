@@ -19,6 +19,7 @@
  (include-book "ed25519-group-prime")
  (include-book "goldilocks-field-prime")
  (include-book "jubjub-subgroup-prime")
+ (include-book "koala-bear")
  (include-book "nist-p-256-base-prime")
  (include-book "nist-p-256-group-prime")
  (include-book "secp256k1-field-prime")
