@@ -3976,6 +3976,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
+                                       (fn-guard symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
@@ -4030,7 +4031,7 @@
        (hyps `(and (compustatep ,compst-var)
                    (> (compustate-frames-number ,compst-var) 0)
                    ,@hyps
-                   ,(untranslate$ (uguard+ fn wrld) nil state)))
+                   (,fn-guard ,@(strip-cars typed-formals))))
        (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
                     (not (errorp (apconvert-expr-value
                                   (exec-expr-pure ',loop-test ,compst-var))))
@@ -4059,7 +4060,8 @@
                                ,@value-kind-thms
                                ,@struct-reader-return-thms
                                ,@member-read-thms
-                               ,@extobj-recognizers))
+                               ,@extobj-recognizers
+                               ,fn-guard))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok ,@(alist-to-doublets
                                                         instantiation)))
@@ -4144,6 +4146,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
+                                       (fn-guard symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
@@ -4194,7 +4197,7 @@
                    (>= ,limit-var ,limit)
                    ,@hyps
                    ,@diff-pointer-hyps
-                   ,(untranslate$ (uguard+ fn wrld) nil state)
+                   (,fn-guard ,@(strip-cars typed-formals))
                    ,(untranslate$ test-term nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
@@ -4267,7 +4270,8 @@
                                ,@measure-thms
                                expr-value-optionp-when-expr-valuep
                                expr-pure-limit
-                               max))
+                               max
+                               ,fn-guard))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))
@@ -4284,6 +4288,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
+                                  (fn-guard symbolp)
                                   (typed-formals atc-symbol-varinfo-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
@@ -4378,15 +4383,18 @@
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
-       (hyps `(and (compustatep ,compst-var)
-                   (> (compustate-frames-number ,compst-var) 0)
-                   (equal ,fenv-var
-                          (init-fun-env (preprocess ,prog-const)))
-                   (integerp ,limit-var)
-                   (>= ,limit-var ,limit)
-                   ,@hyps
-                   ,@diff-pointer-hyps
-                   ,(untranslate$ (uguard+ fn wrld) nil state)))
+       (hyps-common `((compustatep ,compst-var)
+                      (> (compustate-frames-number ,compst-var) 0)
+                      (equal ,fenv-var
+                             (init-fun-env (preprocess ,prog-const)))
+                      (integerp ,limit-var)
+                      (>= ,limit-var ,limit)
+                      ,@hyps
+                      ,@diff-pointer-hyps))
+       (hyps-lemma `(and ,@hyps-common
+                         (,fn-guard ,@(strip-cars typed-formals))))
+       (hyps-thm `(and ,@hyps-common
+                       ,(untranslate$ (uguard+ fn wrld) nil state)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
@@ -4406,8 +4414,10 @@
                                            ,limit-var)
                           (b* ((,affect-binder (,fn ,@formals)))
                             (mv (stmt-value-none) ,final-compst))))
-       (formula-lemma `(b* (,@formals-bindings) (implies ,hyps ,concl-lemma)))
-       (formula-thm `(b* (,@formals-bindings) (implies ,hyps ,concl-thm)))
+       (formula-lemma
+        `(b* (,@formals-bindings) (implies ,hyps-lemma ,concl-lemma)))
+       (formula-thm
+        `(b* (,@formals-bindings) (implies ,hyps-thm ,concl-thm)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
@@ -4503,7 +4513,8 @@
                                      value-kind-when-slongp
                                      value-kind-when-ullongp
                                      value-kind-when-sllongp
-                                     expr-value-fix-when-expr-valuep))
+                                     expr-value-fix-when-expr-valuep
+                                     ,fn-guard))
                        :use ((:instance (:guard-theorem ,fn)
                                         :extra-bindings-ok ,@(alist-to-doublets
                                                               instantiation))
@@ -4584,7 +4595,8 @@
                                 (:e expr-purep)
                                 (:e expr-pure-limit)
                                 nfix
-                                (:t exec-expr-pure)))
+                                (:t exec-expr-pure)
+                                ,fn-guard))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation
@@ -4594,8 +4606,9 @@
           (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
           (:repeat (:prove :hints ,lemma-hints))))
        (thm-hints `(("Goal"
-                     :in-theory nil
-                     :use (,correct-lemma ,exec-stmt-while-for-fn-thm))))
+                     :in-theory '(,fn-guard)
+                     :use (,correct-lemma
+                           ,exec-stmt-while-for-fn-thm))))
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
                                :formula formula-lemma
@@ -4749,6 +4762,7 @@
                       correct-test-thm
                       names-to-avoid)
                   (atc-gen-loop-test-correct-thm fn
+                                                 fn-guard
                                                  typed-formals
                                                  loop-test
                                                  loop.test-term
@@ -4761,6 +4775,7 @@
                       correct-body-thm
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
+                                                 fn-guard
                                                  typed-formals
                                                  loop.affect
                                                  loop-body
@@ -4779,6 +4794,7 @@
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
+                                            fn-guard
                                             typed-formals
                                             loop.affect
                                             loop-test
@@ -4839,7 +4855,7 @@
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all
-                               :guard nil))) ; <- not used for now
+                               :guard fn-guard)))
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))
