@@ -3977,6 +3977,7 @@
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
                                        (fn-guard symbolp)
+                                       (fn-guard-unnorm-def-thm symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
@@ -4061,7 +4062,7 @@
                                ,@struct-reader-return-thms
                                ,@member-read-thms
                                ,@extobj-recognizers
-                               ,fn-guard))
+                               ,fn-guard-unnorm-def-thm))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok ,@(alist-to-doublets
                                                         instantiation)))
@@ -4147,6 +4148,7 @@
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
                                        (fn-guard symbolp)
+                                       (fn-guard-unnorm-def-thm symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
@@ -4271,7 +4273,7 @@
                                expr-value-optionp-when-expr-valuep
                                expr-pure-limit
                                max
-                               ,fn-guard))
+                               ,fn-guard-unnorm-def-thm))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))
@@ -4289,6 +4291,7 @@
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (fn-guard symbolp)
+                                  (fn-guard-unnorm-def-thm symbolp)
                                   (typed-formals atc-symbol-varinfo-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
@@ -4514,7 +4517,7 @@
                                      value-kind-when-ullongp
                                      value-kind-when-sllongp
                                      expr-value-fix-when-expr-valuep
-                                     ,fn-guard))
+                                     ,fn-guard-unnorm-def-thm))
                        :use ((:instance (:guard-theorem ,fn)
                                         :extra-bindings-ok ,@(alist-to-doublets
                                                               instantiation))
@@ -4596,7 +4599,7 @@
                                 (:e expr-pure-limit)
                                 nfix
                                 (:t exec-expr-pure)
-                                ,fn-guard))
+                                ,fn-guard-unnorm-def-thm))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation
@@ -4606,7 +4609,7 @@
           (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
           (:repeat (:prove :hints ,lemma-hints))))
        (thm-hints `(("Goal"
-                     :in-theory '(,fn-guard)
+                     :in-theory '(,fn-guard-unnorm-def-thm)
                      :use (,correct-lemma
                            ,exec-stmt-while-for-fn-thm))))
        ((mv correct-lemma-event &)
@@ -4684,6 +4687,8 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
+       ((mv fn-guard-unnorm-def-event fn-guard-unnorm-def-thm names-to-avoid)
+        (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
         (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
        (body (ubody+ fn wrld))
@@ -4763,6 +4768,7 @@
                       names-to-avoid)
                   (atc-gen-loop-test-correct-thm fn
                                                  fn-guard
+                                                 fn-guard-unnorm-def-thm
                                                  typed-formals
                                                  loop-test
                                                  loop.test-term
@@ -4776,6 +4782,7 @@
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
                                                  fn-guard
+                                                 fn-guard-unnorm-def-thm
                                                  typed-formals
                                                  loop.affect
                                                  loop-body
@@ -4795,6 +4802,7 @@
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
                                             fn-guard
+                                            fn-guard-unnorm-def-thm
                                             typed-formals
                                             loop.affect
                                             loop-test
@@ -4823,7 +4831,8 @@
                   (and (evmac-input-print->= print :result)
                        (list print-event)))
                  (events (append progress-start?
-                                 (list fn-guard-event)
+                                 (list fn-guard-event
+                                       fn-guard-unnorm-def-event)
                                  formals-events
                                  loop.events
                                  (and measure-of-fn
