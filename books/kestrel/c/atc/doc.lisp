@@ -183,7 +183,7 @@
         If this option is @('t'), then parentheses are added.
         For example, based on whether this option is @('nil') or @('t'),
         an expression may be printed as either"
-       (xdoc::codeblock "a ? b ? c : d : e ? f g")
+       (xdoc::codeblock "a ? b ? c : d : e ? f : g")
        "or"
        (xdoc::codeblock "a ? (b ? c : e) : (e ? f : g)")
        "."))
