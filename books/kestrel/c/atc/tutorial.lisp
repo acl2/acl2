@@ -1233,7 +1233,7 @@
     no code is generated.
     The rationale is that, unless the code can be proved correct,
     it should not be generated.
-    Of course, this is easily defated by setting @(':proofs') to @('nil').
+    Of course, this is easily defeated by setting @(':proofs') to @('nil').
     Nonetheless, when @(':proofs') is @('t'),
     it seems appropriate to generate the code after the proofs.")
 
@@ -1493,7 +1493,7 @@
     The community book @('kestrel/c/representation/integer-operations.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
     provides a function @(tsee boolean-from-sint)
-    the converts (the ACL2 representation of) a C @('int')
+    that converts (the ACL2 representation of) a C @('int')
     into an ACL2 boolean:
     it returns @('t') if the @('int') is not 0;
     it returns @('nil') if the @('int') is 0.
