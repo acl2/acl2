@@ -241,3 +241,22 @@
                                                       among))))
         (t (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
                                                     among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-guards
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
+  :returns (fns symbol-listp)
+  :short "Project the guard function names
+          out of a function information alist,
+          for the functions among a given list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
+     See that function's documentation for more details."))
+  (cond ((endp prec-fns) nil)
+        ((member-eq (caar prec-fns) among)
+         (cons (atc-fn-info->guard (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-guards (cdr prec-fns) among)))
+        (t (atc-symbol-fninfo-alist-to-guards (cdr prec-fns) among))))
