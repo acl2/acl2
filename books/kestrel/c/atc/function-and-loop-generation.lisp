@@ -681,6 +681,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-result-thm ((fn symbolp)
+                               (fn-guard symbolp)
+                               (fn-guard-unnorm-def-thm symbolp)
                                (type? type-optionp)
                                (affect symbol-listp)
                                (typed-formals atc-symbol-varinfo-alistp)
@@ -851,8 +853,11 @@
                                  "-RESULT")))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (guard (untranslate$ (uguard+ fn wrld) t state))
-       (formula `(implies ,guard ,conclusion))
+       (formula `(implies (,fn-guard ,@(strip-cars typed-formals))
+                          ,conclusion))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
+       (guard-unnorm-def-thms
+        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
        (hints `(("Goal"
                  ,@(and (irecursivep+ fn wrld)
                         `(:induct ,fn-call))
@@ -966,7 +971,9 @@
                     ,@(loop$ for recog
                              in (atc-string-taginfo-alist-to-recognizers
                                  prec-tags)
-                             collect `(:e ,recog)))))
+                             collect `(:e ,recog))
+                    ,fn-guard-unnorm-def-thm
+                    ,@guard-unnorm-def-thms)))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -1465,6 +1472,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-correct-thm ((fn symbolp)
+                                  (fn-guard-unnorm-def-thm symbolp)
                                   (typed-formals atc-symbol-varinfo-alistp)
                                   (type typep)
                                   (affect symbol-listp)
@@ -1707,6 +1715,9 @@
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
+       (guard-unnorm-def-thms
+        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -1716,6 +1727,8 @@
                                ,@value-kind-thms
                                not
                                ,@result-thms
+                               ,fn-guard-unnorm-def-thm
+                               ,@guard-unnorm-def-thms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
@@ -1751,6 +1764,8 @@
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
+                          ,fn-guard-unnorm-def-thm
+                          ,@guard-unnorm-def-thms
                           ,@struct-reader-return-thms
                           ,@struct-writer-return-thms
                           ,@type-of-value-thms
@@ -3360,6 +3375,8 @@
             fn-result-thm
             names-to-avoid)
         (atc-gen-fn-result-thm fn
+                               fn-guard
+                               fn-guard-unnorm-def-thm
                                body.type
                                affect
                                typed-formals
@@ -3399,6 +3416,7 @@
                                      state)
           (b* (((mv events print-event name)
                 (atc-gen-cfun-correct-thm fn
+                                          fn-guard-unnorm-def-thm
                                           typed-formals
                                           body.type
                                           affect
@@ -4249,6 +4267,8 @@
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
+       (guard-unnorm-def-thms
+        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -4277,7 +4297,8 @@
                                expr-value-optionp-when-expr-valuep
                                expr-pure-limit
                                max
-                               ,fn-guard-unnorm-def-thm))
+                               ,fn-guard-unnorm-def-thm
+                               ,@guard-unnorm-def-thms))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))
@@ -4456,6 +4477,9 @@
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
+       (guard-unnorm-def-thms
+        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -4503,6 +4527,7 @@
                                      ,@type-prescriptions-called
                                      ,@type-prescriptions-struct-readers
                                      ,@result-thms
+                                     ,fn-guard-unnorm-def-thm
                                      ,@correct-thms
                                      ,@measure-thms
                                      ,natp-of-measure-of-fn-thm
@@ -4521,7 +4546,8 @@
                                      value-kind-when-ullongp
                                      value-kind-when-sllongp
                                      expr-value-fix-when-expr-valuep
-                                     ,fn-guard-unnorm-def-thm))
+                                     ,fn-guard-unnorm-def-thm
+                                     ,@guard-unnorm-def-thms))
                        :use ((:instance (:guard-theorem ,fn)
                                         :extra-bindings-ok ,@(alist-to-doublets
                                                               instantiation))
@@ -4580,6 +4606,7 @@
                                 ,@type-prescriptions-called
                                 ,@type-prescriptions-struct-readers
                                 ,@result-thms
+                                ,fn-guard-unnorm-def-thm
                                 ,@correct-thms
                                 ,@measure-thms
                                 ,natp-of-measure-of-fn-thm
@@ -4603,7 +4630,8 @@
                                 (:e expr-pure-limit)
                                 nfix
                                 (:t exec-expr-pure)
-                                ,fn-guard-unnorm-def-thm))
+                                ,fn-guard-unnorm-def-thm
+                                ,@guard-unnorm-def-thms))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation
@@ -4729,6 +4757,8 @@
                       fn-result-thm
                       names-to-avoid)
                   (atc-gen-fn-result-thm fn
+                                         fn-guard
+                                         fn-guard-unnorm-def-thm
                                          nil
                                          loop.affect
                                          typed-formals
