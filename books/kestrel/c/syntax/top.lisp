@@ -26,6 +26,7 @@
 (include-book "langdef-mapping")
 (include-book "formalized")
 (include-book "compilation-db")
+(include-book "infer-ienv")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

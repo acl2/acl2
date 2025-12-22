@@ -49,4 +49,4 @@
   :type code-ensemblep
   :body (make-code-ensemble
          :transunits (irr-transunit-ensemble)
-         :ienv (ienv-default)))
+         :ienv (irr-ienv)))
