@@ -275,6 +275,7 @@
 
 (define atc-gen-formal-thm ((fn symbolp)
                             (fn-guard symbolp)
+                            (fn-guard-unnorm-def-thm symbolp)
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
@@ -310,7 +311,7 @@
        (pred (atc-type-to-recognizer type prec-tags))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
-       (hints `(("Goal" :in-theory '(,fn-guard
+       (hints `(("Goal" :in-theory '(,fn-guard-unnorm-def-thm
                                      star
                                      ,@(and defobj-pred
                                             (list defobj-pred))))))
@@ -324,6 +325,7 @@
 
 (define atc-typed-formals ((fn symbolp)
                            (fn-guard symbolp)
+                           (fn-guard-unnorm-def-thm symbolp)
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
                            (names-to-avoid symbol-listp)
@@ -369,6 +371,7 @@
        ((erp prelim-alist events names-to-avoid)
         (atc-typed-formals-prelim-alist fn
                                         fn-guard
+                                        fn-guard-unnorm-def-thm
                                         formals
                                         guard
                                         guard-conjuncts
@@ -386,6 +389,7 @@
 
    (define atc-typed-formals-prelim-alist ((fn symbolp)
                                            (fn-guard symbolp)
+                                           (fn-guard-unnorm-def-thm symbolp)
                                            (formals symbol-listp)
                                            (guard pseudo-termp)
                                            (guard-conjuncts pseudo-term-listp)
@@ -408,6 +412,7 @@
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
+                                           fn-guard-unnorm-def-thm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -418,6 +423,7 @@
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
+                                           fn-guard-unnorm-def-thm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -428,6 +434,7 @@
           ((erp prelim-alist events names-to-avoid)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
+                                           fn-guard-unnorm-def-thm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -444,7 +451,8 @@
                          even when the multiple predicates are the same."
                         guard fn arg)))
           ((mv event name names-to-avoid)
-           (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
+           (atc-gen-formal-thm fn fn-guard fn-guard-unnorm-def-thm
+                               formals arg type defobj-pred
                                prec-tags names-to-avoid wrld))
           (events (cons event events))
           (externalp
@@ -3006,6 +3014,7 @@
 
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
+                                 (fn-guard-unnorm-def-thm symbolp)
                                  (fn-def* symbolp)
                                  (init-formals symbol-listp)
                                  (affect symbol-listp)
@@ -3156,7 +3165,7 @@
                     ,exec-concl)))
        (hints `(("Goal"
                  :use ,lemma-name
-                 :in-theory '(,fn-guard))))
+                 :in-theory '(,fn-guard-unnorm-def-thm))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -3242,7 +3251,8 @@
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+        (atc-typed-formals fn fn-guard fn-guard-unnorm-def-thm
+                           prec-tags prec-objs names-to-avoid wrld))
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
@@ -3393,6 +3403,7 @@
         (if body.thm-name
             (atc-gen-fun-correct-thm fn
                                      fn-guard
+                                     fn-guard-unnorm-def-thm
                                      fn-def*
                                      init-formals
                                      affect
@@ -4527,7 +4538,6 @@
                                      ,@type-prescriptions-called
                                      ,@type-prescriptions-struct-readers
                                      ,@result-thms
-                                     ,fn-guard-unnorm-def-thm
                                      ,@correct-thms
                                      ,@measure-thms
                                      ,natp-of-measure-of-fn-thm
@@ -4606,7 +4616,6 @@
                                 ,@type-prescriptions-called
                                 ,@type-prescriptions-struct-readers
                                 ,@result-thms
-                                ,fn-guard-unnorm-def-thm
                                 ,@correct-thms
                                 ,@measure-thms
                                 ,natp-of-measure-of-fn-thm
@@ -4722,7 +4731,8 @@
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm-def-thm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+        (atc-typed-formals fn fn-guard fn-guard-unnorm-def-thm
+                           prec-tags prec-objs names-to-avoid wrld))
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
