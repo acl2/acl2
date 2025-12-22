@@ -3220,6 +3220,8 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
+       ((mv fn-guard-unnorm-def-event fn-guard-unnorm-def-thm names-to-avoid)
+        (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((mv fn-def*-events
             fn-def*
             names-to-avoid)
@@ -3423,7 +3425,8 @@
         (append
          progress-start?
          (list fn-fun-env-event)
-         (list fn-guard-event)
+         (list fn-guard-event
+               fn-guard-unnorm-def-event)
          fn-def*-events
          formals-events
          (list init-scope-expand-event)
@@ -3450,7 +3453,8 @@
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
               :limit limit
-              :guard fn-guard)))
+              :guard fn-guard
+              :guard-unnorm-def-thm fn-guard-unnorm-def-thm)))
     (retok fundef
            (and proofs local-events)
            (acons fn info prec-fns)
@@ -4864,7 +4868,8 @@
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all
-                               :guard fn-guard)))
+                               :guard fn-guard
+                               :guard-unnorm-def-thm fn-guard-unnorm-def-thm)))
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))
