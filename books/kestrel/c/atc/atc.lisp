@@ -131,6 +131,10 @@
   "@('fn-guard') is the name of a locally generated function
    for the guard of @('fn')."
 
+  "@('fn-guard-unnorm') is the name of a locally generated theorem
+   for the unnormalized definition of
+   the function @('fn-guard') described above."
+
   "@('typed-formals') is an alist
    from the formal parameters of
    the function in @('t1'), ..., @('tp') for which code is being generated,

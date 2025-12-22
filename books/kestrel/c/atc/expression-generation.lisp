@@ -61,6 +61,8 @@
         It is the target function for which the expression is generated.")
    (fn-guard symbol
              "Described in @(see atc-implementation).")
+   (fn-guard-unnorm symbol
+                    "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -347,7 +349,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -505,7 +507,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -674,7 +676,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -1557,7 +1559,7 @@
                                  wrld))
              (okp-lemma-hints
               `(("Goal"
-                 :in-theory '(,gin.fn-guard if* test* declar assign)
+                 :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                  :use (:guard-theorem ,gin.fn))))
              ((mv okp-lemma-event &)
               (evmac-generate-defthm okp-lemma-name
@@ -1922,7 +1924,8 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :in-theory '(,gin.fn-guard-unnorm
+                                       if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2057,7 +2060,8 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :in-theory '(,gin.fn-guard-unnorm
+                                       if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2536,6 +2540,8 @@
         It is the target function for which the expressions are generated.")
    (fn-guard symbol
              "Described in @(see atc-implementation).")
+   (fn-guard-unnorm symbol
+                    "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -2619,6 +2625,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid

@@ -275,7 +275,7 @@
 
 (define atc-gen-formal-thm ((fn symbolp)
                             (fn-guard symbolp)
-                            (fn-guard-unnorm-def-thm symbolp)
+                            (fn-guard-unnorm symbolp)
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
@@ -311,7 +311,7 @@
        (pred (atc-type-to-recognizer type prec-tags))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
-       (hints `(("Goal" :in-theory '(,fn-guard-unnorm-def-thm
+       (hints `(("Goal" :in-theory '(,fn-guard-unnorm
                                      star
                                      ,@(and defobj-pred
                                             (list defobj-pred))))))
@@ -325,7 +325,7 @@
 
 (define atc-typed-formals ((fn symbolp)
                            (fn-guard symbolp)
-                           (fn-guard-unnorm-def-thm symbolp)
+                           (fn-guard-unnorm symbolp)
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
                            (names-to-avoid symbol-listp)
@@ -371,7 +371,7 @@
        ((erp prelim-alist events names-to-avoid)
         (atc-typed-formals-prelim-alist fn
                                         fn-guard
-                                        fn-guard-unnorm-def-thm
+                                        fn-guard-unnorm
                                         formals
                                         guard
                                         guard-conjuncts
@@ -389,7 +389,7 @@
 
    (define atc-typed-formals-prelim-alist ((fn symbolp)
                                            (fn-guard symbolp)
-                                           (fn-guard-unnorm-def-thm symbolp)
+                                           (fn-guard-unnorm symbolp)
                                            (formals symbol-listp)
                                            (guard pseudo-termp)
                                            (guard-conjuncts pseudo-term-listp)
@@ -412,7 +412,7 @@
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
-                                           fn-guard-unnorm-def-thm
+                                           fn-guard-unnorm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -423,7 +423,7 @@
           ((unless (member-eq arg formals))
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
-                                           fn-guard-unnorm-def-thm
+                                           fn-guard-unnorm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -434,7 +434,7 @@
           ((erp prelim-alist events names-to-avoid)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
-                                           fn-guard-unnorm-def-thm
+                                           fn-guard-unnorm
                                            formals
                                            guard
                                            (cdr guard-conjuncts)
@@ -451,7 +451,7 @@
                          even when the multiple predicates are the same."
                         guard fn arg)))
           ((mv event name names-to-avoid)
-           (atc-gen-formal-thm fn fn-guard fn-guard-unnorm-def-thm
+           (atc-gen-formal-thm fn fn-guard fn-guard-unnorm
                                formals arg type defobj-pred
                                prec-tags names-to-avoid wrld))
           (events (cons event events))
@@ -690,7 +690,7 @@
 
 (define atc-gen-fn-result-thm ((fn symbolp)
                                (fn-guard symbolp)
-                               (fn-guard-unnorm-def-thm symbolp)
+                               (fn-guard-unnorm symbolp)
                                (type? type-optionp)
                                (affect symbol-listp)
                                (typed-formals atc-symbol-varinfo-alistp)
@@ -864,8 +864,8 @@
        (formula `(implies (,fn-guard ,@(strip-cars typed-formals))
                           ,conclusion))
        (called-fns (all-fnnames (ubody+ fn wrld)))
-       (guard-unnorm-def-thms
-        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
+       (guard-unnorms
+        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
        (hints `(("Goal"
                  ,@(and (irecursivep+ fn wrld)
                         `(:induct ,fn-call))
@@ -980,8 +980,8 @@
                              in (atc-string-taginfo-alist-to-recognizers
                                  prec-tags)
                              collect `(:e ,recog))
-                    ,fn-guard-unnorm-def-thm
-                    ,@guard-unnorm-def-thms)))
+                    ,fn-guard-unnorm
+                    ,@guard-unnorms)))
                 '(:use (:guard-theorem ,fn))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -1480,7 +1480,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-cfun-correct-thm ((fn symbolp)
-                                  (fn-guard-unnorm-def-thm symbolp)
+                                  (fn-guard-unnorm symbolp)
                                   (typed-formals atc-symbol-varinfo-alistp)
                                   (type typep)
                                   (affect symbol-listp)
@@ -1724,8 +1724,8 @@
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (called-fns (all-fnnames (ubody+ fn wrld)))
-       (guard-unnorm-def-thms
-        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
+       (guard-unnorms
+        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
        (hints `(("Goal"
                  :in-theory (union-theories
                              (theory 'atc-all-rules)
@@ -1735,8 +1735,8 @@
                                ,@value-kind-thms
                                not
                                ,@result-thms
-                               ,fn-guard-unnorm-def-thm
-                               ,@guard-unnorm-def-thms
+                               ,fn-guard-unnorm
+                               ,@guard-unnorms
                                ,@struct-reader-return-thms
                                ,@struct-writer-return-thms
                                ,@type-of-value-thms
@@ -1772,8 +1772,8 @@
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
-                          ,fn-guard-unnorm-def-thm
-                          ,@guard-unnorm-def-thms
+                          ,fn-guard-unnorm
+                          ,@guard-unnorms
                           ,@struct-reader-return-thms
                           ,@struct-writer-return-thms
                           ,@type-of-value-thms
@@ -3014,7 +3014,7 @@
 
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
-                                 (fn-guard-unnorm-def-thm symbolp)
+                                 (fn-guard-unnorm symbolp)
                                  (fn-def* symbolp)
                                  (init-formals symbol-listp)
                                  (affect symbol-listp)
@@ -3165,7 +3165,7 @@
                     ,exec-concl)))
        (hints `(("Goal"
                  :use ,lemma-name
-                 :in-theory '(,fn-guard-unnorm-def-thm))))
+                 :in-theory '(,fn-guard-unnorm))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -3244,14 +3244,14 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv fn-guard-unnorm-def-event fn-guard-unnorm-def-thm names-to-avoid)
+       ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((mv fn-def*-events
             fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard fn-guard-unnorm-def-thm
+        (atc-typed-formals fn fn-guard fn-guard-unnorm
                            prec-tags prec-objs names-to-avoid wrld))
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
@@ -3327,6 +3327,7 @@
                        :affect affect
                        :fn fn
                        :fn-guard fn-guard
+                       :fn-guard-unnorm fn-guard-unnorm
                        :compst-var compst-var
                        :fenv-var fenv-var
                        :limit-var limit-var
@@ -3386,7 +3387,7 @@
             names-to-avoid)
         (atc-gen-fn-result-thm fn
                                fn-guard
-                               fn-guard-unnorm-def-thm
+                               fn-guard-unnorm
                                body.type
                                affect
                                typed-formals
@@ -3403,7 +3404,7 @@
         (if body.thm-name
             (atc-gen-fun-correct-thm fn
                                      fn-guard
-                                     fn-guard-unnorm-def-thm
+                                     fn-guard-unnorm
                                      fn-def*
                                      init-formals
                                      affect
@@ -3427,7 +3428,7 @@
                                      state)
           (b* (((mv events print-event name)
                 (atc-gen-cfun-correct-thm fn
-                                          fn-guard-unnorm-def-thm
+                                          fn-guard-unnorm
                                           typed-formals
                                           body.type
                                           affect
@@ -3483,7 +3484,7 @@
               :fun-env-thm fn-fun-env-thm
               :limit limit
               :guard fn-guard
-              :guard-unnorm-def-thm fn-guard-unnorm-def-thm)))
+              :guard-unnorm fn-guard-unnorm)))
     (retok fundef
            (and proofs local-events)
            (acons fn info prec-fns)
@@ -4010,7 +4011,7 @@
 
 (define atc-gen-loop-test-correct-thm ((fn symbolp)
                                        (fn-guard symbolp)
-                                       (fn-guard-unnorm-def-thm symbolp)
+                                       (fn-guard-unnorm symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (loop-test exprp)
                                        (test-term pseudo-termp)
@@ -4095,7 +4096,7 @@
                                ,@struct-reader-return-thms
                                ,@member-read-thms
                                ,@extobj-recognizers
-                               ,fn-guard-unnorm-def-thm))
+                               ,fn-guard-unnorm))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok ,@(alist-to-doublets
                                                         instantiation)))
@@ -4181,7 +4182,7 @@
 
 (define atc-gen-loop-body-correct-thm ((fn symbolp)
                                        (fn-guard symbolp)
-                                       (fn-guard-unnorm-def-thm symbolp)
+                                       (fn-guard-unnorm symbolp)
                                        (typed-formals atc-symbol-varinfo-alistp)
                                        (affect symbol-listp)
                                        (loop-body stmtp)
@@ -4278,8 +4279,8 @@
        (member-write-thms
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
-       (guard-unnorm-def-thms
-        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
+       (guard-unnorms
+        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
@@ -4308,8 +4309,8 @@
                                expr-value-optionp-when-expr-valuep
                                expr-pure-limit
                                max
-                               ,fn-guard-unnorm-def-thm
-                               ,@guard-unnorm-def-thms))
+                               ,fn-guard-unnorm
+                               ,@guard-unnorms))
                  :use ((:instance (:guard-theorem ,fn)
                                   :extra-bindings-ok
                                   ,@(alist-to-doublets instantiation)))
@@ -4327,7 +4328,7 @@
 
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (fn-guard symbolp)
-                                  (fn-guard-unnorm-def-thm symbolp)
+                                  (fn-guard-unnorm symbolp)
                                   (typed-formals atc-symbol-varinfo-alistp)
                                   (affect symbol-listp)
                                   (loop-test exprp)
@@ -4489,8 +4490,8 @@
         (atc-string-taginfo-alist-to-member-write-thms prec-tags))
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (called-fns (all-fnnames (ubody+ fn wrld)))
-       (guard-unnorm-def-thms
-        (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms prec-fns called-fns))
+       (guard-unnorms
+        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -4556,8 +4557,8 @@
                                      value-kind-when-ullongp
                                      value-kind-when-sllongp
                                      expr-value-fix-when-expr-valuep
-                                     ,fn-guard-unnorm-def-thm
-                                     ,@guard-unnorm-def-thms))
+                                     ,fn-guard-unnorm
+                                     ,@guard-unnorms))
                        :use ((:instance (:guard-theorem ,fn)
                                         :extra-bindings-ok ,@(alist-to-doublets
                                                               instantiation))
@@ -4639,8 +4640,8 @@
                                 (:e expr-pure-limit)
                                 nfix
                                 (:t exec-expr-pure)
-                                ,fn-guard-unnorm-def-thm
-                                ,@guard-unnorm-def-thms))
+                                ,fn-guard-unnorm
+                                ,@guard-unnorms))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation
@@ -4650,7 +4651,7 @@
           (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
           (:repeat (:prove :hints ,lemma-hints))))
        (thm-hints `(("Goal"
-                     :in-theory '(,fn-guard-unnorm-def-thm)
+                     :in-theory '(,fn-guard-unnorm)
                      :use (,correct-lemma
                            ,exec-stmt-while-for-fn-thm))))
        ((mv correct-lemma-event &)
@@ -4728,10 +4729,10 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((mv fn-guard-unnorm-def-event fn-guard-unnorm-def-thm names-to-avoid)
+       ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
-        (atc-typed-formals fn fn-guard fn-guard-unnorm-def-thm
+        (atc-typed-formals fn fn-guard fn-guard-unnorm
                            prec-tags prec-objs names-to-avoid wrld))
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
@@ -4742,7 +4743,8 @@
                                            :typed-formals typed-formals
                                            :inscope (list typed-formals)
                                            :fn fn
-                                           :fn-guard nil
+                                           :fn-guard fn-guard
+                                           :fn-guard-unnorm fn-guard-unnorm
                                            :compst-var nil
                                            :fenv-var nil
                                            :limit-var nil
@@ -4768,7 +4770,7 @@
                       names-to-avoid)
                   (atc-gen-fn-result-thm fn
                                          fn-guard
-                                         fn-guard-unnorm-def-thm
+                                         fn-guard-unnorm
                                          nil
                                          loop.affect
                                          typed-formals
@@ -4812,7 +4814,7 @@
                       names-to-avoid)
                   (atc-gen-loop-test-correct-thm fn
                                                  fn-guard
-                                                 fn-guard-unnorm-def-thm
+                                                 fn-guard-unnorm
                                                  typed-formals
                                                  loop-test
                                                  loop.test-term
@@ -4826,7 +4828,7 @@
                       names-to-avoid)
                   (atc-gen-loop-body-correct-thm fn
                                                  fn-guard
-                                                 fn-guard-unnorm-def-thm
+                                                 fn-guard-unnorm
                                                  typed-formals
                                                  loop.affect
                                                  loop-body
@@ -4846,7 +4848,7 @@
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
                                             fn-guard
-                                            fn-guard-unnorm-def-thm
+                                            fn-guard-unnorm
                                             typed-formals
                                             loop.affect
                                             loop-test
@@ -4909,7 +4911,7 @@
                                :fun-env-thm nil
                                :limit loop.limit-all
                                :guard fn-guard
-                               :guard-unnorm-def-thm fn-guard-unnorm-def-thm)))
+                               :guard-unnorm fn-guard-unnorm)))
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))

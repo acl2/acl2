@@ -715,6 +715,8 @@
         It is the target function for which the statement is generated.")
    (fn-guard symbol
              "Described in @(see atc-implementation).")
+   (fn-guard-unnorm symbol
+                    "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (fenv-var symbol
@@ -988,7 +990,7 @@
                                                      wrld))
              (guard-lemma-hints
               `(("Goal"
-                 :in-theory '(,gin.fn-guard ,called-fn-guard if* test*)
+                 :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
                  :use (:guard-theorem ,gin.fn))))
              ((mv guard-lemma-event &)
               (evmac-generate-defthm guard-lemma-name
@@ -1146,15 +1148,17 @@
                  names-to-avoid)))
        ((erp (expr-gout pure))
         (atc-gen-expr-pure term
-                           (make-expr-gin :context gin.context
-                                          :inscope gin.inscope
-                                          :prec-tags gin.prec-tags
-                                          :fn gin.fn
-                                          :fn-guard gin.fn-guard
-                                          :compst-var gin.compst-var
-                                          :thm-index gin.thm-index
-                                          :names-to-avoid gin.names-to-avoid
-                                          :proofs gin.proofs)
+                           (make-expr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
                            state))
        ((unless (expr-purep pure.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
@@ -2077,6 +2081,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2090,6 +2095,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index arr.thm-index
                             :names-to-avoid arr.names-to-avoid
@@ -2103,6 +2109,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index sub.thm-index
                             :names-to-avoid sub.names-to-avoid
@@ -2193,7 +2200,7 @@
                                              wrld))
        (okp-lemma-hints
         `(("Goal"
-           :in-theory '(,gin.fn-guard if* test* declar assign)
+           :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
            :use (:guard-theorem ,gin.fn))))
        ((mv okp-lemma-event &)
         (evmac-generate-defthm okp-lemma-name
@@ -2531,6 +2538,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2566,6 +2574,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index struct.thm-index
                             :names-to-avoid struct.names-to-avoid
@@ -2953,6 +2962,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -2988,6 +2998,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index struct.thm-index
                             :names-to-avoid struct.names-to-avoid
@@ -3011,6 +3022,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index index.thm-index
                             :names-to-avoid index.names-to-avoid
@@ -3093,7 +3105,7 @@
                                              wrld))
        (okp-lemma-hints
         `(("Goal"
-           :in-theory '(,gin.fn-guard if* test* declar assign)
+           :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
            :use (:guard-theorem ,gin.fn))))
        ((mv okp-lemma-event &)
         (evmac-generate-defthm okp-lemma-name
@@ -3460,6 +3472,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -3481,6 +3494,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index ptr.thm-index
                             :names-to-avoid ptr.names-to-avoid
@@ -4660,7 +4674,8 @@
                                          nil
                                          wrld))
        (lemma-hints `(("Goal"
-                       :in-theory '(,gin.fn-guard if* test* declar assign)
+                       :in-theory '(,gin.fn-guard-unnorm
+                                    if* test* declar assign)
                        :use (:guard-theorem ,gin.fn))))
        ((mv lemma-event &)
         (evmac-generate-defthm lemma-name
@@ -5359,7 +5374,7 @@
                                                wrld))
        (guard-lemma-hints
         `(("Goal"
-           :in-theory '(,gin.fn-guard ,called-fn-guard if* test*)
+           :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
            :use (:guard-theorem ,gin.fn))))
        ((mv guard-lemma-event &)
         (evmac-generate-defthm guard-lemma-name
@@ -5978,6 +5993,7 @@
                                   :prec-tags gin.prec-tags
                                   :fn gin.fn
                                   :fn-guard gin.fn-guard
+                                  :fn-guard-unnorm gin.fn-guard-unnorm
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
@@ -6984,6 +7000,7 @@
    (inscope atc-symbol-varinfo-alist-list)
    (fn symbol)
    (fn-guard symbol)
+   (fn-guard-unnorm symbol)
    (compst-var symbol)
    (fenv-var symbol)
    (limit-var symbol)
@@ -7121,6 +7138,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
@@ -7152,6 +7170,7 @@
                        :affect affect
                        :fn gin.fn
                        :fn-guard gin.fn-guard
+                       :fn-guard-unnorm gin.fn-guard-unnorm
                        :compst-var gin.compst-var
                        :prec-fns gin.prec-fns
                        :prec-tags gin.prec-tags

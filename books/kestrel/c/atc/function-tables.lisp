@@ -110,7 +110,7 @@
    (fun-env-thm symbol)
    (limit pseudo-term)
    (guard symbol)
-   (guard-unnorm-def-thm symbol))
+   (guard-unnorm symbol))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,7 +267,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-symbol-fninfo-alist-to-guard-unnorm-def-thms
+(define atc-symbol-fninfo-alist-to-guard-unnorms
   ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
   :returns (fns symbol-listp)
   :short "Project the names of the theorems for
@@ -281,8 +281,6 @@
      See that function's documentation for more details."))
   (cond ((endp prec-fns) nil)
         ((member-eq (caar prec-fns) among)
-         (cons (atc-fn-info->guard-unnorm-def-thm (cdr (car prec-fns)))
-               (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms (cdr prec-fns)
-                                                                 among)))
-        (t (atc-symbol-fninfo-alist-to-guard-unnorm-def-thms (cdr prec-fns)
-                                                             among))))
+         (cons (atc-fn-info->guard-unnorm (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-guard-unnorms (cdr prec-fns) among)))
+        (t (atc-symbol-fninfo-alist-to-guard-unnorms (cdr prec-fns) among))))
