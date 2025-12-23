@@ -4256,8 +4256,12 @@
        (body-term (untranslate$ body-term nil state))
        (concl `(b* ((,affect-binder ,body-term)
                     (,compst-var-new ,final-compst))
-                 (equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
-                        (mv (stmt-value-none) ,compst-var-new))))
+                 (and (equal (exec-stmt ',loop-body
+                                        ,compst-var
+                                        ,fenv-var
+                                        ,limit-var)
+                             (mv (stmt-value-none) ,compst-var-new))
+                      (compustatep ,compst-var-new))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
