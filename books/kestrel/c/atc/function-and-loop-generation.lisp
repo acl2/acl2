@@ -4252,6 +4252,7 @@
                                                     compst-var
                                                     prec-objs))
        (body-term (atc-loop-body-term-subst body-term fn affect))
+       (body-term (untranslate$ body-term nil state))
        (concl `(equal (exec-stmt ',loop-body ,compst-var ,fenv-var ,limit-var)
                       (b* ((,affect-binder ,body-term))
                         (mv (stmt-value-none) ,final-compst))))
