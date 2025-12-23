@@ -4261,7 +4261,8 @@
                                         ,fenv-var
                                         ,limit-var)
                              (mv (stmt-value-none) ,compst-var-new))
-                      (compustatep ,compst-var-new))))
+                      (compustatep ,compst-var-new)
+                      (> (compustate-frames-number ,compst-var-new) 0))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
