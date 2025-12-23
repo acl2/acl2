@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Supporting author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,10 +32,7 @@
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,6 +47,47 @@
      says whether the programmatic interface has been called."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-default (&key
+                      ((std (or (eq std :auto)
+                                (equal std 17)
+                                (equal std 23)))
+                       ':auto)
+                      ((gcc (or (eq gcc :auto)
+                                (booleanp gcc)))
+                       ':auto))
+  :guard-debug t
+  :short "A default implementation environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the default used by @(tsee input-files).")
+   (xdoc::p
+    "We default to the C17 standard without GCC extensions.
+     This is the C version with the strongest support.
+     Optionally, this can be overridden
+     with the @(':std') and @(':gcc') keyword arguments.")
+   (xdoc::p
+    "For the type sizes and signedness options,
+     we use values which have anecdotally appeared common
+     on 64-bit machines."))
+  (b* ((std (if (eq std :auto) 17 std))
+       (gcc (if (eq gcc :auto) nil gcc))
+       (version (if (int= std 17)
+                    (if gcc
+                        (c::version-c17+gcc)
+                      (c::version-c17))
+                  (if gcc
+                        (c::version-c23+gcc)
+                      (c::version-c23)))))
+    (make-ienv :version version
+               :short-bytes 2
+               :int-bytes 4
+               :long-bytes 8
+               :llong-bytes 8
+               :plain-char-signedp nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,7 +284,7 @@
                                    const
                                    (progp booleanp))
   :returns (mv erp (new-const symbolp))
-  :short "Process the @(':const') inputs."
+  :short "Process the @(':const') input."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -280,96 +319,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-ienv (std
-                                  gcc
-                                  short-bytes
-                                  int-bytes
-                                  long-bytes
-                                  long-long-bytes
-                                  plain-char-signed)
+(define input-files-process-ienv (ienv)
   :returns (mv erp (ienv ienvp))
-  :short "Process the
-          @(':std'),
-          @(':gcc'),
-          @(':short-bytes'),
-          @(':int-bytes'),
-          @(':long-bytes'),
-          @(':long-long-bytes'),
-          @(':plain-char-signed')
-          inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the inputs that define the implementation environment,
-     which we return if the processing of these inputs is successful."))
-  (b* (((reterr) (ienv-default))
-       ;; Process :STD input.
-       ((unless (member-equal std '(17 23)))
-        (reterr (msg "The :STD input must be 17 or 23, ~
+  :short "Process the @('ienv') input."
+  (b* (((reterr) (irr-ienv))
+       ((unless ienv)
+        (retok (ienv-default)))
+       ((unless (ienvp ienv))
+        (reterr (msg "The :IENV input must be an implementation environment, ~
                       but it is ~x0 instead."
-                     std)))
-       ;; Process :GCC input.
-       ((unless (booleanp gcc))
-        (reterr (msg "The :GCC input must be a boolean, ~
-                      but it is ~x0 instead."
-                     gcc)))
-       ;; Process :SHORT-BYTES input.
-       ((unless (and (integerp short-bytes)
-                     (>= short-bytes 2)))
-        (reterr (msg "The :SHORT-BYTES input must be ~
-                      an integer greater than or equal to 2, ~
-                      but it is ~x0 instead."
-                     short-bytes)))
-       ;; Process :INT-BYTES input.
-       ((unless (and (integerp int-bytes)
-                     (>= int-bytes 2)
-                     (>= int-bytes short-bytes)))
-        (reterr (msg "The :INT-BYTES input must be ~
-                      an integer greater than or equal to 2, ~
-                      and greater than or equal to ~
-                      the value ~x0 of :SHORT-BYTES, ~
-                      but it is ~x1 instead."
-                     short-bytes int-bytes)))
-       ;; Process :LONG-BYTES input.
-       ((unless (and (integerp long-bytes)
-                     (>= long-bytes 4)
-                     (>= long-bytes int-bytes)))
-        (reterr (msg "The :LONG-BYTES input must be ~
-                      an integer greater than or equal to 4, ~
-                      and greater than or equal to ~
-                      the value ~x0 of :INT-BYTES, ~
-                      but it is ~x1 instead."
-                     int-bytes long-bytes)))
-       ;; Process :LONG-LONG-BYTES input.
-       ((unless (and (integerp long-long-bytes)
-                     (>= long-long-bytes 8)
-                     (>= long-long-bytes long-bytes)))
-        (reterr (msg "The :LONG-LONG-BYTES input must be ~
-                      an integer greater than or equal to 8, ~
-                      and greater than or equal to ~
-                      the value ~x0 of :LONG-BYTES, ~
-                      but it is ~x1 instead."
-                     long-bytes long-long-bytes)))
-       ;; Process :PLAIN-CHAR-SIGNED input.
-       ((unless (booleanp plain-char-signed))
-        (reterr (msg "The :PLAIN-CHAR-SIGNED input must be a boolean, ~
-                      but it is ~x0 instead."
-                     plain-char-signed)))
-       ;; Build the implementation environment.
-       (version (cond ((= std 17)
-                       (if gcc
-                           (c::version-c17+gcc)
-                         (c::version-c17)))
-                      ((= std 23)
-                       (if gcc
-                           (c::version-c23+gcc)
-                         (c::version-c23)))))
-       (ienv (make-ienv :version version
-                        :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes long-long-bytes
-                        :plain-char-signedp plain-char-signed)))
+                     ienv))))
     (retok ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -383,13 +342,7 @@
                                     (const-presentp booleanp)
                                     const
                                     keep-going
-                                    std
-                                    gcc
-                                    short-bytes
-                                    int-bytes
-                                    long-bytes
-                                    long-long-bytes
-                                    plain-char-signed
+                                    ienv
                                     (progp booleanp)
                                     state)
   :returns (mv erp
@@ -414,7 +367,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil :parse nil nil (ienv-default))
+  (b* (((reterr) nil "" nil nil :parse nil nil (irr-ienv))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
        ((erp path) (input-files-process-path path))
@@ -426,13 +379,7 @@
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
        ((erp keep-going) (input-files-process-keep-going keep-going))
-       ((erp ienv) (input-files-process-ienv std
-                                             gcc
-                                             short-bytes
-                                             int-bytes
-                                             long-bytes
-                                             long-long-bytes
-                                             plain-char-signed)))
+       ((erp ienv) (input-files-process-ienv ienv)))
     (retok files
            path
            preprocessor
@@ -645,6 +592,10 @@
 
   ///
 
+  (defret input-files-gen-events.events-type-prescription
+    (true-listp events)
+    :rule-classes :type-prescription)
+
   (defret code-ensemble-unambp-of-input-files-gen-events
     (implies (not erp)
              (code-ensemble-unambp code))
@@ -663,13 +614,7 @@
                                                    (const-presentp booleanp)
                                                    const
                                                    keep-going
-                                                   std
-                                                   gcc
-                                                   short-bytes
-                                                   int-bytes
-                                                   long-bytes
-                                                   long-long-bytes
-                                                   plain-char-signed
+                                                   ienv
                                                    (progp booleanp)
                                                    state)
   :returns (mv erp
@@ -702,13 +647,7 @@
                                     const-presentp
                                     const
                                     keep-going
-                                    std
-                                    gcc
-                                    short-bytes
-                                    int-bytes
-                                    long-bytes
-                                    long-long-bytes
-                                    plain-char-signed
+                                    ienv
                                     progp
                                     state))
        ((erp events code state)
@@ -745,13 +684,7 @@
                         (const-presentp booleanp)
                         const
                         keep-going
-                        std
-                        gcc
-                        short-bytes
-                        int-bytes
-                        long-bytes
-                        long-long-bytes
-                        plain-char-signed
+                        ienv
                         (ctx ctxp)
                         state)
   :returns (mv erp (event pseudo-event-formp) state)
@@ -771,13 +704,7 @@
                                                    const-presentp
                                                    const
                                                    keep-going
-                                                   std
-                                                   gcc
-                                                   short-bytes
-                                                   int-bytes
-                                                   long-bytes
-                                                   long-long-bytes
-                                                   plain-char-signed
+                                                   ienv
                                                    nil
                                                    state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
@@ -794,13 +721,7 @@
                               (process ':validate)
                               (const 'nil const-presentp)
                               (keep-going 'nil)
-                              (std '17)
-                              (gcc 'nil)
-                              (short-bytes '2)
-                              (int-bytes '4)
-                              (long-bytes '8)
-                              (long-long-bytes '8)
-                              (plain-char-signed 'nil))
+                              (ienv 'nil))
     `(make-event-terse
        (input-files-fn ',files-presentp
                        ,files
@@ -811,13 +732,7 @@
                        ',const-presentp
                        ',const
                        ',keep-going
-                       ',std
-                       ',gcc
-                       ',short-bytes
-                       ',int-bytes
-                       ',long-bytes
-                       ',long-long-bytes
-                       ',plain-char-signed
+                       ,ienv
                        'input-files
                        state))))
 
@@ -833,19 +748,13 @@
      a programmatic interface to the functionality of @(tsee input-files).
      It has the form:")
    (xdoc::codeblock
-    "(input-files-prog :files             ...  ; required"
-    "                  :path              ...  ; default \".\""
-    "                  :preprocess        ...  ; default nil"
-    "                  :preprocess-args   ...  ; default nil"
-    "                  :process           ...  ; default :validate"
-    "                  :keep-going        ...  ; default nil"
-    "                  :std               ...  ; default 17"
-    "                  :gcc               ...  ; default nil"
-    "                  :short-bytes       ...  ; default 2"
-    "                  :int-bytes         ...  ; default 4"
-    "                  :long-bytes        ...  ; default 8"
-    "                  :long-long-bytes   ...  ; default 8"
-    "                  :plain-char-signed ...  ; default nil"
+    "(input-files-prog :files           ...  ; required"
+    "                  :path            ...  ; default \".\""
+    "                  :preprocess      ...  ; default nil"
+    "                  :preprocess-args ...  ; default nil"
+    "                  :process         ...  ; default :validate"
+    "                  :keep-going      ...  ; default nil"
+    "                  :ienv            ...  ; default (ienv-default)"
     "  )")
    (xdoc::p
     "This is the same as @(tsee input-files),
@@ -886,13 +795,7 @@
                              (const-presentp booleanp)
                              const
                              keep-going
-                             std
-                             gcc
-                             short-bytes
-                             int-bytes
-                             long-bytes
-                             long-long-bytes
-                             plain-char-signed
+                             ienv
                              state)
   :returns (mv erp (code code-ensemblep) state)
   :short "Implementation of @(tsee input-files-prog)."
@@ -913,13 +816,7 @@
                                                    const-presentp
                                                    const
                                                    keep-going
-                                                   std
-                                                   gcc
-                                                   short-bytes
-                                                   int-bytes
-                                                   long-bytes
-                                                   long-long-bytes
-                                                   plain-char-signed
+                                                   ienv
                                                    t
                                                    state)))
     (retok code state))
@@ -943,13 +840,7 @@
                                    (process ':validate)
                                    (const 'nil const-presentp)
                                    (keep-going 'nil)
-                                   (std '17)
-                                   (gcc 'nil)
-                                   (short-bytes '2)
-                                   (int-bytes '4)
-                                   (long-bytes '8)
-                                   (long-long-bytes '8)
-                                   (plain-char-signed 'nil))
+                                   (ienv 'nil))
     `(input-files-prog-fn ',files-presentp
                           ,files
                           ',path
@@ -959,11 +850,5 @@
                           ',const-presentp
                           ',const
                           ',keep-going
-                          ',std
-                          ',gcc
-                          ',short-bytes
-                          ',int-bytes
-                          ',long-bytes
-                          ',long-long-bytes
-                          ',plain-char-signed
+                          ',ienv
                           state)))
