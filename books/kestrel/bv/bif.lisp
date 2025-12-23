@@ -11,12 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bvif")
 (include-book "bool-to-bit")
 (local (include-book "unsigned-byte-p"))
+(local (include-book "getbit"))
 
 ;; single bit IF, where the test is a bit, not a boolean
 ;fixme do we use this?

@@ -29,6 +29,7 @@
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 

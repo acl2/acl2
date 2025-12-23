@@ -19,6 +19,7 @@
 (local (include-book "bvchop"))
 (local (include-book "bvuminus"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
 (local (include-book "logext"))

@@ -12,8 +12,9 @@
 (in-package "ACL2")
 
 ;(include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "logior-b"))
 (local (include-book "unsigned-byte-p"))
 

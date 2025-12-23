@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvminus-def")
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "bvuminus-def")
 (include-book "bvplus-def")
 (include-book "getbit-def")

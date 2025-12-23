@@ -21,6 +21,7 @@
 (include-book "bv-syntax")
 (local (include-book "bvcat-rules"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 

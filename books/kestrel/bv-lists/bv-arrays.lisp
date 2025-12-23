@@ -43,6 +43,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "all-unsigned-byte-p2"))
 
 ;move
