@@ -509,7 +509,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ACL2 formal parameters are actually passed as an alist,
+    "The ACL2 formal parameters are passed as an alist,
      from the formals to their information,
      as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
@@ -1075,7 +1075,11 @@
      We also generate an instantiation
      for lemmas used in the hints of generated theorems;
      the instantiation is in alist form,
-     so that we can use a readily available stronger type for it.")
+     so that we can use a readily available stronger type for it.
+     The generated instantiation is briefly discussed
+     at the end of this ACL2 function's documentation,
+     since it is essentially the same as the generated bindings,
+     which we explain in detail below.")
    (xdoc::p
     "The (outer) bindings can be determined from
      the formals of the ACL2 function @('fn') that represents
@@ -1088,24 +1092,25 @@
     "Consider a non-recursive @('fn'), which represents a C function.
      Its correctness theorem equates (roughly speaking)
      a call of @(tsee exec-fun) with a call of @('fn').
-     However, while @('fn') takes arrays and structures in the heap
-     as arguments,
-     @(tsee exec-fun) takes pointers to those arrays and structures
-     as arguments.
+     Non-array non-pointer non-external-object formals of @('fn')
+     are also passed unchanged to @(tsee exec-fun).
+     Thus, in this case we generate
+     no bindings, no substitution pairs, and no hypotheses.")
+   (xdoc::p
+    "Non-external-object array or pointer formals of a non-recursive @('fn')
+     represent the full arrays or pointed-to (structure or integer) objects,
+     while @(tsee exec-fun) takes pointers.
      So we introduce variables for the pointers,
-     named after the formals of @('fn') that are arrays or structures:
-     we add @('-PTR') to the formals of @('fn'),
+     named after the formals of @('fn') that have array or pointer type:
+     we add @('-ptr') to the formals of @('fn'),
      which should not cause name conflicts because
      the names of the formals must be portable C identifiers.
-     For each array or structure formal @('a') of @('fn'),
-     we generate a pointer variable @('a-ptr') as explained,
-     along with a binding
-     @('(a (read-object (value-pointer->designator a-ptr) compst))'):
-     this binding relates the two variables,
+     We generate a binding
+     @('(a (read-object (value-pointer->designator a-ptr) compst))'),
+     which relates @('a') and @('a-ptr'),
      and lets us use the guard of @('fn') as hypothesis in the theorem,
-     which uses @('a'),
-     which the binding replaces with the array or structure
-     pointed to by @('a-ptr').
+     which references @('a'),
+     which the binding replaces with the array pointed to by @('a-ptr').
      Along with this binding, we also generate hypotheses saying that
      @('a-ptr') is a top-level pointer of the appropriate type;
      the type is determined from the type of the formal @('a').
@@ -1119,36 +1124,25 @@
      The substitution is also used to calculate the final computation state,
      in @(tsee atc-gen-cfun-final-compustate).")
    (xdoc::p
-    "The treatment of arrays that are external objects is different.
-     Similarly to heap arrays,
-     @('fn') takes the whole external arrays as arguments.
-     But @(tsee exec-fun) takes nothing for these as arguments:
-     those arrays are found in the static storage of the computation state.
+    "The treatment of external-object (array or integer) formals
+     or a non-recursive @('fn')
+     is different.
+     For arrays, the formal is the whole array.
+     For both arrays and integers, @(tsee exec-fun) takes nothing as arguments:
+     those objects are found in the static storage of the computation state.
      We still need to generate a binding that relates
-     the variables passed to @('fn') that contain these arrays
+     the variables passed to @('fn') that contain these objects
      to the computation state:
      we do it via bindings of the form
-     @('((a (read-static-var (ident ...) compst)))'),
-     which we generate here.
+     @('((a (read-static-var <a> compst)))'),
+     where @('<a>') is the identifier derived from the name of @('a').
      We generate no hypotheses in this case:
-     we do not introduce a pointer variable,
+     we do not introduce a pointer variable for the array,
      so there is no need for hypotheses about it;
-     the pointer is generated internally during symbolic execution,
+     the array pointer is generated internally during symbolic execution,
      with an object designator for the variable in static storage.
      We generate no pointer substitution in this case:
-     again, there is no pointer variable introduced here.
-     Finally, we generate an instantiation pair consisting of
-     the formal and the @('(read-static-var (ident ...) compst)') call.")
-   (xdoc::p
-    "For a non-array that is an external object,
-     the situation is similar to the external object array case,
-     but we do not introduce any pointer variable.")
-   (xdoc::p
-    "The non-array non-structure formals of a non-recursive @('fn')
-     do not cause any bindings, hypotheses, or substitutions to be generated.
-     They are passed to both @(tsee exec-fun) and @('fn') in the theorem,
-     and it is the guard of @('fn') that constrains them
-     in the hypotheses of the theorem.")
+     again, there is no pointer variable introduced in this case.")
    (xdoc::p
     "The treatment of a recursive @('fn') is a bit more complicated.
      The correctness theorem for the loop represented by @('fn')
@@ -1158,22 +1152,18 @@
      not on anything that corresponds to the formals of @('fn'),
      as is the case for a non-recursive @('fn') as explained above.
      There is still a correspondence, of course:
-     the formals of @('fn') correspond to variables in the computation state.
-     We consider separately
-     the case of arrays or structures in the heap,
-     the case of arrays in static storage,
-     and the case of non-arrays and non-structures.")
+     the formals of @('fn') correspond to variables in the computation state.")
    (xdoc::p
-    "If @('a') is a non-array non-structure formal of a recursive @('fn'),
+    "If @('a') is a non-array non-pointer non-external-object formal
+     of a recursive @('fn'),
      it corresponds to @('(read-var <a> compst)'),
      where @('<a>') is the identifier derived from the name of @('a').
      Thus, in this case we generate the binding @('(a (read-var <a> compst))').
      Since no pointers are involved, in this case we generate
-     no hypotheses and no substitutions;
-     we generate an instantiation that instantiates
-     the formal with @('(read-var <a> compst)').")
+     no hypotheses and no substitutions.")
    (xdoc::p
-    "If @('a') is a heap array or structure formal of a recursive @('fn'),
+    "If @('a') is a non-external-object array or pointer formal
+     of a recursive @('fn'),
      we introduce an additional @('a-ptr') variable,
      similarly to the case of non-recursive @('fn').
      We generate two bindings @('(a-ptr (read-var <a> compst))')
@@ -1194,10 +1184,10 @@
      We generate a substitution of @('a') with @('a-ptr'),
      for use by @(tsee atc-gen-loop-final-compustate)
      (not to calculate the arguments of @(tsee exec-fun),
-     because no @(tsee exec-fun) call is involved in the theorem for loops.
-     The instantiation combines @(tsee read-var) and @(tsee read-object).")
+     because no @(tsee exec-fun) call is involved in the theorem for loops).")
    (xdoc::p
-    "If @('a') is an array in static storage,
+    "If @('a') is an external-object (array or integer) formal
+     of a recursive @('fn'),
      things are more similar to the case in which @('fn') is not recursive.
      The binding is with @(tsee read-static-var), i.e. the same.
      We generate a different hypothesis from all other cases:
@@ -1211,11 +1201,9 @@
      the symbolic execution for the non-recursive one
      can have @(tsee read-var) reach @(tsee add-frame)
      and turn that into @(tsee read-static-var).
-     We generate no substitution, since there are no pointer variables.
-     We generate an instantiation that instantiates the formal
-     with the @(tsee read-static-var) call.")
+     We generate no substitution, since there are no pointer variables.")
    (xdoc::p
-    "The reason for generating and using the described bindings in the theorems,
+    "A reason for generating and using the described bindings in the theorems,
      as opposed to making the substitutions in the theorem's formula,
      is greater readability of the theorems.
      Particularly in the case of loop theorems,
@@ -1223,7 +1211,8 @@
      the guard with just @('a') in those occurrences is more readable than
      if all those occurrences are replaced with @('(read-var <a> compst)').")
    (xdoc::p
-    "The lemma instantiation is similar to the bindings,
+    "The lemma instantiation returned by this ACL2 function
+     is similar to the bindings returned by this ACL2 function,
      but it only concerns the formals of @('fn'), not the @('a-ptr') variables.
      The instantiation is used on the guard and termination theorems of @('fn'),
      and therefore it can only concern the formals of @('fn').")
@@ -1276,16 +1265,12 @@
                     (list `(valuep ,formal-ptr)
                           `(value-case ,formal-ptr :pointer)
                           `(value-pointer-validp ,formal-ptr)
-                          `(equal (objdesign-kind
-                                   (value-pointer->designator ,formal-ptr))
-                                  :alloc)
+                          `(equal (objdesign-kind ,formal-objdes) :alloc)
                           (if (type-case type :pointer)
                               `(equal (value-pointer->reftype ,formal-ptr)
-                                      ,(type-to-maker
-                                        (type-pointer->to type)))
+                                      ,(type-to-maker (type-pointer->to type)))
                             `(equal (value-pointer->reftype ,formal-ptr)
-                                    ,(type-to-maker
-                                      (type-array->of type))))))))
+                                    ,(type-to-maker (type-array->of type))))))))
        (inst (if fn-recursivep
                  (if pointerp
                      (if extobjp
