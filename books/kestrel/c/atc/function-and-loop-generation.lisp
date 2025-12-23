@@ -1396,10 +1396,10 @@
      executing the function on a generic computation state
      (satisfying conditions in the hypotheses of the theorem)
      and on generic arguments
-     yields an optional result (absent if the function is @('void'))
+     yields an optional result (@('nil') if the function is @('void'))
      and a computation state obtained by modifying
-     zero or more arrays and structures in the computation state.
-     These are the arrays and structures affected by the C function,
+     zero or more objects in the computation state.
+     These are the objects affected by the C function,
      which the correctness theorem binds to the results of
      the ACL2 function that represents the C function.
      The modified computation state is expressed as
@@ -1408,28 +1408,27 @@
      This ACL2 code here generates that nest.")
    (xdoc::p
     "The parameter @('affect') passed to this code
-     consists of the formals of @('fn') that represent arrays and structures
+     consists of the formals of @('fn') that represent objects
      affected by the body of the ACL2 function that represents the C function.
      The parameter @('subst') is
      the result of @(tsee atc-gen-outer-bindings-and-hyps)
-     that maps array and structure formals of the ACL2 function
+     that maps non-external-object array and pointer formals
+     of the ACL2 function
      to the corresponding pointer variables used by the correctness theorems.
      Thus, we go through @('affect'),
      looking up the corresponding pointer variables in @('subst'),
      and we construct
      each nested @(tsee write-object) call,
-     which needs both a pointer and an array or structure;
-     we distinguish between arrays and structures
-     via the types of the formals.
-     This is the case for arrays and structures in the heap;
-     for arrays in static storage,
+     which needs both a pointer and the pointed-to object.
+     This is the case for objects in the heap;
+     for external objects, which are in static storage,
      we generate a call of @(tsee write-static-var),
      and there are no pointers involved.")
    (xdoc::p
     "Note that, in the correctness theorem,
-     the new array and structure variables are bound to
-     the possibly modified arrays and structures returned by the ACL2 function:
-     these new array and structure variables are obtained by adding @('-NEW')
+     the new object variables are bound to
+     the possibly modified objects returned by the ACL2 function:
+     these new object variables are obtained by adding @('-new')
      to the corresponding formals of the ACL2 function;
      these new names should not cause any conflicts,
      because the names of the formals must be portable C identifiers."))
@@ -1508,11 +1507,11 @@
      If it returns a C result (i.e. if the C function is not @('void')),
      we bind a result variable to it;
      the value is @('nil') if the C function is @('void').
-     We also bind the formals that are arrays or structures
+     We also bind the formals that are arrays or pointed objects
      to the (other or only) results of @('fn') (if any).
      We actually use new variables for the latter,
      for greater clarity in the theorem formulation:
-     the new variables are obtained by adding @('-NEW')
+     the new variables are obtained by adding @('-new')
      to the corresponding array and structure formals of @('fn');
      these new names should not cause any conflicts,
      because the names of the formals must be portable C identifiers.")
