@@ -4034,23 +4034,29 @@
      which does not apply here.
      We will make the hints more nuanced later.")
    (xdoc::p
-    "We generate two conjuncts in the conclusion.
+    "We generate four conjuncts in the conclusion.
      One conjunct, as expected, says that
      executing the test yields the same as
      the ACL2 term @('test-term') that represents the test.
      Note that we need to wrap @(tsee exec-expr-pure) into @(tsee test-value),
      because the ACL2 term is boolean,
      and so we need to convert the C value to a boolean.
-     The other conjunct says that @(tsee exec-expr-pure)
-     does not return an error.
-     This is needed in the generated proof for the whole loop,
+     Two other conjuncts say that
+     @(tsee exec-expr-pure) and @(tsee apconvert-expr-value)
+     do not return errors;
+     these are generated before the conjunct described above.
+     The last conjunct says that
+     the term that the test rewrites to is not an error.
+     These additional conjuncts are needed
+     in the generated proof for the whole loop,
      which equates the function generated
      by @(tsee atc-gen-exec-stmt-while-for-loop)
      to the execution of the loop:
-     that function's body includes a check that @(tsee exec-expr-pure)
-     does not yield an error,
-     and so this other conjunct here serves to
-     eliminate the case that that check fails."))
+     that function's body includes checks that
+     @(tsee exec-expr-pure) and @(tsee apconvert-expr-value)
+     do not yield errors,
+     and so the additional conjuncts here serves to
+     eliminate the case that those checks fail."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix-to-fn correct-thm "-TEST"))
@@ -4074,7 +4080,8 @@
                             (expr-value->value
                              (apconvert-expr-value
                               (exec-expr-pure ',loop-test ,compst-var))))
-                           ,test-term)))
+                           ,test-term)
+                    (not (errorp ,test-term))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
