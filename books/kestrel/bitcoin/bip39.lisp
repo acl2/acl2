@@ -105,7 +105,7 @@
      The resulting sequence of bits is divided into 11-bit chunks,
      which become the indexes of the words of the mnemonic.")
    (xdoc::p
-    "The numer of word indexes (i.e. the length of the result)
+    "The number of word indexes (i.e. the length of the result)
      is the value @('MS') in the table in [BIP39].
      This is calculated from @('ENT'), via @('CS') and @('ENT+CS'),
      as shown in the table in [BIP39].
@@ -120,7 +120,7 @@
      showing all the possible values of @('MS')
      based on the possible values of @('ENT').")
    (xdoc::p
-    "The maximum numer of word indexes is 24."))
+    "The maximum number of word indexes is 24."))
   (b* ((entropy (bip39-entropy-fix entropy))
        (entropy-bytes (bits=>bebytes entropy))
        (hash-bytes (sha-256-bytes entropy-bytes))
@@ -278,7 +278,7 @@
     "This is the composition of the three functions that map
      entropy to word indexes, word indexes to words, and words to mnemonic.")
    (xdoc::p
-    "Since the maximum numer of words is 24,
+    "Since the maximum number of words is 24,
      given the bound on the mnemonic as 9 times the number of words,
      we show that the the length of the mnemonic has an upper bound
      equal to the product of 9 and 24."))

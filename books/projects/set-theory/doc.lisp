@@ -91,8 +91,7 @@
  theorem.  We still need a metatheoretic argument to justify ignoring the
  @('(zfc)') hypotheses; again, see @(see zfc-model).  Another benefit is that
  unlike @('defaxiom'), this approach does not interfere with functional
- instantiation (though it's not clear as of this writing whether that is
- important).</p>
+ instantiation.</p>
 
  <p>The @(see events) that are exported by the @(tsee encapsulate) introducing
  @('zfc') may be seen by submitting the command @(':pe zfc') (after evaluating
@@ -160,11 +159,12 @@
 
  <p>Convenient macros @('defthmz'), @('defthmdz'), and @('thmz') generate calls
  of @(tsee defthm), @(tsee defthmd), and @(tsee thm), respectively, in which
- @('(force (zfc))') has been added as a hypothesis.  These macros are used in
- most of the theorems exported from the @('encapsulate') that introduces
- @('zfc').  Here is one of those, stating that two sets are equal when they
- have the same elements.  (Recall that in our setting, everything is a
- set.)</p>
+ @('(force (zfc))') has been added as a hypothesis by default.  (The discussion
+ of @(':props') below explains how these macros can add other hypotheses.)
+ These macros are used in most of the theorems exported from the
+ @('encapsulate') that introduces @('zfc').  Here is one of those, stating that
+ two sets are equal when they have the same elements.  (Recall that in our
+ setting, everything is a set.)</p>
 
  @({
  (defthmdz extensionality
@@ -227,17 +227,17 @@
 
  <p>All of these theorems are essentially trivial consequences of ZF, except
  that the ones using @('min-in') implement not only ZF's Axiom of Regularity
- but also a form of global choice.  It is well known that this puts us in a
- conservative extension of ZFC (also see @(see zfc-model)).</p>
+ but also a form of global choice.  It is well known that global choice
+ provides a conservative extension of ZFC (also see @(see zfc-model)).</p>
 
  <h3>Relations, functions, and their application</h3>
 
  <p>As usual, we consider a set to be a <i>relation</i> if it is a set of
- ordered pairs; this set is a <i>function</i> if furthermore, there is always
- at most one such @('y') for each @('x').  Recall that in our setting, @(tsee
- cons) is the ordered-pair constructor; thus the ordered pair of @('x') and
- @('y'), which in set theory is generally defined as @('{{x},{x,y}}'), is given
- by @('(cons x y)').</p>
+ ordered pairs @('<x,y>'); this set is a <i>function</i> if furthermore, there
+ is at most one such @('y') for each @('x').  Recall that in our setting,
+ @(tsee cons) is the ordered-pair constructor; thus the ordered pair @('<x,y>')
+ of @('x') and @('y'), which in set theory is generally defined as
+ @('{{x},{x,y}}'), is given by @('(cons x y)').</p>
 
  @({
  (defun-sk relation-p (r)
@@ -260,7 +260,8 @@
  @('\"ZF\"') package; so here, @('apply') refers to @('zf::apply'), which is
  different from @('common-lisp::apply').)  The idea is that @('(apply r x)') is
  some @('y') such that the ordered pair @('(cons x y)') is an element of
- @('r').  The following event captures that idea.</p>
+ @('r').  The following event captures that idea: choose @('y') for a given
+ @('r') and @('x') such that @('<x,y>') &isin; $('r').</p>
 
  @({
  (defchoose apply-base (y)
@@ -271,7 +272,7 @@
  <p>However, it seems convenient to provide a default for the case that @('x')
  is not in the domain of @('r').  (We discuss formalization of domains further
  below.)  So we actually define function (and relation) application as
- follows.</p>
+ follows defaulting to 0 (the empty set).</p>
 
  @({
  (defun apply (r x)
@@ -293,18 +294,18 @@
 
  <p>The macro @('zsub') implements the Comprehension scheme.  If @('name') is a
  new name, @('(v1..vn)') is a formal parameters list, @('x') is a variable, and
- @('s') and @('prop') are terms, then @('(zsub name (v1..vn) x s u)')
- introduces a function (name v1..vn) = @('{x \in s: u}').  Here @('(v1..vn)')
- should include all variables occurring free in @('s') or @('u') other than
- @('x'), and must not occur in @('s').</p>
+ @('s') and @('u') are terms, then @('(zsub name (v1..vn) x s u)') introduces a
+ function (name v1..vn) = @('{x \in s: u}').  Here @('(v1..vn)') should include
+ all variables occurring free in @('s') or @('u') other than @('x'), and the
+ @('vi') must not occur in @('s').</p>
 
- <p>@('Zsub') is used for defining the domain of a relation.  Noted above is
- that @(tsee cons) is the ordered-pair constructor.  Consider an ordered pair
- @('<x,y>') = @('(cons x y)').  But the traditional set-theoretic definition of
- @('<x,y>') is: @('{{x},{x,y}}').  Thus for every @('<x,y>') in a set @('r'),
- @('{x}') is in the union of the elements of @('r'), i.e., in @('(union r)');
- hence @('x') is in @('(union (union r))').  Thus, the domain of @('r') can
- be defined using Comprehension as follows.</p>
+ <p>@('Zsub') is used for defining the domain of a relation.  It is noted above
+ is that @(tsee cons) is the ordered-pair constructor.  Consider, then, an
+ ordered pair @('<x,y>') = @('(cons x y)').  But the traditional set-theoretic
+ definition of @('<x,y>') is: @('{{x},{x,y}}').  Thus for every @('<x,y>') in a
+ set @('r'), @('{x}') is in the union of the elements of @('r'), i.e., in
+ @('(union r)'); hence @('x') is in @('(union (union r))').  Thus, the domain
+ of @('r') can be defined using Comprehension as follows.</p>
 
  @({
  {x in (union (union r)): (in (cons x (apply r x)) r)}
@@ -347,11 +348,10 @@
 
  <p>This observation, that we can ignore such hypothesis functions, is
  supported by a keyword, @(':props'), for the @('defthmz'), @('defthmdz'), and
- @('thmz') macros.  The value of this keyword defaults is a list of symbols
- that defaults to @('(zfc)'), but this list can also include hypothesis
- functions introduced by @('zsub') or @('zfn').  So we could have written the
- @(tsee defthm) event introducing @('domain$comprehension') (above) as
- follows.</p>
+ @('thmz') macros.  The value of this keyword is a list of symbols that
+ defaults to @('(zfc)'), but this list can also include hypothesis functions
+ introduced by @('zsub') or @('zfn').  So we could have written the @(tsee
+ defthm) event introducing @('domain$comprehension') (above) as follows.</p>
 
  @({
  (defthmz domain$comprehension
@@ -362,7 +362,7 @@
  })
 
  <p>For each symbol @('p') in the list of @(':props'), @('(force? p)') is added
- as a hypothesis (after any existing hypotheses).  The point of @(':props') is
+ as a hypothesis after any existing hypotheses.  The point of @(':props') is
  that if we consider our events to be about the integration of set theory and
  ACL2 (see @(see zfc-model)), then we can ignore those properties because they
  are all true in that integration.</p>
@@ -377,8 +377,9 @@
  new zero-ary macro name, @('p'), which expands to @('(and (q0) (q1)
  ... (qk))') and makes the above table entry.  For example, the following event
  introduces @('zify-prop'), to be used further below, as the conjunction of
- @('(prod2$prop)'), @('(domain$prop)'), @('(inverse$prop)'), and @('(zfc)'),
- and makes a suitable note in the @('zfc-table').</p>
+ (calls of @(tsee force) on) @('(prod2$prop)'), @('(domain$prop)'),
+ @('(inverse$prop)'), and @('(zfc)'), and makes a suitable note in the
+ @('zfc-table').</p>
 
  @({
  (extend-zfc-table zify-prop
@@ -394,13 +395,14 @@
  term typically mentioning @('x') and @('y') and perhaps other variables, where
  those others are all in @('args'); then @('fn') has formal parameters list
  @('args') and the application @('(fn . args)') produces a set of ordered
- pairs, namely a function mapping suitable @('x') in @('bound') to suitable
- @('y'), as described above (i.e., satisfying @('u')).  Thus, @('(zfn fn args x
- y bound u)') introduces the following axioms, each conditionalized with a
- hypothesis function obtained by adding suffix @('\"$PROP\"') to @('fn').  Here
- we show the special case (which is actually quite typical) that @('args') is
- @('()'); otherwise replace @('(fn)') below by @('(fn arg1 .. argk)') where
- @('args') is @('(arg1 .. argk)').</p>
+ pairs, namely a set-theoretic function (i.e., a set of ordered pairs) mapping
+ suitable @('x') in @('bound') to suitable @('y'), as described above (i.e.,
+ satisfying @('u')).  Thus, @('(zfn fn args x y bound u)') introduces the
+ following axioms, each conditionalized using a hypothesis function obtained by
+ adding suffix @('\"$PROP\"') to @('fn').  Here we show the special case (which
+ is actually quite typical) that @('args') is @('()'); otherwise replace
+ @('(fn)') below by @('(fn arg1 .. argk)') where @('args') is @('(arg1
+ .. argk)').</p>
 
  @({
  (funp (fn))
@@ -413,9 +415,9 @@
  })
 
  <p>Let's see a use of @('zfn') in the book @('base.lisp'), to define a
- function (as an ACL2 object) with domain the set @('(omega)') of natural
- numbers, which maps each natural number @('x') to the value @('(v-map x)'),
- as described further below.</p>
+ set-theoretic function (set of ordered pairs) with domain the set @('(omega)')
+ of natural numbers, which maps each natural number @('x') to the value
+ @('(v-map x)'), as described further below.</p>
 
  @({
  (zfn v                             ; name
@@ -455,15 +457,17 @@
  })
 
  <p>Future work may introduce ordinal recursion to extend this sort of
- construction through the ordinals.</p>
+ construction through all the ordinals.</p>
 
  <h3>Higher-order capabilities using @('zify') and @('zify*')</h3>
 
- <p>If an ACL2 function @('F_A') is represented as a constant @('(F)') that
- denotes a function object (which is a set of ordered pairs), then @('(F)') can
- be applied to an argument @('s') with @('(apply (F) s)').  Although that
- application will not be executable, nevertheless, during a proof @('(apply (F)
- s)') might be rewritten to @('(F_A s)'), which may be executable.</p>
+ <p>Suppose that the constant @('(F)') denotes a set-theoretic function (set of
+ ordered pairs).  Then @('(F)') can be applied to an argument @('s') with
+ @('(apply (F) s)').  Now suppose that @('F_A') a unary ACL2 function for which
+ @('(apply (F) s)') is equal to @('(F_A s)') for all @('s') in the domain of
+ @('F').  Then although @('(apply (F) s)') is not executable, nevertheless,
+ during a proof it might be rewritten to @('(F_A s)'), which may be
+ executable.</p>
 
  <p>We thus see that ACL2 has a sort of &ldquo;higher-order&rdquo; capability.
  Consider the simple example of a standard mapping function.</p>
@@ -487,7 +491,7 @@
 
  <p>A second generic property proved automatically by ACL2 is the following,
  about mapping the composition of two functions over a list.  (See
- @('base.lisp') for the definition of @('compose') using @('zsub') and the
+ @('base.lisp') for the definition of @('compose') using @('zsub') and for the
  definition of @('list-to-set').)</p>
 
  @({
@@ -501,17 +505,17 @@
  })
 
  <p>Now suppose we want to map a given ACL2 function over a list using
- @('map').  For that, we need to create a set-theoretic function object (set of
+ @('map').  For that, we need to introduce a set-theoretic function (set of
  ordered pairs) corresponding to that ACL2 function.  This section uses
  examples to describe the use of macros @('zify') and @('zify*') to create such
- function objects.  These examples should give a good idea of how to use these
- macros, but more documentation may appear later, especially if requested by
- someone who expects to use these macros.  Note that the word
- &ldquo;zify&rdquo; may be pronounced to rhyme with &ldquo;reify&rdquo;, which
- is appropriate since @('zify') takes an existing ACL2 function symbol and
- essentially realizes (i.e., reifies) it as a set-theoretic (or ZF) function: a
- set of ordered pairs.  Both @('zify') and @('zify*') invoke @('zsub') to
- create the desired function.</p>
+ set-theoretic functions.  These examples are intended to provide a good sense
+ of how to use these macros, but more documentation may appear later,
+ especially if requested by someone who expects to use these macros.  Note that
+ the word &ldquo;zify&rdquo; may be pronounced to rhyme with
+ &ldquo;reify&rdquo;, which is appropriate since @('zify') takes an existing
+ ACL2 function symbol and essentially realizes (i.e., reifies) it as a
+ set-theoretic (&ldquo;ZF&rdquo;) function: a set of ordered pairs.  Both
+ @('zify') and @('zify*') invoke @('zsub') to create the desired function.</p>
 
  <p>Consider for example the standard definition of a Fibonacci function.</p>
 
@@ -610,18 +614,10 @@
         :params (fn)
         :props (v$prop acl2$prop))
 
- (thmz (equal (foldr '(1 4 9 16 25 36 100)
-                      (zcons-when-fn* (zevenp))
-                      nil)
-              '(4 16 36 100))
-       :props (foldr-prop zcons-when-fn*$prop zevenp$prop))
-
- (thmz (implies (and (zcons-when-fn*$prop)
-                     (acl2p lst) ; defined in the next section
-                     )
+ (thmz (implies (acl2p lst) ; defined in the next section
                 (equal (foldr lst (zcons-when-fn* f) nil)
                        (filter f lst)))
-       :props (foldr-prop zcons-fn*$prop))
+       :props (foldr-prop zcons-fn*$prop zcons-when-fn*$prop))
 
  ; A computation example.
 
@@ -676,12 +672,12 @@
  following theorem.</p>
 
  @({
- (defthm acl2p-len
+ (defthm acl2::acl2p-len
    (implies (acl2p x) (acl2p (len x)))
    :hints ((\"Goal\" :in-theory (enable len))))
  })
 
- <p>That book then proves such a theorem for most ACL2 primitives.</p>
+ <p>That book proves such a theorem for most every ACL2 primitive.</p>
 
  <p>It is useful that there is a set of all good ACL2 objects.  An example is
  given by the call @('(zify* zcons-when-fn* cons-when-fn ...)') above.</p>
@@ -690,11 +686,11 @@
 
  <p>A design goal in this project was for ACL2 to be a useful set-theory
  prover.  A system like <a
- href='https://isabelle.in.tum.de/dist/Isabelle2024/doc/logics-ZF.pdf'>Isabelle
- ZF</a> may be more foundational.  For example, we took the shortcut of
- introducing @('(omega)') rather than a more traditional formulation of the
- Axiom of Infinity, so that membership in @('(omega)') would be represented by
- @('natp').</p>
+ href='https://isabelle.in.tum.de/doc/logics-ZF.pdf'>Isabelle ZF</a> may be
+ more foundational.  (As of this writing, it also is probably better
+ developed.)  For example, we took the shortcut of introducing @('(omega)')
+ rather than a more traditional formulation of the Axiom of Infinity, so that
+ membership in @('(omega)') would be represented by @('natp').</p>
 
  @({
  (defthmz infinity
@@ -713,10 +709,9 @@
  libraries of rules and built-in linear arithmetic procedures, and of course
  efficient evaluation may be performed in ACL2.</p>
 
- <p>Much of the content of the books in @('projects/set-theory/'), and even
- content in the key book @('base.lisp') in that directory, is not discussed
- here.  You are invited to browse those books, which may well be developed
- further over time.</p>")
+ <p>Much of the content of @('projects/set-theory/base.lisp') and the other
+ books in that directory is not discussed here.  You are invited to browse
+ those books, which may well be developed further over time.</p>")
 
 (defxdoc zfc-model
 
@@ -773,8 +768,8 @@
  <p>In ZF, every object is a set that is contained in a member of the
  <i>cumulative hierarchy</i> V_0, V_1, V_2, ..., V_&omega;, V_{&omega;+1}, ...,
  V_{&omega;*2}, ....  In general V_{&alpha;+1} is the powerset of V_&alpha;,
- and for a <i>limit ordinal</i> &alpha; &mdash; one that is not an immediate
- successor, such as &omega; &mdash; V_&alpha; is the union of {V_&beta;: &beta;
+ and for a <i>limit ordinal</i> &alpha; &mdash; one, such as &omega;, that is
+ not an immediate successor &mdash; V_&alpha; is the union of {V_&beta;: &beta;
  \\in &alpha;}.</p>
 
  <h3>Defining ACL2 objects in set theory</h3>
@@ -791,7 +786,7 @@
  <p>In a nutshell, that logical basis is provided by showing how ACL2 data and
  functions can be defined in the ZFG universe of sets, with all hypothesis
  function calls being true.  Then assuming ZF is consistent &mdash; hence, as
- is well-known, so are ZFC and also ZFG &mdash; every defaxiom-free ACL2 theory
+ is well-known, so is ZFC and also ZFG &mdash; every defaxiom-free ACL2 theory
  extended by all @(':props') calls, including @('(zfc)'), is consistent by
  virtue of being true in that universe.  We give more details in the next
  section, but for now we simply explain how ACL2 objects are defined in set
@@ -836,16 +831,17 @@
  @({
  (defthmdz cons-as-ordered-pair
    (equal (cons x y)
-          (pair (singleton x)
+          (pair (singleton x) ; i.e., (pair x x)
                 (pair x y))))
  })
 
  <p>Note that a cons is never a natural number, because @('(cons x y)') =
  @('{{x},{x,y}}') is always a non-empty set that does not contain 0 (the empty
  set), but no finite ordinal has that property.  Also note that a cons always
- has at most two elements.</p>
+ has at most two elements, and hence never three elements like the encodings of
+ sets described next.</p>
 
- <p>We encode the other atoms as sets of the form @('(zf::ztriple y z)') =
+ <p>We encode the other atoms as sets of the form @('(ztriple y z)') =
  @('{0,y,z}'), where @('y') is a positive natural number and @('z') is not a
  natural number &mdash; in fact @('z') will always be a cons.  Thus each such
  set is a three-element set, hence is not a cons.  It is also not a natural
@@ -938,8 +934,8 @@
  })
 
  <p>The ACL2 primitives (function symbols without definitions, such as @(tsee
- char-code) and @(tsee denominator) can easily be defined in set theory so that
- the ACL2 axioms hold.  For example, for a character @('c') =
+ char-code) and @(tsee denominator)) can easily be defined in set theory so
+ that the ACL2 axioms hold.  For example, for a character @('c') =
  @('{0,4,{{n},{n,0}}}'), @('(char-code c)') = @('n'), and for any set @('s')
  not of that form, @('(char-code s)') = @('0').  Terminating recursive
  definitions present no problem, since in ZFG, they are equivalent to explicit
@@ -975,7 +971,7 @@
  EZ.</p>
 
  <p>(c) The <i>zfc props</i> of an EZ session are its hypothesis function
- calls.  These are as defined above, i.e., they include @('(zfc)') and calls of
+ calls.  These are as defined above, so they include @('(zfc)') and calls of
  zero-ary hypothesis functions generated by invocations of @('zsub') and
  @('zfn').  As noted elsewhere (see @(see zfc)), the hypothesis functions are
  exactly the keys of the table, @('zfc-table').</p>
@@ -1046,10 +1042,10 @@
  real)).</p>
 
  <p>When one uses trust tags (see @(see defttag)) in a session, then as usual,
- this carries is a responsibility to ensure soundness.  In particular, if a
- @(tsee partial-encapsulate) event is accompanied by raw Lisp definitions, then
- there is a responsibility to guarantee that the implicit exported theorems
- hold in the ZFG theory of the session.</p>")
+ that carries a responsibility to ensure soundness.  In particular, if a @(tsee
+ partial-encapsulate) event is accompanied by raw Lisp definitions, then there
+ is a responsibility to guarantee that the implicit exported theorems hold in
+ the ZFG theory of the session.</p>")
 
 (defpointer set-theory zfc)
 

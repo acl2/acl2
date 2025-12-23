@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2025, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -10939,7 +10939,7 @@
 (defmacro pre-v8-7-getpropc-constraint-lst-nil (fn wrld)
 
 ; If you want to write system code that pretends the old 'constraint-lst
-; property is maintained, use this macro instead of 
+; property is maintained, use this macro instead of
 ; (getpropc fn 'constraint-lst nil wrld).
 
   `(car (getpropc ,fn 'constraint-lst-etc nil ,wrld)))
@@ -18651,10 +18651,10 @@
 
 (defun chk-table-guards (name alist ctx wrld ens state)
 
-; At one time we performed a check here to enforce the the following
-; prohibition: do not allow a transition from a non-nil (ttag wrld) to a nil
-; (ttag wrld) at the top level.  However, we see no reason to make such a
-; prohibition, so in Fall 2022 we removed that check.
+; At one time we performed a check here to enforce the following prohibition:
+; do not allow a transition from a non-nil (ttag wrld) to a nil (ttag wrld) at
+; the top level.  However, we see no reason to make such a prohibition, so in
+; Fall 2022 we removed that check.
 
   (chk-table-guards-rec name alist ctx nil wrld ens state))
 

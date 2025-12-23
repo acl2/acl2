@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2025, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -20893,7 +20893,7 @@
 ;   the memory allocation happens to fall out, but in practice
 ;   it seems to be reliable).  If you want to reproduce this and
 ;   your machine gets a different result, you may need to adjust
-;   the index that you write to to provoke the problem.
+;   the index that you write to provoke the problem.
 
 ;   Since CCL's (array t ...) probably uses 8-byte elements, we
 ;   should write to address (/ 192 8) = 24.  To do that we will
@@ -22798,7 +22798,7 @@
 ; Old and new are lists of absstobj-info records, corresponding to abstract
 ; stobjs st-old and st-new, respectively.  We check that the :absstobj-tuples
 ; fields of respective members of old and new represent the same logical
-; skeleton, as defined in the the Essay on Attachable Stobjs.  If so, we return
+; skeleton, as defined in the Essay on Attachable Stobjs.  If so, we return
 ; nil; otherwise we return a message explaining their difference.
 
   (cond ((endp old)
