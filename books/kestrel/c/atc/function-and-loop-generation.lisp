@@ -1030,7 +1030,7 @@
                 (elemtype (type-array->of type))
                 ((unless (type-nonchar-integerp elemtype)) nil)
                 (elemtype-array-length (pack (integer-type-to-fixtype elemtype)
-                                            '-array-length)))
+                                             '-array-length)))
              (list `(equal (,elemtype-array-length ,theresult)
                            (,elemtype-array-length ,name))))))
        (append (list type-conjunct)
@@ -1182,7 +1182,7 @@
      the bindings are put into a @(tsee b*),
      which enforces the order.
      We generate a substitution of @('a') with @('a-ptr'),
-     for use by @(tsee atc-gen-loop-final-compustate)
+     for use by @(tsee atc-gen-new-updated-compustate)
      (not to calculate the arguments of @(tsee exec-fun),
      because no @(tsee exec-fun) call is involved in the theorem for loops).")
    (xdoc::p
@@ -4106,39 +4106,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-final-compustate ((mod-vars symbol-listp)
-                                       (typed-formals atc-symbol-varinfo-alistp)
-                                       (subst symbol-symbol-alistp)
-                                       (compst-var symbolp)
-                                       (prec-objs atc-string-objinfo-alistp))
+(define atc-gen-new-updated-compustate ((mod-vars symbol-listp)
+                                        (typed-formals atc-symbol-varinfo-alistp)
+                                        (subst symbol-symbol-alistp)
+                                        (compst-var symbolp)
+                                        (prec-objs atc-string-objinfo-alistp))
   :returns (term "An untranslated term.")
-  :short "Generate a term representing the final computation state
-          after the execution of a C loop."
+  :short "Generate a term representing the a computation state
+          updated with some ``new''-named variables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The correctness theorem of a C loop says that
-     executing the loop on a generic computation state
-     (satisfying conditions in the hypotheses of the theorem)
+    "Some generated correctness theorems say that
+     executing some construct on a generic computation state
+     (satisfying conditions in the hypotheses of the theorems)
      yields a computation state obtained by modifying
      zero or more objects in the computation state.
-     These are the objects affected by the loop,
-     which the correctness theorem binds to the results of the loop function,
-     and which have corresponding named variables and heap arrays
-     in the computation state.
+     These are the objects affected by the construct,
+     and their new values are expressed by ACL2 variables,
+     which are bound in the theorem,
+     and whose names are derived by suffixing with @('-new')
+     the ACL2 variables that hold the values before executing the construct.
      The modified computation state is expressed as
      a nest of @(tsee write-var),
      @(tsee write-static-var),
-     and @(tsee write-object) calls.
-     This ACL2 code here generates that nest.")
-   (xdoc::p
-    "Note that, in the correctness theorem,
-     the new array variables are bound to
-     the possibly modified arrays returned by the ACL2 function:
-     these new array variables are obtained by adding @('-NEW')
-     to the corresponding formals of the ACL2 function;
-     these new names should not cause any conflicts,
-     because the names of the formals must be portable C identifiers."))
+     and @(tsee write-object) calls,
+     with those @('...-new') variables as arguments for the values to store.
+     This ACL2 code here generates that nest."))
   (b* (((when (endp mod-vars)) compst-var)
        (mod-var (car mod-vars))
        (info (cdr (assoc-eq mod-var typed-formals)))
@@ -4152,25 +4146,25 @@
         (if (consp (assoc-equal (symbol-name mod-var) prec-objs))
             `(write-static-var (ident ,(symbol-name mod-var))
                                ,(add-suffix-to-fn mod-var "-NEW")
-                               ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                               typed-formals
-                                                               subst
-                                                               compst-var
-                                                               prec-objs))
+                               ,(atc-gen-new-updated-compustate (cdr mod-vars)
+                                                                typed-formals
+                                                                subst
+                                                                compst-var
+                                                                prec-objs))
           `(write-object (value-pointer->designator ,ptr)
                          ,(add-suffix-to-fn mod-var "-NEW")
-                         ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                         typed-formals
-                                                         subst
-                                                         compst-var
-                                                         prec-objs)))
+                         ,(atc-gen-new-updated-compustate (cdr mod-vars)
+                                                          typed-formals
+                                                          subst
+                                                          compst-var
+                                                          prec-objs)))
       `(write-var (ident ,(symbol-name (car mod-vars)))
                   ,(add-suffix-to-fn (car mod-vars) "-NEW")
-                  ,(atc-gen-loop-final-compustate (cdr mod-vars)
-                                                  typed-formals
-                                                  subst
-                                                  compst-var
-                                                  prec-objs)))))
+                  ,(atc-gen-new-updated-compustate (cdr mod-vars)
+                                                   typed-formals
+                                                   subst
+                                                   compst-var
+                                                   prec-objs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4244,11 +4238,11 @@
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect
-                                                    typed-formals
-                                                    subst
-                                                    compst-var
-                                                    prec-objs))
+       (final-compst (atc-gen-new-updated-compustate affect
+                                                     typed-formals
+                                                     subst
+                                                     compst-var
+                                                     prec-objs))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (body-term (untranslate$ body-term nil state))
        (guard-after-body
@@ -4470,11 +4464,11 @@
        (affect-binder (if (endp (cdr affect-new))
                           (car affect-new)
                         `(mv ,@affect-new)))
-       (final-compst (atc-gen-loop-final-compustate affect
-                                                    typed-formals
-                                                    subst
-                                                    compst-var
-                                                    prec-objs))
+       (final-compst (atc-gen-new-updated-compustate affect
+                                                     typed-formals
+                                                     subst
+                                                     compst-var
+                                                     prec-objs))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv (stmt-value-none) ,final-compst))))
