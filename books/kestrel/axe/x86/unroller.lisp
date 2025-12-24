@@ -275,7 +275,6 @@
                         assume-bytes
                         stack-slots
                         existing-stack-slots
-                        ;position-independent
                         inputs
                         type-assumptions-for-array-varsp
                         extra-assumption-rules ; todo: why "extra"?
@@ -313,7 +312,7 @@
             (if suppress-assumptions
                 (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
               (assumptions-elf64-new target
-                                     position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                     position-independentp
                                      stack-slots
                                      existing-stack-slots
                                      'x86
@@ -342,7 +341,7 @@
               (if suppress-assumptions
                   (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                 (assumptions-macho64-new target
-                                         position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                         position-independentp
                                          stack-slots
                                          existing-stack-slots
                                          'x86
@@ -369,7 +368,7 @@
                 (if suppress-assumptions
                     (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                   (assumptions-pe64-new target
-                                        position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                        position-independentp
                                         stack-slots
                                         existing-stack-slots
                                         'x86
@@ -997,7 +996,7 @@
                                                     nil)))
                                       ;; TODO: Think about the other cases:
                                       t))
-                                ;; the user supplied a value for position-independent, so use it:
+                                ;; position-independent is t or nil, not :auto:
                                 position-independent))
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
