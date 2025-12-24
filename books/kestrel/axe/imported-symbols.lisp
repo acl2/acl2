@@ -371,6 +371,7 @@
 
     ensure-target-exists-in-executable
     make-flag
+    with-supporters
     ))
 
 (defconst *arithmetic-symbols*

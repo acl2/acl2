@@ -107,22 +107,6 @@
 ;;                   (+ -1 (expt 2 size))))
 ;;   :hints (("Goal" :in-theory (enable bvcat))))
 
-;drop?  we now have bvshr-convert-arg2-to-bv-axe
-(defthmd bvshr-of-logand-becomes-bvshr-of-bvand
-  (implies (and (natp amt)
-                (< amt 32))
-           (equal (bvshr 32 (logand x y) amt)
-                  (bvshr 32 (bvand (+ 32 amt) x y) amt)))
-  :hints (("Goal" :in-theory (e/d (bvshr bvand slice logtail-of-bvchop)
-                                  (slice-of-logand
-                                   ;logand-of-bvchop-becomes-bvand-alt
-                                   ;logand-of-bvchop-becomes-bvand
-                                   bvchop-of-logtail-becomes-slice
-                                   anti-slice
-                                   BVAND-LOGTAIL-ARG2 ;looped
-                                   BVAND-LOGTAIL-ARG1 ;looped
-                                   )))))
-
 ;; ;gen
 ;; (defthmd bvchop-of-+-of-*-of-256
 ;;   (implies (and (integerp x)
