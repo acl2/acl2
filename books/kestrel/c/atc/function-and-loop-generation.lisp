@@ -4012,13 +4012,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a step towards generating more modular and controlled loop proofs.
-     The hints are more than needed for now,
-     as they include rules about statement execution,
-     which does not apply here.
-     We will make the hints more nuanced later.")
+    "This is used in the generated proof for the loop,
+     along with a theorem we generate for the body of the loop.")
    (xdoc::p
-    "We generate four conjuncts in the conclusion.
+    "We generate four conjuncts in the conclusion,
+     which are used as rewrites in the loop theorem.
      One conjunct, as expected, says that
      executing the test yields the same as
      the ACL2 term @('test-term') that represents the test.
@@ -4040,7 +4038,12 @@
      @(tsee exec-expr-pure) and @(tsee apconvert-expr-value)
      do not yield errors,
      and so the additional conjuncts here serves to
-     eliminate the case that those checks fail."))
+     eliminate the case that those checks fail.")
+   (xdoc::p
+    "The hints are more than needed for now,
+     as they include rules about statement execution,
+     which does not apply here.
+     We will make the hints more nuanced later."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-test-thm (add-suffix-to-fn correct-thm "-TEST"))
