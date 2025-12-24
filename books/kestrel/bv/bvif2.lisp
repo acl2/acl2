@@ -19,6 +19,7 @@
 (include-book "bvshl")
 (include-book "kestrel/booleans/boolif-def" :dir :system)
 (local (include-book "bvplus"))
+(local (include-book "getbit"))
 
 ;let sizes differ?
 (defthmd bvplus-of-bvif-arg2

@@ -130,7 +130,7 @@
 (input-files :files '("macro_test1.c" "macro_test2.c")
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
-             :gcc t
+             :ienv (ienv-default :gcc t)
              :const *macro-tests2*)
 
 (acl2::assert! (code-ensemblep *macro-tests2*))

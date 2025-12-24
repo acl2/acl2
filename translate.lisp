@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2025, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -7009,10 +7009,10 @@
 ; generally in selecting the equiv relation to be used by rewrite.
 
 ; Note: The ``-fr'' suffix stands for ``failure-reason''.  If (one-way-unify1
-; pat term alist) fails, this function will attempt to find the the subterm of
-; pat that failed to unify.  This function is part of a tool the user may
-; invoke to find out why a monitored rule triggered a near-miss break.  Because
-; of the intended usage, this function does not try to explain why
+; pat term alist) fails, this function will attempt to find the subterm of pat
+; that failed to unify.  This function is part of a tool the user may invoke to
+; find out why a monitored rule triggered a near-miss break.  Because of the
+; intended usage, this function does not try to explain why
 ; one-way-unify1-term-alist failed.  (We'll wait until some user complains that
 ; rewrite didn't select an allowable equivalence relation!)  Ideally, all three
 ; cliques will be kept in sync.

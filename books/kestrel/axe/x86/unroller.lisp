@@ -275,7 +275,6 @@
                         assume-bytes
                         stack-slots
                         existing-stack-slots
-                        ;position-independent
                         inputs
                         type-assumptions-for-array-varsp
                         extra-assumption-rules ; todo: why "extra"?
@@ -283,7 +282,7 @@
                         count-hits
                         print
                         executable-type
-                        position-independentp
+                        position-independentp ; drop?
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -293,17 +292,12 @@
                               (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (natp existing-stack-slots)
-
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
-
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
-
                               (count-hits-argp count-hits)
                               (print-levelp print)
-                              ;;todo: more?
                               (equal executable-type (acl2::parsed-executable-type parsed-executable))
                               (booleanp position-independentp))
                   :stobjs state))
@@ -313,7 +307,7 @@
             (if suppress-assumptions
                 (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
               (assumptions-elf64-new target
-                                     position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                     position-independentp
                                      stack-slots
                                      existing-stack-slots
                                      'x86
@@ -324,8 +318,6 @@
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil state))
            (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-           ;; Translate all the assumptions:
-           ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
            ;; Maybe simplify the assumptions:
            ((mv erp assumptions assumption-rules state)
             (if extra-assumptions
@@ -333,16 +325,14 @@
                 (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
               (mv nil assumptions nil state)))
            ((when erp) (mv erp nil nil nil state)))
-        (mv nil
-            assumptions ; or should these be the unwritten ones (and similarly below)?
-            assumption-rules input-assumption-vars state))
+        (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
     (if (eq :mach-o-64 executable-type) ; todo: combine with the case above?
         ;; New assumption generation behavior for MACHO64:
         (b* (((mv erp automatic-assumptions input-assumption-vars)
               (if suppress-assumptions
                   (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                 (assumptions-macho64-new target
-                                         position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                         position-independentp
                                          stack-slots
                                          existing-stack-slots
                                          'x86
@@ -353,8 +343,6 @@
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil state))
              (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-             ;; Translate all the assumptions:
-             ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
              ;; Maybe simplify the assumptions:
              ((mv erp assumptions assumption-rules state)
               (if extra-assumptions
@@ -362,14 +350,14 @@
                   (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                 (mv nil assumptions nil state)))
              ((when erp) (mv erp nil nil nil state)))
-          (mv nil assumptions assumption-rules input-assumption-vars state))
+          (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
       (if (eq :pe-64 executable-type) ; todo: combine with the cases above?
           ;; New assumption generation behavior for PE64:
           (b* (((mv erp automatic-assumptions input-assumption-vars)
                 (if suppress-assumptions
                     (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                   (assumptions-pe64-new target
-                                        position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                        position-independentp
                                         stack-slots
                                         existing-stack-slots
                                         'x86
@@ -380,8 +368,6 @@
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil state))
                (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-               ;; Translate all the assumptions:
-               ;; (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
                ;; Maybe simplify the assumptions:
                ((mv erp assumptions assumption-rules state)
                 (if extra-assumptions
@@ -389,7 +375,7 @@
                     (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
                   (mv nil assumptions nil state)))
                ((when erp) (mv erp nil nil nil state)))
-            (mv nil assumptions assumption-rules input-assumption-vars state))
+            (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
 
         ;; (b* (((when (eq :entry-point target)) ; todo
         ;;       (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
@@ -997,7 +983,7 @@
                                                     nil)))
                                       ;; TODO: Think about the other cases:
                                       t))
-                                ;; the user supplied a value for position-independent, so use it:
+                                ;; position-independent is t or nil, not :auto:
                                 position-independent))
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))

@@ -23,6 +23,7 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "unsigned-byte-p"))
 
 (local (in-theory (disable expt)))

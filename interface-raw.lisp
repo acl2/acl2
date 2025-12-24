@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2025, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -4902,7 +4902,7 @@
 ; symbol unqualified.  The consequence is likely small for those who build ACL2
 ; on CCL or SBCL, since they compile on-the-fly, so the marking of an add-trip
 ; symbol as unqualified will not result in interpreted code.  A future
-; optimization might be to to avoid disqualification due to memoization in
+; optimization might be to avoid disqualification due to memoization in
 ; suitable cases, perhaps by tracking raw-mode or trust tags, or perhaps by
 ; somehow taking advantage of the 'old-fn field of the *memoize-info-ht* entry.
 

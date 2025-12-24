@@ -13,11 +13,12 @@
 
 (include-book "bvcat-def")
 (include-book "slice-def")
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "bvchop")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logapp"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "../arithmetic-light/denominator"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))

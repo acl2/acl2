@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2025, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -1230,7 +1230,7 @@
 
 ; In this case preprocess-clause has produced a singleton set of clauses whose
 ; only element is the translated user input.  For example, the user might have
-; invoked defthm on (implies p q) and preprocess has managed to to produce the
+; invoked defthm on (implies p q) and preprocess has managed to produce the
 ; singleton set of clauses containing {(not p) q}.  This is a valuable step in
 ; the proof of course.  However, users complain when we report that (IMPLIES P
 ; Q) -- the displayed goal -- is reduced to (IMPLIES P Q) -- the
@@ -5974,7 +5974,7 @@
 
 ; Otherwise, the measure (which was stored on the property list of the fn) is
 ; in terms of the formals of the fn, but we need to substitute the actuals in
-; the call of the the fn in the conjecture.
+; the call of the fn in the conjecture.
 
       (all-vars1-lst
        (subcor-var-lst
