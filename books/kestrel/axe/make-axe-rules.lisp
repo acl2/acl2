@@ -528,6 +528,7 @@
                  ((when (member-eq :axe-binding-hyp all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-binding-hyp which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                 ;; todo: should we call pre-simplify here instead of below?
                  ;; Check for free vars in the hyp:
                  (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
               (if hyp-free-vars
@@ -557,7 +558,7 @@
                         (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas and possibly stripping a work-hard." hyp rule-symbol)
                         (mv :bad-hyp *unrelievable-hyps* bound-vars))
                        (fn (ffn-symb hyp)))
-                    (prog2$ (and ;todo: drop this check, or use it:
+                    (prog2$ (and ;todo: drop this check, or use it (note that we now have support for axe-binding-hyp):
                              (eq 'equal fn) ;; test for (equal <free-var> <term-with-no-free-vars>)
                              (eql 2 (len (fargs hyp))) ;for guard proofs
                              (atom (farg1 hyp))
@@ -568,7 +569,7 @@
                              )
                             (mv (erp-nil)
                                 (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
-                                ;; if the hyp is successfully relieved (by searching for matches in the context), all of the free-vars in the hyp wil become bound:
+                                ;; if the hyp is successfully relieved (by searching for matches in the context), all of the free-vars in the hyp will become bound:
                                 (append expanded-hyp-free-vars bound-vars))))
                 ;; Normal hyp with no free vars:
                 ;; Here we use hyp, not expanded-hyp, to make it cheaper to rewrite a hyp that contains lambdas:
@@ -576,7 +577,7 @@
                 (b* ((hyp (pre-simplify-term hyp t nil)) ; cleans up lambdas, improves translated ORs, etc. only preserves IFF (not EQUAL)
                      ((when (atom hyp)) ;; can only be a variable
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
-                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)
+                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen: pre-simplify can't introduce new vars (but strengthen the guard?)
                           (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0, is a free var in ~x1 after pre-simplification!" hyp rule-symbol)
                                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                         (mv (erp-nil) `((not (equal 'nil ,hyp))) bound-vars)))
