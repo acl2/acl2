@@ -545,8 +545,9 @@
                          function-name-string
                          executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
                          &key
-                         (param-names ':none)
-                         (assumptions 'nil)
+                         (param-names ':none) ; specific to test-function
+                         (assumptions 'nil) ; different form compared to test-file?
+
                          (extra-rules 'nil)
                          (extra-assumption-rules 'nil)
                          (extra-lift-rules 'nil)
@@ -565,13 +566,15 @@
                          (prune-precise '10000) ; t, nil, or a max size
                          (prune-approx 't)      ; t, nil, or a max size
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (expected-result ':pass)
+                         (max-conflicts '1000000)
                          (inputs-disjoint-from ':code)
                          (assume-bytes ':all)
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000))
+
+                         (expected-result ':pass) ; todo: use :auto (look at the name)
+                         )
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-function"
@@ -689,6 +692,7 @@
 
 ;; Returns (mv erp all-results-as-expectedp state).
 ;; TODO: Return an error if any test is not as expected, but not until the end. -- done?
+;rename?
 (defun test-functions-fn1 (executable ; a path to an executable
                           include-fns ; a list of strings (names of functions), or :all
                           exclude-fns ; a list of strings (names of functions)
@@ -825,150 +829,14 @@
           (cw "s (~x0 tests).~%"  (len function-name-strings))))
     (mv (erp-nil) (not (any-result-unexpectedp result-alist)) state)))
 
-(defun test-functions-fn (executable ; a path to an executable
-                          include-fns ; a list of strings (names of functions), or :all
-                          exclude-fns ; a list of strings (names of functions)
-                          assumptions
-                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
-                          expected-failures
-                          whole-form
-                          state)
-  (declare (xargs :guard (and (stringp executable)
-                          (or (string-listp include-fns)
-                              (eq :all include-fns))
-                          (string-listp exclude-fns)
-                              ;; assumptions
-                          (symbol-listp extra-rules)
-                          (symbol-listp extra-assumption-rules)
-                          (symbol-listp extra-lift-rules)
-                          (symbol-listp extra-proof-rules)
-                          (symbol-listp remove-rules)
-                          (symbol-listp remove-assumption-rules)
-                          (symbol-listp remove-lift-rules)
-                          (symbol-listp remove-proof-rules)
-                          (acl2::normalize-xors-optionp normalize-xors)
-                          (acl2::count-hits-argp count-hits)
-                          ;; print
-                          (natp max-printed-term-size)
-                          (or (eq :debug monitor)
-                              (symbol-listp monitor))
-                          (natp step-limit)
-                          (natp step-increment)
-                          (or (eq nil prune-precise)
-                              (eq t prune-precise)
-                              (natp prune-precise))
-                          (or (eq nil prune-approx)
-                              (eq t prune-approx)
-                              (natp prune-approx))
-                          (acl2::tacticsp tactics)
-                          (or (null max-conflicts)
-                              (natp max-conflicts))
-                          (member-eq inputs-disjoint-from '(nil :code :all))
-                          (member-eq assume-bytes '(:all :non-write))
-                          (or (natp stack-slots)
-                              (eq :auto stack-slots))
-                          (or (natp existing-stack-slots)
-                              (eq :auto existing-stack-slots))
-                          (member-eq position-independent '(t nil :auto))
-                          (or (eq :auto expected-failures)
-                              (string-listp expected-failures)))
-                  :mode :program
-                  :stobjs state))
-  (b* (;; Check whether this call to the tester is redundant:
-       (previous-result (previous-tester-result whole-form state))
-       ((when previous-result)
-        (mv nil '(value-triple :redundant) state))
-       ((mv erp all-results-as-expectedp state)
-        (test-functions-fn1 executable
-                            include-fns
-                            exclude-fns
-                            assumptions
-                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
-                            expected-failures
-                            state))
-       ((when erp) (mv erp nil state)))
-    (if all-results-as-expectedp
-        (mv (erp-nil)
-            ;; the event returned:
-            `(progn
-               (table x86-tester-table ',whole-form ':ok) ; no real result to store, so we just bind the form to :ok in the table
-               (value-triple :invisible))
-            state)
-      (prog2$ (er hard? 'test-functions-fn "Unexpected result (see above).")
-              (mv t nil state)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test a list of functions:
-;; TODO: deprecate this?
-(defmacro test-functions (&whole
-                          whole-form
-                          function-name-strings ; or can be :all
+;; Test the given list of functions.
+;; TODO: Deprecate (just call test-file with :include argument):
+(defmacro test-functions (function-name-strings ; or can be :all
                           executable ; a string
-                          &key
-                          (extra-rules 'nil)
-                          (extra-assumption-rules 'nil)
-                          (extra-lift-rules 'nil)
-                          (extra-proof-rules 'nil)
-                          (remove-rules 'nil)
-                          (remove-assumption-rules 'nil)
-                          (remove-lift-rules 'nil)
-                          (remove-proof-rules 'nil)
-                          (normalize-xors 't)
-                          (count-hits 'nil)
-                          (print 'nil)
-                          (max-printed-term-size '10000)
-                          (monitor 'nil)
-                          (step-limit '1000000)
-                          (step-increment '100)
-                          (prune-precise '10000) ; t, nil, or a max size
-                          (prune-approx 't)      ; t, nil, or a max size
-                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                          (max-conflicts '1000000)
-                          (inputs-disjoint-from ':code)
-                          (assume-bytes ':all)
-                          (stack-slots ':auto)
-                          (existing-stack-slots ':auto)
-                          (position-independent ':auto)
-                          (expected-failures ':auto)
-                          (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          )
-  `(make-event-quiet
-     (acl2-unwind-protect ; enable cleanup on errors/interrupts
-       "acl2-unwind-protect for test-functions"
-       (test-functions-fn ,executable ; gets evaluated
-                          ',function-name-strings
-                          nil ; no need for excludes (just don't list the functions you don't want to test)
-                          ,assumptions  ; gets evaluated
-                          ,extra-rules  ; gets evaluated
-                          ,extra-assumption-rules  ; gets evaluated
-                          ,extra-lift-rules ; gets evaluated
-                          ,extra-proof-rules ; gets evaluated
-                          ,remove-rules ; gets evaluated
-                          ,remove-assumption-rules ; gets evaluated
-                          ,remove-lift-rules ; gets evaluated
-                          ,remove-proof-rules ; gets evaluated
-                          ',normalize-xors
-                          ',count-hits
-                          ',print
-                          ',max-printed-term-size
-                          ,monitor ; gets evaluated
-                          ',step-limit ',step-increment ',prune-precise ',prune-approx
-                          ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
-                          ',expected-failures
-                          ',whole-form
-                          state)
-       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
-       ;; Remove the temp-dir, if it exists:
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-         state)
-       ;; Normal exit (remove the temp-dir, if it exists):
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-         state))))
+                          &rest rest)
+  `(test-file ,executable :include ,function-name-strings ,@rest))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1060,6 +928,7 @@
                      &key
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
+                     (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      (extra-rules 'nil)
                      (extra-assumption-rules 'nil)
                      (extra-lift-rules 'nil)
@@ -1084,9 +953,8 @@
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
                      (position-independent ':auto)
-                     (expected-failures ':auto)
-                     (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     )
+
+                     (expected-failures ':auto))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-file"
