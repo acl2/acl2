@@ -32,6 +32,7 @@
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvcat"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "bvshr"))
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))

@@ -19,6 +19,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "bvuminus"))
 (local (include-book "unsigned-byte-p"))
 

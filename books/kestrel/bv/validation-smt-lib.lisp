@@ -21,6 +21,7 @@
 (local (include-book "sbvdiv-rules"))
 (local (include-book "sbvlt-rules"))
 (local (include-book "bvcat"))
+(local (include-book "getbit"))
 (local (include-book "logand-b"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

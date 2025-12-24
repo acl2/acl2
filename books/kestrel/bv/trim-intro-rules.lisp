@@ -29,6 +29,7 @@
 (include-book "bvlt")
 (include-book "trim-elim-rules-bv") ; need these whenever we introduce trim
 (local (include-book "slice"))
+(local (include-book "getbit"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 

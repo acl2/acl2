@@ -13,6 +13,7 @@
 
 (include-book "bvxor")
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "logxor-b"))
 
 (defund bitxor (x y)

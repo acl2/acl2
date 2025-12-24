@@ -29,6 +29,7 @@
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "repeatbit"))
 
 ;; TODO: Add rules for bv-array operators?

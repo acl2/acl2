@@ -50,6 +50,7 @@
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; We have developed a connection between the ACL2 theorem prover, on which

@@ -639,12 +639,24 @@
            :in-theory (enable bvchop))))
 
 (defthm bvchop-of-+-of-*-of-expt
-  (implies (and (integerp x)
-                (natp size))
-           (equal (bvchop size (+ (* x (expt 2 size)) y))
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ (* x (expt 2 size2)) y))
                   (bvchop size y)))
   :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
                                      mod-sum-cases))))
+
+(defthm bvchop-of-+-of-*-of-expt-alt
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ y (* x (expt 2 size2))))
+                  (bvchop size y)))
+  :hints (("Goal" :use (:instance bvchop-of-+-of-*-of-expt)
+           :in-theory (disable bvchop-of-+-of-*-of-expt))))
 
 (defthm bvchop-of-+-of-minus-of-expt
   (implies (and (integerp x)
