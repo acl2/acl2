@@ -17,6 +17,7 @@
 (local (include-book "../library-wrappers/arithmetic-inequalities"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 
 ;; Set bits HIGH down to LOW to VAL in BV, returning a value of width WIDTH.
 (defun putbits (width high low val bv)

@@ -43,6 +43,7 @@
 (local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/sbvlt" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; These rules work together with TRIM rules such as trim-of-logand-becomes-bvand.

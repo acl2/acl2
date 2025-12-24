@@ -13,7 +13,7 @@
 
 ;(include-book "logand-b") ; todo
 (include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -25,6 +25,7 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logand-b"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 
 (defund bvand (size x y)
   (declare (type integer x y)

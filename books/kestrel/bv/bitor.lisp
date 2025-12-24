@@ -13,6 +13,7 @@
 
 (include-book "bvor")
 (local (include-book "slice"))
+(local (include-book "getbit"))
 
 ;; We could call this bitior instead, if we wanted to match Common Lisp conventions.
 (defund bitor (x y)

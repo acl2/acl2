@@ -17,6 +17,7 @@
 (include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "logext"))
 (local (include-book "logapp"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;;Splits into cases based on the signs of x and y

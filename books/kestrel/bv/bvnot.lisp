@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "lognot")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

@@ -29,6 +29,7 @@
 (local (include-book "logxor-b"))
 (local (include-book "single-bit"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
