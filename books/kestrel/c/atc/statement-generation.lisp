@@ -311,7 +311,7 @@
                      (consp uterm)))
         (raise "Internal error: unexpected term ~x0." uterm)
         (mv nil nil nil))
-       ((when (member-eq (car uterm) '(mv list)))
+       ((when (eq (car uterm) 'list))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
               (raise "Internal error: ~x0 components for ~x1." comps uterm)
