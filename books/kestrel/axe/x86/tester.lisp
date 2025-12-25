@@ -499,7 +499,7 @@
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto: ; todo: eventually drop this
+       ;; Handle a :position-independent of :auto: ; todo: eventually drop this (or move to test-function-core !)
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default
@@ -607,23 +607,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Tests each of the functions indicated by function-name-strings.
 ;; Returns an (mv erp result-alist state).
-(defun test-functions-fn-aux (function-name-strings
-                              parsed-executable
-                              assumptions-alist
-                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits
-                              print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                              tactics max-conflicts
-                              inputs-disjoint-from
-                              assume-bytes
-                              stack-slots
-                              existing-stack-slots
-                              position-independentp
-                              expected-failures
-                              result-alist
-                              state)
+(defun test-function-list (function-name-strings
+                           parsed-executable
+                           assumptions-alist
+                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                           normalize-xors count-hits
+                           print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                           tactics max-conflicts
+                           inputs-disjoint-from
+                           assume-bytes
+                           stack-slots
+                           existing-stack-slots
+                           position-independentp
+                           expected-failures
+                           result-alist
+                           state)
   (declare (xargs :guard (and (string-listp function-name-strings)
                               (and (alistp assumptions-alist)
                                    (string-listp (strip-cars assumptions-alist))
@@ -681,67 +682,67 @@
                             :pass))
          (- (cw "~%")) ; blank line as separator
          )
-      (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
-                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                             tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
-                             expected-failures
-                             (acons function-name (list result expected-result elapsed) result-alist)
-                             state))))
-
-;; Returns (mv erp all-results-as-expectedp state).
-;; TODO: Return an error if any test is not as expected, but not until the end. -- done?
-;rename?
-(defun test-functions-fn1 (executable ; a path to an executable
-                          include-fns ; a list of strings (names of functions), or :all
-                          exclude-fns ; a list of strings (names of functions)
-                          assumptions
+      (test-function-list (rest function-name-strings) parsed-executable assumptions-alist
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
                           expected-failures
-                          state)
+                          (acons function-name (list result expected-result elapsed) result-alist)
+                          state))))
+
+;; Returns (mv erp all-results-as-expectedp state).
+;; TODO: Return an error if any test is not as expected, but not until the end. -- done?
+;; TODO: Combine this with test-file-fn
+(defun test-file-fn1 (executable ; a path to an executable
+                      include-fns ; a list of strings (names of functions), or :all
+                      exclude-fns ; a list of strings (names of functions)
+                      assumptions
+                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                      normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                      tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                      expected-failures
+                      state)
   (declare (xargs :guard (and (stringp executable)
-                          (or (string-listp include-fns)
-                              (eq :all include-fns))
-                          (string-listp exclude-fns)
+                              (or (string-listp include-fns)
+                                  (eq :all include-fns))
+                              (string-listp exclude-fns)
                               ;; assumptions
-                          (symbol-listp extra-rules)
-                          (symbol-listp extra-assumption-rules)
-                          (symbol-listp extra-lift-rules)
-                          (symbol-listp extra-proof-rules)
-                          (symbol-listp remove-rules)
-                          (symbol-listp remove-assumption-rules)
-                          (symbol-listp remove-lift-rules)
-                          (symbol-listp remove-proof-rules)
-                          (acl2::normalize-xors-optionp normalize-xors)
-                          (acl2::count-hits-argp count-hits)
-                          ;; print
-                          (natp max-printed-term-size)
-                          (or (eq :debug monitor)
-                              (symbol-listp monitor))
-                          (natp step-limit)
-                          (natp step-increment)
-                          (or (eq nil prune-precise)
-                              (eq t prune-precise)
-                              (natp prune-precise))
-                          (or (eq nil prune-approx)
-                              (eq t prune-approx)
-                              (natp prune-approx))
-                          (acl2::tacticsp tactics)
-                          (or (null max-conflicts)
-                              (natp max-conflicts))
-                          (member-eq inputs-disjoint-from '(nil :code :all))
-                          (member-eq assume-bytes '(:all :non-write))
-                          (or (natp stack-slots)
-                              (eq :auto stack-slots))
-                          (or (natp existing-stack-slots)
-                              (eq :auto existing-stack-slots))
-                          (member-eq position-independent '(t nil :auto))
-                          (or (eq :auto expected-failures)
-                              (string-listp expected-failures)))
+                              (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp extra-lift-rules)
+                              (symbol-listp extra-proof-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
+                              (symbol-listp remove-lift-rules)
+                              (symbol-listp remove-proof-rules)
+                              (acl2::normalize-xors-optionp normalize-xors)
+                              (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (natp step-limit)
+                              (natp step-increment)
+                              (or (eq nil prune-precise)
+                                  (eq t prune-precise)
+                                  (natp prune-precise))
+                              (or (eq nil prune-approx)
+                                  (eq t prune-approx)
+                                  (natp prune-approx))
+                              (acl2::tacticsp tactics)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
+                              (or (natp stack-slots)
+                                  (eq :auto stack-slots))
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
+                              (member-eq position-independent '(t nil :auto))
+                              (or (eq :auto expected-failures)
+                                  (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -811,15 +812,15 @@
                                (pairlis$ function-name-strings (acl2::repeat (len function-name-strings) assumptions))))))
        ;; Test the functions:
        ((mv erp result-alist state)
-        (test-functions-fn-aux function-name-strings parsed-executable
-                               assumption-alist
-                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                               tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
-                               expected-failures
-                               nil ; empty result-alist
-                               state))
+        (test-function-list function-name-strings parsed-executable
+                            assumption-alist
+                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
+                            expected-failures
+                            nil ; empty result-alist
+                            state))
        (- (cw " Done testing functions in ~s0.)~%" executable)) ;matches "(Testing functions in" above
        ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
@@ -844,44 +845,44 @@
                      whole-form
                      state)
   (declare (xargs :guard (and (stringp executable)
-                          (or (string-listp include-fns)
-                              (eq :all include-fns))
-                          (string-listp exclude-fns)
+                              (or (string-listp include-fns)
+                                  (eq :all include-fns))
+                              (string-listp exclude-fns)
                               ;; assumptions
-                          (symbol-listp extra-rules)
-                          (symbol-listp extra-assumption-rules)
-                          (symbol-listp extra-lift-rules)
-                          (symbol-listp extra-proof-rules)
-                          (symbol-listp remove-rules)
-                          (symbol-listp remove-assumption-rules)
-                          (symbol-listp remove-lift-rules)
-                          (symbol-listp remove-proof-rules)
-                          (acl2::normalize-xors-optionp normalize-xors)
-                          (acl2::count-hits-argp count-hits)
-                          ;; print
-                          (natp max-printed-term-size)
-                          (or (eq :debug monitor)
-                              (symbol-listp monitor))
-                          (natp step-limit)
-                          (natp step-increment)
-                          (or (eq nil prune-precise)
-                              (eq t prune-precise)
-                              (natp prune-precise))
-                          (or (eq nil prune-approx)
-                              (eq t prune-approx)
-                              (natp prune-approx))
-                          (acl2::tacticsp tactics)
-                          (or (null max-conflicts)
-                              (natp max-conflicts))
-                          (member-eq inputs-disjoint-from '(nil :code :all))
-                          (member-eq assume-bytes '(:all :non-write))
-                          (or (natp stack-slots)
-                              (eq :auto stack-slots))
-                          (or (natp existing-stack-slots)
-                              (eq :auto existing-stack-slots))
-                          (member-eq position-independent '(t nil :auto))
-                          (or (eq :auto expected-failures)
-                              (string-listp expected-failures)))
+                              (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
+                              (symbol-listp extra-lift-rules)
+                              (symbol-listp extra-proof-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
+                              (symbol-listp remove-lift-rules)
+                              (symbol-listp remove-proof-rules)
+                              (acl2::normalize-xors-optionp normalize-xors)
+                              (acl2::count-hits-argp count-hits)
+                              ;; print
+                              (natp max-printed-term-size)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (natp step-limit)
+                              (natp step-increment)
+                              (or (eq nil prune-precise)
+                                  (eq t prune-precise)
+                                  (natp prune-precise))
+                              (or (eq nil prune-approx)
+                                  (eq t prune-approx)
+                                  (natp prune-approx))
+                              (acl2::tacticsp tactics)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
+                              (or (natp stack-slots)
+                                  (eq :auto stack-slots))
+                              (or (natp existing-stack-slots)
+                                  (eq :auto existing-stack-slots))
+                              (member-eq position-independent '(t nil :auto))
+                              (or (eq :auto expected-failures)
+                                  (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (;; Check whether this call to the tester is redundant:
@@ -889,16 +890,16 @@
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
        ((mv erp all-results-as-expectedp state)
-        (test-functions-fn1 executable
-                            include-fns ; will likely be :all
-                            exclude-fns
-                            assumptions
-                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
-                            expected-failures
-                            state))
+        (test-file-fn1 executable
+                       include-fns ; will likely be :all
+                       exclude-fns
+                       assumptions
+                       extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                       remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                       normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
+                       tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                       expected-failures
+                       state))
        ((when erp) (mv erp nil state)))
     (if all-results-as-expectedp
         (mv (erp-nil)
@@ -910,9 +911,9 @@
       (prog2$ (er hard? 'test-file-fn "Unexpected result (see above).")
               (mv t nil state)))))
 
-;; Tests all the functions in the file.
-;; Use :include to test only a given set of functions.
-;; Use :exclude to test all but a given set of functions.
+;; By default, we test all the functions in the file whose names start with any
+;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
+;; The :include and :exclude options can be used to override this default.
 (defmacro test-file (&whole
                      whole-form
                      executable ; a string
@@ -944,7 +945,6 @@
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
                      (position-independent ':auto)
-
                      (expected-failures ':auto))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
