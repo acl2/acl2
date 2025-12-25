@@ -1043,17 +1043,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-outer-bindings-and-hyps ((typed-formals atc-symbol-varinfo-alistp)
-                                         (compst-var symbolp)
-                                         (fn-recursivep booleanp)
-                                         (prec-objs atc-string-objinfo-alistp))
+(define atc-gen-outer-bindings-and-hyps
+  ((typed-formals atc-symbol-varinfo-alistp)
+   (compst-var symbolp)
+   (fn-recursivep booleanp)
+   (prec-objs atc-string-objinfo-alistp))
   :returns (mv (bindings doublet-listp)
                (hyps true-listp)
                (subst symbol-symbol-alistp
                       :hyp (atc-symbol-varinfo-alistp typed-formals))
                (instantiation symbol-pseudoterm-alistp
-                              :hyp (and (atc-symbol-varinfo-alistp typed-formals)
-                                        (symbolp compst-var))))
+                              :hyp (and
+                                    (atc-symbol-varinfo-alistp typed-formals)
+                                    (symbolp compst-var))))
   :short "Generate the outer bindings,
           pointer hypotheses,
           pointer substitutions,
@@ -4207,7 +4209,13 @@
     (xdoc::li
      "The guard of the loop function (expressed via the guard function)
       holds on the formals updated according to
-      the ACL2 term that represents the loop body.")))
+      the ACL2 term that represents the loop body.")
+    (xdoc::li
+     "Reading the objects corresponding to the formals
+      from the new computation states
+      yields the values updated according to
+      the ACL2 term that represents the loop body,
+      or the prevoius values if they are not updated.")))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-body-thm (add-suffix-to-fn correct-thm "-BODY"))
@@ -4246,7 +4254,8 @@
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (body-term (untranslate$ body-term nil state))
        (guard-after-body
-        `(,fn-guard ,@(atc-gen-loop-body-correct-thm-aux typed-formals affect)))
+        `(,fn-guard
+          ,@(atc-gen-loop-body-correct-thm-aux1 typed-formals affect)))
        (concl `(b* ((,affect-binder ,body-term)
                     (,compst-var-new ,final-compst))
                  (and (equal (exec-stmt ',loop-body
@@ -4256,7 +4265,9 @@
                              (mv (stmt-value-none) ,compst-var-new))
                       (compustatep ,compst-var-new)
                       (> (compustate-frames-number ,compst-var-new) 0)
-                      ,guard-after-body)))
+                      ,guard-after-body
+                      ,@(atc-gen-loop-body-correct-thm-aux2
+                         typed-formals affect compst-var-new))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -4334,7 +4345,8 @@
         names-to-avoid))
 
   :prepwork
-  ((define atc-gen-loop-body-correct-thm-aux
+
+  ((define atc-gen-loop-body-correct-thm-aux1
      ((typed-formals atc-symbol-varinfo-alistp)
       (affect symbol-listp))
      :returns (formals-new symbol-listp
@@ -4346,8 +4358,42 @@
                           (add-suffix-to-fn formal "-NEW")
                         formal)))
        (cons formal-new
-             (atc-gen-loop-body-correct-thm-aux (cdr typed-formals)
-                                                affect))))))
+             (atc-gen-loop-body-correct-thm-aux1 (cdr typed-formals)
+                                                 affect))))
+
+   (define atc-gen-loop-body-correct-thm-aux2
+     ((typed-formals atc-symbol-varinfo-alistp)
+      (affect symbol-listp)
+      (compst-var-new symbolp))
+     :returns (terms true-listp)
+     :parents nil
+     (b* (((when (endp typed-formals)) nil)
+          ((cons formal info) (car typed-formals))
+          (formal-id `(ident ,(symbol-name formal)))
+          (formal-ptr (add-suffix-to-fn formal "-PTR"))
+          (formal/formalnew (if (member-eq formal affect)
+                                (add-suffix-to-fn formal "-NEW")
+                              formal))
+          (type (atc-var-info->type info))
+          (pointerp (or (type-case type :pointer)
+                        (type-case type :array)))
+          (externalp (atc-var-info->externalp info))
+          (terms
+           (if externalp
+               `((equal (read-static-var ,formal-id ,compst-var-new)
+                        ,formal/formalnew))
+             (if pointerp
+                 `((equal (read-var ,formal-id ,compst-var-new)
+                          ,formal-ptr)
+                   (equal (read-object (value-pointer->designator ,formal-ptr)
+                                       ,compst-var-new)
+                          ,formal/formalnew))
+               `((equal (read-var ,formal-id ,compst-var-new)
+                        ,formal/formalnew)))))
+          (more-terms (atc-gen-loop-body-correct-thm-aux2 (cdr typed-formals)
+                                                          affect
+                                                          compst-var-new)))
+       (append terms more-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
