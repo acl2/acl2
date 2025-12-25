@@ -314,9 +314,7 @@
                               ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
-                              bvchop-of-logior-becomes-bvor
-                              ifix
-                              ))))
+                              ifix))))
 
 ;; Introduces the BV function
 (defthm rotate-left-becomes-leftrotate
@@ -331,9 +329,7 @@
                               ash-becomes-logtail
                               logtail-of-bvchop-becomes-slice
                               logtail-becomes-0
-                              bvchop-of-logior-becomes-bvor
-                              ifix
-                              ))))
+                              ifix))))
 
 ;; ;; todo: handle more specialized variants of rotate-left.  also handle the variants of rotate-right.
 ;; ;; or just open these to expose the non-specialized rotate ops!
