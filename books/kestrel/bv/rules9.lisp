@@ -13,7 +13,7 @@
 
 (include-book "single-bit") ; for BITNOT-BECOMES-BITXOR-WITH-1 ?
 (include-book "bvcat-rules") ; make local?
-(include-book "bitwise") ; make local?
+(local (include-book "bitwise"))
 (include-book "bvplus")
 (include-book "rules") ; for getbit-of-+
 ;(include-book "leftrotate")

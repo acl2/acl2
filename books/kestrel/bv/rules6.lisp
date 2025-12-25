@@ -16,7 +16,7 @@
 (include-book "bv-syntax")
 (include-book "bvmult")
 (include-book "logext")
-(include-book "bitwise")
+(local (include-book "bitwise"))
 (include-book "unsigned-byte-p-forced")
 (include-book "bvif")
 (include-book "bvcat")
