@@ -34,7 +34,10 @@
   (implies (assoc key (tail map))
            (equal (assoc key map)
                   (assoc key (tail map))))
-  :enable assoc)
+  :by assoc-of-tail-when-assoc-of-tail)
+
+(theory-invariant (incompatible! (:rewrite assoc-of-tail-when-assoc-of-tail)
+                                 (:rewrite assoc-when-assoc-of-tail)))
 
 (defrule assoc-when-assoc-of-tail-cheap
   (implies (assoc key (tail map))
@@ -42,3 +45,6 @@
                   (assoc key (tail map))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by assoc-when-assoc-of-tail)
+
+(theory-invariant (incompatible! (:rewrite assoc-of-tail-when-assoc-of-tail)
+                                 (:rewrite assoc-when-assoc-of-tail-cheap)))
