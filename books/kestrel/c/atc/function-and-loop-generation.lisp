@@ -4463,49 +4463,45 @@
      the lemma uses the specialization of @(tsee exec-stmt-while)
      that is generated as discussed above,
      while the theorem uses the general @(tsee exec-stmt-while);
-     the reason is so we can have the right induction, as discussed above.
-     As explained shortly,
-     the formula involves (some of) the loop function's formals,
-     so we take those into account to generate variables for
-     the computation state, the function environment, and the limit.
-     The hypotheses include the guard of the loop function,
-     but we need to replace any pointers with their dereferenced arrays,
-     and in addition we need to replace the parameters of the loop function
-     with @(tsee read-var) calls that read the corresponding variables.
-     The other hypotheses are the same as in @(tsee atc-gen-cfun-correct-thm),
-     with the addition of a hypothesis that
-     the number of frames in the computation state is not zero;
-     this is always the case when executing a loop.
-     The arguments of the loop function call are obtained by
-     replacing its formals with the corresponding @(tsee read-var) calls.
-     The lemma is proved via proof builder instructions,
-     by first applying induction
-     and then calling the prover on all the induction subgoals.
-     For robustness, first we set the theory to contain
-     just the specialized @(tsee exec-stmt-while),
-     then we apply induction, which therefore must be on that function.
-     The theory for the subgoal includes
-     fewer rules than the ones for the full symbolic execution,
-     because we use the correctness theorems for the loop test and body
-     as rewrite rules instead, which take care of most of the execution.
-     The @(':expand') hint applies to the loop function,
-     for robustness (as ACL2's heuristics sometimes prevent
-     the opening of recursive function definitions,
-     but here we know that we always want to open it).
-     The hints also include:
-     (i) the return value theorem of the loop function,
-     which is reasonable since the function is recursive,
-     and so it is called inside its body;
-     (ii) the definition of the specialized @(tsee exec-stmt-while);
-     (iii) the rule saying that the measure yields a natural number; and
-     (iv) the termination theorem of the loop function, suitably instantiated.
-     Given the correctness lemma, the correctness theorem is easily proved,
-     via the lemma and the generate theorem that equates
-     the specialized @(tsee exec-stmt-while) to the general one.")
+     the reason is so we can have the appropriate induction.")
    (xdoc::p
-    "Similarly to @(tsee atc-gen-cfun-correct-thm),
-     we stage the proof of the lemma in two phases:
-     see the documentation of that function for motivation."))
+    "We make use of the theorems for the test and body,
+     so that the proof the the loop itself is, in a sense,
+     independent from the specifics of test and body;
+     this is critical for efficiency of the proof.
+     While the theorem for the test is used as a rewrite rule,
+     the one for the body is used in a @(':use') hint:
+     to use it as a rewrite rule instead,
+     we would have to do some non-trivial transformations
+     to the term that describes the new computation state
+     in the generated theorem about the body;
+     so it is easier to @(':use') the theorem.
+     This can potentially cause more case splits,
+     but we will revisit the approach in case the proofs are too slow.")
+   (xdoc::p
+    "The proof for the loop follows a general pattern,
+     which we should document more generally and abstractly.
+     A couple of key explanations follow.")
+   (xdoc::p
+    "The intuitive reason for the @('write-write-lemma') is that
+     the induction proof shows that zero or more computation state updates,
+     one for each loop iteration,
+     is equivalent to one computation state update
+     with the values returned by the loop function.
+     So, in the induction step, a subgoal arises where we need to simplify
+     a computation state update of a computation state update
+     to just the first update, which overrides the second update.
+     This is achieved by the @('write-write-lemma'),
+     which is specific to state updates of the loop.")
+   (xdoc::p
+    "The reason for the @('write-read-lemma') is instead
+     the base case of the induction,
+     to take care of the case of zero loop iterations.
+     In this case, there is no actual computation state update,
+     and the loop function returns its inputs unchanged.
+     In the proof, we need to show that
+     updating the computation state with the current values
+     leaves the computation state unchanged."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-lemma (add-suffix-to-fn correct-thm "-LEMMA"))
@@ -4522,6 +4518,104 @@
         (atc-gen-outer-bindings-and-hyps typed-formals compst-var t prec-objs))
        (diff-pointer-hyps
         (atc-gen-object-disjoint-hyps (strip-cdrs subst)))
+       (write-write-lemma-name
+        (add-suffix-to-fn correct-thm "-WRITE-WRITE-LEMMA"))
+       ((mv write-write-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix write-write-lemma-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (write-write-lemma-hyps
+        `((compustatep ,compst-var)
+          (> (compustate-frames-number ,compst-var) 0)
+          ,@hyps
+          ,@diff-pointer-hyps
+          (,fn-guard ,@formals)
+          ,@(atc-gen-loop-correct-thm-aux1 affect typed-formals prec-tags)))
+       (write-write-lemma-concl
+        `(equal
+          ,(atc-gen-updated-compustate affect
+                                       "-NEW"
+                                       typed-formals
+                                       subst
+                                       (atc-gen-updated-compustate affect
+                                                                   "-OLD"
+                                                                   typed-formals
+                                                                   subst
+                                                                   'compst))
+          ,(atc-gen-updated-compustate affect
+                                       "-NEW"
+                                       typed-formals
+                                       subst
+                                       'compst)))
+       (write-write-lemma-formula
+        `(b* (,@formals-bindings)
+           (implies (and ,@write-write-lemma-hyps)
+                    ,write-write-lemma-concl)))
+       (called-fns (all-fnnames (ubody+ fn wrld)))
+       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
+       (struct-reader-return-thms
+        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
+       (struct-writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (flexiblep-thms
+        (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
+       (member-read-thms
+        (atc-string-taginfo-alist-to-member-read-thms prec-tags))
+       (member-write-thms
+        (atc-string-taginfo-alist-to-member-write-thms prec-tags))
+       (type-prescriptions-called
+        (loop$ for callable in (strip-cars prec-fns)
+               collect `(:t ,callable)))
+       (type-prescriptions-struct-readers
+        (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
+               collect `(:t ,reader)))
+       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
+       (result-thms
+        (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
+       (result-thms (cons fn-result-thm result-thms))
+       (correct-thms
+        (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
+       (measure-thms
+        (atc-symbol-fninfo-alist-to-measure-nat-thms
+         prec-fns (strip-cars prec-fns)))
+       (guard-unnorms
+        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
+       (write-write-lemma-hints
+        `(("Goal"
+           :do-not-induct t
+           :in-theory (union-theories
+                       (theory 'atc-all-rules)
+                       '(,@not-error-thms
+                         ,@valuep-thms
+                         ,@value-kind-thms
+                         not
+                         return-type-of-stmt-value-return
+                         return-type-of-stmt-value-none
+                         stmt-value-return->value?-of-stmt-value-return
+                         stmt-value-return-of-value-option-fix-value?
+                         (:e c::value-option-fix)
+                         ,@struct-reader-return-thms
+                         ,@struct-writer-return-thms
+                         ,@type-of-value-thms
+                         ,@flexiblep-thms
+                         ,@member-read-thms
+                         ,@member-write-thms
+                         ,@type-prescriptions-called
+                         ,@type-prescriptions-struct-readers
+                         ,@extobj-recognizers
+                         ,@result-thms
+                         ,@correct-thms
+                         ,@measure-thms
+                         expr-value-optionp-when-expr-valuep
+                         expr-pure-limit
+                         max
+                         ,fn-guard-unnorm
+                         ,@guard-unnorms)))))
        (hyps-common `((compustatep ,compst-var)
                       (> (compustate-frames-number ,compst-var) 0)
                       (equal ,fenv-var
@@ -4557,40 +4651,6 @@
         `(b* (,@formals-bindings) (implies ,hyps-lemma ,concl-lemma)))
        (formula-thm
         `(b* (,@formals-bindings) (implies ,hyps-thm ,concl-thm)))
-       (called-fns (all-fnnames (ubody+ fn wrld)))
-       (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
-       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
-       (result-thms
-        (atc-symbol-fninfo-alist-to-result-thms prec-fns called-fns))
-       (result-thms (cons fn-result-thm result-thms))
-       (struct-reader-return-thms
-        (atc-string-taginfo-alist-to-reader-return-thms prec-tags))
-       (struct-writer-return-thms
-        (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
-       (correct-thms
-        (atc-symbol-fninfo-alist-to-correct-thms prec-fns called-fns))
-       (measure-thms
-        (atc-symbol-fninfo-alist-to-measure-nat-thms
-         prec-fns (strip-cars prec-fns)))
-       (type-prescriptions-called
-        (loop$ for callable in (strip-cars prec-fns)
-               collect `(:t ,callable)))
-       (type-prescriptions-struct-readers
-        (loop$ for reader in (atc-string-taginfo-alist-to-readers prec-tags)
-               collect `(:t ,reader)))
-       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
-       (type-of-value-thms
-        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
-       (flexiblep-thms
-        (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
-       (member-read-thms
-        (atc-string-taginfo-alist-to-member-read-thms prec-tags))
-       (member-write-thms
-        (atc-string-taginfo-alist-to-member-write-thms prec-tags))
-       (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
-       (called-fns (all-fnnames (ubody+ fn wrld)))
-       (guard-unnorms
-        (atc-symbol-fninfo-alist-to-guard-unnorms prec-fns called-fns))
        (lemma-hints `(("Goal"
                        :do-not-induct t
                        :in-theory (append
@@ -4753,6 +4813,11 @@
                      :in-theory '(,fn-guard-unnorm)
                      :use (,correct-lemma
                            ,exec-stmt-while-for-fn-thm))))
+       ((mv write-write-lemma-event &)
+        (evmac-generate-defthm write-write-lemma-name
+                               :formula write-write-lemma-formula
+                               :hints write-write-lemma-hints
+                               :enable nil))
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
                                :formula formula-lemma
@@ -4764,12 +4829,51 @@
                                :hints thm-hints
                                :enable nil))
        (print-event `(cw-event "~%~x0~|" ',correct-thm-exported-event)))
-    (mv (list correct-lemma-event
+    (mv (list write-write-lemma-event
+              correct-lemma-event
               correct-thm-local-event
               correct-thm-exported-event)
         print-event
         correct-thm
-        names-to-avoid)))
+        names-to-avoid))
+
+  :prepwork
+
+  ((define atc-gen-loop-correct-thm-aux1
+     ((affect symbol-listp)
+      (typed-formals atc-symbol-varinfo-alistp)
+      (prec-tags atc-string-taginfo-alistp))
+     :returns (terms true-listp)
+     :parents nil
+     (b* (((when (endp affect)) nil)
+          (var (car affect))
+          (info (cdr (assoc-eq var typed-formals)))
+          ((unless info)
+           (raise "Internal error: variable ~x0 not found in ~x1."
+                  var typed-formals))
+          (type (atc-var-info->type info))
+          (pred (atc-type-to-recognizer type prec-tags))
+          (array-length-fn
+           (and (type-case type :array)
+                (b* ((elem-type (type-array->of type))
+                     ((unless (type-nonchar-integerp elem-type))
+                      (raise "Internal error: array type element ~x0."
+                             elem-type))
+                     (elem-fixtype (integer-type-to-fixtype elem-type)))
+                  (pack elem-fixtype '-array-length))))
+          (var-new (add-suffix-to-fn var "-NEW"))
+          (var-old (add-suffix-to-fn var "-OLD"))
+          (terms `((,pred ,var-new)
+                   (,pred ,var-old)
+                   ,@(and array-length-fn
+                          `((equal (,array-length-fn ,var-new)
+                                   (,array-length-fn ,var))
+                            (equal (,array-length-fn ,var-old)
+                                   (,array-length-fn ,var))))))
+          (more-terms (atc-gen-loop-correct-thm-aux1 (cdr affect)
+                                                     typed-formals
+                                                     prec-tags)))
+       (append terms more-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
