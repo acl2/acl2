@@ -4112,8 +4112,7 @@
                                     (suffix stringp)
                                     (typed-formals atc-symbol-varinfo-alistp)
                                     (subst symbol-symbol-alistp)
-                                    (compst-term "An untranslated term.")
-                                    (prec-objs atc-string-objinfo-alistp))
+                                    (compst-term "An untranslated term."))
   :guard (member-equal suffix '("-NEW" "-OLD"))
   :returns (term "An untranslated term.")
   :short "Generate a term representing an updated computation state."
@@ -4141,24 +4140,23 @@
        (type (atc-var-info->type info))
        (pointerp (or (type-case type :pointer)
                      (type-case type :array)))
+       (externalp (atc-var-info->externalp info))
        (ptr-var (cdr (assoc-eq var subst)))
        (compst-term (atc-gen-updated-compustate (cdr vars)
                                                 suffix
                                                 typed-formals
                                                 subst
-                                                compst-term
-                                                prec-objs)))
-    (if pointerp
-        (if (consp (assoc-equal (symbol-name var) prec-objs))
-            `(write-static-var (ident ,(symbol-name var))
-                               ,var-new/old
-                               ,compst-term)
-          `(write-object (value-pointer->designator ,ptr-var)
-                         ,var-new/old
-                         ,compst-term))
-      `(write-var (ident ,(symbol-name (car vars)))
-                  ,var-new/old
-                  ,compst-term))))
+                                                compst-term)))
+    (if externalp
+        `(write-static-var (ident ,(symbol-name var))
+                           ,var-new/old
+                           ,compst-term)
+      (if pointerp `(write-object (value-pointer->designator ,ptr-var)
+                                  ,var-new/old
+                                  ,compst-term)
+        `(write-var (ident ,(symbol-name (car vars)))
+                    ,var-new/old
+                    ,compst-term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4246,8 +4244,7 @@
                                                  "-NEW"
                                                  typed-formals
                                                  subst
-                                                 compst-var
-                                                 prec-objs))
+                                                 compst-var))
        (body-term (atc-loop-body-term-subst body-term fn affect))
        (body-term (untranslate$ body-term nil state))
        (guard-after-body
@@ -4545,8 +4542,7 @@
                                                  "-NEW"
                                                  typed-formals
                                                  subst
-                                                 compst-var
-                                                 prec-objs))
+                                                 compst-var))
        (concl-lemma `(equal (,exec-stmt-while-for-fn ,compst-var ,limit-var)
                             (b* ((,affect-binder (,fn ,@formals)))
                               (mv (stmt-value-none) ,final-compst))))
