@@ -4215,7 +4215,11 @@
       from the new computation states
       yields the values updated according to
       the ACL2 term that represents the loop body,
-      or the prevoius values if they are not updated.")))
+      or the prevoius values if they are not updated.")
+    (xdoc::li
+     "The updated formals have the appropriate types.
+      For arrays, we also say that the length of the updated array
+      is the same as the length of the original array.")))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
        (correct-body-thm (add-suffix-to-fn correct-thm "-BODY"))
@@ -4267,7 +4271,9 @@
                       (> (compustate-frames-number ,compst-var-new) 0)
                       ,guard-after-body
                       ,@(atc-gen-loop-body-correct-thm-aux2
-                         typed-formals affect compst-var-new))))
+                         typed-formals affect compst-var-new)
+                      ,@(atc-gen-loop-body-correct-thm-aux3
+                         affect typed-formals prec-tags))))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (called-fns (all-fnnames (ubody+ fn wrld)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -4393,6 +4399,38 @@
           (more-terms (atc-gen-loop-body-correct-thm-aux2 (cdr typed-formals)
                                                           affect
                                                           compst-var-new)))
+       (append terms more-terms)))
+
+   (define atc-gen-loop-body-correct-thm-aux3
+     ((affect symbol-listp)
+      (typed-formals atc-symbol-varinfo-alistp)
+      (prec-tags atc-string-taginfo-alistp))
+     :returns (terms true-listp)
+     :parents nil
+     (b* (((when (endp affect)) nil)
+          (var (car affect))
+          (info (cdr (assoc-eq var typed-formals)))
+          ((unless info)
+           (raise "Internal error: variable ~x0 not found in ~x1."
+                  var typed-formals))
+          (type (atc-var-info->type info))
+          (pred (atc-type-to-recognizer type prec-tags))
+          (array-length-fn
+           (and (type-case type :array)
+                (b* ((elem-type (type-array->of type))
+                     ((unless (type-nonchar-integerp elem-type))
+                      (raise "Internal error: array type element ~x0."
+                             elem-type))
+                     (elem-fixtype (integer-type-to-fixtype elem-type)))
+                  (pack elem-fixtype '-array-length))))
+          (var-new (add-suffix-to-fn var "-NEW"))
+          (terms `((,pred ,var-new)
+                   ,@(and array-length-fn
+                          `((equal (,array-length-fn ,var-new)
+                                   (,array-length-fn ,var))))))
+          (more-terms (atc-gen-loop-body-correct-thm-aux3 (cdr affect)
+                                                          typed-formals
+                                                          prec-tags)))
        (append terms more-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
