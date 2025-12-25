@@ -831,15 +831,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test the given list of functions.
-;; TODO: Deprecate (just call test-file with :include argument):
-(defmacro test-functions (function-name-strings ; or can be :all
-                          executable ; a string
-                          &rest rest)
-  `(test-file ,executable :include ,function-name-strings ,@rest))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns (mv erp event state).
 (defun test-file-fn (executable ; a path to an executable
                      include-fns ; a list of strings (names of functions), or :all
