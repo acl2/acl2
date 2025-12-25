@@ -287,4 +287,5 @@
            (equal (equal x y)
                   (and (submap x y)
                        (submap y x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by double-containment-no-backchain-limit)

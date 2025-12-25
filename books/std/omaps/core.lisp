@@ -1100,9 +1100,9 @@
          (set::in key (keys map)))
     :enable assoc)
 
-  (defruled in-of-keys-to-assoc
-    (iff (set::in key (keys map))
-         (assoc key map))
+  (defrule in-of-keys-to-assoc
+    (equal (set::in key (keys map))
+           (and (assoc key map) t))
     :enable assoc)
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
@@ -1113,8 +1113,7 @@
          (set::subset (set::mergesort keys) (keys map)))
     :induct t
     :enable (set::mergesort
-             list-in
-             assoc-to-in-of-keys))
+             list-in))
 
   (defruled in-keys-when-assoc-forward
     (implies (assoc key map)
@@ -1129,19 +1128,7 @@
   (defrule keys-of-update
     (equal (keys (update key val m))
            (set::insert key (keys m)))
-    ;; This ugly list suggests a need for useful lemmas!
-    :enable (update
-             emptyp
-             insert
-             head
-             tail
-             mfix
-             mapp
-             set::insert
-             set::head
-             set::tail
-             set::emptyp
-             set::setp))
+    :enable set::expensive-rules)
 
   (defrule keys-of-update*
     (equal (keys (update* new old))
@@ -1153,6 +1140,7 @@
            (set::intersect keys (keys map)))
     :enable (set::double-containment
              set::pick-a-point-subset-strategy)
+    :disable in-of-keys-to-assoc
     :prep-lemmas
     ((defrule lemma1
        (implies (set::in x (keys (restrict keys map)))
