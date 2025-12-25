@@ -643,6 +643,10 @@
              (equal (assoc key map) nil))
     :rule-classes (:rewrite :type-prescription))
 
+  (defrule consp-of-assoc
+    (equal (consp (assoc key map))
+           (and (assoc key map) t)))
+
   (defrule assoc-of-head
     (iff (assoc (mv-nth 0 (head map)) map)
          (not (emptyp map))))
@@ -675,20 +679,10 @@
                (assoc key map2)))
     :enable update*)
 
-  (defrule consp-of-assoc-of-update*
-    (equal (consp (assoc key (update* map1 map2)))
-           (or (consp (assoc key map1))
-               (consp (assoc key map2))))
-    :enable update*)
-
   (defrule update-of-cdr-of-assoc-when-assoc
     (implies (assoc k m)
              (equal (update k (cdr (assoc k m)) m)
                     m)))
-
-  (defruled consp-of-assoc-iff-assoc
-    (iff (consp (assoc key map))
-         (assoc key map)))
 
   (defruled head-key-minimal
     (implies (<< key (mv-nth 0 (head map)))
@@ -1087,11 +1081,6 @@
   (defruled keys-iff-not-emptyp
     (iff (keys map)
          (not (emptyp map))))
-
-  (defruled consp-of-assoc-to-in-of-keys
-    (equal (consp (assoc key map))
-           (set::in key (keys map)))
-    :enable assoc)
 
   (defruled assoc-to-in-of-keys
     (iff (assoc key map)
