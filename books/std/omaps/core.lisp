@@ -248,13 +248,26 @@
     (implies (emptyp map)
              (equal (mv-nth 0 (head map)) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (emptyp mfix mapp))
+    :enable mapp)
 
   (defrule head-value-when-emptyp
     (implies (emptyp map)
              (equal (mv-nth 1 (head map)) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (emptyp mfix mapp))
+    :enable mapp)
+
+  (defruled head-when-emptyp
+    (implies (emptyp map)
+             (equal (head map)
+                    (list nil nil)))
+    :enable head)
+
+  (defrule head-when-emptyp-cheap
+    (implies (emptyp map)
+             (equal (head map)
+                    (list nil nil)))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+    :by head-when-emptyp)
 
   (defrule head-key-count
     (implies (not (emptyp map))

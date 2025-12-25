@@ -22,16 +22,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; core rules (TODO MOVE)
-
-(defrule head-when-emptyp
-  (implies (emptyp map)
-           (equal (head map)
-                  (list nil nil)))
-  :enable head)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled assoc-when-submap-and-assoc
   (implies (and (submap sub sup)
                 (assoc key sub))
@@ -115,10 +105,7 @@
            (submap-sk (tail sub) sup))
   :expand (submap-sk (tail sub) sup)
   :use (:instance submap-sk-necc
-                  (key (submap-witness (tail sub) sup)))
-  :enable assoc-of-tail-when-assoc-of-tail
-  ;; TODO: Is this a bad rule? Rewriting in the wrong direction?
-  :disable assoc-when-assoc-of-tail-cheap)
+                  (key (submap-witness (tail sub) sup))))
 
 (defruledl submap-sk-when-submap
   (implies (submap sub sup)
