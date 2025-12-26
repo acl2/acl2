@@ -4377,7 +4377,8 @@
           (terms
            (if externalp
                `((equal (read-static-var ,formal-id ,compst-var-new)
-                        ,formal/formalnew))
+                        ,formal/formalnew)
+                 (not (var-autop ,formal-id ,compst-var-new)))
              (if pointerp
                  `((equal (read-var ,formal-id ,compst-var-new)
                           ,formal-ptr)
