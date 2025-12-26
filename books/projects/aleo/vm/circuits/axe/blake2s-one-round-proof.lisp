@@ -318,7 +318,7 @@
 ;; TODO: Look at source
 ;; TODO: Ask about the pattern of positive and negative coeffs
 
-;; Need FEP assuptions. plan: introduce all-fep.
+;; Need FEP assumptions. plan: introduce all-fep.
 ;; faster: binary-tree of keyed appends.  axe-syntaxp rule if the var name is symbol-< the key, backchain to showing that it's in the left branch, else the right branch.
 ;; will need a new axe-syntax function.  will need to generalize prove-basic to macro that generates a prover.
 
