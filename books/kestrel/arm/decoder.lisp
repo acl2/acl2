@@ -112,6 +112,13 @@
 ;; (is-good-encoding-patternp '((cond 4) 0 0 1 0 1 0 0 (s 1) (rn 4) (rd 4) (imm12 12)))
 
 
+(defun good-encoding-pattern-listp (pats)
+  (declare (xargs :guard t))
+  (if (not (consp pats))
+      (null pats)
+    (and (good-encoding-patternp (first pats))
+         (good-encoding-pattern-listp (rest pats)))))
+
 (defun encoding-pattern-alistp (alist)
   (declare (xargs :guard t))
   (if (not (consp alist))
@@ -204,45 +211,51 @@
                                    pat1-mandatory-bits pat1-mandatory-bit-mask
                                    pat2-mandatory-bits pat2-mandatory-bit-mask))))
 
-(defund incompatible-patternsp (pat1 pat2)
+(defund incompatible-patternsp (pat1 mnemonic1 pat2 mnemonic2)
   (declare (xargs :guard (and (encoding-patternp pat1)
+                              (keywordp mnemonic1)
                               (encoding-patternp pat2)
+                              (keywordp mnemonic2)
                               (equal (encoding-pattern-size pat1) 32)
                               (equal (encoding-pattern-size pat2) 32))))
-  (let ((pat1-mandatory-bit-mask (mandatory-bit-mask pat1 31 0))
-        (pat1-mandatory-bits (mandatory-bits pat1 31 0))
-        (pat2-mandatory-bit-mask (mandatory-bit-mask pat2 31 0))
-        (pat2-mandatory-bits (mandatory-bits pat2 31 0)))
-    (some-mandatory-bit-differsp 31
-                                 pat1-mandatory-bits pat1-mandatory-bit-mask
-                                 pat2-mandatory-bits pat2-mandatory-bit-mask)))
+  (let* ((pat1-mandatory-bit-mask (mandatory-bit-mask pat1 31 0))
+         (pat1-mandatory-bits (mandatory-bits pat1 31 0))
+         (pat2-mandatory-bit-mask (mandatory-bit-mask pat2 31 0))
+         (pat2-mandatory-bits (mandatory-bits pat2 31 0))
+         (pats-differp (some-mandatory-bit-differsp 31
+                                                    pat1-mandatory-bits pat1-mandatory-bit-mask
+                                                    pat2-mandatory-bits pat2-mandatory-bit-mask)))
+    (if pats-differp
+        t
+      (prog2$ (cw "WARNING: Overlap in patterns for ~x0 and ~x1." mnemonic1 mnemonic2)
+              nil))))
 
-(defun good-encoding-pattern-listp (pats)
-  (declare (xargs :guard t))
-  (if (not (consp pats))
-      (null pats)
-    (and (good-encoding-patternp (first pats))
-         (good-encoding-pattern-listp (rest pats)))))
-
-(defun pattern-incompatible-with-allp (pat pats)
-  (declare (xargs :guard (and (good-encoding-patternp pat) ; maybe a bit overkill but we need the size 32
-                              (good-encoding-pattern-listp pats))))
-  (if (endp pats)
+(defun pattern-incompatible-with-allp (pat mnemonic alist)
+  (declare (xargs :guard (and (good-encoding-patternp pat) ; maybe a bit overkill but we need the size to be 32
+                              (keywordp mnemonic)
+                              (encoding-pattern-alistp alist))))
+  (if (endp alist)
       t
-    (and (incompatible-patternsp pat (first pats))
-         (pattern-incompatible-with-allp pat (rest pats)))))
+    (let* ((entry2 (first alist))
+           (mnemonic2 (car entry2))
+           (pat2 (cdr entry2)))
+      (and (incompatible-patternsp pat mnemonic pat2 mnemonic2)
+           (pattern-incompatible-with-allp pat mnemonic (rest alist))))))
 
-(defun all-patterns-incompatiblep (pats)
-  (declare (xargs :guard (good-encoding-pattern-listp pats)))
-  (if (endp pats)
+(defun all-patterns-incompatiblep (alist)
+  (declare (xargs :guard (encoding-pattern-alistp alist)))
+  (if (endp alist)
       t
-    (and (pattern-incompatible-with-allp (first pats) (rest pats))
-         (all-patterns-incompatiblep (rest pats)))))
+    (let* ((entry (first alist))
+           (mnemonic (car entry))
+           (pat (cdr entry)))
+      (and (pattern-incompatible-with-allp pat mnemonic (rest alist))
+           (all-patterns-incompatiblep (rest alist))))))
 
 (defun is-good-encoding-pattern-alistp (alist)
   (declare (xargs :guard (encoding-pattern-alistp alist)))
   (and (no-duplicatesp-equal (strip-cars alist))
-       (all-patterns-incompatiblep (strip-cdrs alist)) ; todo: keep the cars for printing error messages
+       (all-patterns-incompatiblep alist) ; todo: keep the cars for printing error messages
        ; the patterns must be pairwise disjoint (we compute the masks and check) ; todo: first divide the set as indicated by a tree of splitters (bits or slices).  for a splitter, all (remaining) patterns must have fully concrete values
        ))
 
