@@ -1086,7 +1086,15 @@
 
   (defret expr-aidentp-of-expr-ident
     (expr-aidentp expr gcc)
-    :hyp (ident-aidentp ident gcc)))
+    :hyp (ident-aidentp ident gcc))
+
+  (defruled xeq-expr-ident-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-ident ident info gin)))
+      (implies (gout->thm-name gout)
+               (and (ident-formalp ident)
+                    (expr-formalp expr))))
+    :enable (gout-no-thm
+             expr-formalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1188,7 +1196,16 @@
 
   (defret expr-aidentp-of-xeq-expr-const
     (expr-aidentp expr gcc)
-    :hyp (const-aidentp const gcc)))
+    :hyp (const-aidentp const gcc))
+
+  (defruled xeq-expr-const-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-const const info gin)))
+      (implies (gout->thm-name gout)
+               (and (const-formalp const)
+                    (expr-formalp expr))))
+    :enable (gout-no-thm
+             const-formalp
+             expr-formalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1282,7 +1299,19 @@
 
   (defret expr-aidentp-of-xeq-expr-unary
     (expr-aidentp expr gcc)
-    :hyp (expr-aidentp arg-new gcc)))
+    :hyp (expr-aidentp arg-new gcc))
+
+  (defruled xeq-expr-unary-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-unary op arg arg-new arg-thm-name info gin)))
+      (implies (and (or (not arg-thm-name)
+                        (and (expr-formalp arg)
+                             (expr-formalp arg-new)))
+                    (gout->thm-name gout))
+               (and (member-equal (unop-kind op)
+                                  '(:plus :minus :bitnot :lognot))
+                    (expr-formalp expr))))
+    :expand (expr-formalp (c$::expr-unary op arg-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
