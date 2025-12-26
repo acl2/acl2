@@ -45,12 +45,15 @@
     ;; (:add-sp-plus-register .          ((cond 4) 0 0 0 0 1 0 0 (s 1) 1 1 0 1 (rd 4) (imm5 5) (type 2) 0 (rm 4)))
     (:push-encoding-a1 . ((cond 4) 1 0 0 1 0 0 1 0 1 1 0 1 (register_list 16)))
     (:push-encoding-a2 . ((cond 4) 0 1 0 1 0 0 1 0 1 1 0 1 (rt 4) 0 0 0 0 0 0 0 0 0 1 0 0))
-;;    (:str-immediate . ((cond 4) 0 1 0 (p 1) (u 1) 0 (w 1) 0 (rn 4) (rt 4) (imm12 12))) ; todo: conflicts with push...
+    (:str-immediate . ((cond 4) 0 1 0 (p 1) (u 1) 0 (w 1) 0 (rn 4) (rt 4) (imm12 12))) ; todo: conflicts with push...
     ;; TODO: Add more
     (:sub-immediate .                  ((cond 4) 0 0 1 0 0 1 0 (s 1) (rn 4) (rd 4) (imm12 12)))
     (:sub-register .                   ((cond 4) 0 0 0 0 0 1 0 (s 1) (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4)))
     (:sub-register-shifted-register .  ((cond 4) 0 0 0 0 0 1 0 (s 1) (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4)))
     ))
+
+(defconst *allowed-encoding-overlaps*
+  '((:str-immediate :push-encoding-a2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,32 +233,63 @@
       (prog2$ (cw "WARNING: Overlap in patterns for ~x0 and ~x1." mnemonic1 mnemonic2)
               nil))))
 
-(defun pattern-incompatible-with-allp (pat mnemonic alist)
+(defun keyword-doubletp (d)
+  (declare (xargs :guard t))
+  (and (acl2::keyword-listp d) ; todo: import
+       (= 2 (len d))))
+
+(defun keyword-doublet-listp (lst)
+  (declare (xargs :guard t))
+  (if (not (consp lst))
+      (null lst)
+    (let ((doublet (first lst)))
+      (and (keyword-doubletp doublet)
+           (keyword-doublet-listp (rest lst))))))
+
+;; Checks whether some allowed-overlap contains both mnemonic1 and mnemonic2.
+(defund overlap-allowedp (mnemonic1 mnemonic2 allowed-overlaps)
+  (declare (xargs :guard (and (keywordp mnemonic1)
+                              (keywordp mnemonic2)
+                              ;; (not (equal mnemonic1 mnemonic2)) ; uncomment?
+                              (keyword-doublet-listp allowed-overlaps)
+                              )))
+  (if (endp allowed-overlaps)
+      nil
+    (let ((allowed-overlap (first allowed-overlaps)))
+      (or (and (member-eq mnemonic1 allowed-overlap)
+               (member-eq mnemonic2 allowed-overlap))
+          (overlap-allowedp mnemonic1 mnemonic2 (rest allowed-overlaps))))))
+
+(defun pattern-incompatible-with-allp (pat mnemonic alist allowed-overlaps)
   (declare (xargs :guard (and (good-encoding-patternp pat) ; maybe a bit overkill but we need the size to be 32
                               (keywordp mnemonic)
-                              (encoding-pattern-alistp alist))))
+                              (encoding-pattern-alistp alist)
+                              (keyword-doublet-listp allowed-overlaps))))
   (if (endp alist)
       t
     (let* ((entry2 (first alist))
            (mnemonic2 (car entry2))
            (pat2 (cdr entry2)))
-      (and (incompatible-patternsp pat mnemonic pat2 mnemonic2)
-           (pattern-incompatible-with-allp pat mnemonic (rest alist))))))
+      (and (if (overlap-allowedp mnemonic mnemonic2 allowed-overlaps)
+               t
+             (incompatible-patternsp pat mnemonic pat2 mnemonic2))
+           (pattern-incompatible-with-allp pat mnemonic (rest alist) allowed-overlaps)))))
 
-(defun all-patterns-incompatiblep (alist)
-  (declare (xargs :guard (encoding-pattern-alistp alist)))
+(defun all-patterns-incompatiblep (alist allowed-overlaps)
+  (declare (xargs :guard (and (encoding-pattern-alistp alist)
+                              (keyword-doublet-listp allowed-overlaps))))
   (if (endp alist)
       t
     (let* ((entry (first alist))
            (mnemonic (car entry))
            (pat (cdr entry)))
-      (and (pattern-incompatible-with-allp pat mnemonic (rest alist))
-           (all-patterns-incompatiblep (rest alist))))))
+      (and (pattern-incompatible-with-allp pat mnemonic (rest alist) allowed-overlaps)
+           (all-patterns-incompatiblep (rest alist) allowed-overlaps)))))
 
 (defun is-good-encoding-pattern-alistp (alist)
   (declare (xargs :guard (encoding-pattern-alistp alist)))
   (and (no-duplicatesp-equal (strip-cars alist))
-       (all-patterns-incompatiblep alist) ; todo: keep the cars for printing error messages
+       (all-patterns-incompatiblep alist *allowed-encoding-overlaps*)
        ; the patterns must be pairwise disjoint (we compute the masks and check) ; todo: first divide the set as indicated by a tree of splitters (bits or slices).  for a splitter, all (remaining) patterns must have fully concrete values
        ))
 
