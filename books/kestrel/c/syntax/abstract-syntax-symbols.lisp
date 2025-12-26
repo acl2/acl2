@@ -84,6 +84,7 @@
     make-expr-member
     make-expr-memberp
     make-expr-complit
+    expr-unary
     make-expr-unary
     expr-sizeof
     expr-alignof
@@ -625,6 +626,8 @@
     ;; formalized subset:
 
     ident-formalp
+    const-formalp
+    tyname-formalp
     expr-formalp
     initer-formalp
     dirdeclor-block-formalp
