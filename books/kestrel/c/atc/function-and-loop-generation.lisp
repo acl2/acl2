@@ -4616,6 +4616,26 @@
                          max
                          ,fn-guard-unnorm
                          ,@guard-unnorms)))))
+       (write-read-lemma-name
+        (add-suffix-to-fn correct-thm "-WRITE-READ-LEMMA"))
+       ((mv write-read-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix write-read-lemma-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (write-read-lemma-hyps
+        `((compustatep ,compst-var)
+          (> (compustate-frames-number ,compst-var) 0)
+          ,@hyps
+          ,@diff-pointer-hyps
+          (,fn-guard ,@formals)))
+       (write-read-lemma-concl `(and ,@(atc-gen-loop-correct-thm-aux2
+                                        affect typed-formals compst-var)))
+       (write-read-lemma-formula
+        `(b* (,@formals-bindings)
+           (implies (and ,@write-read-lemma-hyps)
+                    ,write-read-lemma-concl)))
+       (write-read-lemma-hints write-write-lemma-hints)
        (hyps-common `((compustatep ,compst-var)
                       (> (compustate-frames-number ,compst-var) 0)
                       (equal ,fenv-var
@@ -4818,6 +4838,11 @@
                                :formula write-write-lemma-formula
                                :hints write-write-lemma-hints
                                :enable nil))
+       ((mv write-read-lemma-event &)
+        (evmac-generate-defthm write-read-lemma-name
+                               :formula write-read-lemma-formula
+                               :hints write-read-lemma-hints
+                               :enable nil))
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
                                :formula formula-lemma
@@ -4830,6 +4855,7 @@
                                :enable nil))
        (print-event `(cw-event "~%~x0~|" ',correct-thm-exported-event)))
     (mv (list write-write-lemma-event
+              write-read-lemma-event
               correct-lemma-event
               correct-thm-local-event
               correct-thm-exported-event)
@@ -4873,7 +4899,37 @@
           (more-terms (atc-gen-loop-correct-thm-aux1 (cdr affect)
                                                      typed-formals
                                                      prec-tags)))
-       (append terms more-terms)))))
+       (append terms more-terms)))
+
+   (define atc-gen-loop-correct-thm-aux2
+     ((affect symbol-listp)
+      (typed-formals atc-symbol-varinfo-alistp)
+      (compst-var symbolp))
+     :returns (terms true-listp)
+     :parents nil
+     (b* (((when (endp affect)) nil)
+          (var (car affect))
+          (var-id `(ident ,(symbol-name var)))
+          (var-ptr (add-suffix-to-fn var "-PTR"))
+          (info (cdr (assoc-eq var typed-formals)))
+          ((unless info)
+           (raise "Internal error: variable ~x0 not found in ~x1."
+                  var typed-formals))
+          (type (atc-var-info->type info))
+          (pointerp (or (type-case type :pointer)
+                        (type-case type :array)))
+          (externalp (atc-var-info->externalp info))
+          (write-call (if externalp
+                          `(write-static-var ,var-id ,var ,compst-var)
+                        (if pointerp
+                            `(write-object (value-pointer->designator ,var-ptr)
+                                           ,var
+                                           ,compst-var)
+                          `(write-var ,var-id ,var ,compst-var))))
+          (term `(equal ,write-call ,compst-var))
+          (terms (atc-gen-loop-correct-thm-aux2
+                  (cdr affect) typed-formals compst-var)))
+       (cons term terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
