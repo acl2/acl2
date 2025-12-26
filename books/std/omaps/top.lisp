@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024-2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,5 +14,6 @@
 (include-book "with-fixing-theorems")
 (include-book "assoc")
 (include-book "submap")
+(include-book "compatiblep")
 (include-book "delete")
 (include-book "update")

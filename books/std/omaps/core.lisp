@@ -108,9 +108,6 @@
      and the @('coi/bags') library,
      which defines a @('\"BAG\"') package.)")
    (xdoc::p
-    "This omap library could become a new @('std/omaps') library,
-     part of @(csee std), parallel to @(tsee set::std/osets).")
-   (xdoc::p
     "Compared to using the built-in @(see acl2::alists) to represent maps,
      omaps are closer to the mathematical notion of maps,
      at the cost of maintaining their strict order.
@@ -981,12 +978,12 @@
   (xdoc::topstring
    (xdoc::p
     "The resulting set is empty if the value is not in the omap.
-     The resulting set is a singleton
-     if the value is associated to exactly one key.
-     Otherwise, the resulting set contains two or more keys.")
+    The resulting set is a singleton
+    if the value is associated to exactly one key.
+    Otherwise, the resulting set contains two or more keys.")
    (xdoc::p
     "This is the ``reverse'' of @(tsee lookup),
-     which motivates the @('r') in the name."))
+    which motivates the @('r') in the name."))
   (cond ((emptyp map) nil)
         (t (mv-let (key0 val0)
              (head map)
@@ -1107,6 +1104,10 @@
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
                                   (:rewrite in-of-keys-to-assoc)))
+
+  (defrule set-emptyp-of-keys
+    (equal (set::emptyp (keys map))
+           (emptyp map)))
 
   (defruled list-in-to-subset-keys
     (iff (list-in keys map)
@@ -1311,11 +1312,10 @@
                 (> (size map) c))
        :rule-classes nil)))
 
-  ;; (defrule size-update
-  ;;   (equal (size (update key val m))
-  ;;          (if (assoc key m)
-  ;;              (size m)
-  ;;            (1+ (size m)))))
+  (defrule equal-of-omap-size-and-0
+    (equal (equal (size map) 0)
+           (emptyp map))
+    :expand (size map))
 
   (defruled size-to-cardinality-of-keys
     (equal (size map)
