@@ -301,9 +301,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is the equivalent of @(see set::double-containment) for
-     @(see omaps). It is often used together with @(see pick-a-point).
-     For this reason, we define a theory @('extensionality') which enables
-     both."))
+     @(see omaps). See also @(see extensionality) (it may be more
+     straightforward to enable @('extensionality') than to enable both
+     @('double-containment') and @('pick-a-point'))."))
 
   (defruled double-containment-no-backchain-limit
     (implies (and (mapp x)
@@ -320,8 +320,4 @@
                     (and (submap x y)
                          (submap y x))))
     :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
-    :by double-containment-no-backchain-limit)
-
-  (defthy extensionality
-    '(pick-a-point-conclusion
-      double-containment)))
+    :by double-containment-no-backchain-limit))

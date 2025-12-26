@@ -14,6 +14,7 @@
 (include-book "with-fixing-theorems")
 (include-book "assoc")
 (include-book "submap")
+(include-book "extensionality")
 (include-book "compatiblep")
 (include-book "delete")
 (include-book "update")
