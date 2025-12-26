@@ -16,6 +16,9 @@
 ;; auto-generating the boilerplate to extract list elems (also think about how
 ;; to do this without consing).
 
+;; Section references are to the document "ARM Architecture Reference Manual
+;; ARMv7-A and ARMv7-R edition" (see README.md).
+
 (include-book "portcullis")
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvand" :dir :system)
@@ -27,17 +30,29 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These encodings come from "A8.8 Alphabetical list of instructions".
 ;; todo: do I want to use keywords here?
+;; Here we include on the ARM encodings (Encoding A1, etc.), not the Thumb
+;; Encodings (Encoding T1, etc.).
 (defconst *patterns*
-  '((:add-immediate .                 ((cond 4) 0 0 1 0 1 0 0 (s 1) (rn 4)  (rd 4) (imm12 12)))
+  '((:adc-immediate .                 ((cond 4) 0 0 1 0 1 0 1 (s 1) (rn 4)  (rd 4) (imm12 12)))
+    (:add-immediate .                 ((cond 4) 0 0 1 0 1 0 0 (s 1) (rn 4)  (rd 4) (imm12 12)))
     (:add-register .                  ((cond 4) 0 0 0 0 1 0 0 (s 1) (rn 4)  (rd 4) (imm5 5) (type 2) 0 (rm 4)))
     (:add-register-shifted-register . ((cond 4) 0 0 0 0 1 0 0 (s 1) (rn 4)  (rd 4) (rs 4) 0 (type 2) 1 (rm 4)))
     ;; (:add-sp-plus-immediate .         ((cond 4) 0 0 1 0 1 0 0 (s 1) 1 1 0 1 (rd 4) (imm12 12)))
     ;; (:add-sp-plus-register .          ((cond 4) 0 0 0 0 1 0 0 (s 1) 1 1 0 1 (rd 4) (imm5 5) (type 2) 0 (rm 4)))
     (:push-encoding-a1 . ((cond 4) 1 0 0 1 0 0 1 0 1 1 0 1 (register_list 16)))
     (:push-encoding-a2 . ((cond 4) 0 1 0 1 0 0 1 0 1 1 0 1 (rt 4) 0 0 0 0 0 0 0 0 0 1 0 0))
+;;    (:str-immediate . ((cond 4) 0 1 0 (p 1) (u 1) 0 (w 1) 0 (rn 4) (rt 4) (imm12 12))) ; todo: conflicts with push...
     ;; TODO: Add more
+    (:sub-immediate .                  ((cond 4) 0 0 1 0 0 1 0 (s 1) (rn 4) (rd 4) (imm12 12)))
+    (:sub-register .                   ((cond 4) 0 0 0 0 0 1 0 (s 1) (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4)))
+    (:sub-register-shifted-register .  ((cond 4) 0 0 0 0 0 1 0 (s 1) (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4)))
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An encoding entry is a list of items each of which is 0 or 1 or of the form (<var> <bits>)
 (defun encoding-patternp (pat)
@@ -227,7 +242,7 @@
 (defun is-good-encoding-pattern-alistp (alist)
   (declare (xargs :guard (encoding-pattern-alistp alist)))
   (and (no-duplicatesp-equal (strip-cars alist))
-       (all-patterns-incompatiblep (strip-cdrs alist))
+       (all-patterns-incompatiblep (strip-cdrs alist)) ; todo: keep the cars for printing error messages
        ; the patterns must be pairwise disjoint (we compute the masks and check) ; todo: first divide the set as indicated by a tree of splitters (bits or slices).  for a splitter, all (remaining) patterns must have fully concrete values
        ))
 
