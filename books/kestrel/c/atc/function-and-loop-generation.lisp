@@ -4113,7 +4113,7 @@
                                     (typed-formals atc-symbol-varinfo-alistp)
                                     (subst symbol-symbol-alistp)
                                     (compst-term "An untranslated term."))
-  :guard (member-equal suffix '("-NEW" "-OLD"))
+  :guard (member-equal suffix '("-NEW" "-OLD" ""))
   :returns (term "An untranslated term.")
   :short "Generate a term representing an updated computation state."
   :long
@@ -4126,7 +4126,8 @@
      The values that the objects are updated with
      are always variables @('vars') passed as input,
      which are always among the formals @('typed-formals') of some function,
-     but the variables are suffixed with either @('-new') or @('-old').
+     but the variables are suffixed with
+     either @('-new') or @('-old') or nothing.
      The exact purpose should be clearer
      when looking at the callers of this function,
      and how the terms are used in theorems.
@@ -4532,7 +4533,7 @@
           ,@hyps
           ,@diff-pointer-hyps
           (,fn-guard ,@formals)
-          ,@(atc-gen-loop-correct-thm-aux1 affect typed-formals prec-tags)))
+          ,@(atc-gen-loop-correct-thm-aux affect typed-formals prec-tags)))
        (write-write-lemma-concl
         `(equal
           ,(atc-gen-updated-compustate affect
@@ -4543,12 +4544,12 @@
                                                                    "-OLD"
                                                                    typed-formals
                                                                    subst
-                                                                   'compst))
+                                                                   compst-var))
           ,(atc-gen-updated-compustate affect
                                        "-NEW"
                                        typed-formals
                                        subst
-                                       'compst)))
+                                       compst-var)))
        (write-write-lemma-formula
         `(b* (,@formals-bindings)
            (implies (and ,@write-write-lemma-hyps)
@@ -4630,8 +4631,13 @@
           ,@hyps
           ,@diff-pointer-hyps
           (,fn-guard ,@formals)))
-       (write-read-lemma-concl `(and ,@(atc-gen-loop-correct-thm-aux2
-                                        affect typed-formals compst-var)))
+       (write-read-lemma-concl
+        `(equal ,(atc-gen-updated-compustate affect
+                                             ""
+                                             typed-formals
+                                             subst
+                                             compst-var)
+                ,compst-var))
        (write-read-lemma-formula
         `(b* (,@formals-bindings)
            (implies (and ,@write-read-lemma-hyps)
@@ -4866,7 +4872,7 @@
 
   :prepwork
 
-  ((define atc-gen-loop-correct-thm-aux1
+  ((define atc-gen-loop-correct-thm-aux
      ((affect symbol-listp)
       (typed-formals atc-symbol-varinfo-alistp)
       (prec-tags atc-string-taginfo-alistp))
@@ -4897,40 +4903,10 @@
                                    (,array-length-fn ,var))
                             (equal (,array-length-fn ,var-old)
                                    (,array-length-fn ,var))))))
-          (more-terms (atc-gen-loop-correct-thm-aux1 (cdr affect)
-                                                     typed-formals
-                                                     prec-tags)))
-       (append terms more-terms)))
-
-   (define atc-gen-loop-correct-thm-aux2
-     ((affect symbol-listp)
-      (typed-formals atc-symbol-varinfo-alistp)
-      (compst-var symbolp))
-     :returns (terms true-listp)
-     :parents nil
-     (b* (((when (endp affect)) nil)
-          (var (car affect))
-          (var-id `(ident ,(symbol-name var)))
-          (var-ptr (add-suffix-to-fn var "-PTR"))
-          (info (cdr (assoc-eq var typed-formals)))
-          ((unless info)
-           (raise "Internal error: variable ~x0 not found in ~x1."
-                  var typed-formals))
-          (type (atc-var-info->type info))
-          (pointerp (or (type-case type :pointer)
-                        (type-case type :array)))
-          (externalp (atc-var-info->externalp info))
-          (write-call (if externalp
-                          `(write-static-var ,var-id ,var ,compst-var)
-                        (if pointerp
-                            `(write-object (value-pointer->designator ,var-ptr)
-                                           ,var
-                                           ,compst-var)
-                          `(write-var ,var-id ,var ,compst-var))))
-          (term `(equal ,write-call ,compst-var))
-          (terms (atc-gen-loop-correct-thm-aux2
-                  (cdr affect) typed-formals compst-var)))
-       (cons term terms)))))
+          (more-terms (atc-gen-loop-correct-thm-aux (cdr affect)
+                                                    typed-formals
+                                                    prec-tags)))
+       (append terms more-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
