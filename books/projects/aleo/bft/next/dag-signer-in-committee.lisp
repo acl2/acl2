@@ -141,7 +141,6 @@
              certificate->author
              certificate->round
              certificate->signers
-             omap::assoc-to-in-of-keys
              omap::lookup))
 
   (defruled dag-signer-in-committee-p-of-accept-next

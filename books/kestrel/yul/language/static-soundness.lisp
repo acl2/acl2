@@ -497,8 +497,8 @@
   (defruled in-funscope-for-fundefs-iff-in-funtable-for-fundefs
     (implies (and (not (reserrp (funscope-for-fundefs fundefs)))
                   (not (reserrp (funtable-for-fundefs fundefs))))
-             (equal (consp (omap::assoc fun (funscope-for-fundefs fundefs)))
-                    (consp (omap::assoc fun (funtable-for-fundefs fundefs)))))
+             (iff (omap::assoc fun (funscope-for-fundefs fundefs))
+                  (omap::assoc fun (funtable-for-fundefs fundefs))))
     :enable (funscope-for-fundefs
              funtable-for-fundefs))
 
@@ -672,8 +672,7 @@
                (equal (cstate-to-vars cstate1)
                       (cstate-to-vars cstate))))
     :enable (write-var-value
-             cstate-to-vars
-             omap::consp-of-assoc-to-in-of-keys))
+             cstate-to-vars))
 
   (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
@@ -817,8 +816,7 @@
     :enable (check-var
              read-var-value
              not-reserrp-when-valuep
-             cstate-to-vars
-             omap::consp-of-assoc-to-in-of-keys))
+             cstate-to-vars))
 
   (defruled read-vars-values-when-check-var-list
     (implies (check-var-list vars (cstate-to-vars cstate))
@@ -850,8 +848,7 @@
                            varset1))))
     :enable (add-var
              add-var-value
-             cstate-to-vars
-             omap::consp-of-assoc-to-in-of-keys))
+             cstate-to-vars))
 
   (defrule add-vars-values-when-add-vars
     (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
@@ -915,8 +912,7 @@
              (not (reserrp (write-var-value var val cstate))))
     :enable (write-var-value
              check-var
-             cstate-to-vars
-             omap::consp-of-assoc-to-in-of-keys))
+             cstate-to-vars))
 
   (defrule write-var-value-when-check-safe-path
     (implies (not (reserrp
@@ -978,7 +974,6 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
-             omap::consp-of-assoc-to-in-of-keys
              not-reserrp-when-cstatep
              not-reserrp-when-identifier-setp))
 

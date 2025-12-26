@@ -192,7 +192,8 @@
                                    (omap::keys valmap))))
        :enable (in-of-keys-of-system-init-loop
                 set::expensive-rules)
-       :disable system-init-loop)
+       :disable (system-init-loop
+                 omap::in-of-keys-to-assoc))
 
      (defruled lookup-of-system-init-loop
        (implies (address-validator-state-mapp valmap)

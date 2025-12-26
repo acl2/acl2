@@ -14,7 +14,7 @@
 (include-book "initialization")
 (include-book "transitions")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -159,7 +159,8 @@
     :enable (omap::assoc
              omap::assoc-to-in-of-keys
              set::expensive-rules)
-    :disable omap::head-key-not-in-keys-of-tail
+    :disable (omap::head-key-not-in-keys-of-tail
+              omap::in-of-keys-to-assoc)
     :hints ('(:use (:instance omap::head-key-not-in-keys-of-tail
                               (map proposed)))))
 
