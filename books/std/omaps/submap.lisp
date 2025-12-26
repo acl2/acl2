@@ -4,7 +4,9 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Grant Jurgensen (grant@kestrel.edu)
+; Authors: Grant Jurgensen (grant@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,6 +14,8 @@
 
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+
+(include-book "kestrel/utilities/polarity" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -90,14 +94,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This definition and theorems were taken from:
-;;   projects/aleo/bft/library-extensions/omap-theorems.lisp
-
 (define-sk submap-sk ((sub mapp) (sup mapp))
+  :parents (submap)
+  :short "An alternative definition of @(tsee submap) using a skolem function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This definition is sometimes preferable to @(tsee submap). In particular,
+     to support @(see pick-a-point)-style reasoning."))
   (forall (key)
-          (implies (omap::assoc key sub)
-                   (equal (omap::assoc key sub)
-                          (omap::assoc key sup))))
+          (implies (assoc key sub)
+                   (equal (assoc key sub)
+                          (assoc key sup))))
   :skolem-name submap-witness)
 
 (defruledl submap-sk-of-tail-when-submap-sk
@@ -122,27 +130,49 @@
   :enable (submap
            submap-sk-of-tail-when-submap-sk))
 
-(defruled submap-to-submap-sk
-  (equal (submap sub sup)
-         (submap-sk sub sup))
-  :use (submap-sk-when-submap
-        submap-when-submap-sk))
+(defsection pick-a-point
+  :parents (omaps)
+  :short "A theory to enable pick-a-point reasoning for @(see omaps)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In contrast to the oset's @(see set::pick-a-point-subset-strategy),
+     this theory does not rely on computed hints. It simply rewrites
+     @(tsee submap) to the skolem-equivalent @(tsee submap-sk), and unfolds the
+     definition to expose the arbitrary element."))
 
-;; Enable this ruleset to perform pick-a-point reasoning on SUBMAP.
-;; The arbitrary element will be (SUBMAP-WITNESS <sub> <sup>),
-;; where <sub> and <sup> are the omaps for which
-;; we want to prove that (SUBMAP <sub> <sup>) holds.
-(defthy pick-a-point
-  '(submap-to-submap-sk
-    submap-sk))
+  (defruled submap-to-submap-sk
+    (equal (submap sub sup)
+           (submap-sk sub sup))
+    :use (submap-sk-when-submap
+          submap-when-submap-sk))
+
+  (defthy pick-a-point
+    '(submap-to-submap-sk
+      submap-sk))
+
+  (defruled submap-to-submap-sk-in-conclusion
+    (implies (syntaxp (acl2::want-to-weaken (submap sub sup)))
+             (equal (submap sub sup)
+                    (submap-sk sub sup)))
+    :by submap-to-submap-sk)
+
+  ;; Variant of pick-a-point that attempts to avoid rewriting submap
+  ;; hypotheses.
+  (defthy pick-a-point-conclusion
+    '(submap-to-submap-sk-in-conclusion
+      submap-sk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled head-key-minimal-2
-  (implies (assoc key map)
-           (not (<< key (mv-nth 0 (head map)))))
-  :by head-key-minimal)
+;; The following proof of antisymmetry mirrors the osets proof.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The minimal key (the head) of x cannot be smaller than the minimal head of
+;; y. Since x is a submap of y, the head of x must be in y as well. Then the
+;; head of y is either the head of x (in which case it is obviously not
+;; smaller) or it is greater than y's minimal key.
 (defruled <<-of-head-head-when-submap
   (implies (and (submap x y)
                 (not (emptyp x)))
@@ -150,21 +180,10 @@
                     (mv-nth 0 (head y)))))
   :enable head-key-minimal-2)
 
-(defruled head-key-minimal-3
-  (implies (assoc key (tail map))
-           (<< (mv-nth 0 (head map)) key))
-  :enable head-key-minimal-2
-  :disable acl2::<<-trichotomy
-  :use (:instance acl2::<<-trichotomy
-                  (acl2::y key)
-                  (acl2::x (mv-nth 0 (head map)))))
-
-(defrule assoc-when-<<-head
-  (implies (<< (mv-nth 0 (head map)) key)
-           (equal (assoc key map)
-                  (assoc key (tail map)))))
-
-(defrule submap-membership-tail
+;; Since key is in (tail x), it must be greater than the head of x. By the
+;; previous theorem, it must also be greater than the head of y. Since it is in
+;; y (by the submap hypothesis), it must be in y's tail.
+(defrule assoc-of-tail-when-submap-and-assoc-of-tail
   (implies (and (submap x y)
                 (assoc key (tail x)))
            (assoc key (tail y)))
@@ -175,13 +194,13 @@
                    (sub x)
                    (sup y))))
 
-(defrule submap-membership-tail-2
+(defrule assoc-of-tail-when-submap-and-not-assoc-of-tail
   (implies (and (submap x y)
                 (not (assoc a (tail y))))
            (not (assoc a (tail x))))
-  :by submap-membership-tail)
+  :by assoc-of-tail-when-submap-and-assoc-of-tail)
 
-(defruled submap-antisymmetry-head-key
+(defruledl submap-antisymmetry-head-key
   (implies (and (submap x y)
                 (submap y x))
            (equal (mv-nth 0 (head x))
@@ -191,7 +210,7 @@
                    (x y)
                    (y x))))
 
-(defruled submap-antisymmetry-head
+(defruledl submap-antisymmetry-head
   (implies (and (submap x y)
                 (submap y x))
            (equal (head x)
@@ -210,7 +229,7 @@
      :enable (head
               assoc))))
 
-(defruled submap-antisymmetry-head-syntaxp
+(defruledl submap-antisymmetry-head-syntaxp
   (implies (and (submap x y)
                 (syntaxp (<< y x))
                 (submap y x))
@@ -218,12 +237,7 @@
                   (head y)))
   :by submap-antisymmetry-head)
 
-(defruledl assoc-tail-expand
-  (equal (assoc a (tail map))
-         (and (not (equal a (mv-nth 0 (head map))))
-              (assoc a map))))
-
-(defruledl double-containment-lemma-in-tail
+(defruledl submap-antisymmetry-assoc-of-tail
   (implies (and (submap x y)
                 (submap y x))
            (equal (assoc a (tail x))
@@ -232,19 +246,24 @@
   :use ((:instance assoc-tail-expand
                    (map x))
         (:instance assoc-tail-expand
-                   (map y))))
+                   (map y)))
+  :prep-lemmas
+  ((defruled assoc-tail-expand
+     (equal (assoc a (tail map))
+            (and (not (equal a (mv-nth 0 (head map))))
+                 (assoc a map))))))
 
-(defruled submap-tail-tail-when-submap-and-submap
+(defruledl submap-antisymmetry-tail
   (implies (and (submap x y)
                 (submap y x))
            (submap (tail x) (tail y)))
-  :use ((:instance double-containment-lemma-in-tail
+  :use ((:instance submap-antisymmetry-assoc-of-tail
                    (a (submap-witness (tail x) (tail y)))))
   :enable pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled equal-when-not-emptyp-not-emptyp
+(defruled equal-when-not-emptyp-not-emptyp-cheap
   (implies (and (not (emptyp x))
                 (not (emptyp y)))
            (equal (equal x y)
@@ -252,15 +271,17 @@
                        (equal (tail x) (tail y)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
 
+;; We induct over both maps simultaneously. At each step, we show the heads
+;; must be the same.
 (defruled antisymmetry-of-submap-weak
   (implies (and (submap x y)
                 (submap y x))
            (equal (mfix x)
                   (mfix y)))
   :induct (omap-induction2 x y)
-  :enable (equal-when-not-emptyp-not-emptyp
+  :enable (equal-when-not-emptyp-not-emptyp-cheap
            submap-antisymmetry-head-syntaxp
-           submap-tail-tail-when-submap-and-submap))
+           submap-antisymmetry-tail))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,19 +294,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled double-containment-no-backchain-limit
-  (implies (and (mapp x)
-                (mapp y))
-           (equal (equal x y)
-                  (and (submap x y)
-                       (submap y x))))
-  :enable antisymmetry-of-submap)
+(defsection double-containment
+  :parents (omaps)
+  :short "Prove omap equality by antisymmetry of @(tsee submap)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the equivalent of @(see set::double-containment) for
+     @(see omaps). It is often used together with @(see pick-a-point).
+     For this reason, we define a theory @('extensionality') which enables
+     both."))
 
-(defruled double-containment
-  (implies (and (mapp x)
-                (mapp y))
-           (equal (equal x y)
-                  (and (submap x y)
-                       (submap y x))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
-  :by double-containment-no-backchain-limit)
+  (defruled double-containment-no-backchain-limit
+    (implies (and (mapp x)
+                  (mapp y))
+             (equal (equal x y)
+                    (and (submap x y)
+                         (submap y x))))
+    :enable antisymmetry-of-submap)
+
+  (defruled double-containment
+    (implies (and (mapp x)
+                  (mapp y))
+             (equal (equal x y)
+                    (and (submap x y)
+                         (submap y x))))
+    :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
+    :by double-containment-no-backchain-limit)
+
+  (defthy extensionality
+    '(pick-a-point-conclusion
+      double-containment)))

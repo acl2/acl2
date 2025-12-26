@@ -48,3 +48,36 @@
 
 (theory-invariant (incompatible! (:rewrite assoc-of-tail-when-assoc-of-tail)
                                  (:rewrite assoc-when-assoc-of-tail-cheap)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled assoc-when-<<-head
+  (implies (<< (mv-nth 0 (head map)) key)
+           (equal (assoc key map)
+                  (assoc key (tail map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled head-key-minimal-2
+  (implies (assoc key map)
+           (not (<< key (mv-nth 0 (head map)))))
+  :by head-key-minimal)
+
+(defruled head-key-minimal-3
+  (implies (assoc key (tail map))
+           (<< (mv-nth 0 (head map)) key))
+  :enable head-key-minimal-2
+  :disable acl2::<<-trichotomy
+  :use (:instance acl2::<<-trichotomy
+                  (acl2::y key)
+                  (acl2::x (mv-nth 0 (head map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule set-in-of-rlookup
+  (equal (set::in key (rlookup val map))
+         (and (assoc key map)
+              (equal (cdr (assoc key map))
+                     val)))
+  :induct t
+  :enable rlookup)
