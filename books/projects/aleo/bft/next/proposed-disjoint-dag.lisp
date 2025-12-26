@@ -14,7 +14,7 @@
 (include-book "unequivocal-proposed")
 (include-book "certificate-to-other")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -118,7 +118,8 @@
              proposed-disjoint-dag-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys))
+             omap::assoc-to-in-of-keys)
+    :disable omap::in-of-keys-to-assoc)
 
   (defruled proposed-disjoint-dag-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
@@ -140,10 +141,8 @@
              validator-state->dag-of-certify-next
              certify-possiblep
              certs-with-author+round-of-insert
-             omap::keys-of-delete
              certificate->author
              certificate->round
-             omap::assoc-to-in-of-keys
              proposal-setp-of-keys-when-proposal-address-set-mapp))
 
   (defruled proposed-disjoint-dag-p-of-accept-next

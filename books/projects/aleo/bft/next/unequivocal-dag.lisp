@@ -108,8 +108,7 @@
              cert-set-unequivp-of-insert
              certify-possiblep
              certificate->author
-             certificate->round
-             omap::assoc-to-in-of-keys))
+             certificate->round))
 
   (defruled unequiv-dag-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)

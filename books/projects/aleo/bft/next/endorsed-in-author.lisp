@@ -13,7 +13,7 @@
 
 (include-book "proposal-in-author")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -124,8 +124,7 @@
     :enable (endorsed-in-author-p
              validator-state->dag-of-certify-next
              validator-state->proposed-of-certify-next
-             cert-set->prop-set-of-insert
-             omap::keys-of-delete))
+             cert-set->prop-set-of-insert))
 
   (defruled endorsed-in-author-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)

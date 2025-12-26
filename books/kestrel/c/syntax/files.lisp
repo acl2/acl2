@@ -136,5 +136,4 @@
     "Together with @(tsee fileset-paths),
      it can be used an as API to inspect a file set."))
   (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
-  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
-                                           fileset-paths))))
+  :guard-hints (("Goal" :in-theory (enable fileset-paths))))

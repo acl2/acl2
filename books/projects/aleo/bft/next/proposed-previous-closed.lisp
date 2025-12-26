@@ -13,7 +13,7 @@
 
 (include-book "reachability")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -101,7 +101,8 @@
              proposed-previous-closed-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys))
+             omap::assoc-to-in-of-keys)
+    :disable omap::in-of-keys-to-assoc)
 
   (defruled proposed-previous-closed-p-of-certify-next
     (implies (proposed-previous-closed-p systate)
@@ -110,7 +111,6 @@
              proposed-previous-closed-p-necc
              validator-state->dag-of-certify-next
              validator-state->proposed-of-certify-next
-             omap::keys-of-delete
              certs-with-round-of-insert
              cert-set->author-set-of-insert
              set::expensive-rules))

@@ -16,7 +16,6 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/omap-theorems"))
 (local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -198,8 +197,7 @@
                          (k (address-fix val))
                          (x (committee->members-with-stake commtt)))
                    :in-theory (e/d (committee-members
-                                    nfix
-                                    omap::assoc-to-in-of-keys)
+                                    nfix)
                                    (posp-of-cdr-of-assoc-address-pos-mapp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -353,7 +351,6 @@
              validators-stake-of-insert
              committee-members
              set::intersect
-             omap::in-of-keys-to-assoc
              address-setp-of-keys-when-address-pos-mapp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -16,6 +16,8 @@
 
 (include-book "std/util/define-sk" :dir :system)
 
+(local (include-book "std/omaps/top" :dir :system))
+
 (local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -190,7 +192,8 @@
                                    (omap::keys vstates))))
        :enable (in-of-keys-of-system-init-loop
                 set::expensive-rules)
-       :disable system-init-loop)
+       :disable (system-init-loop
+                 omap::in-of-keys-to-assoc))
 
      (defruled lookup-of-system-init-loop
        (implies (validators-statep vstates)

@@ -13,7 +13,7 @@
 
 (include-book "active-committees-after-commit")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -58,8 +58,7 @@
                                       (committee-members commtt))))))))
   :guard-hints
   (("Goal"
-    :in-theory (enable omap::assoc-to-in-of-keys
-                       proposal-setp-of-keys-when-proposal-address-set-mapp)))
+    :in-theory (enable proposal-setp-of-keys-when-proposal-address-set-mapp)))
 
   ///
 
@@ -122,7 +121,6 @@
              augment-possiblep
              proposed-endorser-in-committee-p-necc
              validator-state->proposed-of-augment-next
-             omap::assoc-to-in-of-keys
              omap::lookup-of-update))
 
   (defruled proposed-endorser-in-committee-p-of-certify-next
@@ -131,8 +129,7 @@
               (certify-next cert dests systate)))
     :enable (proposed-endorser-in-committee-p
              proposed-endorser-in-committee-p-necc
-             validator-state->proposed-of-certify-next
-             omap::keys-of-delete))
+             validator-state->proposed-of-certify-next))
 
   (defruled proposed-endorser-in-committee-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
