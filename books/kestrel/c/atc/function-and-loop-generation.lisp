@@ -4958,9 +4958,7 @@
             measure-of-fn
             measure-formals
             names-to-avoid)
-        (if proofs
-            (atc-gen-loop-measure-fn fn names-to-avoid state)
-          (mv '(_) nil nil names-to-avoid)))
+        (atc-gen-loop-measure-fn fn names-to-avoid state))
        ((mv fn-guard-event
             fn-guard
             names-to-avoid)
@@ -5117,8 +5115,7 @@
                                        fn-guard-unnorm-def-event)
                                  formals-events
                                  loop.events
-                                 (and measure-of-fn
-                                      (list measure-of-fn-event))
+                                 (list measure-of-fn-event)
                                  fn-result-events
                                  exec-stmt-while-events
                                  (list natp-of-measure-of-fn-thm-event)
