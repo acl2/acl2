@@ -378,10 +378,10 @@
             (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
 
         ;; (b* (((when (eq :entry-point target)) ; todo
-        ;;       (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+        ;;       (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
         ;;       (mv :bad-entry-point nil nil nil nil state))
         ;;      ((when (natp target)) ; todo
-        ;;       (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+        ;;       (er hard? 'assumptions-new "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
         ;;       (mv :bad-entry-point nil nil nil nil state))
         ;;      (text-section-bytes (acl2::get-mach-o-code parsed-executable)) ;all the code, not just the given subroutine
         ;;      (text-section-offset (acl2::get-mach-o-code-address parsed-executable))
@@ -518,7 +518,7 @@
         ;;         (mv nil nil)))
         ;;      (automatic-assumptions (append standard-assumptions input-assumptions))
         ;;      (untranslated-assumptions (append automatic-assumptions extra-assumptions))
-        ;;      (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+        ;;      (assumptions (translate-terms untranslated-assumptions 'assumptions-new (w state)))
         ;;      (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
         ;;                                                            (print-terms-elided assumptions
         ;;                                                                                '(;(standard-assumptions-elf-64 t nil t t t t)
@@ -546,11 +546,11 @@
         (b* (;;todo: finish adding support for :entry-point!
              ((when (and (eq :entry-point target)
                          (not (eq :pe-32 executable-type))))
-              (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
+              (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
               (mv :bad-entry-point nil nil nil state))
              ((when (and (natp target)
                          (not (eq :pe-32 executable-type))))
-              (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
+              (er hard? 'assumptions-new "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
               (mv :bad-entry-point nil nil nil state))
              ;; (text-offset
              ;;   (and 64-bitp ; todo
@@ -564,7 +564,7 @@
              ;;                nil ; todo
              ;;              (if (eq :pe-32 executable-type)
              ;;                  nil ; todo
-             ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+             ;;                (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))))
              ;; (code-length
              ;;   (and 64-bitp ; todo
              ;;        (if (eq :pe-64 executable-type)
@@ -577,7 +577,7 @@
              ;;                nil ; todo
              ;;              (if (eq :pe-32 executable-type)
              ;;                  nil ; todo
-             ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))';
+             ;;                (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))))';
              (standard-assumptions
                (if suppress-assumptions
                    ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -588,7 +588,7 @@
                        ;; todo: try without expanding this:
                        (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                      ;;todo: add support for :elf-32
-                     (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))
+                     (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))
              ;; Add 32-bit-specific assumptions:
              (standard-assumptions (append (register-high-bit-assumptions)
                                            standard-assumptions))
@@ -615,7 +615,7 @@
              (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
              (assumptions (append assumptions extra-assumptions))
              ;; (assumptions-to-return assumptions)
-             ;; (assumptions (translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+             ;; (assumptions (translate-terms assumptions 'assumptions-new (w state))) ; perhaps don't translate the automatic-assumptions?
              (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                    (print-terms-elided assumptions
                                                                                        '(;; (standard-assumptions-elf-64 t nil t t t t)
