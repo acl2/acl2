@@ -1670,7 +1670,36 @@
   (defret expr-aidentp-of-xeq-expr-binary
     (expr-aidentp expr gcc)
     :hyp (and (expr-aidentp arg1-new gcc)
-              (expr-aidentp arg2-new gcc))))
+              (expr-aidentp arg2-new gcc)))
+
+  (defruled xeq-expr-binary-formalp-when-thm-name
+    (b* (((mv expr gout)
+          (xeq-expr-binary op
+                           arg1 arg1-new arg1-thm-name
+                           arg2 arg2-new arg2-thm-name
+                           info gin)))
+      (implies (and (or (not arg1-thm-name)
+                        (and (expr-formalp arg1)
+                             (expr-formalp arg1-new)))
+                    (or (not arg2-thm-name)
+                        (and (expr-formalp arg2)
+                             (expr-formalp arg2-new)))
+                    (iff (expr-purep arg1-new)
+                         (expr-purep arg1))
+                    (iff (expr-purep arg2-new)
+                         (expr-purep arg2))
+                    (iff (equal (expr-kind arg1-new) :ident)
+                         (equal (expr-kind arg1) :ident))
+                    (iff (equal (expr-kind arg2-new) :ident)
+                         (equal (expr-kind arg2) :ident))
+                    (gout->thm-name gout))
+               (and (or (and (c$::binop-purep op)
+                             (c$::binop-strictp op))
+                        (member-equal (binop-kind op)
+                                      '(:logand :logor :asg)))
+                    (expr-formalp expr))))
+    :expand (expr-formalp (expr-binary op arg1-new arg2-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
