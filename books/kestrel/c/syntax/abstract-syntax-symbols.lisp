@@ -90,6 +90,7 @@
     expr-alignof
     make-expr-alignof
     make-expr-cast
+    expr-cast
     make-expr-binary
     expr-binary->op
     expr-binary->arg1
@@ -642,6 +643,7 @@
     ;; language mapping:
 
     ldm-ident
+    ldm-const
     ldm-tyname
     ldm-binop
     ldm-expr
