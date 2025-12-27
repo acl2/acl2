@@ -102,12 +102,14 @@
 (defrule keys-of-delete
   (equal (keys (delete key map))
          (set::delete key (keys map)))
-  :enable set::expensive-rules)
+  :enable (set::expensive-rules
+           in-of-keys-to-assoc))
 
 (defrule keys-of-delete*
   (equal (keys (delete* keys map))
          (difference (keys map) keys))
-  :enable set::expensive-rules)
+  :enable (set::expensive-rules
+           in-of-keys-to-assoc))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -117,7 +119,8 @@
              (- (size map) 1)
            (size map)))
   :enable (size-to-cardinality-of-keys
-           set::delete-cardinality))
+           set::delete-cardinality
+           in-of-keys-to-assoc))
 
 (defrule size-of-delete-linear
   (<= (size (delete key map))

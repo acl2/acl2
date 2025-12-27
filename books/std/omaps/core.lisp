@@ -978,12 +978,12 @@
   (xdoc::topstring
    (xdoc::p
     "The resulting set is empty if the value is not in the omap.
-    The resulting set is a singleton
-    if the value is associated to exactly one key.
-    Otherwise, the resulting set contains two or more keys.")
+     The resulting set is a singleton
+     if the value is associated to exactly one key.
+     Otherwise, the resulting set contains two or more keys.")
    (xdoc::p
     "This is the ``reverse'' of @(tsee lookup),
-    which motivates the @('r') in the name."))
+     which motivates the @('r') in the name."))
   (cond ((emptyp map) nil)
         (t (mv-let (key0 val0)
              (head map)
@@ -1097,13 +1097,26 @@
          (set::in key (keys map)))
     :enable assoc)
 
-  (defrule in-of-keys-to-assoc
+  (defruled in-of-keys-to-assoc-under-iff
+    (iff (set::in key (keys map))
+         (assoc key map))
+    :enable assoc)
+
+  (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-assoc-under-iff)))
+
+  (defruled in-of-keys-to-assoc
     (equal (set::in key (keys map))
            (and (assoc key map) t))
     :enable assoc)
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
                                   (:rewrite in-of-keys-to-assoc)))
+
+  (defrule assoc-when-in-of-keys-forward-chaining
+    (implies (set::in key (keys map))
+             (assoc key map))
+    :rule-classes :forward-chaining)
 
   (defrule set-emptyp-of-keys
     (equal (set::emptyp (keys map))
@@ -1114,7 +1127,8 @@
          (set::subset (set::mergesort keys) (keys map)))
     :induct t
     :enable (set::mergesort
-             list-in))
+             list-in
+             assoc-to-in-of-keys))
 
   (defruled in-keys-when-assoc-forward
     (implies (assoc key map)
@@ -1129,7 +1143,8 @@
   (defrule keys-of-update
     (equal (keys (update key val m))
            (set::insert key (keys m)))
-    :enable set::expensive-rules)
+    :enable (set::expensive-rules
+             in-of-keys-to-assoc))
 
   (defrule keys-of-update*
     (equal (keys (update* new old))
@@ -1141,7 +1156,6 @@
            (set::intersect keys (keys map)))
     :enable (set::double-containment
              set::pick-a-point-subset-strategy)
-    :disable in-of-keys-to-assoc
     :prep-lemmas
     ((defrule lemma1
        (implies (set::in x (keys (restrict keys map)))

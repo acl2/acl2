@@ -61,7 +61,8 @@
              (size map)
            (+ 1 (size map))))
   :enable (size-to-cardinality-of-keys
-           set::insert-cardinality))
+           set::insert-cardinality
+           in-of-keys-to-assoc))
 
 (defrule size-of-update-linear
   (<= (size map)
