@@ -68,6 +68,7 @@
     exprp
     expr-fix
     expr-count
+    expr-kind
     expr-case
     expr-ident
     make-expr-ident
@@ -89,8 +90,9 @@
     expr-sizeof
     expr-alignof
     make-expr-alignof
-    make-expr-cast
     expr-cast
+    make-expr-cast
+    expr-binary
     make-expr-binary
     expr-binary->op
     expr-binary->arg1
