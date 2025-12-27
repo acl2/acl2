@@ -1158,7 +1158,7 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr gout-no-thm))
-       ((mv & cconst) (c$::ldm-const const)) ; ERP must be NIL
+       ((mv & cconst) (ldm-const const)) ; ERP must be NIL
        (hints
         `(("Goal"
            :in-theory '((:e c::expr-const)
@@ -1310,7 +1310,7 @@
                (and (member-equal (unop-kind op)
                                   '(:plus :minus :bitnot :lognot))
                     (expr-formalp expr))))
-    :expand (expr-formalp (c$::expr-unary op arg-new info))
+    :expand (expr-formalp (expr-unary op arg-new info))
     :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1420,7 +1420,7 @@
                (and (tyname-formalp type)
                     (tyname-formalp type-new)
                     (expr-formalp expr))))
-    :expand (expr-formalp (c$::expr-cast type arg-new))
+    :expand (expr-formalp (expr-cast type arg-new))
     :enable (irr-gout
              gout-no-thm)))
 
