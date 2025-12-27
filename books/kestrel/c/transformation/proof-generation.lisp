@@ -1321,7 +1321,6 @@
                        (arg exprp)
                        (arg-new exprp)
                        (arg-thm-name symbolp)
-                       (info tyname-infop)
                        (gin ginp))
   :guard (and (tyname-unambp type)
               (tyname-annop type)
@@ -1352,11 +1351,9 @@
                 unexpected type name transformation theorem ~x0."
                type-thm-name)
         (mv expr-new (irr-gout)))
-       ((tyname-info info) info)
        ((unless (and arg-thm-name
-                     (type-formalp info.type)
-                     (not (type-case info.type :void))
-                     (not (type-case info.type :char))))
+                     (tyname-formalp type)
+                     (tyname-formalp type-new)))
         (mv expr-new (gout-no-thm gin)))
        ((unless (equal type type-new))
         (raise "Internal error: ~
