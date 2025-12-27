@@ -3657,14 +3657,13 @@
     "Furthermore, the measure term is replaced
      with a call of the generated measure function.
      More precisely, this is done in every term of the form @('(o< A B)')
-     (at the same replacing @(tsee o<) with @(tsee <) as mentioned above),
+     (at the same time replacing @(tsee o<) with @(tsee <) as mentioned above),
      where we expect @('B') to be the measure term,
      and @('A') to be the instantiation of the measure term
      to one of the recursive calls of the loop function.
      We replace @('B') with a generic call of the measure function,
      and @('A') with an instantiated call of the measure function;
-     we obtain the instantiation by matching @('B') to @('A').
-     It is not yet clear whether this approach will work in all cases."))
+     we obtain the instantiation by matching @('B') to @('A')."))
 
   (define atc-gen-loop-tthm-formula ((term pseudo-termp)
                                      (fn symbolp)
