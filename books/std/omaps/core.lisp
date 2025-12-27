@@ -1097,14 +1097,6 @@
          (set::in key (keys map)))
     :enable assoc)
 
-  (defruled in-of-keys-to-assoc-under-iff
-    (iff (set::in key (keys map))
-         (assoc key map))
-    :enable assoc)
-
-  (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
-                                  (:rewrite in-of-keys-to-assoc-under-iff)))
-
   (defruled in-of-keys-to-assoc
     (equal (set::in key (keys map))
            (and (assoc key map) t))
@@ -1112,6 +1104,14 @@
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
                                   (:rewrite in-of-keys-to-assoc)))
+
+  (defruled in-of-keys-to-assoc-under-iff
+    (iff (set::in key (keys map))
+         (assoc key map))
+    :enable assoc)
+
+  (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-assoc-under-iff)))
 
   (defrule assoc-when-in-of-keys-forward-chaining
     (implies (set::in key (keys map))
