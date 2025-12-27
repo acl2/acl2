@@ -108,9 +108,6 @@
      and the @('coi/bags') library,
      which defines a @('\"BAG\"') package.)")
    (xdoc::p
-    "This omap library could become a new @('std/omaps') library,
-     part of @(csee std), parallel to @(tsee set::std/osets).")
-   (xdoc::p
     "Compared to using the built-in @(see acl2::alists) to represent maps,
      omaps are closer to the mathematical notion of maps,
      at the cost of maintaining their strict order.
@@ -248,13 +245,26 @@
     (implies (emptyp map)
              (equal (mv-nth 0 (head map)) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (emptyp mfix mapp))
+    :enable mapp)
 
   (defrule head-value-when-emptyp
     (implies (emptyp map)
              (equal (mv-nth 1 (head map)) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable (emptyp mfix mapp))
+    :enable mapp)
+
+  (defruled head-when-emptyp
+    (implies (emptyp map)
+             (equal (head map)
+                    (list nil nil)))
+    :enable head)
+
+  (defrule head-when-emptyp-cheap
+    (implies (emptyp map)
+             (equal (head map)
+                    (list nil nil)))
+    :rule-classes ((:rewrite :backchain-limit-lst (0)))
+    :by head-when-emptyp)
 
   (defrule head-key-count
     (implies (not (emptyp map))
@@ -643,6 +653,10 @@
              (equal (assoc key map) nil))
     :rule-classes (:rewrite :type-prescription))
 
+  (defrule consp-of-assoc
+    (equal (consp (assoc key map))
+           (and (assoc key map) t)))
+
   (defrule assoc-of-head
     (iff (assoc (mv-nth 0 (head map)) map)
          (not (emptyp map))))
@@ -675,20 +689,10 @@
                (assoc key map2)))
     :enable update*)
 
-  (defrule consp-of-assoc-of-update*
-    (equal (consp (assoc key (update* map1 map2)))
-           (or (consp (assoc key map1))
-               (consp (assoc key map2))))
-    :enable update*)
-
   (defrule update-of-cdr-of-assoc-when-assoc
     (implies (assoc k m)
              (equal (update k (cdr (assoc k m)) m)
                     m)))
-
-  (defruled consp-of-assoc-iff-assoc
-    (iff (consp (assoc key map))
-         (assoc key map)))
 
   (defruled head-key-minimal
     (implies (<< key (mv-nth 0 (head map)))
@@ -1088,23 +1092,35 @@
     (iff (keys map)
          (not (emptyp map))))
 
-  (defruled consp-of-assoc-to-in-of-keys
-    (equal (consp (assoc key map))
-           (set::in key (keys map)))
-    :enable assoc)
-
   (defruled assoc-to-in-of-keys
     (iff (assoc key map)
          (set::in key (keys map)))
     :enable assoc)
 
   (defruled in-of-keys-to-assoc
+    (equal (set::in key (keys map))
+           (and (assoc key map) t))
+    :enable assoc)
+
+  (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-assoc)))
+
+  (defruled in-of-keys-to-assoc-under-iff
     (iff (set::in key (keys map))
          (assoc key map))
     :enable assoc)
 
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
-                                  (:rewrite in-of-keys-to-assoc)))
+                                  (:rewrite in-of-keys-to-assoc-under-iff)))
+
+  (defrule assoc-when-in-of-keys-forward-chaining
+    (implies (set::in key (keys map))
+             (assoc key map))
+    :rule-classes :forward-chaining)
+
+  (defrule set-emptyp-of-keys
+    (equal (set::emptyp (keys map))
+           (emptyp map)))
 
   (defruled list-in-to-subset-keys
     (iff (list-in keys map)
@@ -1127,19 +1143,8 @@
   (defrule keys-of-update
     (equal (keys (update key val m))
            (set::insert key (keys m)))
-    ;; This ugly list suggests a need for useful lemmas!
-    :enable (update
-             emptyp
-             insert
-             head
-             tail
-             mfix
-             mapp
-             set::insert
-             set::head
-             set::tail
-             set::emptyp
-             set::setp))
+    :enable (set::expensive-rules
+             in-of-keys-to-assoc))
 
   (defrule keys-of-update*
     (equal (keys (update* new old))
@@ -1321,11 +1326,10 @@
                 (> (size map) c))
        :rule-classes nil)))
 
-  ;; (defrule size-update
-  ;;   (equal (size (update key val m))
-  ;;          (if (assoc key m)
-  ;;              (size m)
-  ;;            (1+ (size m)))))
+  (defrule equal-of-omap-size-and-0
+    (equal (equal (size map) 0)
+           (emptyp map))
+    :expand (size map))
 
   (defruled size-to-cardinality-of-keys
     (equal (size map)

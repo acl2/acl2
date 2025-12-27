@@ -13,7 +13,7 @@
 
 (include-book "endorsement-from-other")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -59,8 +59,7 @@
                                                           vstate.proposed)))))))
   :guard-hints
   (("Goal"
-    :in-theory (enable proposal-setp-of-keys-when-proposal-address-set-mapp
-                       omap::assoc-to-in-of-keys)))
+    :in-theory (enable proposal-setp-of-keys-when-proposal-address-set-mapp)))
   ///
   (fty::deffixequiv-sk proposed-endorser-other-p
     :args ((systate system-statep))))
@@ -119,8 +118,7 @@
              (proposed-endorser-other-p (certify-next cert dests systate)))
     :enable (proposed-endorser-other-p
              proposed-endorser-other-p-necc
-             validator-state->proposed-of-certify-next
-             omap::keys-of-delete))
+             validator-state->proposed-of-certify-next))
 
   (defruled proposed-endorser-other-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)

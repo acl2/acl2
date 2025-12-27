@@ -14,7 +14,7 @@
 (include-book "unequivocal-proposed")
 (include-book "certificate-to-other")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -140,7 +140,6 @@
              validator-state->dag-of-certify-next
              certify-possiblep
              certs-with-author+round-of-insert
-             omap::keys-of-delete
              certificate->author
              certificate->round
              omap::assoc-to-in-of-keys

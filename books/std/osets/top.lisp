@@ -953,7 +953,6 @@ from the accompanying talk.</p>")
   (equal (intersect X (intersect X Z))
          (intersect X Z)))
 
-; i am here
 
 (defthm difference-set
   (setp (difference X Y)))

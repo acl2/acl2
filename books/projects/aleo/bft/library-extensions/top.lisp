@@ -11,9 +11,10 @@
 
 (in-package "ALEOBFT")
 
+(include-book "xdoc/defxdoc-plus" :dir :system)
+
 (include-book "arithmetic-theorems")
 (include-book "oset-theorems")
-(include-book "omap-theorems")
 (include-book "lists-noforkp")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -34,6 +35,5 @@
      This is a convenient place to collect them temporarily."))
   :order-subtopics (arithmetic-theorems
                     oset-theorems
-                    omap-theorems
                     lists-noforkp)
   :default-parent t)

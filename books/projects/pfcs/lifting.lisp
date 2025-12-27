@@ -99,8 +99,7 @@
 
   (defruled lift-rule-omap-consp-of-assoc-iff-assoc
     (iff (consp (omap::assoc key map))
-         (omap::assoc key map))
-    :by omap::consp-of-assoc-iff-assoc)
+         (omap::assoc key map)))
 
   (defruled lift-rule-natp-of-mod
     (implies (and (integerp a)
