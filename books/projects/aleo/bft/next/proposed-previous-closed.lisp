@@ -101,8 +101,7 @@
              proposed-previous-closed-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys)
-    :disable omap::in-of-keys-to-assoc)
+             omap::assoc-to-in-of-keys))
 
   (defruled proposed-previous-closed-p-of-certify-next
     (implies (proposed-previous-closed-p systate)

@@ -192,8 +192,7 @@
                                    (omap::keys vstates))))
        :enable (in-of-keys-of-system-init-loop
                 set::expensive-rules)
-       :disable (system-init-loop
-                 omap::in-of-keys-to-assoc))
+       :disable system-init-loop)
 
      (defruled lookup-of-system-init-loop
        (implies (validators-statep vstates)

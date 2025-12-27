@@ -118,8 +118,7 @@
              proposed-disjoint-dag-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys)
-    :disable omap::in-of-keys-to-assoc)
+             omap::assoc-to-in-of-keys))
 
   (defruled proposed-disjoint-dag-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
@@ -143,6 +142,7 @@
              certs-with-author+round-of-insert
              certificate->author
              certificate->round
+             omap::assoc-to-in-of-keys
              proposal-setp-of-keys-when-proposal-address-set-mapp))
 
   (defruled proposed-disjoint-dag-p-of-accept-next

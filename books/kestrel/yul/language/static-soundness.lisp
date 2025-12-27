@@ -672,7 +672,8 @@
                (equal (cstate-to-vars cstate1)
                       (cstate-to-vars cstate))))
     :enable (write-var-value
-             cstate-to-vars))
+             cstate-to-vars
+             omap::assoc-to-in-of-keys))
 
   (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
@@ -848,7 +849,8 @@
                            varset1))))
     :enable (add-var
              add-var-value
-             cstate-to-vars))
+             cstate-to-vars
+             omap::assoc-to-in-of-keys))
 
   (defrule add-vars-values-when-add-vars
     (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
@@ -974,6 +976,7 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
+             omap::assoc-to-in-of-keys
              not-reserrp-when-cstatep
              not-reserrp-when-identifier-setp))
 

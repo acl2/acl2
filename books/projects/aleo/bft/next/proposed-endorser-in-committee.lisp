@@ -121,6 +121,7 @@
              augment-possiblep
              proposed-endorser-in-committee-p-necc
              validator-state->proposed-of-augment-next
+             omap::assoc-to-in-of-keys
              omap::lookup-of-update))
 
   (defruled proposed-endorser-in-committee-p-of-certify-next

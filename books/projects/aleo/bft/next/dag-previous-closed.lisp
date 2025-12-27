@@ -113,7 +113,8 @@
              proposed-previous-closed-p-necc
              certificate->author
              certificate->round
-             certificate->previous))
+             certificate->previous
+             omap::assoc-to-in-of-keys))
 
   (defruled dag-previous-closed-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
