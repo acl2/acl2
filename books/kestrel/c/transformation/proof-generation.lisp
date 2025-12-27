@@ -1406,7 +1406,23 @@
   (defret expr-aidentp-of-xeq-expr-cast
     (expr-aidentp expr gcc)
     :hyp (and (tyname-aidentp type-new gcc)
-              (expr-aidentp arg-new gcc))))
+              (expr-aidentp arg-new gcc)))
+
+  (defruled xeq-expr-cast-formalp-when-thm-name
+    (b* (((mv expr gout)
+          (xeq-expr-cast type type-new type-thm-name
+                         arg arg-new arg-thm-name
+                         gin)))
+      (implies (and (or (not arg-thm-name)
+                        (and (expr-formalp arg)
+                             (expr-formalp arg-new)))
+                    (gout->thm-name gout))
+               (and (tyname-formalp type)
+                    (tyname-formalp type-new)
+                    (expr-formalp expr))))
+    :expand (expr-formalp (c$::expr-cast type arg-new))
+    :enable (irr-gout
+             gout-no-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
