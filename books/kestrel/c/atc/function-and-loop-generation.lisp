@@ -3671,131 +3671,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-exec-stmt-while-for-loop ((fn symbolp)
-                                          (loop-stmt stmtp)
-                                          (prog-const symbolp)
-                                          (names-to-avoid symbol-listp)
-                                          (wrld plist-worldp))
-  :guard (and (irecursivep+ fn wrld)
-              (stmt-case loop-stmt :while))
-  :returns (mv (events pseudo-event-form-listp)
-               (exec-stmt-while-for-fn symbolp)
-               (exec-stmt-while-for-fn-thm symbolp)
-               (updated-names-to-avoid symbol-listp
-                                       :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a version of @(tsee exec-stmt-while)
-          specialized to the loop represented by @('fn')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The correctness theorem for a loop says that
-     the execution of the loop (via @(tsee exec-stmt-while))
-     is suitably equivalent to
-     the corresponding ACL2 recursive function @('fn').
-     The theorem is proved by induction, unsurprisingly.
-     However, due to the form in which the function appears in the theorem,
-     namely that the function is not applied to ACL2 variables,
-     we cannot use the function's induction scheme.
-     But we cannot readily use
-     the induction scheme of the execution functions
-     of the C dynamic semantics,
-     or at least it looks cumbersome to do so,
-     because there are several of them, mutually recursive.")
-   (xdoc::p
-    "What we really need is an induction scheme related to the loop.
-     Thus we introduce a local function that is like @(tsee exec-stmt-while)
-     but specialized to the loop generated from @('fn');
-     this function is singly recursive, providing the needed induction scheme.
-     The function does not need to be guard-verified,
-     because it is only used for logic.
-     We also generate a theorem saying that this new function
-     is equivalent to @(tsee exec-stmt-while) applied to the loop;
-     this is critical, because eventually the proof must be
-     about the execution functions of the C dynamic semantics.
-     For robustness, the termination proof for this new function,
-     and the proof of the associated theorem,
-     are carried out in exactly specified theories
-     that should always work."))
-  (b* ((loop-test (stmt-while->test loop-stmt))
-       (loop-body (stmt-while->body loop-stmt))
-       (exec-stmt-while-for-fn
-        (packn-pos (list 'exec-stmt-while-for- fn) fn))
-       ((mv exec-stmt-while-for-fn names-to-avoid)
-        (fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn
-                                           'function
-                                           names-to-avoid
-                                           wrld))
-       (exec-stmt-while-for-fn-body
-        `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
-              ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
-              ((mv test-eval compst)
-               (exec-expr ',loop-test compst fenv (1- limit)))
-              ((when (errorp test-eval)) (mv test-eval compst))
-              ((unless test-eval)
-               (mv (error (list :void-while-test (expr-fix ',loop-test)))
-                   compst))
-              (test-eval (apconvert-expr-value test-eval))
-              ((when (errorp test-eval)) (mv test-eval compst))
-              (test-val (expr-value->value test-eval))
-              (continuep (test-value test-val))
-              ((when (errorp continuep)) (mv continuep compst))
-              ((when (not continuep)) (mv (stmt-value-none) compst))
-              ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
-              ((when (errorp sval)) (mv sval compst))
-              ((when (stmt-value-case sval :return)) (mv sval compst)))
-           (,exec-stmt-while-for-fn compst (1- limit))))
-       (exec-stmt-while-for-fn-hints
-        '(("Goal" :in-theory '(acl2::zp-compound-recognizer
-                               nfix
-                               natp
-                               o-p
-                               o-finp
-                               o<))))
-       ((mv exec-stmt-while-for-fn-event &)
-        (evmac-generate-defun
-         exec-stmt-while-for-fn
-         :formals (list 'compst 'limit)
-         :body exec-stmt-while-for-fn-body
-         :measure '(nfix limit)
-         :well-founded-relation 'o<
-         :hints exec-stmt-while-for-fn-hints
-         :verify-guards nil
-         :enable nil))
-       (exec-stmt-while-for-fn-thm
-        (add-suffix-to-fn exec-stmt-while-for-fn "-TO-EXEC-STMT-WHILE"))
-       ((mv exec-stmt-while-for-fn-thm names-to-avoid)
-        (fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn-thm
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       ((mv exec-stmt-while-for-fn-thm-event &)
-        (evmac-generate-defthm
-         exec-stmt-while-for-fn-thm
-         :formula `(equal (,exec-stmt-while-for-fn compst limit)
-                          (exec-stmt-while ',loop-test
-                                           ',loop-body
-                                           compst
-                                           (init-fun-env
-                                            (preprocess ,prog-const))
-                                           limit))
-         :rule-classes nil
-         :hints `(("Goal"
-                   :induct (,exec-stmt-while-for-fn compst limit)
-                   :in-theory '(,exec-stmt-while-for-fn
-                                exec-stmt-while
-                                valuep-when-value-optionp
-                                value-optionp-of-stmt-value-return->value?
-                                (:e valuep)
-                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
-                                nfix))))))
-    (mv (list exec-stmt-while-for-fn-event
-              exec-stmt-while-for-fn-thm-event)
-        exec-stmt-while-for-fn
-        exec-stmt-while-for-fn-thm
-        names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-loop-measure-thm ((fn symbolp)
                                   (fn-appconds symbol-symbol-alistp)
                                   (appcond-thms keyword-symbol-alistp)
@@ -4427,6 +4302,131 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-exec-stmt-while-for-loop ((fn symbolp)
+                                          (loop-stmt stmtp)
+                                          (prog-const symbolp)
+                                          (names-to-avoid symbol-listp)
+                                          (wrld plist-worldp))
+  :guard (and (irecursivep+ fn wrld)
+              (stmt-case loop-stmt :while))
+  :returns (mv (events pseudo-event-form-listp)
+               (exec-stmt-while-for-fn symbolp)
+               (exec-stmt-while-for-fn-thm symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
+  :short "Generate a version of @(tsee exec-stmt-while)
+          specialized to the loop represented by @('fn')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The correctness theorem for a loop says that
+     the execution of the loop (via @(tsee exec-stmt-while))
+     is suitably equivalent to
+     the corresponding ACL2 recursive function @('fn').
+     The theorem is proved by induction, unsurprisingly.
+     However, due to the form in which the function appears in the theorem,
+     namely that the function is not applied to ACL2 variables,
+     we cannot use the function's induction scheme.
+     But we cannot readily use
+     the induction scheme of the execution functions
+     of the C dynamic semantics,
+     or at least it looks cumbersome to do so,
+     because there are several of them, mutually recursive.")
+   (xdoc::p
+    "What we really need is an induction scheme related to the loop.
+     Thus we introduce a local function that is like @(tsee exec-stmt-while)
+     but specialized to the loop generated from @('fn');
+     this function is singly recursive, providing the needed induction scheme.
+     The function does not need to be guard-verified,
+     because it is only used for logic.
+     We also generate a theorem saying that this new function
+     is equivalent to @(tsee exec-stmt-while) applied to the loop;
+     this is critical, because eventually the proof must be
+     about the execution functions of the C dynamic semantics.
+     For robustness, the termination proof for this new function,
+     and the proof of the associated theorem,
+     are carried out in exactly specified theories
+     that should always work."))
+  (b* ((loop-test (stmt-while->test loop-stmt))
+       (loop-body (stmt-while->body loop-stmt))
+       (exec-stmt-while-for-fn
+        (packn-pos (list 'exec-stmt-while-for- fn) fn))
+       ((mv exec-stmt-while-for-fn names-to-avoid)
+        (fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn
+                                           'function
+                                           names-to-avoid
+                                           wrld))
+       (exec-stmt-while-for-fn-body
+        `(b* ((fenv (init-fun-env (preprocess ,prog-const)))
+              ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+              ((mv test-eval compst)
+               (exec-expr ',loop-test compst fenv (1- limit)))
+              ((when (errorp test-eval)) (mv test-eval compst))
+              ((unless test-eval)
+               (mv (error (list :void-while-test (expr-fix ',loop-test)))
+                   compst))
+              (test-eval (apconvert-expr-value test-eval))
+              ((when (errorp test-eval)) (mv test-eval compst))
+              (test-val (expr-value->value test-eval))
+              (continuep (test-value test-val))
+              ((when (errorp continuep)) (mv continuep compst))
+              ((when (not continuep)) (mv (stmt-value-none) compst))
+              ((mv sval compst) (exec-stmt ',loop-body compst fenv (1- limit)))
+              ((when (errorp sval)) (mv sval compst))
+              ((when (stmt-value-case sval :return)) (mv sval compst)))
+           (,exec-stmt-while-for-fn compst (1- limit))))
+       (exec-stmt-while-for-fn-hints
+        '(("Goal" :in-theory '(acl2::zp-compound-recognizer
+                               nfix
+                               natp
+                               o-p
+                               o-finp
+                               o<))))
+       ((mv exec-stmt-while-for-fn-event &)
+        (evmac-generate-defun
+         exec-stmt-while-for-fn
+         :formals (list 'compst 'limit)
+         :body exec-stmt-while-for-fn-body
+         :measure '(nfix limit)
+         :well-founded-relation 'o<
+         :hints exec-stmt-while-for-fn-hints
+         :verify-guards nil
+         :enable nil))
+       (exec-stmt-while-for-fn-thm
+        (add-suffix-to-fn exec-stmt-while-for-fn "-TO-EXEC-STMT-WHILE"))
+       ((mv exec-stmt-while-for-fn-thm names-to-avoid)
+        (fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn-thm
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       ((mv exec-stmt-while-for-fn-thm-event &)
+        (evmac-generate-defthm
+         exec-stmt-while-for-fn-thm
+         :formula `(equal (,exec-stmt-while-for-fn compst limit)
+                          (exec-stmt-while ',loop-test
+                                           ',loop-body
+                                           compst
+                                           (init-fun-env
+                                            (preprocess ,prog-const))
+                                           limit))
+         :rule-classes nil
+         :hints `(("Goal"
+                   :induct (,exec-stmt-while-for-fn compst limit)
+                   :in-theory '(,exec-stmt-while-for-fn
+                                exec-stmt-while
+                                valuep-when-value-optionp
+                                value-optionp-of-stmt-value-return->value?
+                                (:e valuep)
+                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                                nfix))))))
+    (mv (list exec-stmt-while-for-fn-event
+              exec-stmt-while-for-fn-thm-event)
+        exec-stmt-while-for-fn
+        exec-stmt-while-for-fn-thm
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-correct-thm ((fn symbolp)
                                   (fn-guard symbolp)
                                   (fn-guard-unnorm symbolp)
@@ -5015,15 +5015,6 @@
                                          state))
                  (loop-test (stmt-while->test loop.stmt))
                  (loop-body (stmt-while->body loop.stmt))
-                 ((mv exec-stmt-while-events
-                      exec-stmt-while-for-fn
-                      exec-stmt-while-for-fn-thm
-                      names-to-avoid)
-                  (atc-gen-exec-stmt-while-for-loop fn
-                                                    loop.stmt
-                                                    prog-const
-                                                    names-to-avoid
-                                                    wrld))
                  ((mv natp-of-measure-of-fn-thm-event
                       natp-of-measure-of-fn-thm
                       names-to-avoid)
@@ -5076,6 +5067,15 @@
                                                  loop.limit-body
                                                  names-to-avoid
                                                  state))
+                 ((mv exec-stmt-while-events
+                      exec-stmt-while-for-fn
+                      exec-stmt-while-for-fn-thm
+                      names-to-avoid)
+                  (atc-gen-exec-stmt-while-for-loop fn
+                                                    loop.stmt
+                                                    prog-const
+                                                    names-to-avoid
+                                                    wrld))
                  ((mv correct-events
                       print-event
                       fn-correct-thm
@@ -5117,11 +5117,11 @@
                                  loop.events
                                  (list measure-of-fn-event)
                                  fn-result-events
-                                 exec-stmt-while-events
                                  (list natp-of-measure-of-fn-thm-event)
                                  (list termination-of-fn-thm-event)
                                  test-local-events
                                  body-local-events
+                                 exec-stmt-while-events
                                  correct-events
                                  progress-end?
                                  print-result?)))
