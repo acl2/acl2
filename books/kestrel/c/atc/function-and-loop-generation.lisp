@@ -499,68 +499,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-declon-list ((typed-formals atc-symbol-varinfo-alistp)
-                                   (fn symbolp)
-                                   (prec-objs atc-string-objinfo-alistp))
-  :returns (mv erp
-               (params param-declon-listp))
-  :short "Generate a list of C parameter declarations
-          from a list of ACL2 formal parameters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The ACL2 formal parameters are passed as an alist,
-     from the formals to their information,
-     as calculated by @(tsee atc-typed-formals).")
-   (xdoc::p
-    "We check that the name of each parameter is a portable C identifier,
-     and distinct from the names of the other parameters.")
-   (xdoc::p
-    "If a parameter represents an access to an external object,
-     we skip it, i.e. we do not generate a declaration for it."))
-  (b* (((reterr) nil)
-       ((when (endp typed-formals)) (retok nil))
-       ((cons formal info) (car typed-formals))
-       (type (atc-var-info->type info))
-       (name (symbol-name formal))
-       ((unless (paident-stringp name))
-        (reterr
-         (msg "The symbol name ~s0 of ~
-               the formal parameter ~x1 of the function ~x2 ~
-               must be a portable ASCII C identifier, but it is not."
-              name formal fn)))
-       (cdr-formals (strip-cars (cdr typed-formals)))
-       ((when (member-equal name (symbol-name-lst cdr-formals)))
-        (reterr
-         (msg "The formal parameter ~x0 of the function ~x1 ~
-               has the same symbol name as ~
-               another formal parameter among ~x2; ~
-               this is disallowed, even if the package names differ."
-              formal fn cdr-formals)))
-       ((when (b* ((info (cdr (assoc-equal (symbol-name formal) prec-objs)))
-                   ((unless info) nil)
-                   ((unless (atc-obj-infop info))
-                    (raise "Internal error: ~
-                            malformed ATC-OBJ-INFO ~x0."
-                           info))
-                   (info (atc-obj-info->defobject info)))
-                (eq (defobject-info->name-symbol info) formal)))
-        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs))
-       ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
-                                                        type))
-       (param (make-param-declon :tyspec tyspec
-                                 :declor declor))
-       ((erp params)
-        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs)))
-    (retok (cons param params)))
-  :prepwork ((local
-              (in-theory
-               (enable
-                symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
-                alistp-when-atc-string-objinfo-alistp-rewrite)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-fn-guard ((fn symbolp)
                           (names-to-avoid symbol-listp)
                           state)
@@ -3176,6 +3114,68 @@
     (if (atc-var-info->externalp info)
         (cons formal (atc-typed-formals-to-extobjs (cdr typed-formals)))
       (atc-typed-formals-to-extobjs (cdr typed-formals)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-param-declon-list ((typed-formals atc-symbol-varinfo-alistp)
+                                   (fn symbolp)
+                                   (prec-objs atc-string-objinfo-alistp))
+  :returns (mv erp
+               (params param-declon-listp))
+  :short "Generate a list of C parameter declarations
+          from a list of ACL2 formal parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ACL2 formal parameters are passed as an alist,
+     from the formals to their information,
+     as calculated by @(tsee atc-typed-formals).")
+   (xdoc::p
+    "We check that the name of each parameter is a portable C identifier,
+     and distinct from the names of the other parameters.")
+   (xdoc::p
+    "If a parameter represents an access to an external object,
+     we skip it, i.e. we do not generate a declaration for it."))
+  (b* (((reterr) nil)
+       ((when (endp typed-formals)) (retok nil))
+       ((cons formal info) (car typed-formals))
+       (type (atc-var-info->type info))
+       (name (symbol-name formal))
+       ((unless (paident-stringp name))
+        (reterr
+         (msg "The symbol name ~s0 of ~
+               the formal parameter ~x1 of the function ~x2 ~
+               must be a portable ASCII C identifier, but it is not."
+              name formal fn)))
+       (cdr-formals (strip-cars (cdr typed-formals)))
+       ((when (member-equal name (symbol-name-lst cdr-formals)))
+        (reterr
+         (msg "The formal parameter ~x0 of the function ~x1 ~
+               has the same symbol name as ~
+               another formal parameter among ~x2; ~
+               this is disallowed, even if the package names differ."
+              formal fn cdr-formals)))
+       ((when (b* ((info (cdr (assoc-equal (symbol-name formal) prec-objs)))
+                   ((unless info) nil)
+                   ((unless (atc-obj-infop info))
+                    (raise "Internal error: ~
+                            malformed ATC-OBJ-INFO ~x0."
+                           info))
+                   (info (atc-obj-info->defobject info)))
+                (eq (defobject-info->name-symbol info) formal)))
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs))
+       ((mv tyspec declor) (ident+type-to-tyspec+declor (make-ident :name name)
+                                                        type))
+       (param (make-param-declon :tyspec tyspec
+                                 :declor declor))
+       ((erp params)
+        (atc-gen-param-declon-list (cdr typed-formals) fn prec-objs)))
+    (retok (cons param params)))
+  :prepwork ((local
+              (in-theory
+               (enable
+                symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
+                alistp-when-atc-string-objinfo-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
