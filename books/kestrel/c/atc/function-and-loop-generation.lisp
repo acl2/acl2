@@ -3671,13 +3671,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-measure-thm ((fn symbolp)
-                                  (fn-appconds symbol-symbol-alistp)
-                                  (appcond-thms keyword-symbol-alistp)
-                                  (measure-of-fn symbolp)
-                                  (measure-formals symbol-listp)
-                                  (names-to-avoid symbol-listp)
-                                  (wrld plist-worldp))
+(define atc-gen-loop-measure-natp-thm ((fn symbolp)
+                                       (fn-appconds symbol-symbol-alistp)
+                                       (appcond-thms keyword-symbol-alistp)
+                                       (measure-of-fn symbolp)
+                                       (measure-formals symbol-listp)
+                                       (names-to-avoid symbol-listp)
+                                       (wrld plist-worldp))
   :guard (irecursivep+ fn wrld)
   :returns (mv (event pseudo-event-formp)
                (name symbolp)
@@ -5018,13 +5018,13 @@
                  ((mv natp-of-measure-of-fn-thm-event
                       natp-of-measure-of-fn-thm
                       names-to-avoid)
-                  (atc-gen-loop-measure-thm fn
-                                            fn-appconds
-                                            appcond-thms
-                                            measure-of-fn
-                                            measure-formals
-                                            names-to-avoid
-                                            wrld))
+                  (atc-gen-loop-measure-natp-thm fn
+                                                 fn-appconds
+                                                 appcond-thms
+                                                 measure-of-fn
+                                                 measure-formals
+                                                 names-to-avoid
+                                                 wrld))
                  ((erp termination-of-fn-thm-event
                        termination-of-fn-thm
                        names-to-avoid)
