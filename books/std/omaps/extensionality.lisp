@@ -31,9 +31,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This definition is equivalent to omap equality. There are not many rules
-     about @('ext-equal'), because it is typically either rewritten to
-     @('equal') or to its definition."))
+    "This definition is equivalent to omap equality."))
   (forall (key)
           (equal (assoc key x)
                  (assoc key y)))
@@ -56,9 +54,7 @@
                    (ext-equal x0 y))
               (ext-equal x1 y))
      :expand (ext-equal x1 y)
-     :use (:instance ext-equal-necc
-                     (key (ext-equal-witness x1 y))
-                     (x x0)))))
+     :enable ext-equal-necc)))
 
 (defrule ext-equal-when-mequiv-of-arg2-congruence
   (implies (mequiv y0 y1)
@@ -75,52 +71,43 @@
                    (ext-equal x y0))
               (ext-equal x y1))
      :expand (ext-equal x y1)
-     :use (:instance ext-equal-necc
-                     (key (ext-equal-witness x y1))
-                     (y y0)))))
+     :enable ext-equal-necc)))
 
-(defrule ext-equal-reflexive
+(defrule reflexivity-of-ext-equal
   (ext-equal x x)
   :enable ext-equal)
+
+(defruled symmetry-of-ext-equal-weak
+  (implies (ext-equal x y)
+           (ext-equal y x))
+  :expand (ext-equal y x)
+  :enable ext-equal-necc)
+
+(defrule symmetry-of-ext-equal
+  (equal (ext-equal y x)
+         (ext-equal x y))
+  :use (symmetry-of-ext-equal-weak
+        (:instance symmetry-of-ext-equal-weak
+                   (x y)
+                   (y x))))
 
 (defruledl submap-when-ext-equal
   (implies (ext-equal x y)
            (submap x y))
   :enable (submap-to-submap-sk
-           submap-sk)
-  :use (:instance ext-equal-necc
-                  (key (submap-witness x y))))
-
-(defruledl submap-when-ext-equal-2
-  (implies (ext-equal y x)
-           (submap x y))
-  :enable (submap-to-submap-sk
-           submap-sk)
-  :use (:instance ext-equal-necc
-                  (key (submap-witness x y))
-                  (x y)
-                  (y x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           submap-sk
+           ext-equal-necc))
 
 (defruled ext-equal-becomes-equal
   (equal (ext-equal x y)
          (equal (mfix x) (mfix y)))
-  :use (lemma0 lemma1)
-
+  :use lemma
   :prep-lemmas
-  ((defruled lemma0
+  ((defruled lemma
      (implies (ext-equal x y)
               (equal (mfix x) (mfix y)))
      :enable (double-containment
-               submap-when-ext-equal
-               submap-when-ext-equal-2))
-
-   (defruled lemma1
-     (implies (equal (mfix x) (mfix y))
-              (ext-equal x y)))))
-
-;;;;;;;;;;;;;;;;;;;;
+              submap-when-ext-equal))))
 
 (defruled equal-becomes-ext-equal-when-mapp
   (implies (and (mapp x)
@@ -128,6 +115,14 @@
            (equal (equal x y)
                   (ext-equal x y)))
   :enable ext-equal-becomes-equal)
+
+(defrule transitivity-of-ext-equal
+  (implies (and (ext-equal x y)
+                (ext-equal y z))
+           (ext-equal x z))
+  :enable ext-equal-becomes-equal)
+
+(defequiv ext-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
