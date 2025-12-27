@@ -134,7 +134,7 @@
    (xdoc::p
     "This rule rewrites an equality of omaps into an equality of
      @(tsee assoc) on an arbitrary element. The right-hand side is the
-     expansion of @('(ext-equal x y'))."))
+     expansion of @('(ext-equal x y)')."))
 
   (defruled extensionality
     (implies (and (mapp x)
