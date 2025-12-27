@@ -3491,6 +3491,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-loop-fn-openers ((fn symbolp)
+                                 (fn-guard symbolp)
+                                 (fn-guard-unnorm symbolp)
+                                 (affect symbol-listp)
+                                 (test-term pseudo-termp)
+                                 (body-term pseudo-termp)
+                                 (names-to-avoid symbol-listp)
+                                 state)
+  :guard (and (not (eq fn 'quote))
+              (irecursivep+ fn (w state)))
+  :returns (mv (event-base pseudo-event-formp)
+               (event-step pseudo-event-formp)
+               (name-base symbolp)
+               (name-step symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
+  :short "Generate opener rules for a recursive target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A recursive target function, which represents a loop,
+     must have the specific structure described in @(tsee atc).
+     In essence, its body must have the form")
+   (xdoc::codeblock
+    "(if <test>"
+    "    <body>"
+    "  (mv ...))")
+   (xdoc::p
+    "where @('<test>') represents the test of the loop
+     and @('<body>') represents the body of the loop.
+     But the term above may be wrapped by one or more
+     @('(if (mbt ...) ... ...)') terms,
+     whose @(tsee mbt) tests include condtions that follow from the guard.")
+   (xdoc::p
+    "In the proof for the loop correctness, which is by induction,
+     we need to open the loop function.
+     But to control the proof,
+     we want to avoid exposing those @(tsee mbt) tests,
+     which would require using the guard theorem
+     and opening the guard function.
+     So we generate opener rules for the recursive function,
+     one for the base case and one for the step case,
+     that have a call of the guard function as hypothesis,
+     along with the loop test (for the step opener)
+     or its negation (for the base opener),
+     and that rewrite the call of the recursive function
+     either to the @(tsee mv) of the affected formals (for the base opener)
+     or to @('<body>') (for the step opener);
+     these rules ``bypass'' any @(tsee mbt) tests."))
+  (b* ((wrld (w state))
+       (formals (formals+ fn wrld))
+       (name-base (add-suffix-to-fn fn "-BASE-OPENER"))
+       (name-step (add-suffix-to-fn fn "-STEP-OPENER"))
+       ((mv name-base names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name-base nil names-to-avoid wrld))
+       ((mv name-step names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name-step nil names-to-avoid wrld))
+       (test-term (untranslate$ test-term nil state))
+       (body-term (untranslate$ body-term nil state))
+       (hyps-base `(and (,fn-guard ,@formals)
+                        (not ,test-term)))
+       (hyps-step `(and (,fn-guard ,@formals)
+                        ,test-term))
+       (concl-base `(equal (,fn ,@formals)
+                           (mv ,@affect)))
+       (concl-step `(equal (,fn ,@formals)
+                           ,body-term))
+       (formula-base `(implies ,hyps-base ,concl-base))
+       (formula-step `(implies ,hyps-step ,concl-step))
+       (hints `(("Goal"
+                 :do-not-induct t
+                 :expand (,fn ,@formals)
+                 :in-theory '(,fn-guard-unnorm not)
+                 :use (:guard-theorem ,fn))))
+       ((mv event-base &) (evmac-generate-defthm name-base
+                                                 :formula formula-base
+                                                 :hints hints
+                                                 :enable nil))
+       ((mv event-step &) (evmac-generate-defthm name-step
+                                                 :formula formula-step
+                                                 :hints hints
+                                                 :enable nil)))
+    (mv event-base event-step name-base name-step names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-loop-measure-fn ((fn symbolp)
                                  (names-to-avoid symbol-listp)
                                  state)
@@ -5015,6 +5101,19 @@
                                          state))
                  (loop-test (stmt-while->test loop.stmt))
                  (loop-body (stmt-while->body loop.stmt))
+                 ((mv opener-base-thm-event
+                      opener-step-thm-event
+                      & ; opener-base-thm
+                      & ; opener-step-thm
+                      names-to-avoid)
+                  (atc-gen-loop-fn-openers fn
+                                           fn-guard
+                                           fn-guard-unnorm
+                                           loop.affect
+                                           loop.test-term
+                                           loop.body-term
+                                           names-to-avoid
+                                           state))
                  ((mv natp-of-measure-of-fn-thm-event
                       natp-of-measure-of-fn-thm
                       names-to-avoid)
@@ -5113,6 +5212,8 @@
                  (events (append progress-start?
                                  (list fn-guard-event
                                        fn-guard-unnorm-def-event)
+                                 (list opener-base-thm-event
+                                       opener-step-thm-event)
                                  formals-events
                                  loop.events
                                  (list measure-of-fn-event)
@@ -5148,8 +5249,11 @@
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-atc-symbol-fninfo-alistp-rewrite)))
   :prepwork
-  ((local
+  ((local (in-theory (disable (:e tau-system)))) ; for speed
+   (local
     (in-theory
      (enable
       acl2::true-listp-when-pseudo-event-form-listp-rewrite
