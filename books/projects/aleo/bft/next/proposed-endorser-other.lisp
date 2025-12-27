@@ -110,6 +110,7 @@
     :enable (proposed-endorser-other-p
              validator-state->proposed-of-augment-next
              augment-possiblep
+             omap::assoc-to-in-of-keys
              omap::lookup-of-update))
 
   (defruled proposed-endorser-other-p-of-certify-next

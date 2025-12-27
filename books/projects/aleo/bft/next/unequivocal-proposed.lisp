@@ -110,7 +110,8 @@
     :enable (unequiv-proposed-p
              unequiv-proposed-p-necc
              validator-state->proposed-of-augment-next
-             augment-possiblep))
+             augment-possiblep
+             omap::assoc-to-in-of-keys))
 
   (defruled unequiv-proposed-p-of-certify-next
     (implies (unequiv-proposed-p systate)

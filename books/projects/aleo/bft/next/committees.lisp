@@ -351,6 +351,7 @@
              validators-stake-of-insert
              committee-members
              set::intersect
+             omap::in-of-keys-to-assoc
              address-setp-of-keys-when-address-pos-mapp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -159,8 +159,7 @@
     :enable (omap::assoc
              omap::assoc-to-in-of-keys
              set::expensive-rules)
-    :disable (omap::head-key-not-in-keys-of-tail
-              omap::in-of-keys-to-assoc)
+    :disable omap::head-key-not-in-keys-of-tail
     :hints ('(:use (:instance omap::head-key-not-in-keys-of-tail
                               (map proposed)))))
 

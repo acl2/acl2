@@ -96,8 +96,7 @@
     :enable (proposed-round1-no-previous-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys)
-    :disable omap::in-of-keys-to-assoc)
+             omap::assoc-to-in-of-keys))
 
   (defruled proposed-round1-no-previous-p-of-certify-next
     (implies (proposed-round1-no-previous-p systate)

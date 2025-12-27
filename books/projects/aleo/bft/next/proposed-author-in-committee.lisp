@@ -112,8 +112,7 @@
              augment-possiblep
              proposed-author-in-committee-p-necc
              validator-state->proposed-of-augment-next
-             omap::assoc-to-in-of-keys)
-    :disable omap::in-of-keys-to-assoc)
+             omap::assoc-to-in-of-keys))
 
   (defruled proposed-author-in-committee-p-of-certify-next
     (implies (proposed-author-in-committee-p systate)
