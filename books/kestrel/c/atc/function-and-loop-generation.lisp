@@ -4954,17 +4954,17 @@
      We will change this soon."))
   (b* (((reterr) nil nil nil)
        (wrld (w state))
-       ((mv measure-of-fn-event
-            measure-of-fn
-            measure-formals
-            names-to-avoid)
-        (atc-gen-loop-measure-fn fn names-to-avoid state))
        ((mv fn-guard-event
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
+       ((mv measure-of-fn-event
+            measure-of-fn
+            measure-formals
+            names-to-avoid)
+        (atc-gen-loop-measure-fn fn names-to-avoid state))
        ((erp typed-formals formals-events names-to-avoid)
         (atc-typed-formals fn fn-guard fn-guard-unnorm
                            prec-tags prec-objs names-to-avoid wrld))
