@@ -3517,7 +3517,7 @@
    (xdoc::codeblock
     "(if <test>"
     "    <body>"
-    "  (mv ...))")
+    "  <affected>)")
    (xdoc::p
     "where @('<test>') represents the test of the loop
      and @('<body>') represents the body of the loop.
@@ -3537,7 +3537,7 @@
      along with the loop test (for the step opener)
      or its negation (for the base opener),
      and that rewrite the call of the recursive function
-     either to the @(tsee mv) of the affected formals (for the base opener)
+     either to affected formals @('<affected>') (for the base opener)
      or to @('<body>') (for the step opener);
      these rules ``bypass'' any @(tsee mbt) tests."))
   (b* ((wrld (w state))
@@ -3555,7 +3555,10 @@
        (hyps-step `(and (,fn-guard ,@formals)
                         ,test-term))
        (concl-base `(equal (,fn ,@formals)
-                           (mv ,@affect)))
+                           ,(if (and (consp affect)
+                                     (endp (cdr affect)))
+                                (car affect)
+                              `(mv ,@affect))))
        (concl-step `(equal (,fn ,@formals)
                            ,body-term))
        (formula-base `(implies ,hyps-base ,concl-base))
