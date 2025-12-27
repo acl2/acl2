@@ -3562,9 +3562,8 @@
        (formula-step `(implies ,hyps-step ,concl-step))
        (hints `(("Goal"
                  :do-not-induct t
-                 :expand (,fn ,@formals)
                  :in-theory '(,fn-guard-unnorm not)
-                 :use (:guard-theorem ,fn))))
+                 :use (,fn (:guard-theorem ,fn)))))
        ((mv event-base &) (evmac-generate-defthm name-base
                                                  :formula formula-base
                                                  :hints hints
