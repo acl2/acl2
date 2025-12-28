@@ -12,6 +12,7 @@
 
 (include-book "kestrel/fty/defbytelist" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes-fty" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -111,13 +112,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string=>unicode ((string stringp))
+  :guard (str::ascii-charlist-p (str::explode string))
   :returns (unicode unicode-listp
                     :hints (("Goal"
                              :in-theory
                              (enable
                               unsigned-byte-listp-16-when-8
                               unicode-listp-rewrite-unsigned-byte-listp))))
-  :short "Convert an ACL2 string to a Java Unicode character list."
+  :short "Convert an ACL2 ASCII string to a Java Unicode character list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -129,8 +131,7 @@
      the sequence of ACL2 characters whose codes are
      the bytes that form the UTF-8 encoding of the string.
      This is as expected for ASCII, but not necessarily for non-ASCII.
-     We plan to restrict this ACL2 function to operate
-     only on ACL2 strings consisting of ASCII characters.")
+     Thus, we use a guard to restrict the string to ASCII.")
    (xdoc::p
     "See also @(tsee ascii=>string)."))
   (string=>nats string)

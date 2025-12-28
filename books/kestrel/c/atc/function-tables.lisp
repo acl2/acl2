@@ -75,7 +75,10 @@
      "A limit that suffices to execute the code generated from the function,
       as explained below.")
     (xdoc::li
-     "The locally generated function for the guard of the function."))
+     "The locally generated function for the guard of the function.")
+    (xdoc::li
+     "The locally generated theorem for
+      the unnormalized definition of the guard function."))
    (xdoc::p
     "The limit is a term that may depend on the function's parameters.
      For a non-recursive function,
@@ -106,7 +109,8 @@
    (measure-nat-thm symbol)
    (fun-env-thm symbol)
    (limit pseudo-term)
-   (guard symbol))
+   (guard symbol)
+   (guard-unnorm symbol))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,3 +245,42 @@
                                                       among))))
         (t (atc-symbol-fninfo-alist-to-fun-env-thms (cdr prec-fns)
                                                     among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-guards
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
+  :returns (fns symbol-listp)
+  :short "Project the guard function names
+          out of a function information alist,
+          for the functions among a given list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
+     See that function's documentation for more details."))
+  (cond ((endp prec-fns) nil)
+        ((member-eq (caar prec-fns) among)
+         (cons (atc-fn-info->guard (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-guards (cdr prec-fns) among)))
+        (t (atc-symbol-fninfo-alist-to-guards (cdr prec-fns) among))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-fninfo-alist-to-guard-unnorms
+  ((prec-fns atc-symbol-fninfo-alistp) (among symbol-listp))
+  :returns (fns symbol-listp)
+  :short "Project the names of the theorems for
+          the unnormalized definitions of the guard functions
+          out of a function information alist,
+          for the functions among a given list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee atc-symbol-fninfo-alist-to-result-thms).
+     See that function's documentation for more details."))
+  (cond ((endp prec-fns) nil)
+        ((member-eq (caar prec-fns) among)
+         (cons (atc-fn-info->guard-unnorm (cdr (car prec-fns)))
+               (atc-symbol-fninfo-alist-to-guard-unnorms (cdr prec-fns) among)))
+        (t (atc-symbol-fninfo-alist-to-guard-unnorms (cdr prec-fns) among))))
