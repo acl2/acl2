@@ -13,6 +13,8 @@
 
 ;; See also ../jvm/tester.lisp, the Formal Unit Tester for Java.
 
+;; TODO: Re-enable support for 32-bit binaries.
+
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -253,6 +255,10 @@
   (b* ((- (acl2::ensure-x86 parsed-executable))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
+       ;; This could perhaps be removed once we have some 32-bit formal unit tests:
+       ((when 32-bitp)
+        (er hard? 'test-function-core "32-bit mode is not yet supported in the Formal Unit Tester.")
+        (mv t nil nil state))
 
        (stack-slots (if (eq :auto stack-slots) 100 stack-slots)) ; existing-stack-slots is dealt with in unroll-x86-code-core
        ;; Translate the assumptions supplied by the user:
@@ -322,22 +328,22 @@
           ;; extra-assumption-rules:
           (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
-                  '(;section-assumptions-mach-o-64
-                    acl2::mach-o-section-presentp-constant-opener
-                    acl2::maybe-get-mach-o-segment-constant-opener
-                    acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
-                    acl2::maybe-get-mach-o-section-constant-opener
-                    ;acl2::alistp-constant-opener
-                    ;;acl2::const-assumptions-mach-o-64
-                    ;;acl2::data-assumptions-mach-o-64
-                    ;;acl2::get-mach-o-constants-address-constant-opener
-                    ;;acl2::get-mach-o-constants-constant-opener
-                    ;;acl2::get-mach-o-data-address-constant-opener
-                    ;;acl2::get-mach-o-data-constant-opener
-                    ;;elf64-section-loadedp ; todo:package
-                    acl2::elf-section-presentp
-                    fix-of-rsp
-                    integerp-of-rsp)
+                  ;; '(;section-assumptions-mach-o-64
+                  ;;   acl2::mach-o-section-presentp-constant-opener
+                  ;;   acl2::maybe-get-mach-o-segment-constant-opener
+                  ;;   acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
+                  ;;   acl2::maybe-get-mach-o-section-constant-opener
+                  ;;   ;acl2::alistp-constant-opener
+                  ;;   ;;acl2::const-assumptions-mach-o-64
+                  ;;   ;;acl2::data-assumptions-mach-o-64
+                  ;;   ;;acl2::get-mach-o-constants-address-constant-opener
+                  ;;   ;;acl2::get-mach-o-constants-constant-opener
+                  ;;   ;;acl2::get-mach-o-data-address-constant-opener
+                  ;;   ;;acl2::get-mach-o-data-constant-opener
+                  ;;   ;;elf64-section-loadedp ; todo:package
+                  ;;   acl2::elf-section-presentp
+                  ;;   fix-of-rsp
+                  ;;   integerp-of-rsp)
                   extra-assumption-rules
                   ;; extra-rules ;todo
                   )
@@ -394,9 +400,10 @@
                                                remove-proof-rules
                                                ;; these can introduce boolor: todo: remove from tester-proof-rules?
                                                ;; todo: why is boolor bad?
-                                               '(acl2::boolif-x-x-y-becomes-boolor ;drop?
-                                                 acl2::boolif-when-quotep-arg2
-                                                 acl2::boolif-when-quotep-arg3))))
+                                               '(;;acl2::boolif-x-x-y-becomes-boolor ;drop?
+                                                 ;;acl2::boolif-when-quotep-arg2
+                                                 ;;acl2::boolif-when-quotep-arg3
+                                                 ))))
        ((mv result info-acc state)
         (acl2::apply-tactic-prover result-dag
                                    ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
