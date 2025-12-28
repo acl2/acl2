@@ -13,6 +13,8 @@
 
 ;; See also ../jvm/tester.lisp, the Formal Unit Tester for Java.
 
+;; TODO: Re-enable support for 32-bit binaries.
+
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
