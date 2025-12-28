@@ -5221,15 +5221,15 @@
              (list print-event)))
        (events (append progress-start?
                        (list fn-guard-event
-                             fn-guard-unnorm-def-event)
-                       (list opener-base-thm-event
-                             opener-step-thm-event)
+                             fn-guard-unnorm-def-event
+                             opener-base-thm-event
+                             opener-step-thm-event
+                             measure-of-fn-event
+                             natp-of-measure-of-fn-thm-event
+                             measure-thm-event)
+                       fn-result-events
                        formals-events
                        loop.events
-                       (list measure-of-fn-event)
-                       fn-result-events
-                       (list natp-of-measure-of-fn-thm-event)
-                       (list measure-thm-event)
                        test-local-events
                        body-local-events
                        exec-stmt-while-events
