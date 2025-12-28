@@ -66,7 +66,7 @@
    The @('prec-tags') alist is always a subset of the @(tsee defstruct) table
    that is constructed by @(tsee defstruct) calls
    and that is part of the ACL2 world prior to calling ATC:
-   the @('prec-tags') is initially empty,
+   the @('prec-tags') alist is initially empty,
    gets extended as targets that are @(tsee defstruct) names are processed,
    and eventually contains all the @(tsee defstruct) table information
    for the @(tsee defstruct) targets passed to ATC.
@@ -85,7 +85,7 @@
    The @('prec-objs') alist is always a subset of the @(tsee defobject) table
    that is constructed by @(tsee defobject) calls
    and that is part of the ACL2 world prior to calling ATC:
-   the @('prec-objs') is initially empty,
+   the @('prec-objs') alist is initially empty,
    gets extended as targets that are @(tsee defobject) names are processed,
    and eventually contains all the @(tsee defobject) table information
    for the @(tsee defobject) targets passed to ATC.
@@ -131,10 +131,14 @@
   "@('fn-guard') is the name of a locally generated function
    for the guard of @('fn')."
 
+  "@('fn-guard-unnorm') is the name of a locally generated theorem
+   for the unnormalized definition of
+   the function @('fn-guard') described above."
+
   "@('typed-formals') is an alist
    from the formal parameters of
    the function in @('t1'), ..., @('tp') for which code is being generated,
-   to their C types.
+   to their associated information (C types etc.).
    The keys are unique and in the same order as the formal parameters."
 
   "@('var-term-alist') is an alist from variables to terms
@@ -142,9 +146,9 @@
    as terms are recursively processed.
    This alist collects the @(tsee let) and @(tsee mv-let) bindings
    encountered along the way.
-   These are used to properly instantiate terms
-   limits associated to function calls,
-   because those limits apply to the functions' formals,
+   These are used to properly instantiate
+   limit terms associated to function calls,
+   because those limit terms apply to the functions' formals,
    which must therefore be replaced not just with the actuals of the call,
    but with those actuals with variables replaced with terms
    according to the bindings that lead to the call."

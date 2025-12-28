@@ -401,7 +401,6 @@
                         expr.arg
                         new-arg
                         gout-arg.thm-name
-                        (tyname->info expr.type)
                         gin))
        :binary
        (b* (((mv new-arg1 (gout gout-arg1))
