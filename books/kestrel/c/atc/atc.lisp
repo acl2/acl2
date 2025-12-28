@@ -146,9 +146,9 @@
    as terms are recursively processed.
    This alist collects the @(tsee let) and @(tsee mv-let) bindings
    encountered along the way.
-   These are used to properly instantiate terms
-   limits associated to function calls,
-   because those limits apply to the functions' formals,
+   These are used to properly instantiate
+   limit terms associated to function calls,
+   because those limit terms apply to the functions' formals,
    which must therefore be replaced not just with the actuals of the call,
    but with those actuals with variables replaced with terms
    according to the bindings that lead to the call."
