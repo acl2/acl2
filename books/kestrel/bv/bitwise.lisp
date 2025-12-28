@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "bvand")
+(include-book "bvand-def")
 (include-book "bvxor")
 (include-book "bvnot")
 (include-book "bvor")
@@ -29,6 +29,7 @@
 (local (include-book "logxor-b"))
 (local (include-book "single-bit"))
 (local (include-book "slice"))
+(local (include-book "bvand"))
 (local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
