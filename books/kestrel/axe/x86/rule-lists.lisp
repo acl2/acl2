@@ -6058,8 +6058,8 @@
             acl2::equal-of-bvif ;restrict to constant x?
             acl2::equal-of-bvif-alt ;restrict to constant x?
             ;; just include boolean-rules?
-            acl2::boolif-when-quotep-arg2
-            acl2::boolif-when-quotep-arg3
+            ;; acl2::boolif-when-quotep-arg2
+            ;; acl2::boolif-when-quotep-arg3
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
