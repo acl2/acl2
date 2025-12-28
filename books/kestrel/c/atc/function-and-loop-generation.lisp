@@ -23,7 +23,6 @@
 (include-book "std/system/get-measure-plus" :dir :system)
 (include-book "std/system/install-not-normalized-event" :dir :system)
 (include-book "std/system/one-way-unify-dollar" :dir :system)
-(include-book "std/system/termination-theorem-dollar" :dir :system)
 (include-book "std/system/ubody-plus" :dir :system)
 (include-book "std/system/uguard-plus" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
@@ -3824,83 +3823,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-loop-termination-thm ((fn symbolp)
-                                      (measure-of-fn symbolp)
-                                      (measure-formals symbol-listp)
-                                      (natp-of-measure-of-fn-thm symbolp)
-                                      (names-to-avoid symbol-listp)
-                                      state)
-  :guard (and (function-symbolp fn (w state))
-              (logicp fn (w state))
-              (irecursivep+ fn (w state))
-              (not (eq measure-of-fn 'quote)))
-  :returns (mv erp
-               (event pseudo-event-formp)
-               (name symbolp)
-               (updated-names-to-avoid symbol-listp
-                                       :hyp (symbol-listp names-to-avoid)))
-  :short "Generate the version of the termination theorem
-          tailored to the limits and measure function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We generate a local theorem that is
-     just like the termination theorem of the function
-     except that @(tsee o<) is replaced with @(tsee <),
-     and that the measure terms are abstracted to
-     calls of the generated measure functions.
-     The theorem is proved using the fact that
-     the measure yields a natural number,
-     which means that @(tsee o<) reduces to @(tsee <) (see above).
-     The purpose of this variant of the termination theorem
-     is to help establish the induction hypothesis
-     in the loop correctness theorem, as explained below."))
-  (b* (((reterr) '(_) nil nil)
-       (wrld (w state))
-       (termination-of-fn-thm
-        (packn-pos (list 'termination-of- fn) fn))
-       ((mv termination-of-fn-thm names-to-avoid)
-        (fresh-logical-name-with-$s-suffix termination-of-fn-thm
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (tthm (termination-theorem$ fn state))
-       ((when (eq (car tthm) :failed))
-        (reterr
-         (raise "Internal error: cannot find termination theorem of ~x0." fn)))
-       ((erp tthm-formula)
-        (atc-gen-loop-tthm-formula tthm
-                                   fn
-                                   measure-of-fn
-                                   measure-formals
-                                   state))
-       ((mv termination-of-fn-thm-event &)
-        (evmac-generate-defthm
-         termination-of-fn-thm
-         :formula tthm-formula
-         :rule-classes nil
-         :hints `(("Goal"
-                   :use ((:termination-theorem ,fn)
-                         ,natp-of-measure-of-fn-thm)
-                   :in-theory '(,measure-of-fn
-                                acl2::natp-compound-recognizer
-                                o-p
-                                o-finp
-                                o<))))))
-    (retok termination-of-fn-thm-event
-           termination-of-fn-thm
-           names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-measure-thm ((fn symbolp)
                              (fn-guard symbolp)
                              (fn-guard-unnorm symbolp)
                              (measure-fn symbolp)
                              (measure-formals symbol-listp)
-                             (termination-of-fn-thm symbolp)
                              (test-term pseudo-termp)
                              (body-term pseudo-termp)
+                             (natp-of-measure-of-fn-thm symbolp)
                              (names-to-avoid symbol-listp)
                              state)
   :guard (and (not (eq fn 'quote))
@@ -3974,7 +3904,18 @@
     "Once we obtain the core formula from the recursive calculation,
      we put it into an implication whose premises are
      the guard function of the loop function
-     and the test term of the loop."))
+     and the test term of the loop.")
+   (xdoc::p
+    "The proof relies on the applicability condition that
+     the measure of @('fn') is a natural number,
+     reified in the @('natp-of-measure-of-fn-thm') theorem passed as input.
+     This lets us replace @(tsee o<) with @(tsee <),
+     enabling @(tsee o<) and also @(tsee o-finp).
+     Note that @('natp-of-measure-of-fn-thm') is in a @(':use') hint,
+     because we need to open the measure function,
+     which makes @('natp-of-measure-of-fn-thm'),
+     which is a type prescription rule on the measure function,
+     inapplicable otherwise."))
   (b* ((wrld (w state))
        (name (add-suffix-to-fn fn "-MEASURE-THEOREM"))
        ((mv name names-to-avoid)
@@ -3990,9 +3931,15 @@
                                ,(untranslate$ test-term nil state))
                           ,(untranslate$ core-formula nil state)))
        (hints `(("Goal"
-                 :use (,termination-of-fn-thm
-                       (:guard-theorem ,fn))
-                 :in-theory '(,fn-guard-unnorm not))))
+                 :use ((:termination-theorem ,fn)
+                       (:guard-theorem ,fn)
+                       ,natp-of-measure-of-fn-thm)
+                 :in-theory '(,measure-fn
+                              ,fn-guard-unnorm
+                              acl2::natp-compound-recognizer
+                              not
+                              o-finp
+                              o<))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :rule-classes :linear
@@ -5188,15 +5135,6 @@
                                                  measure-formals
                                                  names-to-avoid
                                                  wrld))
-                 ((erp termination-of-fn-thm-event
-                       termination-of-fn-thm
-                       names-to-avoid)
-                  (atc-gen-loop-termination-thm fn
-                                                measure-of-fn
-                                                measure-formals
-                                                natp-of-measure-of-fn-thm
-                                                names-to-avoid
-                                                state))
                  ((mv measure-thm-event
                       measure-thm
                       names-to-avoid)
@@ -5205,9 +5143,9 @@
                                        fn-guard-unnorm
                                        measure-of-fn
                                        measure-formals
-                                       termination-of-fn-thm
                                        loop.test-term
                                        loop.body-term
+                                       natp-of-measure-of-fn-thm
                                        names-to-avoid
                                        state))
                  ((mv test-local-events
@@ -5298,8 +5236,7 @@
                                  (list measure-of-fn-event)
                                  fn-result-events
                                  (list natp-of-measure-of-fn-thm-event)
-                                 (list termination-of-fn-thm-event
-                                       measure-thm-event)
+                                 (list measure-thm-event)
                                  test-local-events
                                  body-local-events
                                  exec-stmt-while-events
