@@ -1837,7 +1837,28 @@
     (expr-aidentp expr gcc)
     :hyp (and (expr-aidentp test-new gcc)
               (expr-option-aidentp then-new gcc)
-              (expr-aidentp else-new gcc))))
+              (expr-aidentp else-new gcc)))
+
+  (defruled xeq-expr-cond-formalp-when-thm-name
+    (b* (((mv expr gout)
+          (xeq-expr-cond test test-new test-thm-name
+                         then then-new then-thm-name
+                         else else-new else-thm-name
+                         gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (expr-formalp then)
+                             (expr-formalp then-new)))
+                    (or (not else-thm-name)
+                        (and (expr-formalp else)
+                             (expr-formalp else-new)))
+                    (gout->thm-name gout))
+               (expr-formalp expr)))
+    :expand (expr-formalp (expr-cond test-new then-new else-new))
+    :enable (gout-no-thm
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
