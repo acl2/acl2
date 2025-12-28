@@ -105,7 +105,7 @@
   :hints (("Goal" :in-theory (enable bvminus))))
 
 ;; We only need to get the size of one argument for logand
-(defthm logand-becomes-bvand
+(defthmd logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size x)
                 (integerp y))
@@ -113,28 +113,27 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
-(defthm logand-becomes-bvand-alt
+(defthmd logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size y)
                 (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x))
-           :in-theory (disable logand-becomes-bvand))))
+  :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x)))))
 
 ;; ;; subsumed?
 ;; (defthmd logand-of-bvchop-becomes-bvand
 ;;   (equal (logand y (bvchop width x))
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable logand-becomes-bvand))))
+;;            :in-theory (disable))))
 
 ;; ;; subsumed?
 ;; (defthmd logand-of-bvchop-becomes-bvand-alt
 ;;   (equal (logand (bvchop width x) y)
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable logand-becomes-bvand))))
+;;            :in-theory (disable))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
@@ -144,8 +143,7 @@
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :use logand-becomes-bvand
-                  :in-theory (e/d (unsigned-byte-p-forced)
-                                  (logand-becomes-bvand)))))
+                  :in-theory (enable unsigned-byte-p-forced))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
@@ -155,12 +153,11 @@
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :use logand-becomes-bvand-alt
-                  :in-theory (e/d (unsigned-byte-p-forced)
-                                  (logand-becomes-bvand-alt)))))
+                  :in-theory (enable unsigned-byte-p-forced))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm logior-becomes-bvor
+(defthmd logior-becomes-bvor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size y)
                 (unsigned-byte-p-forced size x) ; should never fail
@@ -169,7 +166,7 @@
                   (bvor size x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthm logior-becomes-bvor-alt
+(defthmd logior-becomes-bvor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size x)
                 (unsigned-byte-p-forced size y) ; should never fail
@@ -201,7 +198,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm logxor-becomes-bvxor
+(defthmd logxor-becomes-bvxor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size y)
                 (unsigned-byte-p-forced size x) ; should never fail
@@ -210,7 +207,7 @@
                   (bvxor size x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthm logxor-becomes-bvxor-alt
+(defthmd logxor-becomes-bvxor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size x)
                 (unsigned-byte-p-forced size y) ; should never fail
