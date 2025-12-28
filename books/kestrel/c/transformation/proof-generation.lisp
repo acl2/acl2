@@ -1086,7 +1086,15 @@
 
   (defret expr-aidentp-of-expr-ident
     (expr-aidentp expr gcc)
-    :hyp (ident-aidentp ident gcc)))
+    :hyp (ident-aidentp ident gcc))
+
+  (defruled xeq-expr-ident-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-ident ident info gin)))
+      (implies (gout->thm-name gout)
+               (and (ident-formalp ident)
+                    (expr-formalp expr))))
+    :enable (gout-no-thm
+             expr-formalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1150,7 +1158,7 @@
                     (and (type-case info.type :ullong)
                          (<= info.value (c::ullong-max)))))
         (mv expr gout-no-thm))
-       ((mv & cconst) (c$::ldm-const const)) ; ERP must be NIL
+       ((mv & cconst) (ldm-const const)) ; ERP must be NIL
        (hints
         `(("Goal"
            :in-theory '((:e c::expr-const)
@@ -1188,7 +1196,16 @@
 
   (defret expr-aidentp-of-xeq-expr-const
     (expr-aidentp expr gcc)
-    :hyp (const-aidentp const gcc)))
+    :hyp (const-aidentp const gcc))
+
+  (defruled xeq-expr-const-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-const const info gin)))
+      (implies (gout->thm-name gout)
+               (and (const-formalp const)
+                    (expr-formalp expr))))
+    :enable (gout-no-thm
+             const-formalp
+             expr-formalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1282,7 +1299,19 @@
 
   (defret expr-aidentp-of-xeq-expr-unary
     (expr-aidentp expr gcc)
-    :hyp (expr-aidentp arg-new gcc)))
+    :hyp (expr-aidentp arg-new gcc))
+
+  (defruled xeq-expr-unary-formalp-when-thm-name
+    (b* (((mv expr gout) (xeq-expr-unary op arg arg-new arg-thm-name info gin)))
+      (implies (and (or (not arg-thm-name)
+                        (and (expr-formalp arg)
+                             (expr-formalp arg-new)))
+                    (gout->thm-name gout))
+               (and (member-equal (unop-kind op)
+                                  '(:plus :minus :bitnot :lognot))
+                    (expr-formalp expr))))
+    :expand (expr-formalp (expr-unary op arg-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1292,7 +1321,6 @@
                        (arg exprp)
                        (arg-new exprp)
                        (arg-thm-name symbolp)
-                       (info tyname-infop)
                        (gin ginp))
   :guard (and (tyname-unambp type)
               (tyname-annop type)
@@ -1323,11 +1351,9 @@
                 unexpected type name transformation theorem ~x0."
                type-thm-name)
         (mv expr-new (irr-gout)))
-       ((tyname-info info) info)
        ((unless (and arg-thm-name
-                     (type-formalp info.type)
-                     (not (type-case info.type :void))
-                     (not (type-case info.type :char))))
+                     (tyname-formalp type)
+                     (tyname-formalp type-new)))
         (mv expr-new (gout-no-thm gin)))
        ((unless (equal type type-new))
         (raise "Internal error: ~
@@ -1380,7 +1406,23 @@
   (defret expr-aidentp-of-xeq-expr-cast
     (expr-aidentp expr gcc)
     :hyp (and (tyname-aidentp type-new gcc)
-              (expr-aidentp arg-new gcc))))
+              (expr-aidentp arg-new gcc)))
+
+  (defruled xeq-expr-cast-formalp-when-thm-name
+    (b* (((mv expr gout)
+          (xeq-expr-cast type type-new type-thm-name
+                         arg arg-new arg-thm-name
+                         gin)))
+      (implies (and (or (not arg-thm-name)
+                        (and (expr-formalp arg)
+                             (expr-formalp arg-new)))
+                    (gout->thm-name gout))
+               (and (tyname-formalp type)
+                    (tyname-formalp type-new)
+                    (expr-formalp expr))))
+    :expand (expr-formalp (expr-cast type arg-new))
+    :enable (irr-gout
+             gout-no-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1628,7 +1670,36 @@
   (defret expr-aidentp-of-xeq-expr-binary
     (expr-aidentp expr gcc)
     :hyp (and (expr-aidentp arg1-new gcc)
-              (expr-aidentp arg2-new gcc))))
+              (expr-aidentp arg2-new gcc)))
+
+  (defruled xeq-expr-binary-formalp-when-thm-name
+    (b* (((mv expr gout)
+          (xeq-expr-binary op
+                           arg1 arg1-new arg1-thm-name
+                           arg2 arg2-new arg2-thm-name
+                           info gin)))
+      (implies (and (or (not arg1-thm-name)
+                        (and (expr-formalp arg1)
+                             (expr-formalp arg1-new)))
+                    (or (not arg2-thm-name)
+                        (and (expr-formalp arg2)
+                             (expr-formalp arg2-new)))
+                    (iff (expr-purep arg1-new)
+                         (expr-purep arg1))
+                    (iff (expr-purep arg2-new)
+                         (expr-purep arg2))
+                    (iff (equal (expr-kind arg1-new) :ident)
+                         (equal (expr-kind arg1) :ident))
+                    (iff (equal (expr-kind arg2-new) :ident)
+                         (equal (expr-kind arg2) :ident))
+                    (gout->thm-name gout))
+               (and (or (and (c$::binop-purep op)
+                             (c$::binop-strictp op))
+                        (member-equal (binop-kind op)
+                                      '(:logand :logor :asg)))
+                    (expr-formalp expr))))
+    :expand (expr-formalp (expr-binary op arg1-new arg2-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
