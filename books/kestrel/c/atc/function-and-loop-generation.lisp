@@ -3859,7 +3859,7 @@
    (xdoc::p
     "The loop body term passed to the recursive function
      has already been validated by the time we calculate this formula.
-     Thus it is a statement term with loop flag @('t),
+     Thus it is a statement term with loop flag @('t'),
      using the nomenclature in @(tsee atc).
      So we only need to handle those kinds of terms.")
    (xdoc::p
