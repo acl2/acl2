@@ -31,6 +31,8 @@
 
 (local (include-book "std/system/all-fnnames" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
+(local (include-book "std/system/conjoin" :dir :system))
+(local (include-book "std/system/dumb-negate-lit" :dir :system))
 (local (include-book "std/system/flatten-ands-in-lit" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -105,6 +107,12 @@
 (defruledl alistp-when-symbol-symbol-alistp
   (implies (symbol-symbol-alistp x)
            (alistp x)))
+
+(defrule pseudo-termp-of-implicate
+  (implies (and (pseudo-termp a)
+                (pseudo-termp b))
+           (pseudo-termp (acl2::implicate a b)))
+  :enable (acl2::implicate pseudo-termp acl2::cons-term acl2::cons-term1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,6 +527,9 @@
                                            'function
                                            names-to-avoid
                                            wrld))
+       ((when (eq name 'quote))
+        (raise "Internal error: name is QUOTE.")
+        (mv '(_) nil nil))
        (guard (uguard+ fn wrld))
        ((mv event &)
         (evmac-generate-defun name
@@ -526,7 +537,12 @@
                               :body (untranslate$ guard t state)
                               :verify-guards nil
                               :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+
+  ///
+
+  (defret atc-gen-fn-guard-name-not-quote
+    (not (equal name 'quote))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3635,6 +3651,7 @@
          :verify-guards nil
          :enable nil)))
     (mv event name measure-vars names-to-avoid))
+
   ///
 
   (defret atc-gen-loop-measure-fn-name-not-quote
@@ -3873,6 +3890,179 @@
     (retok termination-of-fn-thm-event
            termination-of-fn-thm
            names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-measure-thm ((fn symbolp)
+                             (fn-guard symbolp)
+                             (fn-guard-unnorm symbolp)
+                             (measure-fn symbolp)
+                             (measure-formals symbol-listp)
+                             (termination-of-fn-thm symbolp)
+                             (test-term pseudo-termp)
+                             (body-term pseudo-termp)
+                             (names-to-avoid symbol-listp)
+                             state)
+  :guard (and (not (eq fn 'quote))
+              (not (eq measure-fn 'quote)))
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp)
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the measure theorem for a loop function @('fn')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This theorem asserts that,
+     at every recursive call of the loop function,
+     the measure function applied to the arguments
+     is less than the measure function applied to the formals.
+     Each such inequality is asserted
+     under all the controlling tests (except @(tsee mbt)s, as explained below)
+     that lead to the recursive function call.")
+   (xdoc::p
+    "The core of the formula is calculated recursively,
+     by the companion ACL2 function called by this ACL2 function;
+     the core formula is completed into a full formula
+     before being put into the theorem,
+     but first we explain the recursive calculation.")
+   (xdoc::p
+    "The loop body term passed to the recursive function
+     has already been validated by the time we calculate this formula.
+     Thus it is a statement term with loop flag @('t),
+     using the nomenclature in @(tsee atc).
+     So we only need to handle those kinds of terms.")
+   (xdoc::p
+    "In the recursive calculation of the core formula,
+     we keep track of @(tsee let)s and @(tsee mv-let)s encountered along the way
+     via a substitution of variables with terms, captured as an alist.
+     These server to take those @(tsee let) and @(tsee mv-let) into account,
+     given that the generated formula does not have such constructs.
+     This substitution is initially empty.")
+   (xdoc::p
+    "If the term being recursively processed
+     is an @(tsee if) with an @(tsee mbt) test,
+     we skip the @(tsee if) and move into the `then' branch.
+     The reason is that eventually the whole formula
+     is put into an implication whose premises include
+     the guard (function) of the loop function:
+     thus, under the guard, the @(tsee mbt)s go away.")
+   (xdoc::p
+    "If the term being recursively processed
+     is an @(tsee if) whose test is not an @(tsee mbt),
+     then we have a term representing a conditional,
+     and we recursively generate formulas for the two branches.
+     Then we wrap each into an implication whose premise
+     is the test or its negation;
+     note that we need to apply the current substitution to the test.")
+   (xdoc::p
+    "If the term being recursively processed is a @(tsee let) or @(tsee mv-let),
+     we update the substitution according to the binding,
+     and we move to the body of the @(tsee let) or @(tsee mv-let).
+     To update the substitution according to the binding,
+     we apply the substitution to the term that
+     the variable/variables is/are bound to,
+     and we update the alist with the binding;
+     for @(tsee mv-let), we need to create multiple bindings.")
+   (xdoc::p
+    "The remaining case is that of a recursive call of the loop function,
+     which is always on the formals of the loop function.
+     This is where we generate the inequality between
+     the measure applied to the arguments (applying the substitution)
+     and the measure applied to the formals.")
+   (xdoc::p
+    "Once we obtain the core formula from the recursive calculation,
+     we put it into an implication whose premises are
+     the guard function of the loop function
+     and the test term of the loop."))
+  (b* ((wrld (w state))
+       (name (add-suffix-to-fn fn "-MEASURE-THEOREM"))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (formals (formals+ fn wrld))
+       (core-formula (atc-gen-measure-thm-core-formula fn
+                                                       formals
+                                                       measure-fn
+                                                       measure-formals
+                                                       body-term
+                                                       nil))
+       (formula `(implies (and (,fn-guard ,@formals)
+                               ,(untranslate$ test-term nil state))
+                          ,(untranslate$ core-formula nil state)))
+       (hints `(("Goal"
+                 :use (,termination-of-fn-thm
+                       (:guard-theorem ,fn))
+                 :in-theory '(,fn-guard-unnorm not))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :rule-classes :linear
+                                            :hints hints
+                                            :enable nil)))
+    (mv event name names-to-avoid))
+
+  :prepwork
+  ((define atc-gen-measure-thm-core-formula ((fn symbolp)
+                                             (formals symbol-listp)
+                                             (measure-fn symbolp)
+                                             (measure-formals symbol-listp)
+                                             (term pseudo-termp)
+                                             (subst symbol-pseudoterm-alistp))
+     :guard (and (not (eq fn 'quote))
+                 (not (eq measure-fn 'quote)))
+     :returns (formula pseudo-termp)
+     :parents nil
+     (b* (((mv okp test-term then-term else-term) (fty-check-if-call term))
+          ((when okp)
+           (b* (((mv mbtp &) (check-mbt-call test-term))
+                ((when mbtp)
+                 (atc-gen-measure-thm-core-formula
+                  fn formals measure-fn measure-formals then-term subst))
+                (then-formula
+                 (atc-gen-measure-thm-core-formula
+                  fn formals measure-fn measure-formals then-term subst))
+                (else-formula
+                 (atc-gen-measure-thm-core-formula
+                  fn formals measure-fn measure-formals else-term subst))
+                (test (fty-fsublis-var subst test-term)))
+             (acl2::conjoin2 (acl2::implicate test
+                                              then-formula)
+                             (acl2::implicate `(not ,test)
+                                              else-formula))))
+          ((mv okp vars body-term val-terms) (fty-check-lambda-call term))
+          ((when okp)
+           (b* (((mv vars val-terms)
+                 (fty-remove-equal-formals-actuals vars val-terms))
+                (var (car vars)) ; VARS must be a singleton
+                (val-term (car val-terms)) ; VAL-TERMS must be a singleton
+                (val-term (fty-fsublis-var subst val-term))
+                (subst (atc-update-var-term-alist (list var)
+                                                  (list val-term)
+                                                  subst)))
+             (atc-gen-measure-thm-core-formula
+              fn formals measure-fn measure-formals body-term subst)))
+          ((mv okp & vars indices & val-term body-term)
+           (fty-check-mv-let-call term))
+          ((when okp)
+           (b* ((val-term (fty-fsublis-var subst val-term))
+                (val-terms (atc-make-mv-nth-terms indices val-term))
+                (subst (atc-update-var-term-alist vars val-terms subst)))
+             (atc-gen-measure-thm-core-formula
+              fn formals measure-fn measure-formals body-term subst)))
+          ((when (equal term `(,fn ,@formals)))
+           (pseudo-term-call '<
+                             (list
+                              (pseudo-term-call measure-fn
+                                                (fty-fsublis-var-lst
+                                                 subst measure-formals))
+                              (pseudo-term-call measure-fn measure-formals)))))
+       (raise "Internal error: unexpected term ~x0." term))
+     :measure (pseudo-term-count term)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+     :guard-hints
+     (("Goal" :in-theory (enable len-of-fty-check-lambda-calls.args-is-formals
+                                 pseudo-fn-p
+                                 acl2::pseudo-fnsym-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5134,6 +5324,19 @@
                                                 natp-of-measure-of-fn-thm
                                                 names-to-avoid
                                                 state))
+                 ((mv measure-thm-event
+                      & ; measure-thm
+                      names-to-avoid)
+                  (atc-gen-measure-thm fn
+                                       fn-guard
+                                       fn-guard-unnorm
+                                       measure-of-fn
+                                       measure-formals
+                                       termination-of-fn-thm
+                                       loop.test-term
+                                       loop.body-term
+                                       names-to-avoid
+                                       state))
                  ((mv test-local-events
                       correct-test-thm
                       names-to-avoid)
@@ -5220,7 +5423,8 @@
                                  (list measure-of-fn-event)
                                  fn-result-events
                                  (list natp-of-measure-of-fn-thm-event)
-                                 (list termination-of-fn-thm-event)
+                                 (list termination-of-fn-thm-event
+                                       measure-thm-event)
                                  test-local-events
                                  body-local-events
                                  exec-stmt-while-events
