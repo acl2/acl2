@@ -4719,8 +4719,10 @@
                                   (fn-result-thm symbolp)
                                   (exec-stmt-while-for-fn symbolp)
                                   (exec-stmt-while-for-fn-thm symbolp)
-                                  (termination-of-fn-thm symbolp)
+                                  (measure-thm symbolp)
                                   (natp-of-measure-of-fn-thm symbolp)
+                                  (opener-base-thm symbolp)
+                                  (opener-step-thm symbolp)
                                   (correct-test-thm symbolp)
                                   (correct-body-thm symbolp)
                                   (limit pseudo-termp)
@@ -4955,164 +4957,35 @@
         `(b* (,@formals-bindings) (implies ,hyps-lemma ,concl-lemma)))
        (formula-thm
         `(b* (,@formals-bindings) (implies ,hyps-thm ,concl-thm)))
-       (lemma-hints `(("Goal"
-                       :do-not-induct t
-                       :in-theory (append
-                                   *atc-symbolic-computation-state-rules*
-                                   *atc-valuep-rules*
-                                   *atc-value-listp-rules*
-                                   *atc-value-optionp-rules*
-                                   *atc-type-of-value-rules*
-                                   *atc-type-of-value-option-rules*
-                                   *atc-value-array->elemtype-rules*
-                                   *atc-array-length-rules*
-                                   *atc-array-length-write-rules*
-                                   *atc-other-executable-counterpart-rules*
-                                   *atc-wrapper-rules*
-                                   *atc-distributivity-over-if-rewrite-rules*
-                                   *atc-identifier-rules*
-                                   *atc-integer-size-rules*
-                                   *atc-limit-rules*
-                                   *atc-not-error-rules*
-                                   *atc-integer-ops-1-return-rewrite-rules*
-                                   *atc-integer-ops-2-return-rewrite-rules*
-                                   *atc-integer-convs-return-rewrite-rules*
-                                   *atc-array-read-return-rewrite-rules*
-                                   *atc-array-write-return-rewrite-rules*
-                                   *atc-misc-rewrite-rules*
-                                   *atc-computation-state-return-rules*
-                                   *atc-boolean-from-integer-return-rules*
-                                   *atc-type-prescription-rules*
-                                   *atc-compound-recognizer-rules*
-                                   *integer-value-disjoint-rules*
-                                   *array-value-disjoint-rules*
-                                   *atc-value-fix-rules*
-                                   *atc-flexible-array-member-rules*
-                                   '(,@not-error-thms
-                                     ,@valuep-thms
-                                     ,@value-kind-thms
-                                     not
-                                     ,exec-stmt-while-for-fn
-                                     ,@struct-reader-return-thms
-                                     ,@struct-writer-return-thms
-                                     ,@type-of-value-thms
-                                     ,@flexiblep-thms
-                                     ,@member-read-thms
-                                     ,@member-write-thms
-                                     ,@type-prescriptions-called
-                                     ,@type-prescriptions-struct-readers
-                                     ,@result-thms
-                                     ,@correct-thms
-                                     ,@measure-thms
-                                     ,natp-of-measure-of-fn-thm
-                                     ,@extobj-recognizers
-                                     ,correct-test-thm
-                                     ,correct-body-thm
-                                     apconvert-expr-value-when-not-value-array
-                                     value-kind-when-ucharp
-                                     value-kind-when-scharp
-                                     value-kind-when-ushortp
-                                     value-kind-when-sshortp
-                                     value-kind-when-uintp
-                                     value-kind-when-sintp
-                                     value-kind-when-ulongp
-                                     value-kind-when-slongp
-                                     value-kind-when-ullongp
-                                     value-kind-when-sllongp
-                                     expr-value-fix-when-expr-valuep
-                                     ,fn-guard-unnorm
-                                     ,@guard-unnorms))
-                       :use ((:instance (:guard-theorem ,fn)
-                                        :extra-bindings-ok ,@(alist-to-doublets
-                                                              instantiation))
-                             (:instance ,termination-of-fn-thm
-                                        :extra-bindings-ok ,@(alist-to-doublets
-                                                              instantiation))))
-                      (and stable-under-simplificationp
-                           '(:in-theory
-                             (append
-                              *atc-symbolic-computation-state-rules*
-                              *atc-valuep-rules*
-                              *atc-value-listp-rules*
-                              *atc-value-optionp-rules*
-                              *atc-type-of-value-rules*
-                              *atc-type-of-value-option-rules*
-                              *atc-value-array->elemtype-rules*
-                              *atc-array-length-rules*
-                              *atc-array-length-write-rules*
-                              *atc-other-executable-counterpart-rules*
-                              *atc-wrapper-rules*
-                              *atc-distributivity-over-if-rewrite-rules*
-                              *atc-identifier-rules*
-                              *atc-integer-size-rules*
-                              *atc-limit-rules*
-                              *atc-not-error-rules*
-                              *atc-integer-ops-1-return-rewrite-rules*
-                              *atc-integer-ops-2-return-rewrite-rules*
-                              *atc-integer-convs-return-rewrite-rules*
-                              *atc-array-read-return-rewrite-rules*
-                              *atc-array-write-return-rewrite-rules*
-                              *atc-misc-rewrite-rules*
-                              *atc-computation-state-return-rules*
-                              *atc-boolean-from-integer-return-rules*
-                              *atc-type-prescription-rules*
-                              *atc-compound-recognizer-rules*
-                              *integer-value-disjoint-rules*
-                              *array-value-disjoint-rules*
-                              *atc-value-fix-rules*
-                              *atc-flexible-array-member-rules*
-                              '(,@not-error-thms
-                                ,@valuep-thms
-                                ,@value-kind-thms
-                                not
-                                stmt-value-return->value?-of-stmt-value-return
-                                (:e value-option-fix)
-                                not-errorp-when-stmt-valuep
-                                return-type-of-stmt-value-return
-                                return-type-of-stmt-value-none
-                                ,exec-stmt-while-for-fn
-                                ,@struct-reader-return-thms
-                                ,@struct-writer-return-thms
-                                ,@type-of-value-thms
-                                ,@flexiblep-thms
-                                ,@member-read-thms
-                                ,@member-write-thms
-                                ,@type-prescriptions-called
-                                ,@type-prescriptions-struct-readers
-                                ,@result-thms
-                                ,@correct-thms
-                                ,@measure-thms
-                                ,natp-of-measure-of-fn-thm
-                                ,@extobj-recognizers
-                                ,correct-test-thm
-                                ,correct-body-thm
-                                apconvert-expr-value-when-not-value-array
-                                value-kind-when-ucharp
-                                value-kind-when-scharp
-                                value-kind-when-ushortp
-                                value-kind-when-sshortp
-                                value-kind-when-uintp
-                                value-kind-when-sintp
-                                value-kind-when-ulongp
-                                value-kind-when-slongp
-                                value-kind-when-ullongp
-                                value-kind-when-sllongp
-                                expr-value-fix-when-expr-valuep
-                                exec-expr-to-exec-expr-pure-when-expr-pure-limit
-                                (:e expr-purep)
-                                (:e expr-pure-limit)
-                                nfix
-                                (:t exec-expr-pure)
-                                ,fn-guard-unnorm
-                                ,@guard-unnorms))
-                             :expand (:lambdas
-                                      (,fn ,@(fsublis-var-lst
-                                              instantiation
-                                              formals)))))))
-       (lemma-instructions
-        `((:in-theory '(,exec-stmt-while-for-fn))
-          (:induct (,exec-stmt-while-for-fn ,compst-var ,limit-var))
-          (:repeat (:prove :hints ,lemma-hints))))
+       (lemma-hints
+        `(("Goal"
+           :induct (,exec-stmt-while-for-fn ,compst-var ,limit-var)
+           :in-theory '(,exec-stmt-while-for-fn
+                        exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                        (:e expr-purep)
+                        (:e expr-pure-limit)
+                        nfix-of-limit-minus-const
+                        ,natp-of-measure-of-fn-thm
+                        mv-nth-of-cons
+                        (:e zp)
+                        (:t exec-expr-pure)
+                        compustate-fix-when-compustatep
+                        ,write-write-lemma-name
+                        ,fn-result-thm
+                        (:e stmt-value-none)
+                        (:e stmt-value-kind)
+                        (:e errorp)
+                        ,write-read-lemma-name
+                        ,@(atc-symbol-varinfo-alist-to-thms typed-formals)
+                        not-zp-of-limit-variable
+                        ,opener-base-thm
+                        ,opener-step-thm))
+          '(:use (,correct-test-thm
+                  (:instance ,correct-body-thm
+                             (,limit-var (1- ,limit-var)))
+                  (:instance ,measure-thm
+                             :extra-bindings-ok
+                             ,@(alist-to-doublets instantiation))))))
        (thm-hints `(("Goal"
                      :in-theory '(,fn-guard-unnorm)
                      :use (,correct-lemma
@@ -5130,7 +5003,7 @@
        ((mv correct-lemma-event &)
         (evmac-generate-defthm correct-lemma
                                :formula formula-lemma
-                               :instructions lemma-instructions
+                               :hints lemma-hints
                                :enable nil))
        ((mv correct-thm-local-event correct-thm-exported-event)
         (evmac-generate-defthm correct-thm
@@ -5294,8 +5167,8 @@
                  (loop-body (stmt-while->body loop.stmt))
                  ((mv opener-base-thm-event
                       opener-step-thm-event
-                      & ; opener-base-thm
-                      & ; opener-step-thm
+                      opener-base-thm
+                      opener-step-thm
                       names-to-avoid)
                   (atc-gen-loop-fn-openers fn
                                            fn-guard
@@ -5325,7 +5198,7 @@
                                                 names-to-avoid
                                                 state))
                  ((mv measure-thm-event
-                      & ; measure-thm
+                      measure-thm
                       names-to-avoid)
                   (atc-gen-measure-thm fn
                                        fn-guard
@@ -5398,8 +5271,10 @@
                                             fn-result-thm
                                             exec-stmt-while-for-fn
                                             exec-stmt-while-for-fn-thm
-                                            termination-of-fn-thm
+                                            measure-thm
                                             natp-of-measure-of-fn-thm
+                                            opener-base-thm
+                                            opener-step-thm
                                             correct-test-thm
                                             correct-body-thm
                                             loop.limit-all
