@@ -16,7 +16,7 @@
 ;; :type-prescription rules but Axe does not).  Unlike bv-rules-axe.lisp, this
 ;; file does not use the Axe syntax functions.
 
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
@@ -24,7 +24,8 @@
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
-(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/bv/leftrotate32" :dir :system)
+(include-book "kestrel/bv/rightrotate32" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 
 (defthmd integerp-of-floor

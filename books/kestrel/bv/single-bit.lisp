@@ -18,6 +18,7 @@
 (include-book "bitor")
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
+(local (include-book "bvand"))
 (local (include-book "getbit"))
 
 (defthm bitxor-of-bitnot-arg1

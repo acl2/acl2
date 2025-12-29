@@ -22,6 +22,7 @@
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bitxor")
+(local (include-book "bvand"))
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))

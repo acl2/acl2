@@ -34,6 +34,7 @@
 ;(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 ;(include-book "known-booleans")
 (local (include-book "kestrel/bv/intro" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ;drop?

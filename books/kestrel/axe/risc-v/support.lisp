@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv-lists/bvchop-list" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 
 (local (in-theory (disable acl2::bvchop-plus-1-split))) ;todo
 
