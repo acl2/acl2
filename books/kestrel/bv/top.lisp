@@ -64,6 +64,7 @@
 
 ;; Bit-wise operations:
 (include-book "bvnot")
+(include-book "bvand-def")
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")

@@ -68,6 +68,7 @@
     exprp
     expr-fix
     expr-count
+    expr-kind
     expr-case
     expr-ident
     make-expr-ident
@@ -84,11 +85,14 @@
     make-expr-member
     make-expr-memberp
     make-expr-complit
+    expr-unary
     make-expr-unary
     expr-sizeof
     expr-alignof
     make-expr-alignof
+    expr-cast
     make-expr-cast
+    expr-binary
     make-expr-binary
     expr-binary->op
     expr-binary->arg1
@@ -625,6 +629,8 @@
     ;; formalized subset:
 
     ident-formalp
+    const-formalp
+    tyname-formalp
     expr-formalp
     initer-formalp
     dirdeclor-block-formalp
@@ -639,6 +645,7 @@
     ;; language mapping:
 
     ldm-ident
+    ldm-const
     ldm-tyname
     ldm-binop
     ldm-expr

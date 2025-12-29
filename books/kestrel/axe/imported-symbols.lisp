@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
-;; This supports packages like the "X" package.
+;; This packages like the "X" package for Axe x86 work and the "R"
+;; package for Axe RISC-V work.
 
-;; In general, we import function names, but not theorem names, from other
-;; packages into this package.
+;; In general, we import function/command names, but not theorem names, from
+;; other packages.
 
 ;; TODO: Combine some of these lists?
 
@@ -78,6 +79,8 @@
     elf-info
 
     ))
+
+;; todo: remove "to-import" from some of these names:
 
 (defconst *bv-symbols-to-import*
   '(bvchop
@@ -380,17 +383,24 @@
     log2
     power-of-2p))
 
+;; We import symbols from APT/ATC to support the workflow where we lift some
+;; binary code and then manipulate it with APT/ATC, all in the same file.
 (defconst *apt-symbols*
   '(;; APT transformations (sometimes used to verify lifted code):
+    simplify
     wrap-output
+    wrap-condexpr
     extract-output
     rename-params
+    rename-params-for-c ; todo: some of these names should perhaps be in the APT package
     flatten-params
     drop-irrelevant-params
     tailrec
     make-tail-rec-bv-up
     make-tail-rec-bv-up2
     def ; handy APT utility
+
+    atc ; to call ATC to generate C code
     ))
 
 ;; Names of Axe rule-lists

@@ -58,6 +58,7 @@
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system)) ; remove? needed for bvlt-of-bvmult-of-slice-and-slice
 (local (include-book "kestrel/bv/pick-a-bit" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

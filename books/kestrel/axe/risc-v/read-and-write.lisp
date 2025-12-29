@@ -38,6 +38,7 @@
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
 (local (include-book "kestrel/bv/bvuminus" :dir :system))

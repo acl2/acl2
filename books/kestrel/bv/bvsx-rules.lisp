@@ -13,7 +13,7 @@
 
 (include-book "bvcat-rules")
 (include-book "bvsx")
-(include-book "bvand")
+(include-book "bvand-def")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -21,6 +21,7 @@
 (local (include-book "slice"))
 (local (include-book "getbit"))
 (local (include-book "bvuminus"))
+(local (include-book "bvand"))
 (local (include-book "unsigned-byte-p"))
 
 (defthm bvand-of-bvsx-low-arg2

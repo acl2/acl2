@@ -1,4 +1,4 @@
-; Bitwise and
+; Rules about bitwise AND
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2025 Kestrel Institute
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "bvand-def")
 ;(include-book "logand-b") ; todo
 (include-book "bvchop")
 (include-book "getbit-def")
@@ -26,19 +27,6 @@
 (local (include-book "logand-b"))
 (local (include-book "slice"))
 (local (include-book "getbit"))
-
-(defund bvand (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (logand (bvchop size x)
-          (bvchop size y)))
-
-(defthm bvand-type
-  (and (integerp (bvand size x y))
-       (<= 0 (bvand size x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:type-prescription bvand))) ; bvand-type is at least as good
 
 ;disable?
 (defthm bvand-commutative

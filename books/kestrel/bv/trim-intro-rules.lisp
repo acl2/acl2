@@ -23,7 +23,7 @@
 (include-book "bvplus")
 (include-book "bvmult")
 (include-book "bvminus")
-(include-book "bvand")
+(include-book "bvand-def")
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvlt")

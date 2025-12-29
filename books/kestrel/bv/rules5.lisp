@@ -25,7 +25,7 @@
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
+(local (in-theory (disable logext-when-non-negative-becomes-bvchop))) ;for speed
 
 ; move these (but need bitnot):
 
@@ -70,7 +70,6 @@
                                    logext-cases
                                    bvminus
                                    bvchop-when-top-bit-1
-
                                    bvuminus
                                    <-of-0-and-logext-alt
                                    *-of-expt-of-one-less)
@@ -81,8 +80,7 @@
                                    expt-type-even-exponent-2
                                    expt-type-odd-exponent-negative-base
                                    <=-of-bvchop-same-linear-2
-                                   expt-type-small-base-negative-exponent
-                                   )))))
+                                   expt-type-small-base-negative-exponent)))))
 
 ;todo: add more versions
 (defthmd sbvlt-add-to-both-sides-normal-case-alt
@@ -102,16 +100,14 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           logext-of-plus
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-;unsigned-byte-p-when-not-bvlt-tighten
+                                          bvchop-when-top-bit-1
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   ;;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
                                    bvlt-tighten-when-getbit-0-alt)))))
@@ -123,14 +119,12 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                          bvchop-when-top-bit-1
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
@@ -141,15 +135,13 @@
                 (not (signed-addition-underflowsp size k y))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           logext-of-plus
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                          bvchop-when-top-bit-1
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
@@ -160,14 +152,12 @@
                 (not (signed-addition-underflowsp size k x))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                          bvchop-when-top-bit-1
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;;bvlt-tighten-free
@@ -178,14 +168,12 @@
                 (not (signed-addition-overflowsp size k y))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                          bvchop-when-top-bit-1
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
@@ -200,10 +188,8 @@
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
-
-                                          bvuminus
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                          bvuminus)
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
@@ -220,8 +206,8 @@
   :hints (("Goal" :in-theory (e/d (sbvlt-add-to-both-sides-both-underflow
                                    sbvlt-add-to-both-sides-both-overflow
                                    sbvlt-add-to-both-sides-normal-case)
-                                  (SIGNED-ADDITION-OVERFLOWSP
-                                   SIGNED-ADDITION-undERFLOWSP)))))
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-sides-all-cases
   (implies (posp size)
@@ -276,8 +262,8 @@
   :hints (("Goal" :use sbvlt-of-bvplus-same-arg2
            :in-theory (e/d (signed-addition-overflowsp-symmetric
                             signed-addition-underflowsp-symmetric)
-                           (SIGNED-ADDITION-OVERFLOWSP
-                            SIGNED-ADDITION-underFLOWSP)))))
+                           (signed-addition-overflowsp
+                            signed-addition-underflowsp)))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
   (implies (and (equal sizeplusone (+ 1 size))
@@ -320,7 +306,7 @@
                                   )
            :in-theory (e/d (sbvlt-rewrite)
                            (unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt ;todo in dagrulesmore0.lisp
-                            ;; UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN
+                            ;; unsigned-byte-p-of-bvplus-tighten
                             )))))
 
 ;for overflow to happen (bvuminus size k2) must be positive, so k2 must be negative...
@@ -335,9 +321,7 @@
                                   bvuminus
                                   logext-cases
                                   bvminus
-                                  bvchop-when-top-bit-1
-
-                                  )
+                                  bvchop-when-top-bit-1)
                                  (bvminus-becomes-bvplus-of-bvuminus
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
                                   ;bvlt-when-unsigned-byte-p-better-non-constant
@@ -352,14 +336,12 @@
                 (not (equal (bvchop 32 k2) (expt 2 31)))) ;k2 not min int
            (not (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))))
   :hints (("Goal":in-theory (e/d (signed-addition-underflowsp
-                                  bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+                                  bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                   bvuminus
                                   logext-cases
                                   bvminus
-                                  BVCHOP-WHEN-TOP-BIT-1
-
-                                  )
-                                 (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  bvchop-when-top-bit-1)
+                                 (bvminus-becomes-bvplus-of-bvuminus
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
                                   ;bvlt-when-unsigned-byte-p-better-non-constant
                                   ;bvlt-tighten-free
@@ -382,8 +364,7 @@
                                   (x (bvplus 32 k2 x))
                                   (y k)
                                   (k (bvuminus 32 k2))
-                                  (size 32)
-                                  )
+                                  (size 32))
            :in-theory (e/d (signed-addition-overflowsp-symmetric-limited
                             signed-addition-underflowsp-symmetric-limited)
                            (signed-addition-overflowsp
@@ -422,12 +403,10 @@
 (defthm sbvlt-of-bvplus-of-min-int-and-0
   (equal (sbvlt 32 (bvplus 32 2147483648 x) 0)
          (sbvle 32 0 x))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-
-                                          )
+                                          bvchop-when-top-bit-1)
                                   (;unsigned-byte-p-when-not-bvlt-tighten
                                    ;bvlt-when-unsigned-byte-p-better-non-constant
                                    ;bvlt-tighten-free
@@ -451,15 +430,14 @@
                            (x k)
                            (y (bvplus 32 k2 x))
                            (k (bvuminus 32 k2))
-                           (size 32)
-                           )
+                           (size 32))
            :in-theory (e/d (bvlt-of-min-int-becomes-sbvlt-of-0
-                            SIGNED-ADDITION-OVERFLOWSP-symmetric-limited
-                            SIGNED-ADDITION-underFLOWSP-symmetric-limited)
-                           ( signed-addition-overflowsp
-                             signed-addition-underflowsp
-                             SBVLT-OF-0-ARG2-POLARITY ;todo: looped
-                             )))))
+                            signed-addition-overflowsp-symmetric-limited
+                            signed-addition-underflowsp-symmetric-limited)
+                           (signed-addition-overflowsp
+                            signed-addition-underflowsp
+                            sbvlt-of-0-arg2-polarity ;todo: looped
+                            )))))
 
 ;If k+x<y with k>=0, then x<y (usually).
 (defthm sbvlt-when-sbvlt-of-bvplus-of-constant
@@ -489,5 +467,4 @@
                                      getbit-when-not-integerp-arg1
                                      sbvlt-rewrite
                                      ;;expt-of-+
-                                     bvminus
-                                     ))))
+                                     bvminus))))
