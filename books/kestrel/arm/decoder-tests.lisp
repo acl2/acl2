@@ -14,12 +14,11 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 (must-be-redundant
-  (defun add-register-argsp (args)
-  (declare (xargs :guard (symbol-alistp args)))
-  (and (unsigned-byte-p 4 (lookup-eq 'cond args))
-       (unsigned-byte-p 1 (lookup-eq 's args))
-       (unsigned-byte-p 4 (lookup-eq 'rn args))
-       (unsigned-byte-p 4 (lookup-eq 'rd args))
-       (unsigned-byte-p 5 (lookup-eq 'imm5 args))
-       (unsigned-byte-p 2 (lookup-eq 'type args))
-       (unsigned-byte-p 4 (lookup-eq 'rm args)))))
+  ;; This gets generated when we make the decoder:
+  (defun adc-immediate-argsp (args)
+    (declare (xargs :guard (symbol-alistp args)))
+    (and (unsigned-byte-p 4 (lookup-eq 'cond args))
+         (unsigned-byte-p 1 (lookup-eq 's args))
+         (unsigned-byte-p 4 (lookup-eq 'rn args))
+         (unsigned-byte-p 4 (lookup-eq 'rd args))
+         (unsigned-byte-p 12 (lookup-eq 'imm12 args)))))

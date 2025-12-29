@@ -139,7 +139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Slightly more restrictive than = as this excludes complex numbers.  The spec
-;; says that the comparison functions operation on integers or 'reals'.
+;; says that the comparison functions operate on integers or 'reals'.
 (defun-inline == (x y) (declare (xargs :guard (and (rationalp x) (rationalp y)))) (equal x y))
 
 (defun-inline != (x y) (declare (xargs :guard (and (rationalp x) (rationalp y)))) (not (== x y)))
