@@ -46,6 +46,30 @@ bool test_MOVDDUP_xmm_xmm_SF(double x, uint8_t y) {
     return (flags & 0x80) == (y & 0x80);  // Bit 7 = SF
 }
 
+unsigned char MOVDDUP_xmm_xmm_return_overflow(double x, uint8_t y) {
+	unsigned char of;
+	__asm__ volatile (
+		"testb $1, %2; "
+		"jz 0f; "
+		"movb $0x7f, %%al; "
+		"addb $1, %%al; "
+		"jmp 1f; "
+		"0: xor %%al, %%al; "
+		"addb $1, %%al; "
+		"1: movddup %1, %%xmm0; "
+		"seto %0; "
+		: "=qm"(of)
+		: "x"(x), "q"(y)
+		: "al", "xmm0", "cc"
+	);
+	return of;
+}
+
+bool test_MOVDDUP_xmm_xmm_OF(double x, uint8_t y) {
+	unsigned char of = MOVDDUP_xmm_xmm_return_overflow(x, y);
+	return (of & 0x01) == (y & 0x01);
+}
+
 // reg-mem
 unsigned char MOVDDUP_xmm_m64_return_flags(double x, uint8_t y) {
     unsigned char ah;
@@ -86,6 +110,31 @@ bool test_MOVDDUP_xmm_m64_ZF(double x, uint8_t y) {
 bool test_MOVDDUP_xmm_m64_SF(double x, uint8_t y) {
     unsigned char flags = MOVDDUP_xmm_m64_return_flags(x, y);
     return (flags & 0x80) == (y & 0x80);  // Bit 7 = SF
+}
+
+unsigned char MOVDDUP_xmm_m64_return_overflow(double x, uint8_t y) {
+	unsigned char of;
+	__asm__ volatile (
+		"testb $1, %2; "          
+		"jz 0f; "
+		"movb $0x7f, %%al; "      
+		"addb $1, %%al; "
+		"jmp 1f; "
+		"0: xor %%al, %%al; "     
+		"addb $1, %%al; "
+		"1: movddup %1, %%xmm0; " 
+		"seto %0; "
+		: "=qm"(of)
+		: "m"(x), "q"(y)
+		: "al", "xmm0", "cc"
+	);
+	return of;
+}
+
+
+bool test_MOVDDUP_xmm_m64_OF(double x, uint8_t y) {
+	unsigned char of = MOVDDUP_xmm_m64_return_overflow(x, y);
+	return (of & 0x01) == (y & 0x01);
 }
 
 

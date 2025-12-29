@@ -5089,166 +5089,153 @@
                                            :proofs nil)
                            state))
        (names-to-avoid loop.names-to-avoid)
-       ((erp events
-             natp-of-measure-of-fn-thm
-             fn-result-thm
-             fn-correct-thm
-             names-to-avoid)
-        (if proofs
-            (b* (((reterr) nil nil nil nil nil)
-                 ((mv fn-result-events
-                      fn-result-thm
-                      names-to-avoid)
-                  (atc-gen-fn-result-thm fn
-                                         fn-guard
-                                         fn-guard-unnorm
-                                         nil
-                                         loop.affect
-                                         typed-formals
-                                         prec-fns
-                                         prec-tags
-                                         prec-objs
-                                         names-to-avoid
-                                         state))
-                 (loop-test (stmt-while->test loop.stmt))
-                 (loop-body (stmt-while->body loop.stmt))
-                 ((mv opener-base-thm-event
-                      opener-step-thm-event
-                      opener-base-thm
-                      opener-step-thm
-                      names-to-avoid)
-                  (atc-gen-loop-fn-openers fn
-                                           fn-guard
-                                           fn-guard-unnorm
-                                           loop.affect
-                                           loop.test-term
-                                           loop.body-term
-                                           names-to-avoid
-                                           state))
-                 ((mv natp-of-measure-of-fn-thm-event
-                      natp-of-measure-of-fn-thm
-                      names-to-avoid)
-                  (atc-gen-loop-measure-natp-thm fn
-                                                 fn-appconds
-                                                 appcond-thms
-                                                 measure-of-fn
-                                                 measure-formals
-                                                 names-to-avoid
-                                                 wrld))
-                 ((mv measure-thm-event
-                      measure-thm
-                      names-to-avoid)
-                  (atc-gen-measure-thm fn
-                                       fn-guard
-                                       fn-guard-unnorm
+       ((mv fn-result-events
+            fn-result-thm
+            names-to-avoid)
+        (atc-gen-fn-result-thm fn
+                               fn-guard
+                               fn-guard-unnorm
+                               nil
+                               loop.affect
+                               typed-formals
+                               prec-fns
+                               prec-tags
+                               prec-objs
+                               names-to-avoid
+                               state))
+       (loop-test (stmt-while->test loop.stmt))
+       (loop-body (stmt-while->body loop.stmt))
+       ((mv opener-base-thm-event
+            opener-step-thm-event
+            opener-base-thm
+            opener-step-thm
+            names-to-avoid)
+        (atc-gen-loop-fn-openers fn
+                                 fn-guard
+                                 fn-guard-unnorm
+                                 loop.affect
+                                 loop.test-term
+                                 loop.body-term
+                                 names-to-avoid
+                                 state))
+       ((mv natp-of-measure-of-fn-thm-event
+            natp-of-measure-of-fn-thm
+            names-to-avoid)
+        (atc-gen-loop-measure-natp-thm fn
+                                       fn-appconds
+                                       appcond-thms
                                        measure-of-fn
                                        measure-formals
+                                       names-to-avoid
+                                       wrld))
+       ((mv measure-thm-event
+            measure-thm
+            names-to-avoid)
+        (atc-gen-measure-thm fn
+                             fn-guard
+                             fn-guard-unnorm
+                             measure-of-fn
+                             measure-formals
+                             loop.test-term
+                             loop.body-term
+                             natp-of-measure-of-fn-thm
+                             names-to-avoid
+                             state))
+       ((mv test-local-events
+            correct-test-thm
+            names-to-avoid)
+        (atc-gen-loop-test-correct-thm fn
+                                       fn-guard
+                                       fn-guard-unnorm
+                                       typed-formals
+                                       loop-test
                                        loop.test-term
-                                       loop.body-term
-                                       natp-of-measure-of-fn-thm
+                                       fn-thms
+                                       prec-tags
+                                       prec-objs
                                        names-to-avoid
                                        state))
-                 ((mv test-local-events
-                      correct-test-thm
-                      names-to-avoid)
-                  (atc-gen-loop-test-correct-thm fn
-                                                 fn-guard
-                                                 fn-guard-unnorm
-                                                 typed-formals
-                                                 loop-test
-                                                 loop.test-term
-                                                 fn-thms
-                                                 prec-tags
-                                                 prec-objs
-                                                 names-to-avoid
-                                                 state))
-                 ((mv body-local-events
-                      correct-body-thm
-                      names-to-avoid)
-                  (atc-gen-loop-body-correct-thm fn
-                                                 fn-guard
-                                                 fn-guard-unnorm
-                                                 typed-formals
-                                                 loop.affect
-                                                 loop-body
-                                                 loop.test-term
-                                                 loop.body-term
-                                                 prec-fns
-                                                 prec-tags
-                                                 prec-objs
-                                                 prog-const
-                                                 fn-thms
-                                                 loop.limit-body
-                                                 names-to-avoid
-                                                 state))
-                 ((mv exec-stmt-while-events
-                      exec-stmt-while-for-fn
-                      exec-stmt-while-for-fn-thm
-                      names-to-avoid)
-                  (atc-gen-exec-stmt-while-for-loop fn
-                                                    loop.stmt
-                                                    prog-const
-                                                    names-to-avoid
-                                                    wrld))
-                 ((mv correct-events
-                      print-event
-                      fn-correct-thm
-                      names-to-avoid)
-                  (atc-gen-loop-correct-thm fn
-                                            fn-guard
-                                            fn-guard-unnorm
-                                            typed-formals
-                                            loop.affect
-                                            loop-test
-                                            loop-body
-                                            prec-fns
-                                            prec-tags
-                                            prec-objs
-                                            prog-const
-                                            fn-thms
-                                            fn-result-thm
-                                            exec-stmt-while-for-fn
-                                            exec-stmt-while-for-fn-thm
-                                            measure-thm
-                                            natp-of-measure-of-fn-thm
-                                            opener-base-thm
-                                            opener-step-thm
-                                            correct-test-thm
-                                            correct-body-thm
-                                            loop.limit-all
-                                            names-to-avoid
-                                            state))
-                 (progress-start?
-                  (and (evmac-input-print->= print :info)
-                       `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-                 (progress-end? (and (evmac-input-print->= print :info)
-                                     `((cw-event " done.~%"))))
-                 (print-result?
-                  (and (evmac-input-print->= print :result)
-                       (list print-event)))
-                 (events (append progress-start?
-                                 (list fn-guard-event
-                                       fn-guard-unnorm-def-event)
-                                 (list opener-base-thm-event
-                                       opener-step-thm-event)
-                                 formals-events
-                                 loop.events
-                                 (list measure-of-fn-event)
-                                 fn-result-events
-                                 (list natp-of-measure-of-fn-thm-event)
-                                 (list measure-thm-event)
-                                 test-local-events
-                                 body-local-events
-                                 exec-stmt-while-events
-                                 correct-events
-                                 progress-end?
-                                 print-result?)))
-              (retok events
-                     natp-of-measure-of-fn-thm
-                     fn-result-thm
-                     fn-correct-thm
-                     names-to-avoid))
-          (retok nil nil nil nil names-to-avoid)))
+       ((mv body-local-events
+            correct-body-thm
+            names-to-avoid)
+        (atc-gen-loop-body-correct-thm fn
+                                       fn-guard
+                                       fn-guard-unnorm
+                                       typed-formals
+                                       loop.affect
+                                       loop-body
+                                       loop.test-term
+                                       loop.body-term
+                                       prec-fns
+                                       prec-tags
+                                       prec-objs
+                                       prog-const
+                                       fn-thms
+                                       loop.limit-body
+                                       names-to-avoid
+                                       state))
+       ((mv exec-stmt-while-events
+            exec-stmt-while-for-fn
+            exec-stmt-while-for-fn-thm
+            names-to-avoid)
+        (atc-gen-exec-stmt-while-for-loop fn
+                                          loop.stmt
+                                          prog-const
+                                          names-to-avoid
+                                          wrld))
+       ((mv correct-events
+            print-event
+            fn-correct-thm
+            names-to-avoid)
+        (atc-gen-loop-correct-thm fn
+                                  fn-guard
+                                  fn-guard-unnorm
+                                  typed-formals
+                                  loop.affect
+                                  loop-test
+                                  loop-body
+                                  prec-fns
+                                  prec-tags
+                                  prec-objs
+                                  prog-const
+                                  fn-thms
+                                  fn-result-thm
+                                  exec-stmt-while-for-fn
+                                  exec-stmt-while-for-fn-thm
+                                  measure-thm
+                                  natp-of-measure-of-fn-thm
+                                  opener-base-thm
+                                  opener-step-thm
+                                  correct-test-thm
+                                  correct-body-thm
+                                  loop.limit-all
+                                  names-to-avoid
+                                  state))
+       (progress-start?
+        (and (evmac-input-print->= print :info)
+             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+       (progress-end? (and (evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
+       (print-result?
+        (and (evmac-input-print->= print :result)
+             (list print-event)))
+       (events (append progress-start?
+                       (list fn-guard-event
+                             fn-guard-unnorm-def-event
+                             opener-base-thm-event
+                             opener-step-thm-event
+                             measure-of-fn-event
+                             natp-of-measure-of-fn-thm-event
+                             measure-thm-event)
+                       fn-result-events
+                       formals-events
+                       loop.events
+                       test-local-events
+                       body-local-events
+                       exec-stmt-while-events
+                       correct-events
+                       progress-end?
+                       print-result?))
        (info (make-atc-fn-info :out-type nil
                                :in-types (atc-var-info-list->type-list
                                           (strip-cdrs typed-formals))
@@ -5263,7 +5250,7 @@
                                :limit loop.limit-all
                                :guard fn-guard
                                :guard-unnorm fn-guard-unnorm)))
-    (retok events
+    (retok (and proofs events)
            (acons fn info prec-fns)
            names-to-avoid))
   :guard-hints

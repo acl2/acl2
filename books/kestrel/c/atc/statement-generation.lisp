@@ -922,6 +922,7 @@
                                        :prec-tags gin.prec-tags
                                        :fn gin.fn
                                        :fn-guard gin.fn-guard
+                                       :fn-guard-unnorm gin.fn-guard-unnorm
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
@@ -5310,6 +5311,7 @@
                                  :prec-tags gin.prec-tags
                                  :fn gin.fn
                                  :fn-guard gin.fn-guard
+                                 :fn-guard-unnorm gin.fn-guard-unnorm
                                  :compst-var gin.compst-var
                                  :thm-index gin.thm-index
                                  :names-to-avoid gin.names-to-avoid
