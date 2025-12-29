@@ -97,6 +97,7 @@
     expr-binary->op
     expr-binary->arg1
     expr-binary->arg2
+    expr-cond
     make-expr-cond
     make-expr-comma
     expr-stmt
@@ -113,6 +114,7 @@
     expr-option-fix
     expr-option-count
     expr-option-case
+    expr-option-some->val
 
     const-exprp
     const-expr-count
