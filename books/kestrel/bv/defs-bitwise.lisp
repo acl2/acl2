@@ -1,7 +1,7 @@
 ; BV Library: Definitions of bitwise operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,16 +12,11 @@
 (in-package "ACL2")
 
 (include-book "bvchop-def")
+(include-book "bvand-def")
 (local (include-book "bvchop"))
 (local (include-book "bitor"))
 (local (include-book "bitand"))
 (local (include-book "bitxor"))
-
-(defund bvand (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (logand (bvchop size x)
-          (bvchop size y)))
 
 (defund bvor (size x y)
   (declare (type integer x y)
