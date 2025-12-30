@@ -306,31 +306,6 @@
     :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs hit-count-info-worldp
                                        make-hit-count-alist-aux)))))
 
-;; (local
-;;   (defthm all-consp-of-make-hit-count-alist-aux
-;;     (implies (all-consp acc)
-;;              (all-consp (make-hit-count-alist-aux hit-counts acc)))
-;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
-
-;; (local
-;;   (defthm true-listp-of-make-hit-count-alist-aux
-;;     (implies (true-listp acc)
-;;              (true-listp (make-hit-count-alist-aux hit-counts acc)))
-;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
-
-;; (local
-;;   (defthm alistp-of-make-hit-count-alist-aux
-;;     (implies (alistp acc)
-;;              (alistp (make-hit-count-alist-aux hit-counts acc)))
-;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
-
-;; (local
-;;   (defthm all-cdrs-rationalp-of-make-hit-count-alist-aux
-;;     (implies (and (hit-count-info-worldp hit-counts)
-;;                   (all-cdrs-rationalp acc))
-;;              (all-cdrs-rationalp (make-hit-count-alist-aux hit-counts acc)))
-;;     :hints (("Goal" :in-theory (enable hit-count-info-worldp make-hit-count-alist-aux)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This gets rid of the mention of :fake.
@@ -342,25 +317,6 @@
   (implies (hit-count-info-worldp hit-counts)
            (hit-count-alistp (make-hit-count-alist hit-counts)))
   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
-
-;; ;; todo: do we need all these type rules?
-
-;; ;; (defthm all-consp-of-make-hit-count-alist
-;; ;;   (all-consp (make-hit-count-alist hit-counts))
-;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
-
-;; ;; (defthm true-listp-of-make-hit-count-alist
-;; ;;   (true-listp (make-hit-count-alist hit-counts))
-;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
-
-;; ;; (defthm alistp-of-make-hit-count-alist
-;; ;;   (alistp (make-hit-count-alist hit-counts))
-;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
-
-;; ;; (defthm all-cdrs-rationalp-of-make-hit-count-alist
-;; ;;   (implies (hit-countsp hit-counts)
-;; ;;            (all-cdrs-rationalp (make-hit-count-alist hit-counts)))
-;; ;;   :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
