@@ -13,7 +13,7 @@
 
 (include-book "reachability")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -152,8 +152,7 @@
              (proposed-author-self-p (certify-next cert dests systate)))
     :expand (proposed-author-self-p (certify-next cert dests systate))
     :enable (proposed-author-self-p-necc
-             validator-state->proposed-of-certify-next
-             omap::keys-of-delete))
+             validator-state->proposed-of-certify-next))
 
   (defruled proposed-author-self-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)

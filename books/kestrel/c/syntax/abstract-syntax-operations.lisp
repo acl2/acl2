@@ -1084,5 +1084,4 @@
      it can be used an as API to inspect a file set."))
   (transunit-fix
    (omap::lookup (filepath-fix path) (transunit-ensemble->units tunits)))
-  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
-                                           transunit-ensemble-paths))))
+  :guard-hints (("Goal" :in-theory (enable transunit-ensemble-paths))))
