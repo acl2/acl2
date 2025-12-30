@@ -13,7 +13,7 @@
 
 (include-book "active-committees-after-commit")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -119,8 +119,7 @@
              (proposed-author-in-committee-p (certify-next cert dests systate)))
     :enable (proposed-author-in-committee-p
              proposed-author-in-committee-p-necc
-             validator-state->proposed-of-certify-next
-             omap::keys-of-delete))
+             validator-state->proposed-of-certify-next))
 
   (defruled proposed-author-in-committee-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
