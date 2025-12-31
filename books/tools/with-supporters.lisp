@@ -33,25 +33,43 @@
 ; - Consider collecting function symbols from bodies of defconst forms rather
 ;   than generating (defconst *sym* (quote ...)).
 
+; - Consider the possibility of improving efficiency by reducing the number of
+;   calls of get-event-local-p.  This might be possible by passing around
+;   triples (n ev . localp) that indicate whether an event ev with
+;   absolute-event-number n is local, in place of pairs (n . ev).
+
 (in-package "ACL2")
 
 (program)
 (set-state-ok t)
 
-(defun fns-with-abs-ev-between (names min max wrld acc)
+(include-book "elide-event")
+
+(defun get-event-local-p (n wrld)
+
+; N is the absolute-event-number for an event.  Return t if that event is
+; local, else nil.  The code is adapted from the code for source function
+; get-event.
+
+  (let ((event-tuple (cddr (car (lookup-world-index 'event n wrld)))))
+    (and event-tuple
+         (access-event-tuple-local-p event-tuple))))
+
+(defun fns-with-abs-ev-between-or-local (names min max wrld acc)
 
 ; Return a list of all symbols in names whose absolute-event-number property
 ; has value greater than min and at most max.
 
   (cond
    ((endp names) acc)
-   (t (fns-with-abs-ev-between
+   (t (fns-with-abs-ev-between-or-local
        (cdr names)
        min max
        wrld
        (let ((k (getpropc (car names) 'absolute-event-number 0 wrld)))
-         (cond ((and (< min k)
-                     (<= k max))
+         (cond ((or (and (< min k)
+                         (<= k max))
+                    (get-event-local-p k wrld))
                 (cons (car names) acc))
                (t acc)))))))
 
@@ -84,9 +102,9 @@
         (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2
                                                      seen))))))
 
-(defun macro-names-from-aliases (names macro-aliases acc)
+(defun accumulate-macro-names-from-aliases (names macro-aliases acc)
   (cond ((endp names) acc)
-        (t (macro-names-from-aliases
+        (t (accumulate-macro-names-from-aliases
             (cdr names)
             macro-aliases
             (let ((pair (rassoc (car names) macro-aliases)))
@@ -248,8 +266,8 @@
 ; be improved (e.g., by looking inside :corollary fields of rule-classes).  But
 ; it's something.
 
-; We skip encapsulate, since our overarching algorithm already picks up its
-; subsidiary events.
+; We skip encapsulate events, since our overarching algorithm already picks up
+; its subsidiary events.
 
   (assert$
    (true-listp ev)
@@ -309,9 +327,10 @@
 
 (defun supporters-of-1 (ev min max macro-aliases wrld state-vars seen)
 
-; See supporters-of-rec, in particular for discussion of seeen.  Here we
+; See supporters-of-rec, in particular for discussion of seen.  Here we
 ; make a reasonable attempt to return all function, macro, and constant
-; symbols that support ev, also returning a suitable extension of seen.
+; symbols that support ev, also returning a suitable extension of the
+; fast-alist, seen.
 
   (cond
    ((and (consp ev) ; always true?
@@ -340,11 +359,9 @@
        (t
         (let* ((formula
                 (if non-trivial-encapsulate-p
-                    (mv-let (name2 x)
-                      ; Old Code:
-                      ; (constraint-info name wrld)
-                      ; New Code:
-                      (pre-v8-7-constraint-info name wrld)
+                    (mv-let (name2 x origins)
+                      (constraint-info name wrld)
+                      (declare (ignore origins))
                       (cond
                        ((unknown-constraints-p x) *t*) ; incomplete!
                        (name2 (conjoin x))
@@ -372,17 +389,18 @@
                (new-fns (filter-out-seen new-fns seen)))
           (mv-let (new-fns seen)
             (instantiable-ancestors-with-guards/measures
-             (fns-with-abs-ev-between new-fns min max wrld nil)
+             (fns-with-abs-ev-between-or-local new-fns min max wrld nil)
              wrld nil seen)
-            (let* ((new-fns
-                    (fns-with-abs-ev-between new-fns min max wrld nil))
+            (let* ((new-fns (fns-with-abs-ev-between-or-local new-fns min max
+                                                              wrld nil))
                    (new-names
                     (if non-trivial-encapsulate-p
                         (collect-constants-and-macros-1 formula new-fns wrld
                                                         state-vars)
                       (collect-constants-and-macros-ev ev new-fns wrld
                                                        state-vars))))
-              (mv (macro-names-from-aliases new-fns macro-aliases new-names)
+              (mv (accumulate-macro-names-from-aliases
+                   new-fns macro-aliases new-names)
                   seen))))))))))
 )
 
@@ -391,7 +409,7 @@
 
 ; Each element of lst is either a symbol or a pair (n . ev) where ev is an
 ; event and n is its absolute-event-number.  The accumulator fal is a
-; fast-alist that is nil at the top level.  We extend fal with triples (n . ev)
+; fast-alist that is nil at the top level.  We extend fal with pairs (n . ev)
 ; where ev is an event with absolute event number n.  We make that extension
 ; for each event ev that supports events based on lst (either events in lst or
 ; definitions of names in lst).  Seen is a fast alist whose keys are defined
@@ -406,9 +424,6 @@
    (t
     (let ((constraint-lst
            (and (symbolp (car lst))
-                ; Old Code:
-                ; (getpropc (car lst) 'constraint-lst nil wrld)
-                ; New Code:
                 (pre-v8-7-getpropc-constraint-lst-nil (car lst) wrld))))
       (cond
        ((and constraint-lst
@@ -470,9 +485,9 @@
 ; This case is a bit tricky.  Suppose we are defining f and that before
 ; including the book at issue, f was defined simply as (defun f (x) x).  Now
 ; suppose the book contains the form (verify-guards f).  Then we need that
-; verify-guards form here, rather than simply adding declaring :verify-guards
-; t, which ACL2 would not accept.  It seems simplest just to include a
-; verify-guards event.
+; verify-guards form here, rather than simply declaring :verify-guards t, which
+; ACL2 would not accept.  It seems simplest just to include a verify-guards
+; event.
 
        `(progn ,ev
                (verify-guards ,(cadr ev)))))))
@@ -507,12 +522,12 @@
 
 (defun adjust-ev-for-symbol-class (ev wrld)
 
-; Ev is an event, as returned by get-event, that comes from a locally-included
-; book.  We will be evaluating ev without including that book, after evaluating
-; events that support ev.  We want to ensure that its symbol-class in that
-; future state will be the same as it was when we locally included the book.
-; We return a possibly modified event that provides that guarantee.  So we
-; return an event that is a version of ev with that property.
+; Ev is an event, as returned by get-event, that may come from a
+; locally-included book.  We will be evaluating ev without including that book,
+; after evaluating events that support ev.  We want to ensure that its
+; symbol-class in that future world will be the same as it was when we locally
+; included the book.  We return a possibly modified event that provides that
+; guarantee.  So we return an event that is a version of ev with that property.
 
   (case (car ev)
     (defchoose
@@ -544,7 +559,8 @@
    ((or (endp pairs)
         (< max (caar pairs)))
     (reverse acc))
-   ((<= (car (car pairs)) min)
+   ((and (<= (car (car pairs)) min)
+         (not (get-event-local-p (car (car pairs)) wrld)))
     (events-from-supporters-fal (cdr pairs) min max wrld acc))
    (t
     (events-from-supporters-fal
@@ -598,20 +614,22 @@
            (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))))
      (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))
 
-(defun supporter-fns-in-range (alist min max wrld acc)
+(defun supporter-fns-in-range-or-local (alist min max wrld acc)
 
 ; We restrict (strip-cars alist) to function symbols whose absolute event
 ; number is in the interval (min,max].
 
   (cond
    ((endp alist) acc)
-   (t (supporter-fns-in-range
+   (t (supporter-fns-in-range-or-local
        (cdr alist) min max wrld
        (if (or (not (function-symbolp (caar alist) wrld))
                (let ((n (getpropc (caar alist) 'absolute-event-number nil
                                   wrld)))
-                 (or (<= n min)
-                     (< max n))))
+; Exclude (caar alist) if it is out of range, unless it is local.
+                 (and (or (<= n min)
+                          (< max n))
+                      (not (get-event-local-p n wrld)))))
            acc
          (cons (caar alist) acc))))))
 
@@ -628,8 +646,8 @@
     (supporters-of-rec lst nil min max (macro-aliases wrld) ctx wrld state-vars
                        nil)
     (let* ((x (merge-sort-car-< (fast-alist-free fal)))
-           (fns (supporter-fns-in-range (fast-alist-free seen)
-                                        min max wrld nil)))
+           (fns (supporter-fns-in-range-or-local (fast-alist-free seen)
+                                                 min max wrld nil)))
       (cons (append? (events-from-supporters-fal x min max wrld nil)
                      (defattach-event-lst wrld fns min max nil nil))
             fns))))
@@ -693,14 +711,22 @@
                           (all-fnnames1 nil (cddr trip) table-guard-fns)))
      (t (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
 
-(defun supporters-in-theory-event (fns ens wrld disables)
+(defun supporters-in-theory-event (fns ens wrld min disables)
   (cond ((endp fns)
          (and disables
               `(in-theory (disable ,@disables))))
-        (t (supporters-in-theory-event (cdr fns) ens wrld
-                                       (append
-                                        (disabledp-fn (car fns) ens wrld)
-                                        disables)))))
+        (t (supporters-in-theory-event
+            (cdr fns) ens wrld min
+            (if (and min
+                     (<= (getpropc (car fns) 'absolute-event-number nil wrld)
+                         min))
+
+; We don't mess with the enabled status of functions that were brought in
+; before the call of with-supporters due to being local.
+
+                disables
+              (append (disabledp-fn (car fns) ens wrld)
+                      disables))))))
 
 (defmacro wsa-er (str &rest args)
   `(mv (er hard 'with-supporters ,str ,@args)
@@ -848,7 +874,7 @@
                               (fns (cdr extras/fns))
                               (in-theory-event
                                (supporters-in-theory-event
-                                fns (ens state) wrld nil))
+                                fns (ens state) wrld min nil))
                               (ev
                                (list*
                                 'encapsulate
@@ -860,7 +886,7 @@
                                 '(set-irrelevant-formals-ok t)
                                 '(set-ignore-ok t)
                                 '(set-state-ok t)
-                                (append extras
+                                (append (elide-event-lst extras)
                                         table-evs
                                         (and in-theory-event
                                              (list in-theory-event))
@@ -890,7 +916,7 @@
 (defmacro with-supporters (local-event &rest rest)
   (with-supporters-fn local-event rest))
 
- (defun with-supporters-after-fn (name events)
+(defun with-supporters-after-fn (name events)
   `(make-event
     (let ((min (getprop ',name 'absolute-event-number nil
                         'current-acl2-world (w state)))
@@ -911,7 +937,7 @@
                   (fns (cdr extras/fns))
                   (in-theory-event
                    (supporters-in-theory-event
-                    fns (ens state) (w state) nil)))
+                    fns (ens state) (w state) nil nil)))
              (value (list* 'progn
                            '(set-enforce-redundancy t)
                            '(set-bogus-defun-hints-ok t)

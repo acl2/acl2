@@ -256,6 +256,20 @@
       handle theorems over trivial @(tsee mutual-recursion) cliques consisting
       of just one function.")
 
+   (xdoc::p
+     "The utility, @(tsee with-supporters), has been improved to deal with the
+      case that support comes from a @(see local) event preceding the
+      @('with-supporters') call.  Thanks to Eric Smith for providing an example
+      to show the need for this improvement, and for suggesting that the
+      generated supporting events be elided (see discussion of @(tsee
+      elide-event) just below)")
+
+   (xdoc::p
+     "A new utility, @(tsee elide-event), maps an event to one that avoids
+      declarations that are unnecessary when either including a book or making
+      the second pass of an @(tsee encapsulate) event.  Thanks to Eric Smith
+      for a chat leading to development of this utility.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "bridge::bridge"
