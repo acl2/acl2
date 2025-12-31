@@ -250,11 +250,13 @@
     add-limit-for-rules
     limit-for-rule
     simplify-dag-basic
+    simplify-term-to-term-basic
     known-booleans
     real-time-since
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
 
+    wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
     dag-node-to-term
@@ -375,6 +377,9 @@
     ensure-target-exists-in-executable
     make-flag
     with-supporters
+
+    tacticp
+    tacticsp
     ))
 
 (defconst *arithmetic-symbols*
