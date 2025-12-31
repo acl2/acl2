@@ -99,6 +99,8 @@
 (include-book "with-quoted-forms")
 (include-book "with-supporters-doc")
 (include-book "with-supporters")
+(include-book "elide-event-doc")
+(include-book "elide-event")
 ;(include-book "with-supporters-test-sub")
 ;(include-book "with-supporters-test-top")
 

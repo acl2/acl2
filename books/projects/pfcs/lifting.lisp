@@ -379,7 +379,10 @@
      for the free variables in a relation's definition,
      based on the intended use of these constraints in zero-knowledge proofs.
      However, the quantification is avoided
-     if all the variables in the body are treated as parameters."))
+     if all the variables in the body are treated as parameters.")
+   (xdoc::p
+    "We declare all formals ignorable,
+     in case the definition does not reference all of them."))
   (b* (((definition def) def)
        (free (definition-free-vars def))
        (quant (lift-var-name-set-to-list free state))
@@ -387,8 +390,10 @@
        (body `(and ,@(lift-constraint-list def.body prime state))))
     (if free
         `(defund-sk ,pred (,@para ,prime)
+           (declare (ignorable ,@para ,prime))
            (exists (,@quant) (and ,@(lift-gen-fep-terms quant prime) ,body)))
       `(defund ,pred (,@para ,prime)
+         (declare (ignorable ,@para ,prime))
          ,body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
