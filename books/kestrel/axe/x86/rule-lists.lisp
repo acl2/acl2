@@ -1888,6 +1888,8 @@
     run-until-esp-is-above-base-axe ; not for IFs
     run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
     esp-is-abovep
+
+    acl2::bvminus-of-bvplus-same-arg2 ; todo: move to more fundamental rule-list
     ))
 
 ;; for 64-bit mode, without :stop-pcs
@@ -4183,6 +4185,8 @@
     esp-of-xw
     ebp-of-xw
 
+    ;; would like to get rid of this (and use bvplus instead of +), but that will require BV versions of rules like eff-addrs-okp-of-+-of-esp-positive-offset.
+
     bvplus-of-constant-and-esp-when-overflow ; todo: caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
@@ -5789,6 +5793,8 @@
           (step-opener-rules32)
           '(not-mv-nth-0-of-add-to-*sp-gen
             mv-nth-1-of-add-to-*sp-gen
+            run-until-esp-is-above-base-axe
+            run-until-esp-is-above-opener-axe
             )))
 
 (defund debug-rules64 ()
