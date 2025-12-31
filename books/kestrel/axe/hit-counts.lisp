@@ -25,70 +25,12 @@
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
-(include-book "merge-sort-by-cdr-greater")
+(include-book "kestrel/utilities/defmergesort" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
-
-(local
-  (defthm symbol-alistp-of-evens
-    (implies (symbol-alistp alist)
-             (symbol-alistp (evens alist)))
-    :hints (("Goal" :induct t
-             :in-theory (enable symbol-alistp evens)))))
-
-(local
-  (defthm symbol-alistp-of-odds
-    (implies (symbol-alistp alist)
-             (symbol-alistp (odds alist)))
-    :hints (("Goal" :induct t
-             :in-theory (enable symbol-alistp odds)))))
-
-(local
-  (defthm symbol-alistp-of-merge-by-cdr->
-    (implies (and (symbol-alistp l1)
-                  (symbol-alistp l2)
-                  (symbol-alistp acc))
-             (symbol-alistp (merge-by-cdr-> l1 l2 acc)))
-    :hints (("Goal" :in-theory (enable merge-by-cdr->)))))
-
-(local
-  (defthm symbol-alistp-of-merge-sort-by-cdr->
-    (implies (symbol-alistp alist)
-             (symbol-alistp (merge-sort-by-cdr-> alist)))
-    :hints (("Goal" :in-theory (enable merge-sort-by-cdr->)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
-  (defthm nat-listp-of-strip-cdrs-of-evens
-    (implies (nat-listp (strip-cdrs alist))
-             (nat-listp (strip-cdrs (evens alist))))
-    :hints (("Goal" :induct t
-             :in-theory (enable nat-listp evens)))))
-
-(local
-  (defthm nat-listp-of-strip-cdrs-of-odds
-    (implies (nat-listp (strip-cdrs alist))
-             (nat-listp (strip-cdrs (odds alist))))
-    :hints (("Goal" :induct t
-             :in-theory (enable nat-listp odds)))))
-
-(local
-  (defthm nat-listp-of-strip-cdrs-of-merge-by-cdr->
-    (implies (and (nat-listp (strip-cdrs l1))
-                  (nat-listp (strip-cdrs l2))
-                  (nat-listp (strip-cdrs acc)))
-             (nat-listp (strip-cdrs (merge-by-cdr-> l1 l2 acc))))
-    :hints (("Goal" :in-theory (enable merge-by-cdr->)))))
-
-(local
-  (defthm nat-listp-of-strip-cdrs-of-merge-sort-by-cdr->
-    (implies (nat-listp (strip-cdrs alist))
-             (nat-listp (strip-cdrs (merge-sort-by-cdr-> alist))))
-    :hints (("Goal" :in-theory (enable merge-sort-by-cdr->)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,11 +193,11 @@
     :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable hit-count-alistp)))))
 
-(local
-  (defthm all-cdrs-rationalp-when-hit-count-alistp
-    (implies (hit-count-alistp alist)
-             (all-cdrs-rationalp alist))
-    :hints (("Goal" :in-theory (enable all-cdrs-rationalp hit-count-alistp)))))
+;; (local
+;;   (defthm all-cdrs-rationalp-when-hit-count-alistp
+;;     (implies (hit-count-alistp alist)
+;;              (all-cdrs-rationalp alist))
+;;     :hints (("Goal" :in-theory (enable all-cdrs-rationalp hit-count-alistp)))))
 
 (local
   (defthmd natp-of-lookup-equal-when-hit-count-alistp
@@ -320,14 +262,53 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A pair of a rule name and its count.
+(defund hit-count-entryp (e)
+  (declare (xargs :guard t))
+  (and (consp e)
+       (symbolp (car e))
+       (natp (cdr e)) ; could say posp
+       ))
+
+;; We put larger counts first and compare the symbols in case of ties
+(defund hit-count-entry-comes-firstp (e1 e2)
+  (declare (xargs :guard (and (hit-count-entryp e1)
+                              (hit-count-entryp e2))
+                  :guard-hints (("Goal" :in-theory (enable hit-count-entryp)))))
+  (let ((count1 (cdr e1))
+        (count2 (cdr e2)))
+    (if (< count2 count1)
+        t ; the entry with the greater count comes first
+      (if (< count1 count2)
+          nil
+        ;; counts are equal, some compare the rule names:
+        ;; the names should not be the same (todo: prove this)
+        (symbol< (car e1) (car e2))))))
+
+;; How to sort the entries of the hit-count-alist (decreasing counts and then, within the same count, by symbol name):
+(defmergesort merge-sort-hit-count-alist merge-hit-count-alist hit-count-entry-comes-firstp hit-count-entryp :extra-theorems nil)
+
+(local
+  (defthmd all-hit-count-entryp-when-hit-count-alistp
+    (implies (hit-count-alistp alist)
+             (all-hit-count-entryp alist))
+    :hints (("Goal" :in-theory (enable all-hit-count-entryp hit-count-alistp hit-count-entryp)))))
+
+(local
+  (defthmd hit-count-alistp-redef
+    (equal (hit-count-alistp alist)
+           (and (all-hit-count-entryp alist)
+                (true-listp alist)))
+    :hints (("Goal" :in-theory (enable all-hit-count-entryp hit-count-alistp hit-count-entryp)))))
+
 (defund sort-hit-count-alist (alist)
   (declare (xargs :guard (hit-count-alistp alist)))
-  (merge-sort-by-cdr-> alist))
+  (merge-sort-hit-count-alist alist))
 
 (defthm hit-count-alistp-of-sort-hit-count-alist
   (implies (hit-count-alistp alist)
            (hit-count-alistp (sort-hit-count-alist alist)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp sort-hit-count-alist))))
+  :hints (("Goal" :in-theory (enable hit-count-alistp-redef sort-hit-count-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
