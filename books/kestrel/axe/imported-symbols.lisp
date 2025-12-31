@@ -333,6 +333,7 @@
     myif
     extend-progn
     get-vars-from-term
+    get-vars-from-terms
     doublets-to-alist
     translate-term
     translate-terms
