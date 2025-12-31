@@ -443,8 +443,8 @@
     (implies (and (funscopep old-scope)
                   (funscopep new-scope)
                   (funscope-renamevarp old-scope new-scope))
-             (equal (consp (omap::assoc fun old-scope))
-                    (consp (omap::assoc fun new-scope))))
+             (iff (omap::assoc fun old-scope)
+                  (omap::assoc fun new-scope)))
     :enable funscope-renamevarp)
 
   (defruled same-funscope-keys-when-renamevar

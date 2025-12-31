@@ -89,8 +89,7 @@
     :expand (endorsed-round1-no-previous-p (augment-next prop endor systate))
     :enable (endorsed-round1-no-previous-p-necc
              validator-state->proposed-of-augment-next
-             augment-possiblep
-             omap::assoc-to-in-of-keys))
+             augment-possiblep))
 
   (defruled endorsed-round1-no-previous-p-of-certify-next
     (implies (endorsed-round1-no-previous-p systate)
