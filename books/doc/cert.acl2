@@ -62,5 +62,8 @@
 (include-book "acl2s/interface/portcullis" :dir :system)
 (include-book "kestrel/c/syntax/portcullis" :dir :system)
 (include-book "kestrel/c/transformation/portcullis" :dir :system)
+(include-book "projects/aleo/portcullis" :dir :system)
+(include-book "projects/aleo/bft/portcullis" :dir :system)
+(include-book "kestrel/risc-v/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

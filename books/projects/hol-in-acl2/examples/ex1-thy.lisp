@@ -35,27 +35,34 @@ val thms =
     ⊢ ∀x y. FST (x,y) = x,
     ⊢ ∀x y. SND (x,y) = y,
     ⊢ ∀f x y. UNCURRY f (x,y) = f x y,
-    ⊢ (∀f. OPTION_BIND NONE f = NONE) ∧ ∀x f. OPTION_BIND (SOME x) f = f x,
-    ⊢ (∀f x. OPTION_MAP f (SOME x) = SOME (f x)) ∧ ∀f. OPTION_MAP f NONE = NONE,
+    ⊢ (∀f. OPTION_BIND NONE f = NONE) ∧
+       ∀x f. OPTION_BIND (SOME x) f = f x,
+    ⊢ (∀f x. OPTION_MAP f (SOME x) = SOME (f x)) ∧
+      ∀f. OPTION_MAP f NONE = NONE,
     ⊢ (∀v f. list_CASE [] v f = v) ∧
-      ∀a0 a1 v f. list_CASE (a0::a1) v f = f a0 a1,
+       ∀a0 a1 v f. list_CASE (a0::a1) v f = f a0 a1,
     ⊢ (∀f. list_size f [] = 0) ∧
-      ∀f a0 a1. list_size f (a0::a1) = 1 + (f a0 + list_size f a1),
-    ⊢ (∀f. MAP f [] = []) ∧ ∀f h t. MAP f (h::t) = f h::MAP f t,
+       ∀f a0 a1. list_size f (a0::a1) = 1 + (f a0 + list_size f a1),
+    ⊢ (∀f. MAP f [] = []) ∧
+       ∀f h t. MAP f (h::t) = f h::MAP f t,
     ⊢ (∀f e. FOLDR f e [] = e) ∧
-      ∀f e x l. FOLDR f e (x::l) = f x (FOLDR f e l),
+       ∀f e x l. FOLDR f e (x::l) = f x (FOLDR f e l),
     ⊢ (∀f e. FOLDL f e [] = e) ∧
-      ∀f e x l. FOLDL f e (x::l) = FOLDL f (f e x) l,
+       ∀f e x l. FOLDL f e (x::l) = FOLDL f (f e x) l,
     ⊢ SPEC (consts $DIV $MOD)
-           (∀n k. 0 < n ⇒ k = k DIV n * n + k MOD n ∧ k MOD n < n ⇔ T)
+        (∀n k. 0 < n ⇒ k = k DIV n * n + k MOD n ∧ k MOD n < n ⇔ T),
     ⊢ (Even 0 ⇔ T) ∧
       (∀n. Even (SUC n) ⇔ Odd n) ∧
       (Odd 0 ⇔ F) ∧
-      (∀n. Odd (SUC n) ⇔ Even n),
-    ⊢ (∀m. m ** 0 = 1) ∧ ∀m n. m ** SUC n = m * m ** n,
+       ∀n. Odd (SUC n) ⇔ Even n,
+    ⊢ (∀m. m ** 0 = 1) ∧
+       ∀m n. m ** SUC n = m * m ** n,
     ⊢ THM MAP_ID_I (MAP I = I),
-    ⊢ THM MAP_o (∀f g. MAP (f ∘ g) = MAP f ∘ MAP g)
-    ]: thm list
+    ⊢ THM MAP_o (∀f g. MAP (f ∘ g) = MAP f ∘ MAP g)]: thm list
+
+val goals =
+   [⊢ GOAL $var$(FST-COMMA) (∀x y. FST (x,y) = x),
+    ⊢ GOAL BOOL_CASES_AX (∀t. (t ⇔ T) ∨ (t ⇔ F))] : thm list
 |#
 
 ; And here is the corresponding output, with modifications made only to
@@ -322,21 +329,19 @@ val thms =
           (:arrow* (:list a) (:list b)) (:list a) (:list c))))
        (hap* (map (typ (:arrow* (:arrow* b c) (:list b) (:list c)))) f)
        (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) g)))))
-;  )]
-
-;;; Added manually; see defgoal form for fst-comma at the end, which
-;;; corresponds to the defhol form just below.
-
-; FST (x,y) = x
-
+;  ),
+; ("FST-COMMA",
 (defhol
    :name fst-comma
-   :goal (:forall
-          ((x a) (y b))
-          (hp= (hap*
-                (fst (typ (:arrow* (:hash a b) a)))
-                (hap* (comma (typ (:arrow* a b (:hash a b)))) x y))
-               x)))
+   :goal (:forall ((x a) (y b))
+     (hp= (hap* (fst (typ (:arrow* (:hash a b) a))) (hp-comma x y)) x)))
+;  ),
+; ("BOOL_CASES_AX",
+(defhol
+   :name bool_cases_ax
+   :goal (:forall ((t :bool))
+     (hp-or (hp= t (hp-true)) (hp= t (hp-false)))))
+;  )]
 
 (close-theory)
 
@@ -352,15 +357,14 @@ val thms =
 ; theoerem to succeed.
 
   (implies
-   (and (alist-subsetp (hol::ex1$hta) hta)
+   (and (alist-subsetp (ex1$hta) hta)
         (hpp x hta)
         (equal (hp-type x) (typ a))
         (hpp y hta)
         (equal (hp-type y) (typ b))
-        (force (hol::ex1$prop)))
-   (equal (hp= (hap*
-                (hol::fst (typ (:arrow* (:hash a b) a)))
-                (hap* (hol::comma (typ (:arrow* a b (:hash a b)))) x y))
+        (force (ex1$prop)))
+   (equal (hp= (hap* (fst (typ (:arrow* (:hash a b) a)))
+                     (hp-comma x y))
                x)
           (hp-true)))
   :hints (("Goal" :in-theory (disable hp-comma))))

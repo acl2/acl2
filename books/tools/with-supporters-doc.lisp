@@ -18,7 +18,7 @@
   @({
   (encapsulate
     ()
-    (local (include-book \"bk\")) ; defines function f ;
+    (local (include-book \"bk\")) ; defines function f
     (defun g (x) (f x)))
   })
 
@@ -34,15 +34,14 @@
 
   @({
   (with-supporters (local ev) ; a local event
-                   [optional keyword arguments, including perhaps:]
-                   :names (name-1 ... name-m) ; optional keyword argument
-                   [other optional keyword arguments]
+                   [optional keyword arguments, for example:]
+                   :names (name-1 ... name-m)
                    event-1 ... event-k)
   })
 
-  <p>where the optional keyword arguments are not evaluated and are described
-  below, and each @('event-i') is an @(see event).  The effect is the same
-  as</p>
+  <p>where the optional keyword arguments (which might or might not include
+  @('names') are not evaluated and are described below, and each @('event-i')
+  is an @(see event).  The effect is the same as</p>
 
   @({(encapsulate () (local ev) EXTRA event-1 ... event-k)})
 
@@ -66,6 +65,9 @@
   definitions are suitably enabled or disabled.</li>
 
   </ul>
+
+  <p>Moreover, unnecessary declarations (see @(see declare)) are removed from
+  the @('EXTRA') events; see @(see elide-event).</p>
 
   <h3>Other keywords</h3>
 
@@ -214,15 +216,18 @@
   :short "Automatically define necessary redundant definitions from after a
   specified event"
   :long
-  "<p>When @(see local) @(tsee include-book) forms are used in support of
+  "<p>See @(tsee with-supporters) for a related utility.<br/>
+  <b>WARNING</b>: The utiliity @('with-supporters-after') is more likely to
+  have bugs than @('with-supporters'); in particular,@('with-supporters-after')
+  is not as well-tested as @('with-supporters').  (Also, unlike
+  @('with-supporters'), the utility @('with-supporters-after') does not support
+  keyword arguments, though they may be straightforward to add.)  The
+  documentation below assumes familiarity with @('with-supporters').</p>
+
+  <p>When @(see local) @(tsee include-book) forms are used in support of
   definitions and theorems, the resulting book or @(tsee encapsulate) event may
   be ill-formed because of missing definitions.  The macro,
   @('with-supporters-after'), is intended to avoid this problem.</p>
-
-  <p>See @(tsee with-supporters) for a related utility.  (However,
-  @('with-supporters-after') does not support keyword arguments; they may be
-  straightforward to add.)  The documentation below assumes familiarity with
-  @('with-supporters').</p>
 
   <p>General form:</p>
 

@@ -293,6 +293,7 @@
 
 (must-be-redundant
  (DEFUN-SK EQUALITY-TEST (U V W P)
+   (DECLARE (IGNORABLE U V W P))
    (EXISTS
     (S)
     (AND (FEP S P)
@@ -483,6 +484,7 @@
 
 (must-be-redundant
  (DEFUN-SK IF-EQUAL-THEN-ELSE (U V X Y Z P)
+   (DECLARE (IGNORABLE U V X Y Z P))
    (EXISTS (W)
            (AND (FEP W P)
                 (AND (IF-THEN-ELSE W X Y Z P)
