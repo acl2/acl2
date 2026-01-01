@@ -485,6 +485,9 @@
      (xdoc::p
       "Otherwise, we read the file from the file system and preprocess it,
        which may involve the recursive preprocessing of more files.
+       The resulting @(tsee ppdfile) contains
+       the lexemes obtained from the file
+       and the macro table at the end of the file.
        Before preprocessing the file,
        we add it to the list of files under preprocessing.
        We create a local preprocessing state stobj for the file,
@@ -503,27 +506,33 @@
           (retok (string-ppdfile-alist-fix preprocessed) state))
          ((erp bytes state) (read-input-file-to-preprocess path file state))
          (preprocessing (cons file preprocessing))
-         ((erp rev-lexemes preprocessed state)
+         ((erp rev-lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
-            (mv-let (erp lexemes ppstate preprocessed state)
+            (mv-let (erp lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
-                      (init-ppstate bytes (ienv->version ienv) ppstate)))
-                  (pproc-*-group-part path
-                                      file
-                                      preprocessed
-                                      preprocessing
-                                      nil
-                                      ppstate
-                                      state))
-              (mv erp lexemes preprocessed state))))
+                      (init-ppstate bytes (ienv->version ienv) ppstate))
+                     ((mv erp lexemes ppstate preprocessed state)
+                      (pproc-*-group-part path
+                                          file
+                                          preprocessed
+                                          preprocessing
+                                          nil
+                                          ppstate
+                                          state)))
+                  (mv erp
+                      lexemes
+                      (ppstate->macros ppstate)
+                      ppstate
+                      preprocessed
+                      state))
+              (mv erp lexemes macros preprocessed state))))
          (lexemes (rev rev-lexemes))
          ((when (= (len preprocessed) *pproc-files-max*))
           (reterr (msg "Exceeded ~x0 file limit." *pproc-files-max*)))
          (ppdfile (make-ppdfile :lexemes lexemes
-                                :macros (macro-table-init) ; TODO
-                                :selfp nil ; TODO
-                                ))
+                                :macros macros
+                                :selfp nil)) ; TODO
          (preprocessed (acons file ppdfile preprocessed)))
       (retok preprocessed state))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
