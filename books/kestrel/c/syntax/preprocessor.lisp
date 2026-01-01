@@ -239,7 +239,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-input-file-to-preproc ((path stringp) (file stringp) state)
+(define read-input-file-to-preprocess ((path stringp) (file stringp) state)
   :returns (mv erp (bytes byte-listp) state)
   :short "Read a file to preprocess, explicitly specified as user input."
   :long
@@ -247,7 +247,8 @@
    (xdoc::p
     "This is used for the files
      whose paths are explicitly passed to @(tsee pproc-files).
-     We concatenate the path prefix to the file path suffix,
+     We concatenate the path prefix (passed to @(tsee pproc-files))
+     to the file path suffix,
      with a slash in between (this is for Unix-like systems).
      We read the bytes from the file system, and return them."))
   (b* (((reterr) nil state)
@@ -432,7 +433,7 @@
           (assoc-equal file (string-plexeme-list-alist-fix preprocessed)))
          ((when file+lexemes)
           (retok (string-plexeme-list-alist-fix preprocessed) state))
-         ((erp bytes state) (read-input-file-to-preproc path file state))
+         ((erp bytes state) (read-input-file-to-preprocess path file state))
          (preprocessing (cons file (string-list-fix preprocessing)))
          ((erp rev-lexemes preprocessed state)
           (with-local-stobj
