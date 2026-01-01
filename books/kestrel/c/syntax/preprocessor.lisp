@@ -37,13 +37,16 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
-     preserves the information about the @('#include') directives in some cases.
+     preserves the information about the @('#include') directives
+     in certain common cases.
      That is, it does not replace such directives
      with the (preprocessed) contents of the referenced files,
      but it otherwise performs the rest of the preprocessing.
-     This is only done under certain conditions;
+     This is only done under certain (common) conditions;
      in general, the C preprocessor operates at a low lexical level,
-     making it difficult to preserve code structure in general.")
+     making it difficult to preserve code structure in general
+     (in those are cases,
+     our preprocessor expands the included files in place).")
    (xdoc::p
     "Our preprocessor maps a list of file paths
      to a file set (see @(see files)):
@@ -52,17 +55,19 @@
      The resulting file set contains entries for all such files,
      not only the ones with the given file paths.")
    (xdoc::p
-    "Our preprocessor reads characters and lexes them into lexemes,
-     while executing the preprocessing directives.
+    "Our preprocessor reads characters,
+     lexes them into lexemes,
+     and parses the lexemes while executing the preprocessing directives.
      The resulting sequence of lexemes is then turned into characters
-     that are written into files.
+     that are written (printed) to files.
      The resulting file set is amenable to our parser
      (more precisely, it will be, once we have extended our parser
      to accept @('#include') directives in certain places).
-     Our preprocessor preserves white space, in order to preserve the layout
-     (modulo the inherent layout changes caused by preprocessing).
-     Our preprocessor also preserves comments,
-     although some comments may no longer apply to preprocessed code
+     Our preprocessor preserves white space and comments when possible,
+     but some layout (i.e. white space) changes are inherent to preprocessing,
+     some comments may be impossible to preserve
+     (e.g. if they occur within macro parameters),
+     and some comments may no longer apply to preprocessed code
      (e.g. comments talking about macros).")
    (xdoc::p
     "Currently some of this preprocessor's code duplicates, at some level,
