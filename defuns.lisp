@@ -8464,7 +8464,7 @@
                   (book-name (car path)))
              (cond
               ((null book-name) "")
-              (t (msg "  Alteratively, include the book that introduces the ~
+              (t (msg "  Alternatively, include the book that introduces the ~
                        proposed redundant definition:~|~x0."
                       (cond
                        ((sysfile-p book-name)
