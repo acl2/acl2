@@ -99,7 +99,7 @@
     "We lex zero or more non-tokens, until we find a token.
      We return the list of non-tokens, and the token with its span.
      If we reach the end of file, we return @('nil') as the token,
-     and an span consisting of just the current position.")
+     and a span consisting of just the current position.")
    (xdoc::p
     "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
      see that function's documentation."))
@@ -148,8 +148,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee plexeme-token/newline-p),
-     we also include line comments as new lines."))
+    "New lines are significant in most situations during preprocessing,
+     i.e. they are not just white space to skip over.
+     In such situations,
+     we need to skip over non-new-line white space and comments,
+     but stop when we encounter either a new line or a token.
+     As explained in @(tsee plexeme-token/newline-p),
+     line comments count as new lines,
+     because conceptually each comment is replaced by a single space character
+     before preprocessing [C17:5.1.1.2/1],
+     and the new line that ends a line comment
+     is not part of the comment [C17:6.4.9/2]:
+     thus, a line comment must be treated like a space followed by new line."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
@@ -196,7 +206,8 @@
   (xdoc::topstring
    (xdoc::p
     "We move the token from the sequence of read lexemes
-     to the sequence of unread lexemes.")
+     to the sequence of unread lexemes.
+     See @(tsee ppstate).")
    (xdoc::p
     "It is an internal error if @('lexemes-read') is 0.
      It means that the calling code is wrong.
