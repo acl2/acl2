@@ -261,8 +261,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist string-plexeme-list-alist
-  :short "Fixtype of alists from strings to lists of preprocessing lexemes."
+(fty::defprod ppdfile
+  :short "Fixtype of preprocessed files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By `preprocessed file' here we mean the result of preprocessing a file.
+     This result consists of
+     the list of lexemes that forms the file after preprocessing
+     (which can be printed to bytes into a file in the file system),
+     the macros defined by the file,
+     and a flag indicating whether the file is self-contained or not.
+     The latter flag is @('t') when the file
+     does not rely on any macro defined outside the file,
+     and can be thus kept unexpanded in another file that includes it.")
+   (xdoc::p
+    "To better understand the meaning of the previous sentence,
+     consider some file containing")
+   (xdoc::codeblock
+    "..."
+    "#define M ..."
+    "..."
+    "#include FILE"
+    "...")
+   (xdoc::p
+    "Where we intentially wrote @('FILE'),
+     without double quotes or angle brackets, and without extensions,
+     because those details do not matter.")
+   (xdoc::p
+    "Since @('#include') is substitution in place,
+     it is possible for @('FILE') to reference @('M')
+     in a way that need @('M') to be defined.
+     This means that @('FILE') would not be legal if preprocessed alone,
+     but the including file is legal.
+     In this case, @('FILE') is not considered self-contained:
+     indeed, our preprocessor would need to expand its inclusion in place.
+     In our preprocessor, the result of recursively preprocessing @('FILE')
+     would have the @('selfp') flag @('nil').")
+   (xdoc::p
+    "If instead @('FILE') does not rely on any outside macros,
+     then it is considered self-contained,
+     and its inclusion can be kept as such (i.e. unexpanded)
+     in the including file.
+     In our preprocessor, the result of recursively preprocessing @('FILE')
+     would have the @('selfp') flag @('t').")
+   (xdoc::p
+    "The notion above has to be relaxed slightly for @('#include') guards,
+     i.e. when @('FILE') has a form like")
+   (xdoc::codeblock
+    "#ifndef FILE_H"
+    "#define FILE_H"
+    "..."
+    "#endif")
+   (xdoc::p
+    "This is a well-known pattern to avoid
+     including the same file multiple times.
+     In this case, strictly speaking @('FILE') depends on
+     a macro that may be externally defined, i.e. @('FILE_H'),
+     but in a way that makes @('FILE') nonetheless self-contained.
+     So for this case @('selfp') would be @('t') as well.
+     The exact characterization of which of these patterns is supported
+     is implemented and explained elsewhere."))
+  ((lexemes plexeme-listp)
+   (macros macro-table)
+   (selfp bool))
+  :pred ppdfilep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist string-ppdfile-alist
+  :short "Fixtype of alists from strings to preprocessed files."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -270,7 +338,7 @@
      have been already preprocessed,
      namely the ones whose paths are specified by the keys of the alist.
      The values associated to the keys are
-     the lexemes resulting from the preprocessing.")
+     the results from the preprocessing of the files.")
    (xdoc::p
     "These alists always have unique keys,
      i.e. there are no shadowed pairs.
@@ -278,43 +346,43 @@
      but we could consider wrapping the alist
      into a @(tsee fty::defprod) with the invariant."))
   :key-type string
-  :val-type plexeme-list
+  :val-type ppdfile
   :true-listp t
   :keyp-of-nil nil
-  :valp-of-nil t
-  :pred string-plexeme-list-alistp
+  :valp-of-nil nil
+  :pred string-ppdfile-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled len-of-string-plexeme-list-alist-fix-upper-bound-len
-    (<= (len (string-plexeme-list-alist-fix x))
+  (defruled len-of-string-ppdfile-alist-fix-upper-bound-len
+    (<= (len (string-ppdfile-alist-fix x))
         (len x))
     :rule-classes :linear
     :induct t
-    :enable (string-plexeme-list-alist-fix len)))
+    :enable (string-ppdfile-alist-fix len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define string-plexeme-list-alist-to-filepath-filedata-map
-  ((alist string-plexeme-list-alistp))
+(define string-ppdfile-alist-to-filepath-filedata-map ((alist
+                                                        string-ppdfile-alistp))
   :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to lists of preprocessing lexemes
+  :short "Turn (1) an alist from string to preprocessed files
           into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
    (xdoc::p
     "The strings are wrapped into file paths;
-     as mentioned in @(tsee string-plexeme-list-alist),
+     as mentioned in @(tsee string-ppdfile-alist),
      the alist has unique keys, so the order of the alist is immaterial.
      The lists of lexemes are printed to bytes,
      obtaining the file datas."))
   (b* (((when (endp alist)) nil)
-       ((cons string lexemes) (car alist))
-       (bytes (plexemes-to-bytes lexemes))
+       ((cons string ppdfile) (car alist))
+       (bytes (plexemes-to-bytes (ppdfile->lexemes ppdfile)))
        (filepath (filepath string))
        (filedata (filedata bytes))
-       (map (string-plexeme-list-alist-to-filepath-filedata-map (cdr alist))))
+       (map (string-ppdfile-alist-to-filepath-filedata-map (cdr alist))))
     (omap::update filepath filedata map))
   :verify-guards :after-returns)
 
@@ -332,7 +400,7 @@
      In practice, the file system is finite,
      but nontermination is the default, mathematically speaking.
      So we impose an artificial limit on the number of files being preprocessed,
-     specifically on the length of the @(tsee string-plexeme-list-alistp) alists
+     specifically on the length of the @(tsee string-ppdfile-alistp) alists
      that are manipulated by our preprocessor.
      The GCC preprocessor imposes an @('#include') nesting limit of 200,
      according to "
@@ -361,7 +429,7 @@
      But it is also called when encoutering files to be included,
      which is why it is mutually recursive with the other functions.")
    (xdoc::p
-    "All the functions take and return state,
+    "All the functions take and return the ACL2 state,
      since they (indirectly) read files.")
    (xdoc::p
     "All the functions take as inputs
@@ -393,13 +461,13 @@
 
   (define pproc-file ((path stringp)
                       (file stringp)
-                      (preprocessed string-plexeme-list-alistp)
+                      (preprocessed string-ppdfile-alistp)
                       (preprocessing string-listp)
                       (ienv ienvp)
                       state)
     :guard (<= (len preprocessed) *pproc-files-max*)
     :returns (mv erp
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a file."
@@ -429,12 +497,12 @@
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
-         (file+lexemes
-          (assoc-equal file (string-plexeme-list-alist-fix preprocessed)))
-         ((when file+lexemes)
-          (retok (string-plexeme-list-alist-fix preprocessed) state))
+         (file+ppdfile
+          (assoc-equal file (string-ppdfile-alist-fix preprocessed)))
+         ((when file+ppdfile)
+          (retok (string-ppdfile-alist-fix preprocessed) state))
          ((erp bytes state) (read-input-file-to-preprocess path file state))
-         (preprocessing (cons file (string-list-fix preprocessing)))
+         (preprocessing (cons file preprocessing))
          ((erp rev-lexemes preprocessed state)
           (with-local-stobj
             ppstate
@@ -452,7 +520,11 @@
          (lexemes (rev rev-lexemes))
          ((when (= (len preprocessed) *pproc-files-max*))
           (reterr (msg "Exceeded ~x0 file limit." *pproc-files-max*)))
-         (preprocessed (acons file lexemes preprocessed)))
+         (ppdfile (make-ppdfile :lexemes lexemes
+                                :macros (macro-table-init) ; TODO
+                                :selfp nil ; TODO
+                                ))
+         (preprocessed (acons file ppdfile preprocessed)))
       (retok preprocessed state))
     :measure (nat-list-measure (list (nfix (- *pproc-files-max*
                                               (len preprocessed)))
@@ -464,7 +536,7 @@
 
   (define pproc-*-group-part ((path stringp)
                               (file stringp)
-                              (preprocessed string-plexeme-list-alistp)
+                              (preprocessed string-ppdfile-alistp)
                               (preprocessing string-listp)
                               (rev-lexemes plexeme-listp)
                               (ppstate ppstatep)
@@ -473,7 +545,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess zero or more group parts."
@@ -481,9 +553,9 @@
     (xdoc::topstring
      (xdoc::p
       "According to the grammar,
-       a preprocessing-file consists of zero or more group-parts.
+       a preprocessing file consists of zero or more group parts.
        Each group part ends with a new line,
-       and non-empty files must end with new line [C17:5.1.1.2/1, phase 4].
+       and non-empty files must end with a new line [C17:5.1.1.2/1, phase 4].
        Thus, we can detect whether there is a group part or not
        by checking for end of file
        (this may need to be relaxed at some point,
@@ -494,7 +566,7 @@
          ((when (= (ppstate->size ppstate) 0)) ; EOF
           (retok (plexeme-list-fix rev-lexemes)
                  ppstate
-                 (string-plexeme-list-alist-fix preprocessed)
+                 (string-ppdfile-alist-fix preprocessed)
                  state))
          (psize (ppstate->size ppstate))
          (plen (len preprocessed))
@@ -517,7 +589,7 @@
 
   (define pproc-group-part ((path stringp)
                             (file stringp)
-                            (preprocessed string-plexeme-list-alistp)
+                            (preprocessed string-ppdfile-alistp)
                             (preprocessing string-listp)
                             (rev-lexemes plexeme-listp)
                             (ppstate ppstatep)
@@ -526,7 +598,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a group part."
@@ -567,7 +639,7 @@
             (plexeme-case toknl :line-comment)) ; // ...
         (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
-               (string-plexeme-list-alist-fix preprocessed)
+               (string-ppdfile-alist-fix preprocessed)
                state))
        ((plexeme-hashp toknl) ; #
         (pproc-directive
@@ -587,7 +659,7 @@
 
   (define pproc-directive ((path stringp)
                            (file stringp)
-                           (preprocessed string-plexeme-list-alistp)
+                           (preprocessed string-ppdfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
@@ -596,7 +668,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a directive."
@@ -606,11 +678,11 @@
       "With reference to the grammar,
        a directive is a group part that starts with @('#');
        this function is called just after the @('#') has been encountered.
-       A directive may be an @('if') group (which spans multiple lines),
+       A directive may be an @('if') group (which may span multiple lines),
        a control line (which spans one line),
        or a non-directive (which spans one line);
        the latter, despite the name, is considered a directive
-       (see footnote 175 in [C17:6.10.3/11].")
+       (see footnote 175 in [C17:6.10.3/11]).")
      (xdoc::p
       "We read the next token or new line, and dispatch accordingly.
        Although [C17:6.10/5] only allows spaces and horizontal tabs
@@ -632,10 +704,10 @@
      (xdoc::p
       "If we find a new line, we have the null directive [C17:6.10.7].
        We simplify replace it with a blank line consisting of the new line,
-       without comments or white space before the new line.")
+       discarding any preceding comments or white space.")
      (xdoc::p
       "If we find an identifier,
-       we check to see if it is the name of a know directive,
+       we check to see if it is the name of a known directive,
        and we handle the directive accordingly if that is the case.
        If it is not a directive name, or if it is not even an identifier,
        we have a non-directive [C17:6.10/9],
@@ -661,7 +733,7 @@
                          (plexeme-line-comment->newline toknl)))))
           (retok (cons newline (plexeme-list-fix rev-lexemes))
                  ppstate
-                 (string-plexeme-list-alist-fix preprocessed)
+                 (string-ppdfile-alist-fix preprocessed)
                  state)))
        ((plexeme-case toknl :ident) ; # ident
         (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
@@ -722,7 +794,7 @@
 
   (define pproc-include-directive ((path stringp)
                                    (file stringp)
-                                   (preprocessed string-plexeme-list-alistp)
+                                   (preprocessed string-ppdfile-alistp)
                                    (preprocessing string-listp)
                                    (rev-lexemes plexeme-listp)
                                    (ppstate ppstatep)
@@ -731,7 +803,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a @('#include') directive."
@@ -741,15 +813,23 @@
       "This is called just after the @('include') identifier has been parsed.")
      (xdoc::p
       "If we do not find a token or new line,
-       it is an error, because there is no header name.")
+       it is an error, because there is no header name,
+       and no macro that could result in a header name.")
      (xdoc::p
       "If we find a new line,
-       it is an error, because there is no header name.")
+       it is an error, because there is no header name,
+       and no macro that could result in a header name.")
      (xdoc::p
       "If we find a header name,
        we find the file referenced by it
        and we recursively preprocess it.
-       Note that we pass @('t') as the @('headerp') flag.")
+       Note that we pass @('t') as the @('headerp') flag,
+       so that we can properly lex header names,
+       which would otherwise be lexed as string literals
+       or as the puctuator @('<') just for the opening angle bracket.
+       Note that string literals and @('<') cannot be
+       macro-expanded to a header name,
+       so it is always correct to lex with the @('headerp') flag @('t').")
      (xdoc::p
       "If we find any other token,
        for now we return an error,
@@ -786,7 +866,7 @@
   (define pproc-text-line ((nontoknls plexeme-listp)
                            (path stringp)
                            (file stringp)
-                           (preprocessed string-plexeme-list-alistp)
+                           (preprocessed string-ppdfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
@@ -795,7 +875,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-plexeme-list-alistp)
+                 (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a (non-empty) text line."
@@ -809,7 +889,7 @@
        since those do not matter for the purpose of preprocessing the text line.
        Recall that empty text lines,
        i.e. with no tokens (but possibly with some white space and comments),
-       are already handlede in @(tsee pproc-group-part)."))
+       are already handled in @(tsee pproc-group-part)."))
     (declare (ignore nontoknls))
     (b* (((reterr) nil ppstate nil state)
          ((unless (mbt (<= (len preprocessed) *pproc-files-max*)))
@@ -869,7 +949,7 @@
     (("Goal"
       :in-theory
       (enable len
-              len-of-string-plexeme-list-alist-fix-upper-bound-len))))
+              len-of-string-ppdfile-alist-fix-upper-bound-len))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -877,13 +957,13 @@
     (defret len-of-new-preprocessed-of-pproc-file-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-file
       :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-*-group-part-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-*-group-part
       :rule-classes :linear
       :hints ('(:expand (pproc-*-group-part path
@@ -896,25 +976,25 @@
     (defret len-of-new-preprocessed-of-pproc-group-part-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-group-part
       :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-directive-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-directive
       :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-include-directive-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-include-directive
       :rule-classes :linear)
     (defret len-of-new-preprocessed-of-pproc-text-line-lower-bound
       (implies (not erp)
                (>= (len new-preprocessed) (len preprocessed)))
-      :hyp (string-plexeme-list-alistp preprocessed)
+      :hyp (string-ppdfile-alistp preprocessed)
       :fn pproc-text-line
       :rule-classes :linear)
     :hints (("Goal" :in-theory (enable len))))
@@ -992,7 +1072,7 @@
 
   (verify-guards pproc-file
     :hints
-    (("Goal" :in-theory (enable alistp-when-string-plexeme-list-alistp-rewrite
+    (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite
                                 true-listp-when-plexeme-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1005,8 +1085,8 @@
    (xdoc::p
     "This is the top-level function of the preprocessor.
      The files are identified by the @('files') strings,
-     which must be all paths relative to the @('path') string
-     (as in @(tsee input-files)).
+     which must all be paths relative to the @('path') string:
+     this is the same interace as @(tsee input-files).
      The elements of @('files') are preprocessed in order.
      Each file is read from the file system and preprocessed.
      We keep track of the files under preprocessing in a list (initially empty),
@@ -1020,22 +1100,22 @@
        ((erp preprocessed state)
         (pproc-files-loop path files nil nil ienv state)))
     (retok
-     (fileset (string-plexeme-list-alist-to-filepath-filedata-map preprocessed))
+     (fileset (string-ppdfile-alist-to-filepath-filedata-map preprocessed))
      state))
 
   :prepwork
   ((define pproc-files-loop ((path stringp)
                              (files string-listp)
-                             (preprocessed string-plexeme-list-alistp)
+                             (preprocessed string-ppdfile-alistp)
                              (preprocessing string-listp)
                              (ienv ienvp)
                              state)
      :guard (<= (len preprocessed) *pproc-files-max*)
-     :returns (mv erp (new-preprocessed string-plexeme-list-alistp) state)
+     :returns (mv erp (new-preprocessed string-ppdfile-alistp) state)
      :parents nil
      (b* (((reterr) nil state)
           ((when (endp files))
-           (retok (string-plexeme-list-alist-fix preprocessed) state))
+           (retok (string-ppdfile-alist-fix preprocessed) state))
           ((erp preprocessed state)
            (pproc-file path (car files) preprocessed preprocessing ienv state)))
        (pproc-files-loop
