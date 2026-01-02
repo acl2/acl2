@@ -43,7 +43,7 @@
     (b* ((path ".")
          (files ,files)
          (ienv (ienv-default))
-         ((mv erp fileset state) (pproc-files path files ienv state)))
+         ((mv erp fileset state) (pproc-files path files ienv state 100)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
