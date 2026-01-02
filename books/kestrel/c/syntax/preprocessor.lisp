@@ -525,7 +525,9 @@
        the lexemes obtained from the file
        and the macros contributed by the file,
        which are the macros in the innermost scope of the final table.
-       If the @('selfp') flag of the @(tsee ppdfile) is @('t'),
+       The local preprocessing state stobj is discarded,
+       after extracting the final macro table and self-contained flag.
+       If the self-contained flag is @('t'),
        we extend the @('preprocessed') alist."))
     (b* (((reterr) (irr-ppdfile) nil state)
          ((when (zp file-recursion-limit))
@@ -537,10 +539,10 @@
                        preprocessing)))
          (preprocessing (cons file preprocessing))
          ((erp bytes state) (read-input-file-to-preprocess path file state))
-         ((erp lexemes macros preprocessed state)
+         ((erp lexemes macros selfp preprocessed state)
           (with-local-stobj
             ppstate
-            (mv-let (erp rev-lexemes macros ppstate preprocessed state)
+            (mv-let (erp rev-lexemes macros selfp ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
                                     (macro-table-fix macros)
@@ -558,15 +560,16 @@
                   (mv erp
                       rev-lexemes
                       (ppstate->macros ppstate)
+                      (ppstate->selfp ppstate)
                       ppstate
                       preprocessed
                       state))
               (mv erp
                   (rev rev-lexemes)
                   (car (macro-table->scopes macros))
+                  selfp
                   preprocessed
                   state))))
-         (selfp t) ; TODO
          (ppdfile (make-ppdfile :lexemes lexemes
                                 :macros macros
                                 :selfp selfp))
