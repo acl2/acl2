@@ -714,9 +714,14 @@
      the processor state contains (preprocessing) lexemes instead of tokens,
      because our preprocessor preserves comments and white space.")
    (xdoc::p
-    "The preprocessor state includes an additional component
-     (not found in the parser state),
-     namely a macro table that consists of all the macros in scope."))
+    "The preprocessor state includes additional components,
+     not found in the parser state.
+     One is a macro table that consists of all the macros in scope.
+     Another one is a flag indicating whether the file being preprocessed
+     is @(see self-contained) or not;
+     the flag starts @('t'),
+     and becomes @('nil') if the file is recognized as not self-contained,
+     otherwise it stays @('t') till the end."))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -752,6 +757,8 @@
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
+      (selfp :type (satisfies booleanp)
+             :initially nil)
       :renaming (;; field recognizers:
                  (bytesp raw-ppstate->bytes-p)
                  (positionp raw-ppstate->position-p)
@@ -764,6 +771,7 @@
                  (versionp raw-ppstate->version-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (selfpp raw-ppstate->selfp-p)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
                  (position raw-ppstate->position)
@@ -778,6 +786,7 @@
                  (version raw-ppstate->version)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (selfp raw-ppstate->selfp)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
                  (update-position raw-update-ppstate->position)
@@ -791,7 +800,8 @@
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
                  (update-version raw-update-ppstate->version)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros))))
+                 (update-macros raw-update-ppstate->macros)
+                 (update-selfp raw-update-ppstate->selfp))))
 
   ;; fixer:
 
@@ -948,6 +958,13 @@
                   (macro-table-init))
          :exec (raw-ppstate->macros ppstate)))
 
+  (define ppstate->selfp (ppstate)
+    :returns (selfp booleanp)
+    (mbe :logic (if (ppstatep ppstate)
+                    (raw-ppstate->selfp ppstate)
+                  nil)
+         :exec (raw-ppstate->selfp ppstate)))
+
   ;; writers:
 
   (define update-ppstate->bytes ((bytes byte-listp) ppstate)
@@ -1059,6 +1076,11 @@
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
+
+  (define update-ppstate->selfp ((selfp booleanp) ppstate)
+    :returns (ppstate ppstatep)
+    (b* ((ppstate (ppstate-fix ppstate)))
+      (raw-update-ppstate->selfp (bool-fix selfp) ppstate)))
 
   ;; readers over writers:
 
@@ -1195,7 +1217,8 @@
      no read characters or lexemes,
      no unread characters or lexemes,
      the initial file position,
-     and the macro table obtained by pushing a new scope for the file.
+     the macro table obtained by pushing a new scope for the file,
+     and the self-contained flag @('t').
      We also resize the arrays of characters and lexemes
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1214,5 +1237,6 @@
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
        (ppstate (update-ppstate->version version ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
+       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
+       (ppstate (update-ppstate->selfp t ppstate)))
     ppstate))
