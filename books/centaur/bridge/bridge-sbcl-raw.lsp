@@ -481,6 +481,14 @@ This is a trace-co test"))
 (defvar *worker-vstack-size*)
 (defvar *worker-tstack-size*)
 
+;; Track socket path for cleanup. Unix domain socket files must be explicitly
+;; deleted - socket-close does NOT remove them (standard POSIX behavior).
+(defvar *bridge-socket-path* nil)
+
+;; Shutdown flag for graceful listener termination.
+;; SBCL's destroy-thread is unreliable - use this flag instead.
+(defvar *bridge-shutdown* nil)
+
 ; Socket handling: we need to support both TCP (via usocket) and Unix domain
 ; sockets (via sb-bsd-sockets). We use etypecase dispatch to handle both.
 
@@ -491,14 +499,16 @@ This is a trace-co test"))
                          :element-type 'character))
 
 (defun make-socket-unix (path)
-  "Create a Unix domain socket at PATH."
+  "Create a Unix domain socket at PATH.
+   Removes any stale socket file from previous runs before binding."
   (require :sb-bsd-sockets)
   (let ((socket (make-instance 'sb-bsd-sockets:local-socket :type :stream)))
-    ;; Remove existing socket file if present
+    ;; Clean up stale socket file from previous runs
     (when (probe-file path)
       (delete-file path))
     (sb-bsd-sockets:socket-bind socket path)
     (sb-bsd-sockets:socket-listen socket 5)
+    ;; Use blocking mode - we'll wake it with a dummy connection on shutdown
     socket))
 
 (defun accept-connection (server-socket)
@@ -509,11 +519,12 @@ This is a trace-co test"))
        (usocket:socket-stream client)))
     (sb-bsd-sockets:local-socket
      (let ((client-socket (sb-bsd-sockets:socket-accept server-socket)))
-       (sb-bsd-sockets:socket-make-stream client-socket
-                                          :input t
-                                          :output t
-                                          :element-type 'character
-                                          :buffering :full)))))
+       (when client-socket
+         (sb-bsd-sockets:socket-make-stream client-socket
+                                            :input t
+                                            :output t
+                                            :element-type 'character
+                                            :buffering :full))))))
 
 (defun close-socket (socket &key abort)
   "Close a socket (server or client)."
@@ -526,19 +537,28 @@ This is a trace-co test"))
      (close socket :abort abort))))
 
 (defun listener-thread (sock)
-  (format t "; ACL2 Bridge: Listener thread starting.~%")
-  (debug "Sock is ~a~%" sock)
+  (format t "; ACL2 Bridge: Listener started~%")
   (unwind-protect
+      ;; Main accept loop - blocking accept, woken by dummy connection on shutdown
       (loop for n from 0 do
-            (let* ((stream      (accept-connection sock))
-                   (worker-name (cl-user::format nil "bridge-worker-~a" n)))
-              (debug "Got connection.~%")
-              (bordeaux-threads:make-thread (lambda () (worker-thread stream))
-                                            :name worker-name)))
-    (progn
-      (alert "Forcibly closing ACL2-Bridge socket!")
-      (close-socket sock :abort t)))
-  (format t "; ACL2 Bridge: Listener thread exiting~%"))
+            (handler-case
+                (let ((stream (accept-connection sock)))
+                  (cond
+                    ;; Check shutdown AFTER accept returns (woken by dummy connection)
+                    (*bridge-shutdown*
+                     (when stream (ignore-errors (close stream :abort t)))
+                     (return))
+                    ;; Got a real connection - spawn worker
+                    (stream
+                     (let ((worker-name (cl-user::format nil "bridge-worker-~a" n)))
+                       (bordeaux-threads:make-thread (lambda () (worker-thread stream))
+                                                     :name worker-name)))))
+              (sb-bsd-sockets:interrupted-error () nil)
+              (error (e)
+                (unless *bridge-shutdown*
+                  (format t "; ACL2 Bridge: Listener error: ~a~%" e)))))
+    ;; Cleanup: close the socket handle only. Socket FILE cleanup happens in stop().
+    (ignore-errors (close-socket sock :abort t))))
 
 
 
@@ -558,16 +578,17 @@ This is a trace-co test"))
 (defvar *main-thread-ready* (bt-semaphore:make-semaphore))
 
 (defun main-thread-loop ()
-  (loop do
+  (loop until *bridge-shutdown* do
         ;; I don't do any sort of error checking here because, by construction,
         ;; the work that gets added by IN-MAIN-THREAD-AUX should properly send
         ;; any errors out to the worker thread.
         (debug "Main thread waiting for work.~%")
         (bt-semaphore:wait-on-semaphore *main-thread-ready*)
         (debug "Main thread got work.~%")
-        (let ((work *main-thread-work*))
-          (setq *main-thread-work* nil)
-          (funcall work))))
+        (unless *bridge-shutdown*
+          (let ((work *main-thread-work*))
+            (setq *main-thread-work* nil)
+            (when work (funcall work))))))
 
 ; Setting up the work is very subtle.  To a first approximation, we just want
 ; to tell the main thread to execute
@@ -705,6 +726,8 @@ This is a trace-co test"))
             (/= vstack-size (* 16 (expt 2 20))))
     (format t "; Warning: stack size parameters are CCL-specific and ignored on SBCL.~%"))
   (debug "Setting stack sizes (ignored on SBCL): ~d, ~d, ~d~%" stack-size tstack-size vstack-size)
+  ;; Reset shutdown flag from any previous session
+  (setq *bridge-shutdown* nil)
   (setq *worker-stack-size* stack-size)
   (setq *worker-vstack-size* tstack-size)
   (setq *worker-tstack-size* vstack-size)
@@ -713,6 +736,9 @@ This is a trace-co test"))
   (format t "Starting ACL2 Bridge on ~a, ~a~%"
           (or (sb-ext:posix-getenv "HOSTNAME") "localhost")
           socket-name-or-port-number)
+  ;; Track socket path for cleanup (only for Unix domain sockets)
+  (setq *bridge-socket-path* (and (stringp socket-name-or-port-number)
+                                   socket-name-or-port-number))
   (let ((sock (cond ((natp socket-name-or-port-number)
                      (make-socket-tcp socket-name-or-port-number))
                     ((stringp socket-name-or-port-number)
@@ -751,20 +777,46 @@ This is a trace-co test"))
 
 
 (defun kill-workers ()
-  (loop for p in (bordeaux-threads:all-threads) do
-        (when (str::strprefixp "bridge-worker-" (bordeaux-threads:thread-name p))
-          (format t "Killing ~a~%" p)
-          (bordeaux-threads:destroy-thread p))))
+  (let ((current (bordeaux-threads:current-thread)))
+    (loop for p in (bordeaux-threads:all-threads) do
+          (when (and (str::strprefixp "bridge-worker-" (bordeaux-threads:thread-name p))
+                     (not (eq p current)))
+            (format t "Killing ~a~%" p)
+            (bordeaux-threads:destroy-thread p)))))
+
+(defun wake-listener-for-shutdown ()
+  "Make a dummy connection to wake up the blocking accept in listener thread.
+   This is the hunchentoot pattern for graceful shutdown."
+  (when *bridge-socket-path*
+    (ignore-errors
+      (let ((sock (make-instance 'sb-bsd-sockets:local-socket :type :stream)))
+        (unwind-protect
+            (sb-bsd-sockets:socket-connect sock *bridge-socket-path*)
+          (ignore-errors (sb-bsd-sockets:socket-close sock)))))))
 
 (defun stop ()
-  (cl-user::format t "; bridge::stop:  Current threads: ~a~%" (bordeaux-threads:all-threads))
+  ;; Signal shutdown
+  (setq *bridge-shutdown* t)
+  
+  ;; Wake the listener's blocking accept with a dummy connection
+  (wake-listener-for-shutdown)
+  
+  ;; Wait for listener to exit
   (let ((listener (find-process "bridge-listener")))
     (when listener
-      (cl-user::format t "Killing ~a~%" listener)
-      (bordeaux-threads:destroy-thread listener)))
-  (kill-workers)
-  ;; Very inelegant: just sleep a couple of seconds to try to give the threads
-  ;; time to die.
-  (sleep 2)
-  (cl-user::format t "; bridge::stop done.~%New threads: ~a~%"
-                   (bordeaux-threads:all-threads)))
+      (loop for i from 0 below 30
+            while (bordeaux-threads:thread-alive-p listener)
+            do (sleep 0.1))
+      (when (bordeaux-threads:thread-alive-p listener)
+        (bordeaux-threads:destroy-thread listener))))
+  
+  ;; Don't kill workers here - the worker calling stop() would kill itself
+  ;; mid-operation. Workers will exit naturally when their clients disconnect.
+  
+  ;; Delete the socket file
+  (when *bridge-socket-path*
+    (ignore-errors (delete-file *bridge-socket-path*))
+    (setq *bridge-socket-path* nil))
+  
+  ;; Wake main-thread-loop so it can exit
+  (bt-semaphore:signal-semaphore *main-thread-ready*))
