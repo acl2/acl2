@@ -512,9 +512,9 @@
    (xdoc::p
     "As explained in @(tsee macro-scope),
      we organize macros in a stack of scopes,
-     i.e. a non-empty list of scopes
-     corresponding to the files being preprocessed,
-     the @(tsee car) being the innermost scope.
+     i.e. a list of scopes corresponding to the files being preprocessed,
+     the @(tsee car) being the innermost scope,
+     and the list being empty only before any file is being preprocessed.
      We also have a separate scope of predefined macros [C17:6.10.8].")
    (xdoc::p
     "Just like we do not necessarily enforce
@@ -524,7 +524,7 @@
      GCC allows redefinition of predefined macros,
      with the redefinition overriding the predefinition.")
    (xdoc::p
-    "We do not yet actually support the predefined macros,
+    "We do not actually support the predefined macros yet,
      but we already have a placeholder in the macro table.
      It is not yet clear whether the best way to represent them
      is as a macro scope,
@@ -533,11 +533,7 @@
      We may revise this part of the data structure
      when we actually add support for predefined macros."))
   ((predefined macro-scope)
-   (scopes macro-scope-list
-           :reqfix (if (consp scopes)
-                       scopes
-                     (list nil))))
-  :require (consp scopes)
+   (scopes macro-scope-list))
   :pred macro-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -545,7 +541,7 @@
 (defirrelevant irr-macro-table
   :short "An irrelevant macro table."
   :type macro-tablep
-  :body (macro-table nil (list nil)))
+  :body (macro-table nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,14 +602,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the table at the beginning of
-     a file to preprocess at the top level
-     (i.e. not recursively as resulting from a @('#include')).
+    "This is the table before we preprocess any file, so there are no scopes.
      For now we do not add any predefined macros,
-     but we should do that at some point.
-     We add a single empty scope, corresponding to the file."))
+     but we should do that at some point."))
   (make-macro-table :predefined nil ; TODO
-                    :scopes (list nil)))
+                    :scopes nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -623,10 +616,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used at the beginning of
-     a file to preprocess recursively from a @('#include') directive.
+    "This is used just before preprocessing a file.
      We add a new empty scope for the new file."))
-  (change-macro-table table :scopes (cons nil (macro-table->scopes table))))
+  (change-macro-table table :scopes (cons nil (macro-table->scopes table)))
+
+  ///
+
+  (defret consp-of-scopes-of-macro-table-push
+    (consp (macro-table->scopes new-table))
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -679,13 +677,17 @@
                              info?))))
           (retok nil)))
        (scopes (macro-table->scopes table))
+       ((unless (consp scopes))
+        (raise "Internal error: no macro scopes.")
+        (reterr t))
        (scope (car scopes))
        (new-scope (acons (ident-fix name) (macro-info-fix info) scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-table (change-macro-table table :scopes new-scopes)))
     (retok new-table))
   :guard-hints (("Goal" :in-theory (enable alistp-when-macro-scopep-rewrite
-                                           acons))))
+                                           acons)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
