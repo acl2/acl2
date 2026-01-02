@@ -30172,27 +30172,25 @@ Lisp definition."
            #+acl2-loop-only
            (ignore close))
   #-acl2-loop-only
-  (when (live-state-p state) ; perhaps always true because of signature check
+  (when (live-state-p state)
     (return-from
      read-file-into-string2
      (let* ((os-filename (pathname-unix-to-os filename state))
-            (pair ; nil or (old-stream/nil old-file-write-date . old-file-clock)
+            (pair ; nil or (old-stream/nil stream . position)
              (assoc-equal os-filename *read-file-into-string-alist*))
             (old-stream-or-nil (car (cdr pair)))
-            (stream (or old-stream-or-nil
-                        (open os-filename
-                              :element-type 'character ; the default
-                              :direction :input
-                              :if-does-not-exist nil))))
-       (cond ((null stream)
+            (failure '(:failed))
+            (stream (if pair
+                        old-stream-or-nil
+                      (or (open os-filename
+                                :element-type 'character ; the default
+                                :direction :input
+                                :if-does-not-exist nil)
+                          failure))))
+       (cond ((eq stream failure)
 
 ; The call of open failed.  We return nil just as we would in
-; read-file-into-string2-logical.  But consider the converse: if
-; read-file-into-string2-logical would return nil because its call of open
-; would fail, then what happens here?  We still might have a stream to the file
-; (i.e., a non-nil value of old-stream-or-nil) even though it no longer can be
-; opened.  Logically, we can imagine that the file actually still exists in
-; that case, so that logically it could be opened.
+; read-file-into-string2-logical.
 
               (return-from read-file-into-string2 nil))
              ((null pair) ; no prior read that could conflict with this one
@@ -30202,14 +30200,66 @@ Lisp definition."
 
               (push (setq pair (cons os-filename (cons stream 0)))
                     *read-file-into-string-alist*))
+             ((eql bytes 0)
+              (when (and (null stream)
+                         (not (int= start 0)))
+
+; There is no longer a stream from which to obtain the file length, to ensure
+; that start is in range.  (It might be reasonable to save that length when we
+; close the stream, but it doesn't seem worth bothering with that.)  So we
+; cause an error in this unusual case.
+
+                (error "Apparently ~s has previously closed the stream ~%that ~
+                        is associated with file~%~s.~%Consider evaluating ~
+                        ~s~%or supplying :START 0 (the default for ~
+                        :START).~%See :DOC read-file-into-string."
+                       'read-file-into-string
+                       os-filename
+                       '(increment-file-clock state)))
+
+; In this special case, there is no reason to do some of the computations
+; below, and we can (and do) simply return the empty string after closing the
+; stream if that has been specified.  Note that when the value of keyword
+; :close is :default, the stream is not closed in this case: bytes+start does
+; not exceed the length of the stream that was originally opened (perhaps since
+; replaced by nil in pair).
+
+              (when (not (member-eq close '(nil :default)))
+                (when (car (cdr pair))
+
+; As directed by the value of the keyword argument, :close: close the stream in
+; (car (cdr pair)), whether it is the value of stream that has just been placed
+; there or it was already there in pair.
+
+                  (setf (car (cdr pair)) nil))
+
+; There are the following cases for stream: it is (car (cdr pair)) when pair is
+; not newly created, hence an existing stream or nil; and otherwise it is the
+; stream that created by the call of open above.  Either way, we are done with
+; stream and we close it if it is not nil.
+
+                (when stream
+                  (close stream)))
+              (return-from read-file-into-string2 ""))
+             ((and (not (eql bytes 0))
+                   (null stream)) ; but pair is non-nil
+              (error "Apparently ~s has previously closed the stream ~%that ~
+                      is associated with file~%~s.~%Consider evaluating ~
+                      ~s.~%See :DOC read-file-into-string."
+                     'read-file-into-string
+                     os-filename
+                     '(increment-file-clock state)))
              ((and (not (eql bytes 0))
                    (< start (cdr (cdr pair))))
-              (error "The :start value, ~s, specified for a call of ~s,~%~
-                      is less than the position ~s after a previous read of ~
-                      file~%~s at the same file-clock.~%See :DOC ~
-                      read-file-into-string."
-                     start 'read-file-into-string (cdr (cdr pair))
-                     os-filename)))
+              (error "The :start value, ~s, specified for a call of ~s,~%is ~
+                      less than the position ~s immediately after a previous ~
+                      read of file~%~s at the same file-clock.~%Consider ~
+                      evaluating ~s.~%See :DOC read-file-into-string."
+                     start
+                     'read-file-into-string
+                     (cdr (cdr pair))
+                     os-filename
+                     '(increment-file-clock state))))
        (let* ((file-len (file-length stream))
               (max-bytes (cond ((<= start file-len)
                                 (- file-len start))
@@ -30228,7 +30278,7 @@ Lisp definition."
                        max-bytes))
               seq)
          (declare (type (integer 0 *) file-len max-bytes bytes))
-         (when (<= bytes *read-file-into-string-bound*)
+         (when (< bytes *read-file-into-string-bound*)
            (setf (cdr (cdr pair)) (+ start bytes))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is originally
@@ -30250,10 +30300,9 @@ Lisp definition."
          (when finish-p
 
 ; We close the stream, but we leave the entry in *read-file-into-string-alist*
-; to prevent inappropriate reads after the file-write-date has changed but the
-; *file-clock* has not.
+; to prevent reads until increment-file-clock has been invoked.
 
-; Note that we close the stream even if pair is a newly-added to
+; Note that we close the stream even if pair is newly added to
 ; *read-file-into-string-alist*.
 
            (setf (car (cdr pair)) nil)

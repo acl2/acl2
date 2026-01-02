@@ -139,9 +139,11 @@
 ; it's a purely syntactic test on an untranslated form.
 
   (and (symbolp form)
-       (let ((s (symbol-name form)))
-         (and (not (= (length s) 0))
-              (eql (char s 0) #\*)))))
+       (let* ((s (symbol-name form))
+              (len (length s)))
+         (and (not (= len 0))
+              (eql (char s 0) #\*)
+              (eql (char s (1- len)) #\*)))))
 
 (defun supporters-macro-forms (form)
 
