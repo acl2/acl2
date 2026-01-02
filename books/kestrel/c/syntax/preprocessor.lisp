@@ -452,8 +452,8 @@
      to detect and avoid circularities;
      see @(tsee pproc-file) and @(tsee pproc-files).")
    (xdoc::p
-    "The top-level function @(tsee pproc-file)
-     takes an implementation environment,
+    "The top-level function @(tsee pproc-file) also takes as inputs
+     the current macro table and an implementation environment,
      from which it constructs a local preprocessing state stobj @(tsee ppstate),
      which is passed to and returned from all the other functions.
      There is one such stobj for each file being preprocessed.")
@@ -483,6 +483,7 @@
                       (file stringp)
                       (preprocessed string-ppdfile-alistp)
                       (preprocessing string-listp)
+                      (macros macro-tablep)
                       (ienv ienvp)
                       state
                       (file-recursion-limit natp))
@@ -514,7 +515,9 @@
      (xdoc::p
       "We read the file from the file system and we preprocess it,
        creating a local preprocessing state stobj for the file,
-       with information from the implementation environment.
+       with information from the implementation environment
+       and with the current macro table
+       (which @(tsee init-ppstate) extends with a new empty scope for the file.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
@@ -534,13 +537,16 @@
                        preprocessing)))
          (preprocessing (cons file preprocessing))
          ((erp bytes state) (read-input-file-to-preprocess path file state))
-         ((erp rev-lexemes macros preprocessed state)
+         ((erp lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
-            (mv-let (erp lexemes macros ppstate preprocessed state)
+            (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
-                      (init-ppstate bytes (ienv->version ienv) ppstate))
-                     ((mv erp lexemes ppstate preprocessed state)
+                      (init-ppstate bytes
+                                    (macro-table-fix macros)
+                                    (ienv->version ienv)
+                                    ppstate))
+                     ((mv erp rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part path
                                           file
                                           preprocessed
@@ -550,14 +556,16 @@
                                           state
                                           file-recursion-limit)))
                   (mv erp
-                      lexemes
+                      rev-lexemes
                       (ppstate->macros ppstate)
                       ppstate
                       preprocessed
                       state))
-              (mv erp lexemes macros preprocessed state))))
-         (lexemes (rev rev-lexemes))
-         (macros (car (macro-table->scopes macros)))
+              (mv erp
+                  (rev rev-lexemes)
+                  (car (macro-table->scopes macros))
+                  preprocessed
+                  state))))
          (selfp t) ; TODO
          (ppdfile (make-ppdfile :lexemes lexemes
                                 :macros macros
@@ -1121,6 +1129,7 @@
                                                         (car files)
                                                         preprocessed
                                                         preprocessing
+                                                        (macro-table-init)
                                                         ienv
                                                         state
                                                         file-recursion-limit))
