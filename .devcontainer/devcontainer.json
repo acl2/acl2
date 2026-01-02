@@ -1,0 +1,23 @@
+{
+    "name": "ACL2 Builder",
+    // "image": "ghcr.io/jimwhite/acl2-jupyter:latest",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
+    "forwardPorts": [
+        8888
+    ],
+    "portsAttributes": {
+        "8888": {
+            "label": "Jupyter",
+            "requireLocalPort": true
+        }
+    },
+    "containerEnv": {
+        "JUPYTER_PORT": "8888",
+        "RESTARTABLE": "yes",
+        "ACL2_HOME": "/workspaces/acl2",
+        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books"
+    }
+}
