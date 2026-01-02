@@ -1177,7 +1177,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-ppstate ((data byte-listp) (version c::versionp) ppstate)
+(define init-ppstate ((data byte-listp)
+                      (macros macro-tablep)
+                      (version c::versionp)
+                      ppstate)
   :returns (ppstate ppstatep)
   :short "Initialize the preprocessor state."
   :long
@@ -1185,12 +1188,14 @@
    (xdoc::p
     "This is the state when we start preprocessing a file.
      Given (the data of) a file to preprocess,
+     the current table of macros in scope,
      and a C version,
      the initial preprocessing state consists of
      the data to preprocess,
      no read characters or lexemes,
      no unread characters or lexemes,
-     and the initial file position.
+     the initial file position,
+     and the macro table obtained by pushing a new scope for the file.
      We also resize the arrays of characters and lexemes
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1209,5 +1214,5 @@
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
        (ppstate (update-ppstate->version version ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-init) ppstate)))
+       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
     ppstate))
