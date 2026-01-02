@@ -520,9 +520,10 @@
        and the consequent extension of the @('preprocessed') alist.
        The resulting @(tsee ppdfile) contains
        the lexemes obtained from the file
-       and the macros contributed by the file.
+       and the macros contributed by the file,
+       which are the macros in the innermost scope of the final table.
        If the @('selfp') flag of the @(tsee ppdfile) is @('t'),
-       we add that to the @('preprocessed') alist."))
+       we extend the @('preprocessed') alist."))
     (b* (((reterr) (irr-ppdfile) nil state)
          ((when (zp file-recursion-limit))
           (reterr (msg "Exceeded the limit on file recursion.")))
