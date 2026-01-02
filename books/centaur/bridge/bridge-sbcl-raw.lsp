@@ -365,6 +365,15 @@ abc
                        (return-from worker-do-work t)))))
 
       (debug "Done executing command: ~a~%" ret)
+      
+      ;; Check shutdown flag BEFORE writing return value.
+      ;; If stop() was called, the client has disconnected after sending
+      ;; the stop command, so writing the return would cause broken pipe.
+      ;; This is the hunchentoot pattern: check shutdown before I/O.
+      (when *bridge-shutdown*
+        (debug "Shutdown requested, exiting worker without writing return.~%")
+        (return-from worker-do-work nil))
+      
       (handler-case
        (worker-write-return type ret stream)
        (error (condition)
