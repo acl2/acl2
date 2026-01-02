@@ -400,6 +400,7 @@
     stmt-compound->stmt
     make-stmt-compound
     stmt-compound->items
+    stmt-expr
     make-stmt-expr
     make-stmt-if
     make-stmt-ifelse
@@ -634,6 +635,7 @@
     const-formalp
     tyname-formalp
     expr-formalp
+    expr-option-formalp
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
