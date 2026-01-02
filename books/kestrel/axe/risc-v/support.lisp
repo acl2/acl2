@@ -136,7 +136,8 @@
                                                  b3 stat)))
                     stat)))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte32-lendian slice ubyte32-fix
-                                     ;logtail
+                                     ;;logtail
+                                     acl2::logand-becomes-bvand
                                      acl2::bvchop-of-logtail
                                      ash-when-<-becomes-floor
                                      acl2::floor-of-power-of-2-becomes-logtail))))
