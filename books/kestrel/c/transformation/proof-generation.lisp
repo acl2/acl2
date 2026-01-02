@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -2028,7 +2028,23 @@
 
   (defret stmt-aidentp-of-xeq-stmt-expr
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-expr-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-expr expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand ((stmt-formalp (stmt-expr nil info))
+             (stmt-formalp (stmt-expr expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
