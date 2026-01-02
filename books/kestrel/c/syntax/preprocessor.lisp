@@ -45,15 +45,15 @@
      This is only done under certain (common) conditions;
      in general, the C preprocessor operates at a low lexical level,
      making it difficult to preserve code structure in general
-     (in those are cases,
-     our preprocessor expands the included files in place).")
+     (in those cases, our preprocessor expands the included files in place).")
    (xdoc::p
     "Our preprocessor maps a list of file paths
      to a file set (see @(see files)):
      it preprocesses all the files with the given file paths,
      as well as all the files directly and indirectly included.
-     The resulting file set contains entries for all such files,
-     not only the ones with the given file paths.")
+     The resulting file set contains entries
+     for all the files with the given file paths,
+     as well as for zero or more @(see self-contained) files.")
    (xdoc::p
     "Our preprocessor reads characters,
      lexes them into lexemes,
@@ -83,6 +83,87 @@
                     preprocessor-printer
                     t)
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc self-contained
+  :short "Notion of self-contained file in our preprocessor."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In our preprocessor, a self-contained file is one that,
+     when included by another file, is not expanded in place;
+     that is, it is left as an @('#include').
+     This is not always possible,
+     because the semantics of @('#include')
+     is to replace the directive with the file and continue preprocessing:
+     nothing prevents the replacement from referencing previous macros.")
+   (xdoc::p
+    "For instance, consider a file of the form")
+   (xdoc::codeblock
+    "..."
+    "#define M ..."
+    "..."
+    "#include FILE"
+    "...")
+   (xdoc::p
+    "Where we intentionally wrote @('FILE'),
+     without double quotes or angle brackets, and without extensions,
+     because those details do not matter.")
+   (xdoc::p
+    "Since @('#include') is substitution in place,
+     it is possible for @('FILE') to reference @('M')
+     in a way that needs @('M') to be defined.
+     This means that @('FILE') would not be legal if preprocessed alone,
+     but the including file is legal.
+     Indeed, the result of preprocessing @('#include FILE')
+     depends on where that directive occurs;
+     different occurrences may result in
+     possibly very different replacements,
+     e.g. if @('M') affects conditional inclusion [C17:6.10.1].")
+   (xdoc::p
+    "However, the situation above is often not the case.
+     In particular, if @('FILE') is part of a library,
+     it would not even know about @('M').
+     Thus, the result of preprocessing @('FILE')
+     is often independent from where it occurs,
+     and it always results in the same replacement
+     (but we discuss include guards below).
+     That is, @('FILE') is ``self-contained''.")
+   (xdoc::p
+    "In such common cases,
+     our preprocessor avoids expanding the inclusion in place,
+     and instead adds the result of preprocessing @('FILE')
+     to the file set returned as result of preprocessing a list of files,
+     specified by name (see @(see preprocessor)).
+     This is why, in addition to one element for each specified file,
+     our preprocessor also returns zero or more additional elements
+     in the file set resulting from the preprocessor.")
+   (xdoc::p
+    "The files explicitly specified to the preprocessor
+     are always self-contained files,
+     because they are preprocessed from the top level of our preprocessor,
+     not via a direct or indirect @('#include').")
+   (xdoc::p
+    "The notion of self-contained file described above
+     has to be relaxed slightly for include guards,
+     i.e. when @('FILE') has a form like")
+   (xdoc::codeblock
+    "#ifndef FILE_H"
+    "#define FILE_H"
+    "..."
+    "#endif")
+   (xdoc::p
+    "This is a well-known pattern to avoid
+     including the same file multiple times.
+     In this case, strictly speaking @('FILE') depends on
+     a macro that may be externally defined, i.e. @('FILE_H'),
+     but in a way that makes @('FILE') nonetheless self-contained.")
+   (xdoc::p
+    "The precise notion of self-contained file,
+     and how our preprocessor checks it,
+     is still work in progress.
+     It will be described more precisely as we advance the implementation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,62 +351,19 @@
      This result consists of
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
-     the macros defined by the file,
-     and a flag indicating whether the file is self-contained or not.
-     The latter flag is @('t') when the file
-     does not rely on any macro defined outside the file,
-     and can be thus kept unexpanded in another file that includes it.")
-   (xdoc::p
-    "To better understand the meaning of the previous sentence,
-     consider some file containing")
-   (xdoc::codeblock
-    "..."
-    "#define M ..."
-    "..."
-    "#include FILE"
-    "...")
-   (xdoc::p
-    "Where we intentially wrote @('FILE'),
-     without double quotes or angle brackets, and without extensions,
-     because those details do not matter.")
-   (xdoc::p
-    "Since @('#include') is substitution in place,
-     it is possible for @('FILE') to reference @('M')
-     in a way that need @('M') to be defined.
-     This means that @('FILE') would not be legal if preprocessed alone,
-     but the including file is legal.
-     In this case, @('FILE') is not considered self-contained:
-     indeed, our preprocessor would need to expand its inclusion in place.
-     In our preprocessor, the result of recursively preprocessing @('FILE')
-     would have the @('selfp') flag @('nil').")
-   (xdoc::p
-    "If instead @('FILE') does not rely on any outside macros,
-     then it is considered self-contained,
-     and its inclusion can be kept as such (i.e. unexpanded)
-     in the including file.
-     In our preprocessor, the result of recursively preprocessing @('FILE')
-     would have the @('selfp') flag @('t').")
-   (xdoc::p
-    "The notion above has to be relaxed slightly for @('#include') guards,
-     i.e. when @('FILE') has a form like")
-   (xdoc::codeblock
-    "#ifndef FILE_H"
-    "#define FILE_H"
-    "..."
-    "#endif")
-   (xdoc::p
-    "This is a well-known pattern to avoid
-     including the same file multiple times.
-     In this case, strictly speaking @('FILE') depends on
-     a macro that may be externally defined, i.e. @('FILE_H'),
-     but in a way that makes @('FILE') nonetheless self-contained.
-     So for this case @('selfp') would be @('t') as well.
-     The exact characterization of which of these patterns is supported
-     is implemented and explained elsewhere."))
+     the macros defined by the file (bundled into a single scope alist),
+     and a flag indicating whether the file is @(see self-contained)."))
   ((lexemes plexeme-listp)
-   (macros macro-table)
-   (selfp bool))
+   (macros macro-scopep)
+   (selfp booleanp))
   :pred ppdfilep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-ppdfile
+  :short "An irrelevant preprocessed file."
+  :type ppdfilep
+  :body (ppdfile nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,32 +373,25 @@
   (xdoc::topstring
    (xdoc::p
     "We use these alists to keep track of which files
-     have been already preprocessed,
-     namely the ones whose paths are specified by the keys of the alist.
-     The values associated to the keys are
-     the results from the preprocessing of the files.")
+     have been already preprocessed and are @(see self-contained).
+     That is, all the values of this alist have the @('selfp') flag @('t'),
+     although we do not capture that invariant in this fixtype.")
    (xdoc::p
     "These alists always have unique keys,
      i.e. there are no shadowed pairs.
-     This is not enforced in this fixtype,
-     but we could consider wrapping the alist
-     into a @(tsee fty::defprod) with the invariant."))
+     This is not enforced in this fixtype.")
+   (xdoc::p
+    "When all the files have been preprocessed,
+     this alist contains all the results from the preprocessing.
+     The non-@(see self-contained) files are not part of this alist,
+     because they have been expanded in place."))
   :key-type string
   :val-type ppdfile
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred string-ppdfile-alistp
-  :prepwork ((set-induction-depth-limit 1))
-
-  ///
-
-  (defruled len-of-string-ppdfile-alist-fix-upper-bound-len
-    (<= (len (string-ppdfile-alist-fix x))
-        (len x))
-    :rule-classes :linear
-    :induct t
-    :enable (string-ppdfile-alist-fix len)))
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -376,7 +407,9 @@
      as mentioned in @(tsee string-ppdfile-alist),
      the alist has unique keys, so the order of the alist is immaterial.
      The lists of lexemes are printed to bytes,
-     obtaining the file datas."))
+     obtaining the file datas.")
+   (xdoc::p
+    "This is called on the alist at the end of the preprocessing."))
   (b* (((when (endp alist)) nil)
        ((cons string ppdfile) (car alist))
        (bytes (plexemes-to-bytes (ppdfile->lexemes ppdfile)))
@@ -412,8 +445,8 @@
    (xdoc::p
     "All the functions take and return the @('preprocessed') alist,
      which is extended not only with the file indicated in @(tsee pproc-file),
-     but also possibly with other files included along the way.
-     See @(tsee pproc-file) and @(tsee pproc-files).")
+     but also possibly with other @(see self-contained) files
+     included along the way.")
    (xdoc::p
     "All the functions also take the @('preprocessing') list,
      to detect and avoid circularities;
@@ -454,6 +487,7 @@
                       state
                       (file-recursion-limit natp))
     :returns (mv erp
+                 (ppdfile ppdfilep)
                  (new-preprocessed string-ppdfile-alistp)
                  state)
     :parents (preprocessor pproc)
@@ -463,23 +497,31 @@
      (xdoc::p
       "The file is specified by the @('file') string,
        which must be either a path relative to the @('path') string,
-       or an absolute path with no relation to @('path').")
+       or an absolute path with no relation to @('path').
+       The latter is meant to happen with library files,
+       but we have not implemented their handling yet.")
+     (xdoc::p
+      "This function is called when the file is not in @('preprocessed'),
+       because if that were the case, there is no need to re-preprocess it
+       (see the callers of this function).")
      (xdoc::p
       "If @('file') is found in the list of the files under preprocessing,
        we stop with an error, because there is a circularity.
-       If @('file') is found in the alist of already preprocessed files,
-       the alist is returned unchanged.")
+       Otherwise, before preprocessing the file,
+       we add it to the list of files under preprocessing.")
      (xdoc::p
-      "Otherwise, we read the file from the file system and preprocess it,
-       which may involve the recursive preprocessing of more files.
+      "We read the file from the file system and we preprocess it,
+       creating a local preprocessing state stobj for the file,
+       with information from the implementation environment.
+       The preprocessing of this file may involve
+       the recursive preprocessing of more files,
+       and the consequent extension of the @('preprocessed') alist.
        The resulting @(tsee ppdfile) contains
        the lexemes obtained from the file
-       and the macro table at the end of the file.
-       Before preprocessing the file,
-       we add it to the list of files under preprocessing.
-       We create a local preprocessing state stobj for the file,
-       with information from the implementation environment."))
-    (b* (((reterr) nil state)
+       and the macros contributed by the file.
+       If the @('selfp') flag of the @(tsee ppdfile) is @('t'),
+       we add that to the @('preprocessed') alist."))
+    (b* (((reterr) (irr-ppdfile) nil state)
          ((when (zp file-recursion-limit))
           (reterr (msg "Exceeded the limit on file recursion.")))
          (file (str-fix file))
@@ -487,12 +529,8 @@
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
-         (file+ppdfile
-          (assoc-equal file (string-ppdfile-alist-fix preprocessed)))
-         ((when file+ppdfile)
-          (retok (string-ppdfile-alist-fix preprocessed) state))
-         ((erp bytes state) (read-input-file-to-preprocess path file state))
          (preprocessing (cons file preprocessing))
+         ((erp bytes state) (read-input-file-to-preprocess path file state))
          ((erp rev-lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
@@ -516,11 +554,15 @@
                       state))
               (mv erp lexemes macros preprocessed state))))
          (lexemes (rev rev-lexemes))
+         (macros (car (macro-table->scopes macros)))
+         (selfp t) ; TODO
          (ppdfile (make-ppdfile :lexemes lexemes
                                 :macros macros
-                                :selfp nil)) ; TODO
-         (preprocessed (acons file ppdfile preprocessed)))
-      (retok preprocessed state))
+                                :selfp selfp))
+         (preprocessed (if selfp
+                           (acons file ppdfile preprocessed)
+                         preprocessed)))
+      (retok ppdfile preprocessed state))
     :measure (nat-list-measure (list (nfix file-recursion-limit)
                                      1 ; > all other pproc-... functions
                                      0 ; irrelevant
@@ -1027,7 +1069,12 @@
      whose paths are generally a superset of the input ones:
      the files specified by @('files') may include, directly or indirectly,
      files whose paths are not in @('files'), e.g. files from the C library.
-     The resulting file set is ``closed'' with respect to @('#include').")
+     The resulting file set is ``closed'' with respect to @('#include'):
+     the @(see self-contained) ones are in the file set,
+     and the non-@(see self-contained) ones have been expanded.")
+   (xdoc::p
+    "It is an internal (hard) error if
+     any of the files specified directly is not @(see self-contained).")
    (xdoc::p
     "The file recursion limit is discussed in @(tsee pproc).
      It should be set to a sufficiently large value of course,
@@ -1055,17 +1102,22 @@
      (b* (((reterr) nil state)
           ((when (endp files))
            (retok (string-ppdfile-alist-fix preprocessed) state))
-          ((erp preprocessed state) (pproc-file path
-                                                (car files)
-                                                preprocessed
-                                                preprocessing
-                                                ienv
-                                                state
-                                                file-recursion-limit)))
+          ((erp ppdfile preprocessed state) (pproc-file path
+                                                        (car files)
+                                                        preprocessed
+                                                        preprocessing
+                                                        ienv
+                                                        state
+                                                        file-recursion-limit))
+          ((unless (ppdfile->selfp ppdfile))
+           (raise "Internal error: non-self-contained top-level file ~x0."
+                  (str-fix (car files)))
+           (reterr t)))
        (pproc-files-loop path
                          (cdr files)
                          preprocessed
                          preprocessing
                          ienv
                          state
-                         file-recursion-limit)))))
+                         file-recursion-limit))
+     :no-function nil)))
