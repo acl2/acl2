@@ -87,11 +87,9 @@
    ;; thread interacting with it.
    (stream :initarg :stream :reader stream-of)))
 
-(defmethod trivial-gray-streams:stream-element-type ((self bridge-ostream))
-  (stream-element-type (stream-of self)))
-
-(defmethod close ((self bridge-ostream) &key abort)
-  (close (stream-of self) :abort abort))
+;; Note: stream-element-type and close are standard CL functions, not
+;; trivial-gray-streams generics.  We don't need to specialize them here
+;; since the default behavior delegates to the underlying stream appropriately.
 
 (defmethod trivial-gray-streams:stream-line-column ((self bridge-ostream))
   nil)
@@ -168,6 +166,12 @@
 
 ; Reading Commands ------------------------------------------------------------
 
+#+sbcl
+(defconstant eof
+  ;; Special constant to denote end of file.
+  ;; Guard against SBCL's strict constant redefinition check on reload.
+  (if (boundp 'eof) (symbol-value 'eof) (cons :eof :eof)))
+#-sbcl
 (defconstant eof
   ;; Special constant to denote end of file
   (cons :eof :eof))
@@ -551,7 +555,7 @@ This is a trace-co test"))
 
 (defvar *main-thread-lock* (bordeaux-threads:make-lock "main-thread-lock"))
 (defvar *main-thread-work* nil)
-(defvar *main-thread-ready* (bordeaux-threads:make-semaphore :name "main-thread-ready"))
+(defvar *main-thread-ready* (bt-semaphore:make-semaphore))
 
 (defun main-thread-loop ()
   (loop do
@@ -559,7 +563,7 @@ This is a trace-co test"))
         ;; the work that gets added by IN-MAIN-THREAD-AUX should properly send
         ;; any errors out to the worker thread.
         (debug "Main thread waiting for work.~%")
-        (bordeaux-threads:wait-on-semaphore *main-thread-ready*)
+        (bt-semaphore:wait-on-semaphore *main-thread-ready*)
         (debug "Main thread got work.~%")
         (let ((work *main-thread-work*))
           (setq *main-thread-work* nil)
@@ -602,7 +606,7 @@ This is a trace-co test"))
         (saved-stdout (gensym))
         (saved-stdco  (gensym))
         (work         (gensym)))
-    `(let* ((,done         (bordeaux-threads:make-semaphore :name "worker-done"))
+    `(let* ((,done         (bt-semaphore:make-semaphore))
             (,retvals      nil)
             (,finished     nil)
             (,errval       nil)
@@ -640,13 +644,13 @@ This is a trace-co test"))
                        (return-from try-to-run-it nil)))
 
                    (debug "Main thread waking up the worker.~%")
-                   (bordeaux-threads:signal-semaphore ,done)
+                   (bt-semaphore:signal-semaphore ,done)
                    (debug "Main thread is all done.~%"))))))
        (debug "Installing work for main thread.~%")
        (setq *main-thread-work* ,work)                        ;; Install work for main to find
-       (bordeaux-threads:signal-semaphore *main-thread-ready*) ;; Tell main work is there for him
+       (bt-semaphore:signal-semaphore *main-thread-ready*)     ;; Tell main work is there for him
        (debug "Waiting for main thread to finish.~%")
-       (bordeaux-threads:wait-on-semaphore ,done)              ;; Wait until main is done
+       (bt-semaphore:wait-on-semaphore ,done)                  ;; Wait until main is done
        (when ,errval
          (debug "Got error from the main thread.~%")
          (error ,errval))               ;; Transparently propagate errors

@@ -37,9 +37,12 @@
 ; (depends-on "bridge-sbcl-raw.lsp")
 
 ;; For SBCL, we need quicklisp libraries: bordeaux-threads, usocket, trivial-gray-streams
-;; These are all loaded transitively via hunchentoot.
+;; These are all loaded transitively via hunchentoot. We also need bt-semaphore for
+;; semaphore support (not in bordeaux-threads v0.8.x).
 #+sbcl
 (include-book "quicklisp/hunchentoot" :dir :system)
+#+sbcl
+(include-book "quicklisp/bt-semaphore" :dir :system)
 
 (defxdoc bridge
   :parents (acl2::interfacing-tools)
