@@ -486,6 +486,7 @@
                       (ienv ienvp)
                       state
                       (file-recursion-limit natp))
+    :guard (not (assoc-equal file preprocessed))
     :returns (mv erp
                  (ppdfile ppdfilep)
                  (new-preprocessed string-ppdfile-alistp)
@@ -501,7 +502,8 @@
        The latter is meant to happen with library files,
        but we have not implemented their handling yet.")
      (xdoc::p
-      "This function is called when the file is not in @('preprocessed'),
+      "As expressed by the guard,
+       this function is called when the file is not in @('preprocessed'),
        because if that were the case, there is no need to re-preprocess it
        (see the callers of this function).")
      (xdoc::p
@@ -1062,8 +1064,11 @@
      which must all be paths relative to the @('path') string:
      this is the same interface as @(tsee input-files).
      The elements of @('files') are preprocessed in order.
-     Each file is read from the file system and preprocessed.
-     We keep track of the files under preprocessing in a list (initially empty),
+     Each file is read from the file system and preprocessed,
+     unless it has been already preprocessed via
+     a direct or indirect inclusion of some previous file.")
+   (xdoc::p
+    "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.
      The result of this function is a file set,
      whose paths are generally a superset of the input ones:
@@ -1102,6 +1107,15 @@
      (b* (((reterr) nil state)
           ((when (endp files))
            (retok (string-ppdfile-alist-fix preprocessed) state))
+          (file (str-fix (car files)))
+          ((when (assoc-equal file (string-ppdfile-alist-fix preprocessed)))
+           (pproc-files-loop path
+                             (cdr files)
+                             preprocessed
+                             preprocessing
+                             ienv
+                             state
+                             file-recursion-limit))
           ((erp ppdfile preprocessed state) (pproc-file path
                                                         (car files)
                                                         preprocessed
@@ -1120,4 +1134,6 @@
                          ienv
                          state
                          file-recursion-limit))
+     :guard-hints
+     (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite)))
      :no-function nil)))
