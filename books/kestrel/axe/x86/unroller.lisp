@@ -211,6 +211,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: use this more
+(defund set-difference-eq-fast (l1 l2)
+  (declare (xargs :guard (and (true-listp l1)
+                              (true-listp l2)
+                              (or (symbol-listp l1)
+                                  (symbol-listp l2)))))
+  (if (endp l2)
+      l1 ; special case where there is nothing to remove
+    (set-difference-eq l1 l2)))
+
+(defthm acl2::symbol-listp-of-set-difference-eq-fast
+  (implies (symbol-listp l1)
+           (symbol-listp (set-difference-eq-fast l1 l2)))
+  :hints (("Goal" :in-theory (enable set-difference-eq-fast))))
+
 ;; Returns (mv erp assumptions assumption-rules state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
@@ -221,12 +236,12 @@
                   :stobjs state))
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       ;; todo: optimize):
+       ;; todo: optimize:
        (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32)))
        ;; Add the extra-assumption-rules:
        (assumption-rules (append extra-assumption-rules assumption-rules))
        ;; Remove the remove-assumption-rules:
-       (assumption-rules (set-difference-equal assumption-rules remove-assumption-rules))
+       (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil state))

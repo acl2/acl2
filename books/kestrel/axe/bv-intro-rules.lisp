@@ -210,16 +210,14 @@
                 (unsigned-byte-p-forced xsize x))
            (equal (logand x y)
                   (bvand xsize x y)))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (size xsize) (y y))
-           :in-theory (disable logand-becomes-bvand))))
+  :hints (("Goal" :use (:instance logand-becomes-bvand (size xsize) (y y)))))
 
 (defthmd logand-becomes-bvand-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
            (equal (logand y x)
                   (bvand xsize y x)))
-  :hints (("Goal":use (:instance logand-becomes-bvand (size xsize) (y y))
-           :in-theory (disable logand-becomes-bvand))))
+  :hints (("Goal":use (:instance logand-becomes-bvand (size xsize) (y y)))))
 
 (defthmd logior-becomes-bvor-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
