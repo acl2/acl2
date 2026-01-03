@@ -843,10 +843,11 @@
 
   ///
 
-  (defret ldm-expr-option-ok-when-expr-formalp
+  (defret ldm-expr-option-ok-when-expr-option-formalp
     (not erp)
-    :hyp (expr-formalp expr?)
-    :hints (("Goal" :in-theory (enable expr-option-some->val)))))
+    :hyp (expr-option-formalp expr?)
+    :hints (("Goal" :in-theory (enable expr-option-formalp
+                                       expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1923,7 +1923,19 @@
 
   (defret initer-aidentp-of-xeq-initer-single
     (initer-aidentp initer gcc)
-    :hyp (expr-aidentp expr-new gcc)))
+    :hyp (expr-aidentp expr-new gcc))
+
+
+  (defruled xeq-initer-single-formalp-when-thm-name
+    (b* (((mv initer gout)
+          (xeq-initer-single expr expr-new expr-thm-name gin)))
+      (implies (and (or (not expr-thm-name)
+                        (and (expr-formalp expr)
+                             (expr-formalp expr-new)))
+                    (gout->thm-name gout))
+               (initer-formalp initer)))
+    :expand (initer-formalp (initer-single expr-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

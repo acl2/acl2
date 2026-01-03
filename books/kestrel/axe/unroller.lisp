@@ -15,6 +15,8 @@
 ;this book contains a tool that takes a function (with one recursive call) and generates a new function that does k repetitions per recursive call.
 ;also proves them the same (seems to be automatic?)
 
+;; NOTE: This book is unrelated to the various binary unroller/lifter tools, e.g., x86/unroller.lisp.
+
 ;FIXME - this doesn't handle MV and MV-LET correctly...
 ;fixme what about lets?
 ;FIXME - this should check the input to make sure it's a recursive function

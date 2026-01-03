@@ -553,7 +553,7 @@
     trim-of-logext-becomes-bvsx
     trim-of-if-becomes-bvif
 
-    ;; todo: replace these with the more general trim scheme:
+    ;; todo: replace these with the more general trim scheme (but see comment above about bvminus-convert-arg2-to-bv-axe):
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv

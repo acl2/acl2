@@ -69,6 +69,10 @@
   <p>Moreover, unnecessary declarations (see @(see declare)) are removed from
   the @('EXTRA') events; see @(see elide-event).</p>
 
+  <p>Although @('with-supporters') attempts to pull in all supporters from
+  @(see local) events, it might occasionally miss some.  It should then suffice
+  to include those among the @('event-i').</p>
+
   <h3>Other keywords</h3>
 
   <p>Each keyword argument must appear immediately after the initial local
@@ -88,12 +92,13 @@
 
   <li>@(':tables') (default @('nil'))<br/>
 
-  If this value is not @('nil'), then it may be a list of table names, causing
-  the indicated tables to be populated as they were immediately after
-  evaluating the @(see local) event, @('ev').  Otherwise the value should be
-  @(':all'), indicating that this should be done for all tables (with the
-  exception, for technical reasons, of @('pe-table') and the @('xdoc')
-  table).</li>
+  If this value is not @('nil'), then it may be a list of table names, and
+  otherwise is @(':all') to represent the set of all table names.  The primary
+  effect is to populate the indicated tables as they were populated immediately
+  after evaluating the @(see local) event, @('ev').  Moreover table guards, as
+  well as the function symbols that support them, are included as supporters.
+  However, the following tables are not considered, for technical reasons
+  @(tsee pe-table), @('xdoc'), and @(tsee acl2-defaults-table)).</li>
 
   <li>@(':with-output') (default @('(:off :all :on error)'))<br/>
 
