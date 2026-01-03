@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -393,6 +393,17 @@
     :guard (expr-listp x)
     (expr-formalp x)
     :elementp-of-nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-option-formalp ((expr? expr-optionp))
+  :guard (expr-option-unambp expr?)
+  :returns (yes/no booleanp)
+  :short "Check if an optional expression has a formal dynamic semantics."
+  (expr-option-case expr?
+                    :some (expr-formalp expr?.val)
+                    :none t)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
