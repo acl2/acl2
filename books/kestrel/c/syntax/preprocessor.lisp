@@ -22,6 +22,7 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration :hooks nil)
@@ -314,9 +315,65 @@
 
   ///
 
-  (defret ppstate->size-of-unread-token
+  (defret ppstate->size-of-punread-token
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define h-char-list-to-string ((hchars h-char-listp))
+  :returns (mv erp (string stringp))
+  :short "Convert, to an ACL2 string,
+          a list of characters usable in header names between angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All the characters must be ASCII for now, otherwise we return an error."))
+  (b* (((reterr) "")
+       ((erp chars) (h-char-list-to-char-list hchars)))
+    (retok (str::implode chars)))
+  :prepwork
+  ((define h-char-list-to-char-list ((hchars h-char-listp))
+     :returns (mv erp (chars character-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp hchars)) (retok nil))
+          (hchar (car hchars))
+          (code (h-char->code hchar))
+          ((unless (< code 128))
+           (reterr (msg "Unsupported header name character with code ~x0."
+                        code)))
+          (char (code-char code))
+          ((erp chars) (h-char-list-to-char-list (cdr hchars))))
+       (retok (cons char chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define q-char-list-to-string ((qchars q-char-listp))
+  :returns (mv erp (string stringp))
+  :short "Convert, to an ACL2 string,
+          a list of characters usable in header names between double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All the characters must be ASCII for now, otherwise we return an error."))
+  (b* (((reterr) "")
+       ((erp chars) (q-char-list-to-char-list qchars)))
+    (retok (str::implode chars)))
+  :prepwork
+  ((define q-char-list-to-char-list ((qchars q-char-listp))
+     :returns (mv erp (chars character-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp qchars)) (retok nil))
+          (qchar (car qchars))
+          (code (q-char->code qchar))
+          ((unless (< code 128))
+           (reterr (msg "Unsupported header name character with code ~x0."
+                        code)))
+          (char (code-char code))
+          ((erp chars) (q-char-list-to-char-list (cdr qchars))))
+       (retok (cons char chars))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,6 +391,68 @@
      We read the bytes from the file system, and return them."))
   (b* (((reterr) nil state)
        (path-to-read (str::cat path "/" file))
+       ((mv erp bytes state)
+        (acl2::read-file-into-byte-list path-to-read state))
+       ((when erp)
+        (reterr (msg "Reading ~x0 failed." path-to-read))))
+    (retok bytes state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-included-file-to-preprocess ((path stringp)
+                                          (file stringp)
+                                          (hname header-namep)
+                                          state)
+  :returns (mv erp (bytes byte-listp) state)
+  :short "Read a file to preprocess,
+          referenced via a header name in an @('#include') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('path') and @('file') parameters of this function are
+     the ones for the including file,
+     i.e. the one that contains the @('#include') directive,
+     since they may participate in the resolution of
+     the header name to a file in the file system.
+     If @('path') is the empty string, @('file') is an absolute path;
+     this is the case for library files.
+     Otherwise, @('file') is a path relative to @('path'),
+     with the latter absolute or relative
+     (if relative, it is so with respect to the "
+    (xdoc::seetopic "cbd" "connected book directory")
+    ".")
+   (xdoc::p
+    "[C17:6.10.2] gives leeway in how header names
+     are resolved to files in the file system.
+     Roughly and informally speaking, one could perhaps say that
+     header names with angle brackets resolve to ``library files'',
+     while header names with double quotes resolve to ``application files'';
+     the latter would often be files within the same file system subtree
+     where the including file resides.
+     GCC uses the strategy described in "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Search-Path.html"
+                 "[CPPM:2.3]")
+    ".")
+   (xdoc::p
+    "We start with a very simple strategy in our preprocessor
+     For header names in double quotes,
+     we form a full path from @('path') and the header name.
+     When the header name is just a file name without directories,
+     and when @('file') is also just a file name without directories,
+     this strategy correspond to the idea of finding the included file
+     relative to the directory where the including file is, as in [CPPM:2.3].
+     This is very preliminary, and we will refine it.
+     We will also add suitable support for header names with angle brackets,
+     possibly via a user-supplied list of paths containing ``library files''."))
+  (declare (ignore file))
+  (b* (((reterr) nil state)
+       ((erp path-to-read)
+        (b* (((reterr) ""))
+          (header-name-case
+           hname
+           :angles (reterr :todo)
+           :quotes (b* (((erp name) (q-char-list-to-string hname.chars)))
+                     (retok (str::cat path "/" name))))))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list path-to-read state))
        ((when erp)
