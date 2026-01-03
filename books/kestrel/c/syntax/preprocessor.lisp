@@ -376,28 +376,6 @@
           ((erp chars) (q-char-list-to-char-list (cdr qchars))))
        (retok (cons char chars))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define read-input-file-to-preprocess ((path stringp) (file stringp) state)
-  :returns (mv erp (bytes byte-listp) state)
-  :short "Read a file to preprocess, explicitly specified as user input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for the files
-     whose paths are explicitly passed to @(tsee pproc-files).
-     We concatenate the path prefix (passed to @(tsee pproc-files))
-     to the file path suffix,
-     with a slash in between (this is for Unix-like systems).
-     We read the bytes from the file system, and return them."))
-  (b* (((reterr) nil state)
-       (path-to-read (str::cat path "/" file))
-       ((mv erp bytes state)
-        (acl2::read-file-into-byte-list path-to-read state))
-       ((when erp)
-        (reterr (msg "Reading ~x0 failed." path-to-read))))
-    (retok bytes state)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define resolve-included-file ((including-file stringp)
@@ -650,7 +628,10 @@
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         ((erp bytes state) (read-input-file-to-preprocess path file state))
+         (path-to-read (str::cat path "/" file))
+         ((mv erp bytes state)
+          (acl2::read-file-into-byte-list path-to-read state))
+         ((when erp) (reterr (msg "Reading ~x0 failed." path-to-read)))
          ((erp lexemes macros selfp preprocessed state)
           (with-local-stobj
             ppstate
