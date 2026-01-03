@@ -1311,7 +1311,13 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                           ;; This seems like a stronger replacement for the above?
                           (str::cat "CONSP-OF-" (symbol-name make-foo))
                           name)
-                  (consp (,make-foo ,@field-names))
+                  ,(if (and (not tag)
+                            (eq layout :tree))
+                       ;; A tagless :tree aggregate will be nil if all of its fields
+                       ;; are nil:
+                       `(implies (or ,@field-names)
+                                 (consp (,make-foo ,@field-names)))
+                     `(consp (,make-foo ,@field-names)))
                   :rule-classes :type-prescription
                   :hints(("Goal" :in-theory (enable ,make-foo))))
 
@@ -1382,16 +1388,22 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                                              (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
                                              name)))))
 
-                (defthm ,(intern-in-package-of-symbol
-                          (str::cat "CONSP-WHEN-" (symbol-name foop))
-                          name)
-                  (implies (,foop ,x)
-                           (consp ,x))
-                  :rule-classes :compound-recognizer
-                  :hints(("Goal"
-                          :in-theory
-                          (union-theories '(,foop)
-                                          (theory 'defaggregate-basic-theory)))))
+                ,@(if (and (not tag)
+                           (eq layout :tree))
+                      ;; A tagless :tree aggregate will be nil when all of its
+                      ;; fields are nil.  So is not clear how to make a
+                      ;; CONSP-WHEN :compound-recognizer rule:
+                      nil
+                    `((defthm ,(intern-in-package-of-symbol
+                                 (str::cat "CONSP-WHEN-" (symbol-name foop))
+                                 name)
+                        (implies (,foop ,x)
+                                 (consp ,x))
+                        :rule-classes :compound-recognizer
+                        :hints(("Goal"
+                                :in-theory
+                                (union-theories '(,foop)
+                                                (theory 'defaggregate-basic-theory)))))))
 
                 ,@(da-make-accessors-of-constructor name field-names)
                 ,@(da-make-requirements-of-recognizer name require field-names pred)))
