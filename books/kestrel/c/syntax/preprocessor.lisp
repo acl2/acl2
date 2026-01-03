@@ -19,6 +19,7 @@
 (include-book "implementation-environments")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "std/strings/strrpos" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -399,65 +400,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-included-file-to-preprocess ((path stringp)
-                                          (file stringp)
-                                          (hname header-namep)
-                                          state)
-  :returns (mv erp (bytes byte-listp) state)
-  :short "Read a file to preprocess,
-          referenced via a header name in an @('#include') directive."
+(define resolve-included-file ((including-file stringp)
+                               (included-file header-namep))
+  :returns (mv erp (resolved-included-file stringp))
+  :short "Resolve a header name to file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('path') and @('file') parameters of this function are
-     the ones for the including file,
-     i.e. the one that contains the @('#include') directive,
-     since they may participate in the resolution of
-     the header name to a file in the file system.
-     If @('path') is the empty string, @('file') is an absolute path;
-     this is the case for library files.
-     Otherwise, @('file') is a path relative to @('path'),
-     with the latter absolute or relative
-     (if relative, it is so with respect to the "
+    "This is called when the file at path @('including-file')
+     contains an @('#include') directive with header name @('included-file'),
+     to resolve the latter to a path, which is returned.
+     Both the @('including-file') path and the returned path
+     may be relative (to the "
     (xdoc::seetopic "cbd" "connected book directory")
-    ".")
+    ") or absolute.")
    (xdoc::p
-    "[C17:6.10.2] gives leeway in how header names
-     are resolved to files in the file system.
-     Roughly and informally speaking, one could perhaps say that
-     header names with angle brackets resolve to ``library files'',
-     while header names with double quotes resolve to ``application files'';
-     the latter would often be files within the same file system subtree
-     where the including file resides.
-     GCC uses the strategy described in "
+    "[C17:6.10.2] gives leeway in how header names are resolved.
+     GCC uses a more precise strategy, described in "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Search-Path.html"
                  "[CPPM:2.3]")
     ".")
    (xdoc::p
-    "We start with a very simple strategy in our preprocessor
-     For header names in double quotes,
-     we form a full path from @('path') and the header name.
-     When the header name is just a file name without directories,
-     and when @('file') is also just a file name without directories,
-     this strategy correspond to the idea of finding the included file
-     relative to the directory where the including file is, as in [CPPM:2.3].
-     This is very preliminary, and we will refine it.
-     We will also add suitable support for header names with angle brackets,
-     possibly via a user-supplied list of paths containing ``library files''."))
-  (declare (ignore file))
-  (b* (((reterr) nil state)
-       ((erp path-to-read)
-        (b* (((reterr) ""))
-          (header-name-case
-           hname
-           :angles (reterr :todo)
-           :quotes (b* (((erp name) (q-char-list-to-string hname.chars)))
-                     (retok (str::cat path "/" name))))))
-       ((mv erp bytes state)
-        (acl2::read-file-into-byte-list path-to-read state))
-       ((when erp)
-        (reterr (msg "Reading ~x0 failed." path-to-read))))
-    (retok bytes state)))
+    "We start by resolving header names in double quotes as in [CPPM:2.3],
+     namely by using the header name as an extension of
+     the path of the directory of the including file,
+     but for now without resorting to the angle-bracket search
+     if that first search attempt fails.
+     We do not support angle bracket resolution yet.")
+   (xdoc::p
+    "For now we only support Unix-style paths, i.e. with @('/').
+     If @('including-file') has no slash,
+     its directory is the connected book directory,
+     so we return the header name as is,
+     as a path relative to the connected book directory too.
+     If @('including-file') has at least one slash,
+     we extract the directory prefix
+     as the substring up to and including the last slash,
+     and we prepend that to the header name to obtain.
+     Note that the header name is converted to an ASCII string;
+     resolution fails if the header name contains non-ASCII codes."))
+  (b* (((reterr) "")
+       ((erp included-file-as-string)
+        (header-name-case
+         included-file
+         :angles (h-char-list-to-string included-file.chars)
+         :quotes (q-char-list-to-string included-file.chars)))
+       ((when (header-name-case included-file :angles)) (reterr :todo))
+       (last-slash-position (str::strrpos "/" including-file))
+       ((when (not last-slash-position)) (retok included-file-as-string))
+       (prefix (subseq including-file 0 (1+ last-slash-position))))
+    (retok (str::cat prefix included-file-as-string)))
+  :guard-hints (("Goal" :in-theory (enable length))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
