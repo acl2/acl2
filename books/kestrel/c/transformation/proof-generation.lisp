@@ -2134,7 +2134,23 @@
 
   (defret stmt-aidentp-of-xeq-stmt-return
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-return-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-return expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand ((stmt-formalp (stmt-return nil info))
+             (stmt-formalp (stmt-return expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
