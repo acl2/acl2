@@ -703,7 +703,11 @@
                                 (or (eq names :all)
                                     (member-eq name names))
                                 (not (assoc-eq-cadr name evs)))
-                           (cons ev evs))
+                           (cons `(table ,name
+                                         nil
+                                         ',(table-alist name wrld)
+                                         :clear)
+                                 evs))
                           (t evs)))
                         (& evs))))
             (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
