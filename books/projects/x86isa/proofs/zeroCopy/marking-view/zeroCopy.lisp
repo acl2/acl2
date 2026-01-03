@@ -3546,6 +3546,10 @@
                              (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
                              (:rewrite gl::nfix-natp))))))
 
+; Matt K. mod to prevent error in Allegro CL from (expt 2 8589934592):
+; "Attempt to create an integer which is too large to represent."
+(local (in-theory (disable (:e expt))))
+
 (defthmd source-data-projection
   (implies
    (and (rewire_dst_to_src-effects-preconditions x86)
