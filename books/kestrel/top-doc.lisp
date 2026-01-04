@@ -19,6 +19,7 @@
 
 (local
  (progn
+   (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
    (include-book "axe/doc")
