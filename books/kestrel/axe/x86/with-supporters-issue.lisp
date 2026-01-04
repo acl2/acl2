@@ -1,14 +1,16 @@
 (in-package "ACL2")
 
+;; TODO: Move this to be among the tests of with-supporters
+
 (include-book "tools/with-supporters" :dir :system)
 
-; Before the fix at the end of December 2025, there was an error, explained as
-; follows.
+; Before a fix at the end of December 2025, the with-supporters call below
+; caused a problem.  The problem was that the local include-book causes logapp
+; to be defined when with-supporters is called, so with-supporters refrained
+; from including logapp in the list of supporters it generated.  When the book
+; was subsequently included, the local include-book was skipped and logapp was
+; undefined.  Since December, 2025, with-supporters handles this situation.
 
-;; This brings in logapp, but only locally.  So the call of with-supporters
-;; below thinks that logapp is already defined and does not define it.
-;; If we uncomment this line, this book fails to certify:
-; [It is now uncommented and the book now does certify.]
 (local (include-book "ihs/basic-definitions" :dir :system))
 
 (with-supporters
