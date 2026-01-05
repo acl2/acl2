@@ -40,9 +40,9 @@
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
-(acl2::ensure-rules-known (extra-tester-rules))
-(acl2::ensure-rules-known (extra-tester-lifting-rules))
-(acl2::ensure-rules-known (tester-proof-rules))
+(ensure-rules-known (extra-tester-rules))
+(ensure-rules-known (extra-tester-lifting-rules))
+(ensure-rules-known (tester-proof-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,7 +61,7 @@
   (let* ((table-alist (get-x86-tester-table state)))
     (if (not (alistp table-alist))
         (er hard? 'previous-tester-result "Invalid table-alist for x86-tester-table: ~x0." table-alist)
-      (let ((previous-result (acl2::lookup-equal whole-form table-alist)))
+      (let ((previous-result (lookup-equal whole-form table-alist)))
         (if previous-result
             previous-result
           nil)))))
@@ -230,8 +230,8 @@
                                   (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
                               ;; print
                               (natp max-printed-term-size)
                               (or (eq nil prune-precise)
@@ -240,7 +240,7 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::tacticsp tactics)
+                              (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -367,7 +367,7 @@
           (real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
               (progn$ (cw "Test ~s0 passed in " function-name-string)
-                      (acl2::print-to-hundredths elapsed)
+                      (print-to-hundredths elapsed)
                       (cw "s.)~%")
                       (mv (erp-nil)
                           t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
@@ -428,7 +428,7 @@
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
           (progn$ (cw "Test ~s0 passed in " function-name-string)
-                  (acl2::print-to-hundredths elapsed)
+                  (print-to-hundredths elapsed)
                   (cw "s.)~%")
                   (mv (erp-nil)
                       t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
@@ -469,8 +469,8 @@
                               (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
                               ;; print
                               (natp max-printed-term-size)
                               (or (eq :debug monitor)
@@ -483,7 +483,7 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::tacticsp tactics)
+                              (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -526,7 +526,7 @@
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
-          (acl2::print-to-hundredths elapsed)
+          (print-to-hundredths elapsed)
           (cw "s.~%"))
        (result-ok (if (eq :any expected-result)
                       t
@@ -644,8 +644,8 @@
                               (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
                               ;; print
                               (natp max-printed-term-size)
                               (or (eq :debug monitor)
@@ -658,7 +658,7 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::tacticsp tactics)
+                              (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -678,7 +678,7 @@
          ((mv erp passedp elapsed state)
           (test-function-core function-name parsed-executable
                               :none ; todo: some way to pass in param-names?
-                              (acl2::lookup-equal function-name assumptions-alist)
+                              (lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
@@ -724,8 +724,8 @@
                               (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
                               ;; print
                               (natp max-printed-term-size)
                               (or (eq :debug monitor)
@@ -738,7 +738,7 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::tacticsp tactics)
+                              (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -816,7 +816,7 @@
                                      assumptions
                                    (er hard? 'test-functions-fn "Ill-formed assumptions: ~X01." assumptions nil))
                                ;; it's a list of (untranslated) terms to be used as assumptions for every function:
-                               (pairlis$ function-name-strings (acl2::repeat (len function-name-strings) assumptions))))))
+                               (pairlis$ function-name-strings (repeat (len function-name-strings) assumptions))))))
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-function-list function-name-strings parsed-executable
@@ -833,7 +833,7 @@
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")
-          (acl2::print-to-hundredths overall-time)
+          (print-to-hundredths overall-time)
           (cw "s (~x0 tests).~%"  (len function-name-strings))))
     (mv (erp-nil) (not (any-result-unexpectedp result-alist)) state)))
 
@@ -864,8 +864,8 @@
                               (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (acl2::normalize-xors-optionp normalize-xors)
-                              (acl2::count-hits-argp count-hits)
+                              (normalize-xors-optionp normalize-xors)
+                              (count-hits-argp count-hits)
                               ;; print
                               (natp max-printed-term-size)
                               (or (eq :debug monitor)
@@ -878,7 +878,7 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (acl2::tacticsp tactics)
+                              (tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (member-eq inputs-disjoint-from '(nil :code :all))

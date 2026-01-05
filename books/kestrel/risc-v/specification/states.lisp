@@ -399,7 +399,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is is only defined when @('XLEN') is 64;
+    "This is only defined when @('XLEN') is 64;
      when it is 32, @(tsee write-xreg) already writes all 32 bits.
      When @('XLEN') is 64,
      several instructions write to the low 32 bits of a register,
