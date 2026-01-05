@@ -14866,19 +14866,6 @@
         (t (and (symbolp (car lst))
                 (optimize-alistp (cdr lst))))))
 
-(defun find-symbol-by-name-in-list (sym syms)
-
-; Returns the symbol in syms that has the same symbol-name as sym but is not eq
-; to sym.  Returns nil if no such symbol is found.
-
-  (declare (xargs :guard (and (symbolp sym)
-                              (symbol-listp syms))))
-  (cond ((endp syms) nil)
-        ((and (not (eq sym (car syms)))
-              (equal (symbol-name sym) (symbol-name (car syms))))
-         (car syms))
-        (t (find-symbol-by-name-in-list sym (cdr syms)))))
-
 (defun chk-dcl-lst (l vars binder ctx wrld)
 
 ; L is the list of expanded declares.  Vars is a list of variables
@@ -14899,43 +14886,44 @@
                    (temp (cdr (assoc-eq binder *acceptable-dcls-alist*))))
                (cond
                 ((not (member-eq dcl temp))
-                 (let* ((matching-sym (find-symbol-by-name-in-list dcl temp))
+                 (let ((matching-sym
+                        (and (symbolp dcl)
+                             (car (member-symbol-name (symbol-name dcl)
+                                                      temp)))))
 
-; We always suggest using the ACL2:: prefix because all acceptable declaration
-; keywords are either native to the ACL2 package (like IRRELEVANT and XARGS) or
-; are COMMON-LISP symbols imported into ACL2 (like TYPE, IGNORE, IGNORABLE, and
-; OPTIMIZE).  In either case, ACL2::NAME will resolve to the correct symbol.
+; Note that "ACL2::~s8" below is always correct since the CDRs of elements of
+; *acceptable-dcls-alist* are always in the ACL2 package (either directly or by
+; being imported from the "COMMON-LISP" package).
 
-                        (matching-sym-to-print
-                         (and matching-sym
-                              (msg "ACL2::~s0" (symbol-name matching-sym)))))
                    (er-cmp ctx
-                         "The only acceptable declaration~#0~[~/s~] at the ~
-                          top-level of ~#1~[an FLET binding~/a MACROLET ~
-                          binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
-                          declaration ~x4 is thus unacceptable here.~#5~[~/ ~
-                          It is never necessary to make IGNORE or IGNORABLE ~
-                          declarations in lambda$ expressions because lambda$ ~
-                          automatically adds an IGNORABLE declaration for all ~
-                          of the formals.~]~#6~[~/  Note: You used the symbol ~
-                          ~x7 as a declaration keyword but the declaration ~
-                          keyword should be ~@8.~]  See :DOC declare."
-                         temp
-                         (cond ((eq binder 'flet) 0)
-                               ((eq binder 'macrolet) 1)
-                               (t 2))
-                         binder
-                         (tilde-*-conjunction-phrase temp
-                                                     *dcl-explanation-alist*)
-                         entry
-                         (cond ((and (eq binder 'lambda$)
-                                     (or (eq dcl 'ignore)
-                                         (eq dcl 'ignorable)))
-                                1)
-                               (t 0))
-                         (if matching-sym 1 0)
-                         dcl
-                         matching-sym-to-print)))
+                           "The only acceptable declaration~#0~[~/s~] at the ~
+                            top-level of ~#1~[an FLET binding~/a MACROLET ~
+                            binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
+                            declaration ~x4 is thus unacceptable here.~#5~[~/ ~
+                            It is never necessary to make IGNORE or IGNORABLE ~
+                            declarations in lambda$ expressions because ~
+                            lambda$ automatically adds an IGNORABLE ~
+                            declaration for all of the formals.~]~#6~[~/  ~
+                            Note: You used the symbol ~x7 in your declaration ~
+                            but you probably intended to use the symbol ~
+                            ACL2::~s8.~]  See :DOC declare."
+                           temp
+                           (cond ((eq binder 'flet) 0)
+                                 ((eq binder 'macrolet) 1)
+                                 (t 2))
+                           binder
+                           (tilde-*-conjunction-phrase temp
+                                                       *dcl-explanation-alist*)
+                           entry
+                           (cond ((and (eq binder 'lambda$)
+                                       (or (eq dcl 'ignore)
+                                           (eq dcl 'ignorable)))
+                                  1)
+                                 (t 0))
+                           (if matching-sym 1 0)
+                           dcl
+                           (and matching-sym
+                                (symbol-name matching-sym)))))
                 ((not (true-listp entry))
                  (er-cmp ctx
                          "Each element of a declaration must end in NIL but ~
