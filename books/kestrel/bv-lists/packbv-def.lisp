@@ -1,7 +1,7 @@
 ; BV Lists Library: definition of packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,10 @@
 ;; This book contains a utility for packing (i.e., assembling) smaller bit
 ;; vectors into larger bit vectors.  The smaller bit vectors can of course be
 ;; single bits.
+
+;; For theorems about packbv, see packbv.lisp and packbv-and-unpackbv.lisp.
+
+;; See also packbv-little.lisp for a little-endian version.
 
 (include-book "../bv/bvcat-def")
 

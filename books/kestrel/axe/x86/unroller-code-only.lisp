@@ -10,21 +10,25 @@
 
 (in-package "X")
 
-;; TODO: This needs to have all the relevant rules built in to it.
+;; Including this book is much faster and brings in much less material than
+;; including unroller.lisp.
+
+;; WARNING: This book includes only the functions and rules needed to run the
+;; unroller/lifter tool.  Users of this tool may want to include other books to
+;; reason about the results of unrolling/lifting (e.g., books from
+;; books/kestrel/bv/).
 
 (include-book "centaur/misc/tshell" :dir :system) ; needs to be non-local since it has Raw Lisp code
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; todo: Raw Lisp code
 (include-book "projects/x86isa/machine/other-non-det" :dir :system) ; todo: Raw Lisp code
 (include-book "coi/lists/portcullis" :dir :system) ; for the LIST package
-
 (include-book "tools/with-supporters" :dir :system)
 
 (defttag :unroller-x86-code-only)
 
 (local (include-book "rule-lists")) ; defines the rule-lists mentioned below
 
-;; TODO: doesn't seem to handle the :known-booleans-table right
-;; Try (table-alist :known-booleans-table (w state)).
+;; TODO: Can this be sped up?
 (make-event
   `(acl2::with-supporters
      (local (include-book "unroller"))

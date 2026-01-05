@@ -2010,6 +2010,7 @@
                   (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable esp))))
 
+;; todo: make a version with bvplus instead of +
 (defthm eff-addrs-okp-of-+-of-esp-positive-offset
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var
                 (stack-segment-assumptions32 stack-slots-needed x86)
@@ -3781,6 +3782,7 @@
 (defthm integerp-of-read-from-segment
   (integerp (read-from-segment n eff-addr seg-reg x86)))
 
+;; todo: make a version with bvplus instead of +
 (defthm eff-addrs-okp-of-+-of-esp-negative-offset
   (implies (and (<= off 0)
                 (stack-segment-assumptions32 stack-slots-needed x86) ;binds stack-slots-needed
