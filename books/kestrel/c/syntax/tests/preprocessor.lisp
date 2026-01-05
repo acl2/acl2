@@ -40,10 +40,12 @@
 
 (defmacro test-preproc (files &key expected)
   `(assert!-stobj
-    (b* ((path ".")
-         (files ,files)
+    (b* ((files ,files)
+         (base-dir ".")
+         (include-dirs nil)
          (ienv (ienv-default))
-         ((mv erp fileset state) (pproc-files path files ienv state 100)))
+         ((mv erp fileset state)
+          (pproc-files files base-dir include-dirs ienv state 100)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
