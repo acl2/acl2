@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "parser-states")
+(include-book "implementation-environments")
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -710,11 +711,14 @@
     "Most of the components of the preprocessor state
      are analogous to the ones of the parser state:
      see the documentation of @(tsee parstate) first.
-     The only difference in those components is that
+     A difference is that, instead of just a C version,
+     here we have a full implementation environment;
+     probably parser states should have that too.
+     Another difference is that
      the processor state contains (preprocessing) lexemes instead of tokens,
      because our preprocessor preserves comments and white space.")
    (xdoc::p
-    "The preprocessor state includes additional components,
+    "The preprocessor state also includes additional components,
      not found in the parser state.
      One is a macro table that consists of all the macros in scope.
      Another one is a flag indicating whether the file being preprocessed
@@ -751,8 +755,8 @@
                     :initially 0)
       (lexemes-unread :type (integer 0 *)
                       :initially 0)
-      (version :type (satisfies c::versionp)
-               :initially ,(c::version-c23))
+      (ienv :type (satisfies ienvp)
+            :initially ,(irr-ienv))
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
@@ -768,7 +772,7 @@
                  (lexemesp raw-ppstate->lexemes-p)
                  (lexemes-readp raw-ppstate->lexemes-read-p)
                  (lexemes-unreadp raw-ppstate->lexemes-unread-p)
-                 (versionp raw-ppstate->version-p)
+                 (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
                  (selfpp raw-ppstate->selfp-p)
@@ -783,7 +787,7 @@
                  (lexemesi raw-ppstate->lexeme)
                  (lexemes-read raw-ppstate->lexemes-read)
                  (lexemes-unread raw-ppstate->lexemes-unread)
-                 (version raw-ppstate->version)
+                 (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
                  (selfp raw-ppstate->selfp)
@@ -798,7 +802,7 @@
                  (update-lexemesi raw-update-ppstate->lexeme)
                  (update-lexemes-read raw-update-ppstate->lexemes-read)
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
-                 (update-version raw-update-ppstate->version)
+                 (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-selfp raw-update-ppstate->selfp))))
@@ -937,12 +941,13 @@
                   0)
          :exec (raw-ppstate->lexemes-unread ppstate)))
 
-  (define ppstate->version (ppstate)
-    :returns (version c::versionp)
+  (define ppstate->ienv (ppstate)
+    :returns (ienv ienvp)
     (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->version ppstate)
-                  (c::version-c23))
-         :exec (raw-ppstate->version ppstate)))
+                    (raw-ppstate->ienv ppstate)
+                  (irr-ienv))
+         :exec (raw-ppstate->ienv ppstate))
+    :hooks nil)
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
@@ -1062,10 +1067,10 @@
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->lexemes-unread (nfix lexemes-unread) ppstate)))
 
-  (define update-ppstate->version ((version c::versionp) ppstate)
+  (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->version (c::version-fix version) ppstate)))
+      (raw-update-ppstate->ienv (ienv-fix ienv) ppstate)))
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
@@ -1195,13 +1200,14 @@
 (define ppstate->gcc ((ppstate ppstatep))
   :returns (gcc booleanp)
   :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ppstate->version ppstate)))
+  (c::version-gccp (ienv->version (ppstate->ienv ppstate)))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
-                      (version c::versionp)
+                      (ienv ienvp)
                       ppstate)
   :returns (ppstate ppstatep)
   :short "Initialize the preprocessor state."
@@ -1211,7 +1217,7 @@
     "This is the state when we start preprocessing a file.
      Given (the data of) a file to preprocess,
      the current table of macros in scope,
-     and a C version,
+     and an implementation environment,
      the initial preprocessing state consists of
      the data to preprocess,
      no read characters or lexemes,
@@ -1235,7 +1241,7 @@
        (ppstate (update-ppstate->lexemes-length (len data) ppstate))
        (ppstate (update-ppstate->lexemes-read 0 ppstate))
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
-       (ppstate (update-ppstate->version version ppstate))
+       (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
        (ppstate (update-ppstate->selfp t ppstate)))

@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "../preprocessor-lexer")
+(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
@@ -26,14 +27,12 @@
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, POS/SPAN, PPSTATE.
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((std (or ,std 23))
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-table-init)
-                                version
+                                (ienv-default :std std :gcc ,gcc)
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
@@ -56,14 +55,12 @@
   ;; STD indicates the C standard version (17 or 23; default 17).
   ;; GCC flag says whether GCC extensions are enabled (default NIL).
   `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
+    (b* ((std (or ,std 23))
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-table-init)
-                                version
+                                (ienv-default :std std :gcc ,gcc)
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))

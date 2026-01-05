@@ -16,7 +16,6 @@
 (include-book "preprocessor-lexer")
 (include-book "preprocessor-printer")
 (include-book "files")
-(include-book "implementation-environments")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
@@ -751,8 +750,7 @@
        the file's contents have already been read (see callers),
        and passed as the @('bytes') input of this function.
        We create a local preprocessing state stobj for the file,
-       with information from the implementation environment
-       and with the current macro table
+       with the implementation environment and the current macro table
        (which @(tsee init-ppstate) extends with a new empty scope for the file).
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
@@ -781,7 +779,7 @@
                 (b* ((ppstate
                       (init-ppstate bytes
                                     (macro-table-fix macros)
-                                    (ienv->version ienv)
+                                    ienv
                                     ppstate))
                      ((mv erp rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part file
