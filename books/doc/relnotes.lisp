@@ -196,6 +196,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "bridge::bridge" "Bridge"))
+
+   (xdoc::p
+    "Python bindings are available in @('[books]/centaur/bridge/python').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
 
    ;;;;;;;;;;;;;;;;;;;;
@@ -361,14 +368,6 @@
    (xdoc::p
     "XDOC support for a number of HTML @(see xdoc::entities) was added.
      In particular, many letter variants with diacritics.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "bridge::bridge"
-                             "Bridge"))
-
-   (xdoc::p
-     "Python bindings are available in @('[books]/centaur/bridge/python').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
