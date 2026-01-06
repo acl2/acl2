@@ -30,6 +30,7 @@
 ;(include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -921,7 +922,7 @@
     (let* ((entry (first alist))
            (mnemonic (car entry))
            (pattern (cdr entry)))
-      (cons `(defun ,(acl2::pack-in-package "ARM" mnemonic '-argsp) (args)
+      (cons `(defund ,(acl2::pack-in-package "ARM" mnemonic '-argsp) (args)
                (declare (xargs :guard (symbol-alistp args)))
                (and ,@(make-instruction-arg-conjuncts pattern)))
             (make-instruction-arg-predicates (rest alist))))))
@@ -937,6 +938,17 @@
       (cons `(,mnemonic (,(acl2::pack-in-package "ARM" mnemonic '-argsp) args))
             (make-good-inst-cases (rest alist))))))
 
+(defun make-good-inst-names (alist)
+  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (mnemonic (car entry))
+           ;; (pattern (cdr entry))
+           )
+      (cons (acl2::pack-in-package "ARM" mnemonic '-argsp)
+            (make-good-inst-names (rest alist))))))
+
 (defun make-decoder (name alist)
   (declare (xargs :guard (and (symbolp name)
                               (good-encoding-pattern-alistp alist))))
@@ -946,7 +958,7 @@
      ;; Recognize a "good" instruction
      ;; todo: it's really the args that we are checking here
      ;; todo:  show decoder always produces a good-inst?
-     (defun good-instp (mnemonic args)
+     (defund good-instp (mnemonic args)
        (declare (xargs :guard t))
        (and (mnemonicp mnemonic)
             (symbol-alistp args)
@@ -961,7 +973,13 @@
        (declare (xargs :guard (unsigned-byte-p 32 inst)))
        (cond
         ,@(make-decoding-cases alist)
-        (t (mv :unsupported nil nil))))))
+        (t (mv :unsupported nil nil))))
+
+     (defthm ,(acl2::pack-in-package "ARM" name '-return-type)
+       (implies (not (mv-nth 0 (arm32-decode inst)))
+                (good-instp (mv-nth 1 (arm32-decode inst))
+                            (mv-nth 2 (arm32-decode inst))))
+       :hints (("Goal" :in-theory (enable ,name good-instp ,@(make-good-inst-names alist)))))))
 
 ;; This makes a decoder called arm32-decode that decodes a USB32 into an
 ;; instruction (any of the instructions in the *patterns*):
