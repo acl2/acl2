@@ -79,24 +79,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Gets the stack pointer (register 13).
+;; Gets the stack pointer (register 13 = #b1101).
 ;; We consider this an abbreviation to be kept enabled.
 (defun sp (arm)
   (declare (xargs :stobjs arm))
   (reg 13 arm))
 
-;; Gets the link register (register 14).
+;; Gets the link register (register 14 = #b1110).
 ;; We consider this an abbreviation to be kept enabled.
 (defun lr (arm)
   (declare (xargs :stobjs arm))
   (reg 14 arm))
 
-;; Gets the program counter (register 15).
+;; Gets the program counter (register 15 = #b1111).
 ;; We consider this an abbreviation to be kept enabled.
 (defun pc (arm)
   (declare (xargs :stobjs arm))
   (reg 15 arm))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
