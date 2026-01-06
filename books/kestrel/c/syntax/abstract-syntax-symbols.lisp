@@ -402,7 +402,9 @@
     stmt-compound->items
     stmt-expr
     make-stmt-expr
+    stmt-if
     make-stmt-if
+    stmt-ifelse
     make-stmt-ifelse
     make-stmt-switch
     make-stmt-while

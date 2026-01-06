@@ -2253,7 +2253,23 @@
   (defret stmt-aidentp-of-xeq-stmt-if
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (stmt-aidentp then-new gcc))))
+              (stmt-aidentp then-new gcc)))
+
+  (defruled xeq-stmt-if-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-if test test-new test-thm-name
+                       then then-new then-thm-name
+                       gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-if test-new then-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2391,7 +2407,27 @@
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
               (stmt-aidentp then-new gcc)
-              (stmt-aidentp else-new gcc))))
+              (stmt-aidentp else-new gcc)))
+
+  (defruled xeq-stmt-ifelse-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-ifelse test test-new test-thm-name
+                           then then-new then-thm-name
+                           else else-new else-thm-name
+                           gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (or (not else-thm-name)
+                        (and (stmt-formalp else)
+                             (stmt-formalp else-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-ifelse test-new then-new else-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
