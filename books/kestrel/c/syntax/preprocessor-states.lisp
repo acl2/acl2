@@ -690,6 +690,34 @@
                                            acons)))
   :no-function nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-table-extend-top ((scope macro-scopep) (table macro-tablep))
+  :returns (new-table macro-tablep)
+  :short "Extend the top scope of a macro table with another scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to incorporate,
+     into the macro table of a file being preprocessed,
+     the macros contributed by a (@(see self-contained)) file
+     included by the former file.
+     When the included file is self-contained,
+     it is not expanded in place,
+     but we need to preprocess the rest of the including file
+     as if the included file were expanded in place,
+     in particular we must add the macro definitions that
+     the expanded included file would produce."))
+  (b* ((old-scopes (macro-table->scopes table))
+       ((unless (consp old-scopes))
+        (raise "Internal error: no scopes in macro table.")
+        (irr-macro-table))
+       (old-scope (car old-scopes))
+       (new-scope (append scope old-scope))
+       (new-scopes (cons new-scope (cdr old-scopes))))
+    (change-macro-table table :scopes new-scopes))
+  :no-function nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
@@ -1161,6 +1189,15 @@
            (lnfix size))
     :enable (ppstate->size
              update-ppstate->size
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->size-of-update-ppstate->macros
+    (equal (ppstate->size (update-ppstate->macros macros ppstate))
+           (ppstate->size ppstate))
+    :enable (ppstate->size
+             update-ppstate->macros
              ppstatep
              ppstate-fix
              length))

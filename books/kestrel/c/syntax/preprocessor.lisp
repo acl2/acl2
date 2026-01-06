@@ -23,6 +23,7 @@
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -617,7 +618,16 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred string-ppdfile-alistp
-  :prepwork ((set-induction-depth-limit 1)))
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp
+    (implies (and (string-ppdfile-alistp alist)
+                  (assoc-equal key alist))
+             (ppdfilep (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1151,12 +1161,17 @@
        without calling @(tsee pproc-file).
        More precisely, the resulting @('#include') directive
        has lost any white space and comments in the line,
-       except for an ending line comment if present,
-       and except for one space between the @('include') and the header name;
+       except for one space between the @('include') and the header name;
        on fact, the original file may not have any space
        between the @('include') and the header name,
        but we add one since it is more idiomatic.
-       In the future, we may want to preserve the entire line.")
+       In the future, we may want to preserve the entire line.
+       We also add, to the current file's scope,
+       the macros contributed by the included file:
+       although we do not expand the file in place,
+       in order to process the rest of the including file,
+       we need to act as if we had expanded the included file in place,
+       i.e. its macros must be available.")
      (xdoc::p
       "If the resolved file is not found in the @('preprocessed') alist,
        we preprocess it via @(tsee pproc-file), recursively,
@@ -1169,7 +1184,8 @@
        and we do not need to expand the file in place;
        so we keep the @('#include') directive,
        as described just above for the case of
-       an already preprocessed self-contained with no @(tsee pproc-file) call.
+       an already preprocessed self-contained with no @(tsee pproc-file) call;
+       as also described just above, we add the contributed macros.
        If instead the included preprocessed file is not self-contained,
        we need to expand it in place.")
      (xdoc::p
@@ -1215,16 +1231,23 @@
              (preprocessed (string-ppdfile-alist-fix preprocessed))
              (name+ppdfile (assoc-equal resolved-file preprocessed))
              ((when name+ppdfile)
-              ;; TODO: add resulting macros to current scope
-              (retok (list* toknl2 ; new line or line comment
-                            toknl ; header name
-                            (plexeme-spaces 1)
-                            (plexeme-ident (ident "include"))
-                            (plexeme-punctuator "#")
-                            (plexeme-list-fix rev-lexemes))
-                     ppstate
-                     preprocessed
-                     state))
+              (b* ((ppstate (update-ppstate->macros
+                             (macro-table-extend-top
+                              (ppdfile->macros (cdr name+ppdfile))
+                              (ppstate->macros ppstate))
+                             ppstate)))
+                (retok (list* (if (plexeme-case toknl2 :newline)
+                                  toknl2
+                                (plexeme-newline
+                                 (plexeme-line-comment->newline toknl2)))
+                              toknl ; header name
+                              (plexeme-spaces 1)
+                              (plexeme-ident (ident "include"))
+                              (plexeme-punctuator "#")
+                              (plexeme-list-fix rev-lexemes))
+                       ppstate
+                       preprocessed
+                       state)))
              ((when (zp file-recursion-limit))
               (reterr (msg "Exceeded the limit on file recursion.")))
              ((erp ppdfile preprocessed state)
@@ -1238,9 +1261,16 @@
                           (ppstate->ienv ppstate)
                           state
                           (1- file-recursion-limit)))
-             ;; TODO: add resulting macros to current scope
+             (ppstate (update-ppstate->macros
+                       (macro-table-extend-top
+                        (ppdfile->macros ppdfile)
+                        (ppstate->macros ppstate))
+                       ppstate))
              ((when (ppdfile->selfp ppdfile))
-              (retok (list* toknl2 ; new line or line comment
+              (retok (list* (if (plexeme-case toknl2 :newline)
+                                toknl2
+                              (plexeme-newline
+                               (plexeme-line-comment->newline toknl2)))
                             toknl ; header name
                             (plexeme-spaces 1)
                             (plexeme-ident (ident "include"))
@@ -1387,8 +1417,11 @@
 
   (verify-guards pproc-file
     :hints
-    (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite
-                                true-listp-when-plexeme-listp)))))
+    (("Goal"
+      :in-theory
+      (enable alistp-when-string-ppdfile-alistp-rewrite
+              true-listp-when-plexeme-listp
+              ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
