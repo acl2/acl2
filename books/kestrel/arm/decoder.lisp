@@ -860,8 +860,10 @@
   (and (encoding-pattern-alistp alist)
        (is-good-encoding-pattern-alistp alist)))
 
+(defconst *desugared-patterns* (desugar-patterns *patterns*))
+
 ;move
-(assert-event (good-encoding-pattern-alistp (desugar-patterns *patterns*)))
+(assert-event (good-encoding-pattern-alistp *desugared-patterns*))
 
 
 (defun make-alist-for-fields (highbit pat)
@@ -932,7 +934,7 @@
      ,@(make-instruction-arg-predicates alist)
 
      ;; The decoder:
-     (defun ,name (inst)
+     (defund ,name (inst)
        (declare (xargs :guard (unsigned-byte-p 32 inst)))
        (cond
         ,@(make-decoding-cases alist)
@@ -940,4 +942,4 @@
 
 ;; This makes a decoder called arm32-decode that decodes a USB32 into an
 ;; instruction (any of the instructions in the *patterns*):
-(make-event (make-decoder 'arm32-decode (desugar-patterns *patterns*)))
+(make-event (make-decoder 'arm32-decode *desugared-patterns*))
