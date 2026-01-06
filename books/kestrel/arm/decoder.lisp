@@ -1,6 +1,6 @@
 ; A decoder for ARM32 instructions
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -798,7 +798,7 @@
 
 (defun keyword-doubletp (d)
   (declare (xargs :guard t))
-  (and (acl2::keyword-listp d) ; todo: import
+  (and (keyword-listp d)
        (= 2 (len d))))
 
 (defun keyword-doublet-listp (lst)
@@ -922,7 +922,7 @@
     (let* ((entry (first alist))
            (mnemonic (car entry))
            (pattern (cdr entry)))
-      (cons `(defund ,(acl2::pack-in-package "ARM" mnemonic '-argsp) (args)
+      (cons `(defund ,(pack-in-package "ARM" mnemonic '-argsp) (args)
                (declare (xargs :guard (symbol-alistp args)))
                (and ,@(make-instruction-arg-conjuncts pattern)))
             (make-instruction-arg-predicates (rest alist))))))
@@ -935,7 +935,7 @@
            (mnemonic (car entry))
            ;; (pattern (cdr entry))
            )
-      (cons `(,mnemonic (,(acl2::pack-in-package "ARM" mnemonic '-argsp) args))
+      (cons `(,mnemonic (,(pack-in-package "ARM" mnemonic '-argsp) args))
             (make-good-inst-cases (rest alist))))))
 
 (defun make-good-inst-names (alist)
@@ -946,7 +946,7 @@
            (mnemonic (car entry))
            ;; (pattern (cdr entry))
            )
-      (cons (acl2::pack-in-package "ARM" mnemonic '-argsp)
+      (cons (pack-in-package "ARM" mnemonic '-argsp)
             (make-good-inst-names (rest alist))))))
 
 (defun make-decoder (name alist)
@@ -975,7 +975,7 @@
         ,@(make-decoding-cases alist)
         (t (mv :unsupported nil nil))))
 
-     (defthm ,(acl2::pack-in-package "ARM" name '-return-type)
+     (defthm ,(pack-in-package "ARM" name '-return-type)
        (implies (not (mv-nth 0 (arm32-decode inst)))
                 (good-instp (mv-nth 1 (arm32-decode inst))
                             (mv-nth 2 (arm32-decode inst))))
