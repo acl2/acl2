@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "parser-states")
+(include-book "implementation-environments")
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -689,6 +690,34 @@
                                            acons)))
   :no-function nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-table-extend-top ((scope macro-scopep) (table macro-tablep))
+  :returns (new-table macro-tablep)
+  :short "Extend the top scope of a macro table with another scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to incorporate,
+     into the macro table of a file being preprocessed,
+     the macros contributed by a (@(see self-contained)) file
+     included by the former file.
+     When the included file is self-contained,
+     it is not expanded in place,
+     but we need to preprocess the rest of the including file
+     as if the included file were expanded in place,
+     in particular we must add the macro definitions that
+     the expanded included file would produce."))
+  (b* ((old-scopes (macro-table->scopes table))
+       ((unless (consp old-scopes))
+        (raise "Internal error: no scopes in macro table.")
+        (irr-macro-table))
+       (old-scope (car old-scopes))
+       (new-scope (append scope old-scope))
+       (new-scopes (cons new-scope (cdr old-scopes))))
+    (change-macro-table table :scopes new-scopes))
+  :no-function nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
@@ -710,13 +739,21 @@
     "Most of the components of the preprocessor state
      are analogous to the ones of the parser state:
      see the documentation of @(tsee parstate) first.
-     The only difference in those components is that
+     A difference is that, instead of just a C version,
+     here we have a full implementation environment;
+     probably parser states should have that too.
+     Another difference is that
      the processor state contains (preprocessing) lexemes instead of tokens,
      because our preprocessor preserves comments and white space.")
    (xdoc::p
-    "The preprocessor state includes an additional component
-     (not found in the parser state),
-     namely a macro table that consists of all the macros in scope."))
+    "The preprocessor state also includes additional components,
+     not found in the parser state.
+     One is a macro table that consists of all the macros in scope.
+     Another one is a flag indicating whether the file being preprocessed
+     is @(see self-contained) or not;
+     the flag starts @('t'),
+     and becomes @('nil') if the file is recognized as not self-contained,
+     otherwise it stays @('t') till the end."))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -746,12 +783,14 @@
                     :initially 0)
       (lexemes-unread :type (integer 0 *)
                       :initially 0)
-      (version :type (satisfies c::versionp)
-               :initially ,(c::version-c23))
+      (ienv :type (satisfies ienvp)
+            :initially ,(irr-ienv))
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
+      (selfp :type (satisfies booleanp)
+             :initially nil)
       :renaming (;; field recognizers:
                  (bytesp raw-ppstate->bytes-p)
                  (positionp raw-ppstate->position-p)
@@ -761,9 +800,10 @@
                  (lexemesp raw-ppstate->lexemes-p)
                  (lexemes-readp raw-ppstate->lexemes-read-p)
                  (lexemes-unreadp raw-ppstate->lexemes-unread-p)
-                 (versionp raw-ppstate->version-p)
+                 (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (selfpp raw-ppstate->selfp-p)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
                  (position raw-ppstate->position)
@@ -775,9 +815,10 @@
                  (lexemesi raw-ppstate->lexeme)
                  (lexemes-read raw-ppstate->lexemes-read)
                  (lexemes-unread raw-ppstate->lexemes-unread)
-                 (version raw-ppstate->version)
+                 (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (selfp raw-ppstate->selfp)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
                  (update-position raw-update-ppstate->position)
@@ -789,9 +830,10 @@
                  (update-lexemesi raw-update-ppstate->lexeme)
                  (update-lexemes-read raw-update-ppstate->lexemes-read)
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
-                 (update-version raw-update-ppstate->version)
+                 (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros))))
+                 (update-macros raw-update-ppstate->macros)
+                 (update-selfp raw-update-ppstate->selfp))))
 
   ;; fixer:
 
@@ -927,12 +969,13 @@
                   0)
          :exec (raw-ppstate->lexemes-unread ppstate)))
 
-  (define ppstate->version (ppstate)
-    :returns (version c::versionp)
+  (define ppstate->ienv (ppstate)
+    :returns (ienv ienvp)
     (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->version ppstate)
-                  (c::version-c23))
-         :exec (raw-ppstate->version ppstate)))
+                    (raw-ppstate->ienv ppstate)
+                  (irr-ienv))
+         :exec (raw-ppstate->ienv ppstate))
+    :hooks nil)
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
@@ -947,6 +990,13 @@
                     (raw-ppstate->macros ppstate)
                   (macro-table-init))
          :exec (raw-ppstate->macros ppstate)))
+
+  (define ppstate->selfp (ppstate)
+    :returns (selfp booleanp)
+    (mbe :logic (if (ppstatep ppstate)
+                    (raw-ppstate->selfp ppstate)
+                  nil)
+         :exec (raw-ppstate->selfp ppstate)))
 
   ;; writers:
 
@@ -1045,10 +1095,10 @@
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->lexemes-unread (nfix lexemes-unread) ppstate)))
 
-  (define update-ppstate->version ((version c::versionp) ppstate)
+  (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->version (c::version-fix version) ppstate)))
+      (raw-update-ppstate->ienv (ienv-fix ienv) ppstate)))
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
@@ -1059,6 +1109,11 @@
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
+
+  (define update-ppstate->selfp ((selfp booleanp) ppstate)
+    :returns (ppstate ppstatep)
+    (b* ((ppstate (ppstate-fix ppstate)))
+      (raw-update-ppstate->selfp (bool-fix selfp) ppstate)))
 
   ;; readers over writers:
 
@@ -1138,6 +1193,15 @@
              ppstate-fix
              length))
 
+  (defrule ppstate->size-of-update-ppstate->macros
+    (equal (ppstate->size (update-ppstate->macros macros ppstate))
+           (ppstate->size ppstate))
+    :enable (ppstate->size
+             update-ppstate->macros
+             ppstatep
+             ppstate-fix
+             length))
+
   ;; writers over readers:
 
   (defrule update-ppstate->chars-read-of-ppstate->chars-read
@@ -1173,13 +1237,14 @@
 (define ppstate->gcc ((ppstate ppstatep))
   :returns (gcc booleanp)
   :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ppstate->version ppstate)))
+  (c::version-gccp (ienv->version (ppstate->ienv ppstate)))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
-                      (version c::versionp)
+                      (ienv ienvp)
                       ppstate)
   :returns (ppstate ppstatep)
   :short "Initialize the preprocessor state."
@@ -1189,13 +1254,14 @@
     "This is the state when we start preprocessing a file.
      Given (the data of) a file to preprocess,
      the current table of macros in scope,
-     and a C version,
+     and an implementation environment,
      the initial preprocessing state consists of
      the data to preprocess,
      no read characters or lexemes,
      no unread characters or lexemes,
      the initial file position,
-     and the macro table obtained by pushing a new scope for the file.
+     the macro table obtained by pushing a new scope for the file,
+     and the self-contained flag @('t').
      We also resize the arrays of characters and lexemes
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1212,7 +1278,8 @@
        (ppstate (update-ppstate->lexemes-length (len data) ppstate))
        (ppstate (update-ppstate->lexemes-read 0 ppstate))
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
-       (ppstate (update-ppstate->version version ppstate))
+       (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
+       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
+       (ppstate (update-ppstate->selfp t ppstate)))
     ppstate))

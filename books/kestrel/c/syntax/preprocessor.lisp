@@ -16,12 +16,16 @@
 (include-book "preprocessor-lexer")
 (include-book "preprocessor-printer")
 (include-book "files")
-(include-book "implementation-environments")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
+(include-book "std/strings/strpos" :dir :system)
+(include-book "std/strings/strrpos" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration :hooks nil)
@@ -38,14 +42,15 @@
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
      preserves the information about the @('#include') directives
-     in certain common cases.
+     under conditions that should be often satisfied in practical code.
      That is, it does not replace such directives
      with the (preprocessed) contents of the referenced files,
      but it otherwise performs the rest of the preprocessing.
-     This is only done under certain (common) conditions;
+     This is only done under certain conditions;
      in general, the C preprocessor operates at a low lexical level,
      making it difficult to preserve code structure in general
-     (in those cases, our preprocessor expands the included files in place).")
+     (in those cases, our preprocessor expands the included files in place,
+     like typical preprocessors).")
    (xdoc::p
     "Our preprocessor maps a list of file paths
      to a file set (see @(see files)):
@@ -55,10 +60,44 @@
      for all the files with the given file paths,
      as well as for zero or more @(see self-contained) files.")
    (xdoc::p
-    "Our preprocessor reads characters,
+    "The input to our preprocessor is similar to @(tsee input-files),
+     in the sense that the files to preprocess are specified by
+     (1) a base directory path and (2) a list of file paths.
+     The base directory path may be absolute,
+     or relative to the "
+    (xdoc::seetopic "cbd" "connected book directory")
+    ". The file paths in the list are relative to the base directory.")
+   (xdoc::p
+    "The file set output of our preprocessor has keys
+     that are either absolute or relative paths.
+     The latter are relative to the base directory (1),
+     and they are used not only for the files listed in (2),
+     but also for any additional files that are directly or indirectly included
+     via @('#include') directives with double quotes only (not angle brackets):
+     our preprocessor's search strategy
+     for @('#include') directives with double quotes,
+     in line with GCC "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Search-Path.html"
+                 "[CPPM:2.3]")
+    ", resolves the included files relative to
+     the directory of the including file;
+     in the output file set,
+     the keys for these additional files are
+     the paths of the files relative to the base directory.
+     In contrast, absolute path keys in the output file set are for
+     files included via @('#include') directives with angle brackets,
+     which our preprocessor searches in certain directories,
+     unrelated to the base directory.
+     [C17:6.10.2] gives leeway in how included file are resolved;
+     our preprocessor uses an approch similar to GCC [CPPM:2.3].
+     The directories where to search files included with angle brackets
+     are passed as an additional input to our preprocessor.")
+   (xdoc::p
+    "Our preprocessor
+     reads characters from files,
      lexes them into lexemes,
      and parses the lexemes while executing the preprocessing directives.
-     The resulting sequence of lexemes is then turned into characters
+     The resulting sequences of lexemes is then turned into characters
      that are written (printed) to files.
      The resulting file set is amenable to our parser
      (more precisely, it will be, once we have extended our parser
@@ -67,7 +106,7 @@
      but some layout (i.e. white space) changes are inherent to preprocessing,
      some comments may be impossible to preserve
      (e.g. if they occur within macro parameters),
-     and some comments may no longer apply to preprocessed code
+     and some preserved comments may no longer apply to preprocessed code
      (e.g. comments talking about macros).")
    (xdoc::p
     "Currently some of this preprocessor's code duplicates, at some level,
@@ -109,7 +148,7 @@
    (xdoc::p
     "Where we intentionally wrote @('FILE'),
      without double quotes or angle brackets, and without extensions,
-     because those details do not matter.")
+     because those details do not matter here.")
    (xdoc::p
     "Since @('#include') is substitution in place,
      it is possible for @('FILE') to reference @('M')
@@ -122,7 +161,7 @@
      possibly very different replacements,
      e.g. if @('M') affects conditional inclusion [C17:6.10.1].")
    (xdoc::p
-    "However, the situation above is often not the case.
+    "However, the situation above is not a common case.
      In particular, if @('FILE') is part of a library,
      it would not even know about @('M').
      Thus, the result of preprocessing @('FILE')
@@ -134,10 +173,10 @@
     "In such common cases,
      our preprocessor avoids expanding the inclusion in place,
      and instead adds the result of preprocessing @('FILE')
-     to the file set returned as result of preprocessing a list of files,
-     specified by name (see @(see preprocessor)).
+     to the file set returned as result of preprocessing a list of files
+     (see @(see preprocessor)).
      This is why, in addition to one element for each specified file,
-     our preprocessor also returns zero or more additional elements
+     our preprocessor also returns zero or more additional elements,
      in the file set resulting from the preprocessor.")
    (xdoc::p
     "The files explicitly specified to the preprocessor
@@ -162,6 +201,7 @@
    (xdoc::p
     "The precise notion of self-contained file,
      and how our preprocessor checks it,
+     particularly in the face of include guards,
      is still work in progress.
      It will be described more precisely as we advance the implementation.")))
 
@@ -314,31 +354,216 @@
 
   ///
 
-  (defret ppstate->size-of-unread-token
+  (defret ppstate->size-of-punread-token
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-input-file-to-preprocess ((path stringp) (file stringp) state)
-  :returns (mv erp (bytes byte-listp) state)
-  :short "Read a file to preprocess, explicitly specified as user input."
+(define path-absolutep ((path stringp))
+  :returns (yes/no booleanp)
+  :short "Check if a path is absolute."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used for the files
-     whose paths are explicitly passed to @(tsee pproc-files).
-     We concatenate the path prefix (passed to @(tsee pproc-files))
-     to the file path suffix,
-     with a slash in between (this is for Unix-like systems).
-     We read the bytes from the file system, and return them."))
-  (b* (((reterr) nil state)
-       (path-to-read (str::cat path "/" file))
+    "We check whether it starts with a slash.
+     This is for Unix-like system."))
+  (and (> (length path) 0)
+       (eql (char path 0) #\/)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define h-char-list-to-string ((hchars h-char-listp))
+  :returns (mv erp (string stringp))
+  :short "Convert, to an ACL2 string,
+          a list of characters usable in header names between angle brackets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All the characters must be ASCII for now, otherwise we return an error."))
+  (b* (((reterr) "")
+       ((erp chars) (h-char-list-to-char-list hchars)))
+    (retok (str::implode chars)))
+  :prepwork
+  ((define h-char-list-to-char-list ((hchars h-char-listp))
+     :returns (mv erp (chars character-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp hchars)) (retok nil))
+          (hchar (car hchars))
+          (code (h-char->code hchar))
+          ((unless (< code 128))
+           (reterr (msg "Unsupported header name character with code ~x0."
+                        code)))
+          (char (code-char code))
+          ((erp chars) (h-char-list-to-char-list (cdr hchars))))
+       (retok (cons char chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define q-char-list-to-string ((qchars q-char-listp))
+  :returns (mv erp (string stringp))
+  :short "Convert, to an ACL2 string,
+          a list of characters usable in header names between double quotes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All the characters must be ASCII for now, otherwise we return an error."))
+  (b* (((reterr) "")
+       ((erp chars) (q-char-list-to-char-list qchars)))
+    (retok (str::implode chars)))
+  :prepwork
+  ((define q-char-list-to-char-list ((qchars q-char-listp))
+     :returns (mv erp (chars character-listp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp qchars)) (retok nil))
+          (qchar (car qchars))
+          (code (q-char->code qchar))
+          ((unless (< code 128))
+           (reterr (msg "Unsupported header name character with code ~x0."
+                        code)))
+          (char (code-char code))
+          ((erp chars) (q-char-list-to-char-list (cdr qchars))))
+       (retok (cons char chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define resolve-included-file ((including-file stringp)
+                               (included-file header-namep)
+                               (base-dir stringp)
+                               (include-dirs string-listp)
+                               state)
+  :returns (mv erp
+               (resolved-included-file stringp)
+               (file-bytes byte-listp)
+               state)
+  :short "Resolve a header name to a file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when the file at path @('including-file')
+     contains an @('#include') directive with header name @('included-file'),
+     to resolve the latter to a path, which is returned by this function,
+     along with the bytes obtained by reading the resolved file.
+     The @('including-file') path is either absolute,
+     or relative to the base directory @('base-dir') passed as input,
+     which is passed as input to the @(see preprocessor).
+     The list @('include-dirs') is a list of absolute paths
+     to search for included files,
+     generally unrelated to @('base-dir'), and used, in particular,
+     to specify where the C standard library headers are
+     (this list of directories is another input to the @(see preprocessor)).")
+   (xdoc::p
+    "There are three cases:")
+   (xdoc::ol
+    (xdoc::li
+     "If @('included-file') has angle brackets,
+      the header name is converted to an ASCII path
+      relative to one of the directories in @('include-dirs'),
+      which are tried in order until a file can be read.
+      If a file can be read,
+      its absolute path is returned as the @('resolved-included-file') result,
+      along with the bytes that form the file.
+      Otherwise, we return an error: file resolution failed.")
+    (xdoc::li
+     "If @('included-file') has double quotes
+      and @('including-file') is absolute,
+      the header name is converted to an ASCII path
+      relative to the directory of @('including-file').
+      If a file can be read there,
+      its absolute path is returned as the @('resolved-included-file') result,
+      along with the bytes that form the file.
+      Otherwise, the ASCII path is searched
+      relative to the directories in @('include-dirs'), in order,
+      and things proceed as in the previous case,
+      as if the header name had angle brackets [C17:6.10.2/3].")
+    (xdoc::li
+     "If @('included-file') has double quotes
+      and @('including-file') is relative (to @('base-dir')),
+      the header name is converted to an ASCII path
+      relative to the directory of @('including-file').
+      If a file can be read there,
+      we refactor its path into the @('base-dir') prefix and the rest
+      (we give a clarifying example shortly)
+      and return the rest as the @('resolved-included-file') result,
+      along with the bytes that form the file.
+      For example, assume that
+      @('base-dir') is @('/one/two'),
+      @('including-file') is @('three/including.c'), and
+      @('included-file') is @('four/included.h').
+      Then the directory of the including file is @('/one/two/three'),
+      the included file is @('/one/two/three/four/included.h'),
+      and its path is refactored into @('/one/two') (i.e. @('base-dir'))
+      and the rest @('three/four/included.h').
+      Note that, since @('including-file') is relative to @('base-dir'),
+      @('base-dir') must be a prefix (proper or not) of
+      the directory of @('including-file').
+      In other words, the path of the included file
+      is relativized to @('base-dir').
+      However, if the file cannot be read,
+      the ASCII path is searched
+      relative to the directories in @('include-dirs'), in order,
+      and things proceed as in the first case,
+      as if the header name had angle brackets [C17:6.10.2/3]."))
+   (xdoc::p
+    "To find the directory @('dir-of-including-file') of the including file,
+     we see whether @('including-file') contains at least a slash.
+     It it does, we keep the characters up and including the last slash.
+     If it does not, it means that @('including-file')
+     cannot be an absolute path (because otherwise it would start with slash),
+     and thus it must be relative to @('base-dir'),
+     so the latter is the directory of the including file.")
+   (xdoc::p
+    "The following examples may be helpful to follow the code:")
+   (xdoc::codeblock
+    "// base-dir = base (absolute or relative)"
+    ""
+    "/absolute/including.c:  // dir-of-including-file = /absolute/"
+    "#include \"file.h\"     // included-file-path = /absolute/file.h"
+    "#include \"sub/file.h\" // included-file-path = /absolute/sub/file.h"
+    ""
+    "relative/including.c:   // dir-of-including-file = base/relative/"
+    "#include \"file.h\"     // included-file-path = base/relative/file.h"
+    "#include \"sub/file.h\" // included-file-path = base/relative/sub/file.h"
+    ""
+    "including.c:            // dir-of-including-file = base/"
+    "#include \"file.h\"     // included-file-path = base/file.h"
+    "#include \"sub/file.h\" // included-file-path = base/sub/file.h"))
+  (declare (ignore include-dirs))
+  (b* (((reterr) "" nil state)
+       ((when (header-name-case included-file :angles))
+        (reterr (msg "Angle-bracket #include not yet supported."))) ; TODO
+       ((erp included-file-ascii)
+        (q-char-list-to-string (header-name-quotes->chars included-file)))
+       (base-dir/ (str::cat base-dir "/"))
+       (dir-of-including-file
+        (b* ((last-slash-position (str::strrpos "/" including-file)))
+          (if last-slash-position
+              (if (path-absolutep including-file)
+                  (subseq including-file 0 (1+ last-slash-position))
+                (str::cat base-dir/
+                          (subseq including-file 0 (1+ last-slash-position))))
+            base-dir/)))
+       (included-file-path (str::cat dir-of-including-file included-file-ascii))
+       (resolved-included-file
+        (if (path-absolutep including-file)
+            included-file-path
+          (b* ((must-be-0
+                (str::strpos base-dir/ included-file-path))
+               ((unless (eql must-be-0 0))
+                (raise "Internal error: ~x0 does not start with ~x1."
+                       included-file-path base-dir/)
+                ""))
+            (subseq included-file-path (length base-dir/) nil))))
        ((mv erp bytes state)
-        (acl2::read-file-into-byte-list path-to-read state))
+        (acl2::read-file-into-byte-list included-file-path state))
+       ;; TODO: search INCLUDE-DIRS if ERP
        ((when erp)
-        (reterr (msg "Reading ~x0 failed." path-to-read))))
-    (retok bytes state)))
+        (reterr (msg "Cannot read file ~x0." included-file-path))))
+    (retok resolved-included-file bytes state))
+  :guard-hints (("Goal" :in-theory (enable length string-append)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,12 +602,15 @@
      That is, all the values of this alist have the @('selfp') flag @('t'),
      although we do not capture that invariant in this fixtype.")
    (xdoc::p
-    "These alists always have unique keys,
-     i.e. there are no shadowed pairs.
-     This is not enforced in this fixtype.")
+    "These alists always have unique keys, i.e. there are no shadowed pairs;
+     this is not enforced in this fixtype.
+     The keys are file paths,
+     either absolute,
+     or relative to the base directory passed to the @(see preprocessor).")
    (xdoc::p
     "When all the files have been preprocessed,
-     this alist contains all the results from the preprocessing.
+     this alist contains all the results from the preprocessing,
+     which is turned into a file set.
      The non-@(see self-contained) files are not part of this alist,
      because they have been expanded in place."))
   :key-type string
@@ -391,7 +619,16 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred string-ppdfile-alistp
-  :prepwork ((set-induction-depth-limit 1)))
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp
+    (implies (and (string-ppdfile-alistp alist)
+                  (assoc-equal key alist))
+             (ppdfilep (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,13 +672,16 @@
      But it is also called when encoutering files to be included,
      which is why it is mutually recursive with the other functions.")
    (xdoc::p
-    "All the functions take and return the ACL2 state,
-     since they (indirectly) read files.")
+    "All the functions except @(tsee pproc-file) take as input
+     the path @('file') of the current file being preprocessed,
+     which is either absolute, or relative to the base directory;
+     the latter is passed as the input @('base-dir'),
+     along with the list @('include-dirs') of the directories
+     to search for files included with angle brackets.")
    (xdoc::p
-    "All the functions take as inputs
-     the path prefix @('path') and the path rest @('file')
-     of the file being preprocessed.
-     These are needed to recursively find and read included files.")
+    "The top-level function @(tsee pproc-file) also takes as input
+     the bytes obtained from reading the file,
+     which is read by the caller.")
    (xdoc::p
     "All the functions take and return the @('preprocessed') alist,
      which is extended not only with the file indicated in @(tsee pproc-file),
@@ -463,6 +703,9 @@
      in reverse order for efficiency.
      They are reversed into the right order by @(tsee pproc-file).")
    (xdoc::p
+    "All the functions take and return the ACL2 state,
+     since they (indirectly) read files.")
+   (xdoc::p
     "In the absence of explicit checks, preprocessing may not terminate:
      @('file1.h') may include @('file2.h'), which may include @('file3.h'), etc.
      In practice, the file system is finite,
@@ -479,8 +722,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-file ((path stringp)
+  (define pproc-file ((bytes byte-listp)
                       (file stringp)
+                      (base-dir stringp)
+                      (include-dirs string-listp)
                       (preprocessed string-ppdfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
@@ -498,10 +743,8 @@
     (xdoc::topstring
      (xdoc::p
       "The file is specified by the @('file') string,
-       which must be either a path relative to the @('path') string,
-       or an absolute path with no relation to @('path').
-       The latter is meant to happen with library files,
-       but we have not implemented their handling yet.")
+       which must be either a path relative to @('base-dir')
+       or an absolute path (in which case @('base-dir') is irrelevant.")
      (xdoc::p
       "As expressed by the guard,
        this function is called when the file is not in @('preprocessed'),
@@ -513,11 +756,12 @@
        Otherwise, before preprocessing the file,
        we add it to the list of files under preprocessing.")
      (xdoc::p
-      "We read the file from the file system and we preprocess it,
-       creating a local preprocessing state stobj for the file,
-       with information from the implementation environment
-       and with the current macro table
-       (which @(tsee init-ppstate) extends with a new empty scope for the file.
+      "When this function is called,
+       the file's contents have already been read (see callers),
+       and passed as the @('bytes') input of this function.
+       We create a local preprocessing state stobj for the file,
+       with the implementation environment and the current macro table
+       (which @(tsee init-ppstate) extends with a new empty scope for the file).
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
@@ -525,30 +769,30 @@
        the lexemes obtained from the file
        and the macros contributed by the file,
        which are the macros in the innermost scope of the final table.
-       If the @('selfp') flag of the @(tsee ppdfile) is @('t'),
+       The local preprocessing state stobj is discarded,
+       after extracting the final macro table and self-contained flag.
+       If the self-contained flag is @('t'),
        we extend the @('preprocessed') alist."))
     (b* (((reterr) (irr-ppdfile) nil state)
-         ((when (zp file-recursion-limit))
-          (reterr (msg "Exceeded the limit on file recursion.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         ((erp bytes state) (read-input-file-to-preprocess path file state))
-         ((erp lexemes macros preprocessed state)
+         ((erp lexemes macros selfp preprocessed state)
           (with-local-stobj
             ppstate
-            (mv-let (erp rev-lexemes macros ppstate preprocessed state)
+            (mv-let (erp rev-lexemes macros selfp ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
                                     (macro-table-fix macros)
-                                    (ienv->version ienv)
+                                    ienv
                                     ppstate))
                      ((mv erp rev-lexemes ppstate preprocessed state)
-                      (pproc-*-group-part path
-                                          file
+                      (pproc-*-group-part file
+                                          base-dir
+                                          include-dirs
                                           preprocessed
                                           preprocessing
                                           nil
@@ -558,15 +802,16 @@
                   (mv erp
                       rev-lexemes
                       (ppstate->macros ppstate)
+                      (ppstate->selfp ppstate)
                       ppstate
                       preprocessed
                       state))
               (mv erp
                   (rev rev-lexemes)
                   (car (macro-table->scopes macros))
+                  selfp
                   preprocessed
                   state))))
-         (selfp t) ; TODO
          (ppdfile (make-ppdfile :lexemes lexemes
                                 :macros macros
                                 :selfp selfp))
@@ -581,8 +826,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-*-group-part ((path stringp)
-                              (file stringp)
+  (define pproc-*-group-part ((file stringp)
+                              (base-dir stringp)
+                              (include-dirs string-listp)
                               (preprocessed string-ppdfile-alistp)
                               (preprocessing string-listp)
                               (rev-lexemes plexeme-listp)
@@ -615,8 +861,9 @@
                  state))
          (psize (ppstate->size ppstate))
          ((erp rev-lexemes ppstate preprocessed state) ; group-part
-          (pproc-group-part path
-                            file
+          (pproc-group-part file
+                            base-dir
+                            include-dirs
                             preprocessed
                             preprocessing
                             rev-lexemes
@@ -625,8 +872,9 @@
                             file-recursion-limit))
          ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
           (reterr :impossible)))
-      (pproc-*-group-part path
-                          file
+      (pproc-*-group-part file
+                          base-dir
+                          include-dirs
                           preprocessed
                           preprocessing
                           rev-lexemes
@@ -640,8 +888,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-group-part ((path stringp)
-                            (file stringp)
+  (define pproc-group-part ((file stringp)
+                            (base-dir stringp)
+                            (include-dirs string-listp)
                             (preprocessed string-ppdfile-alistp)
                             (preprocessing string-listp)
                             (rev-lexemes plexeme-listp)
@@ -693,8 +942,9 @@
                (string-ppdfile-alist-fix preprocessed)
                state))
        ((plexeme-hashp toknl) ; #
-        (pproc-directive path
-                         file
+        (pproc-directive file
+                         base-dir
+                         include-dirs
                          preprocessed
                          preprocessing
                          rev-lexemes
@@ -704,8 +954,9 @@
        (t ; non-#-token
         (b* ((ppstate (punread-token ppstate)))
           (pproc-text-line nontoknls
-                           path
                            file
+                           base-dir
+                           include-dirs
                            preprocessed
                            preprocessing
                            rev-lexemes
@@ -720,8 +971,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-directive ((path stringp)
-                           (file stringp)
+  (define pproc-directive ((file stringp)
+                           (base-dir stringp)
+                           (include-dirs string-listp)
                            (preprocessed string-ppdfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
@@ -800,14 +1052,15 @@
         (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
           (cond
            ((equal dirname "if") ; # if
-            (reterr :todo))
+            (reterr (msg "#if directive not yet supported."))) ; TODO
            ((equal dirname "ifdef") ; # ifdef
-            (reterr :todo))
+            (reterr (msg "#ifdef directive not yet supported."))) ; TODO
            ((equal dirname "ifndef") ; # ifndef
-            (reterr :todo))
+            (reterr (msg "#ifndef directive not yet supported."))) ; TODO
            ((equal dirname "include") ; # include
-            (pproc-include-directive path
-                                     file
+            (pproc-include-directive file
+                                     base-dir
+                                     include-dirs
                                      preprocessed
                                      preprocessing
                                      rev-lexemes
@@ -815,15 +1068,15 @@
                                      state
                                      file-recursion-limit))
            ((equal dirname "define") ; # define
-            (reterr :todo))
+            (reterr (msg "#define directive not yet supported."))) ; TODO
            ((equal dirname "undef") ; # undef
-            (reterr :todo))
+            (reterr (msg "#undef directive not yet supported."))) ; TODO
            ((equal dirname "line") ; # line
-            (reterr :todo))
+            (reterr (msg "#line directive not yet supported."))) ; TODO
            ((equal dirname "error") ; # error
-            (reterr :todo))
+            (reterr (msg "#error directive not yet supported."))) ; TODO
            ((equal dirname "pragma") ; # pragma
-            (reterr :todo))
+            (reterr (msg "#pragma directive not yet supported."))) ; TODO
            (t ;  # non-directive
             (reterr-msg :where (span->start span)
                         :expected "a directive name among ~
@@ -858,8 +1111,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-include-directive ((path stringp)
-                                   (file stringp)
+  (define pproc-include-directive ((file stringp)
+                                   (base-dir stringp)
+                                   (include-dirs string-listp)
                                    (preprocessed string-ppdfile-alistp)
                                    (preprocessing string-listp)
                                    (rev-lexemes plexeme-listp)
@@ -878,32 +1132,73 @@
      (xdoc::p
       "This is called just after the @('include') identifier has been parsed.")
      (xdoc::p
-      "If we do not find a token or new line,
-       it is an error, because there is no header name,
-       and no macro that could result in a header name.")
-     (xdoc::p
-      "If we find a new line,
-       it is an error, because there is no header name,
-       and no macro that could result in a header name.")
-     (xdoc::p
-      "If we find a header name,
-       we find the file referenced by it
-       and we recursively preprocess it.
-       Note that we pass @('t') as the @('headerp') flag,
+      "We obtain the next token or new line.
+       we pass @('t') as the @('headerp') flag,
        so that we can properly lex header names,
        which would otherwise be lexed as string literals
        or as the puctuator @('<') just for the opening angle bracket.
-       Note that string literals and @('<') cannot be
+       String literals and @('<') cannot be
        macro-expanded to a header name,
        so it is always correct to lex with the @('headerp') flag @('t').")
      (xdoc::p
-      "If we find any other token,
+      "If we do not find a token or new line,
+       it is an error, because there is no header name,
+       and there is no macro that could result in a header name.")
+     (xdoc::p
+      "If we find a new line,
+       it is an error, because there is no header name,
+       and there is no macro that could result in a header name.")
+     (xdoc::p
+      "If we find a header name,
+       we ensure that we find a new line without intervening tokens,
+       i.e. that there is nothing (of significance) after the directive
+       in the line (see grammar).")
+     (xdoc::p
+      "We resolve the header name to a file.
+       If the resolved file is found in the @('preprocessed') alist,
+       it means that it has been already preprocessed and is self-contained;
+       so we leave the @('#include') directive as is,
+       without calling @(tsee pproc-file).
+       More precisely, the resulting @('#include') directive
+       has lost any white space and comments in the line,
+       except for one space between the @('include') and the header name;
+       on fact, the original file may not have any space
+       between the @('include') and the header name,
+       but we add one since it is more idiomatic.
+       In the future, we may want to preserve the entire line.
+       We also add, to the current file's scope,
+       the macros contributed by the included file:
+       although we do not expand the file in place,
+       in order to process the rest of the including file,
+       we need to act as if we had expanded the included file in place,
+       i.e. its macros must be available.")
+     (xdoc::p
+      "If the resolved file is not found in the @('preprocessed') alist,
+       we preprocess it via @(tsee pproc-file), recursively,
+       with the macros in scope from the current file's preprocessing state,
+       to which @(tsee pproc-file) adds a new scope for the new file.
+       We check the file recursion limit here.
+       When @(tsee pproc-file) returns, there are two cases.
+       If the included preprocessed file is self-contained,
+       @(tsee pproc-file) has added it to @('preprocessed'),
+       and we do not need to expand the file in place;
+       so we keep the @('#include') directive,
+       as described just above for the case of
+       an already preprocessed self-contained with no @(tsee pproc-file) call;
+       as also described just above, we add the contributed macros.
+       If instead the included preprocessed file is not self-contained,
+       we need to expand it in place.")
+     (xdoc::p
+      "Note that @(tsee resolve-included-file)
+       always reads the whole file and returns its bytes,
+       which is wasteful when the file is found in @('preprocessed').
+       We may improve this aspect at some point.")
+     (xdoc::p
+      "If, after the @('#') and @('include') tokens,
+       we find a token that is not a header name,
        for now we return an error,
        but we should preprocess that token and any subsequent tokens,
        and see if they result in a header name."))
-    (declare
-     (ignore
-      path file preprocessed preprocessing rev-lexemes file-recursion-limit))
     (b* (((reterr) nil ppstate nil state)
          ((erp & toknl span ppstate) (pread-token/newline t ppstate)))
       (cond
@@ -911,15 +1206,83 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline)
+       ((or (plexeme-case toknl :newline) ; # include EOL
             (plexeme-case toknl :line-comment)) ; # include // ...
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
        ((plexeme-case toknl :header) ; # include headername
-        (reterr :todo))
+        (b* (((erp & toknl2 span2 ppstate) (pread-token/newline nil ppstate))
+             ((unless (and toknl2
+                           (or (plexeme-case toknl2 :newline)
+                               ;; # include EOL
+                               (plexeme-case toknl2 :line-comment)
+                               ;; # include // ...
+                               )))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a new line or line comment"
+                          :found (plexeme-to-msg toknl2)))
+             ((erp resolved-file bytes state)
+              (resolve-included-file file
+                                     (plexeme-header->name toknl)
+                                     base-dir
+                                     include-dirs
+                                     state))
+             (preprocessed (string-ppdfile-alist-fix preprocessed))
+             (name+ppdfile (assoc-equal resolved-file preprocessed))
+             ((when name+ppdfile)
+              (b* ((ppstate (update-ppstate->macros
+                             (macro-table-extend-top
+                              (ppdfile->macros (cdr name+ppdfile))
+                              (ppstate->macros ppstate))
+                             ppstate)))
+                (retok (list* (if (plexeme-case toknl2 :newline)
+                                  toknl2
+                                (plexeme-newline
+                                 (plexeme-line-comment->newline toknl2)))
+                              toknl ; header name
+                              (plexeme-spaces 1)
+                              (plexeme-ident (ident "include"))
+                              (plexeme-punctuator "#")
+                              (plexeme-list-fix rev-lexemes))
+                       ppstate
+                       preprocessed
+                       state)))
+             ((when (zp file-recursion-limit))
+              (reterr (msg "Exceeded the limit on file recursion.")))
+             ((erp ppdfile preprocessed state)
+              (pproc-file bytes
+                          resolved-file
+                          base-dir
+                          include-dirs
+                          preprocessed
+                          preprocessing
+                          (ppstate->macros ppstate)
+                          (ppstate->ienv ppstate)
+                          state
+                          (1- file-recursion-limit)))
+             (ppstate (update-ppstate->macros
+                       (macro-table-extend-top
+                        (ppdfile->macros ppdfile)
+                        (ppstate->macros ppstate))
+                       ppstate))
+             ((when (ppdfile->selfp ppdfile))
+              (retok (list* (if (plexeme-case toknl2 :newline)
+                                toknl2
+                              (plexeme-newline
+                               (plexeme-line-comment->newline toknl2)))
+                            toknl ; header name
+                            (plexeme-spaces 1)
+                            (plexeme-ident (ident "include"))
+                            (plexeme-punctuator "#")
+                            (plexeme-list-fix rev-lexemes))
+                     ppstate
+                     preprocessed
+                     state)))
+          (reterr
+           (msg "Non-self-contained #include not yet supported.")))) ; TODO
        (t ; # include token
-        (reterr (msg "Non-direct #include not yet supported.")))))
+        (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
     :measure (nat-list-measure (list (nfix file-recursion-limit)
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
@@ -929,8 +1292,9 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define pproc-text-line ((nontoknls plexeme-listp)
-                           (path stringp)
                            (file stringp)
+                           (base-dir stringp)
+                           (include-dirs string-listp)
                            (preprocessed string-ppdfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
@@ -955,9 +1319,10 @@
        Recall that empty text lines,
        i.e. with no tokens (but possibly with some white space and comments),
        are already handled in @(tsee pproc-group-part)."))
-    (declare (ignore nontoknls preprocessed file-recursion-limit))
+    (declare (ignore nontoknls file base-dir include-dirs preprocessed
+                     preprocessing rev-lexemes file-recursion-limit))
     (b* (((reterr) nil ppstate nil state))
-      (reterr (list :todo path file preprocessing rev-lexemes)))
+      (reterr (msg "Text lines not yet supported."))) ; TODO
     :measure (nat-list-measure (list (nfix file-recursion-limit)
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
@@ -1053,13 +1418,17 @@
 
   (verify-guards pproc-file
     :hints
-    (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite
-                                true-listp-when-plexeme-listp)))))
+    (("Goal"
+      :in-theory
+      (enable alistp-when-string-ppdfile-alistp-rewrite
+              true-listp-when-plexeme-listp
+              ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pproc-files ((path stringp)
-                     (files string-listp)
+(define pproc-files ((files string-listp)
+                     (base-dir stringp)
+                     (include-dirs string-listp)
                      (ienv ienvp)
                      state
                      (file-recursion-limit natp))
@@ -1070,12 +1439,16 @@
    (xdoc::p
     "This is the top-level function of the preprocessor.
      The files are identified by the @('files') strings,
-     which must all be paths relative to the @('path') string:
+     which must all be paths relative to the @('base-dir') string:
      this is the same interface as @(tsee input-files).
-     The elements of @('files') are preprocessed in order.
+     The list @('include-dirs') specifies the directories to search
+     for @('#include') directives with angle brackets.")
+   (xdoc::p
+    "The elements of @('files') are preprocessed in order.
      Each file is read from the file system and preprocessed,
      unless it has been already preprocessed via
-     a direct or indirect inclusion of some previous file.")
+     a direct or indirect inclusion of some previous file,
+     and it is @(see self-contained).")
    (xdoc::p
     "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.
@@ -1091,21 +1464,23 @@
      any of the files specified directly is not @(see self-contained).")
    (xdoc::p
     "The file recursion limit is discussed in @(tsee pproc).
-     It should be set to a sufficiently large value of course,
+     It should be set to a sufficiently large value,
      but an excessively large value could be slow
-     in diagnosing an actual circularity.
+     in revealing a circularity.
      It seems best to let the user set this limit (outside this function),
      with perhaps a reasonable default like GCC has."))
   (b* (((reterr) (irr-fileset) state)
        ((erp preprocessed state)
-        (pproc-files-loop path files nil nil ienv state file-recursion-limit)))
+        (pproc-files-loop files base-dir include-dirs
+                          nil nil ienv state file-recursion-limit)))
     (retok
      (fileset (string-ppdfile-alist-to-filepath-filedata-map preprocessed))
      state))
 
   :prepwork
-  ((define pproc-files-loop ((path stringp)
-                             (files string-listp)
+  ((define pproc-files-loop ((files string-listp)
+                             (base-dir stringp)
+                             (include-dirs string-listp)
                              (preprocessed string-ppdfile-alistp)
                              (preprocessing string-listp)
                              (ienv ienvp)
@@ -1118,15 +1493,24 @@
            (retok (string-ppdfile-alist-fix preprocessed) state))
           (file (str-fix (car files)))
           ((when (assoc-equal file (string-ppdfile-alist-fix preprocessed)))
-           (pproc-files-loop path
-                             (cdr files)
+           (pproc-files-loop (cdr files)
+                             base-dir
+                             include-dirs
                              preprocessed
                              preprocessing
                              ienv
                              state
                              file-recursion-limit))
-          ((erp ppdfile preprocessed state) (pproc-file path
+          (file (car files))
+          (path-to-read (str::cat base-dir "/" (str-fix file)))
+          ((mv erp bytes state)
+           (acl2::read-file-into-byte-list path-to-read state))
+          ((when erp)
+           (reterr (msg "Cannot read file ~x0." path-to-read)))
+          ((erp ppdfile preprocessed state) (pproc-file bytes
                                                         (car files)
+                                                        base-dir
+                                                        include-dirs
                                                         preprocessed
                                                         preprocessing
                                                         (macro-table-init)
@@ -1135,10 +1519,11 @@
                                                         file-recursion-limit))
           ((unless (ppdfile->selfp ppdfile))
            (raise "Internal error: non-self-contained top-level file ~x0."
-                  (str-fix (car files)))
+                  (str-fix file))
            (reterr t)))
-       (pproc-files-loop path
-                         (cdr files)
+       (pproc-files-loop (cdr files)
+                         base-dir
+                         include-dirs
                          preprocessed
                          preprocessing
                          ienv

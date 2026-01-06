@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,10 +64,26 @@
      "The "
      (xdoc::ahref "https://www.gnu.org/software/c-intro-and-ref/manual"
                   "GNU C Language Intro and Reference Manual")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/"
+                  "GNU C Preprocessor Manual")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cppinternals/"
+                  "GNU C Preprocessor Internals")
      "."))
    (xdoc::p
     "In the documentation of this library,
-     these source are referenced as `[C23]', `[C17]', `[GCCM]', and `[GCCL]';
+     these source are referenced as
+     `[C23]',
+     `[C17]',
+     `[GCCM]',
+     `[GCCL]',
+     `[CPPM]', and
+     `[CPPI]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
@@ -76,10 +92,10 @@
      e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
      as nouns or parenthetically.
-     In the case of [GCCM] and [GCCL], we also give URL links,
+     In the case of the GNU sources, we also give URL links,
      which, given the characters that form them, may be useful to locate
      documentation that has moved or otherwise changed,
-     given that [GCCM] and [GCCL] are live documents;
+     given that those are live documents;
      an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
                  "[GCCM:6]")
