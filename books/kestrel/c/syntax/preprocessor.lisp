@@ -532,7 +532,8 @@
     "#include \"sub/file.h\" // included-file-path = base/sub/file.h"))
   (declare (ignore include-dirs))
   (b* (((reterr) "" nil state)
-       ((when (header-name-case included-file :angles)) (reterr :todo))
+       ((when (header-name-case included-file :angles))
+        (reterr (msg "Angle-bracket #include not yet supported."))) ; TODO
        ((erp included-file-ascii)
         (q-char-list-to-string (header-name-quotes->chars included-file)))
        (base-dir/ (str::cat base-dir "/"))
@@ -1052,11 +1053,11 @@
         (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
           (cond
            ((equal dirname "if") ; # if
-            (reterr :todo))
+            (reterr (msg "#if directive not yet supported."))) ; TODO
            ((equal dirname "ifdef") ; # ifdef
-            (reterr :todo))
+            (reterr (msg "#ifdef directive not yet supported."))) ; TODO
            ((equal dirname "ifndef") ; # ifndef
-            (reterr :todo))
+            (reterr (msg "#ifndef directive not yet supported."))) ; TODO
            ((equal dirname "include") ; # include
             (pproc-include-directive file
                                      base-dir
@@ -1068,15 +1069,15 @@
                                      state
                                      file-recursion-limit))
            ((equal dirname "define") ; # define
-            (reterr :todo))
+            (reterr (msg "#define directive not yet supported."))) ; TODO
            ((equal dirname "undef") ; # undef
-            (reterr :todo))
+            (reterr (msg "#undef directive not yet supported."))) ; TODO
            ((equal dirname "line") ; # line
-            (reterr :todo))
+            (reterr (msg "#line directive not yet supported."))) ; TODO
            ((equal dirname "error") ; # error
-            (reterr :todo))
+            (reterr (msg "#error directive not yet supported."))) ; TODO
            ((equal dirname "pragma") ; # pragma
-            (reterr :todo))
+            (reterr (msg "#pragma directive not yet supported."))) ; TODO
            (t ;  # non-directive
             (reterr-msg :where (span->start span)
                         :expected "a directive name among ~
@@ -1279,9 +1280,10 @@
                      ppstate
                      preprocessed
                      state)))
-          (reterr :todo))) ; expand in place
+          (reterr
+           (msg "Non-self-contained #include not yet supported.")))) ; TODO
        (t ; # include token
-        (reterr (msg "Non-direct #include not yet supported.")))))
+        (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
     :measure (nat-list-measure (list (nfix file-recursion-limit)
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
@@ -1321,7 +1323,7 @@
     (declare (ignore nontoknls file base-dir include-dirs preprocessed
                      preprocessing rev-lexemes file-recursion-limit))
     (b* (((reterr) nil ppstate nil state))
-      (reterr :todo))
+      (reterr (msg "Text lines not yet supported."))) ; TODO
     :measure (nat-list-measure (list (nfix file-recursion-limit)
                                      0 ; < pproc-file
                                      (ppstate->size ppstate)
