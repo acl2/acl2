@@ -412,8 +412,7 @@
            (unsigned-byte-p 32 (mv-nth 0 (armexpandimm_c imm12 carry_in))))
   :hints (("Goal" :in-theory (enable armexpandimm_c))))
 
-
-;; the arm arm is irrelevant?
+;; the arm arg is irrelevant?
 (defun ARMExpandImm (imm12 arm)
   (declare (xargs :guard (unsigned-byte-p 12 imm12)
                   :stobjs arm))
