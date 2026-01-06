@@ -722,10 +722,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-file ((file stringp)
+  (define pproc-file ((bytes byte-listp)
+                      (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (bytes byte-listp)
                       (preprocessed string-ppdfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
@@ -743,9 +743,8 @@
     (xdoc::topstring
      (xdoc::p
       "The file is specified by the @('file') string,
-       which must be a path relative to the "
-      (xdoc::seetopic "cbd" "connected book directory")
-      " or an absolute path.")
+       which must be either a path relative to @('base-dir')
+       or an absolute path (in which case @('base-dir') is irrelevant.")
      (xdoc::p
       "As expressed by the guard,
        this function is called when the file is not in @('preprocessed'),
@@ -1252,10 +1251,10 @@
              ((when (zp file-recursion-limit))
               (reterr (msg "Exceeded the limit on file recursion.")))
              ((erp ppdfile preprocessed state)
-              (pproc-file resolved-file
+              (pproc-file bytes
+                          resolved-file
                           base-dir
                           include-dirs
-                          bytes
                           preprocessed
                           preprocessing
                           (ppstate->macros ppstate)
@@ -1508,10 +1507,10 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp ppdfile preprocessed state) (pproc-file (car files)
+          ((erp ppdfile preprocessed state) (pproc-file bytes
+                                                        (car files)
                                                         base-dir
                                                         include-dirs
-                                                        bytes
                                                         preprocessed
                                                         preprocessing
                                                         (macro-table-init)
