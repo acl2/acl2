@@ -162,17 +162,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: move to decoder and show it always produces a good-inst?
-(defun good-instp (mnemonic args)
-  (declare (xargs :guard t))
-  (and (mnemonicp mnemonic)
-       (symbol-alistp args)
-       (case mnemonic
-         (:add-register (add-register-argsp args))
-         (:add-immediate (add-immediate-argsp args))
-         ;; todo: more
-         (otherwise t))))
-
 (defund execute-inst (mnemonic args arm)
   (declare (xargs :guard (good-instp mnemonic args)
                   :stobjs arm))

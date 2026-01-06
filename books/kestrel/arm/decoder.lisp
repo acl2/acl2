@@ -926,11 +926,33 @@
                (and ,@(make-instruction-arg-conjuncts pattern)))
             (make-instruction-arg-predicates (rest alist))))))
 
+(defun make-good-inst-cases (alist)
+  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (mnemonic (car entry))
+           ;; (pattern (cdr entry))
+           )
+      (cons `(,mnemonic (,(acl2::pack-in-package "ARM" mnemonic '-argsp) args))
+            (make-good-inst-cases (rest alist))))))
+
 (defun make-decoder (name alist)
   (declare (xargs :guard (and (symbolp name)
                               (good-encoding-pattern-alistp alist))))
   `(progn
      ,@(make-instruction-arg-predicates alist)
+
+     ;; Recognize a "good" instruction
+     ;; todo: it's really the args that we are checking here
+     ;; todo:  show decoder always produces a good-inst?
+     (defun good-instp (mnemonic args)
+       (declare (xargs :guard t))
+       (and (mnemonicp mnemonic)
+            (symbol-alistp args)
+            (case mnemonic
+              ,@(make-good-inst-cases alist)
+              (otherwise nil))))
 
      ;; The decoder.  Given an instruction, attempt to decode it into mnemonic and args.
      ;; Returns (mv erp mnemonic args) where ARGS is an alist from field names
