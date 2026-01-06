@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "../preprocessor-reader")
+(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
@@ -18,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro init (input)
-  `(init-ppstate ,input (macro-table-init) (c::version-c23) ppstate))
+  `(init-ppstate ,input (macro-table-init) (ienv-default) ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
