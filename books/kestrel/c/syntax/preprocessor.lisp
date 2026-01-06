@@ -764,8 +764,6 @@
        If the self-contained flag is @('t'),
        we extend the @('preprocessed') alist."))
     (b* (((reterr) (irr-ppdfile) nil state)
-         ((when (zp file-recursion-limit))
-          (reterr (msg "Exceeded the limit on file recursion.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
          ((when (member-equal file preprocessing))
@@ -1124,31 +1122,67 @@
      (xdoc::p
       "This is called just after the @('include') identifier has been parsed.")
      (xdoc::p
-      "If we do not find a token or new line,
-       it is an error, because there is no header name,
-       and no macro that could result in a header name.")
-     (xdoc::p
-      "If we find a new line,
-       it is an error, because there is no header name,
-       and no macro that could result in a header name.")
-     (xdoc::p
-      "If we find a header name,
-       we find the file referenced by it
-       and we recursively preprocess it.
-       Note that we pass @('t') as the @('headerp') flag,
+      "We obtain the next token or new line.
+       we pass @('t') as the @('headerp') flag,
        so that we can properly lex header names,
        which would otherwise be lexed as string literals
        or as the puctuator @('<') just for the opening angle bracket.
-       Note that string literals and @('<') cannot be
+       String literals and @('<') cannot be
        macro-expanded to a header name,
        so it is always correct to lex with the @('headerp') flag @('t').")
      (xdoc::p
-      "If we find any other token,
+      "If we do not find a token or new line,
+       it is an error, because there is no header name,
+       and there is no macro that could result in a header name.")
+     (xdoc::p
+      "If we find a new line,
+       it is an error, because there is no header name,
+       and there is no macro that could result in a header name.")
+     (xdoc::p
+      "If we find a header name,
+       we ensure that we find a new line without intervening tokens,
+       i.e. that there is nothing (of significance) after the directive
+       in the line (see grammar).")
+     (xdoc::p
+      "We resolve the header name to a file.
+       If the resolved file is found in the @('preprocessed') alist,
+       it means that it has been already preprocessed and is self-contained;
+       so we leave the @('#include') directive as is,
+       without calling @(tsee pproc-file).
+       More precisely, the resulting @('#include') directive
+       has lost any white space and comments in the line,
+       except for an ending line comment if present,
+       and except for one space between the @('include') and the header name;
+       on fact, the original file may not have any space
+       between the @('include') and the header name,
+       but we add one since it is more idiomatic.
+       In the future, we may want to preserve the entire line.")
+     (xdoc::p
+      "If the resolved file is not found in the @('preprocessed') alist,
+       we preprocess it via @(tsee pproc-file), recursively,
+       with the macros in scope from the current file's preprocessing state,
+       to which @(tsee pproc-file) adds a new scope for the new file.
+       We check the file recursion limit here.
+       When @(tsee pproc-file) returns, there are two cases.
+       If the included preprocessed file is self-contained,
+       @(tsee pproc-file) has added it to @('preprocessed'),
+       and we do not need to expand the file in place;
+       so we keep the @('#include') directive,
+       as described just above for the case of
+       an already preprocessed self-contained with no @(tsee pproc-file) call.
+       If instead the included preprocessed file is not self-contained,
+       we need to expand it in place.")
+     (xdoc::p
+      "Note that @(tsee resolve-included-file)
+       always reads the whole file and returns its bytes,
+       which is wasteful when the file is found in @('preprocessed').
+       We may improve this aspect at some point.")
+     (xdoc::p
+      "If, after the @('#') and @('include') tokens,
+       we find a token that is not a header name,
        for now we return an error,
        but we should preprocess that token and any subsequent tokens,
        and see if they result in a header name."))
-    (declare (ignore file base-dir include-dirs preprocessed preprocessing
-                     rev-lexemes file-recursion-limit))
     (b* (((reterr) nil ppstate nil state)
          ((erp & toknl span ppstate) (pread-token/newline t ppstate)))
       (cond
@@ -1156,13 +1190,66 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline)
+       ((or (plexeme-case toknl :newline) ; # include EOL
             (plexeme-case toknl :line-comment)) ; # include // ...
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
        ((plexeme-case toknl :header) ; # include headername
-        (reterr :todo))
+        (b* (((erp & toknl2 span2 ppstate) (pread-token/newline nil ppstate))
+             ((unless (and toknl2
+                           (or (plexeme-case toknl2 :newline)
+                               ;; # include EOL
+                               (plexeme-case toknl2 :line-comment)
+                               ;; # include // ...
+                               )))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a new line or line comment"
+                          :found (plexeme-to-msg toknl2)))
+             ((erp resolved-file bytes state)
+              (resolve-included-file file
+                                     (plexeme-header->name toknl)
+                                     base-dir
+                                     include-dirs
+                                     state))
+             (preprocessed (string-ppdfile-alist-fix preprocessed))
+             (name+ppdfile (assoc-equal resolved-file preprocessed))
+             ((when name+ppdfile)
+              ;; TODO: add resulting macros to current scope
+              (retok (list* toknl2 ; new line or line comment
+                            toknl ; header name
+                            (plexeme-spaces 1)
+                            (plexeme-ident (ident "include"))
+                            (plexeme-punctuator "#")
+                            (plexeme-list-fix rev-lexemes))
+                     ppstate
+                     preprocessed
+                     state))
+             ((when (zp file-recursion-limit))
+              (reterr (msg "Exceeded the limit on file recursion.")))
+             ((erp ppdfile preprocessed state)
+              (pproc-file resolved-file
+                          base-dir
+                          include-dirs
+                          bytes
+                          preprocessed
+                          preprocessing
+                          (ppstate->macros ppstate)
+                          (ppstate->ienv ppstate)
+                          state
+                          (1- file-recursion-limit)))
+             ;; TODO: add resulting macros to current scope
+             ((when (ppdfile->selfp ppdfile))
+              (retok (list* toknl2 ; new line or line comment
+                            toknl ; header name
+                            (plexeme-spaces 1)
+                            (plexeme-ident (ident "include"))
+                            (plexeme-punctuator "#")
+                            (plexeme-list-fix rev-lexemes))
+                     ppstate
+                     preprocessed
+                     state)))
+          (reterr :todo))) ; expand in place
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported.")))))
     :measure (nat-list-measure (list (nfix file-recursion-limit)
