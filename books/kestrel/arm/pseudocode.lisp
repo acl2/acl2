@@ -172,6 +172,9 @@
         (not result)
       result)))
 
+;; So we can call ConditionPassed before checking for a condition of #b1111.
+(thm (ConditionPassed #b1111 arm) :hints (("Goal" :in-theory (enable conditionpassed))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See A8.4.3 (Pseudocode details of instruction-specified shifts and rotates)
@@ -320,6 +323,21 @@
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
   :hints (("Goal" :in-theory (enable shift_c))))
 
+(defthm unsigned-byte-p-of-mv-nth-1-of-shift_c
+  (implies (and (unsigned-byte-p n value)
+                (< 0 n)
+                (SRTypep type)
+                (integerp amount)           ; restrict?
+                (<= 0 amount)               ; for the guard of lsl_c
+                (bitp carry_in)
+                ;; the assert:
+                (not (and (eq type :SRType_RRX)
+                          (not (equal amount 1)))))
+           (unsigned-byte-p 1 (mv-nth 1 (shift_c n value type amount carry_in))))
+  :hints (("Goal" :in-theory (enable shift_c))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund shift (n value type amount carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n value)
                               (< 0 n)
@@ -353,12 +371,12 @@
                               (posp n) ; so there is a sign bit
                               (bitp carry_in))))
   (let* ((unsigned_sum (+ x y carry_in))
-         (signed_sum (+ (acl2::logext n x)
-                        (acl2::logext n y)
+         (signed_sum (+ (logext n x)
+                        (logext n y)
                         carry_in))
          (result (slice (- n 1) 0 unsigned_sum))
          (carry_out (if (== result unsigned_sum) 0 1))
-         (overflow (if (== (acl2::logext n result) signed_sum) 0 1)))
+         (overflow (if (== (logext n result) signed_sum) 0 1)))
     (mv result carry_out overflow)))
 
 (defthm unsigned-byte-p-of-mv-nth-0-of-AddWithCarry
@@ -412,6 +430,11 @@
            (unsigned-byte-p 32 (mv-nth 0 (armexpandimm_c imm12 carry_in))))
   :hints (("Goal" :in-theory (enable armexpandimm_c))))
 
+(defthm unsigned-byte-p-1-of-mv-nth-1-of-armexpandimm_c
+  (implies (bitp carry_in)
+           (unsigned-byte-p 1 (mv-nth 1 (armexpandimm_c imm12 carry_in))))
+  :hints (("Goal" :in-theory (enable armexpandimm_c))))
+
 ;; the arm arg is irrelevant?
 (defun ARMExpandImm (imm12 arm)
   (declare (xargs :guard (unsigned-byte-p 12 imm12)
@@ -447,3 +470,34 @@
 ;;                   :stobjs arm))
 ;;   ;; todo: more cases
 ;;   (BXWritePC address arm))
+
+(defund sint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (logext n x))
+
+;; for us, a bitstring is already an unsigned integer, but we chop to make an
+;; unconditional return type.
+(defund uint (n x)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x))))
+  (bvchop n x))
+
+(defthm uint-bound-linear
+  (implies (natp n)
+           (<= (uint n x) (+ -1 (expt 2 n))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable uint))))
+
+(defund int (n x unsigned)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x)
+                              (booleanp unsigned))))
+  (if unsigned (uint n x) (sint n x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund archversion ()
+  (declare (xargs :guard t))
+  5 ; todo
+  )
