@@ -89,3 +89,17 @@
 
 
 "))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "#include \"included.h\"
+"
+                                    "included.h"
+                                    "#include \"subdir/included2.h\"
+"
+                                    "subdir/included2.h"
+                                    "
+"
+                                    ))
