@@ -74,6 +74,8 @@
 (defmacro def-inst (mnemonic body)
   (def-inst-fn mnemonic body))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :add-immediate
     (if (not (ConditionPassed cond arm))
         arm
@@ -160,24 +162,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun good-instp (opcode args) ; todo: rename opcode to mnemonic
+;; todo: move to decoder and show it always produces a good-inst?
+(defun good-instp (mnemonic args)
   (declare (xargs :guard t))
-  (and (mnemonicp opcode)
+  (and (mnemonicp mnemonic)
        (symbol-alistp args)
-       (case opcode
+       (case mnemonic
          (:add-register (add-register-argsp args))
          (:add-immediate (add-immediate-argsp args))
          ;; todo: more
          (otherwise t))))
 
-(defund execute-inst (opcode args arm)
-  (declare (xargs :guard (good-instp opcode args)
+(defund execute-inst (mnemonic args arm)
+  (declare (xargs :guard (good-instp mnemonic args)
                   :stobjs arm))
-  (case opcode
+  (case mnemonic
     (:add-immediate (execute-add-immediate args arm))
     (:add-register (execute-add-register args arm))
     ;; todo: more
-    (otherwise (update-error :unsupported-opcode-error arm))))
+    (otherwise (update-error :unsupported-mnemonic-error arm))))
 
 ;; Returns a new state, which might have the error flag set
 (defun step (arm)
@@ -187,8 +190,8 @@
   (if (error arm)
       arm
     (b* ((inst (read 4 (pc arm) arm))
-         ((mv erp opcode args)
+         ((mv erp mnemonic args)
           (arm32-decode inst))
          ((when erp)
           (update-error :decoding-error arm)))
-      (execute-inst opcode args arm))))
+      (execute-inst mnemonic args arm))))

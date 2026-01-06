@@ -46,7 +46,7 @@
 ;; todo: do I want to use keywords for the field names?
 ;; TODO: Add more
 ;; TODO: Add _ in consistently where it separates two 0/1 values in different fields
-;; todo: check for opcode variants in the assembly representations of each instruction (as for BL/BLX).
+;; todo: check for mnemonic variants in the assembly representations of each instruction (as for BL/BLX).
 (defconst *patterns*
   '((:adc-immediate                  (cond 4) 0 0 _ 1 _ 0 1 0 1 s (rn 4) (rd 4) (imm12 12))
     (:adc-register                   (cond 4) 0 0 _ 0 _ 0 1 0 1 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
@@ -889,7 +889,7 @@
   (if (endp alist)
       nil
     (cons (let* ((entry (first alist))
-                 (opcode (car entry))
+                 (mnemonic (car entry))
                  (pattern (cdr entry))
                  (mandatory-bit-mask (mandatory-bit-mask pattern 31 0)) ; has a 1 everywhere the pattern has a concrete value
                  (mandatory-bits (mandatory-bits pattern 31 0)) ; has all the mandatory bits the same as in the pattern and zeros for the don't cares
@@ -897,7 +897,7 @@
             ;; this is a cond clause:
             `((equal (bvand 32 inst ,mandatory-bit-mask) ,mandatory-bits)
               (mv nil ; no error
-                  ,opcode
+                  ,mnemonic
                   ,(make-alist-for-fields 31 pattern)
                   )))
           (make-decoding-cases (rest alist)))))
@@ -919,9 +919,9 @@
   (if (endp alist)
       nil
     (let* ((entry (first alist))
-           (opcode (car entry))
+           (mnemonic (car entry))
            (pattern (cdr entry)))
-      (cons `(defun ,(acl2::pack-in-package "ARM" opcode '-argsp) (args)
+      (cons `(defun ,(acl2::pack-in-package "ARM" mnemonic '-argsp) (args)
                (declare (xargs :guard (symbol-alistp args)))
                (and ,@(make-instruction-arg-conjuncts pattern)))
             (make-instruction-arg-predicates (rest alist))))))
@@ -930,10 +930,11 @@
   (declare (xargs :guard (and (symbolp name)
                               (good-encoding-pattern-alistp alist))))
   `(progn
-     ;; Returns (mv erp opcode args).
      ,@(make-instruction-arg-predicates alist)
 
-     ;; The decoder:
+     ;; The decoder.  Given an instruction, attempt to decode it into mnemonic and args.
+     ;; Returns (mv erp mnemonic args) where ARGS is an alist from field names
+     ;; to their values from in the instruction (e.g., rd=14).
      (defund ,name (inst)
        (declare (xargs :guard (unsigned-byte-p 32 inst)))
        (cond
