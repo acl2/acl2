@@ -1,4 +1,4 @@
-; A formal model of ARM32
+; A formal model of ARM32: the instructions
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -28,7 +28,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(include-book "std/testing/must-be-redundant" :dir :system)
+;(include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
@@ -125,27 +125,3 @@
                                  arm)
                              arm)))
                  arm)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund execute-inst (mnemonic args arm)
-  (declare (xargs :guard (good-instp mnemonic args)
-                  :guard-hints (("Goal" :in-theory (enable good-instp)))
-                  :stobjs arm))
-  (case mnemonic
-    (:add-immediate (execute-add-immediate args arm))
-    (:add-register (execute-add-register args arm))
-    ;; todo: more
-    (otherwise (update-error :unsupported-mnemonic-error arm))))
-
-;; Returns a new state, which might have the error flag set
-(defun step (arm)
-  (declare (xargs :stobjs arm))
-  (if (error arm)
-      arm
-    (b* ((inst (read 4 (pc arm) arm))
-         ((mv erp mnemonic args)
-          (arm32-decode inst))
-         ((when erp)
-          (update-error :decoding-error arm)))
-      (execute-inst mnemonic args arm))))
