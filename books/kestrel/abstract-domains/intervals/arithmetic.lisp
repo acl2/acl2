@@ -12,7 +12,6 @@
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -25,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ arithmetic
+(defxdoc arithmetic
   :parents (intervals)
   :short "Arithmetic on @(see intervals)."
   :long
@@ -33,8 +32,9 @@
     (xdoc::p
       "Given an @($n$)-ary function @('f') on rationals, and a corresponding
        @($n$)-ary function @('ivl-f') on intervals, we say that @('ivl-f') is
-       an ``interval-extension'' of @('f') iff, for all rationals
-       @('x0'), @('x1'), @('xn') and intervals @('00'), @('x1'), @('xn'):")
+       an ``interval extension'' of @('f') iff, for all rationals
+       @('x0'), @('x1'), ... @('xn') and intervals @('i0'), @('i1'), ...
+       @('in'):")
     (xdoc::codeblock
       "(implies (and (inp x0 i0)"
       "              (inp x1 i1)"
@@ -43,34 +43,42 @@
       "         (inp (f x0 x1 ... xn)"
       "              (ivl-f i0 i1 ... in)))")
     (xdoc::p
-      ". The arithmetic operations here are the tightest possible
-       interval-extensions of the corresponding rational operation.")
+      ". The arithmetic operations defined here are the tightest possible
+       interval extensions of the corresponding rational operation.")
     (xdoc::p
-      "Note that the tightest interval-extension of a function is not
-       necessarily fully precise. That is, for an arbitrary element $('x') in
-       the output interval of @('ivl-f'), it is not necessarily the case that
-       there exists values @('x0'), @('x1'), ... @('xn') in the input intervals
-       such that @('(equal (f x0 x1 ... xn) x)'). For instance, consider the
-       tightest interval-extension of a discontinuous function like @(tsee
-       floor). The extension of @(tsee floor) on intervals @($[1,1]$) and
-       @($[1,2]$) would produce @($[0, 1]$). But, this interval includes many
-       values (such as @($1/2$)) which we could not actually produce with
-       @(tsee floor).")
+      "We define an interval extension to be ``precise'' when all rationals
+       included in the output interval can actually be achieved by the regular
+       function for some set of inputs from the input intervals.  More
+       formally, for arbitrary intervals @('i0'), @('i1'), ... @('in'):")
+    (xdoc::codeblock
+      "(implies (inp r (inv-f i0 i1 ... in))"
+      "         (exists (x0 x1 ... xn)"
+      "                 (and (inp x0 i0)"
+      "                      (inp x1 i1)"
+      "                      ..."
+      "                      (inp xn in)"
+      "                      (equal r (f x0 x1 ... xn)))))")
     (xdoc::p
-      "Currently, the only defined interval-extension is @(tsee +). We plan to
-       add further extensions."))
-  :default-parent t)
+      "Note that the tightest interval extension will be precise if it extends
+       a continue function, but not necessarily if it extends a discontinuous
+       function. This is because an interval cannot represent any ``gaps''.
+       Consider the tightest extension of the @(tsee floor) function.
+       The output of @(tsee floor) is always an integer, but any nonempty,
+       non-@(see exact) interval produced by the interval extension will
+       necessarily include non-integers.")
+    (xdoc::p
+      "Currently, the only defined interval extension is @(tsee +). We plan to
+       add further extensions.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection +
-  :parents (intervals)
+  :parents (arithmetic)
   :short "Interval addition."
   :long
   (xdoc::topstring
     (xdoc::p
-      "This is the obvious interval-extension of @(tsee acl2::+). It is fully
-       precise (in the sense described in @(see arithmetic))."))
+      "This is the precise interval extension of @(tsee acl2::+)."))
 
   (define binary-+
     ((x intervalp)

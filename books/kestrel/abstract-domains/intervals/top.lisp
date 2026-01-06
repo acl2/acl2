@@ -51,6 +51,6 @@
        the top is @(tsee full).")
     (xdoc::p
       "We define various arithmetic operations on intervals. Each arithmetic
-       operation is the tightest interval-extension of the regular arithmetic
+       operation is the tightest interval extension of the regular arithmetic
        operation. (See @(see arithmetic) for a definition of ``tightest
-       interval-extension.'')")))
+       interval extension.'')")))
