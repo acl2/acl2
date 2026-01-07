@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,7 @@
 (include-book "byte-list20")
 (include-book "byte-list32")
 (include-book "byte-list64")
+(include-book "byte-list-list")
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")

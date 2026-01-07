@@ -82,12 +82,22 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
        (cond (cdr (assoc-eq :cond options)))
+       (bool-bytes 1)
+       (float-bytes 4)
+       (double-bytes 8)
+       (ldouble-bytes 16)
+       (pointer-bytes 8)
        (version (if gcc (c::version-c17+gcc) (c::version-c17)))
        (ienv (make-ienv :version version
+                        :bool-bytes bool-bytes
                         :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
+                        :float-bytes float-bytes
+                        :double-bytes double-bytes
+                        :ldouble-bytes ldouble-bytes
+                        :pointer-bytes pointer-bytes
                         :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
@@ -114,12 +124,22 @@
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (gcc (cdr (assoc-eq :gcc options)))
+       (bool-bytes 1)
+       (float-bytes 4)
+       (double-bytes 8)
+       (ldouble-bytes 16)
+       (pointer-bytes 8)
        (version (if gcc (c::version-c17+gcc) (c::version-c17)))
        (ienv (make-ienv :version version
+                        :bool-bytes bool-bytes
                         :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
+                        :float-bytes float-bytes
+                        :double-bytes double-bytes
+                        :ldouble-bytes ldouble-bytes
+                        :pointer-bytes pointer-bytes
                         :plain-char-signedp plain-char-signedp))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
