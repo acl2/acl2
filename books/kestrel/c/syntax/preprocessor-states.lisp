@@ -489,7 +489,7 @@
      where each scope corresponds to a file.
      [C17] does not have a notion of macro scopes,
      but our preprocessor uses this notion to determine
-     when included files are self-contained,
+     when included files are @(see self-contained),
      in the precise sense that we define elsewhere.")
    (xdoc::p
     "The values of this fixtype represent a macro scope.
@@ -819,14 +819,7 @@
       because our preprocessor preserves comments and white space.")
     (xdoc::li
      "The preprocessor state also contains
-      a macro table that consists of all the macros in scope.")
-    (xdoc::li
-     "The preprocessor state also contains
-      a flag indicating whether the file being preprocessed
-      is @(see self-contained) or not;
-      the flag starts @('t'),
-      and becomes @('nil') if the file is recognized as not self-contained,
-      otherwise it stays @('t') till the end.")))
+      a macro table that consists of all the macros in scope.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -865,8 +858,6 @@
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
-      (selfp :type (satisfies booleanp)
-             :initially nil)
       :renaming (;; field recognizers:
                  (bytessp raw-ppstate->bytess-p)
                  (bytess-currentp raw-ppstate->bytess-current-p)
@@ -880,7 +871,6 @@
                  (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
-                 (selfpp raw-ppstate->selfp-p)
                  ;; field readers:
                  (bytess-length raw-ppstate->bytess-length)
                  (bytessi raw-ppstate->bytes)
@@ -897,7 +887,6 @@
                  (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
-                 (selfp raw-ppstate->selfp)
                  ;; field writers:
                  (resize-bytess raw-update-ppstate->bytess-length)
                  (update-bytessi raw-update-ppstate->bytes)
@@ -913,8 +902,7 @@
                  (update-lexemes-unread raw-update-ppstate->lexemes-unread)
                  (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros)
-                 (update-selfp raw-update-ppstate->selfp))))
+                 (update-macros raw-update-ppstate->macros))))
 
   ;; fixer:
 
@@ -1096,13 +1084,6 @@
                   (macro-table-init))
          :exec (raw-ppstate->macros ppstate)))
 
-  (define ppstate->selfp (ppstate)
-    :returns (selfp booleanp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->selfp ppstate)
-                  nil)
-         :exec (raw-ppstate->selfp ppstate)))
-
   ;; writers:
 
   (define update-ppstate->bytess-length ((length natp) ppstate)
@@ -1245,11 +1226,6 @@
     :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
-
-  (define update-ppstate->selfp ((selfp booleanp) ppstate)
-    :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->selfp (bool-fix selfp) ppstate)))
 
   ;; readers over writers:
 
@@ -1504,7 +1480,6 @@
      The position is the initial one.
      There are no read or unread characters or lexemes.
      The macro table is obtained by pushing a new scope for the file.
-     The self-contained flag is set to @('t').
      We also resize the arrays of characters and lexemes
      to the number of data bytes,
      which is overkill but certainly sufficient
@@ -1525,8 +1500,7 @@
        (ppstate (update-ppstate->lexemes-unread 0 ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
-       (ppstate (update-ppstate->selfp t ppstate)))
+       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
     ppstate)
   :guard-hints
   (("Goal"
