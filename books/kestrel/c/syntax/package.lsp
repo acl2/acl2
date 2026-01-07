@@ -24,6 +24,7 @@
                                    newline
                                    position
                                    pprint-newline
+                                   read-byte
                                    read-char
                                    read-files
                                    replace

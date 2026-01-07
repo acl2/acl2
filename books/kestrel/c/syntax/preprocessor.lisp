@@ -780,12 +780,15 @@
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
+         ((when (zp file-recursion-limit))
+          (reterr (msg "Exceeded the limit on file recursion.")))
          ((erp lexemes macros selfp preprocessed state)
           (with-local-stobj
             ppstate
             (mv-let (erp rev-lexemes macros selfp ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
+                                    file-recursion-limit
                                     (macro-table-fix macros)
                                     ienv
                                     ppstate))

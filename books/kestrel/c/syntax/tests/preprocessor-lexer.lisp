@@ -31,6 +31,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
+                                1
                                 (macro-table-init)
                                 (ienv-default :std std :gcc ,gcc)
                                 ppstate))
@@ -59,6 +60,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
+                                1
                                 (macro-table-init)
                                 (ienv-default :std std :gcc ,gcc)
                                 ppstate))
@@ -351,7 +353,7 @@
  plex-hexadecimal-digit
  "fy"
  :cond (and (equal ast #\f)
-            (equal (ppstate->bytes ppstate) (list (char-code #\y)))))
+            (equal (ppstate->bytes 0 ppstate) (list (char-code #\y)))))
 
 (test-lex-fail
  plex-hexadecimal-digit
@@ -391,7 +393,7 @@
  plex-hex-quad
  "DeadBeef"
  :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
-            (equal (ppstate->bytes ppstate) (acl2::string=>nats "Beef"))))
+            (equal (ppstate->bytes 0 ppstate) (acl2::string=>nats "Beef"))))
 
 (test-lex-fail
  plex-hex-quad
