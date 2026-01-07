@@ -754,7 +754,20 @@
      because there is no reason why the execution of C code should terminate.
      For the preprocessor, we should be able to do better,
      by just using a limit on the number of files recursively preprocessed,
-     but we defer this to later, since it is not critical for now."))
+     but we defer this to later, since it is not critical for now.")
+   (xdoc::p
+    "These functions use, like other code, use "
+    (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
+    " to handle errors arising in (broadly termed) input validation,
+     e.g. illegal C code being preprocessed.
+     These functions also use the error-value-tuple mechanism
+     to signal when the file being preprocessed is not @(see self-contained):
+     in that case, the function detecting that returns
+     @(':not-self-contained') as the @('erp') output,
+     which is eventually returned by @(tsee pproc-file)
+     and caught by the caller of @(tsee pproc-file).
+     It is indeed a sort of error, but a recoverable one,
+     more like an exception in the sense that other languages have."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,15 +820,19 @@
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
-       The resulting @(tsee scfile) contains
+       If the file is not self-contained,
+       @(tsee pproc-*-group-part) returns @(':not-self-contained')
+       (see @(tsee pproc)),
+       which this function also returns;
+       the caller handles it.
+       If there is no error (and no @(':not-self-contained')),
+       a @(tsee scfile) is built and added to @('preprocessed').
+       The @(tsee scfile) contains
        the lexemes obtained from the file
        and the macros contributed by the file,
        which are the macros in the innermost scope of the final table.
-       Currently, in the absence of error,
-       the file is always self-contained,
-       but we will add code to differentiate non-self-contained files soon.
-       In any case, if the file is self-contained (as always currently),
-       it is added to the @('preprocessed') alist."))
+       The @(tsee scfile) is returned,
+       so the caller can use its macros."))
     (b* (((reterr) (irr-scfile) nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -1205,17 +1222,22 @@
        we preprocess it via @(tsee pproc-file), recursively,
        with the macros in scope from the current file's preprocessing state,
        to which @(tsee pproc-file) adds a new scope for the new file.
-       We check the file recursion limit here.
-       When @(tsee pproc-file) returns, there are two cases.
-       If the included preprocessed file is self-contained,
+       When @(tsee pproc-file) returns, there are three cases.
+       If the included preprocessed file is not self-contained,
+       @('erp') is @(':not-self-contained') (see @(tsee pproc)),
+       and in this case we need to expand the file in place;
+       in other words,
+       we catch and handle the @(':not-self-contained') ``exception''.
+       If @('erp') is some other kind of error,
+       we pass it up to the caller of this function.
+       If instead @('erp') is @('nil'),
+       the file is self-contained:
        @(tsee pproc-file) has added it to @('preprocessed'),
        and we do not need to expand the file in place;
        so we keep the @('#include') directive,
        as described just above for the case of
        an already preprocessed self-contained with no @(tsee pproc-file) call;
-       as also described just above, we add the contributed macros.
-       If instead the included preprocessed file is not self-contained,
-       we need to expand it in place.")
+       as also described just above, we add the contributed macros.")
      (xdoc::p
       "Note that @(tsee resolve-included-file)
        always reads the whole file and returns its bytes,
@@ -1277,7 +1299,7 @@
                        ppstate
                        preprocessed
                        state)))
-             ((erp scfile preprocessed state)
+             ((mv erp scfile preprocessed state)
               (pproc-file bytes
                           resolved-file
                           base-dir
@@ -1288,26 +1310,28 @@
                           (ppstate->ienv ppstate)
                           state
                           (1- limit)))
-             ((when t) ; TODO: check if file was self-contained
-              (b* ((ppstate (update-ppstate->macros
-                             (macro-table-extend-top
-                              (scfile->macros scfile)
-                              (ppstate->macros ppstate))
-                             ppstate)))
-                (retok (list* (if (plexeme-case toknl2 :newline)
-                                  toknl2
-                                (plexeme-newline
-                                 (plexeme-line-comment->newline toknl2)))
-                              toknl ; header name
-                              (plexeme-spaces 1)
-                              (plexeme-ident (ident "include"))
-                              (plexeme-punctuator "#")
-                              (plexeme-list-fix rev-lexemes))
-                       ppstate
-                       preprocessed
-                       state))))
-          (reterr
-           (msg "Non-self-contained #include not yet supported.")))) ; TODO
+
+             ((when (eq erp :not-self-contained))
+              (reterr
+               (msg "Non-self-contained #include not yet supported."))) ; TODO
+             ((when erp) (reterr erp))
+             (ppstate (update-ppstate->macros
+                       (macro-table-extend-top
+                        (scfile->macros scfile)
+                        (ppstate->macros ppstate))
+                       ppstate)))
+          (retok (list* (if (plexeme-case toknl2 :newline)
+                            toknl2
+                          (plexeme-newline
+                           (plexeme-line-comment->newline toknl2)))
+                        toknl ; header name
+                        (plexeme-spaces 1)
+                        (plexeme-ident (ident "include"))
+                        (plexeme-punctuator "#")
+                        (plexeme-list-fix rev-lexemes))
+                 ppstate
+                 preprocessed
+                 state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
     :measure (nfix limit)
