@@ -8127,7 +8127,9 @@
 ; rcnst, to avoid looking it up here.  But that efficiency gain is probably
 ; trivial.
 
-  (equational-polyp-ok-rec hist (equational-polyp-limit wrld)))
+  (let ((limit (equational-polyp-limit wrld)))
+    (or (null limit) ; only possible during boot-strap at this point
+        (equational-polyp-ok-rec hist limit))))
 
 (defun simplify-clause1 (top-clause hist rcnst wrld state step-limit)
 
