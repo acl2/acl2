@@ -645,6 +645,7 @@
     dirdeclor-block-formalp
     declor-block-formalp
     init-declor-block-formalp
+    init-declor-list-block-formalp
     declon-block-formalp
     stmt-formalp
     comp-stmt-formalp

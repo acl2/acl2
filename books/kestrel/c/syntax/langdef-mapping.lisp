@@ -1311,6 +1311,7 @@
     (not erp)
     :hyp (declon-fun-formalp declon)
     :hints (("Goal" :in-theory (enable declon-fun-formalp
+                                       init-declor-list-fun-formalp
                                        init-declor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1457,6 +1458,7 @@
     (not erp)
     :hyp (declon-obj-formalp declon)
     :hints (("Goal" :in-theory (enable declon-obj-formalp
+                                       init-declor-list-obj-formalp
                                        init-declor-obj-formalp))))
 
   (defret ldm-declon-obj-ok-when-declon-block-formalp
@@ -1466,6 +1468,7 @@
     (("Goal"
       :in-theory
       (enable declon-block-formalp
+              init-declor-list-block-formalp
               init-declor-block-formalp
               check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 

@@ -2882,6 +2882,7 @@
                    :thm-name thm-name
                    :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable declon-block-formalp
+                                           init-declor-list-block-formalp
                                            init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
