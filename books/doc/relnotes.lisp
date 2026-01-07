@@ -123,6 +123,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "abstract-domains" "Abstract Domains"))
+
+   (xdoc::p
+    "A collection of abstract domains. This includes a theory of rational
+     @(see interval::intervals), and a "
+    (xdoc::seetopic "3vl" "three-valued logic")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
 
    (xdoc::p
@@ -261,6 +271,16 @@
      to reason about, because it expands to a function which is disabled by
      default (in contrast to @(tsee msg), which macro-expands directly into a
      cons nest).")
+
+   (xdoc::p
+    "A new book, @('arith-fix-and-equiv.lisp'), has been added.
+     This book defines predicates, fixers, and equivalence relations
+     for the basic arithmetic types, as well as the ``maybe'' variants,
+     It reuses existing definitions in the standard library when available.
+     It introduces basic theorems, and refinements
+     between all of the equivalence relations.
+     The book @('arith-fix-and-equiv-defs.lisp')
+     contains all of the definitions with no theorems and no dependencies.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
