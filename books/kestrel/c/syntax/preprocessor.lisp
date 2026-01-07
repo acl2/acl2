@@ -663,62 +663,102 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All these functions are mutually recursive because,
-     as we preprocess a file,
-     we may need to recursively preprocess files that it includes.")
-   (xdoc::p
     "The top-level function of the clique is @(tsee pproc-file),
      which is called by @(tsee pproc-files) outside the clique.
      But it is also called when encoutering files to be included,
      which is why it is mutually recursive with the other functions.")
    (xdoc::p
-    "All the functions except @(tsee pproc-file) take as input
-     the path @('file') of the current file being preprocessed,
-     which is either absolute, or relative to the base directory;
-     the latter is passed as the input @('base-dir'),
-     along with the list @('include-dirs') of the directories
-     to search for files included with angle brackets.")
+    "The functions in the clique have certain common inputs and outputs:")
+   (xdoc::ul
+    (xdoc::li
+     "All the functions take
+      the path @('file') of the file being preprocessed,
+      along with the base directory @('base-dir')
+      and the inclusion directory @('include-dirs').
+      The latter two come from @(tsee pproc-files) and never change.
+      The @('file') path comes from the list @('files') in @(tsee pproc-files),
+      as well as from the resolution of @('#include') directives.")
+    (xdoc::li
+     "All the functions take and return
+      the alist @('preprocessed'), which contain (the results of)
+      the files preprocessed so far.
+      This starts empty and eventually contains all the preprocessed files.")
+    (xdoc::li
+     "All the functions take
+      the list @('preprocessing') of the files being preprocessed.
+      This is used to detect circularities.")
+    (xdoc::li
+     "All the functions except @(tsee pproc-file) take and return
+      the list of lexemes generated so far by the preprocessing.
+      These are in reverse order, to make extension efficient.
+      The function @(tsee pproc-file) does not take a list of lexemes
+      because it initiates the preprocessing of a file;
+      instead of a list of lexemes, it returns a @(tsee ppdfile),
+      which contains all the lexemes as well as the macros.")
+    (xdoc::li
+     "All the functions except @(tsee pproc-file) take and return
+      a preprocessing state, for the file being preprocessed.
+      The preprocessing state for the file is created, as a local stobj,
+      by @(tsee pproc-file).")
+    (xdoc::li
+     "All the functions take and return the ACL2 state,
+      needed to read files in the file system.")
+    (xdoc::li
+     "All the functions take an artificial limit to ensure termination.
+      This is discussed below."))
    (xdoc::p
-    "The top-level function @(tsee pproc-file) also takes as input
-     the bytes obtained from reading the file,
-     which is read by the caller.")
-   (xdoc::p
-    "All the functions take and return the @('preprocessed') alist,
-     which is extended not only with the file indicated in @(tsee pproc-file),
-     but also possibly with other @(see self-contained) files
-     included along the way.")
-   (xdoc::p
-    "All the functions also take the @('preprocessing') list,
-     to detect and avoid circularities;
-     see @(tsee pproc-file) and @(tsee pproc-files).")
-   (xdoc::p
-    "The top-level function @(tsee pproc-file) also takes as inputs
-     the current macro table and an implementation environment,
-     from which it constructs a local preprocessing state stobj @(tsee ppstate),
-     which is passed to and returned from all the other functions.
-     There is one such stobj for each file being preprocessed.")
-   (xdoc::p
-    "All the functions except the top-level @(tsee pproc-file)
-     take and return the list of lexemes resulting from preprocessing,
-     in reverse order for efficiency.
-     They are reversed into the right order by @(tsee pproc-file).")
-   (xdoc::p
-    "All the functions take and return the ACL2 state,
-     since they (indirectly) read files.")
+    "Other inputs and outputs specific to individual functions
+     are discussed in the documentation of those functions.")
    (xdoc::p
     "In the absence of explicit checks, preprocessing may not terminate:
      @('file1.h') may include @('file2.h'), which may include @('file3.h'), etc.
      In practice, the file system is finite,
      but nontermination is the default, mathematically speaking.
-     So we impose an artificial limit on the number of files being preprocessed,
-     specifically on the depth of the recursion of @(tsee pproc-file).
-     The GCC preprocessor imposes an @('#include') nesting limit of 200,
+     It should suffice to impose a limit on
+     the number of files being recursively preprocessed,
+     like the limit of 200 that
+     the GCC preprocessor imposes an @('#include') nesting limit,
      according to "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Implementation-limits.html"
                  "Section 12.2 of the GNU C Preprocessor Manual")
-    ". We pass the limit as an argument to these functions,
-     so it can be set outside these functions;
-     when this limit reaches 0, @(tsee pproc-file) returns an error."))
+    ". But fleshing out the termination argument takes a bit of extra work:
+     we cannot just use a lexicographic measure consisting of
+     the number of recursive files remaining
+     followed by the size of the preprocessing state,
+     because the latter increases
+     when included files are not self-contained and must be expanded in place
+     as well as when macros are expanded.
+     There should still be a way in which things got suitably smaller.
+     In particular, to handle the expansion in place of included file,
+     we could probably make a lexicographic measure consisting of
+     the number of recursive files remaining
+     followed by the list of sizes of the byte lists
+     in the array in the @('bytess') component of @(tsee ppstate),
+     in the same order,
+     so that adding a list of bytes to the array at index @('i+1')
+     weighs less than having removed a non-zero number of bytes
+     from the list in the array at index @('i'),
+     namely the bytes that form the @('#include') directive.
+     But we also need to consider the sizes of the unread lexemes,
+     which may get larger when macros are expanded.
+     Macro expansion is bounded in the C preprocessor,
+     to prevent recursive expansion,
+     so perhaps one could include, in the measure,
+     some indication of which macros have been already expanded.
+     All of this is not straightforward,
+     and may require explicating invariants about the preprocessing state
+     and perhaps other inputs of the functions in the clique.
+     So for now we use a simpler approach,
+     i.e. a limit on the number of recursive calls in the clique:
+     each function first checks whether 0 is reached,
+     and if not it calls other functions with the limit reduced by one;
+     the limit is then just the measure.
+     This is the same approach as in our dynamic semantics of C,
+     but it is a necessity there,
+     because there is no reason why the execution of C code should terminate.
+     For the preprocessor, we should be able to do better,
+     by just using a limit on the number of files recursively preprocessed,
+     but we defer this to later, since it is not critical for now."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,7 +771,7 @@
                       (macros macro-tablep)
                       (ienv ienvp)
                       state
-                      (file-recursion-limit natp))
+                      (limit natp))
     :guard (not (assoc-equal file preprocessed))
     :returns (mv erp
                  (ppdfile ppdfilep)
@@ -742,9 +782,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The file is specified by the @('file') string,
-       which must be either a path relative to @('base-dir')
-       or an absolute path (in which case @('base-dir') is irrelevant.")
+      "The bytes contained in the file are passed to this function.
+       The file itself is read by the callers,
+       namely @(tsee pproc-files) and @(tsee pproc-include-directive).")
      (xdoc::p
       "As expressed by the guard,
        this function is called when the file is not in @('preprocessed'),
@@ -756,11 +796,17 @@
        Otherwise, before preprocessing the file,
        we add it to the list of files under preprocessing.")
      (xdoc::p
-      "When this function is called,
-       the file's contents have already been read (see callers),
-       and passed as the @('bytes') input of this function.
-       We create a local preprocessing state stobj for the file,
-       with the implementation environment and the current macro table
+      "The macro table passed as input is empty
+       when this function is called by @(tsee pproc-files).
+       Otherwise, it is the table for
+       the file that contains the @('#include') directive
+       that results in this call of @(tsee pproc-file).")
+     (xdoc::p
+      "We create a local preprocessing state stobj from
+       the bytes of the file,
+       the recursion limit,
+       the implementation environment,
+       and the macro table
        (which @(tsee init-ppstate) extends with a new empty scope for the file).
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
@@ -774,21 +820,20 @@
        If the self-contained flag is @('t'),
        we extend the @('preprocessed') alist."))
     (b* (((reterr) (irr-ppdfile) nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         ((when (zp file-recursion-limit))
-          (reterr (msg "Exceeded the limit on file recursion.")))
          ((erp lexemes macros selfp preprocessed state)
           (with-local-stobj
             ppstate
             (mv-let (erp rev-lexemes macros selfp ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
-                                    file-recursion-limit
+                                    limit
                                     (macro-table-fix macros)
                                     ienv
                                     ppstate))
@@ -801,7 +846,7 @@
                                           nil
                                           ppstate
                                           state
-                                          file-recursion-limit)))
+                                          (1- limit))))
                   (mv erp
                       rev-lexemes
                       (ppstate->macros ppstate)
@@ -822,10 +867,7 @@
                            (acons file ppdfile preprocessed)
                          preprocessed)))
       (retok ppdfile preprocessed state))
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     1 ; > all other pproc-... functions
-                                     0 ; irrelevant
-                                     0))) ; irrelevant
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -837,7 +879,7 @@
                               (rev-lexemes plexeme-listp)
                               (ppstate ppstatep)
                               state
-                              (file-recursion-limit natp))
+                              (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
@@ -857,12 +899,12 @@
        (this may need to be relaxed at some point,
        since GCC is more lenient on this front)."))
     (b* (((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((when (= (ppstate->size ppstate) 0)) ; EOF
           (retok (plexeme-list-fix rev-lexemes)
                  ppstate
                  (string-ppdfile-alist-fix preprocessed)
                  state))
-         (psize (ppstate->size ppstate))
          ((erp rev-lexemes ppstate preprocessed state) ; group-part
           (pproc-group-part file
                             base-dir
@@ -872,9 +914,7 @@
                             rev-lexemes
                             ppstate
                             state
-                            file-recursion-limit))
-         ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
-          (reterr :impossible)))
+                            (1- limit))))
       (pproc-*-group-part file
                           base-dir
                           include-dirs
@@ -883,11 +923,8 @@
                           rev-lexemes
                           ppstate
                           state
-                          file-recursion-limit))
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     0 ; < pproc-file
-                                     (ppstate->size ppstate)
-                                     2))) ; > pproc-group-part
+                          (1- limit)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -899,7 +936,7 @@
                             (rev-lexemes plexeme-listp)
                             (ppstate ppstatep)
                             state
-                            (file-recursion-limit natp))
+                            (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
@@ -932,6 +969,7 @@
        we put back the token and we call a separate function.
        We pass any preceding white space and comments to that function."))
     (b* (((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
        ((not toknl) ; EOF
@@ -953,7 +991,7 @@
                          rev-lexemes
                          ppstate
                          state
-                         file-recursion-limit))
+                         (1- limit)))
        (t ; non-#-token
         (b* ((ppstate (punread-token ppstate)))
           (pproc-text-line nontoknls
@@ -965,11 +1003,8 @@
                            rev-lexemes
                            ppstate
                            state
-                           file-recursion-limit)))))
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     0 ; < pproc-file
-                                     (ppstate->size ppstate)
-                                     1)) ; > pproc-text-line
+                           (1- limit))))))
+    :measure (nfix limit)
     :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -982,7 +1017,7 @@
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
                            state
-                           (file-recursion-limit natp))
+                           (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
@@ -1034,6 +1069,7 @@
        (We may extend this in the future,
        e.g. to accommodate non-standard directives.)"))
     (b* (((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp & toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
        ((not toknl) ; # EOF
@@ -1069,7 +1105,7 @@
                                      rev-lexemes
                                      ppstate
                                      state
-                                     file-recursion-limit))
+                                     (1- limit)))
            ((equal dirname "define") ; # define
             (reterr (msg "#define directive not yet supported."))) ; TODO
            ((equal dirname "undef") ; # undef
@@ -1106,10 +1142,7 @@
                                'error', and ~
                                'pragma'"
                     :found (plexeme-to-msg toknl)))))
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     0 ; < pproc-file
-                                     (ppstate->size ppstate)
-                                     0))
+    :measure (nfix limit)
     :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1122,7 +1155,7 @@
                                    (rev-lexemes plexeme-listp)
                                    (ppstate ppstatep)
                                    state
-                                   (file-recursion-limit natp))
+                                   (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
@@ -1203,6 +1236,7 @@
        but we should preprocess that token and any subsequent tokens,
        and see if they result in a header name."))
     (b* (((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp & toknl span ppstate) (pread-token/newline t ppstate)))
       (cond
        ((not toknl) ; # include EOF
@@ -1251,8 +1285,6 @@
                        ppstate
                        preprocessed
                        state)))
-             ((when (zp file-recursion-limit))
-              (reterr (msg "Exceeded the limit on file recursion.")))
              ((erp ppdfile preprocessed state)
               (pproc-file bytes
                           resolved-file
@@ -1263,7 +1295,7 @@
                           (ppstate->macros ppstate)
                           (ppstate->ienv ppstate)
                           state
-                          (1- file-recursion-limit)))
+                          (1- limit)))
              (ppstate (update-ppstate->macros
                        (macro-table-extend-top
                         (ppdfile->macros ppdfile)
@@ -1286,10 +1318,7 @@
            (msg "Non-self-contained #include not yet supported.")))) ; TODO
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     0 ; < pproc-file
-                                     (ppstate->size ppstate)
-                                     0))
+    :measure (nfix limit)
     :no-function nil)
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1303,7 +1332,7 @@
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
                            state
-                           (file-recursion-limit natp))
+                           (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
@@ -1322,14 +1351,12 @@
        Recall that empty text lines,
        i.e. with no tokens (but possibly with some white space and comments),
        are already handled in @(tsee pproc-group-part)."))
-    (declare (ignore nontoknls file base-dir include-dirs preprocessed
-                     preprocessing rev-lexemes file-recursion-limit))
-    (b* (((reterr) nil ppstate nil state))
+    (declare (ignore nontoknls file base-dir include-dirs
+                     preprocessed preprocessing rev-lexemes))
+    (b* (((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
       (reterr (msg "Text lines not yet supported."))) ; TODO
-    :measure (nat-list-measure (list (nfix file-recursion-limit)
-                                     0 ; < pproc-file
-                                     (ppstate->size ppstate)
-                                     0)))
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1338,94 +1365,14 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :hints (("Goal" :in-theory (enable len nfix fix)))
+  :verify-guards :after-returns
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards nil ; done below
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  ///
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defret-mutual ppstate->size-of-pproc-uncond
-    (defret ppstate->size-of-pproc-file-uncond
-      t
-      :fn pproc-file
-      :rule-classes nil)
-    (defret ppstate->size-of-pproc-*-group-part-uncond
-      (<= (ppstate->size new-ppstate)
-          (ppstate->size ppstate))
-      :fn pproc-*-group-part
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-group-part-uncond
-      (<= (ppstate->size new-ppstate)
-          (ppstate->size ppstate))
-      :fn pproc-group-part
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-directive-uncond
-      (<= (ppstate->size new-ppstate)
-          (ppstate->size ppstate))
-      :fn pproc-directive
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-include-directive-uncond
-      (<= (ppstate->size new-ppstate)
-          (ppstate->size ppstate))
-      :fn pproc-include-directive
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-text-line-uncond
-      (<= (ppstate->size new-ppstate)
-          (ppstate->size ppstate))
-      :fn pproc-text-line
-      :rule-classes :linear))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defret-mutual ppstate->size-of-pproc-cond
-    (defret ppstate->size-of-pproc-file-cond
-      t
-      :fn pproc-file
-      :rule-classes nil)
-    (defret ppstate->size-of-pproc-*-group-part-cond
-      t
-      :fn pproc-*-group-part
-      :rule-classes nil)
-    (defret ppstate->size-of-pproc-group-part-cond
-      (implies (not erp)
-               (<= (ppstate->size new-ppstate)
-                   (1- (ppstate->size ppstate))))
-      :fn pproc-group-part
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-directive-cond
-      (implies (not erp)
-               (<= (ppstate->size new-ppstate)
-                   (1- (ppstate->size ppstate))))
-      :fn pproc-directive
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-include-directive-cond
-      (implies (not erp)
-               (<= (ppstate->size new-ppstate)
-                   (1- (ppstate->size ppstate))))
-      :fn pproc-include-directive
-      :rule-classes :linear)
-    (defret ppstate->size-of-pproc-text-line-cond
-      (implies (not erp)
-               (<= (ppstate->size new-ppstate)
-                   (1- (ppstate->size ppstate))))
-      :fn pproc-text-line
-      :rule-classes :linear))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (verify-guards pproc-file
-    :hints
-    (("Goal"
-      :in-theory
-      (enable alistp-when-string-ppdfile-alistp-rewrite
-              true-listp-when-plexeme-listp
-              ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp)))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable alistp-when-string-ppdfile-alistp-rewrite
+            ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp
+            true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1434,7 +1381,7 @@
                      (include-dirs string-listp)
                      (ienv ienvp)
                      state
-                     (file-recursion-limit natp))
+                     (recursion-limit natp))
   :returns (mv erp (fileset filesetp) state)
   :short "Preprocess zero or more files."
   :long
@@ -1442,7 +1389,7 @@
    (xdoc::p
     "This is the top-level function of the preprocessor.
      The files are identified by the @('files') strings,
-     which must all be paths relative to the @('base-dir') string:
+     which must be paths relative to the @('base-dir') string path:
      this is the same interface as @(tsee input-files).
      The list @('include-dirs') specifies the directories to search
      for @('#include') directives with angle brackets.")
@@ -1466,16 +1413,13 @@
     "It is an internal (hard) error if
      any of the files specified directly is not @(see self-contained).")
    (xdoc::p
-    "The file recursion limit is discussed in @(tsee pproc).
-     It should be set to a sufficiently large value,
-     but an excessively large value could be slow
-     in revealing a circularity.
+    "The recursion limit is discussed in @(tsee pproc).
      It seems best to let the user set this limit (outside this function),
-     with perhaps a reasonable default like GCC has."))
+     with perhaps a reasonably large default."))
   (b* (((reterr) (irr-fileset) state)
        ((erp preprocessed state)
         (pproc-files-loop files base-dir include-dirs
-                          nil nil ienv state file-recursion-limit)))
+                          nil nil ienv state recursion-limit)))
     (retok
      (fileset (string-ppdfile-alist-to-filepath-filedata-map preprocessed))
      state))
@@ -1488,7 +1432,7 @@
                              (preprocessing string-listp)
                              (ienv ienvp)
                              state
-                             (file-recursion-limit natp))
+                             (recursion-limit natp))
      :returns (mv erp (new-preprocessed string-ppdfile-alistp) state)
      :parents nil
      (b* (((reterr) nil state)
@@ -1503,7 +1447,7 @@
                              preprocessing
                              ienv
                              state
-                             file-recursion-limit))
+                             recursion-limit))
           (file (car files))
           (path-to-read (str::cat base-dir "/" (str-fix file)))
           ((mv erp bytes state)
@@ -1519,7 +1463,7 @@
                                                         (macro-table-init)
                                                         ienv
                                                         state
-                                                        file-recursion-limit))
+                                                        recursion-limit))
           ((unless (ppdfile->selfp ppdfile))
            (raise "Internal error: non-self-contained top-level file ~x0."
                   (str-fix file))
@@ -1531,7 +1475,7 @@
                          preprocessing
                          ienv
                          state
-                         file-recursion-limit))
+                         recursion-limit))
      :guard-hints
      (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite)))
      :no-function nil)))

@@ -1478,7 +1478,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-ppstate ((data byte-listp)
-                      (file-recursion-limit posp)
+                      (limit posp)
                       (macros macro-tablep)
                       (ienv ienvp)
                       ppstate)
@@ -1490,12 +1490,15 @@
     "This is the state when we start preprocessing a file.
      It is built from
      (the data of) a file to preprocess,
-     the current file recursion limit (see @(see pproc)),
+     the current recursion limit (see @(see pproc)),
      the current table of macros in scope,
      and an implementation environment.
-     The array of byte lists is resized to the file recursion limit,
-     so that reaching the end of the array signals
-     the exhaustion of the file recursion limit.
+     The array of byte lists is resized to the recursion limit,
+     which is always positive when this function is called (see guard):
+     this is overkill but certainly sufficient;
+     as we flesh out a more nuanced termination mechanism for @(tsee pproc)
+     (see discussion there about that),
+     we can refine the resizing of this array.
      The bytes of the file are stored into the first element of the array,
      to which the current byte list index is set to point.
      The position is the initial one.
@@ -1510,8 +1513,7 @@
      we will pick a different size,
      but then we may need to resize the array as needed
      while preprocessing."))
-  (b* ((ppstate (update-ppstate->bytess-length (pos-fix file-recursion-limit)
-                                               ppstate))
+  (b* ((ppstate (update-ppstate->bytess-length (pos-fix limit) ppstate))
        (ppstate (update-ppstate->bytes 0 (byte-list-fix data) ppstate))
        (ppstate (update-ppstate->bytess-current 0 ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))

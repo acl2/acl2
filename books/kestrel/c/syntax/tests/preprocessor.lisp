@@ -45,7 +45,7 @@
          (include-dirs nil)
          (ienv (ienv-default))
          ((mv erp fileset state)
-          (pproc-files files base-dir include-dirs ienv state 100)))
+          (pproc-files files base-dir include-dirs ienv state 1000000000)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
