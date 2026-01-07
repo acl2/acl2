@@ -21,6 +21,114 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Fix bug in dmr.}}
+
+NOTE: If someone wants to take this task on, they should claim it
+here.  Otherwise Matt might work on it, as he would like it completed
+before the release of ACL2 8.7.  The following email summarizes the
+issue.
+
+Gmail Matt Kaufmann <matthew.j.kaufmann@gmail.com>
+does DMR work for you?
+jstrothermoore@gmail.com <jstrothermoore@gmail.com> Sun, May 4, 2025 at 7:21 AM
+To: matthew.j.kaufmann@gmail.com
+
+Hi Matt.  Does DMR work for you?  I have an apparently
+infinite loop caused by arithmetic-5.  I want to figure
+out what is going on, but my attempt to use DMR not
+only fails but causes an unrecoverable hard error.
+
+(include-book "arithmetic-5/top" :dir :system)
+
+(SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP HIST
+                                                PSPV)))
+
+(dmr-start)
+
+<control-t 1> ; sets up the acl2-dmr-... buffer
+
+<control-x 2> ; split screen
+
+<control-x b> ; put *shell* back in one window
+
+; Type this form into *shell* and watch it loop if no
+; dmr was started.  But if dmr is started we get a
+; series of hard errors...  By the way, if the
+; indicated hyp is deleted from the thm below, the
+; proof works.  But I'm not interested in that.  I'm
+; trying to loop so I can watch dmr.
+
+(thm
+  (IMPLIES (AND (INTEGERP B)
+                (<= 0 B)
+                (< 1 B)
+                (< (* N (EXPT B -2)) 1) ; keep this hyp to cause loop
+                (INTEGERP N)
+                (<= B N))
+           (< (+ (MOD N B) (* (/ B) N)) N)))
+
+HARD ACL2 ERROR in GET-RULE-FIELD:  The object
+((REWRITE-RULE (:REWRITE |(mod x (- y))| . 3)
+               7200
+               ((SYNP 'NIL '# '#)
+                (SYNP 'NIL '# '#)
+                (RATIONALP (BINARY-* X #))
+                (NOT (INTEGERP #)))
+               EQUAL (MOD X Y)
+               (BINARY-+ Y (MOD X (UNARY-- Y)))
+               ...))
+is neither a rewrite-rule record nor a linear-lemma record.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+...
+
+
+You will note that the object in question is a list
+containing a rewrite-rule, not a rewrite rule,
+suggesting that in handling rewrite-with-lemma in
+dmr-interp we're missing a car.  But if you put the car
+in there you just get a different error later on the
+handling of a linear lemma.
+
+I haven't tracked this down yet.  For the record, in
+fixing some bug in the past year I modified
+get-rule-field and so I might have introduced this bug.
+It would help to have a version of ACL2 in which DMR
+works, so I can compare the definitions of dmr-interp
+and get-rule-field...
+
+Do you have a version of ACL2 that where dmr works?
+
+J
+
+----------
+
+Matt Kaufmann <matthew.j.kaufmann@gmail.com> Sun, May 4, 2025 at 7:49 AM
+To: jstrothermoore@gmail.com
+
+Hi J,
+
+Your dmr example seems to work on ACL2 8.5 on my Mac (but not 8.6).
+The proof seems to get stuck here:
+
+ 0. "( THM ...)"
+ 1. SIMPLIFY-CLAUSE
+   2. Setting up the linear pot list
+   3. Applying linear arithmetic to a clause with 7 terms
+   4. Applying non-linear arithmetic to 3 vars
+   5. Rewriting (to simplify) the product of two polys; argument(s) 2
+   7. Applying (:REWRITE ARITH-NORMALIZE-FACTORS-SCATTER-EXPONENTS)
+   8. Rewriting (to simplify) the rhs of the conclusion
+   9. Applying (:REWRITE ARITH-BUBBLE-DOWN-*-MATCH-3)
+   10. Rewriting (to simplify) the rhs of the conclusion; argument(s) 1
+   12. Applying (:REWRITE |arith (* (expt (- x) m) (/ (expt x n)))|)
+
+[[.. other stuff elided ..]]
+
+-- Matt
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Improve error message for linear rule that is illegal because of evaluation.}}
 
 Eric Smith's email just below raises that issue; some analysis is

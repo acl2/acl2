@@ -400,14 +400,20 @@
     stmt-compound->stmt
     make-stmt-compound
     stmt-compound->items
+    stmt-expr
     make-stmt-expr
+    stmt-if
     make-stmt-if
+    stmt-ifelse
     make-stmt-ifelse
     make-stmt-switch
+    stmt-while
     make-stmt-while
+    stmt-dowhile
     make-stmt-dowhile
     make-stmt-for-expr
     make-stmt-for-declon
+    stmt-return
     make-stmt-return
     stmt-gotoe
 
@@ -634,12 +640,14 @@
     const-formalp
     tyname-formalp
     expr-formalp
+    expr-option-formalp
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
     init-declor-block-formalp
     declon-block-formalp
     stmt-formalp
+    comp-stmt-formalp
     block-item-formalp
     block-item-list-formalp
     fundef-formalp

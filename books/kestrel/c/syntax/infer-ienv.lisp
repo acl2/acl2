@@ -91,14 +91,19 @@
   :returns (mv (er? maybe-msgp)
                (ienv ienvp))
   (b* (((reterr) (irr-ienv))
-       ((unless (= (len lines) 7))
+       ((unless (= (len lines) 12))
         (retmsg$ "Ill-formed ienv.c output"))
        ((list std-c-str
               gcc-extensions-str
+              bool-bytes-str
               short-bytes-str
               int-bytes-str
               long-bytes-str
               llong-bytes-str
+              float-bytes-str
+              double-bytes-str
+              ldouble-bytes-str
+              pointer-bytes-str
               plain-char-signedp-str)
         lines)
        ((erp std-c)
@@ -118,6 +123,10 @@
                   (if (= std-c 17)
                       (c::version-c17)
                     (c::version-c23))))
+       (bool-bytes? (str::strval bool-bytes-str))
+       ((unless bool-bytes?)
+        (retmsg$ "Could not parse a natural number from bool-bytes: ~x0"
+                 bool-bytes-str))
        (short-bytes? (str::strval short-bytes-str))
        ((unless short-bytes?)
         (retmsg$ "Could not parse a natural number from short-bytes: ~x0"
@@ -134,7 +143,26 @@
        ((unless llong-bytes?)
         (retmsg$ "Could not parse a natural number from llong-bytes: ~x0"
                  llong-bytes-str))
+       (float-bytes? (str::strval float-bytes-str))
+       ((unless float-bytes?)
+        (retmsg$ "Could not parse a natural number from float-bytes: ~x0"
+                 float-bytes-str))
+       (double-bytes? (str::strval double-bytes-str))
+       ((unless double-bytes?)
+        (retmsg$ "Could not parse a natural number from double-bytes: ~x0"
+                 double-bytes-str))
+       (ldouble-bytes? (str::strval ldouble-bytes-str))
+       ((unless ldouble-bytes?)
+        (retmsg$ "Could not parse a natural number from ldouble-bytes: ~x0"
+                 ldouble-bytes-str))
+       (pointer-bytes? (str::strval pointer-bytes-str))
+       ((unless pointer-bytes?)
+        (retmsg$ "Could not parse a natural number from pointer-bytes: ~x0"
+                 pointer-bytes-str))
        (plain-char-signedp (not (equal plain-char-signedp-str "0")))
+       ((unless (< 0 bool-bytes?))
+        (retmsg$ "bool-bytes is not positive: ~x0"
+                 bool-bytes?))
        ((unless (<= short-bytes? int-bytes?))
         (retmsg$ "short-bytes exceeds int-bytes: ~x0, ~x1."
                  short-bytes?
@@ -158,13 +186,30 @@
                  long-bytes?))
        ((unless (<= 8 llong-bytes?))
         (retmsg$ "llong-bytes is less than 8: ~x0"
-                 llong-bytes?)))
+                 llong-bytes?))
+       ((unless (< 0 float-bytes?))
+        (retmsg$ "float-bytes is not positive: ~x0"
+                 float-bytes?))
+       ((unless (< 0 double-bytes?))
+        (retmsg$ "double-bytes is not positive: ~x0"
+                 double-bytes?))
+       ((unless (< 0 ldouble-bytes?))
+        (retmsg$ "ldouble-bytes is not positive: ~x0"
+                 ldouble-bytes?))
+       ((unless (< 0 pointer-bytes?))
+        (retmsg$ "pointer-bytes is not positive: ~x0"
+                 pointer-bytes?)))
     (retok (make-ienv
              :version version
+             :bool-bytes bool-bytes?
              :short-bytes short-bytes?
              :int-bytes int-bytes?
              :long-bytes long-bytes?
              :llong-bytes llong-bytes?
+             :float-bytes float-bytes?
+             :double-bytes double-bytes?
+             :ldouble-bytes ldouble-bytes?
+             :pointer-bytes pointer-bytes?
              :plain-char-signedp plain-char-signedp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

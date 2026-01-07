@@ -83,10 +83,15 @@
                         (c::version-c23+gcc)
                       (c::version-c23)))))
     (make-ienv :version version
+               :bool-bytes 1
                :short-bytes 2
                :int-bytes 4
                :long-bytes 8
                :llong-bytes 8
+               :float-bytes 4
+               :double-bytes 8
+               :ldouble-bytes 16
+               :pointer-bytes 8
                :plain-char-signedp nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

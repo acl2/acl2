@@ -14,6 +14,7 @@
 ;; Books.  Its main use is to check for conflicts within the Kestrel books and
 ;; with other libraries.
 
+(include-book "abstract-domains/top")
 (include-book "acl2pl/top")
 (include-book "algorithm-theories/top")
 (include-book "apt/top")

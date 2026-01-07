@@ -76,7 +76,7 @@ that follows the fixtype discipline.</li>
 simple data types.</li>
 
 <li>@(see deftypes) &mdash; Macro for generating mutually recursive data types,
-built on top of @(see defprod), (see deflist), etc.</li>
+built on top of @(see defprod), @(see deflist), etc.</li>
 
 </ul>")
 
@@ -1731,7 +1731,7 @@ std::defenum). This macro can be used with @(see multicase). An example of its r
    (&  \"failing\"))
  })
 ")
-  
+
 
 (defxdoc defvisitor-template
   :parents (defvisitors)

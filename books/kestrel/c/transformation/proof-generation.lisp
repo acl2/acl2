@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -2028,7 +2028,23 @@
 
   (defret stmt-aidentp-of-xeq-stmt-expr
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-expr-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-expr expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand ((stmt-formalp (stmt-expr nil info))
+             (stmt-formalp (stmt-expr expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2118,7 +2134,23 @@
 
   (defret stmt-aidentp-of-xeq-stmt-return
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-return-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-return expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand ((stmt-formalp (stmt-return nil info))
+             (stmt-formalp (stmt-return expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2221,7 +2253,23 @@
   (defret stmt-aidentp-of-xeq-stmt-if
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (stmt-aidentp then-new gcc))))
+              (stmt-aidentp then-new gcc)))
+
+  (defruled xeq-stmt-if-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-if test test-new test-thm-name
+                       then then-new then-thm-name
+                       gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-if test-new then-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2359,7 +2407,27 @@
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
               (stmt-aidentp then-new gcc)
-              (stmt-aidentp else-new gcc))))
+              (stmt-aidentp else-new gcc)))
+
+  (defruled xeq-stmt-ifelse-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-ifelse test test-new test-thm-name
+                           then then-new then-thm-name
+                           else else-new else-thm-name
+                           gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (or (not else-thm-name)
+                        (and (stmt-formalp else)
+                             (stmt-formalp else-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-ifelse test-new then-new else-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2424,7 +2492,18 @@
 
   (defret stmt-aidentp-of-xeq-stmt-compound
     (stmt-aidentp stmt gcc)
-    :hyp (comp-stmt-aidentp cstmt-new gcc)))
+    :hyp (comp-stmt-aidentp cstmt-new gcc))
+
+  (defruled xeq-stmt-compound-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-compound cstmt cstmt-new cstmt-thm-name gin)))
+      (implies (and (or (not cstmt-thm-name)
+                        (and (comp-stmt-formalp cstmt)
+                             (comp-stmt-formalp cstmt-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-compound cstmt-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2532,7 +2611,23 @@
   (defret stmt-aidentp-of-xeq-stmt-while
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (stmt-aidentp body-new gcc))))
+              (stmt-aidentp body-new gcc)))
+
+  (defruled xeq-stmt-while-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-while test test-new test-thm-name
+                          body body-new body-thm-name
+                          gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not body-thm-name)
+                        (and (stmt-formalp body)
+                             (stmt-formalp body-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-while test-new body-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2640,7 +2735,23 @@
   (defret stmt-aidentp-of-xeq-stmt-dowhile
     (stmt-aidentp stmt gcc)
     :hyp (and (stmt-aidentp body-new gcc)
-              (expr-aidentp test-new gcc))))
+              (expr-aidentp test-new gcc)))
+
+  (defruled xeq-stmt-dowhile-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-dowhile body body-new body-thm-name
+                            test test-new test-thm-name
+                            gin)))
+      (implies (and (or (not body-thm-name)
+                        (and (stmt-formalp body)
+                             (stmt-formalp body-new)))
+                    (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (gout->thm-name gout))
+               (stmt-formalp stmt)))
+    :expand (stmt-formalp (stmt-dowhile body-new test-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
