@@ -67,24 +67,37 @@
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
-     and that there are no padding bits
-     or trap representations.
+     and that there are no padding bits or trap representations
+     (except for @('_Bool')s, which are padded to at least one byte).
      Therefore, the characteristics of the integer types
      are defined by four numbers,
-     i.e. the numbers of bytes of (signed and unsigned)
+     i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
      constraints on those number are derived from
      [C17:5.2.4.2.1] (for the minima)
      and [C17:6.2.5/8] (for the increasing sizes).")
    (xdoc::p
+    "The floating types are characterized by their sizes.
+     We make no assumptions about their respective sizes.")
+   (xdoc::p
+    "We include a field for the size of pointers.
+     We assume that all pointers are the same size.
+     This is a safe assumption on most modern systems,
+     but it is not true for certain older architectures
+     and embedded platforms.")
+   (xdoc::p
     "We also need a flag saying whether the plain @('char') type
      has the same range as @('signed char') or not [C17:6.2.5/15].
      If the flag is false, it has the same range as @('unsigned char').")
    (xdoc::p
-    "We also need a flag saying whether GCC extensions are enabled or not.
-     This could eventually evolve into a rich set of C versions,
-     similar to the options supported by compilers like GCC."))
+    "This type will likely be expanded in the future
+     to include further information about the environment.
+     This may include details about standard library types
+     (such as @('size_t'), @('ptrdiff_t'), etc.),
+     alignment and padding policies,
+     endianness, and so on."))
   ((version c::version)
+   (bool-bytes pos)
    (short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
@@ -125,6 +138,10 @@
                                  (<= 8 llong-bytes))
                             llong-bytes
                           8))
+   (float-bytes pos)
+   (double-bytes pos)
+   (ldouble-bytes pos)
+   (pointer-bytes pos)
    (plain-char-signedp bool))
   :require (and (<= short-bytes int-bytes)
                 (<= int-bytes long-bytes)
@@ -150,10 +167,15 @@
     "This can be used as a dummy value of the type."))
   :type ienvp
   :body (make-ienv :version (c::version-c17)
+                   :bool-bytes 1
                    :short-bytes 2
                    :int-bytes 2
                    :long-bytes 4
                    :llong-bytes 8
+                   :float-bytes 1
+                   :double-bytes 1
+                   :ldouble-bytes 1
+                   :pointer-bytes 1
                    :plain-char-signedp nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
