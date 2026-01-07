@@ -1205,3 +1205,14 @@ void bar() {
   int *x;
 } my_union_t;
 ")
+
+;; Example taken from [GCCM:6.11.6.1]
+;; https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html
+(test-valid-fail
+ "register int *foo asm (\"r12\");
+")
+
+(test-valid
+ "register int *foo asm (\"r12\");
+"
+ :gcc t)

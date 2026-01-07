@@ -2150,7 +2150,8 @@
                               (ident identp)
                               (type typep)
                               (fundefp booleanp)
-                              (table valid-tablep))
+                              (table valid-tablep)
+                              (ienv ienvp))
   :returns (mv (erp maybe-msgp)
                (typedefp booleanp)
                (linkage linkagep)
@@ -2265,6 +2266,15 @@
      The type must not be one of a function.
      Thus, it has no linkage [C17:6.2.2/6].
      The lifetime is automatic [C17:6.2.4/5].")
+   (xdoc::p
+    "As a GCC extension, we allow the @('register') storage class specifier
+     for file-scope declarations when
+     the @(':gcc') flag of the implementation environment is enabled.
+     This allows for the ``global register variables'' extension "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html"
+                 "[GCCM:6.11.6.1]")
+    ". In this case, the linkage and lifetime are
+     the same as if we had no storage class specifiers.")
    (xdoc::p
     "If there are no storage class specifiers (i.e. the sequence is empty),
      things differ based on
@@ -2383,7 +2393,8 @@
                          "auto"
                        "register")
                      (ident-fix ident)))
-           ((unless (and (> (valid-table-num-scopes table) 1)
+           ((unless (and (or (> (valid-table-num-scopes table) 1)
+                             (ienv->gcc ienv))
                          (not fundefp)))
             (retmsg$ "The storage class specifier '~s0' ~
                       cannot be used in the file scope, for identifier ~x1."
@@ -2391,7 +2402,9 @@
                          "auto"
                        "register")
                      (ident-fix ident))))
-        (retok nil (linkage-none) (lifetime-auto))))
+        (if (> (valid-table-num-scopes table) 1)
+            (retok nil (linkage-none) (lifetime-auto))
+          (retok nil (linkage-external) (lifetime-static)))))
      ((endp storspecs)
       (if (type-case type :function)
           (b* (((mv info? &) (valid-lookup-ord ident table))
@@ -5537,7 +5550,7 @@
          ((erp new-declor type ident types table)
           (valid-declor initdeclor.declor nil type table ienv))
          ((erp typedefp linkage lifetime?)
-          (valid-stor-spec-list storspecs ident type nil table))
+          (valid-stor-spec-list storspecs ident type nil table ienv))
          ((when typedefp)
           (b* (((when initdeclor.initer?)
                 (retmsg$ "The typedef name ~x0 ~
@@ -6627,7 +6640,7 @@
                   contains return statements."
                  (fundef-fix fundef)))
        ((erp typedefp linkage &)
-        (valid-stor-spec-list storspecs ident type t table))
+        (valid-stor-spec-list storspecs ident type t table ienv))
        ((when typedefp)
         (retmsg$ "The function definition ~x0 ~
                   declares a 'typedef' name instead of a function."
