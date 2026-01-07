@@ -58,7 +58,8 @@
      as well as all the files directly and indirectly included.
      The resulting file set contains entries
      for all the files with the given file paths,
-     as well as for zero or more @(see self-contained) files.")
+     as well as for zero or more @(see self-contained) files
+     that are included directly or indirectly by the given list of files.")
    (xdoc::p
     "The input to our preprocessor is similar to @(tsee input-files),
      in the sense that the files to preprocess are specified by
@@ -567,40 +568,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod ppdfile
-  :short "Fixtype of preprocessed files."
+(fty::defprod scfile
+  :short "Fixtype of self-contained files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "By `preprocessed file' here we mean the result of preprocessing a file.
-     This result consists of
+    "This captures the result of preprocessing a @(see self-contained) file:
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
-     the macros defined by the file (bundled into a single scope alist),
-     and a flag indicating whether the file is @(see self-contained)."))
+     and the macros defined by the file (bundled into a single scope alist)."))
   ((lexemes plexeme-listp)
-   (macros macro-scopep)
-   (selfp booleanp))
-  :pred ppdfilep)
+   (macros macro-scopep))
+  :pred scfilep)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-ppdfile
-  :short "An irrelevant preprocessed file."
-  :type ppdfilep
-  :body (ppdfile nil nil nil))
+(defirrelevant irr-scfile
+  :short "An irrelevant self-contained file."
+  :type scfilep
+  :body (scfile nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist string-ppdfile-alist
-  :short "Fixtype of alists from strings to preprocessed files."
+(fty::defalist string-scfile-alist
+  :short "Fixtype of alists from strings to self-contained files."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use these alists to keep track of which files
-     have been already preprocessed and are @(see self-contained).
-     That is, all the values of this alist have the @('selfp') flag @('t'),
-     although we do not capture that invariant in this fixtype.")
+     have been already preprocessed and are @(see self-contained).")
    (xdoc::p
     "These alists always have unique keys, i.e. there are no shadowed pairs;
      this is not enforced in this fixtype.
@@ -614,45 +610,45 @@
      The non-@(see self-contained) files are not part of this alist,
      because they have been expanded in place."))
   :key-type string
-  :val-type ppdfile
+  :val-type scfile
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred string-ppdfile-alistp
+  :pred string-scfile-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp
-    (implies (and (string-ppdfile-alistp alist)
+  (defruled scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp
+    (implies (and (string-scfile-alistp alist)
                   (assoc-equal key alist))
-             (ppdfilep (cdr (assoc-equal key alist))))
+             (scfilep (cdr (assoc-equal key alist))))
     :induct t
     :enable assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define string-ppdfile-alist-to-filepath-filedata-map ((alist
-                                                        string-ppdfile-alistp))
+(define string-scfile-alist-to-filepath-filedata-map
+  ((alist string-scfile-alistp))
   :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to preprocessed files
+  :short "Turn (1) an alist from string to self-contained files
           into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
    (xdoc::p
     "The strings are wrapped into file paths;
-     as mentioned in @(tsee string-ppdfile-alist),
+     as mentioned in @(tsee string-scfile-alist),
      the alist has unique keys, so the order of the alist is immaterial.
      The lists of lexemes are printed to bytes,
      obtaining the file datas.")
    (xdoc::p
     "This is called on the alist at the end of the preprocessing."))
   (b* (((when (endp alist)) nil)
-       ((cons string ppdfile) (car alist))
-       (bytes (plexemes-to-bytes (ppdfile->lexemes ppdfile)))
+       ((cons string scfile) (car alist))
+       (bytes (plexemes-to-bytes (scfile->lexemes scfile)))
        (filepath (filepath string))
        (filedata (filedata bytes))
-       (map (string-ppdfile-alist-to-filepath-filedata-map (cdr alist))))
+       (map (string-scfile-alist-to-filepath-filedata-map (cdr alist))))
     (omap::update filepath filedata map))
   :verify-guards :after-returns)
 
@@ -681,7 +677,7 @@
     (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
-      the files preprocessed so far.
+      the (self-contained) files preprocessed so far.
       This starts empty and eventually contains all the preprocessed files.")
     (xdoc::li
      "All the functions take
@@ -693,7 +689,7 @@
       These are in reverse order, to make extension efficient.
       The function @(tsee pproc-file) does not take a list of lexemes
       because it initiates the preprocessing of a file;
-      instead of a list of lexemes, it returns a @(tsee ppdfile),
+      instead of a list of lexemes, it returns a @(tsee scfile),
       which contains all the lexemes as well as the macros.")
     (xdoc::li
      "All the functions except @(tsee pproc-file) take and return
@@ -766,7 +762,7 @@
                       (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (preprocessed string-ppdfile-alistp)
+                      (preprocessed string-scfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
                       (ienv ienvp)
@@ -774,8 +770,8 @@
                       (limit natp))
     :guard (not (assoc-equal file preprocessed))
     :returns (mv erp
-                 (ppdfile ppdfilep)
-                 (new-preprocessed string-ppdfile-alistp)
+                 (scfile scfilep)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a file."
@@ -811,15 +807,16 @@
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
-       The resulting @(tsee ppdfile) contains
+       The resulting @(tsee scfile) contains
        the lexemes obtained from the file
        and the macros contributed by the file,
        which are the macros in the innermost scope of the final table.
-       The local preprocessing state stobj is discarded,
-       after extracting the final macro table and self-contained flag.
-       If the self-contained flag is @('t'),
-       we extend the @('preprocessed') alist."))
-    (b* (((reterr) (irr-ppdfile) nil state)
+       Currently, in the absence of error,
+       the file is always self-contained,
+       but we will add code to differentiate non-self-contained files soon.
+       In any case, if the file is self-contained (as always currently),
+       it is added to the @('preprocessed') alist."))
+    (b* (((reterr) (irr-scfile) nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -827,10 +824,10 @@
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         ((erp lexemes macros selfp preprocessed state)
+         ((erp lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
-            (mv-let (erp rev-lexemes macros selfp ppstate preprocessed state)
+            (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
                                     limit
@@ -850,23 +847,18 @@
                   (mv erp
                       rev-lexemes
                       (ppstate->macros ppstate)
-                      (ppstate->selfp ppstate)
                       ppstate
                       preprocessed
                       state))
               (mv erp
                   (rev rev-lexemes)
                   (car (macro-table->scopes macros))
-                  selfp
                   preprocessed
                   state))))
-         (ppdfile (make-ppdfile :lexemes lexemes
-                                :macros macros
-                                :selfp selfp))
-         (preprocessed (if selfp
-                           (acons file ppdfile preprocessed)
-                         preprocessed)))
-      (retok ppdfile preprocessed state))
+         (scfile (make-scfile :lexemes lexemes
+                              :macros macros))
+         (preprocessed (acons file scfile preprocessed)))
+      (retok scfile preprocessed state))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -874,7 +866,7 @@
   (define pproc-*-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (preprocessed string-ppdfile-alistp)
+                              (preprocessed string-scfile-alistp)
                               (preprocessing string-listp)
                               (rev-lexemes plexeme-listp)
                               (ppstate ppstatep)
@@ -883,7 +875,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-ppdfile-alistp)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess zero or more group parts."
@@ -903,7 +895,7 @@
          ((when (= (ppstate->size ppstate) 0)) ; EOF
           (retok (plexeme-list-fix rev-lexemes)
                  ppstate
-                 (string-ppdfile-alist-fix preprocessed)
+                 (string-scfile-alist-fix preprocessed)
                  state))
          ((erp rev-lexemes ppstate preprocessed state) ; group-part
           (pproc-group-part file
@@ -931,7 +923,7 @@
   (define pproc-group-part ((file stringp)
                             (base-dir stringp)
                             (include-dirs string-listp)
-                            (preprocessed string-ppdfile-alistp)
+                            (preprocessed string-scfile-alistp)
                             (preprocessing string-listp)
                             (rev-lexemes plexeme-listp)
                             (ppstate ppstatep)
@@ -940,7 +932,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-ppdfile-alistp)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a group part."
@@ -980,7 +972,7 @@
             (plexeme-case toknl :line-comment)) ; // ...
         (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
                ppstate
-               (string-ppdfile-alist-fix preprocessed)
+               (string-scfile-alist-fix preprocessed)
                state))
        ((plexeme-hashp toknl) ; #
         (pproc-directive file
@@ -1012,7 +1004,7 @@
   (define pproc-directive ((file stringp)
                            (base-dir stringp)
                            (include-dirs string-listp)
-                           (preprocessed string-ppdfile-alistp)
+                           (preprocessed string-scfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
@@ -1021,7 +1013,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-ppdfile-alistp)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a directive."
@@ -1085,7 +1077,7 @@
                          (plexeme-line-comment->newline toknl)))))
           (retok (cons newline (plexeme-list-fix rev-lexemes))
                  ppstate
-                 (string-ppdfile-alist-fix preprocessed)
+                 (string-scfile-alist-fix preprocessed)
                  state)))
        ((plexeme-case toknl :ident) ; # ident
         (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
@@ -1150,7 +1142,7 @@
   (define pproc-include-directive ((file stringp)
                                    (base-dir stringp)
                                    (include-dirs string-listp)
-                                   (preprocessed string-ppdfile-alistp)
+                                   (preprocessed string-scfile-alistp)
                                    (preprocessing string-listp)
                                    (rev-lexemes plexeme-listp)
                                    (ppstate ppstatep)
@@ -1159,7 +1151,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-ppdfile-alistp)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a @('#include') directive."
@@ -1265,12 +1257,12 @@
                                      base-dir
                                      include-dirs
                                      state))
-             (preprocessed (string-ppdfile-alist-fix preprocessed))
-             (name+ppdfile (assoc-equal resolved-file preprocessed))
-             ((when name+ppdfile)
+             (preprocessed (string-scfile-alist-fix preprocessed))
+             (name+scfile (assoc-equal resolved-file preprocessed))
+             ((when name+scfile)
               (b* ((ppstate (update-ppstate->macros
                              (macro-table-extend-top
-                              (ppdfile->macros (cdr name+ppdfile))
+                              (scfile->macros (cdr name+scfile))
                               (ppstate->macros ppstate))
                              ppstate)))
                 (retok (list* (if (plexeme-case toknl2 :newline)
@@ -1285,7 +1277,7 @@
                        ppstate
                        preprocessed
                        state)))
-             ((erp ppdfile preprocessed state)
+             ((erp scfile preprocessed state)
               (pproc-file bytes
                           resolved-file
                           base-dir
@@ -1296,24 +1288,24 @@
                           (ppstate->ienv ppstate)
                           state
                           (1- limit)))
-             (ppstate (update-ppstate->macros
-                       (macro-table-extend-top
-                        (ppdfile->macros ppdfile)
-                        (ppstate->macros ppstate))
-                       ppstate))
-             ((when (ppdfile->selfp ppdfile))
-              (retok (list* (if (plexeme-case toknl2 :newline)
-                                toknl2
-                              (plexeme-newline
-                               (plexeme-line-comment->newline toknl2)))
-                            toknl ; header name
-                            (plexeme-spaces 1)
-                            (plexeme-ident (ident "include"))
-                            (plexeme-punctuator "#")
-                            (plexeme-list-fix rev-lexemes))
-                     ppstate
-                     preprocessed
-                     state)))
+             ((when t) ; TODO: check if file was self-contained
+              (b* ((ppstate (update-ppstate->macros
+                             (macro-table-extend-top
+                              (scfile->macros scfile)
+                              (ppstate->macros ppstate))
+                             ppstate)))
+                (retok (list* (if (plexeme-case toknl2 :newline)
+                                  toknl2
+                                (plexeme-newline
+                                 (plexeme-line-comment->newline toknl2)))
+                              toknl ; header name
+                              (plexeme-spaces 1)
+                              (plexeme-ident (ident "include"))
+                              (plexeme-punctuator "#")
+                              (plexeme-list-fix rev-lexemes))
+                       ppstate
+                       preprocessed
+                       state))))
           (reterr
            (msg "Non-self-contained #include not yet supported.")))) ; TODO
        (t ; # include token
@@ -1327,7 +1319,7 @@
                            (file stringp)
                            (base-dir stringp)
                            (include-dirs string-listp)
-                           (preprocessed string-ppdfile-alistp)
+                           (preprocessed string-scfile-alistp)
                            (preprocessing string-listp)
                            (rev-lexemes plexeme-listp)
                            (ppstate ppstatep)
@@ -1336,7 +1328,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-ppdfile-alistp)
+                 (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
     :short "Preprocess a (non-empty) text line."
@@ -1370,8 +1362,8 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable alistp-when-string-ppdfile-alistp-rewrite
-            ppdfilep-of-cdr-of-assoc-equal-when-string-ppdfile-alistp
+    (enable alistp-when-string-scfile-alistp-rewrite
+            scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp
             true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1421,25 +1413,25 @@
         (pproc-files-loop files base-dir include-dirs
                           nil nil ienv state recursion-limit)))
     (retok
-     (fileset (string-ppdfile-alist-to-filepath-filedata-map preprocessed))
+     (fileset (string-scfile-alist-to-filepath-filedata-map preprocessed))
      state))
 
   :prepwork
   ((define pproc-files-loop ((files string-listp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (preprocessed string-ppdfile-alistp)
+                             (preprocessed string-scfile-alistp)
                              (preprocessing string-listp)
                              (ienv ienvp)
                              state
                              (recursion-limit natp))
-     :returns (mv erp (new-preprocessed string-ppdfile-alistp) state)
+     :returns (mv erp (new-preprocessed string-scfile-alistp) state)
      :parents nil
      (b* (((reterr) nil state)
           ((when (endp files))
-           (retok (string-ppdfile-alist-fix preprocessed) state))
+           (retok (string-scfile-alist-fix preprocessed) state))
           (file (str-fix (car files)))
-          ((when (assoc-equal file (string-ppdfile-alist-fix preprocessed)))
+          ((when (assoc-equal file (string-scfile-alist-fix preprocessed)))
            (pproc-files-loop (cdr files)
                              base-dir
                              include-dirs
@@ -1454,17 +1446,17 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp ppdfile preprocessed state) (pproc-file bytes
-                                                        (car files)
-                                                        base-dir
-                                                        include-dirs
-                                                        preprocessed
-                                                        preprocessing
-                                                        (macro-table-init)
-                                                        ienv
-                                                        state
-                                                        recursion-limit))
-          ((unless (ppdfile->selfp ppdfile))
+          ((erp & preprocessed state) (pproc-file bytes
+                                                  (car files)
+                                                  base-dir
+                                                  include-dirs
+                                                  preprocessed
+                                                  preprocessing
+                                                  (macro-table-init)
+                                                  ienv
+                                                  state
+                                                  recursion-limit))
+          ((unless t) ; TODO: check for self-containment
            (raise "Internal error: non-self-contained top-level file ~x0."
                   (str-fix file))
            (reterr t)))
@@ -1477,5 +1469,5 @@
                          state
                          recursion-limit))
      :guard-hints
-     (("Goal" :in-theory (enable alistp-when-string-ppdfile-alistp-rewrite)))
+     (("Goal" :in-theory (enable alistp-when-string-scfile-alistp-rewrite)))
      :no-function nil)))
