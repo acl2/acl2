@@ -15,13 +15,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund execute-inst (mnemonic args arm)
-  (declare (xargs :guard (good-instp mnemonic args)
+(defund execute-inst (mnemonic args inst-address arm)
+  (declare (xargs :guard (and (good-instp mnemonic args)
+                              (addressp inst-address))
                   :guard-hints (("Goal" :in-theory (enable good-instp)))
                   :stobjs arm))
   (case mnemonic
-    (:add-immediate (execute-add-immediate args arm))
-    (:add-register (execute-add-register args arm))
+    (:add-immediate (execute-add-immediate args inst-address arm))
+    (:add-register (execute-add-register args inst-address arm))
     ;; todo: more
     (otherwise (update-error :unsupported-mnemonic-error arm))))
 
@@ -30,9 +31,10 @@
   (declare (xargs :stobjs arm))
   (if (error arm)
       arm
-    (b* ((inst (read 4 (pc arm) arm))
+    (b* ((inst-address (pc arm))
+         (inst (read 4 inst-address arm))
          ((mv erp mnemonic args)
           (arm32-decode inst))
          ((when erp)
           (update-error :decoding-error arm)))
-      (execute-inst mnemonic args arm))))
+      (execute-inst mnemonic args inst-address arm))))
