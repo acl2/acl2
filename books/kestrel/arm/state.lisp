@@ -79,24 +79,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Gets the stack pointer (register 13).
+(defconst *sp* #b1101)
+(defconst *lr* #b1110)
+(defconst *pc* #b1111)
+
+;; Gets the stack pointer (register 13 = #b1101).
 ;; We consider this an abbreviation to be kept enabled.
 (defun sp (arm)
   (declare (xargs :stobjs arm))
-  (reg 13 arm))
+  (reg *sp* arm))
 
-;; Gets the link register (register 14).
+;; Gets the link register (register 14 = #b1110).
 ;; We consider this an abbreviation to be kept enabled.
 (defun lr (arm)
   (declare (xargs :stobjs arm))
-  (reg 14 arm))
+  (reg *lr* arm))
 
-;; Gets the program counter (register 15).
+;; Gets the program counter (register 15 = #b1111).
 ;; We consider this an abbreviation to be kept enabled.
 (defun pc (arm)
   (declare (xargs :stobjs arm))
-  (reg 15 arm))
-
+  (reg *pc* arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,3 +138,7 @@
 (defun set-apsr.q (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 27 bit (apsr arm)) arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun addressp (ad)
+  (declare (xargs :guard t))
+  (unsigned-byte-p 32 ad))

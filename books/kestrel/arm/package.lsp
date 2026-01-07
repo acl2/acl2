@@ -1,6 +1,6 @@
 ; The ARM package
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,8 @@
 ;; should rename this to ARM32 anyway.
 
 (defpkg "ARM"
-  (append '(bvor bvand slice getbit bvchop bvplus bvcat bvsx repeatbit putbit
+  (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvcat bvsx repeatbit putbit
+            logext
             defstobj+
             lookup-eq
             lookup-equal
@@ -22,6 +23,7 @@
             patbind-when
             pack-in-package
             must-be-redundant
+            keyword-listp
             )
           (set-difference-eq *acl2-exports*
                              '(pc ; needed for the ARM program counter
