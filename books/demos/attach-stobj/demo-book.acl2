@@ -6,6 +6,7 @@
 (depends-on "demo-input.lsp")
 (depends-on "demo-log.txt")
 (include-book "mem-as-ht")
+(include-book "nested")
 ||#
 
 ; cert-flags: ? t :ttags (:attach-stobj-demo)
