@@ -423,6 +423,7 @@
     block-item-count
     block-item-case
     make-block-item-declon
+    block-item-stmt
     make-block-item-stmt
 
     block-item-listp

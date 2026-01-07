@@ -3001,7 +3001,18 @@
 
   (defret block-item-aidentp-of-xeq-block-item-stmt
     (block-item-aidentp item gcc)
-    :hyp (stmt-aidentp stmt-new gcc)))
+    :hyp (stmt-aidentp stmt-new gcc))
+
+  (defruled xeq-block-item-stmt-formalp-when-thm-name
+    (b* (((mv item gout)
+          (xeq-block-item-stmt stmt stmt-new stmt-thm-name info gin)))
+      (implies (and (or (not stmt-thm-name)
+                        (and (stmt-formalp stmt)
+                             (stmt-formalp stmt-new)))
+                    (gout->thm-name gout))
+               (block-item-formalp item)))
+    :expand (block-item-formalp (block-item-stmt stmt-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
