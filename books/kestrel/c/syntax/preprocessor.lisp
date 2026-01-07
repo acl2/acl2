@@ -781,7 +781,6 @@
                       (ienv ienvp)
                       state
                       (limit natp))
-    :guard (not (assoc-equal file preprocessed))
     :returns (mv erp
                  (scfile scfilep)
                  (new-preprocessed string-scfile-alistp)
@@ -795,36 +794,36 @@
        The file itself is read by the callers,
        namely @(tsee pproc-files) and @(tsee pproc-include-directive).")
      (xdoc::p
-      "As expressed by the guard,
-       this function is called when the file is not in @('preprocessed'),
-       because if that were the case, there is no need to re-preprocess it
-       (see the callers of this function).")
-     (xdoc::p
       "If @('file') is found in the list of the files under preprocessing,
        we stop with an error, because there is a circularity.
        Otherwise, before preprocessing the file,
        we add it to the list of files under preprocessing.")
      (xdoc::p
-      "The macro table passed as input is empty
-       when this function is called by @(tsee pproc-files).
+      "The macro table passed as input to this function
+       is empty when this function is called by @(tsee pproc-files).
        Otherwise, it is the table for
        the file that contains the @('#include') directive
        that results in this call of @(tsee pproc-file).")
      (xdoc::p
-      "We create a local preprocessing state stobj from
+      "If the file is in the @('preprocessed') alist,
+       we avoid re-preprocessing it:
+       we leave @('preprocessed') unchanged,
+       and we return the @(tsee scfile) from the alist.")
+     (xdoc::p
+      "Otherwise, we create a local preprocessing state stobj from
        the bytes of the file,
        the recursion limit,
-       the implementation environment,
-       and the macro table
-       (which @(tsee init-ppstate) extends with a new empty scope for the file).
+       the macro table
+       (which @(tsee init-ppstate) extends with a new empty scope for the file),
+       and the implementation environment.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
        If the file is not self-contained,
-       @(tsee pproc-*-group-part) returns @(':not-self-contained')
+       @(tsee pproc-*-group-part) will return @(':not-self-contained')
        (see @(tsee pproc)),
        which this function also returns;
-       the caller handles it.
+       the caller handles that.
        If there is no error (and no @(':not-self-contained')),
        a @(tsee scfile) is built and added to @('preprocessed').
        The @(tsee scfile) contains
@@ -841,6 +840,9 @@
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
+         (preprocessed (string-scfile-alist-fix preprocessed))
+         (name+scfile (assoc-equal file preprocessed))
+         ((when name+scfile) (retok (cdr name+scfile) preprocessed state))
          ((erp lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
@@ -1199,11 +1201,14 @@
        i.e. that there is nothing (of significance) after the directive
        in the line (see grammar).")
      (xdoc::p
-      "We resolve the header name to a file.
-       If the resolved file is found in the @('preprocessed') alist,
-       it means that it has been already preprocessed and is self-contained;
-       so we leave the @('#include') directive as is,
-       without calling @(tsee pproc-file).
+      "We resolve the header name to a file,
+       and we call @(tsee pproc-file) to preprocess it.
+       If the call returns @(':not-self-contained') as @('erp'),
+       the included file is not self-contained,
+       and we need to expand it in place.
+       If the call returns some other error, we pass it up to the caller.
+       If the call returns no error,
+       we leave the @('#include') directive as is.
        More precisely, the resulting @('#include') directive
        has lost any white space and comments in the line,
        except for one space between the @('include') and the header name;
@@ -1211,33 +1216,12 @@
        between the @('include') and the header name,
        but we add one since it is more idiomatic.
        In the future, we may want to preserve the entire line.
-       We also add, to the current file's scope,
-       the macros contributed by the included file:
+       We also incorporate the returned macros into
+       the top scope of the macros of the current file;
        although we do not expand the file in place,
        in order to process the rest of the including file,
        we need to act as if we had expanded the included file in place,
        i.e. its macros must be available.")
-     (xdoc::p
-      "If the resolved file is not found in the @('preprocessed') alist,
-       we preprocess it via @(tsee pproc-file), recursively,
-       with the macros in scope from the current file's preprocessing state,
-       to which @(tsee pproc-file) adds a new scope for the new file.
-       When @(tsee pproc-file) returns, there are three cases.
-       If the included preprocessed file is not self-contained,
-       @('erp') is @(':not-self-contained') (see @(tsee pproc)),
-       and in this case we need to expand the file in place;
-       in other words,
-       we catch and handle the @(':not-self-contained') ``exception''.
-       If @('erp') is some other kind of error,
-       we pass it up to the caller of this function.
-       If instead @('erp') is @('nil'),
-       the file is self-contained:
-       @(tsee pproc-file) has added it to @('preprocessed'),
-       and we do not need to expand the file in place;
-       so we keep the @('#include') directive,
-       as described just above for the case of
-       an already preprocessed self-contained with no @(tsee pproc-file) call;
-       as also described just above, we add the contributed macros.")
      (xdoc::p
       "Note that @(tsee resolve-included-file)
        always reads the whole file and returns its bytes,
@@ -1279,26 +1263,6 @@
                                      base-dir
                                      include-dirs
                                      state))
-             (preprocessed (string-scfile-alist-fix preprocessed))
-             (name+scfile (assoc-equal resolved-file preprocessed))
-             ((when name+scfile)
-              (b* ((ppstate (update-ppstate->macros
-                             (macro-table-extend-top
-                              (scfile->macros (cdr name+scfile))
-                              (ppstate->macros ppstate))
-                             ppstate)))
-                (retok (list* (if (plexeme-case toknl2 :newline)
-                                  toknl2
-                                (plexeme-newline
-                                 (plexeme-line-comment->newline toknl2)))
-                              toknl ; header name
-                              (plexeme-spaces 1)
-                              (plexeme-ident (ident "include"))
-                              (plexeme-punctuator "#")
-                              (plexeme-list-fix rev-lexemes))
-                       ppstate
-                       preprocessed
-                       state)))
              ((mv erp scfile preprocessed state)
               (pproc-file bytes
                           resolved-file
@@ -1310,7 +1274,6 @@
                           (ppstate->ienv ppstate)
                           state
                           (1- limit)))
-
              ((when (eq erp :not-self-contained))
               (reterr
                (msg "Non-self-contained #include not yet supported."))) ; TODO
@@ -1377,7 +1340,11 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
-             (local (in-theory (enable acons))))
+             (local
+              (in-theory
+               (enable
+                acons
+                scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1387,7 +1354,6 @@
   (("Goal"
     :in-theory
     (enable alistp-when-string-scfile-alistp-rewrite
-            scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp
             true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1411,23 +1377,28 @@
      for @('#include') directives with angle brackets.")
    (xdoc::p
     "The elements of @('files') are preprocessed in order.
-     Each file is read from the file system and preprocessed,
-     unless it has been already preprocessed via
-     a direct or indirect inclusion of some previous file,
-     and it is @(see self-contained).")
+     Each file is read from the file system
+     and preprocessed via @(tsee pproc-file).
+     Since the starting macro table is empty in these calls,
+     @(tsee pproc-file) cannot return @(':not-self-contained') as @('erp'),
+     but we double-check it here, throwing a hard error if the check fails.
+     We pass any other error up to the caller.
+     If there is no error, the returned @(tsee scfile) is discarded,
+     because we are at the top level
+     and there are no macros to incorporate.
+     Note that @(tsee pproc-file) ensures, as a post-condition,
+     thet @(tsee scfile) is in the @('preprocessed') alist.")
    (xdoc::p
     "We keep track of the files under preprocessing in a list (initially empty),
-     to detect and avoid circularities.
-     The result of this function is a file set,
+     to detect and avoid circularities.")
+   (xdoc::p
+    "The result of this function is a file set,
      whose paths are generally a superset of the input ones:
      the files specified by @('files') may include, directly or indirectly,
      files whose paths are not in @('files'), e.g. files from the C library.
      The resulting file set is ``closed'' with respect to @('#include'):
      the @(see self-contained) ones are in the file set,
      and the non-@(see self-contained) ones have been expanded.")
-   (xdoc::p
-    "It is an internal (hard) error if
-     any of the files specified directly is not @(see self-contained).")
    (xdoc::p
     "The recursion limit is discussed in @(tsee pproc).
      It seems best to let the user set this limit (outside this function),
@@ -1455,35 +1426,25 @@
           ((when (endp files))
            (retok (string-scfile-alist-fix preprocessed) state))
           (file (str-fix (car files)))
-          ((when (assoc-equal file (string-scfile-alist-fix preprocessed)))
-           (pproc-files-loop (cdr files)
-                             base-dir
-                             include-dirs
-                             preprocessed
-                             preprocessing
-                             ienv
-                             state
-                             recursion-limit))
-          (file (car files))
-          (path-to-read (str::cat base-dir "/" (str-fix file)))
+          (path-to-read (str::cat base-dir "/" file))
           ((mv erp bytes state)
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp & preprocessed state) (pproc-file bytes
-                                                  (car files)
-                                                  base-dir
-                                                  include-dirs
-                                                  preprocessed
-                                                  preprocessing
-                                                  (macro-table-init)
-                                                  ienv
-                                                  state
-                                                  recursion-limit))
-          ((unless t) ; TODO: check for self-containment
-           (raise "Internal error: non-self-contained top-level file ~x0."
-                  (str-fix file))
-           (reterr t)))
+          ((mv erp & preprocessed state) (pproc-file bytes
+                                                     (car files)
+                                                     base-dir
+                                                     include-dirs
+                                                     preprocessed
+                                                     preprocessing
+                                                     (macro-table-init)
+                                                     ienv
+                                                     state
+                                                     recursion-limit))
+          ((when (eq erp :not-self-contained))
+           (raise "Internal error: non-self-contained top-level file ~x0." file)
+           (reterr t))
+          ((when erp) (reterr erp)))
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
