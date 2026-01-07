@@ -10,7 +10,7 @@
 
 (in-package "ARM")
 
-(include-book "decoder")
+(include-book "encodings")
 
 (defun let-bindings-for-encoding-fields (pat)
   (declare (xargs :guard (encoding-patternp pat)))
