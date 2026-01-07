@@ -12,7 +12,7 @@
 ;; should rename this to ARM32 anyway.
 
 (defpkg "ARM"
-  (append '(bvor bvand bvxor slice getbit bvchop bvplus bvcat bvsx repeatbit putbit
+  (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvcat bvsx repeatbit putbit
             logext
             defstobj+
             lookup-eq
