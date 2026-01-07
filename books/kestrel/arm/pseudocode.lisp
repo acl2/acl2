@@ -31,6 +31,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *unpredictable* :unpredictable)
+(defconst *unsupported* :unsupported)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; See D16.5.3 (Bitstring manipulation)
 
 ;; See "Zero-extension and sign-extension of bitstrings"
@@ -190,7 +195,7 @@
 
 (defconst *SRTypes* (list *SRType_LSL* *SRType_LSR* *SRType_ASR* *SRType_ROR* *SRType_RRX*))
 
-(defun SRTypep (ty)
+(defund SRTypep (ty)
   (declare (xargs :guard t))
   (member-eq ty *SRTypes*))
 
@@ -232,6 +237,10 @@
   (implies (unsigned-byte-p 2 type)
            (SRTypep (DecodeRegShift type)))
   :hints (("Goal" :in-theory (enable DecodeRegShift))))
+
+(defthm not-equal-of-DecodeRegShift-and-SRTYPE_RRX
+ (not (equal (DecodeRegShift type) :SRTYPE_RRX))
+ :hints (("Goal" :in-theory (enable DecodeRegShift))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +305,8 @@
                               (bitp carry_in)
                               ;; the assert:
                               (not (and (eq type :SRType_RRX)
-                                        (not (equal amount 1)))))))
+                                        (not (equal amount 1)))))
+                  :guard-hints (("Goal" :in-theory (enable srtypep)))))
   (b* (((mv result carry_out)
         (if (= amount 0)
             (mv value carry_in)
@@ -305,7 +315,7 @@
             (:SRType_LSR (lsr_c n value amount))
             (:SRType_ASR (asr_c n value amount))
             (:SRType_ROR (ror_c n value amount))
-            (:SRType_RRX (rrx_c n value amount))
+            (:SRType_RRX (rrx_c n value carry_in))
             (otherwise (prog2$ (er hard 'shift_c "Unreachable case.")
                                (mv nil nil)))))))
     (mv result carry_out)))
@@ -321,7 +331,7 @@
                 (not (and (eq type :SRType_RRX)
                           (not (equal amount 1)))))
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
-  :hints (("Goal" :in-theory (enable shift_c))))
+  :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-shift_c
   (implies (and (unsigned-byte-p n value)
@@ -334,10 +344,11 @@
                 (not (and (eq type :SRType_RRX)
                           (not (equal amount 1)))))
            (unsigned-byte-p 1 (mv-nth 1 (shift_c n value type amount carry_in))))
-  :hints (("Goal" :in-theory (enable shift_c))))
+  :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; See A8.4.3 (Pseudocode details of instruction-specified shifts and rotates)
 (defund shift (n value type amount carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n value)
                               (< 0 n)
@@ -446,24 +457,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A2.5.1 (Instruction set state register, ISETSTATE)
 
-;; (defun BranchTo (address arm)
-;;   (declare (xargs :guard (unsigned-byte-p 32 address)
-;;                   :stobjs arm))
+(defconst *InstrSet_ARM* #b00)
+(defconst *InstrSet_Thumb* #b01)
+(defconst *InstrSet_Jazelle* #b10)
+(defconst *InstrSet_ThumbEE* #b11)
 
-;;   xxx)
+(defun CurrentInstrSet ()
+  (declare (xargs :guard t))
+  *InstrSet_ARM* ; for now
+  )
 
-;; (defun BXWritePC (address arm)
-;;   (declare (xargs :guard (unsigned-byte-p 32 address)
-;;                   :stobjs arm))
-;;   ;; todo: more cases
-;;   (if (== (getbit 0 address) 1)
-;;       (update-error :unsupported arm) ; todo: use the name "set-error"
-;;     (if (== (getbit 1 address) 0)
-;;         ;; todo: change the ARM instr set
-;;         (BranchTo address)
-;;       (update-error :unpredictable arm))))
+(defun SelectInstrSet (iset arm)
+  (declare (xargs :guard (member iset (list *InstrSet_ARM*
+                                            *InstrSet_Thumb*
+                                            *InstrSet_Jazelle*
+                                            *InstrSet_ThumbEE*))
+                  :stobjs arm))
+  (if (== iset *InstrSet_ARM*)
+      arm ; for now we do nothing because we are always in ARM mode
+    ;; todo: flesh out:
+    (update-error *unsupported* arm)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund archversion ()
+  (declare (xargs :guard t))
+  5 ; todo
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+(defun BranchTo (address arm)
+  (declare (xargs :guard (unsigned-byte-p 32 address)
+                  :stobjs arm))
+  ;; todo: do we need to deal with the 8-byte offset?:
+  (set-reg #b1111 address arm))
+
+;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+(defun BranchWritePC (address arm)
+  (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
+                  :stobjs arm))
+  (if (eql (CurrentInstrSet) *InstrSet_ARM*)
+      (if (and (< (ArchVersion) 6)
+               (= (slice 1 0 address) #b00))
+          (update-error *unpredictable* arm)
+        (BranchTo (bvcat 30 (slice 31 2 address) 2 #b00) arm))
+    (update-error *unsupported* arm)))
+
+(defun BXWritePC (address arm)
+  (declare (xargs :guard (unsigned-byte-p 32 address)
+                  :stobjs arm))
+  (if (== (CurrentInstrSet) *InstrSet_ThumbEE*)
+      (update-error :unsupported arm) ; todo
+    (if (== (getbit 0 address) 1)
+        (update-error :unsupported arm) ; todo: use the name "set-error"
+      (if (== (getbit 1 address) 0)
+          ;; todo: change the ARM instr set
+          (BranchTo address arm)
+        (update-error :unpredictable arm)))))
 
 ;; (defun ALUWritePC (address arm)
 ;;   (declare (xargs :guard (unsigned-byte-p 32 address)
@@ -497,7 +551,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund archversion ()
-  (declare (xargs :guard t))
-  5 ; todo
-  )
+;; See "Rounding and aligning" in D16.5.4 Arithmetic
+(defund align (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y)
+                              (not (equal 0 y)))))
+  (* y (div x y)))
+
+;; todo
+;; (thm
+;;  (equal (align x 4)
+;;         (bvand 32 #xfffffffc x))
+;;  :hints (("Goal" :in-theory (enable align bvand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
