@@ -12,6 +12,13 @@
 
 (include-book "encodings")
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/alists-light/acons" :dir :system))
+(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+
+ ; for speed:
+(local (in-theory (disable acl2::equal-constant-when-bvchop-equal-constant-false
+                           acl2::bvand-type
+                           symbol-alistp)))
 
 (defun make-alist-for-fields (highbit pat)
   (declare (xargs :guard (and (encoding-patternp pat)
