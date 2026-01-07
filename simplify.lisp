@@ -8128,7 +8128,7 @@
 ; trivial.
 
   (let ((limit (equational-polyp-limit wrld)))
-    (or (null limit) ; only possible during boo-strap at this point
+    (or (null limit) ; only possible during boot-strap at this point
         (equational-polyp-ok-rec hist limit))))
 
 (defun simplify-clause1 (top-clause hist rcnst wrld state step-limit)
