@@ -2794,19 +2794,22 @@
                                  :vartys vartys-post))
        ((when specs-thm-name)
         (raise "Internal error: ~
-                new list of initializer declarators ~x0 ~
-                is not in the formalized subset."
-               ideclors)
+                unexpected declaration specifies transformation theorem ~x0."
+               specs-thm-name)
         (mv declon-new (irr-gout)))
        ((unless (and ideclors-thm-name
-                     (declon-block-formalp declon)))
+                     (not extension)
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs-new)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (init-declor-list-block-formalp ideclors)
+                     (init-declor-list-block-formalp ideclors-new)))
         (mv declon-new gout-no-thm))
-       ((unless (declon-block-formalp declon-new))
-        (raise "Internal error: ~
-                new declaration ~x0 is not in the formalized subset ~
-                while old declaration ~x1 is."
-               declon-new declon)
-        (mv declon-new (irr-gout)))
        (initdeclor (car ideclors))
        (var (dirdeclor-ident->ident
              (declor->direct
@@ -2902,7 +2905,30 @@
   (defret declon-aidentp-of-xeq-declon-declon
     (declon-aidentp declon gcc)
     :hyp (and (decl-spec-list-aidentp specs-new gcc)
-              (init-declor-list-aidentp ideclors-new gcc))))
+              (init-declor-list-aidentp ideclors-new gcc)))
+
+  (defruled xeq-declon-declon-formalp-when-thm-name
+    (b* (((mv declon gout)
+          (xeq-declon-declon extension
+                             specs specs-new specs-thm-name
+                             ideclors ideclors-new ideclors-thm-name
+                             vartys-post gin)))
+      (implies (and (or (not ideclors-thm-name)
+                        (and (init-declor-list-block-formalp ideclors)
+                             (init-declor-list-block-formalp ideclors-new)))
+                    (gout->thm-name gout))
+               (and (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs-new)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (declon-block-formalp declon))))
+    :expand (declon-block-formalp (declon-declon nil specs ideclors-new))
+    :enable (irr-gout
+             gout-no-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -375,6 +375,7 @@
     declon-fix
     declon-count
     declon-case
+    declon-declon
     make-declon-declon
     declon-declon->extension
     declon-declon->specs
@@ -638,6 +639,8 @@
 
     ident-formalp
     const-formalp
+    type-spec-list-formalp
+    stor-spec-list-formalp
     tyname-formalp
     expr-formalp
     expr-option-formalp
