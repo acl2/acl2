@@ -94,8 +94,8 @@
     ;; todo: clz
 
     (:cmn-immediate (cond 4) 0 0 _ 1 _ 1 0 1 1 _ 1 (rn 4) (0) (0) (0) (0) (imm12 12))
-    (:cmn-regsiter  (cond 4) 0 0 _ 0 _ 1 0 1 1 _ 1 (rn 4) (0) (0) (0) (0) (imm5 5) (type 2) 0 (rm 4))
-    (:cmn-regsiter-shifted-register  (cond 4) 0 0 _ 0 _ 1 0 1 1 _ 1 (rn 4) (0) (0) (0) (0) (rs 4) 0 (type 2) 1 (rm 4))
+    (:cmn-register  (cond 4) 0 0 _ 0 _ 1 0 1 1 _ 1 (rn 4) (0) (0) (0) (0) (imm5 5) (type 2) 0 (rm 4))
+    (:cmn-register-shifted-register  (cond 4) 0 0 _ 0 _ 1 0 1 1 _ 1 (rn 4) (0) (0) (0) (0) (rs 4) 0 (type 2) 1 (rm 4))
 
     (:cmp-immediate  (cond 4) 0 0 _ 1 _ 1 0 1 0 _ 1 (rn 4) (0) (0) (0) (0) (imm12 12))
     (:cmp-register  (cond 4) 0 0 _ 0 _ 1 0 1 0 _ 1 (rn 4) (0) (0) (0) (0) (imm5 5) (type 2) 0 (rm 4))
@@ -108,7 +108,7 @@
 
     (:eor-immediate  (cond 4) 0 0 1 0 0 0 1 s (rn 4) (rd 4) (imm12 12))
     (:eor-register   (cond 4) 0 0 0 0 0 0 1 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
-    (:eor-shifted-register   (cond 4) 0 0 0 0 0 0 1 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
+    (:eor-register-shifted-register   (cond 4) 0 0 0 0 0 0 1 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
     ;; todo: isb
     ;; todo: ldc/ldc2
