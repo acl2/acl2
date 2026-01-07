@@ -3017,11 +3017,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xeq-block-item-declon ((declon declonp)
-                             (declon-new declonp)
-                             (declon-thm-name symbolp)
-                             info
-                             (vartys-post c::ident-type-mapp)
-                             (gin ginp))
+                               (declon-new declonp)
+                               (declon-thm-name symbolp)
+                               info
+                               (vartys-post c::ident-type-mapp)
+                               (gin ginp))
   :guard (and (declon-unambp declon)
               (declon-annop declon)
               (declon-unambp declon-new)
@@ -3089,7 +3089,19 @@
 
   (defret block-item-aidentp-of-xeq-block-item-declon
     (block-item-aidentp item gcc)
-    :hyp (declon-aidentp declon-new gcc)))
+    :hyp (declon-aidentp declon-new gcc))
+
+  (defruled xeq-block-item-declon-formalp-when-thm-name
+    (b* (((mv item gout)
+          (xeq-block-item-declon declon declon-new declon-thm-name
+                                 info vartys-post gin)))
+      (implies (and (or (not declon-thm-name)
+                        (and (declon-block-formalp declon)
+                             (declon-block-formalp declon-new)))
+                    (gout->thm-name gout))
+               (block-item-formalp item)))
+    :expand (block-item-formalp (block-item-declon declon-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
