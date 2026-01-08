@@ -237,7 +237,7 @@
 
  <h3>Book about formal floating-point hardware verification</h3>
 
- <p><a href='https://www.springer.com/gp/book/9783319955124'>Formal
+ <p><a href='https://link.springer.com/book/10.1007/978-3-030-87181-9'>Formal
    Verification of Floating-Point Hardware Design: A Mathematical
    Approach</a>, David
    M. Russinoff.  <a href='http://www.springer.com'>Springer</a>, 2019.
