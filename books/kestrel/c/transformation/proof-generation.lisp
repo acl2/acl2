@@ -3258,7 +3258,23 @@
   (defret block-item-list-aidentp-of-xeq-block-item-list-cons
     (block-item-list-aidentp item+items gcc)
     :hyp (and (block-item-aidentp item-new gcc)
-              (block-item-list-aidentp items-new gcc))))
+              (block-item-list-aidentp items-new gcc)))
+
+  (defruled xeq-block-item-list-cons-formalp-when-thm-name
+    (b* (((mv item+items gout)
+          (xeq-block-item-list-cons item item-new item-thm-name
+                                    items items-new items-thm-name
+                                    gin)))
+      (implies (and (or (not item-thm-name)
+                        (and (block-item-formalp item)
+                             (block-item-formalp item-new)))
+                    (or (not items-thm-name)
+                        (and (block-item-list-formalp items)
+                             (block-item-list-formalp items-new)))
+                    (gout->thm-name gout))
+               (block-item-list-formalp item+items)))
+    :expand (block-item-list-formalp (cons item-new items-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
