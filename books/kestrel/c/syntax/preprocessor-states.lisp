@@ -1504,3 +1504,28 @@
   (("Goal"
     :in-theory
     (enable ppstate->bytess-length-of-update-ppstate->bytess-length))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ppstate-add-bytes ((bytes byte-listp) (ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Add some input bytes to a preprocessing state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when a file included via a @('#include') directive
+     is expanded in place:
+     as explained in @(tsee ppstate),
+     we put its bytes into the next element of the array of byte lists.
+     It is an internal error if there is no next element in the array:
+     the file recursion limit has been exceeded."))
+  (b* (((reterr) ppstate)
+       (bytess-length (ppstate->bytess-length ppstate))
+       (bytess-current (ppstate->bytess-current ppstate))
+       (bytess-current (1+ bytess-current))
+       ((unless (< bytess-current bytess-length))
+        (reterr (msg "Exceeded file recursion limit of ~x0." bytess-length)))
+       (ppstate (update-ppstate->bytes bytess-current bytes ppstate))
+       (ppstate (update-ppstate->bytess-current bytess-current ppstate)))
+    (retok ppstate))
+  :hooks nil)
