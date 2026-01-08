@@ -65,7 +65,23 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to the parser's @(see reader),
-     but for the preprocessor."))
+     but for the preprocessor.")
+   (xdoc::p
+    "An additional complication here is that
+     @(tsee ppstate), unlike @(tsee parstate),
+     has the input bytes organized as an array of lists,
+     instead of just a list.
+     So it is convenient to wrap the reading of a byte
+     into an abstraction, namely @(tsee read-byte);
+     its name has no @('p') (unlike @(tsee pread-char) and others,
+     because there is no counterpart in the parser.")
+   (xdoc::p
+    "Instead of reading characters from bytes on the fly,
+     we could consider reading all the characters from each file first,
+     and then operating directly on lists of characters.
+     Essentially, we would replace bytes with characters in @(tsee ppstate),
+     and maybe also revise the array and indices for read and unread characters;
+     but this is future work."))
   :order-subtopics t
   :default-parent t)
 
