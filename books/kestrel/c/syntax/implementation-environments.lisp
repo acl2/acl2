@@ -204,9 +204,7 @@
      consisting of increasing bit values,
      ended by the sign bit for signed integers.
      The exact choice of bit layout does not matter,
-     since the main purpose of the mapping is to exhibit a correspondence.")
-   (xdoc::p
-    "For now we map to the C17 version."))
+     since the main purpose of the mapping is to exhibit a correspondence."))
   (b* (((ienv ienv) ienv)
        (uchar-format (c::uchar-format-8))
        (schar-format (c::schar-format-8tcnt))
