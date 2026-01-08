@@ -10271,7 +10271,7 @@
               :SUPERSCRIPTS '(:1A :1C)
               :GROUP '(:GROUP-15)
               :FEAT '(:SSE))
-          NIL 'NIL
+          NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
     (INST "VLDMXCSR"
           (OP :OP #xFAE
