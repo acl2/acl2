@@ -83,11 +83,11 @@
 
 (test-preproc '("null-directive.c")
               :expected (fileset-of "null-directive.c"
-                                    "
-
-
-
-
+                                    "/*#*/
+/* comment */ /*#*/
+/*#*/ // comment
+/* comment */ /*#*/ // comment
+    /*#*/
 "))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,6 +100,6 @@
                                     "#include \"subdir/included2.h\"
 "
                                     "subdir/included2.h"
-                                    "
+                                    "/*#*/ // null directive
 "
                                     ))

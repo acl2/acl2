@@ -1071,8 +1071,8 @@
       "If we find no token or new line, it is an error.")
      (xdoc::p
       "If we find a new line, we have the null directive [C17:6.10.7].
-       We simplify replace it with a blank line consisting of the new line,
-       discarding any preceding comments or white space.")
+       We leave the line as is,
+       but we wrap the @('#') into a (small) block comment.")
      (xdoc::p
       "If we find an identifier,
        we check to see if it is the name of a known directive,
@@ -1095,11 +1095,15 @@
        ((or (plexeme-case toknl :newline) ; # newline
             (plexeme-case toknl :line-comment)) ; # // ...
         ;; null directive
-        (b* ((newline (if (plexeme-case toknl :newline)
-                          toknl
-                        (plexeme-newline
-                         (plexeme-line-comment->newline toknl)))))
-          (retok (cons newline (plexeme-list-fix rev-lexemes))
+        (b* ((nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
+             (rev-lexemes (plexeme-list-fix rev-lexemes))
+             (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
+             (rev-lexemes (cons (plexeme-block-comment (list (char-code #\#)))
+                                rev-lexemes))
+             (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
+             (rev-lexemes (cons toknl ; toknl is new line or line comment
+                                rev-lexemes)))
+          (retok rev-lexemes
                  ppstate
                  (string-scfile-alist-fix preprocessed)
                  state)))
@@ -1300,6 +1304,7 @@
                        ppstate))
              (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
              (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
+             (rev-lexemes (plexeme-list-fix rev-lexemes))
              (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
              (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
@@ -1311,8 +1316,7 @@
                                     toknl2
                                   (plexeme-newline
                                    (plexeme-line-comment->newline toknl2)))
-                                rev-lexemes))
-             (rev-lexemes (plexeme-list-fix rev-lexemes)))
+                                rev-lexemes)))
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
