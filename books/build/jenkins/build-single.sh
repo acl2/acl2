@@ -39,10 +39,11 @@ LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET = $TARGET"
 echo "Using STARTJOB = $STARTJOB"
+echo "Using MAKEACL2OPTS = $MAKEACL2OPTS"
 echo "Using MAKEOPTS = $MAKEOPTS"
 
 echo "Making ACL2"
-$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP"
+$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP ${MAKEACL2OPTS}"
 # Outdated (as of 2020) but maybe relevant comment: If your startjob
 # is just a wrapper for bash, you'll want to use $* to pass in the
 # arguments to startjob

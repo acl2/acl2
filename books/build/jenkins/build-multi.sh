@@ -54,6 +54,7 @@ echo "Using STARTJOB = $STARTJOB"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
+echo "Using MAKEACL2OPTS = $MAKEACL2OPTS"
 echo "Using MAKEOPTS = $MAKEOPTS"
 
 if [ "${LISP:0:3}" == "gcl" ]; then
@@ -85,7 +86,7 @@ esac
 echo "Using ACL2_SUFFIX = $ACL2_SUFFIX"
 
 echo "Making ACL2(${ACL2_SUFFIX})"
-$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP"
+$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP ${MAKEACL2OPTS}"
 
 echo "Building the books."
 cd books
