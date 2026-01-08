@@ -1312,10 +1312,7 @@
              (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
              (rev-lexemes (cons toknl rev-lexemes)) ; toknl is header name
              (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
-             (rev-lexemes (cons (if (plexeme-case toknl2 :newline)
-                                    toknl2
-                                  (plexeme-newline
-                                   (plexeme-line-comment->newline toknl2)))
+             (rev-lexemes (cons toknl2 ; toknl2 is new line or line comment
                                 rev-lexemes)))
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
