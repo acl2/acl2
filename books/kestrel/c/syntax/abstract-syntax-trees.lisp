@@ -3188,12 +3188,17 @@
       "As a GCC extension, we allow expressions to follow @('goto')s.
        See the ABNF grammar.")
      (xdoc::p
-      "As a GCC extension, we include assembler statements."))
+      "As GCC extensions, we include
+       attributed null statements,
+       attributed return statements, and
+       assembler statements.
+       See the ABNF grammar."))
     (:labeled ((label label)
                (stmt stmt)))
     (:compound ((stmt comp-stmt)))
     (:expr ((expr? expr-option)
             (info any)))
+    (:null-attrib ((attrib attrib-spec))) ; GCC extension
     (:if ((test expr)
           (then stmt)))
     (:ifelse ((test expr)
@@ -3223,7 +3228,9 @@
     (:break ())
     (:return ((expr? expr-option)
               (info any)))
-    (:asm ((stmt asm-stmt)))
+    (:return-attrib ((attrib attrib-spec) ; GCC extension
+                     (expr expr)))
+    (:asm ((stmt asm-stmt))) ; GCC extension
     :pred stmtp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

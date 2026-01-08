@@ -3985,6 +3985,12 @@
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
        pstate)
+     :null-attrib
+     (b* ((pstate (print-indent pstate))
+          (pstate (print-attrib-spec stmt.attrib pstate))
+          (pstate (print-astring ";" pstate))
+          (pstate (print-new-line pstate)))
+       pstate)
      :if
      (b* ((pstate (print-indent pstate))
           (pstate (print-astring "if (" pstate))
@@ -4180,6 +4186,14 @@
                                            pstate)))
                     pstate)
             :none pstate))
+          (pstate (print-astring ";" pstate))
+          (pstate (print-new-line pstate)))
+       pstate)
+     :return-attrib
+     (b* ((pstate (print-indent pstate))
+          (pstate (print-attrib-spec stmt.attrib pstate))
+          (pstate (print-astring " return " pstate))
+          (pstate (print-expr stmt.expr (expr-priority-expr) pstate))
           (pstate (print-astring ";" pstate))
           (pstate (print-new-line pstate)))
        pstate)
