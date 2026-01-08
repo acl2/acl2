@@ -15,16 +15,16 @@
 
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
-        (t (let ((m (car x)))  ; monomial
+        (t (let ((m (car x)))  ; first monomial
              (and (consp (car x))
-                  (let* ((c (car m)) ; coefficient
-                         (e (cdr m)) ; exponent
+                  (let* ((c (car m)) ; coefficient of m
+                         (e (cdr m)) ; exponent of m
                          (r (cdr x))) ; rest of poly
                     (and (polyp r)
                          (posp c)
                          (natp e)
                          (or (null r)
-                             (< (cdar r) ; next exponent
+                             (< (cdr (car r)) ; next exponent
                                 e)))))))))
 
 (defun eval-poly (x v)
@@ -38,8 +38,8 @@
   (declare (xargs :guard (and (polyp x)
                               (natp v)))) ; could be (acl2-numberp v)
   (cond ((endp x) 0)
-        (t (+ (* (caar x)
-                 (expt v (cdar x)))
+        (t (+ (* (car (car x))
+                 (expt v (cdr (car x))))
               (eval-poly (cdr x) v)))))
 
 (defun sum-polys (x y)
@@ -53,11 +53,11 @@
                   :measure (+ (len x) (len y))))
   (cond ((endp x) y)
         ((endp y) x)
-        ((= (cdar x) (cdar y)) ; same exponent
-         (cons (cons (+ (caar x)  (caar y))
-                     (cdar x))
+        ((= (cdr (car x)) (cdr (car y))) ; same exponent
+         (cons (cons (+ (car (car x))  (car (car y)))
+                     (cdr (car x)))
                (sum-polys (cdr x) (cdr y))))
-        ((< (cdar x) (cdar y))
+        ((< (cdr (car x)) (cdr (car y)))
          (cons (car y)
                (sum-polys x (cdr y))))
         (t

@@ -1,10 +1,44 @@
-Set-theoretic Foundations for ACL2: The Zfc Theory of an ACL2 Session
+Set-theoretic Foundations for ACL2(zfc): The ZFC Theory of an ACL2 Session
 Copyright (C) 2025, Matt Kaufmann
 License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 This note sketches the logical foundation for our integration of ZFG
-(Zermelo Fraenkel set theory with global choice) with ACL2.  We
-introduce the following notions before presenting the key theorems.
+(Zermelo Fraenkel set theory with global choice) with ACL2, which we
+may call ACL2(zfc).  We assume familiarity with ACL2 and ZF as well as
+the basics of the file base.lisp in this directory.  Note as is
+well-known, that ZFG is conservative over ZFC (Zermelo Fraenkel set
+theory with local choice).
+
+It may seem that no such foundation is necessary; after all, the
+set-theory books in the current directory (books/projects/set-theory/)
+are all certifiable without trust tags.  But consider an event such as
+the following from base.lisp, which says that a member of the union of
+two sets is a member of (at least) one of those sets.
+
+(defthmz in-union2
+  (equal (in a (union2 x y))
+         (or (in a x) (in a y)))
+  :hints ...)
+
+This expands to the following.
+
+(defthm in-union2
+   (implies (force? (zfc))
+            (equal (in a (union2 x y))
+                   (or (in a x) (in a y))))
+   :hints ...)
+
+The hypothesis (force? (zfc)) is logically just (zfc).  So this
+theorem is vacuous is (zfc) is false.  In fact, (zfc) is introduced in
+an encapsulate in base.lisp with a local witness of nil!  So how is it
+that the theorem in-union2 means anything non-trivial?
+
+This note outlines how we can view (zfc) as being true in a suitable
+setting, assuming of course that ZF is consistent.  More generally,
+this note outlines how we can interpret defthmz as being simply defthm
+in that setting.
+
+We introduce the following notions before presenting the key theorems.
 
 (a) Defun, mutual-recursion (or defuns), defchoose, and non-trivial
 encapsulates (those with non-empty signatures) are considered to be
@@ -14,11 +48,12 @@ outside a non-trivial encapsulate is a "theorem event".  (Technically,
 "outside" references a process whereby every trivial encapsulate has
 been replaced, recursively, by its sequence of non-local events.)  An
 event is "logically admissible" if the proof obligations imposed by
-ACL2 are all logical consequences of the axioms introduced so far.  So
-for example, a recursive defun is logically admissible if the measure
-conjecture is a logical consequences of the axioms introduced so far,
-regardless of whether the ACL2 system can actually prove the measure
-conjecture.  (Note that we are ignoring guards.)
+ACL2 for that event are all logical consequences of the axioms
+introduced so far.  So for example, a recursive defun is logically
+admissible if the measure conjecture is a logical consequences of the
+axioms introduced so far, regardless of whether the ACL2 system can
+actually prove the measure conjecture.  (Note that we are ignoring
+guards.)
 
 (b) An "ACL2 session" is a sequence of events where every axiomatic
 event is logically admissible and every formula of a theorem event is
@@ -27,20 +62,25 @@ We consider it to be a correctness requirement for the ACL2
 implementation that every ACL2 logical world represents an ACL2
 session.  We do not consider include-book events to be part of an ACL2
 session, but rather, we consider the non-local events introduced by an
-include-book event.  The "theory of" a session is defined to be the
-deductive closure of its axioms.
+include-book event (as though :puff had been used; see :DOC puff)..
+The "theory of" a session is defined to be the deductive closure of
+its axioms.
 
 (c) Let EZ be the encapsulate that introduces the ACL2 versions of the
-ZFG axioms.  An "EZ session" is a defaxiom-free ACL2 session that
-includes EZ among its axiomatic events.  Clearly we can move EZ to the
-front of any ACL2 session that includes it; so without loss of
-generality, we further specify that EZ is the first event in an EZ
-session.
+ZFG axioms.  (See base.lisp.)  An "EZ session" is a defaxiom-free ACL2
+session that includes EZ among its axiomatic events.  Clearly we can
+move EZ to the front of any ACL2 session that includes it; so without
+loss of generality, we further specify that EZ is the first event in
+an EZ session.
 
-(d) A "zfc prop" of an EZ session is either a key in the zfc-table
-present after the the last event of that session, or else a function
-call of that key that may be forced; it will be clear from the context
-which of these is intended.
+(d) Defthmz and similar macros use a table, called "zfc-table", whose
+keys indicate assumptions besides (zfc) that are valid in the
+set-theoretic setting developed in this note.  These assumptions are
+all calls of zero-ary functions.  A "zfc prop" of an EZ session
+indicates such functions: technically, it is either a key in the
+zfc-table present after the the last event of that session, or else a
+function call of that key that may be forced; it will be clear from
+the context which of these is intended.
 
 (e) The "zfc theory" of an EZ session is the extension of ZFG
 axiomatized by all of the following:
@@ -68,13 +108,13 @@ vacuous.  Moreover, Theorem 1 provides a natural set-theoretic
 interpretation for an EZ session.
 
 Remark 2.  Theorem 2 tells us that the formula of each defthmz (or
-thmz) event, except when that event is inside a non-trivial
-encapsulate event, is a theorem of the zfc theory of the session.
-Note that Theorem 2 is really about props being true; so for example,
-when (make-event '(defthmz <name> <body> ...))  expands to (defthm
-<name> (implies <props> <body>)), it's irrelevant that the defthmz
-macro call may no longer be visible in the world; what matters is that
-the props are true.
+thmz or defthmdz) event, except when that event is inside a
+non-trivial encapsulate event, is a theorem of the zfc theory of the
+session.  Note that Theorem 2 is really about props being true; so for
+example, when (make-event '(defthmz <name> <body> ...))  expands to
+(defthm <name> (implies <props> <body>)), it's irrelevant that the
+defthmz macro call may no longer be visible in the world; what matters
+is that the props are true.
 
 Notation.  If each of S1 and S2 is either a sequence of events or an
 event, then S1^S2 is the sequence produced by concatenating S2 to the
