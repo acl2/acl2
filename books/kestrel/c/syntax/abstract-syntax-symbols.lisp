@@ -649,6 +649,7 @@
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
+    declor-fun-formalp
     init-declor-block-formalp
     init-declor-list-block-formalp
     declon-block-formalp

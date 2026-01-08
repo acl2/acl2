@@ -3383,8 +3383,24 @@
                                   (omap::update cvar ctype gin.vartys))
                               gin.vartys))
        (gout-no-thm (change-gout (gout-no-thm gin) :vartys vartys-after-fundef))
-       ((unless body-thm-name) (mv new-fundef gout-no-thm))
-       ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
+
+       ((unless (and body-thm-name
+                     (not extension)
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs-new)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (declor-fun-formalp declor)
+                     (declor-fun-formalp declor-new)
+                     (not asm?)
+                     (endp attribs)
+                     (endp declons)
+                     (endp declons-new)))
+        (mv new-fundef gout-no-thm))
        ((declor declor) declor)
        ((when (consp declor.pointers)) (mv new-fundef gout-no-thm))
        ((mv okp params dirdeclor)
@@ -3546,4 +3562,36 @@
               (declon-list-unambp declons-new)
               (declon-list-aidentp declons-new gcc)
               (comp-stmt-unambp body-new)
-              (comp-stmt-aidentp body-new gcc))))
+              (comp-stmt-aidentp body-new gcc)))
+
+  (defruled xeq-fundef-formalp-when-thm-name
+    (b* (((mv fundef gout)
+          (xeq-fundef extension
+                      specs specs-new
+                      declor declor-new
+                      asm?
+                      attribs
+                      declons
+                      declons-new
+                      body body-new body-thm-name
+                      info gin)))
+      (implies (and (or (not body-thm-name)
+                        (and (comp-stmt-formalp body)
+                             (comp-stmt-formalp body-new)))
+                    (gout->thm-name gout))
+               (and (fundef-formalp fundef)
+                    (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs-new)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (declor-fun-formalp declor)
+                    (declor-fun-formalp declor-new)
+                    (endp attribs)
+                    (endp declons)
+                    (endp declons-new))))
+    :enable (fundef-formalp
+             gout-no-thm)))
