@@ -284,6 +284,100 @@
                  (set-difference-equal *keywords-gcc-c17* *keywords-gcc-c23*)
                  (list "typeof"))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *keywords-clang-c17*
+  :short "List of the additional Clang keywords for C17 [CLE]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Keywords introduced by Clang extensions are listed in "
+     (xdoc::ahref
+       "https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords"
+       "[CLE#implementation-defined-keywords]")
+     ". Clang generally aims to support GCC extensions as well.
+      Therefore, we include @(tsee *keywords-gcc-c17*) as well,
+      except when we have observed Clang's lack of support.
+      Currently, we remove all of the keywords related to floating-point,
+      except for @('_Float16') "
+     (xdoc::ahref
+       "https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point"
+       "[CLE#half-precision-floating-point]")
+     ".")
+   (xdoc::p
+    "These are all disjoint from the standard keywords."))
+  (append
+    '("__datasizeof"
+      "_BitInt"
+      "_ExtInt"
+      "__imag"
+      "__real"
+      "__complex"
+      "__complex__"
+      "__const"
+      "__const__"
+      "__nullptr"
+      "__typeof_unqual"
+      "__typeof_unqual__")
+    (set-difference-equal
+      *keywords-gcc-c17*
+      '("__float80"
+        "__floar128"
+        "_Float16x"
+        "_Float32"
+        "_Float32x"
+        "_Float64"
+        "_Float64x"
+        "_Float128"
+        "_Float128x")))
+  ///
+  (assert-event (string-listp *keywords-clang-c17*))
+  (assert-event (no-duplicatesp-equal *keywords-clang-c17*))
+  (assert-event (not (intersectp-equal *keywords-clang-c17* *keywords-c17*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *keywords-clang-c23*
+  :short "List of the additional Clang keywords for C23 [CLE]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The same remarks made in @(tsee *keywords-clang-c17*) apply here.")
+   (xdoc::p
+    "This is almost the same list as @(tsee *keywords-clang-c17*),
+     except that @('_BitInt') and @('typeof') are absent here,
+     because they are standard keywords in C23."))
+  (append
+    '("__datasizeof"
+      "_ExtInt"
+      "__imag"
+      "__real"
+      "__complex"
+      "__complex__"
+      "__const"
+      "__const__"
+      "__nullptr"
+      "__typeof_unqual"
+      "__typeof_unqual__")
+    (set-difference-equal
+      *keywords-gcc-c23*
+      '("__float80"
+        "__floar128"
+        "_Float16x"
+        "_Float32"
+        "_Float32x"
+        "_Float64"
+        "_Float64x"
+        "_Float128"
+        "_Float128x")))
+  ///
+  (assert-event (string-listp *keywords-clang-c23*))
+  (assert-event (no-duplicatesp-equal *keywords-clang-c23*))
+  (assert-event (not (intersectp-equal *keywords-clang-c23* *keywords-c23*)))
+  (assert-event
+    (equal (mergesort (set-difference-equal *keywords-clang-c17* *keywords-clang-c23*))
+           (mergesort (list "_BitInt" "typeof")))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keywords ((version versionp))
@@ -293,8 +387,10 @@
    version
    :c17 *keywords-c17*
    :c17+gcc (append *keywords-c17* *keywords-gcc-c17*)
+   :c17+clang (append *keywords-c17* *keywords-clang-c17*)
    :c23 *keywords-c23*
-   :c23+gcc (append *keywords-c23* *keywords-gcc-c23*))
+   :c23+gcc (append *keywords-c23* *keywords-gcc-c23*)
+   :c23+clang (append *keywords-c23* *keywords-clang-c23*))
 
   ///
 
