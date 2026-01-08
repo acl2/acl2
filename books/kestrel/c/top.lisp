@@ -74,6 +74,11 @@
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cppinternals/"
                   "GNU C Preprocessor Internals")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html"
+                  "Clang Language Extensions")
      "."))
    (xdoc::p
     "In the documentation of this library,
@@ -82,8 +87,9 @@
      `[C17]',
      `[GCCM]',
      `[GCCL]',
-     `[CPPM]', and
-     `[CPPI]';
+     `[CPPM]',
+     `[CPPI]', and
+     `[CLE]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];

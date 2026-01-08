@@ -40,7 +40,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We model four choices for now:")
+    "We model six choices for now:")
    (xdoc::ul
     (xdoc::li
      "C17 standard [C17].")
@@ -49,11 +49,17 @@
     (xdoc::li
      "C17 standard with GCC extensions [C17] [GCCM] [GCCL].")
     (xdoc::li
-     "C23 standard with GCC extensions [C23] [GCCM] [GCCL].")))
+     "C23 standard with GCC extensions [C23] [GCCM] [GCCL].")
+    (xdoc::li
+     "C17 standard with Clang extensions [C17] [CLE].")
+    (xdoc::li
+     "C23 standard with Clang extensions [C17] [CLE].")))
   (:c17 ())
   (:c23 ())
   (:c17+gcc ())
   (:c23+gcc ())
+  (:c17+clang ())
+  (:c23+clang ())
   :pred versionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -65,9 +71,10 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check whether the C version is C17,
-     with or without GCC extensions."))
+     with or without GCC/Clang extensions."))
   (or (version-case version :c17)
-      (version-case version :c17+gcc)))
+      (version-case version :c17+gcc)
+      (version-case version :c17+clang)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -78,9 +85,10 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check whether the C version is C23,
-     with or without GCC extensions."))
+     with or without GCC/Clang extensions."))
   (or (version-case version :c23)
-      (version-case version :c23+gcc)))
+      (version-case version :c23+gcc)
+      (version-case version :c23+clang)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,3 +97,26 @@
   :short "Check if this C version includes GCC extensions or not."
   (or (version-case version :c17+gcc)
       (version-case version :c23+gcc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define version-clangp ((version versionp))
+  :returns (yes/no booleanp)
+  :short "Check if this C version includes Clang extensions or not."
+  (or (version-case version :c17+clang)
+      (version-case version :c23+clang)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define version-gcc/clangp ((version versionp))
+  :returns (yes/no booleanp)
+  :short "Check if this C version includes either GCC or Clang extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is very large overlap between the of extensions
+     supported by GCC and by Clang.
+     Therefore, it is most often sufficient to check
+     if the version includes either."))
+  (or (version-gccp version)
+      (version-clangp version)))
