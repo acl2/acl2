@@ -19,7 +19,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro init (input)
-  `(init-ppstate ,input 1 (macro-table-init) (ienv-default) ppstate))
+  `(init-ppstate ,input
+                 1 ; no #include's
+                 (macro-table-init)
+                 (ienv-default)
+                 ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

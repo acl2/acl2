@@ -31,7 +31,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1
+                                1 ; no #include's
                                 (macro-table-init)
                                 (ienv-default :std std :gcc ,gcc)
                                 ppstate))
@@ -60,7 +60,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1
+                                1 ; no #include's
                                 (macro-table-init)
                                 (ienv-default :std std :gcc ,gcc)
                                 ppstate))
