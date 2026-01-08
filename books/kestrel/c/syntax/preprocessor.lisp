@@ -1351,10 +1351,8 @@
   :verify-guards :after-returns
 
   :guard-hints
-  (("Goal"
-    :in-theory
-    (enable alistp-when-string-scfile-alistp-rewrite
-            true-listp-when-plexeme-listp))))
+  (("Goal" :in-theory (enable alistp-when-string-scfile-alistp-rewrite
+                              true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
