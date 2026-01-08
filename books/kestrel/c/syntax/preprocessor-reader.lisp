@@ -14,6 +14,10 @@
 (include-book "preprocessor-messages")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/bv/logand" :dir :system))
+(local (include-book "kestrel/bv/logior" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
@@ -245,7 +249,7 @@
                               peek2-byte))
              :use byte-optionp-of-peek2-byte))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-ppstate-for-char ((char natp)
                                  (new-position positionp)
@@ -277,7 +281,7 @@
     (equal (ppstate->size new-ppstate)
            (ppstate->size ppstate))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pread-char ((ppstate ppstatep))
   :returns (mv erp
@@ -791,3 +795,88 @@
     (equal (ppstate->size new-ppstate)
            (+ (ppstate->size ppstate) (nfix n)))
     :hints (("Goal" :in-theory (enable nfix fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unread-char-to-bytes ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Put the unread character, if any,
+          back into the current list of bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just before @(tsee ppstate-add-bytes),
+     when a file included via @('#include') is expanded in place.
+     This is called after consuming the @('#include') directive,
+     but possibly after having unread a character,
+     if the new line is a carriage return not followed by a line feed:
+     see @(tsee plex-lexeme).
+     That unread character would be read by the next call of @(tsee read-char),
+     which is incorrect because that character must come
+     after all the characters produced from the bytes of the included file.
+     So here we put the unread character, if any,
+     back into the current list of input bytes,
+     performing UTF-8 encoding of them.
+     We also change the current position back to the one of the character."))
+  (b* ((chars-unread (ppstate->chars-unread ppstate))
+       ((when (= chars-unread 0)) ppstate)
+       ((unless (= chars-unread 1))
+        (raise "Internal error: ~x0 unread characters." chars-unread)
+        ppstate)
+       (chars-length (ppstate->chars-length ppstate))
+       (chars-read (ppstate->chars-read ppstate))
+       (char-index (+ chars-read (1- chars-unread)))
+       ((unless (< char-index chars-length))
+        (raise "Internal error: ~
+                index of next unread character ~x0 is not below ~x1."
+               char-index chars-length)
+        ppstate)
+       (char+pos (ppstate->char char-index ppstate))
+       (char (char+position->char char+pos))
+       (pos (char+position->position char+pos))
+       (char-bytes
+        (cond ((< char #x80) (list char))
+              ((< char #x800) (list (logior (ash char -6)
+                                            #b11000000)
+                                    (logior (logand char
+                                                    #b00111111)
+                                            #b10000000)))
+              ((< char #x10000) (list (logior (ash char -12)
+                                              #b11100000)
+                                      (logior (logand (ash char -6)
+                                                      #b00111111)
+                                              #b10000000)
+                                      (logior (logand char
+                                                      #b00111111)
+                                              #b10000000)))
+              ((< char #x10ffff) (list (logior (ash char -18)
+                                               #b11110000)
+                                       (logior (logand (ash char -12)
+                                                       #b00111111)
+                                               #b10000000)
+                                       (logior (logand (ash char -6)
+                                                       #b00111111)
+                                               #b10000000)
+                                       (logior (logand char
+                                                       #b00111111)
+                                               #b10000000)))
+              (t (raise "Internal error: character code ~x0." char))))
+       (bytess-length (ppstate->bytess-length ppstate))
+       (bytess-current (ppstate->bytess-current ppstate))
+       ((unless (< bytess-current bytess-length))
+        (raise "Internal error: ~
+                index of current input bytes ~x0 is not below ~x1."
+               bytess-current bytess-length)
+        ppstate)
+       (bytes (ppstate->bytes bytess-current ppstate))
+       (new-bytes (append char-bytes bytes))
+       (ppstate (update-ppstate->bytes bytess-current new-bytes ppstate))
+       (ppstate (update-ppstate->position pos ppstate))
+       (ppstate (update-ppstate->chars-unread 0 ppstate)))
+    ppstate)
+  :guard-hints (("Goal" :in-theory (enable fix
+                                           bytep
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :no-function nil
+  :hooks nil)

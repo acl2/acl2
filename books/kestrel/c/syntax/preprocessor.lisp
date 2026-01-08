@@ -1205,8 +1205,13 @@
        and we call @(tsee pproc-file) to preprocess it.
        If the call returns @(':not-self-contained') as @('erp'),
        the included file is not self-contained,
-       and we need to expand it in place.
-       If the call returns some other error, we pass it up to the caller.
+       and we need to expand it in place:
+       we put any unread character back into the current input bytes
+       (see documentation of @(tsee unread-char-to-bytes)),
+       and we store the bytes from the file into the stobj
+       (see documentation of @(tsee ppstate-add-bytes)).
+       If the call of @(tsee pproc-file) returns some other error,
+       we pass it up to the caller.
        If the call returns no error,
        we leave the @('#include') directive as is.
        More precisely, the resulting @('#include') directive
@@ -1275,8 +1280,12 @@
                           state
                           (1- limit)))
              ((when (eq erp :not-self-contained))
-              (reterr
-               (msg "Non-self-contained #include not yet supported."))) ; TODO
+              (b* ((ppstate (unread-char-to-bytes ppstate))
+                   ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
+                (retok (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state)))
              ((when erp) (reterr erp))
              (ppstate (update-ppstate->macros
                        (macro-table-extend-top
