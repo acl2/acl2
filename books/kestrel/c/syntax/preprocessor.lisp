@@ -1332,7 +1332,8 @@
     (xdoc::topstring
      (xdoc::p
       "That is, preprocess a line that does not start with a hash
-       (possibly after some white space and comments).
+       (possibly after some white space and comments,
+       which are passed as the @('nontoknls') input to this function).
        This is called after putting back the first token of the line,
        but without having put back any leading white space or comments,
        since those do not matter for the purpose of preprocessing the text line.
