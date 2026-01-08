@@ -81,6 +81,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test-preproc '("text.c")
+              :expected (fileset-of "text.c"
+                                    "int x = 0;
+
+void f(double y) {
+  y = 0.1;
+}
+"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test-preproc '("null-directive.c")
               :expected (fileset-of "null-directive.c"
                                     "/*#*/
