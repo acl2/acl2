@@ -966,20 +966,14 @@
        this function is called (by @(tsee pproc-*-group-part))
        only if we are not at the end of file.")
      (xdoc::p
-      "If we find a new line, it means that
-       we have a text line (see grammar) without tokens.
-       In this case we have finished the group part
-       and we return all the lexemes.
-       For example, this could contain comments, which we therefore preserve.")
-     (xdoc::p
       "If we find a hash, we have a directive,
-       which we handle in a separate function.
-       We discard any white space and comments preceding the hash.")
+       which we handle in a separate function,
+       to which we pass the white space and comments before the hash.")
      (xdoc::p
-      "If we do not find a hash, we have a text line with tokens.
+      "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
        and we call a separate function to handle the rest of the line,
-       after putting the non-hash token back."))
+       after putting the non-hash lexeme back."))
     (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
@@ -988,12 +982,6 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; EOL
-            (plexeme-case toknl :line-comment)) ; // ... EOL
-        (retok (cons toknl (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-               ppstate
-               (string-scfile-alist-fix preprocessed)
-               state))
        ((plexeme-hashp toknl) ; #
         (pproc-directive nontoknls
                          file
@@ -1005,7 +993,7 @@
                          ppstate
                          state
                          (1- limit)))
-       (t ; non-#-token
+       (t ; non-#
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
              (ppstate (punread-lexeme ppstate)))
           (pproc-line-rest file
