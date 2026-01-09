@@ -251,6 +251,20 @@ implementations.")
       excl::*record-source-file-info* nil
       excl::*load-source-file-info* nil)
 
+; The following was contributed by Jim White, who used Copilot on 1/8/2026 to
+; suggest the following addition to prevent raw Lisp errors when certifying the
+; following with SBCL 2.9.11 on ARM64 (Ubuntu 24.04.3 LTS running in Docker
+; container): demos/congruent-stobjs-book, demos/brr-test-book,
+; demos/refinement-failure-test-book, demos/brr-free-variables-book, and
+; workshops/2023/kaufmann-moore/brr-book.  If SBCL bug #2137765 is fixed
+; (https://bugs.launchpad.net/sbcl/+bug/2137765), then we might remove this
+; change sometime later.
+;
+; Disable xref recording in SBCL to avoid overflow errors in
+; SB-C::PACK-XREF-DATA when line numbers exceed (UNSIGNED-BYTE 32).
+#+sbcl
+(declaim (optimize (sb-c::store-xref-data 0)))
+
 ; Create the packages we use.
 
 (load "acl2.lisp")
