@@ -146,6 +146,21 @@
                               read-byte))
              :use byte-optionp-of-read-byte.byte?)))
 
+  (defret ppstate->chars-length-of-read-byte
+    (equal (ppstate->chars-length new-ppstate)
+           (ppstate->chars-length ppstate))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->chars-read-of-read-byte
+    (equal (ppstate->chars-read new-ppstate)
+           (ppstate->chars-read ppstate))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->lexemes-length-of-read-byte
+    (equal (ppstate->lexemes-length new-ppstate)
+           (ppstate->lexemes-length ppstate))
+    :hints (("Goal" :induct t)))
+
   (defret ppstate->size-of-read-byte-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
@@ -158,16 +173,6 @@
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->chars-length-of-read-byte
-    (equal (ppstate->chars-length new-ppstate)
-           (ppstate->chars-length ppstate))
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->chars-read-of-read-byte
-    (equal (ppstate->chars-read new-ppstate)
-           (ppstate->chars-read ppstate))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -292,6 +297,10 @@
   :hooks nil
 
   ///
+
+  (defret ppstate->lexemes-length-of-update-ppstate-for-char
+    (equal (ppstate->lexemes-length new-ppstate)
+           (ppstate->lexemes-length ppstate)))
 
   (defret ppstate->size-of-update-ppstate-for-char
     (equal (ppstate->size new-ppstate)
@@ -700,6 +709,11 @@
           :rule-classes :type-prescription
           :name pread-char.char?-type-prescription))
 
+  (defret ppstate->lexemes-length-of-pread-char
+    (equal (ppstate->lexemes-length new-ppstate)
+           (ppstate->lexemes-length ppstate))
+    :hints (("Goal" :induct t)))
+
   (defret ppstate->size-of-pread-char-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
@@ -755,6 +769,10 @@
   :no-function nil
 
   ///
+
+  (defret ppstate->lexemes-length-of-punread-char
+    (equal (ppstate->lexemes-length new-ppstate)
+           (ppstate->lexemes-length ppstate)))
 
   (defret ppstate->size-of-punread-char
     (equal (ppstate->size new-ppstate)
