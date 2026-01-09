@@ -1518,6 +1518,8 @@
               :some (b* (((erp expr1) (ldm-expr stmt.expr?.val)))
                       (retok (c::stmt-expr expr1)))
               :none (retok (c::make-stmt-null)))
+       :null-attrib (reterr (msg "Unsupported attributed null statement ~x0."
+                                 (stmt-fix stmt)))
        :if (b* (((erp test1) (ldm-expr stmt.test))
                 ((erp then1) (ldm-stmt stmt.then)))
              (retok (c::make-stmt-if :test test1 :then then1)))
@@ -1556,6 +1558,9 @@
        :break (retok (c::stmt-break))
        :return (b* (((erp expr?) (ldm-expr-option stmt.expr?)))
                  (retok (c::make-stmt-return :value expr?)))
+       :return-attrib (reterr
+                       (msg "Unsupported attributed return statement ~x0."
+                            (stmt-fix stmt)))
        :asm (reterr (msg "Unsupported assembler statement ~x0."
                          (stmt-fix stmt)))))
     :measure (stmt-count stmt))

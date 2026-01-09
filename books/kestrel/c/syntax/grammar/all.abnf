@@ -1467,12 +1467,31 @@ static-assert-declaration =
 ; (e.g. a variable that has been assigned '&&lab' for some label 'lab');
 ; the disambiguator disambiguated the two situations.
 
+; As a GCC extension, we include statement attributes
+; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html).
+; According to that page of the GCC manual,
+; these are single attribute specifiers
+; that precede a null statement,
+; or a return statement with an expression
+; Since the grammar in [C17], which we follow as much as possible,
+; covers null statements as a special case of expression statements
+; (namely, the special case with no expression),
+; we add a new alternative to the grammar rule for statements,
+; for null statements with an attribute specifier.
+; Similarly, since the grammar in [C17] defines return statements
+; as having an optional expression,
+; we add a new alternative to the rule for statements.
+
+; As a GCC extension, we allow assembler statements.
+
 statement = labeled-statement
           / compound-statement
           / expression-statement
           / selection-statement
           / iteration-statement
           / jump-statement
+          / attributed-null-statement ; GCC extension
+          / attributed-return-statement ; GCC extension
           / asm-statement ; GCC extension
 
 labeled-statement = identifier ":"
@@ -1516,6 +1535,10 @@ jump-statement = %s"goto" identifier ";"
                / %s"continue" ";"
                / %s"break" ";"
                / %s"return" [ expression ] ";"
+
+attributed-null-statement = attribute-specifier ";"
+
+attributed-return-statement = attribute-specifier %s"return" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
