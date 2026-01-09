@@ -2070,7 +2070,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-unambp-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-unambp-of-simpadd0-exprs/decls
     (defret expr-unambp-of-simpadd0-expr
       (expr-unambp new-expr)
       :fn simpadd0-expr)
@@ -2277,7 +2277,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-annop-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-annop-of-simpadd0-exprs/decls
     (defret expr-annop-of-simpadd0-expr
       (expr-annop new-expr)
       :hyp (and (expr-unambp expr)
@@ -2578,7 +2578,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-aidentp-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-aidentp-of-simpadd0-exprs/decls
     (defret expr-aidentp-of-simpadd0-expr
       (expr-aidentp new-expr gcc)
       :hyp (and (expr-unambp expr)
