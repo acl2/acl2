@@ -2970,6 +2970,8 @@
        :expr
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-expr :expr? new-expr? :info nil) table))
+       :null-attrib
+       (retok (stmt-fix stmt) (dimb-table-fix table))
        :if
        (b* ((table (dimb-push-scope table))
             ((erp new-test table) (dimb-expr stmt.test table))
@@ -3078,6 +3080,10 @@
        :return
        (b* (((erp new-expr? table) (dimb-expr-option stmt.expr? table)))
          (retok (make-stmt-return :expr? new-expr? :info stmt.info) table))
+       :return-attrib
+       (b* (((erp new-expr table) (dimb-expr stmt.expr table)))
+         (retok (make-stmt-return-attrib :attrib stmt.attrib :expr new-expr)
+                table))
        :asm
        (retok (stmt-fix stmt) (dimb-table-fix table))))
     :measure (stmt-count stmt))

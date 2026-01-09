@@ -403,6 +403,8 @@
     stmt-compound->items
     stmt-expr
     make-stmt-expr
+    stmt-null-attrib
+    make-stmt-null-attrib
     stmt-if
     make-stmt-if
     stmt-ifelse
@@ -416,6 +418,8 @@
     make-stmt-for-declon
     stmt-return
     make-stmt-return
+    stmt-return-attrib
+    make-stmt-return-attrib
     stmt-gotoe
 
     block-itemp

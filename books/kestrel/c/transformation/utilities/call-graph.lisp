@@ -594,6 +594,7 @@
      ;; TODO: error on ambiguous constructs
      ;; :for-ambig
      :return (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
+     :return-attrib (call-graph-expr stmt.expr fn-name filepath valid-table call-graph)
      :otherwise (call-graph-fix call-graph))
     :measure (stmt-count stmt))
 

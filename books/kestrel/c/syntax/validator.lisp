@@ -5970,6 +5970,8 @@
                 types
                 type?
                 table))
+       :null-attrib
+       (retok (stmt-null-attrib stmt.attrib) nil nil (valid-table-fix table))
        :if
        (b* ((table (valid-push-scope table))
             ((erp new-test test-type test-types table)
@@ -6130,6 +6132,14 @@
             (return-type (or type? (type-void))))
          (retok (make-stmt-return :expr? new-expr? :info nil)
                 (set::insert return-type types)
+                nil
+                table))
+       :return-attrib
+       (b* (((erp new-expr type types table)
+             (valid-expr stmt.expr table ienv)))
+         (retok (make-stmt-return-attrib :attrib stmt.attrib
+                                         :expr new-expr)
+                (set::insert type types)
                 nil
                 table))
        :asm

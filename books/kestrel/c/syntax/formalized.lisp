@@ -614,6 +614,7 @@
      :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
                (expr-formalp stmt.expr?))
+     :null-attrib nil
      :if (and (expr-formalp stmt.test)
               (stmt-formalp stmt.then))
      :ifelse (and (expr-formalp stmt.test)
@@ -633,6 +634,7 @@
      :break nil
      :return (or (not stmt.expr?)
                  (expr-formalp stmt.expr?))
+     :return-attrib nil
      :asm nil)
     :measure (stmt-count stmt))
 

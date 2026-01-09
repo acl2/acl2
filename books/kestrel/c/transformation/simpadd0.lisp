@@ -1844,6 +1844,7 @@
                               gout-expr?.thm-name
                               stmt.info
                               gin))
+       :null-attrib (mv (stmt-fix stmt) (gout-no-thm gin))
        :if (b* (((mv new-test (gout gout-test))
                  (simpadd0-expr stmt.test gin))
                 (gin (gin-update gin gout-test))
@@ -1960,6 +1961,12 @@
                                   gout-expr?.thm-name
                                   stmt.info
                                   gin))
+       :return-attrib (b* (((mv new-expr (gout gout-expr))
+                            (simpadd0-expr stmt.expr gin))
+                           (gin (gin-update gin gout-expr)))
+                        (mv (make-stmt-return-attrib :attrib stmt.attrib
+                                                     :expr new-expr)
+                            (gout-no-thm gin)))
        :asm (mv (stmt-fix stmt) (gout-no-thm gin))))
     :measure (stmt-count stmt))
 

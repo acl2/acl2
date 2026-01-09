@@ -1294,6 +1294,8 @@
       :expr? (expr-option-subst-free (c$::stmt-expr->expr? stmt)
                                      subst bound-vars)
       :info stmt.info)
+     :null-attrib
+     (make-stmt-null-attrib :attrib stmt.attrib)
      :if (c$::stmt-if (expr-subst-free (c$::stmt-if->test stmt)
                                        subst bound-vars)
                       (stmt-subst-free (c$::stmt-if->then stmt)
@@ -1364,6 +1366,10 @@
        (expr-option-subst-free (c$::stmt-return->expr? stmt)
                                subst bound-vars)
        :info stmt.info)
+     :return-attrib
+     (make-stmt-return-attrib
+      :attrib stmt.attrib
+      :expr (expr-subst-free stmt.expr subst bound-vars))
      :asm (c$::stmt-asm
             (asm-stmt-subst-free (c$::stmt-asm->stmt stmt)
                                  subst bound-vars)))
