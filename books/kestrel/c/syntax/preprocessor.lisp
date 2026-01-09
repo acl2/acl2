@@ -321,13 +321,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-token ((ppstate ppstatep))
+(define punread-lexeme ((ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
-  :short "Unread a token."
+  :short "Unread a lexeme."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We move the token from the sequence of read lexemes
+    "We move the lexeme from the sequence of read lexemes
      to the sequence of unread lexemes.
      See @(tsee ppstate).")
    (xdoc::p
@@ -355,7 +355,7 @@
 
   ///
 
-  (defret ppstate->size-of-punread-token
+  (defret ppstate->size-of-punread-lexeme
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
 
@@ -1007,7 +1007,7 @@
                          (1- limit)))
        (t ; non-#-token
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (punread-token ppstate)))
+             (ppstate (punread-lexeme ppstate)))
           (pproc-line-rest file
                            base-dir
                            include-dirs
