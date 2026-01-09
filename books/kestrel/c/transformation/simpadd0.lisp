@@ -2574,6 +2574,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (verify-guards simpadd0-expr)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (defret-mutual exprs/decls-aidentp-of-simpadd0-exprs/decls
     (defret expr-aidentp-of-simpadd0-expr
       (expr-aidentp new-expr gcc)
@@ -2868,11 +2872,7 @@
                                        simpadd0-stmt
                                        simpadd0-comp-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list))))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (verify-guards simpadd0-expr))
+                                       simpadd0-block-item-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
