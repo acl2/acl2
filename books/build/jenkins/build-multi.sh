@@ -54,8 +54,8 @@ echo "Using STARTJOB = $STARTJOB"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
-echo "Using MAKEACL2OPTS = $MAKEACL2OPTS"
-echo "Using MAKEOPTS = $MAKEOPTS"
+echo "Using MAKEACL2OPTS = $MAKEACL2OPTS" # for building ACL2 itself.  Do not include LISP, ACL2_PAR, or ACL2_REAL.
+echo "Using MAKEOPTS = $MAKEOPTS" # for building books
 
 if [ "${LISP:0:3}" == "gcl" ]; then
   USE_QUICKLISP="";

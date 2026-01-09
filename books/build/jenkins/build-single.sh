@@ -39,8 +39,8 @@ LISP=`which ccl`
 echo "Using LISP = $LISP"
 echo "Making TARGET = $TARGET"
 echo "Using STARTJOB = $STARTJOB"
-echo "Using MAKEACL2OPTS = $MAKEACL2OPTS"
-echo "Using MAKEOPTS = $MAKEOPTS"
+echo "Using MAKEACL2OPTS = $MAKEACL2OPTS" # for building ACL2 itself.  Do not include LISP, ACL2_PAR, or ACL2_REAL.
+echo "Using MAKEOPTS = $MAKEOPTS" # for building books
 
 echo "Making ACL2"
 $STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP ${MAKEACL2OPTS}"
