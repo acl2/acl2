@@ -1312,6 +1312,113 @@
              ppstate-fix
              length))
 
+  (defrule ppstate->lexemes-length-of-update-ppstate->bytes
+    (equal (ppstate->lexemes-length (update-ppstate->bytes i bytes ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->bytes
+             ppstatep
+             ppstate-fix
+             length
+             update-nth-array
+             ppstate->bytess-length
+             byte-list-listp-of-update-nth-strong))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->bytess-current
+    (equal (ppstate->lexemes-length
+            (update-ppstate->bytess-current bytess-current ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->bytess-current
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->position
+    (equal (ppstate->lexemes-length (update-ppstate->position position ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->position
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->char
+    (equal (ppstate->lexemes-length (update-ppstate->char i char ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->char
+             ppstatep
+             ppstate-fix
+             length
+             update-nth-array
+             ppstate->chars-length
+             byte-list-listp-of-update-nth-strong))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->chars-read
+    (equal (ppstate->lexemes-length
+            (update-ppstate->chars-read chars-read ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->chars-read
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->chars-unread
+    (equal (ppstate->lexemes-length
+            (update-ppstate->chars-unread chars-unread ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->chars-unread
+             ppstatep
+             ppstate-fix
+             length))
+
+(defrule ppstate->lexemes-length-of-update-ppstate->lexeme
+  (equal (ppstate->lexemes-length (update-ppstate->lexeme i lexeme ppstate))
+         (ppstate->lexemes-length ppstate))
+  :enable (ppstate->lexemes-length
+           update-ppstate->lexeme
+           ppstatep
+           ppstate-fix
+           length
+           update-nth-array
+           byte-list-listp-of-update-nth-strong
+           nfix
+           max
+           len))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->lexemes-read
+    (equal (ppstate->lexemes-length
+            (update-ppstate->lexemes-read lexemes-read ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->lexemes-read
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->lexemes-unread
+    (equal (ppstate->lexemes-length
+            (update-ppstate->lexemes-unread lexemes-unread ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->lexemes-unread
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->lexemes-length-of-update-ppstate->size
+    (equal (ppstate->lexemes-length
+            (update-ppstate->size size ppstate))
+           (ppstate->lexemes-length ppstate))
+    :enable (ppstate->lexemes-length
+             update-ppstate->size
+             ppstatep
+             ppstate-fix
+             length))
+
   (defrule ppstate->size-of-update-ppstate->bytes
     (equal (ppstate->size (update-ppstate->bytes i bytes ppstate))
            (ppstate->size ppstate))
@@ -1391,6 +1498,15 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->lexemes-read
+             ppstatep
+             ppstate-fix
+             length))
+
+  (defrule ppstate->size-of-update-ppstate->lexemes-unread
+    (equal (ppstate->size (update-ppstate->lexemes-unread lexemes-unread ppstate))
+           (ppstate->size ppstate))
+    :enable (ppstate->size
+             update-ppstate->lexemes-unread
              ppstatep
              ppstate-fix
              length))

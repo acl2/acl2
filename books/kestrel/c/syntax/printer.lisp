@@ -231,7 +231,7 @@
              (pristate->gcc pstate))
       :hints (("Goal" :induct t)))))
 
-(local
+(local ; used by the macro below
  (defun defret-mut-same-gcc-fn (fns)
    (b* (((when (endp fns)) nil)
         (fn (car fns))
@@ -242,7 +242,7 @@
         (events (defret-mut-same-gcc-fn (cdr fns))))
      (cons event events))))
 
-(local
+(local ; for mutually recursive FNS
  (defmacro defret-mut-same-gcc (name fns &key hints)
    `(defret-mutual ,name
       ,@(defret-mut-same-gcc-fn fns)
