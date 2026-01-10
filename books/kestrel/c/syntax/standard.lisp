@@ -201,9 +201,11 @@
    (asm-output nil)
    (asm-input nil)
    (asm-stmt nil)
+   (stmt :null-attrib nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
    (stmt :gotoe nil)
+   (stmt :return-attrib nil)
    (stmt :asm nil)
    (comp-stmt (and (endp (comp-stmt->labels comp-stmt))
                    (block-item-list-standardp (comp-stmt->items comp-stmt))))

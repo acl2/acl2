@@ -1278,6 +1278,7 @@
      :labeled (stmt-types stmt.stmt)
      :compound (comp-stmt-types stmt.stmt)
      :expr (set::insert nil nil)
+     :null-attrib (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
                          (stmt-types stmt.else))
@@ -1295,6 +1296,7 @@
               stmt.expr?
               :some (set::insert (expr-type stmt.expr?.val) nil)
               :none (set::insert (type-void) nil))
+     :return-attrib (set::insert (expr-type stmt.expr) nil)
      :asm nil)
     :measure (stmt-count stmt))
 

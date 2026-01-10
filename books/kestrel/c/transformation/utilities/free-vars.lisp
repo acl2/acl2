@@ -919,6 +919,7 @@
                      (free-vars-comp-stmt stmt.stmt bound-vars)))
                  free-vars)
      :expr (free-vars-expr-option stmt.expr? bound-vars)
+     :null-attrib nil
      :if (union (free-vars-expr stmt.test bound-vars)
                 (free-vars-stmt stmt.then bound-vars))
      :ifelse (union (free-vars-expr stmt.test bound-vars)
@@ -945,6 +946,7 @@
      :continue nil
      :break nil
      :return (free-vars-expr-option stmt.expr? bound-vars)
+     :return-attrib (free-vars-expr stmt.expr bound-vars)
      :asm (free-vars-asm-stmt stmt.stmt bound-vars)
      :for-ambig (raise "Unexpected ambiguous expression"))
     :no-function nil

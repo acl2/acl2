@@ -201,12 +201,17 @@
              (label-unambp label))
     :expand (label-unambp label))
 
-  (defruled stmt-unambp-of-when-goto
+  (defruled stmt-unambp-when-null-attrib
+    (implies (stmt-case stmt :null-attrib)
+             (stmt-unambp stmt))
+    :expand (stmt-unambp stmt))
+
+  (defruled stmt-unambp-when-goto
     (implies (stmt-case stmt :goto)
              (stmt-unambp stmt))
     :enable stmt-unambp)
 
-  (defruled stmt-unambp-of-when-asm
+  (defruled stmt-unambp-when-asm
     (implies (stmt-case stmt :asm)
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
@@ -348,8 +353,9 @@
                     designor-unambp-when-dot
                     dirdeclor-unambp-when-ident
                     label-unambp-when-name
-                    stmt-unambp-of-when-goto
-                    stmt-unambp-of-when-asm
+                    stmt-unambp-when-null-attrib
+                    stmt-unambp-when-goto
+                    stmt-unambp-when-asm
                     ext-declon-unambp-when-not-fundef/declon
                     expr-not-sizeof-when-unambp
                     expr-not-alignof-when-unambp

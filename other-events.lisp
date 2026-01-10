@@ -13489,8 +13489,9 @@
          (*hcomp-cert-obj* nil)
          (*hcomp-cert-filename* nil)
          (*hcomp-elided-defconst-alist* nil))
-     (declare (type hash-table
-                    *hcomp-fn-ht* *hcomp-const-ht* *hcomp-macro-ht*))
+
+; Careful: Do not declare any *hcomp-xx-ht* to be of type hash-table.  These
+; can be nil!
 
 ; Form is an ACL2 form, so none of the raw Lisp variables bound above occurs
 ; free in form, which saves us from a potential capture problem.

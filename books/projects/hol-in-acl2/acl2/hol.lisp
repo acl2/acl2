@@ -121,7 +121,7 @@
   (in x (hol-type-eval type hta)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Hol types and pairs, and matching
+;;; Hol types and pairs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The acronym "hp" stands for "hol-pair", a cons whose cdr is a hol ground type
@@ -181,57 +181,9 @@
         (t (and (weak-hol-typep (car x) groundp)
                 (weak-hol-type-listp (cdr x) groundp)))))
 
-(mutual-recursion
-
-(defun type-match (pat type bindings)
-
-; Pat is a type pattern, that is, a type expression that need not be ground.
-; Type-match attempts to extend the given bindings by associating type
-; variables with ground types, returning the extended bindings upon success and
-; :fail upon failure.
-
-  (declare (xargs :guard (and (weak-hol-typep pat nil)
-                              (weak-hol-typep type t)
-                              (weak-hol-type-alistp bindings))
-                  :verify-guards nil
-                  :measure (acl2-count pat)))
-  (cond
-   ((atom pat)
-    (cond ((keywordp pat)
-           (cond ((eq pat type) bindings)
-                 (t :fail)))
-          (t (let ((pair (assoc-hta pat bindings)))
-               (cond ((null pair) (acons pat type bindings))
-                     ((equal (cdr pair) type) bindings)
-                     (t :fail))))))
-   ((atom type)
-    :fail)
-   ((not (eq (car pat) (car type)))
-    :fail)
-   (t (type-match-lst (cdr pat) (cdr type) bindings))))
-
-(defun type-match-lst (pat-lst type-lst bindings)
-
-; Bindings is an alist.  It keys are symbols that represent types.  Its values
-; are type expressions.
-
-  (declare (xargs :guard (and (weak-hol-type-listp pat-lst nil)
-                              (weak-hol-type-listp type-lst t)
-                              (equal (length pat-lst) (length type-lst))
-                              (weak-hol-type-alistp bindings))
-                  :measure (acl2-count pat-lst)))
-  (cond
-   ((atom pat-lst)
-    (if (and (null pat-lst)
-             (null type-lst))
-        bindings
-      :fail))
-   ((atom type-lst) :fail)
-   (t (let ((bindings1 (type-match (car pat-lst) (car type-lst) bindings)))
-        (cond ((eq bindings1 :fail)
-               :fail)
-              (t (type-match-lst (cdr pat-lst) (cdr type-lst) bindings1)))))))
-)
+; Some of the lemmas below may have been developed in support of the admission
+; of type-match and lemmas about it.  But they are reasonable lemmas, so we
+; keep them here.
 
 (defthm weak-hol-type-alistp-forward-to-symbol-alistp
   (implies (weak-hol-type-alistp bindings)
@@ -248,46 +200,6 @@
   (implies (weak-hol-type-listp x groundp)
            (true-listp x))
   :rule-classes :forward-chaining)
-
-(encapsulate
-  ()
-
-(local (include-book "tools/flag" :dir :system))
-
-(local (acl2::make-flag type-match))
-
-(local
- (defthm equal-plus-len
-   (implies (and (syntaxp (quotep k))
-                 (syntaxp (quotep n))
-                 (natp n))
-            (equal (equal (+ k (len x)) n)
-                   (equal (len x) (- n k))))))
-
-(local
- (defthm-flag-type-match
-   (defthm weak-hol-type-alist-type-match
-     (implies (and (weak-hol-typep pat nil)
-                   (weak-hol-typep type t)
-                   (weak-hol-type-alistp bindings)
-                   (not (equal (type-match pat type bindings)
-                               :fail)))
-              (weak-hol-type-alistp (type-match pat type bindings)))
-     :flag type-match)
-   (defthm weak-hol-type-alist-type-match-lst
-     (implies (and (weak-hol-type-listp pat-lst nil)
-                   (weak-hol-type-listp type-lst t)
-                   (equal (length pat-lst) (length type-lst))
-                   (weak-hol-type-alistp bindings)
-                   (not (equal (type-match-lst pat-lst type-lst bindings)
-                               :fail)))
-              (weak-hol-type-alistp (type-match-lst pat-lst type-lst
-                                                    bindings)))
-     :flag type-match-lst)))
-
-(verify-guards type-match
-  :hints (("Goal" :expand ((:free (groundp) (weak-hol-typep pat groundp))))))
-)
 
 (local (defthm len-strip-cdrs
          (equal (len (strip-cdrs x))
@@ -321,7 +233,7 @@
 
 (defthm hp-listp-forward-to-weak-hp-listp
 
-; This is a nice rule but we don't need it for type-match.
+; This is a nice rule but it might not be necessary.
 
   (implies (and (hp-listp obj-lst hta)
                 (symbol-alistp hta))
@@ -356,8 +268,8 @@
        ((and (and (consp ftype)
                   (eq (car ftype) :arrow)) ; (arrow a b); x has type a
              (equal xtype (nth 1 ftype)))
-        (cons (apply fval xval)
-              (nth 2 ftype)))
+        (make-hp (apply fval xval)
+                 (nth 2 ftype)))
        (t ; ill-typed function application: error
         nil))))))
 
@@ -417,10 +329,10 @@
 
 (defun hp-cons (x y)
 
-; For hol pairs x and y, (hp-cons x y) is (x::y), i.e., the hol list of
+; For hol pairs x and y, (hp-cons x y) is [x::y], i.e., the hol list of
 ; appropriate type whose value is the cons of the fp-values of x and y.
 
-; If y:n->s where x \in s, then (x::y):n+1->s by mapping n to x.
+; If y:n->s where x \in s, then [x::y]:n+1->s by mapping n to x.
 
   (declare (xargs :guard (and (weak-hpp x)
                               (weak-hpp y))))
