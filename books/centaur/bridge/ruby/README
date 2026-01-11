@@ -41,6 +41,10 @@ Documentation:
 
 Trying the Demo:
 
+   First, install Ruby and the required gems:
+      conda install -y ruby
+      gem install getopt hash_keyword_args
+
    To try the demo, you'll need to first start an ACL2 Bridge, then run
    "./demo.rb --help" for information on how to connect.  You can connect
    multiple clients at a time, of course.

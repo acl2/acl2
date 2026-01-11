@@ -38,6 +38,7 @@ displayed without disrupting the REPL.
 2. Run ~(ld "demo.lsp")~ in ACL2
 3. Run ~python demo.py~ (or ~python async_demo.py~) in another shell
 4. Use ~^D~ to exit
+5. The Bridge server will continue for other clients.  Stop with ~^C~ or run ~python demo.py --stop~ (or ~python async_demo.py --stop~) to have the client send a (BRIDGE::STOP) command to stop the server.
 
 * Notes
 - See the demo(s) and docstrings for usage.
