@@ -149,7 +149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum plexeme
-  :short "Fixtype of preprocessing lexems."
+  :short "Fixtype of preprocessing lexemes."
   :long
   (xdoc::topstring
    (xdoc::p
