@@ -13,6 +13,7 @@
 (include-book "parser-states")
 (include-book "implementation-environments")
 
+(include-book "kestrel/fty/byte-list-list" :dir :system)
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -38,29 +39,21 @@
   :induct t
   :enable (assoc-equal))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist byte-list-list
-  :elt-type byte-list
-  :true-listp t
-  :elementp-of-nil t
-  :pred byte-list-listp
+(defruledl byte-list-listp-of-resize-list
+  (implies (and (byte-list-listp bytess)
+                (byte-listp default))
+           (byte-list-listp (resize-list bytess length default)))
+  :induct t
+  :enable (byte-list-listp resize-list))
 
-  ///
-
-  (defruled byte-list-listp-of-resize-list
-    (implies (and (byte-list-listp bytess)
-                  (byte-listp default))
-             (byte-list-listp (resize-list bytess length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled byte-list-listp-of-update-nth-strong
-    (implies (byte-list-listp bytess)
-             (equal (byte-list-listp (update-nth i bytes bytess))
-                    (byte-listp bytes)))
-    :induct t
-    :enable (update-nth nfix zp len)))
+(defruledl byte-list-listp-of-update-nth-strong
+  (implies (byte-list-listp bytess)
+           (equal (byte-list-listp (update-nth i bytes bytess))
+                  (byte-listp bytes)))
+  :induct t
+  :enable (byte-listp update-nth nfix zp len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

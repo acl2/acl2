@@ -41,6 +41,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                byte-list-listp
                 character-list
                 defirrelevant
                 defmacro+
