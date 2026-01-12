@@ -59,10 +59,25 @@ val thms =
        ∀m n. m ** SUC n = m * m ** n,
     ⊢ THM MAP_ID_I (MAP I = I),
     ⊢ THM MAP_o (∀f g. MAP (f ∘ g) = MAP f ∘ MAP g)]: thm list
+|#
 
-val goals =
+; together with
+
+#|
+val it =
    [⊢ GOAL $var$(FST-COMMA) (∀x y. FST (x,y) = x),
-    ⊢ GOAL BOOL_CASES_AX (∀t. (t ⇔ T) ∨ (t ⇔ F))] : thm list
+    ⊢ GOAL BOOL_CASES_AX (∀t. (t ⇔ T) ∨ (t ⇔ F)),
+    ⊢ GOAL pair_fst_snd_eq (∀p q. FST p = FST q ∧ SND p = SND q ⇔ p = q)]:
+   thm list
+|#
+
+; which is generated from:
+
+#|
+val goals =
+  [mk_named_goal "FST-COMMA" (concl FST),
+   mk_named_goal "BOOL_CASES_AX" (concl BOOL_CASES_AX),
+   mk_named_goal "pair_fst_snd_eq" (concl (GSYM PAIR_FST_SND_EQ))];
 |#
 
 ; And here is the corresponding output, with modifications made only to
@@ -341,6 +356,18 @@ val goals =
    :name bool_cases_ax
    :goal (:forall ((t :bool))
      (hp-or (hp= t (hp-true)) (hp= t (hp-false)))))
+;  ),
+; ("pair_fst_snd_eq",
+(defhol
+  :name pair_fst_snd_eq
+  :goal (:forall ((p (:hash a b)) (q (:hash a b)))
+                 (hp=
+                  (hp-and
+                   (hp= (hap* (fst (typ (:arrow* (:hash a b) a))) p)
+                        (hap* (fst (typ (:arrow* (:hash a b) a))) q))
+                   (hp= (hap* (snd (typ (:arrow* (:hash a b) b))) p)
+                        (hap* (snd (typ (:arrow* (:hash a b) b))) q)))
+                  (hp= p q))))
 ;  )]
 
 (close-theory)
@@ -368,3 +395,22 @@ val goals =
                x)
           (hp-true)))
   :hints (("Goal" :in-theory (disable hp-comma))))
+
+; See ex1-proof.lisp:
+#|
+(defgoal pair_fst_snd_eq
+  (implies
+   (and (alist-subsetp (ex1$hta) hta)
+        (hpp p hta)
+        (equal (hp-type p) (typ (:hash a b)))
+        (hpp q hta)
+        (equal (hp-type q) (typ (:hash a b)))
+        (force (ex1$prop)))
+   (equal (hp= (hp-and
+                (hp= (hap* (fst (typ (:arrow* (:hash a b) a))) p)
+                     (hap* (fst (typ (:arrow* (:hash a b) a))) q))
+                (hp= (hap* (snd (typ (:arrow* (:hash a b) b))) p)
+                     (hap* (snd (typ (:arrow* (:hash a b) b))) q)))
+               (hp= p q))
+          (hp-true))))
+|#
