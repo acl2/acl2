@@ -1,6 +1,6 @@
 ; Wrappers of the C transformations, suitable for use with run-json-command
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;; We might be able to avoid creating a different wrapper for each
 ;; transformation, but consider the case when the arguments cannot be clearly
 ;; split into arguments passed to input-files/output-files and arguments passed
-;; to the transformation (e.g., if the gcc argument is passed to both).
+;; to the transformation (e.g., if the extensions argument is passed to both).
 
 (include-book "kestrel/c/transformation/split-gso" :dir :system)
 (include-book "kestrel/c/transformation/simpadd0" :dir :system)
@@ -44,9 +44,9 @@
         (er hard? ctx "The :old-dir and :new-dir arguments must be different.")))
     nil))
 
-;; Returns (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list).
+;; Returns (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list).
 ;; Changes the default for :preprocess to :auto
-;; Changes the default for :gcc to t.
+;; Changes the default for :extensions to :gcc.
 (defun handle-common-args (kv-list ctx)
   (declare (xargs :guard t))
   (b* (((when (not (keyword-value-listp kv-list)))
@@ -97,13 +97,17 @@
                             preprocess-args
                           (omap::from-alist preprocess-args)))
        (kv-list (remove-keyword :preprocess-args kv-list))
-       ;; Change the default for :gcc:
-       (gcc-suppliedp (assoc-keyword :gcc kv-list))
-       (gcc (if gcc-suppliedp
-                (lookup-keyword :gcc kv-list)
-              t))
-       (kv-list (remove-keyword :gcc kv-list)))
-    (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc kv-list)))
+       ;; Change the default for :extensions:
+       (extensions-suppliedp (assoc-keyword :extensions kv-list))
+       (extensions (if extensions-suppliedp
+                       (let ((extensions-str? (lookup-keyword :extensions kv-list)))
+                         (cond ((equal extensions-str? "gcc") :gcc)
+                               ((equal extensions-str? "clang") :clang)
+                               ((not extensions-str?) nil)
+                               (t (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false."))))
+                     :gcc))
+       (kv-list (remove-keyword :extensions kv-list)))
+    (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions kv-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +118,7 @@
 (defun split-gso-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -122,7 +126,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::split-gso *old-const*
                        *new-const*
                        ;; Pass through all other args:
@@ -144,7 +148,7 @@
 (defun simpadd0-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -152,7 +156,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
                       ;; Pass through all other args (currently, none):
@@ -174,7 +178,7 @@
 (defun split-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -182,7 +186,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::split-fn *old-const*
                       *new-const*
                       ;; Pass through all other args (currently, none):
@@ -204,7 +208,7 @@
 (defun wrap-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -212,7 +216,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::wrap-fn *old-const*
                      *new-const*
                      ;; Pass through all other args (currently, :targets):

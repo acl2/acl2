@@ -1561,10 +1561,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppstate->gcc ((ppstate ppstatep))
+(define ppstate->gcc/clang ((ppstate ppstatep))
   :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ienv->version (ppstate->ienv ppstate)))
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  (c::version-gcc/clangp (ienv->version (ppstate->ienv ppstate)))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

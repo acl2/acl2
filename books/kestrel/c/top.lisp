@@ -117,6 +117,14 @@
      we always clearly distinguish between
      standard C and GCC extensions.")
    (xdoc::p
+    "Likewise, we provide support for Clang extensions.
+     Clang attempts to support a broad range of GCC extensions,
+     while also providing a few of its own.
+     Since Clang mostly follows GCC, we frequently refer to ``GCC extensions''
+     in the documentation to refer to extensions supported by both systems,
+     and only mention Clang specifically
+     when a particular extension is unsupported by Clang.")
+   (xdoc::p
     "When referencing concepts that are the same in [C23] and [C17],
      we prefer to just reference [C23].
      However, since we started developing this library before [C23],

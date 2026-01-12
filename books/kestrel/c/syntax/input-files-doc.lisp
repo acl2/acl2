@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -139,9 +139,11 @@
                 (xdoc::td "@('-std=c17')"))
       (xdoc::tr (xdoc::td "@('(c::version-c23)')")
                 (xdoc::td "@('-std=c23')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)')")
+      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)') /
+                           @('(c::version-c17+clang)')")
                 (xdoc::td "@('-std=gnu17')"))
-      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)')")
+      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)') /
+                           @('(c::version-c23+clang)')")
                 (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
       "The @(':preprocess-args') input specifies additional arguments

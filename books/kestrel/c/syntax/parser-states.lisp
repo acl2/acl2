@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1045,10 +1045,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parstate->gcc ((parstate parstatep))
-  :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (parstate->version parstate))
+(define parstate->gcc/clang ((parstate parstatep))
+  :returns (gcc/clang booleanp)
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently, we have no need to distinguish
+     between GCC and Clang extensions during parsing,
+     beyond getting the appropriate keywords."))
+  (c::version-gcc/clangp (parstate->version parstate))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

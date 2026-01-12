@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -48,40 +48,35 @@
     "Here we formalize the notion of ASCII identifiers,
      and we define predicates on the abstract syntax
      that check that all the identifiers satisfy this property.
-     More precisely, we define two sets of predicates:
-     one is for standard C, and one is for C with GCC extensions.
-     The difference is that the letter has more keywords,
+     More precisely, we define a family of predicates:
+     one for each supported version of C.
+     The non-standard versions have more keywords,
      and thus (finitely) fewer identifiers."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ascii-ident-stringp (x (gcc booleanp))
+(define ascii-ident-stringp (x (version c::versionp))
   :returns (yes/no booleanp)
   :short "Recognize an ACL2 string that is a C ASCII identifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('gcc') flag determines whether GCC extensions
-     should be considered or not,
-     since the notion varies slightly, as explained shortly.")
-   (xdoc::p
-    "For standard C (i.e. no GCC extensions),
+    "For standard C17,
      this notion is the same as the one of "
     (xdoc::seetopic "c::portable-ascii-identifiers" "portable ASCII identifiers")
     " defined in the language formalization;
-     in fact, we use a function defined here as part of the definition here.
+     in fact, we use a function defined there as part of the definition here.
      The notion is that the string must start with a letter or underscore,
      consists of only letters, digits, and underscores,
      and be distinct from the standard C keywords.")
    (xdoc::p
-    "With GCC extensions, the notion is strenghtened
-     to also exclude the GCC keywords."))
+    "If the @('version') is not C17,
+     we adjust the keywords to be excluded accordingly."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x c::*keywords-c17*))
-       (or (not gcc) (not (member-equal x c::*keywords-gcc-c17*))))
+       (not (member-equal x (c::keywords version))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,14 +84,13 @@
 (fty::deffold-reduce aidentp
   :short "Definition of the predicates that check whether
           all the identifiers in the abstract syntax
-          are ASCII and valid, with or without GCC extensions."
+          are ASCII and valid, w.r.t a particular version of C."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
    (xdoc::p
-    "These predicates are all parameterized by
-     a flag saying whether GCC extensions are supported or not,
+    "These predicates are all parameterized by the C version,
      which changes the exact notion of valid ASCII identifier;
      see @(tsee ascii-ident-stringp).")
    (xdoc::p
@@ -121,11 +115,11 @@
           transunit
           filepath-transunit-map
           transunit-ensemble)
-  :extra-args ((gcc booleanp))
+  :extra-args ((version c::versionp))
   :result booleanp
   :default t
   :combine and
-  :override ((ident (ascii-ident-stringp (ident->unwrap ident) gcc))))
+  :override ((ident (ascii-ident-stringp (ident->unwrap ident) version))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +131,7 @@
   (xdoc::topstring
    (xdoc::p
     "The condition is checked w.r.t.
-     the GCC flag in the implementation environment."))
+     the @(see c::version) in the implementation environment."))
   (transunit-ensemble-aidentp (code-ensemble->transunits code)
-                              (ienv->gcc (code-ensemble->ienv code)))
+                              (ienv->version (code-ensemble->ienv code)))
   :hooks (:fix))

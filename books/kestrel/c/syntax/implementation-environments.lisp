@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -166,7 +166,7 @@
    (xdoc::p
     "This can be used as a dummy value of the type."))
   :type ienvp
-  :body (make-ienv :version (c::version-c17)
+  :body (make-ienv :version (c::irr-version)
                    :bool-bytes 1
                    :short-bytes 2
                    :int-bytes 2
@@ -801,6 +801,27 @@
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
   (c::version-gccp (ienv->version ienv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->clang ((ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Flag saying whether Clang extensions are enabled or not."
+  (c::version-clangp (ienv->version ienv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->gcc/clang ((ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Flag saying whether GCC/Clang extensions are enabled or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is very large overlap between the of extensions
+     supported by GCC and by Clang.
+     Therefore, it is most often sufficient to check
+     if the version includes either."))
+  (c::version-gcc/clangp (ienv->version ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

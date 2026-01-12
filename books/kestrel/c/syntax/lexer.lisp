@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -526,7 +526,7 @@
      ((utf8-= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
      ((and (utf8-= char (char-code #\%)) ; \ %
-           (parstate->gcc parstate))
+           (parstate->gcc/clang parstate))
       (retok (escape-simple (simple-escape-percent)) pos parstate))
      ((and (utf8-<= (char-code #\0) char)
            (utf8-<= char (char-code #\7))) ; \ octdig
@@ -1298,7 +1298,7 @@
      If the next character is not part of any suffix,
      we unread the character and return no suffix.")
    (xdoc::p
-    "If GCC extensions are enabled,
+    "If GCC/Clang extensions are enabled,
      we allow the @('f') or @('F') suffix
      to be followed by @('<n>') or @('<n>x'),
      with @('<n>') among @('16'), @('32'), @('64'), or @('128')."))
@@ -1308,7 +1308,7 @@
      ((not char) ; EOF
       (retok nil pos parstate))
      ((utf8-= char (char-code #\f)) ; f
-      (b* (((unless (parstate->gcc parstate))
+      (b* (((unless (parstate->gcc/clang parstate))
             (retok (fsuffix-locase-f) pos parstate))
            ((erp digits digits-last-pos & parstate) ; f [digits]
             (lex-*-digit pos parstate)))
@@ -1341,7 +1341,7 @@
          (t ; f nondigits
           (retok (fsuffix-locase-f) pos parstate)))))
      ((utf8-= char (char-code #\F)) ; F
-      (b* (((unless (parstate->gcc parstate))
+      (b* (((unless (parstate->gcc/clang parstate))
             (retok (fsuffix-upcase-f) pos parstate))
            ((erp digits digits-last-pos & parstate) ; f [digits]
             (lex-*-digit pos parstate)))

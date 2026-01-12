@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "../../portcullis")
 
+(include-book "std/util/defirrelevant" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -61,6 +62,13 @@
   (:c17+clang ())
   (:c23+clang ())
   :pred versionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-version
+  :short "An irrelevant C version"
+  :type versionp
+  :body (version-c17))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

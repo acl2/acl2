@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1204,11 +1204,11 @@
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
       See @(tsee valid-binary) for details on these restrictions.
-      When validating with GCC extensions enabled,
+      When validating with GCC/Clang extensions enabled,
       these restrictions are slightly weakened.
       See the following section."))
    (xdoc::section
-    "GCC Extensions"
+    "GCC/Clang Extensions"
     (xdoc::p
      "GCC has a type attribute @('transparent_union')
       which affects type-checking of arguments against
@@ -1221,11 +1221,11 @@
       and a null pointer expression or void pointer type is allowed
       if any of the union members are a pointer.
       For now, we approximate this by allowing any argument type
-      when the parameter type is a union and GCC extensions are enabled.
+      when the parameter type is a union and GCC/Clang extensions are enabled.
       See "
      (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
-       "the GCC manual")
+       "[GCCM:6.4.3.1]")
      " for more information on the @('transparent_union') attribute.")))
   (b* (((reterr))
        (types-param (type-list-fix types-param))
@@ -1240,9 +1240,9 @@
        (type-param (first types-param))
        (arg (first args))
        (type-arg (type-fpconvert (type-apconvert (first types-arg))))
-       (gcc (ienv->gcc ienv)))
+       (gcc/clang (ienv->gcc/clang ienv)))
     (if (or (type-case type-param :unknown)
-            (and gcc (type-case type-param :union))
+            (and gcc/clang (type-case type-param :union))
             (type-case type-arg :unknown)
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
@@ -1609,9 +1609,9 @@
      to be used as an operand while the other operand has pointer type.
      But we found it accepted by practical compilers,
      so it is probably a GCC extension.
-     We therefore accept this when the GCC flag of the "
+     We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " is enabled.
+    " version indicates GCC/Clang extensions.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -1751,7 +1751,7 @@
                                          (not (type-case type-to2 :function))
                                          (type-compatiblep
                                            type-to1 type-to2 ienv))))
-                           (and (ienv->gcc ienv)
+                           (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
@@ -2268,8 +2268,8 @@
      The lifetime is automatic [C17:6.2.4/5].")
    (xdoc::p
     "As a GCC extension, we allow the @('register') storage class specifier
-     for file-scope declarations when
-     the @(':gcc') flag of the implementation environment is enabled.
+     for file-scope declarations when GCC/Clang extensions are enabled
+     by the implementation environment.
      This allows for the ``global register variables'' extension "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html"
                  "[GCCM:6.11.6.1]")
@@ -2394,7 +2394,7 @@
                        "register")
                      (ident-fix ident)))
            ((unless (and (or (> (valid-table-num-scopes table) 1)
-                             (ienv->gcc ienv))
+                             (ienv->gcc/clang ienv))
                          (not fundefp)))
             (retmsg$ "The storage class specifier '~s0' ~
                       cannot be used in the file scope, for identifier ~x1."
@@ -5895,9 +5895,9 @@
        (including the case in which the compound statement has no block items),
        the second piece of information is @('nil').
        The reason for having this second piece of information
-       is to support the validation of "
+       is to support the validation of GCC statement expressions"
       (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
-                   "GCC statement expressions")
+                   "[GCCM:6.12.1]")
       ".")
      (xdoc::p
       "To validate a labeled statement,
@@ -6615,12 +6615,12 @@
      [C17:6.4.2.2].
      In our currently approximate type system, this has @('char') array type
      (the @('const') type qualifier is ignored).
-     If the GCC flag is enabled (i.e. GCC extensions are allowed),
+     If the GCC/Clang flag is enabled (i.e. GCC/Clang extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
-     @('__PRETTY_FUNCTION__') (GCC manual, "
+     @('__PRETTY_FUNCTION__') "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
-                 "``Function Names''")
-    ").")
+                 "[GCCM:6.12.24]")
+    ".")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -6748,7 +6748,7 @@
                               :uid uid)
                              table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
-       (table (if (ienv->gcc ienv)
+       (table (if (ienv->gcc/clang ienv)
                   (valid-add-ord (ident "__FUNCTION__")
                                  (make-valid-ord-info-objfun
                                   :type (make-type-array :of (type-char))
@@ -6758,7 +6758,7 @@
                                  table)
                 table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
-       (table (if (ienv->gcc ienv)
+       (table (if (ienv->gcc/clang ienv)
                   (valid-add-ord (ident "__PRETTY_FUNCTION__")
                                  (make-valid-ord-info-objfun
                                   :type (make-type-array :of (type-char))
@@ -6866,10 +6866,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If GCC extensions are not enabled,
+    "If GCC/Clang extensions are not enabled,
      the initial validation table is the one
      returned by @(tsee valid-init-table).
-     If GCC extensions are enabled,
+     If GCC/Clang extensions are enabled,
      we add a number of objects and functions
      that we have encountered in practical code;
      we should eventually have a comprehensive list here.")
@@ -6894,10 +6894,10 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
-       (gcc (ienv->gcc ienv))
+       (gcc/clang (ienv->gcc/clang ienv))
        (table (valid-init-table filepath externals next-uid))
        (table
-         (if gcc
+         (if gcc/clang
              (b* ((table
                     (valid-add-ord-objfuns-file-scope
                      *gcc-builtin-functions*

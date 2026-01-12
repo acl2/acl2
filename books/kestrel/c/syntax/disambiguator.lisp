@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,11 +22,9 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration
+  :no-function nil
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3639,7 +3637,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-fundef ((fundef fundefp) (table dimb-tablep) (gcc booleanp))
+(define dimb-fundef ((fundef fundefp) (table dimb-tablep) (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp) (new-fundef fundefp) (new-table dimb-tablep))
   :short "Disambiguate a function definition."
   :long
@@ -3691,12 +3689,12 @@
    (xdoc::p
     "We extend the disambiguation table with the identifier @('__func__')
      [C17:6.4.2.2].
-     If the GCC flag is enabled (i.e. GCC extensions are allowed),
+     If the GCC/Clang flag is enabled (i.e. GCC/Clang extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
-     @('__PRETTY_FUNCTION__') (GCC manual, "
+     @('__PRETTY_FUNCTION__') "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
-                 "``Function Names''")
-    ").")
+                 "[GCCM:6.12.24]")
+    ".")
    (xdoc::p
     "After all of that, we disambiguate the body of the function definition.
      But we do not push a new scope for the block,
@@ -3722,7 +3720,7 @@
        (table (dimb-add-ident-objfun-file-scope ident table))
        ((erp new-declons table) (dimb-declon-list fundef.declons table))
        (table (dimb-add-ident-objfun (ident "__func__") table))
-       (table (if gcc
+       (table (if gcc/clang
                   (dimb-add-idents-objfun
                    (list (ident "__FUNCTION__")
                          (ident "__PRETTY_FUNCTION__"))
@@ -3750,14 +3748,14 @@
 
 (define dimb-ext-declon ((extdecl ext-declonp)
                          (table dimb-tablep)
-                         (gcc booleanp))
+                         (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp) (new-extdecl ext-declonp) (new-table dimb-tablep))
   :short "Disambiguate an external declaration."
   (b* (((reterr) (irr-ext-declon) (irr-dimb-table)))
     (ext-declon-case
      extdecl
      :fundef
-     (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc)))
+     (b* (((erp new-fundef table) (dimb-fundef extdecl.fundef table gcc/clang)))
        (retok (ext-declon-fundef new-fundef) table))
      :declon
      (b* (((erp new-decl table) (dimb-declon extdecl.declon table)))
@@ -3777,16 +3775,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-ext-declon-list ((edecls ext-declon-listp)
-                           (table dimb-tablep)
-                           (gcc booleanp))
+                              (table dimb-tablep)
+                              (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp)
                (new-edecls ext-declon-listp)
                (new-table dimb-tablep))
   :short "Disambiguate a list of external declarations."
   (b* (((reterr) nil (irr-dimb-table))
        ((when (endp edecls)) (retok nil (dimb-table-fix table)))
-       ((erp new-edecl table) (dimb-ext-declon (car edecls) table gcc))
-       ((erp new-edecls table) (dimb-ext-declon-list (cdr edecls) table gcc)))
+       ((erp new-edecl table) (dimb-ext-declon (car edecls) table gcc/clang))
+       ((erp new-edecls table)
+        (dimb-ext-declon-list (cdr edecls) table gcc/clang)))
     (retok (cons new-edecl new-edecls) table))
   :hooks (:fix)
 
@@ -3799,7 +3798,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-transunit ((tunit transunitp) (gcc booleanp))
+(define dimb-transunit ((tunit transunitp) (gcc/clang booleanp))
   :returns (mv (erp maybe-msgp) (new-tunit transunitp))
   :short "Disambiguate a translation unit."
   :long
@@ -3809,7 +3808,7 @@
      we disambiguate all the external declarations in order,
      and we discard the final disambiguation table.")
    (xdoc::p
-    "If the GCC flag is @('nil') (i.e. no GCC extensions),
+    "If the GCC/Clang flag is @('nil') (i.e. no GCC/Clang extensions),
      the initial disambiguation table is empty.
      If the flag is @('t'), for now the only difference is that
      we initialize the disambiguation table with some "
@@ -3855,16 +3854,16 @@
      @('__eax') is still in the table, with the right kind,
      and can be used as an expression in scope.
      However, note that these variables only make sense on an x86 platform:
-     we should refine our GCC flag with
+     we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
        (edecls (transunit->declons tunit))
        (table (dimb-init-table))
        (table
-         (if gcc
+         (if gcc/clang
              (dimb-add-idents-objfun *gcc-builtin* table)
            table))
-       ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc)))
+       ((erp new-edecls &) (dimb-ext-declon-list edecls table gcc/clang)))
     (retok (make-transunit :comment (transunit->comment tunit)
                            :declons new-edecls
                            :info nil)))
@@ -3879,20 +3878,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-transunit-ensemble ((tuens transunit-ensemblep)
-                                 (gcc booleanp)
+                                 (gcc/clang booleanp)
                                  (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens transunit-ensemblep))
   :short "Disambiguate a translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass a flag saying whether GCC extensions should be accepted.")
+    "We also pass a flag saying
+     whether GCC/Clang extensions should be accepted.")
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
   (b* (((reterr) (irr-transunit-ensemble))
        (tumap (transunit-ensemble->units tuens))
-       ((erp new-tumap) (dimb-transunit-ensemble-loop tumap gcc keep-going))
+       ((erp new-tumap)
+        (dimb-transunit-ensemble-loop tumap gcc/clang keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -3908,7 +3909,7 @@
   :prepwork
 
   ((define dimb-transunit-ensemble-loop ((tumap filepath-transunit-mapp)
-                                         (gcc booleanp)
+                                         (gcc/clang booleanp)
                                          (keep-going booleanp))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-transunit-mapp
@@ -3917,27 +3918,29 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp tumap)) (retok nil))
           ((mv path tunit) (omap::head tumap))
-          ((mv erp new-tunit) (dimb-transunit tunit gcc))
+          ((mv erp new-tunit) (dimb-transunit tunit gcc/clang))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->unwrap path)
                            erp)
                        (dimb-transunit-ensemble-loop (omap::tail tumap)
-                                                     gcc
+                                                     gcc/clang
                                                      keep-going))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->unwrap path)
                       erp)))
           ((erp new-tumap)
-           (dimb-transunit-ensemble-loop (omap::tail tumap) gcc keep-going)))
+           (dimb-transunit-ensemble-loop (omap::tail tumap)
+                                         gcc/clang
+                                         keep-going)))
        (retok (omap::update path new-tunit new-tumap)))
      :verify-guards :after-returns
 
      ///
 
      (fty::deffixequiv dimb-transunit-ensemble-loop
-       :args ((gcc booleanp)
+       :args ((gcc/clang booleanp)
               (keep-going booleanp)))
 
      (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
