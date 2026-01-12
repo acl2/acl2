@@ -99,13 +99,18 @@
        (kv-list (remove-keyword :preprocess-args kv-list))
        ;; Change the default for :extensions:
        (extensions-suppliedp (assoc-keyword :extensions kv-list))
-       (extensions (if extensions-suppliedp
-                       (let ((extensions-str? (lookup-keyword :extensions kv-list)))
-                         (cond ((equal extensions-str? "gcc") :gcc)
-                               ((equal extensions-str? "clang") :clang)
-                               ((not extensions-str?) nil)
-                               (t (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false."))))
-                     :gcc))
+       (extensions
+         (b* (((unless extensions-suppliedp)
+               :gcc)
+              (extensions-str? (lookup-keyword :extensions kv-list))
+              ((when (not extensions-str?))
+               nil)
+              ((unless (stringp extensions-str?))
+               (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false."))
+              (extensions-str (string-downcase extensions-str?)))
+           (cond ((equal extensions-str "gcc") :gcc)
+                 ((equal extensions-str "clang") :clang)
+                 (t (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false.")))))
        (kv-list (remove-keyword :extensions kv-list)))
     (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions kv-list)))
 
