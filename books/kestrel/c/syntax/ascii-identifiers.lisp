@@ -76,7 +76,7 @@
      we adjust the keywords to be excluded accordingly."))
   (and (stringp x)
        (c::paident-char-listp (str::explode x))
-       (not (member-equal x (c::keywords version))))
+       (not (member-equal x (c::keywords-for version))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
