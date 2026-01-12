@@ -336,19 +336,19 @@
      In this case, after raising the hard error,
      logically we still increment @('lexemes-read')
      so that the theorem about @(tsee ppstate->size) holds unconditionally."))
-  (b* ((ppstate.lexemes-read (ppstate->lexemes-read ppstate))
-       (ppstate.lexemes-unread (ppstate->lexemes-unread ppstate))
+  (b* ((ppstate.lexemes/markers-read (ppstate->lexemes/markers-read ppstate))
+       (ppstate.lexemes/markers-unread (ppstate->lexemes/markers-unread ppstate))
        (ppstate.size (ppstate->size ppstate))
-       ((unless (> ppstate.lexemes-read 0))
+       ((unless (> ppstate.lexemes/markers-read 0))
         (raise "Internal error: no token to unread.")
-        (b* ((ppstate (update-ppstate->lexemes-unread
-                       (1+ ppstate.lexemes-unread) ppstate))
+        (b* ((ppstate (update-ppstate->lexemes/markers-unread
+                       (1+ ppstate.lexemes/markers-unread) ppstate))
              (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
           ppstate))
-       (ppstate (update-ppstate->lexemes-unread
-                 (1+ ppstate.lexemes-unread) ppstate))
-       (ppstate (update-ppstate->lexemes-read
-                 (1- ppstate.lexemes-read) ppstate))
+       (ppstate (update-ppstate->lexemes/markers-unread
+                 (1+ ppstate.lexemes/markers-unread) ppstate))
+       (ppstate (update-ppstate->lexemes/markers-read
+                 (1- ppstate.lexemes/markers-read) ppstate))
        (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
     ppstate)
   :no-function nil

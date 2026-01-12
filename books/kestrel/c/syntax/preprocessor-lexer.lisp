@@ -60,33 +60,35 @@
 ; the lexing functions do not modify some PPSTATE stobj components.
 
 (local ; for non-recursive FN
- (defmacro defret-same-lexemes-length (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-      (equal (ppstate->lexemes-length new-ppstate)
-             (ppstate->lexemes-length ppstate)))))
+ (defmacro defret-same-lexemes/markers-length (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexemes/markers-length-of- fn) fn)
+      (equal (ppstate->lexemes/markers-length new-ppstate)
+             (ppstate->lexemes/markers-length ppstate)))))
 
 (local ; for singly recursive FN
- (defmacro defret-rec-same-lexemes-length (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-      (equal (ppstate->lexemes-length new-ppstate)
-             (ppstate->lexemes-length ppstate))
+ (defmacro defret-rec-same-lexemes/markers-length (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexemes/markers-length-of- fn) fn)
+      (equal (ppstate->lexemes/markers-length new-ppstate)
+             (ppstate->lexemes/markers-length ppstate))
       :hints (("Goal" :induct t)))))
 
 (local ; used by the macro below
- (defun defret-mut-same-lexemes-length-fn (fns)
+ (defun defret-mut-same-lexemes/markers-length-fn (fns)
    (b* (((when (endp fns)) nil)
         (fn (car fns))
-        (event `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-                  (equal (ppstate->lexemes-length new-ppstate)
-                         (ppstate->lexemes-length ppstate))
+        (event `(defret ,(packn-pos (list 'ppstate->lexemes/markers-length-of-
+                                          fn)
+                                    fn)
+                  (equal (ppstate->lexemes/markers-length new-ppstate)
+                         (ppstate->lexemes/markers-length ppstate))
                   :fn ,fn))
-        (events (defret-mut-same-lexemes-length-fn (cdr fns))))
+        (events (defret-mut-same-lexemes/markers-length-fn (cdr fns))))
      (cons event events))))
 
 (local ; for mutually recursive FNS
- (defmacro defret-mut-same-lexemes-length (name fns &key hints)
+ (defmacro defret-mut-same-lexemes/markers-length (name fns &key hints)
    `(defret-mutual ,name
-      ,@(defret-mut-same-lexemes-length-fn fns)
+      ,@(defret-mut-same-lexemes/markers-length-fn fns)
       ,@(and hints (list :hints hints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,7 +164,7 @@
        :hints (("Goal" :in-theory (enable rationalp-when-natp
                                           acl2-numberp-when-natp))))
 
-     (defret-rec-same-lexemes-length plex-identifier-loop)
+     (defret-rec-same-lexemes/markers-length plex-identifier-loop)
 
      (defret ppstate->size-of-plex-identifier-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -172,7 +174,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-identifier)
+  (defret-same-lexemes/markers-length plex-identifier)
 
   (defret ppstate->size-of-plex-identifier-uncond
     (<= (ppstate->size new-ppstate)
@@ -359,7 +361,7 @@
 
      ///
 
-     (defret-rec-same-lexemes-length plex-pp-number-loop)
+     (defret-rec-same-lexemes/markers-length plex-pp-number-loop)
 
      (defret ppstate->size-of-plex-pp-number-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -369,7 +371,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-pp-number)
+  (defret-same-lexemes/markers-length plex-pp-number)
 
   (defret ppstate->size-of-plex-pp-number-uncond
     (<= (ppstate->size new-ppstate)
@@ -416,7 +418,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-hexadecimal-digit)
+  (defret-same-lexemes/markers-length plex-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -456,7 +458,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-hex-quad)
+  (defret-same-lexemes/markers-length plex-hex-quad)
 
   (defret ppstate->size-of-plex-hex-quad-uncond
     (<= (ppstate->size new-ppstate)
@@ -519,7 +521,7 @@
    (hexdigs true-listp
             :rule-classes :type-prescription))
 
-  (defret-rec-same-lexemes-length plex-*-hexadecimal-digit)
+  (defret-rec-same-lexemes/markers-length plex-*-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-*-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -645,7 +647,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-escape-sequence)
+  (defret-same-lexemes/markers-length plex-escape-sequence)
 
   (defret ppstate->size-of-plex-escape-sequence-uncond
     (<= (ppstate->size new-ppstate)
@@ -706,7 +708,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-c-char)
+  (defret-rec-same-lexemes/markers-length plex-*-c-char)
 
   (defret ppstate->size-of-plex-*-c-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -770,7 +772,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-s-char)
+  (defret-rec-same-lexemes/markers-length plex-*-s-char)
 
   (defret ppstate->size-of-plex-*-s-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -825,7 +827,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-h-char)
+  (defret-rec-same-lexemes/markers-length plex-*-h-char)
 
   (defret ppstate->size-of-plex-*-h-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -880,7 +882,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-q-char)
+  (defret-rec-same-lexemes/markers-length plex-*-q-char)
 
   (defret ppstate->size-of-plex-*-q-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -923,7 +925,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-character-constant)
+  (defret-same-lexemes/markers-length plex-character-constant)
 
   (defret ppstate->size-of-plex-character-constant-uncond
     (<= (ppstate->size new-ppstate)
@@ -958,7 +960,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-string-literal)
+  (defret-same-lexemes/markers-length plex-string-literal)
 
   (defret ppstate->size-of-plex-string-literal-uncond
     (<= (ppstate->size new-ppstate)
@@ -1019,7 +1021,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-header-name)
+  (defret-same-lexemes/markers-length plex-header-name)
 
   (defret ppstate->size-of-plex-header-name-uncond
     (<= (ppstate->size new-ppstate)
@@ -1152,7 +1154,7 @@
 
      ///
 
-     (defret-mut-same-lexemes-length plex-block-comment-loops
+     (defret-mut-same-lexemes/markers-length plex-block-comment-loops
        (plex-rest-of-block-comment
         plex-rest-of-block-comment-after-star))
 
@@ -1184,7 +1186,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-block-comment)
+  (defret-same-lexemes/markers-length plex-block-comment)
 
   (defret ppstate->size-of-plex-block-comment-uncond
     (<= (ppstate->size new-ppstate)
@@ -1264,7 +1266,7 @@
 
      ///
 
-     (defret-rec-same-lexemes-length plex-line-comment-loop)
+     (defret-rec-same-lexemes/markers-length plex-line-comment-loop)
 
      (defret ppstate->size-of-plex-line-comment-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -1281,7 +1283,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-line-comment)
+  (defret-same-lexemes/markers-length plex-line-comment)
 
   (defret ppstate->size-of-plex-line-comment-uncond
     (<= (ppstate->size new-ppstate)
@@ -1342,7 +1344,7 @@
 
      ///
 
-     (defret-rec-same-lexemes-length plex-spaces-loop)
+     (defret-rec-same-lexemes/markers-length plex-spaces-loop)
 
      (defret ppstate->size-of-plex-spaces-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -1352,7 +1354,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-spaces)
+  (defret-same-lexemes/markers-length plex-spaces)
 
   (defret ppstate->size-of-plex-spaces-uncond
     (<= (ppstate->size new-ppstate)
@@ -1372,7 +1374,7 @@
    (xdoc::p
     "Here `from the input' means that
      the lexeme is read directly from the input,
-     and not from the unread lexemes if there are any.
+     and not from the unread lexemes and markers if there are any.
      This is almost the top-level lexing function for the preprocessor:
      the top-level one, @(tsee plex-lexeme),
      first attempt to (re-)read an unread lexeme,
@@ -1926,7 +1928,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-lexeme-from-input)
+  (defret-same-lexemes/markers-length plex-lexeme-from-input)
 
   (defret ppstate->size-of-plex-lexeme-from-input-uncond
     (<= (ppstate->size new-ppstate)
@@ -1952,26 +1954,33 @@
   (xdoc::topstring
    (xdoc::p
     "This is the top-level function of the lexer.
-     If there are unread lexemes,
-     we return the first unread lexeme,
+     If there are unread lexemes and markers,
+     we return the first unread lexeme
+     (and throw an error if there is a marker, for now),
      and adjust the indices in the preprocessing state (see @(tsee ppstate)).
-     If there are no unread lexemes,
+     If there are no unread lexemes and markers,
      we call @(tsee plex-lexeme-from-input) to read a lexeme from the input,
-     and then we store it into the array of lexemes, adjusting the index."))
+     and then we store it into the array of lexemes and markers,
+     adjusting the index."))
   (b* (((reterr) nil (irr-span) ppstate)
-       (lexemes-length (ppstate->lexemes-length ppstate))
-       (lexemes-read (ppstate->lexemes-read ppstate))
-       (lexemes-unread (ppstate->lexemes-unread ppstate))
+       (lexemes/markers-length (ppstate->lexemes/markers-length ppstate))
+       (lexemes/markers-read (ppstate->lexemes/markers-read ppstate))
+       (lexemes/markers-unread (ppstate->lexemes/markers-unread ppstate))
        (size (ppstate->size ppstate))
-       ((when (> lexemes-unread 0))
-        (b* (((unless (< lexemes-read lexemes-length))
+       ((when (> lexemes/markers-unread 0))
+        (b* (((unless (< lexemes/markers-read lexemes/markers-length))
               (raise "Internal error: index ~x0 out of bound ~x1."
-                     lexemes-read lexemes-length)
+                     lexemes/markers-read lexemes/markers-length)
               (reterr t))
-             (lexeme+span (ppstate->lexeme lexemes-read ppstate))
-             (ppstate
-              (update-ppstate->lexemes-unread (1- lexemes-unread) ppstate))
-             (ppstate (update-ppstate->lexemes-read (1+ lexemes-read) ppstate))
+             (lexmark (ppstate->lexeme/marker lexemes/markers-read ppstate))
+             ((unless (lexeme/marker-case lexmark :lexeme))
+              (raise "Internal error: unexpected marker ~x0." lexmark)
+              (reterr t))
+             (lexeme+span (lexeme/marker-lexeme->lexspan lexmark))
+             (ppstate (update-ppstate->lexemes/markers-unread
+                       (1- lexemes/markers-unread) ppstate))
+             (ppstate (update-ppstate->lexemes/markers-read
+                       (1+ lexemes/markers-read) ppstate))
              ((unless (> size 0))
               (raise "Internal error: size is 0 but there are unread lexemes.")
               (reterr t))
@@ -1981,19 +1990,24 @@
                  ppstate)))
        ((erp lexeme? span ppstate) (plex-lexeme-from-input headerp ppstate))
        ((when (not lexeme?)) (retok nil span ppstate))
-       ((unless (< lexemes-read lexemes-length))
+       (lexeme lexeme?)
+       ((unless (< lexemes/markers-read lexemes/markers-length))
         (raise "Internal error: index ~x0 out of bound ~x1."
-               lexemes-read lexemes-length)
+               lexemes/markers-read lexemes/markers-length)
         (reterr t))
-       (lexeme+span (make-plexeme+span :lexeme lexeme? :span span))
-       (ppstate (update-ppstate->lexeme lexemes-read lexeme+span ppstate))
-       (ppstate (update-ppstate->lexemes-read (1+ lexemes-read) ppstate)))
-    (retok lexeme? span ppstate))
+       (lexeme+span (make-plexeme+span :lexeme lexeme :span span))
+       (lexmark (lexeme/marker-lexeme lexeme+span))
+       (ppstate (update-ppstate->lexeme/marker lexemes/markers-read
+                                               lexmark
+                                               ppstate))
+       (ppstate (update-ppstate->lexemes/markers-read
+                 (1+ lexemes/markers-read) ppstate)))
+    (retok lexeme span ppstate))
   :no-function nil
 
   ///
 
-  (defret-same-lexemes-length plex-lexeme)
+  (defret-same-lexemes/markers-length plex-lexeme)
 
   (defret ppstate->size-of-plex-lexeme-uncond
     (<= (ppstate->size new-ppstate)

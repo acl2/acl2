@@ -156,9 +156,9 @@
            (ppstate->chars-read ppstate))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->lexemes-length-of-read-byte
-    (equal (ppstate->lexemes-length new-ppstate)
-           (ppstate->lexemes-length ppstate))
+  (defret ppstate->lexemes/markers-length-of-read-byte
+    (equal (ppstate->lexemes/markers-length new-ppstate)
+           (ppstate->lexemes/markers-length ppstate))
     :hints (("Goal" :induct t)))
 
   (defret ppstate->size-of-read-byte-uncond
@@ -298,9 +298,9 @@
 
   ///
 
-  (defret ppstate->lexemes-length-of-update-ppstate-for-char
-    (equal (ppstate->lexemes-length new-ppstate)
-           (ppstate->lexemes-length ppstate)))
+  (defret ppstate->lexemes/markers-length-of-update-ppstate-for-char
+    (equal (ppstate->lexemes/markers-length new-ppstate)
+           (ppstate->lexemes/markers-length ppstate)))
 
   (defret ppstate->size-of-update-ppstate-for-char
     (equal (ppstate->size new-ppstate)
@@ -709,9 +709,9 @@
           :rule-classes :type-prescription
           :name pread-char.char?-type-prescription))
 
-  (defret ppstate->lexemes-length-of-pread-char
-    (equal (ppstate->lexemes-length new-ppstate)
-           (ppstate->lexemes-length ppstate))
+  (defret ppstate->lexemes/markers-length-of-pread-char
+    (equal (ppstate->lexemes/markers-length new-ppstate)
+           (ppstate->lexemes/markers-length ppstate))
     :hints (("Goal" :induct t)))
 
   (defret ppstate->size-of-pread-char-uncond
@@ -770,9 +770,9 @@
 
   ///
 
-  (defret ppstate->lexemes-length-of-punread-char
-    (equal (ppstate->lexemes-length new-ppstate)
-           (ppstate->lexemes-length ppstate)))
+  (defret ppstate->lexemes/markers-length-of-punread-char
+    (equal (ppstate->lexemes/markers-length new-ppstate)
+           (ppstate->lexemes/markers-length ppstate)))
 
   (defret ppstate->size-of-punread-char
     (equal (ppstate->size new-ppstate)
