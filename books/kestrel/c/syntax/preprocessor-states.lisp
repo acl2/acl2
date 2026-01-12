@@ -1155,7 +1155,6 @@
                       (("Goal"
                         :in-theory
                         (enable nfix
-                                length
                                 byte-list-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->bytess-length (lnfix length) ppstate)))
@@ -1195,7 +1194,6 @@
                       (("Goal"
                         :in-theory
                         (enable nfix
-                                length
                                 char+position-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->chars-length (lnfix length) ppstate)))
@@ -1237,7 +1235,6 @@
                       (("Goal"
                         :in-theory
                         (enable nfix
-                                length
                                 lexmark-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->lexmarks-length (lnfix length) ppstate)))
@@ -1302,7 +1299,6 @@
     :enable (ppstate->bytess-length
              update-ppstate->bytess-length
              ppstatep
-             length
              byte-list-listp-of-resize-list))
 
   (defrule ppstate->bytess-current-of-update-ppstate->bytess-current
@@ -1311,8 +1307,7 @@
            (nfix bytess-current))
     :enable (ppstate->bytess-current
              update-ppstate->bytess-current
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->chars-length-of-update-ppstate->bytes
     (equal (ppstate->chars-length (update-ppstate->bytes i bytes ppstate))
@@ -1320,7 +1315,6 @@
     :enable (ppstate->chars-length
              update-ppstate->bytes
              ppstatep
-             length
              update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
@@ -1331,16 +1325,14 @@
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
              update-ppstate->bytess-current
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->chars-length-of-update-ppstate->size
     (equal (ppstate->chars-length (update-ppstate->size size ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
              update-ppstate->size
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->chars-read-of-update-ppstate->bytes
     (equal (ppstate->chars-read (update-ppstate->bytes i bytes ppstate))
@@ -1348,7 +1340,6 @@
     :enable (ppstate->chars-read
              update-ppstate->bytes
              ppstatep
-             length
              update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
@@ -1359,16 +1350,14 @@
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
              update-ppstate->bytess-current
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->chars-read-of-update-ppstate->size
     (equal (ppstate->chars-read (update-ppstate->size size ppstate))
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
              update-ppstate->size
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->bytes
     (equal (ppstate->lexmarks-length
@@ -1377,7 +1366,6 @@
     :enable (ppstate->lexmarks-length
              update-ppstate->bytes
              ppstatep
-             length
              update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
@@ -1388,8 +1376,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->bytess-current
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->position
     (equal (ppstate->lexmarks-length
@@ -1397,8 +1384,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->position
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->char
     (equal (ppstate->lexmarks-length
@@ -1407,7 +1393,6 @@
     :enable (ppstate->lexmarks-length
              update-ppstate->char
              ppstatep
-             length
              update-nth-array
              ppstate->chars-length
              byte-list-listp-of-update-nth-strong))
@@ -1418,8 +1403,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->chars-read
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->chars-unread
     (equal (ppstate->lexmarks-length
@@ -1427,8 +1411,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->chars-unread
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->lexmark
     (equal (ppstate->lexmarks-length
@@ -1437,7 +1420,6 @@
     :enable (ppstate->lexmarks-length
              update-ppstate->lexmark
              ppstatep
-             length
              update-nth-array
              byte-list-listp-of-update-nth-strong
              nfix
@@ -1451,8 +1433,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->lexmarks-read
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule
     ppstate->lexmarks-length-of-update-ppstate->lexmarks-unread
@@ -1462,8 +1443,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->lexmarks-unread
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->lexmarks-length-of-update-ppstate->size
     (equal (ppstate->lexmarks-length
@@ -1471,8 +1451,7 @@
            (ppstate->lexmarks-length ppstate))
     :enable (ppstate->lexmarks-length
              update-ppstate->size
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->bytes
     (equal (ppstate->size (update-ppstate->bytes i bytes ppstate))
@@ -1480,7 +1459,6 @@
     :enable (ppstate->size
              update-ppstate->bytes
              ppstatep
-             length
              update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
@@ -1499,8 +1477,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->position
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->char
     (equal (ppstate->size (update-ppstate->char i char+pos ppstate))
@@ -1508,7 +1485,6 @@
     :enable (ppstate->size
              update-ppstate->char
              ppstatep
-             length
              update-nth-array
              ppstate->chars-length
              char+position-listp-of-update-nth-strong))
@@ -1518,8 +1494,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->chars-read
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->chars-unread
     (equal (ppstate->size (update-ppstate->chars-unread chars-unread
@@ -1527,8 +1502,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->chars-unread
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->lexmark
     (equal (ppstate->size
@@ -1537,7 +1511,6 @@
     :enable (ppstate->size
              update-ppstate->lexmark
              ppstatep
-             length
              update-nth-array
              ppstate->lexmarks-length
              lexmark-listp-of-update-nth-strong))
@@ -1548,8 +1521,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->lexmarks-read
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->lexmarks-unread
     (equal (ppstate->size
@@ -1558,24 +1530,21 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->lexmarks-unread
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->size
     (equal (ppstate->size (update-ppstate->size size ppstate))
            (lnfix size))
     :enable (ppstate->size
              update-ppstate->size
-             ppstatep
-             length))
+             ppstatep))
 
   (defrule ppstate->size-of-update-ppstate->macros
     (equal (ppstate->size (update-ppstate->macros macros ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->macros
-             ppstatep
-             length))
+             ppstatep))
 
   ;; writers over readers:
 
@@ -1587,7 +1556,6 @@
              ppstate->chars-read
              ppstatep
              nfix
-             length
              acl2::update-nth-of-nth))
 
   (defrule update-ppstate->chars-read-of-ppstate->chars-unread
@@ -1598,7 +1566,6 @@
              ppstate->chars-unread
              ppstatep
              nfix
-             length
              acl2::update-nth-of-nth))
 
   ;; keep recognizer disabled:
