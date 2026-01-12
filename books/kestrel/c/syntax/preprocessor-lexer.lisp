@@ -1372,7 +1372,7 @@
    (xdoc::p
     "Here `from the input' means that
      the lexeme is read directly from the input,
-     and not from the unread lexemes and markers if there are any.
+     and not from the unread lexmarks if there are any.
      This is almost the top-level lexing function for the preprocessor:
      the top-level one, @(tsee plex-lexeme),
      first attempt to (re-)read an unread lexeme,
@@ -1952,13 +1952,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is the top-level function of the lexer.
-     If there are unread lexemes and markers,
+     If there are unread lexmarks,
      we return the first unread lexeme
      (and throw an error if there is a marker, for now),
      and adjust the indices in the preprocessing state (see @(tsee ppstate)).
-     If there are no unread lexemes and markers,
+     If there are no unread lexmarks,
      we call @(tsee plex-lexeme-from-input) to read a lexeme from the input,
-     and then we store it into the array of lexemes and markers,
+     and then we store it into the array of lexmarks,
      adjusting the index."))
   (b* (((reterr) nil (irr-span) ppstate)
        (lexmarks-length (ppstate->lexmarks-length ppstate))

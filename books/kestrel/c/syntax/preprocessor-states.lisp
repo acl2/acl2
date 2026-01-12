@@ -415,12 +415,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lexmark
-  :short "Fixtype of preprocessing lexemes and markers."
+  :short "Fixtype of preprocessing lexemes and markers (`lexmarks')."
   :long
   (xdoc::topstring
    (xdoc::p
     "Along with pairs consisting of lexemes and spans,
-     it is convenient to handle certain markers.")
+     it is convenient to handle certain markers.
+     We use the term `lexmark' to denote a preprocessing lexeme or marker.")
    (xdoc::p
     "The @(':start') and @(':end') summands are used to mark
      the start and end of an expansion of the macro,
@@ -442,14 +443,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-lexmark
-  :short "An irrelevant preprocessing lexeme or marker."
+  :short "An irrelevant lexmark."
   :type lexmarkp
   :body (lexmark-lexeme (irr-plexeme+span)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist lexmark-list
-  :short "Fixtype of lists of preprocessing lexemes and markers."
+  :short "Fixtype of lists of lexmarks."
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
@@ -877,8 +878,7 @@
       the preprocessor state has a full implementation environment.
       Probably parser states should have that too.")
     (xdoc::li
-     "The processor state contains preprocessing lexemes and markers
-      instead of tokens.")
+     "The processor state contains lexmarks instead of tokens.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
