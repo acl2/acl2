@@ -1085,7 +1085,6 @@
                       (("Goal"
                         :in-theory
                         (enable nfix
-                                ppstate-fix
                                 length
                                 byte-list-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
@@ -1126,7 +1125,6 @@
                       (("Goal"
                         :in-theory
                         (enable nfix
-                                ppstate-fix
                                 length
                                 char+position-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
@@ -1168,7 +1166,6 @@
                       :hints
                       (("Goal"
                         :in-theory (enable nfix
-                                           ppstate-fix
                                            length
                                            plexeme+span-listp-of-resize-list))))
     (b* ((ppstate (ppstate-fix ppstate)))
@@ -1229,7 +1226,6 @@
     :enable (ppstate->bytess-length
              update-ppstate->bytess-length
              ppstatep
-             ppstate-fix
              length
              byte-list-listp-of-resize-list))
 
@@ -1240,7 +1236,6 @@
     :enable (ppstate->bytess-current
              update-ppstate->bytess-current
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->chars-length-of-update-ppstate->bytes
@@ -1249,7 +1244,6 @@
     :enable (ppstate->chars-length
              update-ppstate->bytes
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->bytess-length
@@ -1262,7 +1256,6 @@
     :enable (ppstate->chars-length
              update-ppstate->bytess-current
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->chars-length-of-update-ppstate->size
@@ -1271,7 +1264,6 @@
     :enable (ppstate->chars-length
              update-ppstate->size
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->chars-read-of-update-ppstate->bytes
@@ -1280,7 +1272,6 @@
     :enable (ppstate->chars-read
              update-ppstate->bytes
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->bytess-length
@@ -1293,7 +1284,6 @@
     :enable (ppstate->chars-read
              update-ppstate->bytess-current
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->chars-read-of-update-ppstate->size
@@ -1302,7 +1292,6 @@
     :enable (ppstate->chars-read
              update-ppstate->size
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->bytes
@@ -1311,7 +1300,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->bytes
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->bytess-length
@@ -1324,7 +1312,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->bytess-current
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->position
@@ -1333,7 +1320,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->position
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->char
@@ -1342,7 +1328,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->char
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->chars-length
@@ -1355,7 +1340,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->chars-read
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->chars-unread
@@ -1365,7 +1349,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->chars-unread
              ppstatep
-             ppstate-fix
              length))
 
 (defrule ppstate->lexemes-length-of-update-ppstate->lexeme
@@ -1374,7 +1357,6 @@
   :enable (ppstate->lexemes-length
            update-ppstate->lexeme
            ppstatep
-           ppstate-fix
            length
            update-nth-array
            byte-list-listp-of-update-nth-strong
@@ -1389,7 +1371,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->lexemes-read
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->lexemes-unread
@@ -1399,7 +1380,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->lexemes-unread
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->lexemes-length-of-update-ppstate->size
@@ -1409,7 +1389,6 @@
     :enable (ppstate->lexemes-length
              update-ppstate->size
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->bytes
@@ -1418,7 +1397,6 @@
     :enable (ppstate->size
              update-ppstate->bytes
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->bytess-length
@@ -1431,7 +1409,6 @@
     :enable (ppstate->size
              update-ppstate->bytess-current
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->position
@@ -1440,7 +1417,6 @@
     :enable (ppstate->size
              update-ppstate->position
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->char
@@ -1449,7 +1425,6 @@
     :enable (ppstate->size
              update-ppstate->char
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->chars-length
@@ -1461,7 +1436,6 @@
     :enable (ppstate->size
              update-ppstate->chars-read
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->chars-unread
@@ -1471,7 +1445,6 @@
     :enable (ppstate->size
              update-ppstate->chars-unread
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->lexeme
@@ -1480,7 +1453,6 @@
     :enable (ppstate->size
              update-ppstate->lexeme
              ppstatep
-             ppstate-fix
              length
              update-nth-array
              ppstate->lexemes-length
@@ -1492,7 +1464,6 @@
     :enable (ppstate->size
              update-ppstate->lexemes-read
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->lexemes-unread
@@ -1501,7 +1472,6 @@
     :enable (ppstate->size
              update-ppstate->lexemes-unread
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->size
@@ -1510,7 +1480,6 @@
     :enable (ppstate->size
              update-ppstate->size
              ppstatep
-             ppstate-fix
              length))
 
   (defrule ppstate->size-of-update-ppstate->macros
@@ -1519,7 +1488,6 @@
     :enable (ppstate->size
              update-ppstate->macros
              ppstatep
-             ppstate-fix
              length))
 
   ;; writers over readers:
@@ -1531,7 +1499,6 @@
     :enable (update-ppstate->chars-read
              ppstate->chars-read
              ppstatep
-             ppstate-fix
              nfix
              length
              acl2::update-nth-of-nth))
@@ -1543,7 +1510,6 @@
     :enable (update-ppstate->chars-unread
              ppstate->chars-unread
              ppstatep
-             ppstate-fix
              nfix
              length
              acl2::update-nth-of-nth))
