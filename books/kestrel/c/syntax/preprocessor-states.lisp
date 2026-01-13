@@ -878,7 +878,26 @@
       the preprocessor state has a full implementation environment.
       Probably parser states should have that too.")
     (xdoc::li
-     "The processor state contains lexmarks instead of tokens.")
+     "Instead of an array and two indices that represent
+      a sequence of read and unread tokens,
+      we have a single list of pending lexmarks.
+      This is used like the sequence of unread tokens in the parser state,
+      in the sense that the next lexeme is read from the list if non-empty,
+      and otherwise is lexed from the input characters.
+      However, lexmarks are added to the pending list
+      not only when unreading lexemes,
+      which actually happens rarely in our preprocessor,
+      but also when expanding macros.
+      When a macro is expanded, the expansion is added to the pending list,
+      so that preprocessing continues with the expansion,
+      thus realizing rescanning and further replacement [C17:6.10.3.4].
+      The @(':start') and @(':end') markers are added around that expansion,
+      to delimit that the expansion comes from a certain macro,
+      so that we can prevent recursive expansion,
+      as explained in more detail elsewhere.
+      The pending list of lexmarks in the preprocessing state
+      actually never contains @(':placemarker') markers;
+      we should sharpen the type of this stobj component accordingly.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
@@ -906,13 +925,8 @@
                   :initially 0)
       (chars-unread :type (integer 0 *)
                     :initially 0)
-      (lexmarks :type (array (satisfies lexmarkp) (1))
-                :initially ,(irr-lexmark)
-                :resizable t)
-      (lexmarks-read :type (integer 0 *)
-                     :initially 0)
-      (lexmarks-unread :type (integer 0 *)
-                       :initially 0)
+      (lexmarks :type (satisfies lexmark-listp)
+                :initially nil)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       (size :type (integer 0 *)
@@ -927,8 +941,6 @@
                  (chars-readp raw-ppstate->chars-read-p)
                  (chars-unreadp raw-ppstate->chars-unread-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
-                 (lexmarks-readp raw-ppstate->lexmarks-read-p)
-                 (lexmarks-unreadp raw-ppstate->lexmarks-unread-p)
                  (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
@@ -941,10 +953,7 @@
                  (charsi raw-ppstate->char)
                  (chars-read raw-ppstate->chars-read)
                  (chars-unread raw-ppstate->chars-unread)
-                 (lexmarks-length raw-ppstate->lexmarks-length)
-                 (lexmarksi raw-ppstate->lexmark)
-                 (lexmarks-read raw-ppstate->lexmarks-read)
-                 (lexmarks-unread raw-ppstate->lexmarks-unread)
+                 (lexmarks raw-ppstate->lexmarks)
                  (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
@@ -957,10 +966,7 @@
                  (update-charsi raw-update-ppstate->char)
                  (update-chars-read raw-update-ppstate->chars-read)
                  (update-chars-unread raw-update-ppstate->chars-unread)
-                 (resize-lexmarks raw-update-ppstate->lexmarks-length)
-                 (update-lexmarksi raw-update-ppstate->lexmark)
-                 (update-lexmarks-read raw-update-ppstate->lexmarks-read)
-                 (update-lexmarks-unread raw-update-ppstate->lexmarks-unread)
+                 (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros))))
@@ -1011,7 +1017,7 @@
     :enable (raw-ppstate->lexmarks-p
              lexmark-listp))
 
-  ;; needed for reader/writer proofs:
+  ;; needed for subsequent proofs:
 
   (local (in-theory (enable ppstate-fix)))
 
@@ -1087,43 +1093,12 @@
                   0)
          :exec (raw-ppstate->chars-unread ppstate)))
 
-  (define ppstate->lexmarks-length (ppstate)
-    :returns (length natp)
+  (define ppstate->lexmarks (ppstate)
+    :returns (lexmarks lexmark-listp)
     (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexmarks-length ppstate)
-                  1)
-         :exec (raw-ppstate->lexmarks-length ppstate)))
-
-  (define ppstate->lexmark ((i natp) ppstate)
-    :guard (< i (ppstate->lexmarks-length ppstate))
-    :returns (lexmark lexmarkp
-                      :hints
-                      (("Goal"
-                        :in-theory (enable ppstate->lexmarks-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->lexmarks-length ppstate)))
-                    (raw-ppstate->lexmark (nfix i) ppstate)
-                  (irr-lexmark))
-         :exec (raw-ppstate->lexmark i ppstate))
-    :guard-hints
-    (("Goal" :in-theory (enable nfix ppstate->lexmarks-length)))
-    :hooks nil)
-
-  (define ppstate->lexmarks-read (ppstate)
-    :returns (lexmarks-read natp
-                            :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexmarks-read ppstate)
-                  0)
-         :exec (raw-ppstate->lexmarks-read ppstate)))
-
-  (define ppstate->lexmarks-unread (ppstate)
-    :returns (lexmarks-unread natp
-                              :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexmarks-unread ppstate)
-                  0)
-         :exec (raw-ppstate->lexmarks-unread ppstate)))
+                    (raw-ppstate->lexmarks ppstate)
+                  nil)
+         :exec (raw-ppstate->lexmarks ppstate)))
 
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
@@ -1229,51 +1204,13 @@
     (b* ((ppstate (ppstate-fix ppstate)))
       (raw-update-ppstate->chars-unread (lnfix chars-unread) ppstate)))
 
-  (define update-ppstate->lexmarks-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable nfix
-                                lexmark-listp-of-resize-list))))
+  (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
+    :returns (ppstate ppstatep)
     (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexmarks-length (lnfix length) ppstate)))
-
-  (define update-ppstate->lexmark ((i natp)
-                                   (lexmark lexmarkp)
-                                   ppstate)
-    :guard (< i (ppstate->lexmarks-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable update-nth-array
-                                ppstate->lexmarks-length
-                                lexmark-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->lexmarks-length ppstate))
-                      (raw-update-ppstate->lexmark (nfix i)
-                                                   (lexmark-fix lexmark)
-                                                   ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->lexmark i lexmark ppstate)))
-    :guard-hints
-    (("Goal" :in-theory (enable ppstate->lexmarks-length nfix)))
+      (mbe :logic (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
+                                                ppstate)
+           :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
     :hooks nil)
-
-  (define update-ppstate->lexmarks-read ((lexmarks-read natp)
-                                         ppstate)
-    :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexmarks-read (lnfix lexmarks-read)
-                                         ppstate)))
-
-  (define update-ppstate->lexmarks-unread
-    ((lexmarks-unread natp) ppstate)
-    :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexmarks-unread
-       (lnfix lexmarks-unread) ppstate)))
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
@@ -1351,88 +1288,56 @@
     :enable (ppstate->chars-read
              update-ppstate->size))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->bytes
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->bytes i bytes ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->bytes
+    (equal (ppstate->lexmarks (update-ppstate->bytes i bytes ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->bytes
              update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->bytess-current
-    (equal (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->bytess-current
+    (equal (ppstate->lexmarks
             (update-ppstate->bytess-current bytess-current ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->bytess-current))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->position
-    (equal (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->position
+    (equal (ppstate->lexmarks
             (update-ppstate->position position ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->position))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->char
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->char i char ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->char
+    (equal (ppstate->lexmarks (update-ppstate->char i char ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->char
              update-nth-array
              ppstate->chars-length
              byte-list-listp-of-update-nth-strong))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->chars-read
-    (equal (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->chars-read
+    (equal (ppstate->lexmarks
             (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->chars-read))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->chars-unread
-    (equal (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->chars-unread
+    (equal (ppstate->lexmarks
             (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->chars-unread))
 
-  (defrule ppstate->lexmarks-length-of-update-ppstate->lexmark
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->lexmark i lexmark ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
-             update-ppstate->lexmark
-             update-nth-array
-             byte-list-listp-of-update-nth-strong
-             nfix
-             max
-             len))
-
-  (defrule
-    ppstate->lexmarks-length-of-update-ppstate->lexmarks-read
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->lexmarks-read lexmarks-read ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
-             update-ppstate->lexmarks-read))
-
-  (defrule
-    ppstate->lexmarks-length-of-update-ppstate->lexmarks-unread
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->lexmarks-unread lexmarks-unread
-                                             ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
-             update-ppstate->lexmarks-unread))
-
-  (defrule ppstate->lexmarks-length-of-update-ppstate->size
-    (equal (ppstate->lexmarks-length
-            (update-ppstate->size size ppstate))
-           (ppstate->lexmarks-length ppstate))
-    :enable (ppstate->lexmarks-length
+  (defrule ppstate->lexmarks-of-update-ppstate->size
+    (equal (ppstate->lexmarks (update-ppstate->size size ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->size))
 
   (defrule ppstate->size-of-update-ppstate->bytes
@@ -1474,36 +1379,16 @@
              update-ppstate->chars-read))
 
   (defrule ppstate->size-of-update-ppstate->chars-unread
-    (equal (ppstate->size (update-ppstate->chars-unread chars-unread
-                                                        ppstate))
+    (equal (ppstate->size (update-ppstate->chars-unread chars-unread ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->chars-unread))
 
-  (defrule ppstate->size-of-update-ppstate->lexmark
-    (equal (ppstate->size
-            (update-ppstate->lexmark i lexmark ppstate))
+  (defrule ppstate->size-of-update-ppstate->lexmarks
+    (equal (ppstate->size (update-ppstate->lexmarks lexmarks ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->lexmark
-             update-nth-array
-             ppstate->lexmarks-length
-             lexmark-listp-of-update-nth-strong))
-
-  (defrule ppstate->size-of-update-ppstate->lexmarks-read
-    (equal (ppstate->size
-            (update-ppstate->lexmarks-read lexmarks-read ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->lexmarks-read))
-
-  (defrule ppstate->size-of-update-ppstate->lexmarks-unread
-    (equal (ppstate->size
-            (update-ppstate->lexmarks-unread lexmarks-unread
-                                             ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->lexmarks-unread))
+             update-ppstate->lexmarks))
 
   (defrule ppstate->size-of-update-ppstate->size
     (equal (ppstate->size (update-ppstate->size size ppstate))
@@ -1573,15 +1458,11 @@
      The bytes of the file are stored into the first element of the array,
      to which the current byte list index is set to point.
      The position is the initial one.
-     There are no read or unread characters or lexmarks.
+     There are no read or unread characters,
+     and no lexmarks pending.
      The macro table is obtained by pushing a new scope for the file.
-     We also resize the arrays of characters and lexmarks
-     to the number of data bytes,
-     which is overkill but sufficient;
-     if this turns out to be too large,
-     we will pick a different size,
-     but then we may need to resize the array as needed
-     while preprocessing."))
+     We also resize the arrays of characters to the number of data bytes,
+     which is sufficient because each character takes at least one byte."))
   (b* ((ppstate (update-ppstate->bytess-length (pos-fix file-recursion-limit)
                                                ppstate))
        (ppstate (update-ppstate->bytes 0 (byte-list-fix data) ppstate))
@@ -1590,9 +1471,7 @@
        (ppstate (update-ppstate->chars-length (len data) ppstate))
        (ppstate (update-ppstate->chars-read 0 ppstate))
        (ppstate (update-ppstate->chars-unread 0 ppstate))
-       (ppstate (update-ppstate->lexmarks-length (len data) ppstate))
-       (ppstate (update-ppstate->lexmarks-read 0 ppstate))
-       (ppstate (update-ppstate->lexmarks-unread 0 ppstate))
+       (ppstate (update-ppstate->lexmarks nil ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))

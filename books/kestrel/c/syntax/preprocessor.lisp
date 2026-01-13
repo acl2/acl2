@@ -321,35 +321,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-lexeme ((ppstate ppstatep))
+(define punread-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a lexeme."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We move the lexeme from the sequence of read lexemes
-     to the sequence of unread lexemes.
-     See @(tsee ppstate).")
-   (xdoc::p
-    "It is an internal error if @('lexemes-read') is 0.
-     It means that the calling code is wrong.
-     In this case, after raising the hard error,
-     logically we still increment @('lexemes-read')
-     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
-  (b* ((ppstate.lexmarks-read (ppstate->lexmarks-read ppstate))
-       (ppstate.lexmarks-unread (ppstate->lexmarks-unread ppstate))
-       (ppstate.size (ppstate->size ppstate))
-       ((unless (> ppstate.lexmarks-read 0))
-        (raise "Internal error: no token to unread.")
-        (b* ((ppstate (update-ppstate->lexmarks-unread
-                       (1+ ppstate.lexmarks-unread) ppstate))
-             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
-          ppstate))
-       (ppstate (update-ppstate->lexmarks-unread
-                 (1+ ppstate.lexmarks-unread) ppstate))
-       (ppstate (update-ppstate->lexmarks-read
-                 (1- ppstate.lexmarks-read) ppstate))
-       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
+    "We add the lexeme to the list of pending lexmarks.
+     See @(tsee ppstate)."))
+  (b* ((lexmarks (ppstate->lexmarks ppstate))
+       (size (ppstate->size ppstate))
+       (lexmark (lexmark-lexeme (make-plexeme+span :lexeme lexeme :span span)))
+       (ppstate (update-ppstate->lexmarks (cons lexmark lexmarks) ppstate))
+       (ppstate (update-ppstate->size (1+ size) ppstate)))
     ppstate)
   :no-function nil
 
@@ -995,7 +979,7 @@
                          (1- limit)))
        (t ; non-#
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (punread-lexeme ppstate)))
+             (ppstate (punread-lexeme toknl span ppstate)))
           (pproc-line-rest file
                            base-dir
                            include-dirs

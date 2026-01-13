@@ -116,5 +116,4 @@ void f(double y) {
 "
                                     "subdir/included2.h"
                                     "/*#*/ // null directive
-"
-                                    ))
+"))
