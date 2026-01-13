@@ -1285,16 +1285,14 @@
             (ppstate->chars-read ppstate) ppstate)
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-read
-             ppstate->chars-read
-             acl2::update-nth-of-nth))
+             ppstate->chars-read))
 
   (defrule update-ppstate->chars-read-of-ppstate->chars-unread
     (equal (update-ppstate->chars-unread
             (ppstate->chars-unread ppstate) ppstate)
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-unread
-             ppstate->chars-unread
-             acl2::update-nth-of-nth))
+             ppstate->chars-unread))
 
   ;; keep recognizer disabled:
 
