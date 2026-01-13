@@ -680,6 +680,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum macrep-mode
+  :short "Fixtype of macro replacement modes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Among other things,
+     the preprocessor goes through a sequence of lexemes,
+     expanding the macros in them
+     (including rescanning and further replacement [C17:6.10.3.4]),
+     until a stopping criterion is met.
+     The details of the stopping criterion,
+     and of some aspects of macro replacement,
+     vary depending on the situation.
+     We capture these different modes of operations via this fixtype:")
+   (xdoc::ul
+    (xdoc::li
+     "The @(':line') mode is for text lines (see ABNF grammar),
+      as well as for the rest of the lines of certain directives.
+      The stopping criterion is the end of the line,
+      and macro replacement is the normal one.")
+    (xdoc::li
+     "The @(':expr') mode is for the lines that must form constant expressions,
+      just after @('#if') or @('#elif').
+      The stopping criterion is the end of the line,
+      and macro replacement is modified
+      to handle the @('defined') operator [C17:6.10.1/1]
+      and to replace identifiers with 0 [C17:6.10.1/4].")
+    (xdoc::li
+     "The @(':arg-comma'), @(':arg-last'), and @(':arg-dots') modes
+      are for arguments of function-like macros [C17:6.10.3/10],
+      where macro replacement is the normal one,
+      and the stopping criterion is
+      a comma for @(':arg-comma'),
+      and a right parenthesis for @(':arg-last') and @(':arg-dots').
+      These apply to arguments whose corresponding formal parameter,
+      in the replacement list of the macro definition,
+      is not immediately preceded by @('#') or @('##')
+      and not immediately followed by @('##'),
+      because such arguments are not macro-expanded [C17:6.10.3.1/1];
+      that also includes the argument(s) corresponding to @('__VA_ARGS__')
+      [C17:6.10.3.1/2].
+      For a macro without the ellipsis,
+      all the arguments except the last are handled in the @(':arg-comma') mode,
+      while the last argument is handled in the @(':arg-last') mode;
+      if the macro has no parameters, there are no arguments to handle.
+      For a macro with the ellipsis,
+      all the arguments corresponding to named parameters
+      are handled in the @(':arg-comma') mode,
+      while the remaining argument/arguments (corresponding to the ellipsis)
+      is/are handled in the @(':arg-dots') mode.
+      The distinction between @(':arg-last') and @(':arg-dots') is that
+      the former signals an error if a comma is encountered,
+      while the latter does not,
+      because the comma is part of the arguments associated to @('__VA_ARGS__')
+      [C17:
+      (The right parentheses and commas mentioned here are the ones
+      outside nested matching parentheses [C17:6.10.3/10] [C17:6.10.3/11].)"))
+   (xdoc::p
+    "In situations in which the preprocessor goes through lexemes
+     with a certain stopping criterion but without macro replacements,
+     we do not use any of the modes defined by this fixtype.
+     Instead, we use simpler functions that
+     recursively go through lexemes until the stopping criterion.
+     An example is when collecting the replacement list of a macro
+     in a @('#define') directive."))
+  (:line ())
+  (:expr ())
+  (:arg-comma ())
+  (:arg-last ())
+  (:arg-dots ())
+  :pred macrep-modep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum groupend
   :short "Fixtype of endings of groups."
   :long
