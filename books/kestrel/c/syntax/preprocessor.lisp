@@ -681,7 +681,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum groupend
-  :short "Fixtype of group endings."
+  :short "Fixtype of endings of groups."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -691,12 +691,11 @@
      a group consists of one or more group parts,
      but these endings apply to sequences of zero or more group parts
      (see @(tsee pproc-*-group-part)),
-     which are isomorphic to optional groups;
-     however, we prefer the shorter name `group ending'.")
+     which are isomorphic to optional groups.")
    (xdoc::p
     "Looking at the grammar, an (optional) group may end:
      with the end of file, for the top-level group;
-     with one of the directives @('#elif'), @('#else'), and @('#endif')
+     or with one of the directives @('#elif'), @('#else'), and @('#endif')
      (which are not part of the group itself, but follow it),
      for groups nested in @('#if'), @('#ifdef'), and @('#ifndef') directives.
      This fixtype captures these four possibilities."))
@@ -712,6 +711,13 @@
   :short "An irrelevant group ending."
   :type groupendp
   :body (groupend-eof))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption groupend-option
+  groupend
+  :short "Fixtype of optional endings of groups."
+  :pred groupend-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -973,34 +979,27 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only use this for the file content,
-       and so the group ending we return is always end of file.
-       According to the grammar,
-       a preprocessing file consists of zero or more group parts.
-       Each group part ends with a new line,
-       and non-empty files must end with a new line [C17:5.1.1.2/1, phase 4].
-       Thus, we can detect whether there is a group part or not
-       by checking for end of file
-       (this may need to be relaxed at some point,
-       since GCC is more lenient on this front)."))
+      "We attempt to preprocess a group part.
+       If it is present, we recursively attempt to preprocess more group parts.
+       We see whether the group part is present or not
+       based on the optional group ending
+       returned by @(tsee pproc-?-group-part):
+       if it is @('nil'), there was a group part;
+       otherwise, there was no group part, and we pass up the group ending."))
     (b* (((reterr) (irr-groupend) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((when (= (ppstate->size ppstate) 0)) ; EOF
-          (retok (groupend-eof)
-                 (plexeme-list-fix rev-lexemes)
-                 ppstate
-                 (string-scfile-alist-fix preprocessed)
-                 state))
-         ((erp rev-lexemes ppstate preprocessed state) ; group-part
-          (pproc-group-part file
-                            base-dir
-                            include-dirs
-                            preprocessed
-                            preprocessing
-                            rev-lexemes
-                            ppstate
-                            state
-                            (1- limit))))
+         ((erp groupend? rev-lexemes ppstate preprocessed state)
+          (pproc-?-group-part file
+                              base-dir
+                              include-dirs
+                              preprocessed
+                              preprocessing
+                              rev-lexemes
+                              ppstate
+                              state
+                              (1- limit)))
+         ((when groupend?)
+          (retok groupend? rev-lexemes ppstate preprocessed state)))
       (pproc-*-group-part file
                           base-dir
                           include-dirs
@@ -1014,32 +1013,40 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-group-part ((file stringp)
-                            (base-dir stringp)
-                            (include-dirs string-listp)
-                            (preprocessed string-scfile-alistp)
-                            (preprocessing string-listp)
-                            (rev-lexemes plexeme-listp)
-                            (ppstate ppstatep)
-                            state
-                            (limit natp))
+  (define pproc-?-group-part ((file stringp)
+                              (base-dir stringp)
+                              (include-dirs string-listp)
+                              (preprocessed string-scfile-alistp)
+                              (preprocessing string-listp)
+                              (rev-lexemes plexeme-listp)
+                              (ppstate ppstatep)
+                              state
+                              (limit natp))
     :returns (mv erp
+                 (groupend? groupend-optionp)
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc)
-    :short "Preprocess a group part."
+    :short "Preprocess a group part, if present."
     :long
     (xdoc::topstring
      (xdoc::p
+      "If we find a group part, we preprocess it,
+       and we return @('nil') as the optional group ending,
+       because the group has not ended yet.
+       If instead we find no group part,
+       we return the group ending that we encounter
+       (if we did not encounter a group ending, we would have a group part).")
+     (xdoc::p
       "We read the next token or new line,
-       skipping over white space and comments.
-       If we find no token or new line, it is an error,
-       because it means that the file has some white space or comments
-       without a terminating new line;
-       this function is called (by @(tsee pproc-*-group-part))
-       only if we are not at the end of file.")
+       skipping over white space and comments.")
+     (xdoc::p
+      "If we find no token or new line, there are two cases.
+       If we found some white space or comments, it is an error,
+       because non-empty files must end with new lines [C17:5.2.1.2/2].
+       Otherwise, we return the end-of-file group ending.")
      (xdoc::p
       "If we find a hash, we have a directive,
        which we handle in a separate function,
@@ -1049,14 +1056,20 @@
        We add any preceding white space and comments to the growing lexemes,
        and we call a separate function to handle the rest of the line,
        after putting the non-hash lexeme back."))
-    (b* (((reterr) nil ppstate nil state)
+    (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
       (cond
        ((not toknl) ; EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or new line"
-                    :found (plexeme-to-msg toknl)))
+        (if nontoknls
+            (reterr-msg :where (position-to-msg (span->start span))
+                        :expected "new line"
+                        :found (plexeme-to-msg toknl))
+          (retok (groupend-eof)
+                 (plexeme-list-fix rev-lexemes)
+                 ppstate
+                 (string-scfile-alist-fix preprocessed)
+                 state)))
        ((plexeme-hashp toknl) ; #
         (pproc-directive nontoknls
                          file
@@ -1070,16 +1083,18 @@
                          (1- limit)))
        (t ; non-#
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (punread-lexeme toknl span ppstate)))
-          (pproc-line-rest file
-                           base-dir
-                           include-dirs
-                           preprocessed
-                           preprocessing
-                           rev-lexemes
-                           ppstate
-                           state
-                           (1- limit))))))
+             (ppstate (punread-lexeme toknl span ppstate))
+             ((erp rev-lexemes ppstate preprocessed state)
+              (pproc-line-rest file
+                               base-dir
+                               include-dirs
+                               preprocessed
+                               preprocessing
+                               rev-lexemes
+                               ppstate
+                               state
+                               (1- limit))))
+          (retok nil rev-lexemes ppstate preprocessed state)))))
     :measure (nfix limit)
     :no-function nil)
 
@@ -1096,6 +1111,7 @@
                            state
                            (limit natp))
     :returns (mv erp
+                 (groupend? groupend-optionp)
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-scfile-alistp)
@@ -1147,7 +1163,7 @@
        we stop with an error in this case.
        (We may extend this in the future,
        e.g. to accommodate non-standard directives.)"))
-    (b* (((reterr) nil ppstate nil state)
+    (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-after-hash toknl span ppstate)
           (pread-token/newline nil ppstate)))
@@ -1166,7 +1182,8 @@
              (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
              (rev-lexemes (cons toknl ; toknl is new line
                                 rev-lexemes)))
-          (retok rev-lexemes
+          (retok nil
+                 rev-lexemes
                  ppstate
                  (string-scfile-alist-fix preprocessed)
                  state)))
@@ -1244,6 +1261,7 @@
                                    state
                                    (limit natp))
     :returns (mv erp
+                 (groupend? groupend-optionp)
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-scfile-alistp)
@@ -1309,7 +1327,7 @@
        for now we return an error,
        but we should preprocess that token and any subsequent tokens,
        and see if they result in a header name."))
-    (b* (((reterr) nil ppstate nil state)
+    (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
           (pread-token/newline t ppstate)))
@@ -1350,7 +1368,8 @@
              ((when (eq erp :not-self-contained))
               (b* ((ppstate (unread-char-to-bytes ppstate))
                    ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
-                (retok (plexeme-list-fix rev-lexemes)
+                (retok nil
+                       (plexeme-list-fix rev-lexemes)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state)))
@@ -1372,7 +1391,7 @@
              (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
              (rev-lexemes (cons toknl2 ; toknl2 is new line
                                 rev-lexemes)))
-          (retok rev-lexemes ppstate preprocessed state)))
+          (retok nil rev-lexemes ppstate preprocessed state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
     :measure (nfix limit)
