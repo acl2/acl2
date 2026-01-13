@@ -1387,7 +1387,7 @@
      we put its bytes into the next element of the array of byte lists.
      It is an internal error if there is no next element in the array:
      the file recursion limit has been exceeded."))
-  (b* ((ppstate (mbe :logic (ppstate-fix ppstate) :exec ppstate))
+  (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        (bytess-length (ppstate->bytess-length ppstate))
        (bytess-current (ppstate->bytess-current ppstate))
