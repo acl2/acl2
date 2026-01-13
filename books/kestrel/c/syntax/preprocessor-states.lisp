@@ -857,12 +857,12 @@
                     :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
-      (ienv :type (satisfies ienvp)
-            :initially ,(irr-ienv))
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
+      (ienv :type (satisfies ienvp)
+            :initially ,(irr-ienv))
       :renaming (;; field recognizers:
                  (bytessp raw-ppstate->bytess-p)
                  (bytess-currentp raw-ppstate->bytess-current-p)
@@ -871,9 +871,9 @@
                  (chars-readp raw-ppstate->chars-read-p)
                  (chars-unreadp raw-ppstate->chars-unread-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
-                 (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytess-length raw-ppstate->bytess-length)
                  (bytessi raw-ppstate->bytes)
@@ -884,9 +884,9 @@
                  (chars-read raw-ppstate->chars-read)
                  (chars-unread raw-ppstate->chars-unread)
                  (lexmarks raw-ppstate->lexmarks)
-                 (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (resize-bytess raw-update-ppstate->bytess-length)
                  (update-bytessi raw-update-ppstate->bytes)
@@ -897,9 +897,9 @@
                  (update-chars-read raw-update-ppstate->chars-read)
                  (update-chars-unread raw-update-ppstate->chars-unread)
                  (update-lexmarks raw-update-ppstate->lexmarks)
-                 (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros))))
+                 (update-macros raw-update-ppstate->macros)
+                 (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
 
@@ -1009,11 +1009,6 @@
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
          :exec (raw-ppstate->lexmarks ppstate)))
 
-  (define ppstate->ienv (ppstate)
-    :returns (ienv ienvp)
-    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ienv ppstate)))
-
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
@@ -1023,6 +1018,11 @@
     :returns (macros macro-tablep)
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
          :exec (raw-ppstate->macros ppstate)))
+
+  (define ppstate->ienv (ppstate)
+    :returns (ienv ienvp)
+    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ienv ppstate)))
 
   ;; writers:
 
@@ -1096,13 +1096,6 @@
                                                (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
 
-  (define update-ppstate->ienv ((ienv ienvp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->ienv (ienv-fix ienv)
-                                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ienv ienv ppstate)))
-
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
@@ -1115,6 +1108,13 @@
                  (raw-update-ppstate->macros (macro-table-fix macros)
                                              (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->macros macros ppstate)))
+
+  (define update-ppstate->ienv ((ienv ienvp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ienv (ienv-fix ienv)
+                                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate)))
 
   ;; readers over writers:
 
