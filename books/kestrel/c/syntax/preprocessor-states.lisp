@@ -1031,8 +1031,10 @@
                         :in-theory
                         (enable nfix
                                 byte-list-listp-of-resize-list))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->bytess-length (lnfix length) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->bytess-length (nfix length)
+                                                    (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytess-length length ppstate)))
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
@@ -1043,25 +1045,25 @@
                         (enable update-nth-array
                                 ppstate->bytess-length
                                 byte-list-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->bytess-length ppstate))
-                      (raw-update-ppstate->bytes (nfix i)
-                                                 (byte-list-fix bytes)
-                                                 ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->bytes i bytes ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length nfix)))
-    :hooks nil)
+    (mbe :logic (non-exec (raw-update-ppstate->bytes (nfix i)
+                                                     (byte-list-fix bytes)
+                                                     (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytes i bytes ppstate))
+    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length nfix))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->bytess-current (lnfix bytess-current) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->bytess-current (nfix bytess-current)
+                                                     (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytess-current bytess-current ppstate)))
 
   (define update-ppstate->position ((position positionp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->position (position-fix position) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->position (position-fix position)
+                                               (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->position position ppstate)))
 
   (define update-ppstate->chars-length ((length natp) ppstate)
     :returns (ppstate ppstatep
@@ -1070,12 +1072,12 @@
                         :in-theory
                         (enable nfix
                                 char+position-listp-of-resize-list))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-length (lnfix length) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-length (nfix length)
+                                                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-length length ppstate)))
 
-  (define update-ppstate->char ((i natp)
-                                (char+pos char+position-p)
-                                ppstate)
+  (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
     :returns (ppstate ppstatep
                       :hints
@@ -1084,48 +1086,55 @@
                         (enable update-nth-array
                                 ppstate->chars-length
                                 char+position-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->chars-length ppstate))
-                      (raw-update-ppstate->char (nfix i)
-                                                (char+position-fix char+pos)
-                                                ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->char i char+pos ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->chars-length nfix)))
-    :hooks nil)
+    (mbe :logic (non-exec
+                 (if (< (nfix i) (ppstate->chars-length ppstate))
+                     (raw-update-ppstate->char (nfix i)
+                                               (char+position-fix char+pos)
+                                               (ppstate-fix ppstate))
+                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->char i char+pos ppstate))
+    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->chars-read ((chars-read natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-read (lnfix chars-read) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-read (nfix chars-read)
+                                                 (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-read chars-read ppstate)))
 
   (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-unread (lnfix chars-unread) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-unread (nfix chars-unread)
+                                                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-unread chars-unread ppstate)))
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
-                                                ppstate)
-           :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
-    :hooks nil)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
+                                               (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->ienv (ienv-fix ienv) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ienv (ienv-fix ienv)
+                                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate)))
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->size (lnfix size) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->size size ppstate)))
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->macros (macro-table-fix macros)
+                                             (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->macros macros ppstate)))
 
   ;; readers over writers:
 
