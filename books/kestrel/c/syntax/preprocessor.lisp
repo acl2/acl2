@@ -385,13 +385,8 @@
    (xdoc::p
     "We add the lexeme to the list of pending lexmarks.
      See @(tsee ppstate)."))
-  (b* ((lexmarks (ppstate->lexmarks ppstate))
-       (size (ppstate->size ppstate))
-       (lexmark (lexmark-lexeme (make-plexeme+span :lexeme lexeme :span span)))
-       (ppstate (update-ppstate->lexmarks (cons lexmark lexmarks) ppstate))
-       (ppstate (update-ppstate->size (1+ size) ppstate)))
-    ppstate)
-  :no-function nil
+  (push-lexmark (lexmark-lexeme (make-plexeme+span :lexeme lexeme :span span))
+                ppstate)
 
   ///
 

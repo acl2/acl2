@@ -1483,6 +1483,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define push-lexmark ((lexmark lexmarkp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a lexmark onto the pending lexmark list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when unreading a lexeme,
+     and also when expaning a macro."))
+  (b* ((new-lexmarks (cons lexmark (ppstate->lexmarks ppstate)))
+       (new-size (1+ (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate)
+  :hooks nil
+
+  ///
+
+  (defret ppstate->size-of-push-lexmark
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ppstate-add-bytes ((bytes byte-listp) (ppstate ppstatep))
   :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
   :short "Add some input bytes to a preprocessing state."
