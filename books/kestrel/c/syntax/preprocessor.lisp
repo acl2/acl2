@@ -874,11 +874,7 @@
             ppstate
             (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
-                      (init-ppstate bytes
-                                    200
-                                    (macro-table-fix macros)
-                                    ienv
-                                    ppstate))
+                      (init-ppstate bytes 200 macros ienv ppstate))
                      ((mv erp rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part file
                                           base-dir
