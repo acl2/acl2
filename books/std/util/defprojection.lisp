@@ -118,7 +118,7 @@ defmapappend) handle @('x').</p>
 
 @({
     (defprojection my-square-list ((x integer-listp))
-      :result (squared-x integer-listp)
+      :returns (squared-x integer-listp)
       (* x x))
 })
 
