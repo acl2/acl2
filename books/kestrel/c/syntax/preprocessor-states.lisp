@@ -955,9 +955,7 @@
 
   (define ppstate->bytess-length (ppstate)
     :returns (length natp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->bytess-length ppstate)
-                  1)
+    (mbe :logic (non-exec (raw-ppstate->bytess-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytess-length ppstate)))
 
   (define ppstate->bytes ((i natp) ppstate)
@@ -965,34 +963,23 @@
     :returns (bytes byte-listp
                     :hints
                     (("Goal" :in-theory (enable ppstate->bytess-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->bytess-length ppstate)))
-                    (raw-ppstate->bytes (nfix i) ppstate)
-                  nil)
+    (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->bytess-length)))
-    :hooks nil)
+    :guard-hints (("Goal" :in-theory (enable nfix ppstate->bytess-length))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->bytess-current ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->bytess-current (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytess-current ppstate)))
 
   (define ppstate->position (ppstate)
     :returns (position positionp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->position ppstate)
-                  (irr-position))
-         :exec (raw-ppstate->position ppstate))
-    :hooks nil)
+    (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
+         :exec (raw-ppstate->position ppstate)))
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-length ppstate)
-                  1)
+    (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-length ppstate)))
 
   (define ppstate->char ((i natp) ppstate)
@@ -1000,56 +987,39 @@
     :returns (char+pos char+position-p
                        :hints
                        (("Goal" :in-theory (enable ppstate->chars-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->chars-length ppstate)))
-                    (raw-ppstate->char (nfix i) ppstate)
-                  (make-char+position :char 0
-                                      :position (irr-position)))
-         :exec (raw-ppstate->char i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->chars-length)))
-    :hooks nil)
+    (char+position-fix
+     (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
+          :exec (raw-ppstate->char i ppstate)))
+    :guard-hints (("Goal" :in-theory (enable nfix ppstate->chars-length))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-read ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-read ppstate)))
 
   (define ppstate->chars-unread (ppstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-unread ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-unread ppstate)))
 
   (define ppstate->lexmarks (ppstate)
     :returns (lexmarks lexmark-listp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexmarks ppstate)
-                  nil)
+    (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
          :exec (raw-ppstate->lexmarks ppstate)))
 
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->ienv ppstate)
-                  (irr-ienv))
-         :exec (raw-ppstate->ienv ppstate))
-    :hooks nil)
+    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ienv ppstate)))
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->size ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
          :exec (raw-ppstate->size ppstate)))
 
   (define ppstate->macros (ppstate)
     :returns (macros macro-tablep)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->macros ppstate)
-                  (macro-table-init))
+    (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
          :exec (raw-ppstate->macros ppstate)))
 
   ;; writers:
@@ -1361,8 +1331,7 @@
 (define ppstate->gcc ((ppstate ppstatep))
   :returns (gcc booleanp)
   :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ienv->version (ppstate->ienv ppstate)))
-  :hooks nil)
+  (c::version-gccp (ienv->version (ppstate->ienv ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
