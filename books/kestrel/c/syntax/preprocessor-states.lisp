@@ -1366,7 +1366,6 @@
        (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate)
-  :hooks nil
 
   ///
 
@@ -1388,7 +1387,8 @@
      we put its bytes into the next element of the array of byte lists.
      It is an internal error if there is no next element in the array:
      the file recursion limit has been exceeded."))
-  (b* (((reterr) ppstate)
+  (b* ((ppstate (mbe :logic (ppstate-fix ppstate) :exec ppstate))
+       ((reterr) ppstate)
        (bytess-length (ppstate->bytess-length ppstate))
        (bytess-current (ppstate->bytess-current ppstate))
        (size (ppstate->size ppstate))
@@ -1398,5 +1398,4 @@
        (ppstate (update-ppstate->bytes bytess-current bytes ppstate))
        (ppstate (update-ppstate->bytess-current bytess-current ppstate))
        (ppstate (update-ppstate->size (+ size (len bytes)) ppstate)))
-    (retok ppstate))
-  :hooks nil)
+    (retok ppstate)))
