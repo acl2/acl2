@@ -231,15 +231,18 @@
              ((unless (lexmark-case lexmark :lexeme))
               (raise "Internal error: unexpected marker ~x0." lexmark)
               (reterr t))
-             (lexeme+span (lexmark-lexeme->lexspan lexmark))
+             (lexeme (lexmark-lexeme->lexeme lexmark))
+             (span? (lexmark-lexeme->span? lexmark))
+             ((unless span?)
+              (raise "Internal error: span expected.")
+              (reterr t))
+             (span span?)
              ((unless (> size 0))
               (raise "Internal error: size is 0 but there are pending lexemes.")
               (reterr t))
              (ppstate (update-ppstate->size (1- size) ppstate))
              (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
-          (retok (plexeme+span->lexeme lexeme+span)
-                 (plexeme+span->span lexeme+span)
-                 ppstate)))
+          (retok lexeme span ppstate)))
        ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme?)) (retok nil span ppstate))
        (lexeme lexeme?))
@@ -385,8 +388,7 @@
    (xdoc::p
     "We add the lexeme to the list of pending lexmarks.
      See @(tsee ppstate)."))
-  (push-lexmark (lexmark-lexeme (make-plexeme+span :lexeme lexeme :span span))
-                ppstate)
+  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span? span) ppstate)
 
   ///
 

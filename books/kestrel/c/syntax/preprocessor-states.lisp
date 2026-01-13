@@ -373,29 +373,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod plexeme+span
-  :short "Fixtype of pairs consisting of a lexeme and a span."
-  ((lexeme plexeme)
-   (span span))
-  :pred plexeme+span-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-plexeme+span
-  :short "An irrelevant pair consisting of a lexeme and a span."
-  :type plexeme+span-p
-  :body (plexeme+span (irr-plexeme) (irr-span)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum lexmark
   :short "Fixtype of preprocessing lexemes and markers (`lexmarks')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Along with pairs consisting of lexemes and spans,
+    "Along with lexemes,
      it is convenient to handle certain markers.
      We use the term `lexmark' to denote a preprocessing lexeme or marker.")
+   (xdoc::p
+    "The lexemes may be accompanied by spans.")
    (xdoc::p
     "The @(':start') and @(':end') summands are used to mark
      the start and end of an expansion of the macro,
@@ -408,7 +395,8 @@
    (xdoc::p
     "Only lexemes have spans associated with them.
      The markers are artifacts, not an actual part of the input files."))
-  (:lexeme ((lexspan plexeme+span)))
+  (:lexeme ((lexeme plexeme)
+            (span? span-option)))
   (:start ((macro ident)))
   (:end ((macro ident)))
   (:placemarker ())
@@ -419,7 +407,7 @@
 (defirrelevant irr-lexmark
   :short "An irrelevant lexmark."
   :type lexmarkp
-  :body (lexmark-lexeme (irr-plexeme+span)))
+  :body (lexmark-lexeme (irr-plexeme) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -857,7 +845,7 @@
       we have a single list of pending lexmarks.
       This is used like the sequence of unread tokens in the parser state,
       in the sense that the next lexeme is read from the list if non-empty,
-      and otherwise is lexed from the input characters.
+      and otherwise it is lexed from the input characters.
       However, lexmarks are added to the pending list
       not only when unreading lexemes,
       which actually happens rarely in our preprocessor,
