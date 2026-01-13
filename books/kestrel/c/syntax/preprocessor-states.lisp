@@ -949,7 +949,9 @@
 
   ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix nfix)))
+  (local (in-theory (enable ppstate-fix
+                            nfix
+                            update-nth-array)))
 
   ;; readers:
 
@@ -960,12 +962,10 @@
 
   (define ppstate->bytes ((i natp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
-    :returns (bytes byte-listp
-                    :hints
-                    (("Goal" :in-theory (enable ppstate->bytess-length))))
+    :returns (bytes byte-listp)
     (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
-    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
+    :prepwork ((local (in-theory (enable ppstate->bytess-length)))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
@@ -984,13 +984,11 @@
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (char+pos char+position-p
-                       :hints
-                       (("Goal" :in-theory (enable ppstate->chars-length))))
+    :returns (char+pos char+position-p)
     (char+position-fix
      (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
           :exec (raw-ppstate->char i ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->chars-length))))
+    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
@@ -1041,8 +1039,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable update-nth-array
-                                ppstate->bytess-length
+                        (enable ppstate->bytess-length
                                 byte-list-listp-of-update-nth-strong))))
     (mbe :logic (non-exec (raw-update-ppstate->bytes (nfix i)
                                                      (byte-list-fix bytes)
@@ -1081,8 +1078,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable update-nth-array
-                                ppstate->chars-length
+                        (enable ppstate->chars-length
                                 char+position-listp-of-update-nth-strong))))
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
@@ -1156,7 +1152,6 @@
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
              update-ppstate->bytes
-             update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
 
@@ -1178,7 +1173,6 @@
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
              update-ppstate->bytes
-             update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
 
@@ -1200,7 +1194,6 @@
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
              update-ppstate->bytes
-             update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
 
@@ -1223,7 +1216,6 @@
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
              update-ppstate->char
-             update-nth-array
              ppstate->chars-length
              byte-list-listp-of-update-nth-strong))
 
@@ -1252,7 +1244,6 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->bytes
-             update-nth-array
              ppstate->bytess-length
              byte-list-listp-of-update-nth-strong))
 
@@ -1275,7 +1266,6 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->char
-             update-nth-array
              ppstate->chars-length
              char+position-listp-of-update-nth-strong))
 
