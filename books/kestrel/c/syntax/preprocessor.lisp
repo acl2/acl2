@@ -860,18 +860,18 @@
        Otherwise, before preprocessing the file,
        we add it to the list of files under preprocessing.")
      (xdoc::p
+      "If the file is in the @('preprocessed') alist,
+       we avoid re-preprocessing it:
+       we leave @('preprocessed') unchanged,
+       and we return the @(tsee scfile) from the alist.")
+     (xdoc::p
       "The macro table passed as input to this function
        is empty when this function is called by @(tsee pproc-files).
        Otherwise, it is the table for
        the file that contains the @('#include') directive
        that results in this call of @(tsee pproc-file).")
      (xdoc::p
-      "If the file is in the @('preprocessed') alist,
-       we avoid re-preprocessing it:
-       we leave @('preprocessed') unchanged,
-       and we return the @(tsee scfile) from the alist.")
-     (xdoc::p
-      "Otherwise, we create a local preprocessing state stobj from
+      "We create a local preprocessing state stobj from
        the bytes of the file,
        a file recursion limit of 200 (consistent with GCC),
        the macro table
@@ -881,10 +881,14 @@
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
        If the file is not self-contained,
-       @(tsee pproc-*-group-part) will return @(':not-self-contained')
+       @(tsee pproc-*-group-part) returns @(':not-self-contained') as error
        (see @(tsee pproc)),
        which this function also returns;
        the caller handles that.
+       We ensure that the optional group read by @(tsee pproc-*-group-part)
+       ends with the end of the file,
+       because we are at the top level,
+       not inside a conditional directive.
        If there is no error (and no @(':not-self-contained')),
        a @(tsee scfile) is built and added to @('preprocessed').
        The @(tsee scfile) contains
@@ -910,7 +914,7 @@
             (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes 200 macros ienv ppstate))
-                     ((mv erp & rev-lexemes ppstate preprocessed state)
+                     ((mv erp groupend rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
@@ -919,7 +923,17 @@
                                           nil
                                           ppstate
                                           state
-                                          (1- limit))))
+                                          (1- limit)))
+                     ((unless (groupend-case groupend :eof))
+                      (mv (msg "Found directive ~s0 ~
+                                without a preceding #if, #ifdef, or #ifndef."
+                               (groupend-case
+                                groupend
+                                :eof (impossible)
+                                :elif "#elif"
+                                :else "#else"
+                                :endif "#endif"))
+                          nil (irr-macro-table) ppstate nil state)))
                   (mv erp
                       rev-lexemes
                       (ppstate->macros ppstate)
