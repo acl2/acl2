@@ -1015,27 +1015,27 @@
 
 (defmacro test-lex-lexeme (input &key cond)
   `(test-lex
-    read-lexeme
+    plex-lexeme
     ,input
     :more-inputs (nil)
     :cond ,cond))
 
 (defmacro test-lex-lexeme-headerp (input &key cond)
   `(test-lex
-    read-lexeme
+    plex-lexeme
     ,input
     :more-inputs (t)
     :cond ,cond))
 
 (defmacro test-lex-lexeme-fail (input)
   `(test-lex-fail
-    read-lexeme
+    plex-lexeme
     ,input
     :more-inputs (nil)))
 
 (defmacro test-lex-lexeme-headerp-fail (input)
   `(test-lex-fail
-    read-lexeme
+    plex-lexeme
     ,input
     :more-inputs (t)))
 

@@ -1361,23 +1361,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-lexeme-from-input ((headerp booleanp) (ppstate ppstatep))
+(define plex-lexeme ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (lexeme? plexeme-optionp)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a lexeme during preprocessing, from the input."
+  :short "Lex a lexeme during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here `from the input' means that
-     the lexeme is read directly from the input,
-     and not from the unread lexmarks if there are any.
-     This is almost the top-level lexing function for the preprocessor:
-     the top-level one, @(tsee plex-lexeme),
-     first attempt to (re-)read an unread lexeme,
-     and if it needs to call this function instead,
-     it stores the read lexeme into the preprocessing state.")
+    "This is the top-level lexing function for the preprocessor.")
    (xdoc::p
     "This function returns the next lexeme from the input,
      or @('nil') if we reached the end of the file;
@@ -1926,14 +1919,14 @@
 
   ///
 
-  (defret-same-lexmarks plex-lexeme-from-input)
+  (defret-same-lexmarks plex-lexeme)
 
-  (defret ppstate->size-of-plex-lexeme-from-input-uncond
+  (defret ppstate->size-of-plex-lexeme-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear)
 
-  (defret ppstate->size-of-plex-lexeme-from-input-cond
+  (defret ppstate->size-of-plex-lexeme-cond
     (implies (and (not erp)
                   lexeme?)
              (<= (ppstate->size new-ppstate)
@@ -1956,7 +1949,7 @@
      we return the first one if it is a lexeme
      (and throw an error if it is a marker, for now).
      If there are no pending lexmarks,
-     we call @(tsee plex-lexeme-from-input) to read a lexeme from the input."))
+     we call @(tsee plex-lexeme) to read a lexeme from the input."))
   (b* (((reterr) nil (irr-span) ppstate)
        (lexmarks (ppstate->lexmarks ppstate))
        (size (ppstate->size ppstate))
@@ -1974,7 +1967,7 @@
           (retok (plexeme+span->lexeme lexeme+span)
                  (plexeme+span->span lexeme+span)
                  ppstate)))
-       ((erp lexeme? span ppstate) (plex-lexeme-from-input headerp ppstate))
+       ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
        ((when (not lexeme?)) (retok nil span ppstate))
        (lexeme lexeme?))
     (retok lexeme span ppstate))

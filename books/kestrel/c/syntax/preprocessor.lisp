@@ -223,7 +223,7 @@
      If we reach the end of file, we return @('nil') as the token,
      and a span consisting of just the current position.")
    (xdoc::p
-    "The @('headerp') flag has the same meaning as in @(tsee read-lexeme):
+    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
      see that function's documentation."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
