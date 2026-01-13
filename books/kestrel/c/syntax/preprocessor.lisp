@@ -223,10 +223,10 @@
      If we reach the end of file, we return @('nil') as the token,
      and a span consisting of just the current position.")
    (xdoc::p
-    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
+    "The @('headerp') flag has the same meaning as in @(tsee read-lexeme):
      see that function's documentation."))
   (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
        ((erp nontokens token token-span ppstate) (pread-token headerp ppstate)))
@@ -283,7 +283,7 @@
      is not part of the comment [C17:6.4.9/2]:
      thus, a line comment must be treated like a space followed by new line."))
   (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
        ((erp nontoknls toknl toknl-span ppstate)

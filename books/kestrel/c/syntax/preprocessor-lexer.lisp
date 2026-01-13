@@ -1942,7 +1942,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-lexeme ((headerp booleanp) (ppstate ppstatep))
+(define read-lexeme ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (lexeme? plexeme-optionp)
                (span spanp)
@@ -1982,13 +1982,13 @@
 
   ///
 
-  (defret ppstate->size-of-plex-lexeme-uncond
+  (defret ppstate->size-of-read-lexeme-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable nfix))))
 
-  (defret ppstate->size-of-plex-lexeme-cond
+  (defret ppstate->size-of-read-lexeme-cond
     (implies (and (not erp)
                   lexeme?)
              (<= (ppstate->size new-ppstate)
