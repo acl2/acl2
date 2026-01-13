@@ -1232,8 +1232,7 @@
             (update-ppstate->bytess-current bytess-current ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->bytess-current
-             length))
+             update-ppstate->bytess-current))
 
   (defrule ppstate->size-of-update-ppstate->position
     (equal (ppstate->size (update-ppstate->position position ppstate))
