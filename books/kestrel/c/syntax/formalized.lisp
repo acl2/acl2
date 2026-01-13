@@ -392,7 +392,12 @@
   (std::deflist expr-list-formalp (x)
     :guard (expr-listp x)
     (expr-formalp x)
-    :elementp-of-nil nil))
+    :elementp-of-nil nil)
+
+  (defruled expr-formalp-when-ident
+    (implies (expr-case expr :ident)
+             (equal (expr-formalp expr)
+                    (ident-formalp (expr-ident->ident expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
