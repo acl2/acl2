@@ -416,24 +416,7 @@
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
-  :pred lexmark-listp
-
-  ///
-
-  (defruled lexmark-listp-of-resize-list
-    (implies (and (lexmark-listp lexmarks)
-                  (lexmarkp default))
-             (lexmark-listp (resize-list lexmarks length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled lexmark-listp-of-update-nth-strong
-    (implies (lexmark-listp lexmarks)
-             (equal (lexmark-listp (update-nth i lexmark lexmarks))
-                    (and (lexmarkp lexmark)
-                         (<= (nfix i) (len lexmarks)))))
-    :induct t
-    :enable (update-nth nfix zp len)))
+  :pred lexmark-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
