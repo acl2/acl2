@@ -382,7 +382,7 @@
      it is convenient to handle certain markers.
      We use the term `lexmark' to denote a preprocessing lexeme or marker.")
    (xdoc::p
-    "The lexemes may be accompanied by spans.")
+    "The lexemes are accompanied by spans.")
    (xdoc::p
     "The @(':start') and @(':end') summands are used to mark
      the start and end of an expansion of the macro,
@@ -396,7 +396,7 @@
     "Only lexemes have spans associated with them.
      The markers are artifacts, not an actual part of the input files."))
   (:lexeme ((lexeme plexeme)
-            (span? span-option)))
+            (span span)))
   (:start ((macro ident)))
   (:end ((macro ident)))
   (:placemarker ())
@@ -407,7 +407,7 @@
 (defirrelevant irr-lexmark
   :short "An irrelevant lexmark."
   :type lexmarkp
-  :body (lexmark-lexeme (irr-plexeme) nil))
+  :body (lexmark-lexeme (irr-plexeme) (irr-span)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
