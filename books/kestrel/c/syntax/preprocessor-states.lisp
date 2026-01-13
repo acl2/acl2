@@ -1035,11 +1035,7 @@
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable ppstate->bytess-length))))
+    :returns (ppstate ppstatep)
     (mbe :logic (non-exec (raw-update-ppstate->bytes (nfix i)
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
@@ -1069,11 +1065,7 @@
 
   (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable ppstate->chars-length))))
+    :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
                      (raw-update-ppstate->char (nfix i)
@@ -1145,8 +1137,7 @@
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
              update-ppstate->bytes
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->chars-length-of-update-ppstate->bytess-current
     (equal (ppstate->chars-length
@@ -1166,8 +1157,7 @@
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
              update-ppstate->bytes
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->chars-read-of-update-ppstate->bytess-current
     (equal (ppstate->chars-read
@@ -1187,8 +1177,7 @@
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
              update-ppstate->bytes
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->lexmarks-of-update-ppstate->bytess-current
     (equal (ppstate->lexmarks
@@ -1209,8 +1198,7 @@
            (ppstate->lexmarks ppstate))
     :enable (ppstate->lexmarks
              update-ppstate->char
-             ppstate->chars-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->chars-length))
 
   (defrule ppstate->lexmarks-of-update-ppstate->chars-read
     (equal (ppstate->lexmarks
@@ -1237,8 +1225,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->bytes
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->size-of-update-ppstate->bytess-current
     (equal (ppstate->size
@@ -1259,8 +1246,7 @@
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->char
-             ppstate->chars-length
-             char+position-listp-of-update-nth-strong))
+             ppstate->chars-length))
 
   (defrule ppstate->size-of-update-ppstate->chars-read
     (equal (ppstate->size (update-ppstate->chars-read chars-read ppstate))
