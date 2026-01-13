@@ -386,32 +386,6 @@
   :type plexeme+span-p
   :body (plexeme+span (irr-plexeme) (irr-span)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist plexeme+span-list
-  :short "Fixtype of lists of pairs consisting of a lexeme and a span."
-  :elt-type plexeme+span
-  :true-listp t
-  :elementp-of-nil nil
-  :pred plexeme+span-listp
-
-  ///
-
-  (defruled plexeme+span-listp-of-resize-list
-    (implies (and (plexeme+span-listp lexemes)
-                  (plexeme+span-p default))
-             (plexeme+span-listp (resize-list lexemes length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled plexeme+span-listp-of-update-nth-strong
-    (implies (plexeme+span-listp lexemes)
-             (equal (plexeme+span-listp (update-nth i lexeme lexemes))
-                    (and (plexeme+span-p lexeme)
-                         (<= (nfix i) (len lexemes)))))
-    :induct t
-    :enable (update-nth nfix zp len)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lexmark
