@@ -949,7 +949,7 @@
 
   ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix)))
+  (local (in-theory (enable ppstate-fix nfix)))
 
   ;; readers:
 
@@ -965,7 +965,7 @@
                     (("Goal" :in-theory (enable ppstate->bytess-length))))
     (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->bytess-length))))
+    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
@@ -990,7 +990,7 @@
     (char+position-fix
      (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
           :exec (raw-ppstate->char i ppstate)))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->chars-length))))
+    :guard-hints (("Goal" :in-theory (enable ppstate->chars-length))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
@@ -1029,8 +1029,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable nfix
-                                byte-list-listp-of-resize-list))))
+                        (enable byte-list-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-length (nfix length)
                                                     (ppstate-fix ppstate)))
@@ -1049,7 +1048,7 @@
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->bytes i bytes ppstate))
-    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length nfix))))
+    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
     :returns (ppstate ppstatep)
@@ -1070,8 +1069,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable nfix
-                                char+position-listp-of-resize-list))))
+                        (enable char+position-listp-of-resize-list))))
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
@@ -1319,7 +1317,6 @@
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-read
              ppstate->chars-read
-             nfix
              acl2::update-nth-of-nth))
 
   (defrule update-ppstate->chars-read-of-ppstate->chars-unread
@@ -1328,7 +1325,6 @@
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-unread
              ppstate->chars-unread
-             nfix
              acl2::update-nth-of-nth))
 
   ;; keep recognizer disabled:
