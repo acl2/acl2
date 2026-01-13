@@ -951,7 +951,11 @@
 
   (local (in-theory (enable ppstate-fix
                             nfix
-                            update-nth-array)))
+                            update-nth-array
+                            byte-list-listp-of-resize-list
+                            char+position-listp-of-resize-list
+                            byte-list-listp-of-update-nth-strong
+                            char+position-listp-of-update-nth-strong)))
 
   ;; readers:
 
@@ -1023,11 +1027,7 @@
   ;; writers:
 
   (define update-ppstate->bytess-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable byte-list-listp-of-resize-list))))
+    :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-length (nfix length)
                                                     (ppstate-fix ppstate)))
@@ -1039,8 +1039,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable ppstate->bytess-length
-                                byte-list-listp-of-update-nth-strong))))
+                        (enable ppstate->bytess-length))))
     (mbe :logic (non-exec (raw-update-ppstate->bytes (nfix i)
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
@@ -1062,11 +1061,7 @@
          :exec (raw-update-ppstate->position position ppstate)))
 
   (define update-ppstate->chars-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable char+position-listp-of-resize-list))))
+    :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
@@ -1078,8 +1073,7 @@
                       :hints
                       (("Goal"
                         :in-theory
-                        (enable ppstate->chars-length
-                                char+position-listp-of-update-nth-strong))))
+                        (enable ppstate->chars-length))))
     (mbe :logic (non-exec
                  (if (< (nfix i) (ppstate->chars-length ppstate))
                      (raw-update-ppstate->char (nfix i)
@@ -1137,8 +1131,7 @@
             (update-ppstate->bytess-length length ppstate))
            (lnfix length))
     :enable (ppstate->bytess-length
-             update-ppstate->bytess-length
-             byte-list-listp-of-resize-list))
+             update-ppstate->bytess-length))
 
   (defrule ppstate->bytess-current-of-update-ppstate->bytess-current
     (equal (ppstate->bytess-current
