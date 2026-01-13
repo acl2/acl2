@@ -2058,7 +2058,9 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards nil ; done after the unambiguity proofs
+  :verify-guards nil ; done after the unambiguity and annotations proofs
+
+  :flag-local nil
 
   ///
 
@@ -2873,6 +2875,29 @@
                                        simpadd0-comp-stmt
                                        simpadd0-block-item
                                        simpadd0-block-item-list)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection simpadd0-formalp-when-thm-name
+  :short "Theorems saying that
+          if a transformation function returns a theorem
+          then the old and new constructs are in the formalized subset."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is in progress: more theorems will be added."))
+
+  (defret-mutual simpadd0-expr/decls/stmts-formalp-when-thm-name
+    (defret simpadd0-expr-formalp-when-thm-name
+      (implies (gout->thm-name gout)
+               (and (expr-formalp expr)
+                    (expr-formalp new-expr)))
+      :hyp (expr-case expr :ident)
+      :fn simpadd0-expr
+      :hints ('(:in-theory (enable simpadd0-expr
+                                   c$::expr-formalp-when-ident
+                                   xeq-expr-ident-formalp-when-thm-name))))
+    :skip-others t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
