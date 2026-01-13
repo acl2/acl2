@@ -680,8 +680,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum groupend
+  :short "Fixtype of group endings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here by `group' we mean the preprocessing notion
+     captured by the @('group') nonterminal in the ABNF grammar.
+     More accurately, the endings formalized here refer to optional groups:
+     a group consists of one or more group parts,
+     but these endings apply to sequences of zero or more group parts
+     (see @(tsee pproc-*-group-part)),
+     which are isomorphic to optional groups;
+     however, we prefer the shorter name `group ending'.")
+   (xdoc::p
+    "Looking at the grammar, an (optional) group may end:
+     with the end of file, for the top-level group;
+     with one of the directives @('#elif'), @('#else'), and @('#endif')
+     (which are not part of the group itself, but follow it),
+     for groups nested in @('#if'), @('#ifdef'), and @('#ifndef') directives.
+     This fixtype captures these four possibilities."))
+  (:eof ())
+  (:elif ())
+  (:else ())
+  (:endif ())
+  :pred groupendp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-groupend
+  :short "An irrelevant group ending."
+  :type groupendp
+  :body (groupend-eof))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc
-  :short "Preprocess files."
+  :short "Preprocess files and entities therein."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -875,7 +910,7 @@
             (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes 200 macros ienv ppstate))
-                     ((mv erp rev-lexemes ppstate preprocessed state)
+                     ((mv erp & rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
@@ -914,6 +949,7 @@
                               state
                               (limit natp))
     :returns (mv erp
+                 (groupend groupendp)
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-scfile-alistp)
@@ -923,7 +959,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "According to the grammar,
+      "For now we only use this for the file content,
+       and so the group ending we return is always end of file.
+       According to the grammar,
        a preprocessing file consists of zero or more group parts.
        Each group part ends with a new line,
        and non-empty files must end with a new line [C17:5.1.1.2/1, phase 4].
@@ -931,10 +969,11 @@
        by checking for end of file
        (this may need to be relaxed at some point,
        since GCC is more lenient on this front)."))
-    (b* (((reterr) nil ppstate nil state)
+    (b* (((reterr) (irr-groupend) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((when (= (ppstate->size ppstate) 0)) ; EOF
-          (retok (plexeme-list-fix rev-lexemes)
+          (retok (groupend-eof)
+                 (plexeme-list-fix rev-lexemes)
                  ppstate
                  (string-scfile-alist-fix preprocessed)
                  state))
