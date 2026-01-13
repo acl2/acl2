@@ -57,7 +57,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(see act-limits),
+    "As explained in @(see atc-limits),
      a limit term is the sum of
      a positive integer constant
      and zero or more non-constant terms;
