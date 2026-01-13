@@ -170,9 +170,8 @@
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
-     from just after the opening @('//') to just before the closing new line.
-     For line comments, we also include the final new-line character,
-     to preserve the exact kind of new line.")
+     from just after the opening @('//') to just before the closing new line;
+     recall that line comments exclude the ending new line [C17:6.4.9/2].")
    (xdoc::p
     "We keep the information about the three possible kinds of new-line,
      and of all other white space characters,
@@ -187,7 +186,7 @@
   (:punctuator ((punctuator string)))
   (:other ((char nat)))
   (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list) (newline newline)))
+  (:line-comment ((content nat-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())
@@ -292,23 +291,9 @@
      see grammar rules in [C17:6.10/1].
      Preprocessing is largely line-oriented.
      In our preprocessor, new-line characters are captured as new-line lexemes
-     (see @(tsee plexeme)).")
-   (xdoc::p
-    "[C17:5.1.1.2/3] requires that comments, including line comments,
-     are turned into single space characters;
-     we do not actually do that, to preserve the comment information,
-     but conceptually we need our preprocessor to behave as if we did.
-     This means that, if we are looking for tokens or new-line characters,
-     we must also consider line comments,
-     because they are always followed by a new-line character;
-     recall that line comments exclude the ending new line [C17:6.4.9/2].
-     Although block comments may include new lines,
-     those are part of the comment:
-     the whole comment is turned into a space character,
-     and so there are no new lines to consider here."))
+     (see @(tsee plexeme))."))
   (or (plexeme-tokenp lexeme)
-      (plexeme-case lexeme :newline)
-      (plexeme-case lexeme :line-comment)))
+      (plexeme-case lexeme :newline)))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -329,14 +329,7 @@
      i.e. they are not just white space to skip over.
      In such situations,
      we need to skip over non-new-line white space and comments,
-     but stop when we encounter either a new line or a token.
-     As explained in @(tsee plexeme-token/newline-p),
-     line comments count as new lines,
-     because conceptually each comment is replaced by a single space character
-     before preprocessing [C17:5.1.1.2/1],
-     and the new line that ends a line comment
-     is not part of the comment [C17:6.4.9/2]:
-     thus, a line comment must be treated like a space followed by new line."))
+     but stop when we encounter either a new line or a token."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
@@ -1114,8 +1107,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # EOL
-            (plexeme-case toknl :line-comment)) ; # // ... EOL
+       ((plexeme-case toknl :newline) ; # EOL
         ;; null directive
         (b* ((nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
              (rev-lexemes (plexeme-list-fix rev-lexemes))
@@ -1123,7 +1115,7 @@
              (rev-lexemes (cons (plexeme-block-comment (list (char-code #\#)))
                                 rev-lexemes))
              (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
-             (rev-lexemes (cons toknl ; toknl is new line or line comment
+             (rev-lexemes (cons toknl ; toknl is new line
                                 rev-lexemes)))
           (retok rev-lexemes
                  ppstate
@@ -1277,8 +1269,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # include EOL
-            (plexeme-case toknl :line-comment)) ; # include // ... EOL
+       ((plexeme-case toknl :newline) ; # include EOL
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
@@ -1286,13 +1277,9 @@
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (pread-token/newline nil ppstate))
              ((unless (and toknl2
-                           (or (plexeme-case toknl2 :newline)
-                               ;; # include EOL
-                               (plexeme-case toknl2 :line-comment)
-                               ;; # include // ... EOL
-                               )))
+                           (plexeme-case toknl2 :newline))) ; # include EOL
               (reterr-msg :where (position-to-msg (span->start span2))
-                          :expected "a new line or line comment"
+                          :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
              ((erp resolved-file bytes state)
               (resolve-included-file file
@@ -1334,7 +1321,7 @@
              (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
              (rev-lexemes (cons toknl rev-lexemes)) ; toknl is header name
              (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
-             (rev-lexemes (cons toknl2 ; toknl2 is new line or line comment
+             (rev-lexemes (cons toknl2 ; toknl2 is new line
                                 rev-lexemes)))
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
@@ -1369,7 +1356,7 @@
       "If we find no token or new line, it is an error,
        because there must be a full line.")
      (xdoc::p
-      "If we find a new line (or line comment),
+      "If we find a new line,
        we add it to the growing list,
        and we return, because we have finished preprocessing the line.")
      (xdoc::p
@@ -1397,8 +1384,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # EOL
-            (plexeme-case toknl :line-comment)) ; # // ... EOL
+       ((plexeme-case toknl :newline) ; # EOL
         (retok (cons toknl rev-lexemes)
                ppstate
                (string-scfile-alist-fix preprocessed)

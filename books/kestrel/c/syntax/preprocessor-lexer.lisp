@@ -1199,7 +1199,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-line-comment ((first-pos positionp) (ppstate ppstatep))
+(define plex-line-comment ((first-pos positionp)
+                           (current-pos positionp)
+                           (ppstate ppstatep))
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
@@ -1210,54 +1212,53 @@
    (xdoc::p
     "This is the same as @(tsee lex-line-comment),
      but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.")
+     and it returns the content of the comment as part of the lexeme.
+     It also excludes the closing new line,
+     leaving it to be lexed separately.")
    (xdoc::p
     "Collecting the content of the comment,
      i.e. the characters between @('//') and new line (excluding both),
-     requires some additional code here."))
+     requires some additional code here.")
+   (xdoc::p
+    "When encountering the end of file,
+     we succeed and return the line comment,
+     even though [C17] prohibits a non-empty file to end without a new line.
+     However, this condition can be enforced elsewhere,
+     and GCC actually relaxes this condition.
+     So it is more flexible for this lexing function
+     to handle end of file as successfully ending the line comment."))
   (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
-       ((erp content last-pos newline ppstate)
-        (plex-line-comment-loop first-pos ppstate)))
-    (retok (make-plexeme-line-comment :content content
-                                      :newline newline)
+       ((erp content last-pos ppstate)
+        (plex-line-comment-loop first-pos current-pos ppstate)))
+    (retok (plexeme-line-comment content)
            (make-span :start first-pos :end last-pos)
            ppstate))
 
   :prepwork
 
-  ((define plex-line-comment-loop ((first-pos positionp) (ppstate ppstatep))
+  ((define plex-line-comment-loop ((first-pos positionp)
+                                   (current-pos positionp)
+                                   (ppstate ppstatep))
      :returns (mv erp
                   (content nat-listp)
                   (last-pos positionp)
-                  (newline newlinep)
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
-     (b* (((reterr) nil (irr-position) (irr-newline) ppstate)
+     (b* (((reterr) nil (irr-position) ppstate)
           ((erp char pos ppstate) (pread-char ppstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where (position-to-msg pos)
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The line comment starting at ~@1 ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
+         (retok nil (position-fix current-pos) ppstate))
         ((utf8-= char 10) ; LF
-         (retok nil pos (newline-lf) ppstate))
+         (b* ((ppstate (punread-char ppstate))) ;
+           (retok nil (position-fix current-pos) ppstate)))
         ((utf8-= char 13) ; CR
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
-           (cond
-            ((not char2) ; CR EOF
-             (retok nil pos (newline-cr) ppstate))
-            ((utf8-= char2 10) ; CR LF
-             (retok nil pos2 (newline-crlf) ppstate))
-            (t ; LF other
-             (b* ((ppstate (punread-char ppstate))) ; LF
-               (retok nil pos (newline-lf) ppstate))))))
+         (b* ((ppstate (punread-char ppstate))) ;
+           (retok nil (position-fix current-pos) ppstate)))
         (t ; other
-         (b* (((erp content last-pos newline ppstate)
-               (plex-line-comment-loop first-pos ppstate)))
-           (retok (cons char content) last-pos newline ppstate)))))
+         (b* (((erp content last-pos ppstate)
+               (plex-line-comment-loop first-pos pos ppstate)))
+           (retok (cons char content) last-pos ppstate)))))
      :measure (ppstate->size ppstate)
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
      :no-function nil
@@ -1270,13 +1271,6 @@
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret ppstate->size-of-plex-line-comment-loop-cond
-       (implies (not erp)
-                (<= (ppstate->size new-ppstate)
-                    (1- (ppstate->size ppstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
@@ -1286,12 +1280,6 @@
   (defret ppstate->size-of-plex-line-comment-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear)
-
-  (defret ppstate->size-of-plex-line-comment-cond
-    (implies (not erp)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1564,7 +1552,7 @@
          ((utf8-= char2 (char-code #\*)) ; / *
           (plex-block-comment pos ppstate))
          ((utf8-= char2 (char-code #\/)) ; / /
-          (plex-line-comment pos ppstate))
+          (plex-line-comment pos pos2 ppstate))
          ((utf8-= char2 (char-code #\=)) ; / =
           (retok (plexeme-punctuator "/=")
                  (make-span :start pos :end pos2)
