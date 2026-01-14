@@ -909,6 +909,7 @@
                     ppstate
                   (non-exec (create-ppstate)))
          :exec ppstate)
+    :inline t
     ///
     (defrule ppstate-fix-when-ppstatep
       (implies (ppstatep ppstate)
@@ -962,29 +963,34 @@
   (define ppstate->bytess-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->bytess-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-length ppstate)))
+         :exec (raw-ppstate->bytess-length ppstate))
+    :inline t)
 
   (define ppstate->bytes ((i natp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
     :returns (bytes byte-listp)
     (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->bytess-length)))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->bytess-current (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-current ppstate)))
+         :exec (raw-ppstate->bytess-current ppstate))
+    :inline t)
 
   (define ppstate->position (ppstate)
     :returns (position positionp)
     (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
-         :exec (raw-ppstate->position ppstate)))
+         :exec (raw-ppstate->position ppstate))
+    :inline t)
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-length ppstate)))
+         :exec (raw-ppstate->chars-length ppstate))
+    :inline t)
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -992,37 +998,44 @@
     (char+position-fix
      (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
           :exec (raw-ppstate->char i ppstate)))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-read ppstate)))
+         :exec (raw-ppstate->chars-read ppstate))
+    :inline t)
 
   (define ppstate->chars-unread (ppstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-unread ppstate)))
+         :exec (raw-ppstate->chars-unread ppstate))
+    :inline t)
 
   (define ppstate->lexmarks (ppstate)
     :returns (lexmarks lexmark-listp)
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
-         :exec (raw-ppstate->lexmarks ppstate)))
+         :exec (raw-ppstate->lexmarks ppstate))
+    :inline t)
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
-         :exec (raw-ppstate->size ppstate)))
+         :exec (raw-ppstate->size ppstate))
+    :inline t)
 
   (define ppstate->macros (ppstate)
     :returns (macros macro-tablep)
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
-         :exec (raw-ppstate->macros ppstate)))
+         :exec (raw-ppstate->macros ppstate))
+    :inline t)
 
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ienv ppstate)))
+         :exec (raw-ppstate->ienv ppstate))
+    :inline t)
 
   ;; writers:
 
@@ -1031,7 +1044,8 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-length (nfix length)
                                                     (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-length length ppstate)))
+         :exec (raw-update-ppstate->bytess-length length ppstate))
+    :inline t)
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
@@ -1040,6 +1054,7 @@
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->bytes i bytes ppstate))
+    :inline t
     :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
@@ -1047,21 +1062,24 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-current (nfix bytess-current)
                                                      (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-current bytess-current ppstate)))
+         :exec (raw-update-ppstate->bytess-current bytess-current ppstate))
+    :inline t)
 
   (define update-ppstate->position ((position positionp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->position (position-fix position)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->position position ppstate)))
+         :exec (raw-update-ppstate->position position ppstate))
+    :inline t)
 
   (define update-ppstate->chars-length ((length natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-length length ppstate)))
+         :exec (raw-update-ppstate->chars-length length ppstate))
+    :inline t)
 
   (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -1073,6 +1091,7 @@
                                                (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char i char+pos ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->chars-read ((chars-read natp) ppstate)
@@ -1080,41 +1099,47 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-read (nfix chars-read)
                                                  (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-read chars-read ppstate)))
+         :exec (raw-update-ppstate->chars-read chars-read ppstate))
+    :inline t)
 
   (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-unread (nfix chars-unread)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-unread chars-unread ppstate)))
+         :exec (raw-update-ppstate->chars-unread chars-unread ppstate))
+    :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
+         :exec (raw-update-ppstate->lexmarks lexmarks ppstate))
+    :inline t)
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->size size ppstate)))
+         :exec (raw-update-ppstate->size size ppstate))
+    :inline t)
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->macros (macro-table-fix macros)
                                              (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->macros macros ppstate)))
+         :exec (raw-update-ppstate->macros macros ppstate))
+    :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->ienv (ienv-fix ienv)
                                            (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ienv ienv ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate))
+    :inline t)
 
   ;; readers over writers:
 
