@@ -693,13 +693,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
+(define read-token/newline-header? ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontoknls plexeme-listp)
                (toknl? plexeme-optionp)
                (toknl-span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token or new line during preprocessing."
+  :short "Read a token or new line during preprocessing,
+          with the option of recognizing a header name or not."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -707,13 +708,18 @@
      i.e. they are not just white space to skip over.
      In such situations,
      we need to skip over non-new-line white space and comments,
-     but stop when we encounter either a new line or a token."))
+     but stop when we encounter either a new line or a token.")
+   (xdoc::p
+    "This is always called through one of its wrappers,
+     @(tsee read-token/newline) and @(tsee read-token/newline-after-include).
+     The former is used in almost all situations (hence the shorter name),
+     while the latter is use just in one situation."))
   (b* (((reterr) nil nil (irr-span) ppstate)
        ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
        ((erp nontoknls toknl toknl-span ppstate)
-        (read-ptoken/newline headerp ppstate)))
+        (read-token/newline-header? headerp ppstate)))
     (retok (cons lexeme nontoknls)
            toknl
            toknl-span
@@ -722,28 +728,104 @@
 
   ///
 
-  (defret plexeme-list-not-token/newline-p-of-read-ptoken/newline
+  (defret plexeme-list-not-token/newline-p-of-read-token/newline-header?
     (plexeme-list-not-token/newline-p nontoknls)
     :hints (("Goal" :induct t)))
 
-  (defret plexeme-token/newline-p-of-read-ptoken/newline
+  (defret plexeme-token/newline-p-of-read-token/newline-header?
     (implies token?
              (plexeme-token/newline-p toknl?))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-read-ptoken/newline-uncond
+  (defret ppstate->size-of-read-token/newline-header?-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-read-ptoken/newline-cond
+  (defret ppstate->size-of-read-token/newline-header?-cond
     (implies (and (not erp)
                   toknl?)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-token/newline ((ppstate ppstatep))
+  :returns (mv erp
+               (nontoknls plexeme-listp)
+               (toknl? plexeme-optionp)
+               (toknl-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Read a token or new line during preprocessing,
+          in most situations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In most situations, we are not looking for a header name,
+     so we pass @('nil') as flag to @(tsee read-token/newline-header?)."))
+  (read-token/newline-header? nil ppstate)
+
+  ///
+
+  (defret plexeme-list-not-token/newline-p-of-read-token/newline
+    (plexeme-list-not-token/newline-p nontoknls))
+
+  (defret plexeme-token/newline-p-of-read-token/newline
+    (implies token?
+             (plexeme-token/newline-p toknl?)))
+
+  (defret ppstate->size-of-read-token/newline-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-read-token/newline-cond
+    (implies (and (not erp)
+                  toknl?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-token/newline-after-include ((ppstate ppstatep))
+  :returns (mv erp
+               (nontoknls plexeme-listp)
+               (toknl? plexeme-optionp)
+               (toknl-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Read a token or new line during preprocessing,
+          just after reading a @('#include')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just after reading a @('#inclue'),
+     is the only situation in which we are looking for a header name."))
+  (read-token/newline-header? t ppstate)
+
+  ///
+
+  (defret plexeme-list-not-token/newline-p-of-read-token/newline-after-include
+    (plexeme-list-not-token/newline-p nontoknls))
+
+  (defret plexeme-token/newline-p-of-read-token/newline-after-include
+    (implies token?
+             (plexeme-token/newline-p toknl?)))
+
+  (defret ppstate->size-of-read-token/newline-after-include-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear)
+
+  (defret ppstate->size-of-read-token/newline-after-include-cond
+    (implies (and (not erp)
+                  toknl?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1126,10 +1208,10 @@
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
        Thus, we can accept all white space and comments in a directive,
-       as @(tsee read-ptoken/newline) does."))
+       as @(tsee read-token/newline) does."))
     (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (read-ptoken/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
       (cond
        ((not toknl) ; EOF
         (if nontoknls
@@ -1144,7 +1226,7 @@
        ((plexeme-hashp toknl) ; #
         (b* ((nontoknls-before-hash nontoknls)
              ((erp nontoknls-after-hash toknl2 span2 ppstate)
-              (read-ptoken/newline nil ppstate)))
+              (read-token/newline ppstate)))
           (cond
            ((not toknl2) ; # EOF
             (reterr-msg :where (position-to-msg (span->start span2))
@@ -1344,7 +1426,7 @@
     (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
-          (read-ptoken/newline t ppstate)))
+          (read-token/newline-after-include ppstate)))
       (cond
        ((not toknl) ; # include EOF
         (reterr-msg :where (position-to-msg (span->start span))
@@ -1356,7 +1438,7 @@
                     :found (plexeme-to-msg toknl)))
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
-              (read-ptoken/newline nil ppstate))
+              (read-token/newline ppstate))
              ((unless (and toknl2
                            (plexeme-case toknl2 :newline))) ; # include EOL
               (reterr-msg :where (position-to-msg (span->start span2))
@@ -1458,7 +1540,7 @@
        in the same way as an identifier that is not a macro name."))
     (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (read-ptoken/newline nil ppstate))
+         ((erp nontoknls toknl span ppstate) (read-token/newline ppstate))
          (rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes))))
       (cond
        ((not toknl) ; EOF
