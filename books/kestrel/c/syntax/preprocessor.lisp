@@ -629,7 +629,12 @@
      we return the first one if it is a lexeme
      (and throw an error if it is a marker, for now).
      If there are no pending lexmarks,
-     we call @(tsee plex-lexeme) to lex a lexeme from the input."))
+     we call @(tsee plex-lexeme) to lex a lexeme from the input.")
+   (xdoc::p
+    "The @('headerp') flag is passed to @(tsee plex-lexeme),
+     if we find no pending lexmark.
+     It is an invariant that pending lexmarks are never header names;
+     thus, in this case the @('headerp') flag is irrelevant."))
   (b* (((reterr) nil (irr-span) ppstate)
        (lexmarks (ppstate->lexmarks ppstate))
        (size (ppstate->size ppstate))
