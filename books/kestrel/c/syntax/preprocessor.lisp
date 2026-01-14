@@ -1226,17 +1226,19 @@
                ((equal directive "ifndef") ; # ifndef
                 (reterr (msg "#ifndef directive not yet supported."))) ; TODO
                ((equal directive "include") ; # include
-                (pproc-include nontoknls-before-hash
-                               nontoknls-after-hash
-                               file
-                               base-dir
-                               include-dirs
-                               preprocessed
-                               preprocessing
-                               rev-lexemes
-                               ppstate
-                               state
-                               (1- limit)))
+                (b* (((erp rev-lexemes ppstate preprocessed state)
+                      (pproc-include nontoknls-before-hash
+                                     nontoknls-after-hash
+                                     file
+                                     base-dir
+                                     include-dirs
+                                     preprocessed
+                                     preprocessing
+                                     rev-lexemes
+                                     ppstate
+                                     state
+                                     (1- limit))))
+                  (retok nil rev-lexemes ppstate preprocessed state)))
                ((equal directive "define") ; # define
                 (reterr (msg "#define directive not yet supported."))) ; TODO
                ((equal directive "undef") ; # undef
@@ -1299,7 +1301,6 @@
                          state
                          (limit natp))
     :returns (mv erp
-                 (groupend? groupend-optionp)
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep :hyp (ppstatep ppstate))
                  (new-preprocessed string-scfile-alistp)
@@ -1365,7 +1366,7 @@
        for now we return an error,
        but we should preprocess that token and any subsequent tokens,
        and see if they result in a header name."))
-    (b* (((reterr) nil nil ppstate nil state)
+    (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
           (pread-token/newline t ppstate)))
@@ -1406,8 +1407,7 @@
              ((when (eq erp :not-self-contained))
               (b* ((ppstate (unread-char-to-bytes ppstate))
                    ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
-                (retok nil
-                       (plexeme-list-fix rev-lexemes)
+                (retok (plexeme-list-fix rev-lexemes)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state)))
@@ -1429,7 +1429,7 @@
              (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
              (rev-lexemes (cons toknl2 ; toknl2 is new line
                                 rev-lexemes)))
-          (retok nil rev-lexemes ppstate preprocessed state)))
+          (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
     :measure (nfix limit)
