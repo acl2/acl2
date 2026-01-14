@@ -4,10 +4,11 @@
 
 (in-package "ZF")
 
-; The goal in this book is to prove the goal (DEFGOAL EVAL_SUM_POLY_DISTRIB
-; ...) from eval-poly-thy.lisp, which is a file produced with a translator from
-; HOL to ACL2 written by Konrad Slind.  That goal is stated in the ZF package
-; as the final theorem, hol::HOL{EVAL_SUM_POLY_DISTRIB}, in the present book.
+; The goal in this book is to prove (DEFGOAL EVAL_SUM_POLY_DISTRIB ...) from
+; eval-poly-thy.lisp, which is a file produced with a translator from HOL to
+; ACL2 written by Konrad Slind.  That goal is stated in the ZF package as the
+; final theorem, hol::HOL{EVAL_SUM_POLY_DISTRIB}, in the present book; it is
+; redundantly phrased in terms of DEFGOAL in eval-poly-top.lisp.
 
 ; Actually, this is a theorem when the HP-IMPLIES call is replaced by its
 ; second argument, i.e., the HP= call.  That's what we'll prove as the
@@ -20,8 +21,8 @@
 ;  (include-book "eval-poly-thy")
 ;  (in-package "HOL")
 
-; And then, applying hol-pprint to the quotation of the HP= call in those
-; returns:
+; And then, applying hol-pprint to the quotation of EVAL_SUM_POLY_DISTRIB-main
+; below returns:
 
 #|
 (EQUAL (= (EVAL_POLY (SUM_POLYS X Y) V)
@@ -347,6 +348,7 @@
                     Y V)))
     (HP-TRUE))))
 
+; A version of (DEFGOAL EVAL_SUM_POLY_DISTRIB ...):
 #!hol
 (DEFTHM HOL{EVAL_SUM_POLY_DISTRIB}
  (IMPLIES

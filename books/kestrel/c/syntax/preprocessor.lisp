@@ -208,6 +208,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-lexeme ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme? plexeme-optionp)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a lexeme during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level function of the lexer.
+     If there are pending lexmarks,
+     we return the first one if it is a lexeme
+     (and throw an error if it is a marker, for now).
+     If there are no pending lexmarks,
+     we call @(tsee plex-lexeme) to read a lexeme from the input."))
+  (b* (((reterr) nil (irr-span) ppstate)
+       (lexmarks (ppstate->lexmarks ppstate))
+       (size (ppstate->size ppstate))
+       ((when (consp lexmarks))
+        (b* ((lexmark (car lexmarks))
+             ((unless (lexmark-case lexmark :lexeme))
+              (raise "Internal error: unexpected marker ~x0." lexmark)
+              (reterr t))
+             (lexeme (lexmark-lexeme->lexeme lexmark))
+             (span (lexmark-lexeme->span lexmark))
+             ((unless (> size 0))
+              (raise "Internal error: size is 0 but there are pending lexemes.")
+              (reterr t))
+             (ppstate (update-ppstate->size (1- size) ppstate))
+             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
+          (retok lexeme span ppstate)))
+       ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
+       ((when (not lexeme?)) (retok nil span ppstate))
+       (lexeme lexeme?))
+    (retok lexeme span ppstate))
+  :no-function nil
+
+  ///
+
+  (defret ppstate->size-of-read-lexeme-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret ppstate->size-of-read-lexeme-cond
+    (implies (and (not erp)
+                  lexeme?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pread-token ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontokens plexeme-listp)
@@ -226,7 +281,7 @@
     "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
      see that function's documentation."))
   (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
        ((erp nontokens token token-span ppstate) (pread-token headerp ppstate)))
@@ -274,16 +329,9 @@
      i.e. they are not just white space to skip over.
      In such situations,
      we need to skip over non-new-line white space and comments,
-     but stop when we encounter either a new line or a token.
-     As explained in @(tsee plexeme-token/newline-p),
-     line comments count as new lines,
-     because conceptually each comment is replaced by a single space character
-     before preprocessing [C17:5.1.1.2/1],
-     and the new line that ends a line comment
-     is not part of the comment [C17:6.4.9/2]:
-     thus, a line comment must be treated like a space followed by new line."))
+     but stop when we encounter either a new line or a token."))
   (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (plex-lexeme headerp ppstate))
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
        ((erp nontoknls toknl toknl-span ppstate)
@@ -321,37 +369,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-lexeme ((ppstate ppstatep))
+(define punread-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a lexeme."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We move the lexeme from the sequence of read lexemes
-     to the sequence of unread lexemes.
-     See @(tsee ppstate).")
-   (xdoc::p
-    "It is an internal error if @('lexemes-read') is 0.
-     It means that the calling code is wrong.
-     In this case, after raising the hard error,
-     logically we still increment @('lexemes-read')
-     so that the theorem about @(tsee ppstate->size) holds unconditionally."))
-  (b* ((ppstate.lexemes-read (ppstate->lexemes-read ppstate))
-       (ppstate.lexemes-unread (ppstate->lexemes-unread ppstate))
-       (ppstate.size (ppstate->size ppstate))
-       ((unless (> ppstate.lexemes-read 0))
-        (raise "Internal error: no token to unread.")
-        (b* ((ppstate (update-ppstate->lexemes-unread
-                       (1+ ppstate.lexemes-unread) ppstate))
-             (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
-          ppstate))
-       (ppstate (update-ppstate->lexemes-unread
-                 (1+ ppstate.lexemes-unread) ppstate))
-       (ppstate (update-ppstate->lexemes-read
-                 (1- ppstate.lexemes-read) ppstate))
-       (ppstate (update-ppstate->size (1+ ppstate.size) ppstate)))
-    ppstate)
-  :no-function nil
+    "We add the lexeme to the list of pending lexmarks.
+     See @(tsee ppstate)."))
+  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
 
   ///
 
@@ -995,7 +1021,7 @@
                          (1- limit)))
        (t ; non-#
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (punread-lexeme ppstate)))
+             (ppstate (punread-lexeme toknl span ppstate)))
           (pproc-line-rest file
                            base-dir
                            include-dirs
@@ -1081,8 +1107,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # EOL
-            (plexeme-case toknl :line-comment)) ; # // ... EOL
+       ((plexeme-case toknl :newline) ; # EOL
         ;; null directive
         (b* ((nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
              (rev-lexemes (plexeme-list-fix rev-lexemes))
@@ -1090,7 +1115,7 @@
              (rev-lexemes (cons (plexeme-block-comment (list (char-code #\#)))
                                 rev-lexemes))
              (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
-             (rev-lexemes (cons toknl ; toknl is new line or line comment
+             (rev-lexemes (cons toknl ; toknl is new line
                                 rev-lexemes)))
           (retok rev-lexemes
                  ppstate
@@ -1244,8 +1269,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # include EOL
-            (plexeme-case toknl :line-comment)) ; # include // ... EOL
+       ((plexeme-case toknl :newline) ; # include EOL
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
@@ -1253,13 +1277,9 @@
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (pread-token/newline nil ppstate))
              ((unless (and toknl2
-                           (or (plexeme-case toknl2 :newline)
-                               ;; # include EOL
-                               (plexeme-case toknl2 :line-comment)
-                               ;; # include // ... EOL
-                               )))
+                           (plexeme-case toknl2 :newline))) ; # include EOL
               (reterr-msg :where (position-to-msg (span->start span2))
-                          :expected "a new line or line comment"
+                          :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
              ((erp resolved-file bytes state)
               (resolve-included-file file
@@ -1301,7 +1321,7 @@
              (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
              (rev-lexemes (cons toknl rev-lexemes)) ; toknl is header name
              (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
-             (rev-lexemes (cons toknl2 ; toknl2 is new line or line comment
+             (rev-lexemes (cons toknl2 ; toknl2 is new line
                                 rev-lexemes)))
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
@@ -1336,7 +1356,7 @@
       "If we find no token or new line, it is an error,
        because there must be a full line.")
      (xdoc::p
-      "If we find a new line (or line comment),
+      "If we find a new line,
        we add it to the growing list,
        and we return, because we have finished preprocessing the line.")
      (xdoc::p
@@ -1364,8 +1384,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token or new line"
                     :found (plexeme-to-msg toknl)))
-       ((or (plexeme-case toknl :newline) ; # EOL
-            (plexeme-case toknl :line-comment)) ; # // ... EOL
+       ((plexeme-case toknl :newline) ; # EOL
         (retok (cons toknl rev-lexemes)
                ppstate
                (string-scfile-alist-fix preprocessed)

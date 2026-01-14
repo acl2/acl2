@@ -60,33 +60,33 @@
 ; the lexing functions do not modify some PPSTATE stobj components.
 
 (local ; for non-recursive FN
- (defmacro defret-same-lexemes-length (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-      (equal (ppstate->lexemes-length new-ppstate)
-             (ppstate->lexemes-length ppstate)))))
+ (defmacro defret-same-lexmarks (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
+      (equal (ppstate->lexmarks new-ppstate)
+             (ppstate->lexmarks ppstate)))))
 
 (local ; for singly recursive FN
- (defmacro defret-rec-same-lexemes-length (fn)
-   `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-      (equal (ppstate->lexemes-length new-ppstate)
-             (ppstate->lexemes-length ppstate))
+ (defmacro defret-rec-same-lexmarks (fn)
+   `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
+      (equal (ppstate->lexmarks new-ppstate)
+             (ppstate->lexmarks ppstate))
       :hints (("Goal" :induct t)))))
 
 (local ; used by the macro below
- (defun defret-mut-same-lexemes-length-fn (fns)
+ (defun defret-mut-same-lexmarks-fn (fns)
    (b* (((when (endp fns)) nil)
         (fn (car fns))
-        (event `(defret ,(packn-pos (list 'ppstate->lexemes-length-of- fn) fn)
-                  (equal (ppstate->lexemes-length new-ppstate)
-                         (ppstate->lexemes-length ppstate))
+        (event `(defret ,(packn-pos (list 'ppstate->lexmarks-of- fn) fn)
+                  (equal (ppstate->lexmarks new-ppstate)
+                         (ppstate->lexmarks ppstate))
                   :fn ,fn))
-        (events (defret-mut-same-lexemes-length-fn (cdr fns))))
+        (events (defret-mut-same-lexmarks-fn (cdr fns))))
      (cons event events))))
 
 (local ; for mutually recursive FNS
- (defmacro defret-mut-same-lexemes-length (name fns &key hints)
+ (defmacro defret-mut-same-lexmarks (name fns &key hints)
    `(defret-mutual ,name
-      ,@(defret-mut-same-lexemes-length-fn fns)
+      ,@(defret-mut-same-lexmarks-fn fns)
       ,@(and hints (list :hints hints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,7 +162,7 @@
        :hints (("Goal" :in-theory (enable rationalp-when-natp
                                           acl2-numberp-when-natp))))
 
-     (defret-rec-same-lexemes-length plex-identifier-loop)
+     (defret-rec-same-lexmarks plex-identifier-loop)
 
      (defret ppstate->size-of-plex-identifier-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -172,7 +172,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-identifier)
+  (defret-same-lexmarks plex-identifier)
 
   (defret ppstate->size-of-plex-identifier-uncond
     (<= (ppstate->size new-ppstate)
@@ -359,7 +359,7 @@
 
      ///
 
-     (defret-rec-same-lexemes-length plex-pp-number-loop)
+     (defret-rec-same-lexmarks plex-pp-number-loop)
 
      (defret ppstate->size-of-plex-pp-number-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -369,7 +369,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-pp-number)
+  (defret-same-lexmarks plex-pp-number)
 
   (defret ppstate->size-of-plex-pp-number-uncond
     (<= (ppstate->size new-ppstate)
@@ -416,7 +416,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-hexadecimal-digit)
+  (defret-same-lexmarks plex-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -456,7 +456,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-hex-quad)
+  (defret-same-lexmarks plex-hex-quad)
 
   (defret ppstate->size-of-plex-hex-quad-uncond
     (<= (ppstate->size new-ppstate)
@@ -519,7 +519,7 @@
    (hexdigs true-listp
             :rule-classes :type-prescription))
 
-  (defret-rec-same-lexemes-length plex-*-hexadecimal-digit)
+  (defret-rec-same-lexmarks plex-*-hexadecimal-digit)
 
   (defret ppstate->size-of-plex-*-hexadecimal-digit-uncond
     (<= (ppstate->size new-ppstate)
@@ -645,7 +645,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-escape-sequence)
+  (defret-same-lexmarks plex-escape-sequence)
 
   (defret ppstate->size-of-plex-escape-sequence-uncond
     (<= (ppstate->size new-ppstate)
@@ -706,7 +706,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-c-char)
+  (defret-rec-same-lexmarks plex-*-c-char)
 
   (defret ppstate->size-of-plex-*-c-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -770,7 +770,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-s-char)
+  (defret-rec-same-lexmarks plex-*-s-char)
 
   (defret ppstate->size-of-plex-*-s-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -825,7 +825,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-h-char)
+  (defret-rec-same-lexmarks plex-*-h-char)
 
   (defret ppstate->size-of-plex-*-h-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -880,7 +880,7 @@
 
   ///
 
-  (defret-rec-same-lexemes-length plex-*-q-char)
+  (defret-rec-same-lexmarks plex-*-q-char)
 
   (defret ppstate->size-of-plex-*-q-char-uncond
     (<= (ppstate->size new-ppstate)
@@ -923,7 +923,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-character-constant)
+  (defret-same-lexmarks plex-character-constant)
 
   (defret ppstate->size-of-plex-character-constant-uncond
     (<= (ppstate->size new-ppstate)
@@ -958,7 +958,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-string-literal)
+  (defret-same-lexmarks plex-string-literal)
 
   (defret ppstate->size-of-plex-string-literal-uncond
     (<= (ppstate->size new-ppstate)
@@ -1019,7 +1019,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-header-name)
+  (defret-same-lexmarks plex-header-name)
 
   (defret ppstate->size-of-plex-header-name-uncond
     (<= (ppstate->size new-ppstate)
@@ -1152,7 +1152,7 @@
 
      ///
 
-     (defret-mut-same-lexemes-length plex-block-comment-loops
+     (defret-mut-same-lexmarks plex-block-comment-loops
        (plex-rest-of-block-comment
         plex-rest-of-block-comment-after-star))
 
@@ -1184,7 +1184,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-block-comment)
+  (defret-same-lexmarks plex-block-comment)
 
   (defret ppstate->size-of-plex-block-comment-uncond
     (<= (ppstate->size new-ppstate)
@@ -1199,7 +1199,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-line-comment ((first-pos positionp) (ppstate ppstatep))
+(define plex-line-comment ((first-pos positionp)
+                           (current-pos positionp)
+                           (ppstate ppstatep))
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
@@ -1210,88 +1212,74 @@
    (xdoc::p
     "This is the same as @(tsee lex-line-comment),
      but it operates on preprocessor states instead of parser states,
-     and it returns the content of the comment as part of the lexeme.")
+     and it returns the content of the comment as part of the lexeme.
+     It also excludes the closing new line,
+     leaving it to be lexed separately.")
    (xdoc::p
     "Collecting the content of the comment,
      i.e. the characters between @('//') and new line (excluding both),
-     requires some additional code here."))
+     requires some additional code here.")
+   (xdoc::p
+    "When encountering the end of file,
+     we succeed and return the line comment,
+     even though [C17] prohibits a non-empty file to end without a new line.
+     However, this condition can be enforced elsewhere,
+     and GCC actually relaxes this condition.
+     So it is more flexible for this lexing function
+     to handle end of file as successfully ending the line comment."))
   (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
-       ((erp content last-pos newline ppstate)
-        (plex-line-comment-loop first-pos ppstate)))
-    (retok (make-plexeme-line-comment :content content
-                                      :newline newline)
+       ((erp content last-pos ppstate)
+        (plex-line-comment-loop first-pos current-pos ppstate)))
+    (retok (plexeme-line-comment content)
            (make-span :start first-pos :end last-pos)
            ppstate))
 
   :prepwork
 
-  ((define plex-line-comment-loop ((first-pos positionp) (ppstate ppstatep))
+  ((define plex-line-comment-loop ((first-pos positionp)
+                                   (current-pos positionp)
+                                   (ppstate ppstatep))
      :returns (mv erp
                   (content nat-listp)
                   (last-pos positionp)
-                  (newline newlinep)
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
-     (b* (((reterr) nil (irr-position) (irr-newline) ppstate)
+     (b* (((reterr) nil (irr-position) ppstate)
           ((erp char pos ppstate) (pread-char ppstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where (position-to-msg pos)
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The line comment starting at ~@1 ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
+         (retok nil (position-fix current-pos) ppstate))
         ((utf8-= char 10) ; LF
-         (retok nil pos (newline-lf) ppstate))
+         (b* ((ppstate (punread-char ppstate))) ;
+           (retok nil (position-fix current-pos) ppstate)))
         ((utf8-= char 13) ; CR
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
-           (cond
-            ((not char2) ; CR EOF
-             (retok nil pos (newline-cr) ppstate))
-            ((utf8-= char2 10) ; CR LF
-             (retok nil pos2 (newline-crlf) ppstate))
-            (t ; LF other
-             (b* ((ppstate (punread-char ppstate))) ; LF
-               (retok nil pos (newline-lf) ppstate))))))
+         (b* ((ppstate (punread-char ppstate))) ;
+           (retok nil (position-fix current-pos) ppstate)))
         (t ; other
-         (b* (((erp content last-pos newline ppstate)
-               (plex-line-comment-loop first-pos ppstate)))
-           (retok (cons char content) last-pos newline ppstate)))))
+         (b* (((erp content last-pos ppstate)
+               (plex-line-comment-loop first-pos pos ppstate)))
+           (retok (cons char content) last-pos ppstate)))))
      :measure (ppstate->size ppstate)
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
      :no-function nil
 
      ///
 
-     (defret-rec-same-lexemes-length plex-line-comment-loop)
+     (defret-rec-same-lexmarks plex-line-comment-loop)
 
      (defret ppstate->size-of-plex-line-comment-loop-uncond
        (<= (ppstate->size new-ppstate)
            (ppstate->size ppstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret ppstate->size-of-plex-line-comment-loop-cond
-       (implies (not erp)
-                (<= (ppstate->size new-ppstate)
-                    (1- (ppstate->size ppstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
 
-  (defret-same-lexemes-length plex-line-comment)
+  (defret-same-lexmarks plex-line-comment)
 
   (defret ppstate->size-of-plex-line-comment-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear)
-
-  (defret ppstate->size-of-plex-line-comment-cond
-    (implies (not erp)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1342,7 +1330,7 @@
 
      ///
 
-     (defret-rec-same-lexemes-length plex-spaces-loop)
+     (defret-rec-same-lexmarks plex-spaces-loop)
 
      (defret ppstate->size-of-plex-spaces-loop-uncond
        (<= (ppstate->size new-ppstate)
@@ -1352,7 +1340,7 @@
 
   ///
 
-  (defret-same-lexemes-length plex-spaces)
+  (defret-same-lexmarks plex-spaces)
 
   (defret ppstate->size-of-plex-spaces-uncond
     (<= (ppstate->size new-ppstate)
@@ -1361,23 +1349,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plex-lexeme-from-input ((headerp booleanp) (ppstate ppstatep))
+(define plex-lexeme ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (lexeme? plexeme-optionp)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a lexeme during preprocessing, from the input."
+  :short "Lex a lexeme during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here `from the input' means that
-     the lexeme is read directly from the input,
-     and not from the unread lexemes if there are any.
-     This is almost the top-level lexing function for the preprocessor:
-     the top-level one, @(tsee plex-lexeme),
-     first attempt to (re-)read an unread lexeme,
-     and if it needs to call this function instead,
-     it stores the read lexeme into the preprocessing state.")
+    "This is the top-level lexing function for the preprocessor.")
    (xdoc::p
     "This function returns the next lexeme from the input,
      or @('nil') if we reached the end of the file;
@@ -1571,7 +1552,7 @@
          ((utf8-= char2 (char-code #\*)) ; / *
           (plex-block-comment pos ppstate))
          ((utf8-= char2 (char-code #\/)) ; / /
-          (plex-line-comment pos ppstate))
+          (plex-line-comment pos pos2 ppstate))
          ((utf8-= char2 (char-code #\=)) ; / =
           (retok (plexeme-punctuator "/=")
                  (make-span :start pos :end pos2)
@@ -1926,85 +1907,16 @@
 
   ///
 
-  (defret-same-lexemes-length plex-lexeme-from-input)
-
-  (defret ppstate->size-of-plex-lexeme-from-input-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear)
-
-  (defret ppstate->size-of-plex-lexeme-from-input-cond
-    (implies (and (not erp)
-                  lexeme?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define plex-lexeme ((headerp booleanp) (ppstate ppstatep))
-  :returns (mv erp
-               (lexeme? plexeme-optionp)
-               (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a lexeme during preprocessing."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the top-level function of the lexer.
-     If there are unread lexemes,
-     we return the first unread lexeme,
-     and adjust the indices in the preprocessing state (see @(tsee ppstate)).
-     If there are no unread lexemes,
-     we call @(tsee plex-lexeme-from-input) to read a lexeme from the input,
-     and then we store it into the array of lexemes, adjusting the index."))
-  (b* (((reterr) nil (irr-span) ppstate)
-       (lexemes-length (ppstate->lexemes-length ppstate))
-       (lexemes-read (ppstate->lexemes-read ppstate))
-       (lexemes-unread (ppstate->lexemes-unread ppstate))
-       (size (ppstate->size ppstate))
-       ((when (> lexemes-unread 0))
-        (b* (((unless (< lexemes-read lexemes-length))
-              (raise "Internal error: index ~x0 out of bound ~x1."
-                     lexemes-read lexemes-length)
-              (reterr t))
-             (lexeme+span (ppstate->lexeme lexemes-read ppstate))
-             (ppstate
-              (update-ppstate->lexemes-unread (1- lexemes-unread) ppstate))
-             (ppstate (update-ppstate->lexemes-read (1+ lexemes-read) ppstate))
-             ((unless (> size 0))
-              (raise "Internal error: size is 0 but there are unread lexemes.")
-              (reterr t))
-             (ppstate (update-ppstate->size (1- size) ppstate)))
-          (retok (plexeme+span->lexeme lexeme+span)
-                 (plexeme+span->span lexeme+span)
-                 ppstate)))
-       ((erp lexeme? span ppstate) (plex-lexeme-from-input headerp ppstate))
-       ((when (not lexeme?)) (retok nil span ppstate))
-       ((unless (< lexemes-read lexemes-length))
-        (raise "Internal error: index ~x0 out of bound ~x1."
-               lexemes-read lexemes-length)
-        (reterr t))
-       (lexeme+span (make-plexeme+span :lexeme lexeme? :span span))
-       (ppstate (update-ppstate->lexeme lexemes-read lexeme+span ppstate))
-       (ppstate (update-ppstate->lexemes-read (1+ lexemes-read) ppstate)))
-    (retok lexeme? span ppstate))
-  :no-function nil
-
-  ///
-
-  (defret-same-lexemes-length plex-lexeme)
+  (defret-same-lexmarks plex-lexeme)
 
   (defret ppstate->size-of-plex-lexeme-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix))))
+    :rule-classes :linear)
 
   (defret ppstate->size-of-plex-lexeme-cond
     (implies (and (not erp)
                   lexeme?)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix)))))
+    :rule-classes :linear))

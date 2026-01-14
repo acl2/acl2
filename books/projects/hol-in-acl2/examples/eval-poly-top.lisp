@@ -22,7 +22,7 @@
 
 (local (include-book "eval-poly-proof"))
 
-(DEFTHM HOL{EVAL_SUM_POLY_DISTRIB}
+(DEFGOAL EVAL_SUM_POLY_DISTRIB
  (IMPLIES
   (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
        (HPP X HTA)

@@ -13,6 +13,7 @@
 (include-book "parser-states")
 (include-book "implementation-environments")
 
+(include-book "kestrel/fty/byte-list-list" :dir :system)
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -38,29 +39,21 @@
   :induct t
   :enable (assoc-equal))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist byte-list-list
-  :elt-type byte-list
-  :true-listp t
-  :elementp-of-nil t
-  :pred byte-list-listp
+(defruledl byte-list-listp-of-resize-list
+  (implies (and (byte-list-listp bytess)
+                (byte-listp default))
+           (byte-list-listp (resize-list bytess length default)))
+  :induct t
+  :enable (byte-list-listp resize-list))
 
-  ///
-
-  (defruled byte-list-listp-of-resize-list
-    (implies (and (byte-list-listp bytess)
-                  (byte-listp default))
-             (byte-list-listp (resize-list bytess length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled byte-list-listp-of-update-nth-strong
-    (implies (byte-list-listp bytess)
-             (equal (byte-list-listp (update-nth i bytes bytess))
-                    (byte-listp bytes)))
-    :induct t
-    :enable (update-nth nfix zp len)))
+(defruledl byte-list-listp-of-update-nth-strong
+  (implies (byte-list-listp bytess)
+           (equal (byte-list-listp (update-nth i bytes bytess))
+                  (byte-listp bytes)))
+  :induct t
+  :enable (byte-listp update-nth nfix zp len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,16 +149,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum plexeme
-  :short "Fixtype of preprocessing lexems."
+  :short "Fixtype of preprocessing lexemes."
   :long
   (xdoc::topstring
    (xdoc::p
     "This consists of preprocessing tokens [C17:6.4] [C17:A.1.1],
-     with the addition of comments and white space.")
+     with the addition of comments and white space:
+     these are all the preprocessing lexemes,
+     although [C17] does not use the word `lexeme'.")
    (xdoc::p
     "We reuse some of the fixtypes for ASTs here.")
    (xdoc::p
-    "The @(':other') case corresponds to
+    "The @(':other') summand corresponds to
      the last alternative in the ABNF grammar rule for @('preprocessing-token'),
      as well as the prose description of the rule in [C17].
      It consists of the code of the character.")
@@ -175,9 +170,8 @@
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
-     from just after the opening @('//') to just before the closing new line.
-     For line comments, we also include the final new-line character,
-     to preserve the exact kind of new line.")
+     from just after the opening @('//') to just before the closing new line;
+     recall that line comments exclude the ending new line [C17:6.4.9/2].")
    (xdoc::p
     "We keep the information about the three possible kinds of new-line,
      and of all other white space characters,
@@ -192,7 +186,7 @@
   (:punctuator ((punctuator string)))
   (:other ((char nat)))
   (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list) (newline newline)))
+  (:line-comment ((content nat-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())
@@ -230,40 +224,6 @@
              (true-listp x))
     :induct t
     :enable plexeme-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod plexeme+span
-  :short "Fixtype of pairs consisting of a lexeme and a span."
-  ((lexeme plexeme)
-   (span span))
-  :pred plexeme+span-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist plexeme+span-list
-  :short "Fixtype of lists of pairs consisting of a lexeme and a span."
-  :elt-type plexeme+span
-  :true-listp t
-  :elementp-of-nil nil
-  :pred plexeme+span-listp
-
-  ///
-
-  (defruled plexeme+span-listp-of-resize-list
-    (implies (and (plexeme+span-listp lexemes)
-                  (plexeme+span-p default))
-             (plexeme+span-listp (resize-list lexemes length default)))
-    :induct t
-    :enable (resize-list))
-
-  (defruled plexeme+span-listp-of-update-nth-strong
-    (implies (plexeme+span-listp lexemes)
-             (equal (plexeme+span-listp (update-nth i lexeme lexemes))
-                    (and (plexeme+span-p lexeme)
-                         (<= (nfix i) (len lexemes)))))
-    :induct t
-    :enable (update-nth nfix zp len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,23 +291,9 @@
      see grammar rules in [C17:6.10/1].
      Preprocessing is largely line-oriented.
      In our preprocessor, new-line characters are captured as new-line lexemes
-     (see @(tsee plexeme)).")
-   (xdoc::p
-    "[C17:5.1.1.2/3] requires that comments, including line comments,
-     are turned into single space characters;
-     we do not actually do that, to preserve the comment information,
-     but conceptually we need our preprocessor to behave as if we did.
-     This means that, if we are looking for tokens or new-line characters,
-     we must also consider line comments,
-     because they are always followed by a new-line character;
-     recall that line comments exclude the ending new line [C17:6.4.9/2].
-     Although block comments may include new lines,
-     those are part of the comment:
-     the whole comment is turned into a space character,
-     and so there are no new lines to consider here."))
+     (see @(tsee plexeme))."))
   (or (plexeme-tokenp lexeme)
-      (plexeme-case lexeme :newline)
-      (plexeme-case lexeme :line-comment)))
+      (plexeme-case lexeme :newline)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -409,6 +355,53 @@
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
          (or (equal string "#")
              (equal string "%:")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum lexmark
+  :short "Fixtype of preprocessing lexemes and markers (`lexmarks')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Along with lexemes,
+     it is convenient to handle certain markers.
+     We use the term `lexmark' to denote a preprocessing lexeme or marker.")
+   (xdoc::p
+    "The lexemes are accompanied by spans.")
+   (xdoc::p
+    "The @(':start') and @(':end') summands are used to mark
+     the start and end of an expansion of the macro,
+     whose name is the @('macro') field of these two summands,
+     in order to inhibit its (direct or indirect) recursive expansion
+     [C17:6.10.3.4/2].")
+   (xdoc::p
+    "The @(':placemarker') summand is used as described in [C17:6.10.3.3],
+     to handle the @('##') operator.")
+   (xdoc::p
+    "Only lexemes have spans associated with them.
+     The markers are artifacts, not an actual part of the input files."))
+  (:lexeme ((lexeme plexeme)
+            (span span)))
+  (:start ((macro ident)))
+  (:end ((macro ident)))
+  (:placemarker ())
+  :pred lexmarkp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-lexmark
+  :short "An irrelevant lexmark."
+  :type lexmarkp
+  :body (lexmark-lexeme (irr-plexeme) (irr-span)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist lexmark-list
+  :short "Fixtype of lists of lexmarks."
+  :elt-type lexmark
+  :true-listp t
+  :elementp-of-nil nil
+  :pred lexmark-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -815,8 +808,26 @@
       the preprocessor state has a full implementation environment.
       Probably parser states should have that too.")
     (xdoc::li
-     "The processor state contains (preprocessing) lexemes instead of tokens,
-      because our preprocessor preserves comments and white space.")
+     "Instead of an array and two indices that represent
+      a sequence of read and unread tokens,
+      we have a single list of pending lexmarks.
+      This is used like the sequence of unread tokens in the parser state,
+      in the sense that the next lexeme is read from the list if non-empty,
+      and otherwise it is lexed from the input characters.
+      However, lexmarks are added to the pending list
+      not only when unreading lexemes,
+      which actually happens rarely in our preprocessor,
+      but also when expanding macros.
+      When a macro is expanded, the expansion is added to the pending list,
+      so that preprocessing continues with the expansion,
+      thus realizing rescanning and further replacement [C17:6.10.3.4].
+      The @(':start') and @(':end') markers are added around that expansion,
+      to delimit that the expansion comes from a certain macro,
+      so that we can prevent recursive expansion,
+      as explained in more detail elsewhere.
+      The pending list of lexmarks in the preprocessing state
+      actually never contains @(':placemarker') markers;
+      we should sharpen the type of this stobj component accordingly.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
@@ -844,14 +855,8 @@
                   :initially 0)
       (chars-unread :type (integer 0 *)
                     :initially 0)
-      (lexemes :type (array (satisfies plexeme+span-p) (1))
-               :initially ,(make-plexeme+span :lexeme (irr-plexeme)
-                                              :span (irr-span))
-               :resizable t)
-      (lexemes-read :type (integer 0 *)
-                    :initially 0)
-      (lexemes-unread :type (integer 0 *)
-                      :initially 0)
+      (lexmarks :type (satisfies lexmark-listp)
+                :initially nil)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       (size :type (integer 0 *)
@@ -865,9 +870,7 @@
                  (charsp raw-ppstate->chars-p)
                  (chars-readp raw-ppstate->chars-read-p)
                  (chars-unreadp raw-ppstate->chars-unread-p)
-                 (lexemesp raw-ppstate->lexemes-p)
-                 (lexemes-readp raw-ppstate->lexemes-read-p)
-                 (lexemes-unreadp raw-ppstate->lexemes-unread-p)
+                 (lexmarksp raw-ppstate->lexmarks-p)
                  (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
@@ -880,10 +883,7 @@
                  (charsi raw-ppstate->char)
                  (chars-read raw-ppstate->chars-read)
                  (chars-unread raw-ppstate->chars-unread)
-                 (lexemes-length raw-ppstate->lexemes-length)
-                 (lexemesi raw-ppstate->lexeme)
-                 (lexemes-read raw-ppstate->lexemes-read)
-                 (lexemes-unread raw-ppstate->lexemes-unread)
+                 (lexmarks raw-ppstate->lexmarks)
                  (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
@@ -896,10 +896,7 @@
                  (update-charsi raw-update-ppstate->char)
                  (update-chars-read raw-update-ppstate->chars-read)
                  (update-chars-unread raw-update-ppstate->chars-unread)
-                 (resize-lexemes raw-update-ppstate->lexemes-length)
-                 (update-lexemesi raw-update-ppstate->lexeme)
-                 (update-lexemes-read raw-update-ppstate->lexemes-read)
-                 (update-lexemes-unread raw-update-ppstate->lexemes-unread)
+                 (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros))))
@@ -943,289 +940,181 @@
     :enable (raw-ppstate->chars-p
              char+position-listp))
 
-  (defrule raw-ppstate->lexemes-p-becomes-plexeme+span-listp
-    (equal (raw-ppstate->lexemes-p x)
-           (plexeme+span-listp x))
+  (defrule raw-ppstate->lexmarks-p-becomes-lexmark-listp
+    (equal (raw-ppstate->lexmarks-p x)
+           (lexmark-listp x))
     :induct t
-    :enable (raw-ppstate->lexemes-p
-             plexeme+span-listp))
+    :enable (raw-ppstate->lexmarks-p
+             lexmark-listp))
 
-  ;; needed for reader/writer proofs:
+  ;; needed for subsequent proofs:
 
-  (local (in-theory (enable ppstate-fix)))
+  (local (in-theory (enable ppstate-fix
+                            nfix
+                            update-nth-array
+                            byte-list-listp-of-resize-list
+                            char+position-listp-of-resize-list
+                            byte-list-listp-of-update-nth-strong
+                            char+position-listp-of-update-nth-strong)))
 
   ;; readers:
 
   (define ppstate->bytess-length (ppstate)
     :returns (length natp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->bytess-length ppstate)
-                  1)
+    (mbe :logic (non-exec (raw-ppstate->bytess-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytess-length ppstate)))
 
   (define ppstate->bytes ((i natp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
-    :returns (bytes byte-listp
-                    :hints
-                    (("Goal" :in-theory (enable ppstate->bytess-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->bytess-length ppstate)))
-                    (raw-ppstate->bytes (nfix i) ppstate)
-                  nil)
+    :returns (bytes byte-listp)
+    (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->bytess-length)))
-    :hooks nil)
+    :prepwork ((local (in-theory (enable ppstate->bytess-length)))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->bytess-current ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->bytess-current (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytess-current ppstate)))
 
   (define ppstate->position (ppstate)
     :returns (position positionp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->position ppstate)
-                  (irr-position))
-         :exec (raw-ppstate->position ppstate))
-    :hooks nil)
+    (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
+         :exec (raw-ppstate->position ppstate)))
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-length ppstate)
-                  1)
+    (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-length ppstate)))
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (char+pos char+position-p
-                       :hints
-                       (("Goal" :in-theory (enable ppstate->chars-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->chars-length ppstate)))
-                    (raw-ppstate->char (nfix i) ppstate)
-                  (make-char+position :char 0
-                                      :position (irr-position)))
-         :exec (raw-ppstate->char i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->chars-length)))
-    :hooks nil)
+    :returns (char+pos char+position-p)
+    (char+position-fix
+     (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
+          :exec (raw-ppstate->char i ppstate)))
+    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-read ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-read ppstate)))
 
   (define ppstate->chars-unread (ppstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->chars-unread ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
          :exec (raw-ppstate->chars-unread ppstate)))
 
-  (define ppstate->lexemes-length (ppstate)
-    :returns (length natp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexemes-length ppstate)
-                  1)
-         :exec (raw-ppstate->lexemes-length ppstate)))
-
-  (define ppstate->lexeme ((i natp) ppstate)
-    :guard (< i (ppstate->lexemes-length ppstate))
-    :returns (lexeme+span plexeme+span-p
-                          :hints
-                          (("Goal"
-                            :in-theory (enable ppstate->lexemes-length))))
-    (mbe :logic (if (and (ppstatep ppstate)
-                         (< (nfix i) (ppstate->lexemes-length ppstate)))
-                    (raw-ppstate->lexeme (nfix i) ppstate)
-                  (make-plexeme+span :lexeme (irr-plexeme)
-                                     :span (irr-position)))
-         :exec (raw-ppstate->lexeme i ppstate))
-    :guard-hints (("Goal" :in-theory (enable nfix ppstate->lexemes-length)))
-    :hooks nil)
-
-  (define ppstate->lexemes-read (ppstate)
-    :returns (lexemes-read natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexemes-read ppstate)
-                  0)
-         :exec (raw-ppstate->lexemes-read ppstate)))
-
-  (define ppstate->lexemes-unread (ppstate)
-    :returns (lexemes-unread natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->lexemes-unread ppstate)
-                  0)
-         :exec (raw-ppstate->lexemes-unread ppstate)))
+  (define ppstate->lexmarks (ppstate)
+    :returns (lexmarks lexmark-listp)
+    (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
+         :exec (raw-ppstate->lexmarks ppstate)))
 
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->ienv ppstate)
-                  (irr-ienv))
-         :exec (raw-ppstate->ienv ppstate))
-    :hooks nil)
+    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ienv ppstate)))
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->size ppstate)
-                  0)
+    (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
          :exec (raw-ppstate->size ppstate)))
 
   (define ppstate->macros (ppstate)
     :returns (macros macro-tablep)
-    (mbe :logic (if (ppstatep ppstate)
-                    (raw-ppstate->macros ppstate)
-                  (macro-table-init))
+    (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
          :exec (raw-ppstate->macros ppstate)))
 
   ;; writers:
 
   (define update-ppstate->bytess-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable nfix
-                                ppstate-fix
-                                length
-                                byte-list-listp-of-resize-list))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->bytess-length (lnfix length) ppstate)))
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->bytess-length (nfix length)
+                                                    (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytess-length length ppstate)))
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable update-nth-array
-                                ppstate->bytess-length
-                                byte-list-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->bytess-length ppstate))
-                      (raw-update-ppstate->bytes (nfix i)
-                                                 (byte-list-fix bytes)
-                                                 ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->bytes i bytes ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length nfix)))
-    :hooks nil)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->bytes (nfix i)
+                                                     (byte-list-fix bytes)
+                                                     (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytes i bytes ppstate))
+    :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->bytess-current (lnfix bytess-current) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->bytess-current (nfix bytess-current)
+                                                     (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->bytess-current bytess-current ppstate)))
 
   (define update-ppstate->position ((position positionp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->position (position-fix position) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->position (position-fix position)
+                                               (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->position position ppstate)))
 
   (define update-ppstate->chars-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable nfix
-                                ppstate-fix
-                                length
-                                char+position-listp-of-resize-list))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-length (lnfix length) ppstate)))
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-length (nfix length)
+                                                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-length length ppstate)))
 
-  (define update-ppstate->char ((i natp)
-                                (char+pos char+position-p)
-                                ppstate)
+  (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable update-nth-array
-                                ppstate->chars-length
-                                char+position-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->chars-length ppstate))
-                      (raw-update-ppstate->char (nfix i)
-                                                (char+position-fix char+pos)
-                                                ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->char i char+pos ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->chars-length nfix)))
-    :hooks nil)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (if (< (nfix i) (ppstate->chars-length ppstate))
+                     (raw-update-ppstate->char (nfix i)
+                                               (char+position-fix char+pos)
+                                               (ppstate-fix ppstate))
+                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->char i char+pos ppstate))
+    :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->chars-read ((chars-read natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-read (lnfix chars-read) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-read (nfix chars-read)
+                                                 (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-read chars-read ppstate)))
 
   (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->chars-unread (lnfix chars-unread) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->chars-unread (nfix chars-unread)
+                                                   (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->chars-unread chars-unread ppstate)))
 
-  (define update-ppstate->lexemes-length ((length natp) ppstate)
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory (enable nfix
-                                           ppstate-fix
-                                           length
-                                           plexeme+span-listp-of-resize-list))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexemes-length (lnfix length) ppstate)))
-
-  (define update-ppstate->lexeme ((i natp)
-                                  (lexeme+span plexeme+span-p)
-                                  ppstate)
-    :guard (< i (ppstate->lexemes-length ppstate))
-    :returns (ppstate ppstatep
-                      :hints
-                      (("Goal"
-                        :in-theory
-                        (enable update-nth-array
-                                ppstate->lexemes-length
-                                plexeme+span-listp-of-update-nth-strong))))
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (mbe :logic (if (< (nfix i) (ppstate->lexemes-length ppstate))
-                      (raw-update-ppstate->lexeme (nfix i)
-                                                  (plexeme+span-fix lexeme+span)
-                                                  ppstate)
-                    ppstate)
-           :exec (raw-update-ppstate->lexeme i lexeme+span ppstate)))
-    :guard-hints (("Goal" :in-theory (enable ppstate->lexemes-length nfix)))
-    :hooks nil)
-
-  (define update-ppstate->lexemes-read ((lexemes-read natp) ppstate)
+  (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexemes-read (lnfix lexemes-read) ppstate)))
-
-  (define update-ppstate->lexemes-unread ((lexemes-unread natp) ppstate)
-    :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->lexemes-unread (lnfix lexemes-unread) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
+                                               (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->ienv (ienv-fix ienv) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ienv (ienv-fix ienv)
+                                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate)))
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->size (lnfix size) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->size size ppstate)))
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
-    (b* ((ppstate (ppstate-fix ppstate)))
-      (raw-update-ppstate->macros (macro-table-fix macros) ppstate)))
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->macros (macro-table-fix macros)
+                                             (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->macros macros ppstate)))
 
   ;; readers over writers:
 
@@ -1234,300 +1123,159 @@
             (update-ppstate->bytess-length length ppstate))
            (lnfix length))
     :enable (ppstate->bytess-length
-             update-ppstate->bytess-length
-             ppstatep
-             ppstate-fix
-             length
-             byte-list-listp-of-resize-list))
+             update-ppstate->bytess-length))
 
   (defrule ppstate->bytess-current-of-update-ppstate->bytess-current
     (equal (ppstate->bytess-current
             (update-ppstate->bytess-current bytess-current ppstate))
            (nfix bytess-current))
     :enable (ppstate->bytess-current
-             update-ppstate->bytess-current
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->bytess-current))
 
   (defrule ppstate->chars-length-of-update-ppstate->bytes
     (equal (ppstate->chars-length (update-ppstate->bytes i bytes ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
              update-ppstate->bytes
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->chars-length-of-update-ppstate->bytess-current
     (equal (ppstate->chars-length
             (update-ppstate->bytess-current bytess-current ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
-             update-ppstate->bytess-current
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->bytess-current))
 
   (defrule ppstate->chars-length-of-update-ppstate->size
     (equal (ppstate->chars-length (update-ppstate->size size ppstate))
            (ppstate->chars-length ppstate))
     :enable (ppstate->chars-length
-             update-ppstate->size
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->size))
 
   (defrule ppstate->chars-read-of-update-ppstate->bytes
     (equal (ppstate->chars-read (update-ppstate->bytes i bytes ppstate))
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
              update-ppstate->bytes
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->chars-read-of-update-ppstate->bytess-current
     (equal (ppstate->chars-read
             (update-ppstate->bytess-current bytess-current ppstate))
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
-             update-ppstate->bytess-current
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->bytess-current))
 
   (defrule ppstate->chars-read-of-update-ppstate->size
     (equal (ppstate->chars-read (update-ppstate->size size ppstate))
            (ppstate->chars-read ppstate))
     :enable (ppstate->chars-read
-             update-ppstate->size
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->size))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->bytes
-    (equal (ppstate->lexemes-length (update-ppstate->bytes i bytes ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
+  (defrule ppstate->lexmarks-of-update-ppstate->bytes
+    (equal (ppstate->lexmarks (update-ppstate->bytes i bytes ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->bytes
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->bytess-current
-    (equal (ppstate->lexemes-length
+  (defrule ppstate->lexmarks-of-update-ppstate->bytess-current
+    (equal (ppstate->lexmarks
             (update-ppstate->bytess-current bytess-current ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->bytess-current
-             ppstatep
-             ppstate-fix
-             length))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
+             update-ppstate->bytess-current))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->position
-    (equal (ppstate->lexemes-length (update-ppstate->position position ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->position
-             ppstatep
-             ppstate-fix
-             length))
+  (defrule ppstate->lexmarks-of-update-ppstate->position
+    (equal (ppstate->lexmarks
+            (update-ppstate->position position ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
+             update-ppstate->position))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->char
-    (equal (ppstate->lexemes-length (update-ppstate->char i char ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
+  (defrule ppstate->lexmarks-of-update-ppstate->char
+    (equal (ppstate->lexmarks (update-ppstate->char i char ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
              update-ppstate->char
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->chars-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->chars-length))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->chars-read
-    (equal (ppstate->lexemes-length
+  (defrule ppstate->lexmarks-of-update-ppstate->chars-read
+    (equal (ppstate->lexmarks
             (update-ppstate->chars-read chars-read ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->chars-read
-             ppstatep
-             ppstate-fix
-             length))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
+             update-ppstate->chars-read))
 
-  (defrule ppstate->lexemes-length-of-update-ppstate->chars-unread
-    (equal (ppstate->lexemes-length
+  (defrule ppstate->lexmarks-of-update-ppstate->chars-unread
+    (equal (ppstate->lexmarks
             (update-ppstate->chars-unread chars-unread ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->chars-unread
-             ppstatep
-             ppstate-fix
-             length))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
+             update-ppstate->chars-unread))
 
-(defrule ppstate->lexemes-length-of-update-ppstate->lexeme
-  (equal (ppstate->lexemes-length (update-ppstate->lexeme i lexeme ppstate))
-         (ppstate->lexemes-length ppstate))
-  :enable (ppstate->lexemes-length
-           update-ppstate->lexeme
-           ppstatep
-           ppstate-fix
-           length
-           update-nth-array
-           byte-list-listp-of-update-nth-strong
-           nfix
-           max
-           len))
-
-  (defrule ppstate->lexemes-length-of-update-ppstate->lexemes-read
-    (equal (ppstate->lexemes-length
-            (update-ppstate->lexemes-read lexemes-read ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->lexemes-read
-             ppstatep
-             ppstate-fix
-             length))
-
-  (defrule ppstate->lexemes-length-of-update-ppstate->lexemes-unread
-    (equal (ppstate->lexemes-length
-            (update-ppstate->lexemes-unread lexemes-unread ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->lexemes-unread
-             ppstatep
-             ppstate-fix
-             length))
-
-  (defrule ppstate->lexemes-length-of-update-ppstate->size
-    (equal (ppstate->lexemes-length
-            (update-ppstate->size size ppstate))
-           (ppstate->lexemes-length ppstate))
-    :enable (ppstate->lexemes-length
-             update-ppstate->size
-             ppstatep
-             ppstate-fix
-             length))
+  (defrule ppstate->lexmarks-of-update-ppstate->size
+    (equal (ppstate->lexmarks (update-ppstate->size size ppstate))
+           (ppstate->lexmarks ppstate))
+    :enable (ppstate->lexmarks
+             update-ppstate->size))
 
   (defrule ppstate->size-of-update-ppstate->bytes
     (equal (ppstate->size (update-ppstate->bytes i bytes ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->bytes
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->bytess-length
-             byte-list-listp-of-update-nth-strong))
+             ppstate->bytess-length))
 
   (defrule ppstate->size-of-update-ppstate->bytess-current
     (equal (ppstate->size
             (update-ppstate->bytess-current bytess-current ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->bytess-current
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->bytess-current))
 
   (defrule ppstate->size-of-update-ppstate->position
     (equal (ppstate->size (update-ppstate->position position ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->position
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->position))
 
   (defrule ppstate->size-of-update-ppstate->char
     (equal (ppstate->size (update-ppstate->char i char+pos ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
              update-ppstate->char
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->chars-length
-             char+position-listp-of-update-nth-strong))
+             ppstate->chars-length))
 
   (defrule ppstate->size-of-update-ppstate->chars-read
     (equal (ppstate->size (update-ppstate->chars-read chars-read ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->chars-read
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->chars-read))
 
   (defrule ppstate->size-of-update-ppstate->chars-unread
-    (equal (ppstate->size (update-ppstate->chars-unread chars-unread
-                                                        ppstate))
+    (equal (ppstate->size (update-ppstate->chars-unread chars-unread ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->chars-unread
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->chars-unread))
 
-  (defrule ppstate->size-of-update-ppstate->lexeme
-    (equal (ppstate->size (update-ppstate->lexeme i lexeme ppstate))
+  (defrule ppstate->size-of-update-ppstate->lexmarks
+    (equal (ppstate->size (update-ppstate->lexmarks lexmarks ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->lexeme
-             ppstatep
-             ppstate-fix
-             length
-             update-nth-array
-             ppstate->lexemes-length
-             plexeme+span-listp-of-update-nth-strong))
-
-  (defrule ppstate->size-of-update-ppstate->lexemes-read
-    (equal (ppstate->size (update-ppstate->lexemes-read lexemes-read ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->lexemes-read
-             ppstatep
-             ppstate-fix
-             length))
-
-  (defrule ppstate->size-of-update-ppstate->lexemes-unread
-    (equal (ppstate->size (update-ppstate->lexemes-unread lexemes-unread ppstate))
-           (ppstate->size ppstate))
-    :enable (ppstate->size
-             update-ppstate->lexemes-unread
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->lexmarks))
 
   (defrule ppstate->size-of-update-ppstate->size
     (equal (ppstate->size (update-ppstate->size size ppstate))
            (lnfix size))
     :enable (ppstate->size
-             update-ppstate->size
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->size))
 
   (defrule ppstate->size-of-update-ppstate->macros
     (equal (ppstate->size (update-ppstate->macros macros ppstate))
            (ppstate->size ppstate))
     :enable (ppstate->size
-             update-ppstate->macros
-             ppstatep
-             ppstate-fix
-             length))
+             update-ppstate->macros))
 
   ;; writers over readers:
 
@@ -1536,24 +1284,14 @@
             (ppstate->chars-read ppstate) ppstate)
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-read
-             ppstate->chars-read
-             ppstatep
-             ppstate-fix
-             nfix
-             length
-             acl2::update-nth-of-nth))
+             ppstate->chars-read))
 
   (defrule update-ppstate->chars-read-of-ppstate->chars-unread
     (equal (update-ppstate->chars-unread
             (ppstate->chars-unread ppstate) ppstate)
            (ppstate-fix ppstate))
     :enable (update-ppstate->chars-unread
-             ppstate->chars-unread
-             ppstatep
-             ppstate-fix
-             nfix
-             length
-             acl2::update-nth-of-nth))
+             ppstate->chars-unread))
 
   ;; keep recognizer disabled:
 
@@ -1564,8 +1302,7 @@
 (define ppstate->gcc ((ppstate ppstatep))
   :returns (gcc booleanp)
   :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ienv->version (ppstate->ienv ppstate)))
-  :hooks nil)
+  (c::version-gccp (ienv->version (ppstate->ienv ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1591,16 +1328,11 @@
      The bytes of the file are stored into the first element of the array,
      to which the current byte list index is set to point.
      The position is the initial one.
-     There are no read or unread characters or lexemes.
+     There are no read or unread characters,
+     and no lexmarks pending.
      The macro table is obtained by pushing a new scope for the file.
-     We also resize the arrays of characters and lexemes
-     to the number of data bytes,
-     which is overkill but certainly sufficient
-     (because we will never lex more characters or lexemes than bytes);
-     if this turns out to be too large,
-     we will pick a different size,
-     but then we may need to resize the array as needed
-     while preprocessing."))
+     We also resize the arrays of characters to the number of data bytes,
+     which is sufficient because each character takes at least one byte."))
   (b* ((ppstate (update-ppstate->bytess-length (pos-fix file-recursion-limit)
                                                ppstate))
        (ppstate (update-ppstate->bytes 0 (byte-list-fix data) ppstate))
@@ -1609,9 +1341,7 @@
        (ppstate (update-ppstate->chars-length (len data) ppstate))
        (ppstate (update-ppstate->chars-read 0 ppstate))
        (ppstate (update-ppstate->chars-unread 0 ppstate))
-       (ppstate (update-ppstate->lexemes-length (len data) ppstate))
-       (ppstate (update-ppstate->lexemes-read 0 ppstate))
-       (ppstate (update-ppstate->lexemes-unread 0 ppstate))
+       (ppstate (update-ppstate->lexmarks nil ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
@@ -1620,6 +1350,28 @@
   (("Goal"
     :in-theory
     (enable ppstate->bytess-length-of-update-ppstate->bytess-length))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexmark ((lexmark lexmarkp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a lexmark onto the pending lexmark list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when unreading a lexeme,
+     and also when expaning a macro."))
+  (b* ((new-lexmarks (cons lexmark (ppstate->lexmarks ppstate)))
+       (new-size (1+ (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate)
+
+  ///
+
+  (defret ppstate->size-of-push-lexmark
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1635,13 +1387,15 @@
      we put its bytes into the next element of the array of byte lists.
      It is an internal error if there is no next element in the array:
      the file recursion limit has been exceeded."))
-  (b* (((reterr) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
        (bytess-length (ppstate->bytess-length ppstate))
        (bytess-current (ppstate->bytess-current ppstate))
+       (size (ppstate->size ppstate))
        (bytess-current (1+ bytess-current))
        ((unless (< bytess-current bytess-length))
         (reterr (msg "Exceeded file recursion limit of ~x0." bytess-length)))
        (ppstate (update-ppstate->bytes bytess-current bytes ppstate))
-       (ppstate (update-ppstate->bytess-current bytess-current ppstate)))
-    (retok ppstate))
-  :hooks nil)
+       (ppstate (update-ppstate->bytess-current bytess-current ppstate))
+       (ppstate (update-ppstate->size (+ size (len bytes)) ppstate)))
+    (retok ppstate)))

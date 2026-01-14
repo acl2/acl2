@@ -37,7 +37,7 @@
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
-         (,(if (member-eq fn '(plex-*-hexadecimal-digit))
+         (,(if (eq fn 'plex-*-hexadecimal-digit)
                '(mv erp ?ast ?pos/span ?pos/span2 ppstate)
              '(mv erp ?ast ?pos/span ppstate))
           (,fn ,@more-inputs ppstate)))
@@ -960,26 +960,24 @@
 (test-lex
  plex-line-comment
  (list 10)
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
-              (plexeme-line-comment nil (newline-lf))))
+              (plexeme-line-comment nil)))
 
 (test-lex
  plex-line-comment
  (append (acl2::string=>nats "comment") (list 10 13))
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
-              (plexeme-line-comment (acl2::string=>nats "comment")
-                                    (newline-lf))))
+              (plexeme-line-comment (acl2::string=>nats "comment"))))
 
 (test-lex
  plex-line-comment
  (append (acl2::string=>nats "/* no special significance */") (list 13))
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
               (plexeme-line-comment
-               (acl2::string=>nats "/* no special significance */")
-               (newline-cr))))
+               (acl2::string=>nats "/* no special significance */"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1508,8 +1506,7 @@
  "// single line comment
   "
  :cond (equal ast (plexeme-line-comment
-                   (acl2::string=>nats " single line comment")
-                   (newline-lf))))
+                   (acl2::string=>nats " single line comment"))))
 
 ; header names
 
