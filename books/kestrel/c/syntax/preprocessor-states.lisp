@@ -1401,7 +1401,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ppstate-add-bytes ((bytes byte-listp) (ppstate ppstatep))
-  :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :returns (mv erp (new-ppstate ppstatep))
   :short "Add some input bytes to a preprocessing state."
   :long
   (xdoc::topstring

@@ -19,7 +19,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(acl2::controlled-configuration :hooks nil)
+(acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
 
@@ -102,7 +102,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex an identifier during preprocessing."
   :long
   (xdoc::topstring
@@ -116,7 +116,8 @@
      has been already read;
      that character is passed to this function.
      The position of that character is also passed as input."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp rest-chars last-pos ppstate)
         (plex-identifier-loop first-pos ppstate))
        (span (make-span :start first-pos :end last-pos))
@@ -134,9 +135,10 @@
                                   :in-theory (enable unsigned-byte-p
                                                      integer-range-p))))
                   (last-pos positionp)
-                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                  (new-ppstate ppstatep))
      :parents nil
-     (b* (((reterr) nil (irr-position) ppstate)
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) nil (irr-position) ppstate)
           ((erp char pos ppstate) (read-pchar ppstate))
           ((when (not char))
            (retok nil (position-fix pos-so-far) ppstate))
@@ -188,7 +190,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a preprocessing number during preprocessing."
   :long
   (xdoc::topstring
@@ -204,7 +206,9 @@
      so long as we can ``extend'' the preprocessing number,
      according to the grammar rule.
      Eventually we return the full preprocessing number and the full span."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
+       (digit (str::dec-digit-char-fix digit))
        (initial-pnumber (if dot
                             (pnumber-dot-digit digit)
                           (pnumber-digit digit)))
@@ -222,9 +226,10 @@
      :returns (mv erp
                   (final-pnumber pnumberp)
                   (last-pos positionp)
-                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                  (new-ppstate ppstatep))
      :parents nil
-     (b* (((reterr) (irr-pnumber) (irr-position) ppstate)
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) (irr-pnumber) (irr-position) ppstate)
           ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; pp-number EOF
@@ -387,14 +392,15 @@
                                                    integer-range-p
                                                    integerp-when-natp))))
                (pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a hexadecimal digit during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-hexadecimal-digit),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) #\0 (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) #\0 (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((when (not char))
         (reterr-msg :where (position-to-msg pos)
@@ -435,14 +441,15 @@
   :returns (mv erp
                (quad hex-quad-p)
                (last-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a quadruple of hexadecimal digits during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-hex-quad),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) (irr-hex-quad) (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-hex-quad) (irr-position) ppstate)
        ((erp hexdig1 & ppstate) (plex-hexadecimal-digit ppstate))
        ((erp hexdig2 & ppstate) (plex-hexadecimal-digit ppstate))
        ((erp hexdig3 & ppstate) (plex-hexadecimal-digit ppstate))
@@ -484,7 +491,7 @@
                                              integerp-when-natp))))
                (last-pos positionp)
                (next-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex zero or more hexadecimal digits, as many as available,
           during preprocessing."
   :long
@@ -492,7 +499,8 @@
    (xdoc::p
     "This is the same as @(tsee lex-*-hexadecimal-digit),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) nil (irr-position) (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos ppstate))
@@ -534,14 +542,15 @@
   :returns (mv erp
                (escape escapep)
                (last-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex an escape sequence during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-escape-sequence),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) (irr-escape) (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-escape) (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
@@ -664,7 +673,7 @@
   :returns (mv erp
                (cchars c-char-listp)
                (closing-squote-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex zero or more characters and escape sequences
           in a character constant,
           during preprocessing."
@@ -674,7 +683,8 @@
     "This is the same as @(tsee lex-*-c-char),
      but it operates on preprocessor states instead of parser states,
      and we exclude CR besides LF."))
-  (b* (((reterr) nil (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -728,7 +738,7 @@
   :returns (mv erp
                (schars s-char-listp)
                (closing-dquote-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex zero or more characters and escape sequences
           in a string literal,
           during preprocessing."
@@ -738,7 +748,8 @@
     "This is the same as @(tsee lex-*-s-char),
      but it operates on preprocessor states instead of parser states,
      and we exclude CR besides LF."))
-  (b* (((reterr) nil (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -792,7 +803,7 @@
   :returns (mv erp
                (hchars h-char-listp)
                (closing-angle-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex zero or more characters
           in a header name between angle brackets,
           during preprocessing."
@@ -801,7 +812,8 @@
    (xdoc::p
     "This is the same as @(tsee lex-*-h-char),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) nil (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -847,7 +859,7 @@
   :returns (mv erp
                (qchars q-char-listp)
                (closing-dquote-pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex zero or more characters
           in a header name between double quotes,
           during preprocessing."
@@ -856,7 +868,8 @@
    (xdoc::p
     "This is the same as @(tsee lex-*-q-char),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) nil (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
@@ -904,14 +917,15 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a character constant during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-character-constant),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp cchars closing-squote-pos ppstate) (plex-*-c-char ppstate))
        (span (make-span :start first-pos :end closing-squote-pos))
        ((unless cchars)
@@ -944,14 +958,15 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a string literal during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the same as @(tsee lex-string-literal),
      but it operates on preprocessor states instead of parser states."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp schars closing-dquote-pos ppstate) (plex-*-s-char ppstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
     (retok (plexeme-string (stringlit eprefix? schars)) span ppstate))
@@ -977,7 +992,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a header name during preprocessing."
   :long
   (xdoc::topstring
@@ -985,7 +1000,8 @@
     "This is the same as @(tsee lex-header-name),
      but it operates on preprocessor states instead of parser states,
      and it returns a lexeme instead of a header name."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp char first-pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
@@ -1038,7 +1054,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a block comment during preprocessing."
   :long
   (xdoc::topstring
@@ -1056,7 +1072,8 @@
      until it is established that the @('*') is not part of
      the closing @('*/');
      see the comments interspersed with the code."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp content last-pos ppstate)
         (plex-rest-of-block-comment first-pos ppstate)))
     (retok (plexeme-block-comment content)
@@ -1072,9 +1089,10 @@
        :returns (mv erp
                     (content nat-listp)
                     (last-pos positionp)
-                    (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                    (new-ppstate ppstatep))
        :parents nil
-       (b* (((reterr) nil (irr-position) ppstate)
+       (b* ((ppstate (ppstate-fix ppstate))
+            ((reterr) nil (irr-position) ppstate)
             ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
@@ -1105,9 +1123,10 @@
        :returns (mv erp
                     (content nat-listp)
                     (last-pos positionp)
-                    (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                    (new-ppstate ppstatep))
        :parents nil
-       (b* (((reterr) nil (irr-position) ppstate)
+       (b* ((ppstate (ppstate-fix ppstate))
+            ((reterr) nil (irr-position) ppstate)
             ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
@@ -1151,6 +1170,8 @@
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
      ///
+
+     (fty::deffixequiv-mutual plex-block-comment-loops)
 
      (defret-mut-same-lexmarks plex-block-comment-loops
        (plex-rest-of-block-comment
@@ -1205,7 +1226,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a line comment during preprocessing."
   :long
   (xdoc::topstring
@@ -1227,7 +1248,8 @@
      and GCC actually relaxes this condition.
      So it is more flexible for this lexing function
      to handle end of file as successfully ending the line comment."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp content last-pos ppstate)
         (plex-line-comment-loop first-pos current-pos ppstate)))
     (retok (plexeme-line-comment content)
@@ -1242,9 +1264,10 @@
      :returns (mv erp
                   (content nat-listp)
                   (last-pos positionp)
-                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                  (new-ppstate ppstatep))
      :parents nil
-     (b* (((reterr) nil (irr-position) ppstate)
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) nil (irr-position) ppstate)
           ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; EOF
@@ -1288,7 +1311,7 @@
   :returns (mv erp
                (lexeme plexemep)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex consecutive spaces during preprocessing."
   :long
   (xdoc::topstring
@@ -1299,7 +1322,8 @@
     "We read zero or more additional spaces,
      and we return a lexeme for spaces,
      with the count incremented by one to account for the first space."))
-  (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) ppstate)
        ((erp nspaces last-pos ppstate) (plex-spaces-loop first-pos ppstate)))
     (retok (plexeme-spaces (1+ nspaces))
            (make-span :start first-pos :end last-pos)
@@ -1311,9 +1335,10 @@
      :returns (mv erp
                   (nspaces natp :rule-classes (:rewrite :type-prescription))
                   (last-pos positionp)
-                  (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+                  (new-ppstate ppstatep))
      :parents nil
-     (b* (((reterr) 0 (irr-position) ppstate)
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) 0 (irr-position) ppstate)
           ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; end of file
@@ -1353,7 +1378,7 @@
   :returns (mv erp
                (lexeme? plexeme-optionp)
                (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Lex a lexeme during preprocessing."
   :long
   (xdoc::topstring
@@ -1381,7 +1406,8 @@
      with the necessary differences,
      including the handling of the context header flag."))
 
-  (b* (((reterr) nil (irr-span) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-span) ppstate)
        ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char) ; EOF
         (retok nil ; no lexeme
