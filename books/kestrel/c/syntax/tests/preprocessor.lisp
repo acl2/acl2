@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -40,10 +40,12 @@
 
 (defmacro test-preproc (files &key expected)
   `(assert!-stobj
-    (b* ((path ".")
-         (files ,files)
+    (b* ((files ,files)
+         (base-dir ".")
+         (include-dirs nil)
          (ienv (ienv-default))
-         ((mv erp fileset state) (pproc-files path files ienv state 100)))
+         ((mv erp fileset state)
+          (pproc-files files base-dir include-dirs ienv state 1000000000)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -79,11 +81,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test-preproc '("text.c")
+              :expected (fileset-of "text.c"
+                                    "int x = 0;
+
+void f(double y) {
+  y = 0.1;
+}
+"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test-preproc '("null-directive.c")
               :expected (fileset-of "null-directive.c"
-                                    "
+                                    "/*#*/
+/* comment */ /*#*/
+/*#*/ // comment
+/* comment */ /*#*/ // comment
+    /*#*/
+"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "#include \"included.h\"
+/* comment
+   on two lines */ #include \"subdir/included2.h\"
+#include \"included.h\" // comment
+   #include \"included.h\"
+"
+                                    "included.h"
+                                    "#include \"subdir/included2.h\"
+"
+                                    "subdir/included2.h"
+                                    "/*#*/ // null directive
 "))

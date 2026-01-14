@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -8127,7 +8127,9 @@
 ; rcnst, to avoid looking it up here.  But that efficiency gain is probably
 ; trivial.
 
-  (equational-polyp-ok-rec hist (equational-polyp-limit wrld)))
+  (let ((limit (equational-polyp-limit wrld)))
+    (or (null limit) ; only possible during boot-strap at this point
+        (equational-polyp-ok-rec hist limit))))
 
 (defun simplify-clause1 (top-clause hist rcnst wrld state step-limit)
 

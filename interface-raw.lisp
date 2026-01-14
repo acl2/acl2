@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -6904,7 +6904,8 @@
                                                'nested-encapsulate)
                                               (t nil)))))))
                        (when skip-reason
-                         (when (eq skip-reason 'logic)
+                         (cond
+                          ((eq skip-reason 'logic)
                            (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
                            (with-debug (eval (car tail))
                                        "[~s] Storing *hcomp-fake-value* for ~
@@ -6912,10 +6913,10 @@
                                        'idfat-6 (*1*-symbol name))
                            (setf (gethash (*1*-symbol name) *hcomp-fn-ht*)
                                  *hcomp-fake-value*))
-                         (when evalp
+                          (evalp
                            (with-debug (eval (car tail))
                                        "[~s] Eval def for ~s.~%"
-                                       'idfat-7 (cadr (car tail))))
+                                       'idfat-7 (cadr (car tail)))))
                          (setf (car tail) nil))))))))
   (cond ((eq *hcomp-status* 'include-book)
          (assert evalp)

@@ -900,6 +900,7 @@
 
      not-equal-bvchop-when-not-equal-bvchop      ;tue feb  8 12:55:33 2011
      bvmod-of-0-arg2
+     ;; bvmod-of-power-of-2 ; introduces bvchop ; todo: this breaks a MUSE derivation
      slice-when-not-bvlt-free ;fri jan 28 18:39:08 2011
      slice-when-bvlt-gen      ;wed mar 16 00:47:10 2011 was in axe-rules
      equal-constant-when-not-slice-equal-constant ;was in axe prover rules
@@ -1240,7 +1241,7 @@
      bvdiv-of-1-arg3
      bvdiv-same
      sbvdiv-of-0-arg1
-     sbvdiv-of-0-arg2 ; unusual casae
+     sbvdiv-of-0-arg2 ; unusual case
      sbvdiv-of-1-arg3
      sbvdiv-same
 

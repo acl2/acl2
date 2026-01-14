@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "apply-fn-if-known")
+(include-book "arith-fix-and-equiv")
 (include-book "auto-instance")
 (include-book "auto-termination")
 (include-book "bits-as-digits")

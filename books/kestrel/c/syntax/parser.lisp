@@ -871,7 +871,7 @@
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-keywordp token? "_Alignas")
-      (token-keywordp token? "__attribute")
+      (token-keywordp token? "__attribut")
       (token-keywordp token? "__attribute__"))
   ///
 
@@ -8921,8 +8921,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Most statements start with distinct keywords or punctuators
-       (one punctuator, the open curly brace),
+      "Most statements start with distinct keywords or punctuators,
        but both labeled statements and expression statements
        may start with an identifier.
        However, for a labeled statement,
@@ -9637,7 +9636,7 @@
                       (t ; for ( ; ; other
                        (reterr-msg :where (position-to-msg (span->start span4))
                                    :expected "an expression ~
-                                           or a closed parenthesis"
+                                              or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is anything else, it is an error.
                   (t ; for ( ; other
@@ -9654,6 +9653,36 @@
           (retok (make-stmt-expr :expr? expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is the '__attribute__' or '__attribute' keyword,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attributed null or return statement.
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((psize (parsize parstate))
+             (uscores (token-keywordp token "__attribute__"))
+             ((erp attrib & parstate) ; attrib
+              (parse-attribute-specifier uscores span parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token2 ";") ; attrib ;
+            (retok (make-stmt-null-attrib :attrib attrib)
+                   (span-join span span2)
+                   parstate))
+           ((token-keywordp token2 "return") ; attrib return
+            (b* (((erp expr & parstate) ; attrib return expr
+                  (parse-expression parstate))
+                 ((erp last-span parstate) ; attrib return expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-stmt-return-attrib :attrib attrib
+                                              :expr expr)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; attrib other
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a semicolon or an expression"
+                        :found (token-to-msg token2))))))
        ;; If token is the 'asm' (or variant) keyword,
        ;; which can only happen if GCC extensions are supported,
        ;; we parse an assembler statement.
@@ -9769,7 +9798,7 @@
        Thus, under the appropriate conditions,
        we parse a possibly ambiguous declaration or statement."))
     (b* (((reterr) (irr-block-item) (irr-span) parstate)
-         ((erp token & parstate) (read-token parstate)))
+         ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier, we need to read another token.
        ((and token (token-case token :ident)) ; ident
@@ -9815,6 +9844,68 @@
                (retok (block-item-ambig declon/stmt.declon/stmt)
                       span
                       parstate)))))))
+       ;; If token is the '__attribute__' or '__attribute' keyword,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we need to check whether we have an attributed statement.
+       ;; This must be handled before checking for
+       ;; the start of a declaration specifier below,
+       ;; because '__attribute__' or '__attribute' may be such a start.
+       ;; We parse an attribute specifier,
+       ;; and then we see whether it is followed by semicolon or 'return',
+       ;; in which cases we have an attributed (null or return) statement.
+       ;; If that is not the case, we put back the tokens
+       ;; and we proceed to parse a declaration,
+       ;; because it means that the '__attribute__' or '__attribute' keyword
+       ;; must be the start of a declaration (specifier).
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((checkpoint (parstate->tokens-read parstate))
+             (psize (parsize parstate))
+             (uscores (token-keywordp token "__attribute__"))
+             ((erp attrib & parstate) ; attrib
+              (parse-attribute-specifier uscores span parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token2 ";") ; attrib ;
+            (retok (make-block-item-stmt
+                    :stmt (make-stmt-null-attrib :attrib attrib)
+                    :info nil)
+                   (span-join span span2)
+                   parstate))
+           ((token-keywordp token2 "return") ; attrib return
+            (b* (((erp expr & parstate) ; attrib return expr
+                  (parse-expression parstate))
+                 ((erp last-span parstate) ; attrib return expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-block-item-stmt
+                      :stmt (make-stmt-return-attrib :attrib attrib
+                                                     :expr expr)
+                      :info nil)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; attrib other
+            (b* ((parstate ; __attribute(__)
+                  (unread-to-token checkpoint parstate))
+                 ((unless (<= (parsize parstate) psize))
+                  (raise "Internal error: ~
+                          size ~x0 after backtracking exceeds ~
+                          size ~x1 before backtracking."
+                         (parsize parstate) psize)
+                  ;; Here we have (> (parsize parstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the initial parser state.
+                  ;; This is just logical: execution stops at the RAISE above.
+                  (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                    (reterr t)))
+                 (parstate (unread-token parstate)) ;
+                 ((erp declon span parstate) ; declon
+                  (parse-declaration parstate)))
+              (retok (make-block-item-declon :declon declon :info nil)
+                     span
+                     parstate))))))
        ;; If token may start a declaration specifier,
        ;; or token is the '_Static_assert' keyword,
        ;; we must have a declaration,

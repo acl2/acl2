@@ -1794,6 +1794,7 @@
                 (mv (make-stmt-expr :expr? expr?
                                     :info stmt.info)
                     env))
+        :null-attrib (mv (stmt-fix stmt) nil)
         :if (b* (((mv test value? env)
                   (const-prop-expr stmt.test env))
                  ((mv then then-env)
@@ -1889,6 +1890,11 @@
         :return (b* (((mv expr? - env)
                       (const-prop-expr-option stmt.expr? env)))
                   (mv (make-stmt-return :expr? expr? :info stmt.info) env))
+        :return-attrib (b* (((mv expr - env)
+                             (const-prop-expr stmt.expr env)))
+                         (mv (make-stmt-return-attrib :attrib stmt.attrib
+                                                      :expr expr)
+                             env))
         :asm (mv (stmt-fix stmt) nil)))
     :measure (stmt-count stmt))
 

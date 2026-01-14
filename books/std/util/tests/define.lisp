@@ -579,6 +579,17 @@
 (assert! (equal (notinline-test$notinline 2) 2))
 (assert! (equal (notinline-test 2) 2))
 
+(assert! (equal (acl2::untranslate-preproc-for-define
+                  '(inline-test$inline 1) (w state))
+                '(inline-test 1)))
+
+(define nullary-inline-test ()
+  :inline t
+  nil)
+
+(assert! (equal (acl2::untranslate-preproc-for-define
+                  '(nullary-inline-test$inline) (w state))
+                '(nullary-inline-test)))
 
 
 ;; Alessandro Coglio reported a bug to do with giving hints when using :t-proof.

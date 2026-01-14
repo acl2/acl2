@@ -24,6 +24,7 @@
                                    newline
                                    position
                                    pprint-newline
+                                   read-byte
                                    read-char
                                    read-files
                                    replace
@@ -40,6 +41,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                byte-list-listp
                 character-list
                 defirrelevant
                 defmacro+

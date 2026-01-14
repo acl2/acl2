@@ -112,7 +112,7 @@
      that is introduced by @(tsee defchoose),
      or otherwise is introduced by @(tsee defun-sk),
      or otherwise has an unnormalized body
-     (which implies that is is introduced by @(tsee defun)).
+     (which implies that it is introduced by @(tsee defun)).
      Note that @(tsee defun-sk) functions
      are internally introduced by @(tsee defun),
      so it is important to check for @(tsee defun-sk) first.

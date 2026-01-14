@@ -889,6 +889,24 @@
                                (ident "lab2"))
                          (list (ident "lab3"))))))
 
+(test-parse
+ parse-statement
+ "__attribute__((fallthrough));"
+ :gcc t
+ :cond (stmt-case ast :null-attrib))
+
+(test-parse
+ parse-statement
+ "__attribute__((assume(x == 42)));"
+ :gcc t
+ :cond (stmt-case ast :null-attrib))
+
+(test-parse
+ parse-statement
+ "__attribute__((musttail)) return bar();"
+ :gcc t
+ :cond (stmt-case ast :return-attrib))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-block-item
@@ -896,6 +914,27 @@
 (test-parse
  parse-block-item
  "idx = &((char*)session_peak())[i*BUFSIZE];")
+
+(test-parse
+ parse-block-item
+ "__attribute__((fallthrough));"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
+
+(test-parse
+ parse-block-item
+ "__attribute__((assume(x == 42)));"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
+
+(test-parse
+ parse-block-item
+ "__attribute__((musttail)) return bar();"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1288,6 +1327,20 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-translation-unit
  "void f(int x) {
  __alignof__ x;
+}
+"
+ :gcc t)
+
+(test-parse
+ parse-translation-unit
+ "int foo(int x) {
+  switch (x) {
+  case 0:
+    x++;
+    __attribute__((__fallthrough__));
+  default:
+    return x;
+  }
 }
 "
  :gcc t)

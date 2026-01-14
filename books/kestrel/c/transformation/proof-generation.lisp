@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1309,6 +1309,7 @@
                     (gout->thm-name gout))
                (and (member-equal (unop-kind op)
                                   '(:plus :minus :bitnot :lognot))
+                    (expr-formalp arg)
                     (expr-formalp expr))))
     :expand (expr-formalp (expr-unary op arg-new info))
     :enable gout-no-thm))
@@ -1418,7 +1419,7 @@
                              (expr-formalp arg-new)))
                     (gout->thm-name gout))
                (and (tyname-formalp type)
-                    (tyname-formalp type-new)
+                    (expr-formalp arg)
                     (expr-formalp expr))))
     :expand (expr-formalp (expr-cast type arg-new))
     :enable (irr-gout
@@ -1697,6 +1698,8 @@
                              (c$::binop-strictp op))
                         (member-equal (binop-kind op)
                                       '(:logand :logor :asg)))
+                    (expr-formalp arg1)
+                    (expr-formalp arg2)
                     (expr-formalp expr))))
     :expand (expr-formalp (expr-binary op arg1-new arg2-new info))
     :enable gout-no-thm))
@@ -1855,7 +1858,10 @@
                         (and (expr-formalp else)
                              (expr-formalp else-new)))
                     (gout->thm-name gout))
-               (expr-formalp expr)))
+               (and (expr-formalp test)
+                    (expr-formalp then)
+                    (expr-formalp else)
+                    (expr-formalp expr))))
     :expand (expr-formalp (expr-cond test-new then-new else-new))
     :enable (gout-no-thm
              expr-option-some->val)))
@@ -1933,7 +1939,8 @@
                         (and (expr-formalp expr)
                              (expr-formalp expr-new)))
                     (gout->thm-name gout))
-               (initer-formalp initer)))
+               (and (expr-formalp expr)
+                    (initer-formalp initer))))
     :expand (initer-formalp (initer-single expr-new))
     :enable gout-no-thm))
 
@@ -2028,7 +2035,24 @@
 
   (defret stmt-aidentp-of-xeq-stmt-expr
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-expr-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-expr expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (and (expr-option-formalp expr?)
+                    (stmt-formalp stmt))))
+    :expand ((stmt-formalp (stmt-expr nil info))
+             (stmt-formalp (stmt-expr expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2118,7 +2142,24 @@
 
   (defret stmt-aidentp-of-xeq-stmt-return
     (stmt-aidentp stmt gcc)
-    :hyp (expr-option-aidentp expr?-new gcc)))
+    :hyp (expr-option-aidentp expr?-new gcc))
+
+  (defruled xeq-stmt-return-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-return expr? expr?-new expr?-thm-name info gin)))
+      (implies (and (or (not expr?)
+                        (not expr?-thm-name)
+                        (and (expr-option-formalp expr?)
+                             (expr-option-formalp expr?-new)))
+                    (gout->thm-name gout))
+               (and (expr-option-formalp expr?)
+                    (stmt-formalp stmt))))
+    :expand ((stmt-formalp (stmt-return nil info))
+             (stmt-formalp (stmt-return expr?-new info)))
+    :enable (irr-gout
+             gout-no-thm
+             expr-option-formalp
+             expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2221,7 +2262,25 @@
   (defret stmt-aidentp-of-xeq-stmt-if
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (stmt-aidentp then-new gcc))))
+              (stmt-aidentp then-new gcc)))
+
+  (defruled xeq-stmt-if-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-if test test-new test-thm-name
+                       then then-new then-thm-name
+                       gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (gout->thm-name gout))
+               (and (expr-formalp test)
+                    (stmt-formalp then)
+                    (stmt-formalp stmt))))
+    :expand (stmt-formalp (stmt-if test-new then-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2359,7 +2418,30 @@
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
               (stmt-aidentp then-new gcc)
-              (stmt-aidentp else-new gcc))))
+              (stmt-aidentp else-new gcc)))
+
+  (defruled xeq-stmt-ifelse-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-ifelse test test-new test-thm-name
+                           then then-new then-thm-name
+                           else else-new else-thm-name
+                           gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not then-thm-name)
+                        (and (stmt-formalp then)
+                             (stmt-formalp then-new)))
+                    (or (not else-thm-name)
+                        (and (stmt-formalp else)
+                             (stmt-formalp else-new)))
+                    (gout->thm-name gout))
+               (and (expr-formalp test)
+                    (stmt-formalp then)
+                    (stmt-formalp else)
+                    (stmt-formalp stmt))))
+    :expand (stmt-formalp (stmt-ifelse test-new then-new else-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2424,7 +2506,19 @@
 
   (defret stmt-aidentp-of-xeq-stmt-compound
     (stmt-aidentp stmt gcc)
-    :hyp (comp-stmt-aidentp cstmt-new gcc)))
+    :hyp (comp-stmt-aidentp cstmt-new gcc))
+
+  (defruled xeq-stmt-compound-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-compound cstmt cstmt-new cstmt-thm-name gin)))
+      (implies (and (or (not cstmt-thm-name)
+                        (and (comp-stmt-formalp cstmt)
+                             (comp-stmt-formalp cstmt-new)))
+                    (gout->thm-name gout))
+               (and (comp-stmt-formalp cstmt)
+                    (stmt-formalp stmt))))
+    :expand (stmt-formalp (stmt-compound cstmt-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2532,7 +2626,25 @@
   (defret stmt-aidentp-of-xeq-stmt-while
     (stmt-aidentp stmt gcc)
     :hyp (and (expr-aidentp test-new gcc)
-              (stmt-aidentp body-new gcc))))
+              (stmt-aidentp body-new gcc)))
+
+  (defruled xeq-stmt-while-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-while test test-new test-thm-name
+                          body body-new body-thm-name
+                          gin)))
+      (implies (and (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (or (not body-thm-name)
+                        (and (stmt-formalp body)
+                             (stmt-formalp body-new)))
+                    (gout->thm-name gout))
+               (and (expr-formalp test)
+                    (stmt-formalp body)
+                    (stmt-formalp stmt))))
+    :expand (stmt-formalp (stmt-while test-new body-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2640,7 +2752,25 @@
   (defret stmt-aidentp-of-xeq-stmt-dowhile
     (stmt-aidentp stmt gcc)
     :hyp (and (stmt-aidentp body-new gcc)
-              (expr-aidentp test-new gcc))))
+              (expr-aidentp test-new gcc)))
+
+  (defruled xeq-stmt-dowhile-formalp-when-thm-name
+    (b* (((mv stmt gout)
+          (xeq-stmt-dowhile body body-new body-thm-name
+                            test test-new test-thm-name
+                            gin)))
+      (implies (and (or (not body-thm-name)
+                        (and (stmt-formalp body)
+                             (stmt-formalp body-new)))
+                    (or (not test-thm-name)
+                        (and (expr-formalp test)
+                             (expr-formalp test-new)))
+                    (gout->thm-name gout))
+               (and (stmt-formalp body)
+                    (expr-formalp test)
+                    (stmt-formalp stmt))))
+    :expand (stmt-formalp (stmt-dowhile body-new test-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2683,19 +2813,22 @@
                                  :vartys vartys-post))
        ((when specs-thm-name)
         (raise "Internal error: ~
-                new list of initializer declarators ~x0 ~
-                is not in the formalized subset."
-               ideclors)
+                unexpected declaration specifies transformation theorem ~x0."
+               specs-thm-name)
         (mv declon-new (irr-gout)))
        ((unless (and ideclors-thm-name
-                     (declon-block-formalp declon)))
+                     (not extension)
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs-new)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (init-declor-list-block-formalp ideclors)
+                     (init-declor-list-block-formalp ideclors-new)))
         (mv declon-new gout-no-thm))
-       ((unless (declon-block-formalp declon-new))
-        (raise "Internal error: ~
-                new declaration ~x0 is not in the formalized subset ~
-                while old declaration ~x1 is."
-               declon-new declon)
-        (mv declon-new (irr-gout)))
        (initdeclor (car ideclors))
        (var (dirdeclor-ident->ident
              (declor->direct
@@ -2771,6 +2904,7 @@
                    :thm-name thm-name
                    :vartys vartys-post)))
   :guard-hints (("Goal" :in-theory (enable declon-block-formalp
+                                           init-declor-list-block-formalp
                                            init-declor-block-formalp
                                            declor-block-formalp
                                            dirdeclor-block-formalp)))
@@ -2790,7 +2924,31 @@
   (defret declon-aidentp-of-xeq-declon-declon
     (declon-aidentp declon gcc)
     :hyp (and (decl-spec-list-aidentp specs-new gcc)
-              (init-declor-list-aidentp ideclors-new gcc))))
+              (init-declor-list-aidentp ideclors-new gcc)))
+
+  (defruled xeq-declon-declon-formalp-when-thm-name
+    (b* (((mv declon gout)
+          (xeq-declon-declon extension
+                             specs specs-new specs-thm-name
+                             ideclors ideclors-new ideclors-thm-name
+                             vartys-post gin)))
+      (implies (and (or (not ideclors-thm-name)
+                        (and (init-declor-list-block-formalp ideclors)
+                             (init-declor-list-block-formalp ideclors-new)))
+                    (gout->thm-name gout))
+               (and (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs-new)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (init-declor-list-block-formalp ideclors)
+                    (declon-block-formalp declon))))
+    :expand (declon-block-formalp (declon-declon nil specs ideclors-new))
+    :enable (irr-gout
+             gout-no-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2863,16 +3021,28 @@
 
   (defret block-item-aidentp-of-xeq-block-item-stmt
     (block-item-aidentp item gcc)
-    :hyp (stmt-aidentp stmt-new gcc)))
+    :hyp (stmt-aidentp stmt-new gcc))
+
+  (defruled xeq-block-item-stmt-formalp-when-thm-name
+    (b* (((mv item gout)
+          (xeq-block-item-stmt stmt stmt-new stmt-thm-name info gin)))
+      (implies (and (or (not stmt-thm-name)
+                        (and (stmt-formalp stmt)
+                             (stmt-formalp stmt-new)))
+                    (gout->thm-name gout))
+               (and (stmt-formalp stmt)
+                    (block-item-formalp item))))
+    :expand (block-item-formalp (block-item-stmt stmt-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define xeq-block-item-declon ((declon declonp)
-                             (declon-new declonp)
-                             (declon-thm-name symbolp)
-                             info
-                             (vartys-post c::ident-type-mapp)
-                             (gin ginp))
+                               (declon-new declonp)
+                               (declon-thm-name symbolp)
+                               info
+                               (vartys-post c::ident-type-mapp)
+                               (gin ginp))
   :guard (and (declon-unambp declon)
               (declon-annop declon)
               (declon-unambp declon-new)
@@ -2940,7 +3110,20 @@
 
   (defret block-item-aidentp-of-xeq-block-item-declon
     (block-item-aidentp item gcc)
-    :hyp (declon-aidentp declon-new gcc)))
+    :hyp (declon-aidentp declon-new gcc))
+
+  (defruled xeq-block-item-declon-formalp-when-thm-name
+    (b* (((mv item gout)
+          (xeq-block-item-declon declon declon-new declon-thm-name
+                                 info vartys-post gin)))
+      (implies (and (or (not declon-thm-name)
+                        (and (declon-block-formalp declon)
+                             (declon-block-formalp declon-new)))
+                    (gout->thm-name gout))
+               (and (declon-block-formalp declon)
+                    (block-item-formalp item))))
+    :expand (block-item-formalp (block-item-declon declon-new info))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3097,7 +3280,25 @@
   (defret block-item-list-aidentp-of-xeq-block-item-list-cons
     (block-item-list-aidentp item+items gcc)
     :hyp (and (block-item-aidentp item-new gcc)
-              (block-item-list-aidentp items-new gcc))))
+              (block-item-list-aidentp items-new gcc)))
+
+  (defruled xeq-block-item-list-cons-formalp-when-thm-name
+    (b* (((mv item+items gout)
+          (xeq-block-item-list-cons item item-new item-thm-name
+                                    items items-new items-thm-name
+                                    gin)))
+      (implies (and (or (not item-thm-name)
+                        (and (block-item-formalp item)
+                             (block-item-formalp item-new)))
+                    (or (not items-thm-name)
+                        (and (block-item-list-formalp items)
+                             (block-item-list-formalp items-new)))
+                    (gout->thm-name gout))
+               (and (block-item-formalp item)
+                    (block-item-list-formalp items)
+                    (block-item-list-formalp item+items))))
+    :expand (block-item-list-formalp (cons item-new items-new))
+    :enable gout-no-thm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3206,8 +3407,24 @@
                                   (omap::update cvar ctype gin.vartys))
                               gin.vartys))
        (gout-no-thm (change-gout (gout-no-thm gin) :vartys vartys-after-fundef))
-       ((unless body-thm-name) (mv new-fundef gout-no-thm))
-       ((unless (fundef-formalp fundef)) (mv new-fundef gout-no-thm))
+
+       ((unless (and body-thm-name
+                     (not extension)
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (b* (((mv okp tyspecs)
+                           (check-decl-spec-list-all-typespec specs-new)))
+                       (and okp
+                            (type-spec-list-formalp tyspecs)))
+                     (declor-fun-formalp declor)
+                     (declor-fun-formalp declor-new)
+                     (not asm?)
+                     (endp attribs)
+                     (endp declons)
+                     (endp declons-new)))
+        (mv new-fundef gout-no-thm))
        ((declor declor) declor)
        ((when (consp declor.pointers)) (mv new-fundef gout-no-thm))
        ((mv okp params dirdeclor)
@@ -3369,4 +3586,37 @@
               (declon-list-unambp declons-new)
               (declon-list-aidentp declons-new gcc)
               (comp-stmt-unambp body-new)
-              (comp-stmt-aidentp body-new gcc))))
+              (comp-stmt-aidentp body-new gcc)))
+
+  (defruled xeq-fundef-formalp-when-thm-name
+    (b* (((mv fundef gout)
+          (xeq-fundef extension
+                      specs specs-new
+                      declor declor-new
+                      asm?
+                      attribs
+                      declons
+                      declons-new
+                      body body-new body-thm-name
+                      info gin)))
+      (implies (and (or (not body-thm-name)
+                        (and (comp-stmt-formalp body)
+                             (comp-stmt-formalp body-new)))
+                    (gout->thm-name gout))
+               (and (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (b* (((mv okp tyspecs)
+                          (check-decl-spec-list-all-typespec specs-new)))
+                      (and okp
+                           (type-spec-list-formalp tyspecs)))
+                    (declor-fun-formalp declor)
+                    (declor-fun-formalp declor-new)
+                    (endp attribs)
+                    (endp declons)
+                    (endp declons-new)
+                    (comp-stmt-formalp body)
+                    (fundef-formalp fundef))))
+    :enable (fundef-formalp
+             gout-no-thm)))

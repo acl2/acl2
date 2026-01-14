@@ -1374,6 +1374,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-size-exact ((type typep) (ienv ienvp))
+  :returns (size? acl2::maybe-natp)
+  :short "Get the exact size of a type in bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If we do not have sufficient information to calculate the size,
+     we return @('nil') instead.")
+   (xdoc::p
+    "These values largely come directly from the implementation environment.
+     The size of the complex floating types is given by [C17:6.2.5/13]."))
+  (b* (((ienv ienv) ienv))
+    (type-case
+      type
+      :void nil
+      :char 1
+      :schar 1
+      :uchar 1
+      :sshort ienv.short-bytes
+      :ushort ienv.short-bytes
+      :sint ienv.int-bytes
+      :uint ienv.int-bytes
+      :slong ienv.long-bytes
+      :ulong ienv.long-bytes
+      :sllong ienv.llong-bytes
+      :ullong ienv.llong-bytes
+      :float ienv.float-bytes
+      :double ienv.double-bytes
+      :ldouble ienv.ldouble-bytes
+      :floatc (* 2 ienv.float-bytes)
+      :doublec (* 2 ienv.double-bytes)
+      :ldoublec (* 2 ienv.ldouble-bytes)
+      :bool ienv.bool-bytes
+      :struct nil
+      :union nil
+      :enum nil
+      :array nil
+      :pointer ienv.pointer-bytes
+      :function nil
+      :unknown nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defomap ident-type-map
   :short "Fixtype of omaps from identifiers to types."
   :key-type ident

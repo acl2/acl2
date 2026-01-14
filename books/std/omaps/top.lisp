@@ -18,3 +18,5 @@
 (include-book "compatiblep")
 (include-book "delete")
 (include-book "update")
+(include-book "from-alist")
+(include-book "from-lists")

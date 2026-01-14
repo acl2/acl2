@@ -226,3 +226,23 @@
                                   (i2 8))
            :in-theory (enable bvmod bvchop
                               mod-of-mod-when-multiple))))
+
+(defthmd bvmod-of-power-of-2-helper
+  (implies (and (equal k (expt 2 m))
+                (< m n)
+                (natp n)
+                (natp m))
+           (equal (bvmod n x k)
+                  (bvchop m x)))
+  :hints (("Goal" :in-theory (enable bvmod bvchop))))
+
+(defthm bvmod-of-power-of-2
+  (implies (and (syntaxp (quotep k))
+                (equal k (expt 2 (+ -1 (integer-length k))))
+                (< (+ -1 (integer-length k)) n) ;gen?
+                (natp n)
+                (natp k))
+           (equal (bvmod n x k)
+                  (bvchop (+ -1 (integer-length k)) x)))
+  :hints (("Goal" :use (:instance bvmod-of-power-of-2-helper
+                                  (m (+ -1 (integer-length k)))))))

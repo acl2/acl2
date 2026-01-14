@@ -301,6 +301,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption span-option
+  span
+  :short "Fixtype of optional spans."
+  :pred span-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define span-join ((span1 spanp) (span2 spanp))
   :returns (span spanp)
   :short "Join two spans."

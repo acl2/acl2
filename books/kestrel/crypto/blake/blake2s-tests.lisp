@@ -70,7 +70,7 @@
                   (progn$ (cw "Test failed.~%In: ~x0.~%Key: ~x1.~%Expected result:~x2.~%Actual Result: ~x3." in key out-bytes test-result)
                           :fail))))))))))
 
-;; Returns result, which is is :pass, :fail, or :error.
+;; Returns result, which is :pass, :fail, or :error.
 (defund run-parsed-blake2s-tests (tests)
   (declare (xargs :guard t))
   (if (atom tests)
