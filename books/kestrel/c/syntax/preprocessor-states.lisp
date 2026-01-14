@@ -424,10 +424,11 @@
      but does not capture the fact that the single spaces
      only occur between two tokens,
      which should be also an invariant.
-     The list of lexemes excludes
-     the (mandatory [C17:6.10.3/3]) white space
+     The list of lexemes that forms the replacement list
+     excludes the (mandatory [C17:6.10.3/3]) white space
+     (and comments, which we keep but must treat as white space)
      between the name and the replacement list,
-     as well as the white space after the replacement list,
+     as well as the white space (and comments) after the replacement list,
      excluding the closing new line as well
      [C17:6.10.3/7].")
    (xdoc::p
@@ -435,13 +436,13 @@
      besides the replacement list,
      which we model as for object-like macros (see above),
      we have zero or more parameters, which are identifiers,
-     and an optional ellipsis parameter,
-     whose presence or absence we model as a boolean.
-     The list of lexemes excludes any white space between
-     the closing parenthesis of the parameters and the replacement list,
-     as well as the white space after the replacement list,
-     exclusing the closing new line as well
-     [C17:6.10.3/7]."))
+     an optional ellipsis parameter,
+     whose presence or absence we model as a boolean,
+     and a subset of the parameters that are, in the replacement list,
+     either preceded by @('#') or @('##') or followed by @('##').
+     This subset is modeled as a list, but treated as a set.
+     If the parameters include an ellipsis,
+     we need to count it as the @('__VA_ARGS__') identifier."))
   (:object ((replist plexeme-list
                      :reqfix (if (plexeme-list-token/space-p replist)
                                  replist
@@ -452,8 +453,20 @@
               (replist plexeme-list
                        :reqfix (if (plexeme-list-token/space-p replist)
                                    replist
-                                 nil)))
-   :require (plexeme-list-token/space-p replist))
+                                 nil))
+              (hash-params ident-list
+                           :reqfix (if (subsetp-equal
+                                        hash-params
+                                        (if ellipsis
+                                            (cons (ident "__VA_ARGS__") params)
+                                          params))
+                                       hash-params
+                                     nil)))
+   :require (and (plexeme-list-token/space-p replist)
+                 (subsetp-equal hash-params
+                                (if ellipsis
+                                    (cons (ident "__VA_ARGS__") params)
+                                  params))))
   :pred macro-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
