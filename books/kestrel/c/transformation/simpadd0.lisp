@@ -2900,7 +2900,9 @@
                                    c$::expr-formalp-when-const
                                    xeq-expr-ident-formalp-when-thm-name
                                    xeq-expr-const-formalp-when-thm-name))))
-    :skip-others t))
+    :skip-others t)
+
+  (in-theory (disable simpadd0-expr-formalp-when-thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
