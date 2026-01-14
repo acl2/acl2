@@ -442,18 +442,18 @@
      as well as the white space after the replacement list,
      exclusing the closing new line as well
      [C17:6.10.3/7]."))
-  (:object ((replace plexeme-list
-                     :reqfix (if (plexeme-list-token/space-p replace)
-                                 replace
+  (:object ((replist plexeme-list
+                     :reqfix (if (plexeme-list-token/space-p replist)
+                                 replist
                                nil)))
-   :require (plexeme-list-token/space-p replace))
+   :require (plexeme-list-token/space-p replist))
   (:function ((params ident-list)
               (ellipsis bool)
-              (replace plexeme-list
-                       :reqfix (if (plexeme-list-token/space-p replace)
-                                   replace
+              (replist plexeme-list
+                       :reqfix (if (plexeme-list-token/space-p replist)
+                                   replist
                                  nil)))
-   :require (plexeme-list-token/space-p replace))
+   :require (plexeme-list-token/space-p replist))
   :pred macro-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
