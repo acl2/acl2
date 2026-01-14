@@ -621,16 +621,15 @@
                (lexeme? plexeme-optionp)
                (span spanp)
                (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a lexeme during preprocessing."
+  :short "Read a lexeme during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level function of the lexer.
-     If there are pending lexmarks,
+    "If there are pending lexmarks,
      we return the first one if it is a lexeme
      (and throw an error if it is a marker, for now).
      If there are no pending lexmarks,
-     we call @(tsee plex-lexeme) to read a lexeme from the input."))
+     we call @(tsee plex-lexeme) to lex a lexeme from the input."))
   (b* (((reterr) nil (irr-span) ppstate)
        (lexmarks (ppstate->lexmarks ppstate))
        (size (ppstate->size ppstate))
