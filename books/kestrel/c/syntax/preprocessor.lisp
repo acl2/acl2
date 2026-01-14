@@ -671,6 +671,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a lexeme."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add the lexeme to the list of pending lexmarks.
+     See @(tsee ppstate)."))
+  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
+
+  ///
+
+  (defret ppstate->size-of-unread-plexeme
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-ptoken ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontokens plexeme-listp)
@@ -721,7 +739,7 @@
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
@@ -774,24 +792,6 @@
                  (1- (ppstate->size ppstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
-  :short "Unread a lexeme."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We add the lexeme to the list of pending lexmarks.
-     See @(tsee ppstate)."))
-  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
-
-  ///
-
-  (defret ppstate->size-of-unread-plexeme
-    (equal (ppstate->size new-ppstate)
-           (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
