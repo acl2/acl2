@@ -693,58 +693,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-ptoken ((headerp booleanp) (ppstate ppstatep))
-  :returns (mv erp
-               (nontokens plexeme-listp)
-               (token? plexeme-optionp)
-               (token-span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token during preprocessing."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We lex zero or more non-tokens, until we find a token.
-     We return the list of non-tokens, and the token with its span.
-     If we reach the end of file, we return @('nil') as the token,
-     and a span consisting of just the current position.")
-   (xdoc::p
-    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
-     see that function's documentation."))
-  (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
-       ((when (not lexeme)) (retok nil nil span ppstate))
-       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens token token-span ppstate) (read-ptoken headerp ppstate)))
-    (retok (cons lexeme nontokens) token token-span ppstate))
-  :measure (ppstate->size ppstate)
-
-  ///
-
-  (defret plexeme-list-not-tokenp-of-read-ptoken
-    (plexeme-list-not-tokenp nontokens)
-    :hints (("Goal" :induct t)))
-
-  (defret plexeme-tokenp-of-read-ptoken
-    (implies token?
-             (plexeme-tokenp token?))
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-cond
-    (implies (and (not erp)
-                  token?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontoknls plexeme-listp)
