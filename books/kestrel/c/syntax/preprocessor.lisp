@@ -933,7 +933,7 @@
      (xdoc::p
       "The bytes contained in the file are passed to this function.
        The file itself is read by the callers,
-       namely @(tsee pproc-files) and @(tsee pproc-include-directive).")
+       namely @(tsee pproc-files) and @(tsee pproc-include).")
      (xdoc::p
       "If @('file') is found in the list of the files under preprocessing,
        we stop with an error, because there is a circularity.
@@ -1226,17 +1226,17 @@
                ((equal directive "ifndef") ; # ifndef
                 (reterr (msg "#ifndef directive not yet supported."))) ; TODO
                ((equal directive "include") ; # include
-                (pproc-include-directive nontoknls-before-hash
-                                         nontoknls-after-hash
-                                         file
-                                         base-dir
-                                         include-dirs
-                                         preprocessed
-                                         preprocessing
-                                         rev-lexemes
-                                         ppstate
-                                         state
-                                         (1- limit)))
+                (pproc-include nontoknls-before-hash
+                               nontoknls-after-hash
+                               file
+                               base-dir
+                               include-dirs
+                               preprocessed
+                               preprocessing
+                               rev-lexemes
+                               ppstate
+                               state
+                               (1- limit)))
                ((equal directive "define") ; # define
                 (reterr (msg "#define directive not yet supported."))) ; TODO
                ((equal directive "undef") ; # undef
@@ -1287,17 +1287,17 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-include-directive ((nontoknls-before-hash plexeme-listp)
-                                   (nontoknls-after-hash plexeme-listp)
-                                   (file stringp)
-                                   (base-dir stringp)
-                                   (include-dirs string-listp)
-                                   (preprocessed string-scfile-alistp)
-                                   (preprocessing string-listp)
-                                   (rev-lexemes plexeme-listp)
-                                   (ppstate ppstatep)
-                                   state
-                                   (limit natp))
+  (define pproc-include ((nontoknls-before-hash plexeme-listp)
+                         (nontoknls-after-hash plexeme-listp)
+                         (file stringp)
+                         (base-dir stringp)
+                         (include-dirs string-listp)
+                         (preprocessed string-scfile-alistp)
+                         (preprocessing string-listp)
+                         (rev-lexemes plexeme-listp)
+                         (ppstate ppstatep)
+                         state
+                         (limit natp))
     :returns (mv erp
                  (groupend? groupend-optionp)
                  (new-rev-lexemes plexeme-listp)
