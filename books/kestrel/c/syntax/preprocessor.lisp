@@ -1143,7 +1143,24 @@
       "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
        and we call a separate function to handle the rest of the line,
-       after putting the non-hash lexeme back."))
+       after putting the non-hash lexeme back.")
+     (xdoc::p
+      "[C17:6.10.3/5] only allows space and horizontal tab in a directive
+       (from just after the @('#') to just before the new line).
+       However, [C17:5.1.1.2/1] in phase 3
+       (which precedes preprocessing, i.e. phase 4)
+       requires comments to be replaced by spaces
+       and allows other non-new-line white space to be replaced by spaces.
+       Although we do not carry out such replacements,
+       we must act as if we did,
+       i.e. at least as if we had replaced comments with spaces:
+       thus we must accept comments.
+       We also choose, as allowed,
+       to conceptually replace non-new-line white space
+       (i.e. horizontal tab, vertical tab, and form feed)
+       with spaces, for maximal liberality.
+       Thus, we can accept all white space and comments in a directive,
+       as @(tsee pread-token/newline) does."))
     (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
