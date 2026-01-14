@@ -6395,6 +6395,37 @@
           (unsigned-canonical-rules)
           (canonical-rules-bv)))
 
+;; This should include all rules used by the unroller:
+(defund all-unroller-rules ()
+  (declare (xargs :guard t))
+  (append (unroller-rules32)
+          (unroller-rules64)
+          (read-and-write-rules-bv)
+          ;;  (read-and-write-rules-non-bv)
+          (assumption-simplification-rules32)
+          (assumption-simplification-rules64)
+          (step-opener-rules32)
+          (step-opener-rules64)
+          (new-normal-form-rules-common)
+          (canonical-rules-bv)
+          (new-normal-form-rules64)
+          (unsigned-canonical-rules)
+          (symbolic-execution-rules32)
+          (symbolic-execution-rules64)
+          (prune-dag-post-rewrite-rules)))
+
+(defun additional-rules-for-tester ()
+  (declare (xargs :guard t))
+  (append (extra-tester-rules)
+          (extra-tester-lifting-rules)
+          (tester-proof-rules)))
+
+;; This should include all rules used by the tester:
+(defund all-tester-rules ()
+  (declare (xargs :guard t))
+  (append (all-unroller-rules)
+          (additional-rules-for-tester)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Based on how commonly these rules were used in an example:

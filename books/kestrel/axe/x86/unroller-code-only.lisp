@@ -38,19 +38,5 @@
               def-unrolled-fn
               print-level-at-least-tp
               make-event-quiet maybe-remove-temp-dir
-
-              ;; Rules used during unrolling:
-              ,@(unroller-rules32)
-              ,@(unroller-rules64)
-              ,@(read-and-write-rules-bv)
-              ;;  ,@(read-and-write-rules-non-bv)
-              ,@(assumption-simplification-rules32)
-              ,@(assumption-simplification-rules64)
-              ,@(step-opener-rules32)
-              ,@(step-opener-rules64)
-              ,@(new-normal-form-rules-common)
-              ,@(canonical-rules-bv)
-              ,@(new-normal-form-rules64)
-              ,@(unsigned-canonical-rules)
-              ,@(symbolic-execution-rules32)
-              ,@(symbolic-execution-rules64))))
+              ;; Rules needed by the unroller:
+              ,@(all-unroller-rules))))
