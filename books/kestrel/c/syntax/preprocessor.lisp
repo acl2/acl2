@@ -981,19 +981,18 @@
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
+         (preprocessed (string-scfile-alist-fix preprocessed))
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         (preprocessed (string-scfile-alist-fix preprocessed))
          (name+scfile (assoc-equal file preprocessed))
          ((when name+scfile) (retok (cdr name+scfile) preprocessed state))
          ((erp lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
             (mv-let (erp rev-lexemes macros ppstate preprocessed state)
-                (b* ((ppstate
-                      (init-ppstate bytes 200 macros ienv ppstate))
+                (b* ((ppstate (init-ppstate bytes 200 macros ienv ppstate))
                      ((mv erp groupend rev-lexemes ppstate preprocessed state)
                       (pproc-*-group-part file
                                           base-dir
@@ -1549,7 +1548,7 @@
              ((when (and (not innermostp)
                          (not predefinedp)))
               (reterr :not-self-contained)))
-          (reterr (msg "Macro expansion not yet supported."))))
+          (reterr (msg "Macro expansion not yet supported.")))) ; TODO
        (t ; non-ident-token
         (b* ((rev-lexemes (cons toknl rev-lexemes)))
           (pproc-line-rest file
