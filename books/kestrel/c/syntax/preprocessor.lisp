@@ -1121,9 +1121,24 @@
        because non-empty files must end with new lines [C17:5.2.1.2/2].
        Otherwise, we return the end-of-file group ending.")
      (xdoc::p
-      "If we find a hash, we have a directive,
-       which we handle in a separate function,
-       to which we pass the white space and comments before the hash.")
+      "If we find a hash, we have a directive.
+       We read the next token or new line.
+       If we find none, it is an error,
+       beacuse the file cannot end without a new line [C17:5.2.1.2/2].
+       If we find a new line, we have a null directive [C17:6.10.7]:
+       we leave the line as is,
+       but we wrap the @('#') into a (small) block comment
+       (perhaps we could allow a different behavior based on user options).
+       If we find an identifier, we dispatch based on the identifier:
+       for @('#elif'), @('#else'), and @('#endif'),
+       we return the corresponding group ending;
+       for other directives, we call separate functions.
+       If the identifier is not a directive name,
+       or if we do find an identifier,
+       we have a non-directive
+       (which is a directive, despite the name,
+       see footnote 175 in [C17:6.10.3/11]):
+       we return an error for now, which is consistent with [C17:6.10/9].")
      (xdoc::p
       "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
@@ -1144,17 +1159,99 @@
                  (string-scfile-alist-fix preprocessed)
                  state)))
        ((plexeme-hashp toknl) ; #
-        (pproc-directive nontoknls
-                         file
-                         base-dir
-                         include-dirs
-                         preprocessed
-                         preprocessing
-                         rev-lexemes
-                         ppstate
-                         state
-                         (1- limit)))
-       (t ; non-#
+        (b* ((nontoknls-before-hash nontoknls)
+             ((erp nontoknls-after-hash toknl2 span2 ppstate)
+              (pread-token/newline nil ppstate)))
+          (cond
+           ((not toknl2) ; # EOF
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a token or new line"
+                        :found (plexeme-to-msg toknl2)))
+           ((plexeme-case toknl2 :newline) ; # EOL -- null directive
+            (b* ((rev-lexemes (plexeme-list-fix rev-lexemes))
+                 (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
+                 (rev-lexemes (cons (plexeme-block-comment
+                                     (list (char-code #\#)))
+                                    rev-lexemes))
+                 (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
+                 (rev-lexemes (cons toknl2 ; toknl2 is the new line
+                                    rev-lexemes)))
+              (retok nil ; no group ending
+                     rev-lexemes
+                     ppstate
+                     (string-scfile-alist-fix preprocessed)
+                     state)))
+           ((plexeme-case toknl2 :ident) ; # ident
+            (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
+              (cond
+               ((equal directive "elif") ; # elif
+                (retok (groupend-elif)
+                       (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state))
+               ((equal directive "else") ; # else
+                (retok (groupend-else)
+                       (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state))
+               ((equal directive "endif") ; # endif
+                (retok (groupend-endif)
+                       (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state))
+               ((equal directive "if") ; # if
+                (reterr (msg "#if directive not yet supported."))) ; TODO
+               ((equal directive "ifdef") ; # ifdef
+                (reterr (msg "#ifdef directive not yet supported."))) ; TODO
+               ((equal directive "ifndef") ; # ifndef
+                (reterr (msg "#ifndef directive not yet supported."))) ; TODO
+               ((equal directive "include") ; # include
+                (pproc-include-directive nontoknls-before-hash
+                                         nontoknls-after-hash
+                                         file
+                                         base-dir
+                                         include-dirs
+                                         preprocessed
+                                         preprocessing
+                                         rev-lexemes
+                                         ppstate
+                                         state
+                                         (1- limit)))
+               ((equal directive "define") ; # define
+                (reterr (msg "#define directive not yet supported."))) ; TODO
+               ((equal directive "undef") ; # undef
+                (reterr (msg "#undef directive not yet supported."))) ; TODO
+               ((equal directive "line") ; # line
+                (reterr (msg "#line directive not yet supported."))) ; TODO
+               ((equal directive "error") ; # error
+                (reterr (msg "#error directive not yet supported."))) ; TODO
+               ((equal directive "pragma") ; # pragma
+                (reterr (msg "#pragma directive not yet supported."))) ; TODO
+               (t ;  # other -- non-directive
+                (reterr-msg :where (span->start span2)
+                            :expected "a directive name among ~
+                                       'if', ~
+                                       'ifdef', ~
+                                       'ifndef', ~
+                                       'elif', ~
+                                       'else', ~
+                                       'endif', ~
+                                       'include', ~
+                                       'define', ~
+                                       'undef', ~
+                                       'line', ~
+                                       'error', and ~
+                                       'pragma'"
+                            :found (msg "the directive name '~s0'"
+                                        directive))))))
+           (t ;  # non-ident -- non-directive
+            (reterr-msg :where (span->start span2)
+                        :expected "an identifier"
+                        :found (plexeme-to-msg toknl2))))))
+       (t ; non-# -- text line
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
              (ppstate (punread-lexeme toknl span ppstate))
              ((erp rev-lexemes ppstate preprocessed state)
@@ -1168,155 +1265,6 @@
                                state
                                (1- limit))))
           (retok nil rev-lexemes ppstate preprocessed state)))))
-    :measure (nfix limit)
-    :no-function nil)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define pproc-directive ((nontoknls-before-hash plexeme-listp)
-                           (file stringp)
-                           (base-dir stringp)
-                           (include-dirs string-listp)
-                           (preprocessed string-scfile-alistp)
-                           (preprocessing string-listp)
-                           (rev-lexemes plexeme-listp)
-                           (ppstate ppstatep)
-                           state
-                           (limit natp))
-    :returns (mv erp
-                 (groupend? groupend-optionp)
-                 (new-rev-lexemes plexeme-listp)
-                 (new-ppstate ppstatep :hyp (ppstatep ppstate))
-                 (new-preprocessed string-scfile-alistp)
-                 state)
-    :parents (preprocessor pproc)
-    :short "Preprocess a directive."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "With reference to the grammar,
-       a directive is a group part that starts with @('#');
-       this function is called just after the @('#') has been encountered,
-       possibly preceded by comments and white space,
-       which are passed as the @('nontoknls-before-hash') parameter.
-       A directive may be an @('if') group (which may span multiple lines),
-       a control line (which spans one line),
-       or a non-directive (which spans one line);
-       the latter, despite the name, is considered a directive
-       (see footnote 175 in [C17:6.10.3/11]).")
-     (xdoc::p
-      "We read the next token or new line, and dispatch accordingly.
-       Although [C17:6.10/5] only allows spaces and horizontal tabs
-       as white space within preprocessing directives,
-       [C17:5.1.1.2/1] in phase 3 (which precedes preprocessing, i.e. phase 4)
-       requires comments to be replaced by spaces
-       and allows other non-new-line white space to be replaced by spaces.
-       Although we do not carry out such replacements,
-       we must act as if we did,
-       i.e. at least as if we had replaced comments with spaces:
-       thus we must accept comments.
-       We also choose, as allowed,
-       to conceptually replace non-new-line white space
-       (i.e. horizontal tab, vertical tab, and form feed)
-       with spaces, for maximal liberality.
-       Thus, the use of @(tsee pread-token/newline) is justified here.")
-     (xdoc::p
-      "If we find no token or new line, it is an error.")
-     (xdoc::p
-      "If we find a new line, we have the null directive [C17:6.10.7].
-       We leave the line as is,
-       but we wrap the @('#') into a (small) block comment.")
-     (xdoc::p
-      "If we find an identifier,
-       we check to see if it is the name of a known directive,
-       and we handle the directive accordingly if that is the case.
-       If it is not a directive name, or if it is not even an identifier,
-       we have a non-directive [C17:6.10/9],
-       which renders the behavior undefined;
-       we stop with an error in this case.
-       (We may extend this in the future,
-       e.g. to accommodate non-standard directives.)"))
-    (b* (((reterr) nil nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls-after-hash toknl span ppstate)
-          (pread-token/newline nil ppstate)))
-      (cond
-       ((not toknl) ; # EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or new line"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; # EOL
-        ;; null directive
-        (b* ((nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
-             (rev-lexemes (plexeme-list-fix rev-lexemes))
-             (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
-             (rev-lexemes (cons (plexeme-block-comment (list (char-code #\#)))
-                                rev-lexemes))
-             (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
-             (rev-lexemes (cons toknl ; toknl is new line
-                                rev-lexemes)))
-          (retok nil
-                 rev-lexemes
-                 ppstate
-                 (string-scfile-alist-fix preprocessed)
-                 state)))
-       ((plexeme-case toknl :ident) ; # ident
-        (b* ((dirname (ident->unwrap (plexeme-ident->ident toknl))))
-          (cond
-           ((equal dirname "if") ; # if
-            (reterr (msg "#if directive not yet supported."))) ; TODO
-           ((equal dirname "ifdef") ; # ifdef
-            (reterr (msg "#ifdef directive not yet supported."))) ; TODO
-           ((equal dirname "ifndef") ; # ifndef
-            (reterr (msg "#ifndef directive not yet supported."))) ; TODO
-           ((equal dirname "include") ; # include
-            (pproc-include-directive nontoknls-before-hash
-                                     nontoknls-after-hash
-                                     file
-                                     base-dir
-                                     include-dirs
-                                     preprocessed
-                                     preprocessing
-                                     rev-lexemes
-                                     ppstate
-                                     state
-                                     (1- limit)))
-           ((equal dirname "define") ; # define
-            (reterr (msg "#define directive not yet supported."))) ; TODO
-           ((equal dirname "undef") ; # undef
-            (reterr (msg "#undef directive not yet supported."))) ; TODO
-           ((equal dirname "line") ; # line
-            (reterr (msg "#line directive not yet supported."))) ; TODO
-           ((equal dirname "error") ; # error
-            (reterr (msg "#error directive not yet supported."))) ; TODO
-           ((equal dirname "pragma") ; # pragma
-            (reterr (msg "#pragma directive not yet supported."))) ; TODO
-           (t ;  # non-directive
-            (reterr-msg :where (span->start span)
-                        :expected "a directive name among ~
-                                   'if', ~
-                                   'ifdef', ~
-                                   'ifndef', ~
-                                   'include', ~
-                                   'define', ~
-                                   'undef', ~
-                                   'line', ~
-                                   'error', and ~
-                                   'pragma'"
-                        :found (plexeme-to-msg toknl))))))
-       (t ; # non-directive
-        (reterr-msg :where (span->start span)
-                    :expected "a directive name among ~
-                               'if', ~
-                               'ifdef', ~
-                               'ifndef', ~
-                               'include', ~
-                               'define', ~
-                               'undef', ~
-                               'line', ~
-                               'error', and ~
-                               'pragma'"
-                    :found (plexeme-to-msg toknl)))))
     :measure (nfix limit)
     :no-function nil)
 
