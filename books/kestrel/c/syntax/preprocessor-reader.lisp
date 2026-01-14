@@ -73,7 +73,7 @@
      instead of just a list.
      So it is convenient to wrap the reading of a byte
      into an abstraction, namely @(tsee read-byte);
-     its name has no @('p') (unlike @(tsee pread-char) and others,
+     its name has no @('p') (unlike @(tsee read-pchar) and others,
      because there is no counterpart in the parser.")
    (xdoc::p
     "Instead of reading characters from bytes on the fly,
@@ -282,7 +282,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used when @(tsee pread-char)
+    "This is used when @(tsee read-pchar)
      reads a character from the data bytes (not from the unread characters).
      The @('new-position') input consists of the next position,
      which is normally one column more than the current one,
@@ -308,7 +308,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pread-char ((ppstate ppstatep))
+(define read-pchar ((ppstate ppstatep))
   :returns (mv erp
                (char? nat-optionp
                       :hints (("Goal" :induct t :in-theory (enable natp))))
@@ -459,7 +459,7 @@
                    ;; \ LF other
                    (new-position (position-inc-line 1 ppstate.position))
                    (ppstate (update-ppstate->position new-position ppstate)))
-                (pread-char ppstate)))
+                (read-pchar ppstate)))
              ((when (utf8-= byte2 13)) ; \ CR
               (b* (((erp & ppstate) (read-byte ppstate)) ; consume CR
                    (byte3 (peek-byte ppstate))
@@ -474,11 +474,11 @@
                          (new-position (position-inc-line 1 ppstate.position))
                          (ppstate
                           (update-ppstate->position new-position ppstate)))
-                      (pread-char ppstate)))
+                      (read-pchar ppstate)))
                    ;; \ CR other
                    (new-position (position-inc-line 1 ppstate.position))
                    (ppstate (update-ppstate->position new-position ppstate)))
-                (pread-char ppstate)))
+                (read-pchar ppstate)))
              ;; \ other
              (new-position (position-inc-column 1 ppstate.position))
              (ppstate (update-ppstate-for-char byte new-position ppstate)))
@@ -707,14 +707,14 @@
    (char? (or (equal char? nil)
               (natp char?))
           :rule-classes :type-prescription
-          :name pread-char.char?-type-prescription))
+          :name read-pchar.char?-type-prescription))
 
-  (defret ppstate->lexmarks-of-pread-char
+  (defret ppstate->lexmarks-of-read-pchar
     (equal (ppstate->lexmarks new-ppstate)
            (ppstate->lexmarks ppstate))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-char-uncond
+  (defret ppstate->size-of-read-pchar-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
@@ -722,7 +722,7 @@
              :induct t
              :in-theory (enable nfix))))
 
-  (defret ppstate->size-of-pread-char-cond
+  (defret ppstate->size-of-read-pchar-cond
     (implies (and (not erp)
                   char?)
              (<= (ppstate->size new-ppstate)
@@ -734,7 +734,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-char ((ppstate ppstatep))
+(define unread-pchar ((ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a character during preprocessing."
   :long
@@ -770,18 +770,18 @@
 
   ///
 
-  (defret ppstate->lexmarks-of-punread-char
+  (defret ppstate->lexmarks-of-unread-pchar
     (equal (ppstate->lexmarks new-ppstate)
            (ppstate->lexmarks ppstate)))
 
-  (defret ppstate->size-of-punread-char
+  (defret ppstate->size-of-unread-pchar
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))
     :hints (("Goal" :in-theory (enable len nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-chars ((n natp) (ppstate ppstatep))
+(define unread-pchars ((n natp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a specified number of characters during preprocessing."
   :long
@@ -825,14 +825,14 @@
 
   ///
 
-  (defret ppstate->size-of-punread-chars
+  (defret ppstate->size-of-unread-pchars
     (equal (ppstate->size new-ppstate)
            (+ (ppstate->size ppstate) (nfix n)))
     :hints (("Goal" :in-theory (enable nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unread-char-to-bytes ((ppstate ppstatep))
+(define unread-pchar-to-bytes ((ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Put the unread character, if any,
           back into the current list of bytes."

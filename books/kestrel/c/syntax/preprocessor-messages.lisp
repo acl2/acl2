@@ -63,7 +63,7 @@
     "This is almost identical to @(tsee char-to-msg)
      (see its documentation first)
      with the difference that we consider LF and CR separately.
-     This matches the fact that @(tsee pread-char), unlike @(tsee read-char),
+     This matches the fact that @(tsee read-pchar), unlike @(tsee read-char),
      does not normalize the three possible kinds of new lines to LF."))
   (cond ((not char) "end of file")
         ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"

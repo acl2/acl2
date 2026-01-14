@@ -137,7 +137,7 @@
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
      (b* (((reterr) nil (irr-position) ppstate)
-          ((erp char pos ppstate) (pread-char ppstate))
+          ((erp char pos ppstate) (read-pchar ppstate))
           ((when (not char))
            (retok nil (position-fix pos-so-far) ppstate))
           ((unless ; A-Z a-z 0-9 _
@@ -148,7 +148,7 @@
                    (and (utf8-<= (char-code #\0) char)
                         (utf8-<= char (char-code #\9)))
                    (utf8-= char (char-code #\_))))
-           (b* ((ppstate (punread-char ppstate)))
+           (b* ((ppstate (unread-pchar ppstate)))
              (retok nil (position-fix pos-so-far) ppstate)))
           ((erp chars last-pos ppstate)
            (plex-identifier-loop pos ppstate)))
@@ -225,7 +225,7 @@
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
      (b* (((reterr) (irr-pnumber) (irr-position) ppstate)
-          ((erp char pos ppstate) (pread-char ppstate)))
+          ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; pp-number EOF
          (retok (pnumber-fix current-pnumber)
@@ -239,7 +239,7 @@
                               pos
                               ppstate))
         ((utf8-= char (char-code #\e)) ; pp-number e
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+         (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
             ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number e +
              (plex-pp-number-loop (make-pnumber-number-locase-e-sign
@@ -255,14 +255,14 @@
                                   ppstate))
             (t ; pp-number e other
              (b* ((ppstate ; pp-number e
-                   (if char2 (punread-char ppstate) ppstate)))
+                   (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
                                      :nondigit #\e)
                                     pos
                                     ppstate))))))
         ((utf8-= char (char-code #\E)) ; pp-number E
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+         (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
             ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number E +
              (plex-pp-number-loop (make-pnumber-number-upcase-e-sign
@@ -278,14 +278,14 @@
                                   ppstate))
             (t ; pp-number E other
              (b* ((ppstate ; pp-number E
-                   (if char2 (punread-char ppstate) ppstate)))
+                   (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
                                      :nondigit #\E)
                                     pos
                                     ppstate))))))
         ((utf8-= char (char-code #\p)) ; pp-number p
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+         (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
             ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number p +
              (plex-pp-number-loop (make-pnumber-number-locase-p-sign
@@ -301,14 +301,14 @@
                                   ppstate))
             (t ; pp-number p other
              (b* ((ppstate ; pp-number p
-                   (if char2 (punread-char ppstate) ppstate)))
+                   (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
                                      :nondigit #\p)
                                     pos
                                     ppstate))))))
         ((utf8-= char (char-code #\P)) ; pp-number P
-         (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+         (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
            (cond
             ((and char2 (utf8-= char2 (char-code #\+))) ; pp-number P +
              (plex-pp-number-loop (make-pnumber-number-upcase-p-sign
@@ -324,7 +324,7 @@
                                   ppstate))
             (t ; pp-number P other
              (b* ((ppstate ; pp-number P
-                   (if char2 (punread-char ppstate) ppstate)))
+                   (if char2 (unread-pchar ppstate) ppstate)))
                (plex-pp-number-loop (make-pnumber-number-nondigit
                                      :number current-pnumber
                                      :nondigit #\P)
@@ -346,7 +346,7 @@
                               pos ppstate))
         (t ; pp-number other
          (b* ((ppstate ; pp-number
-               (if char (punread-char ppstate) ppstate)))
+               (if char (unread-pchar ppstate) ppstate)))
            (retok (pnumber-fix current-pnumber)
                   (position-fix current-pos)
                   ppstate)))))
@@ -395,7 +395,7 @@
     "This is the same as @(tsee lex-hexadecimal-digit),
      but it operates on preprocessor states instead of parser states."))
   (b* (((reterr) #\0 (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((when (not char))
         (reterr-msg :where (position-to-msg pos)
                     :expected "a hexadecimal digit"
@@ -493,7 +493,7 @@
     "This is the same as @(tsee lex-*-hexadecimal-digit),
      but it operates on preprocessor states instead of parser states."))
   (b* (((reterr) nil (irr-position) (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((when (not char))
         (retok nil (position-fix pos-so-far) pos ppstate))
        ((unless (or (and (utf8-<= (char-code #\0) char) ; 0
@@ -502,7 +502,7 @@
                          (utf8-<= char (char-code #\F))) ; F
                     (and (utf8-<= (char-code #\a) char) ; a
                          (utf8-<= char (char-code #\f))))) ; f
-        (b* ((ppstate (punread-char ppstate)))
+        (b* ((ppstate (unread-pchar ppstate)))
           (retok nil (position-fix pos-so-far) pos ppstate)))
        (hexdig (code-char char))
        ((erp hexdigs last-pos next-pos ppstate)
@@ -542,7 +542,7 @@
     "This is the same as @(tsee lex-escape-sequence),
      but it operates on preprocessor states instead of parser states."))
   (b* (((reterr) (irr-escape) (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate)))
+       ((erp char pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
       (reterr-msg :where (position-to-msg pos)
@@ -580,12 +580,12 @@
       (retok (escape-simple (simple-escape-percent)) pos ppstate))
      ((and (utf8-<= (char-code #\0) char)
            (utf8-<= char (char-code #\7))) ; \ octdig
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((and char2
                (utf8-<= (char-code #\0) char2)
                (utf8-<= char2 (char-code #\7))) ; \ octdig octdig
-          (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
+          (b* (((erp char3 pos3 ppstate) (read-pchar ppstate)))
             (cond
              ((and char3
                    (utf8-<= (char-code #\0) char3)
@@ -598,13 +598,13 @@
              (t ; \ octdig \octdig other
               (b* ((ppstate
                     ;; \ octdig octdig
-                    (if char3 (punread-char ppstate) ppstate)))
+                    (if char3 (unread-pchar ppstate) ppstate)))
                 (retok (escape-oct (oct-escape-two (code-char char)
                                                    (code-char char2)))
                        pos2
                        ppstate))))))
          (t ; \ octdig other
-          (b* ((ppstate (if char2 (punread-char ppstate) ppstate))) ; \octdig
+          (b* ((ppstate (if char2 (unread-pchar ppstate) ppstate))) ; \octdig
             (retok (escape-oct (oct-escape-one (code-char char)))
                    pos
                    ppstate))))))
@@ -675,7 +675,7 @@
      but it operates on preprocessor states instead of parser states,
      and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
@@ -739,7 +739,7 @@
      but it operates on preprocessor states instead of parser states,
      and we exclude CR besides LF."))
   (b* (((reterr) nil (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
                     :expected "an escape sequence or ~
@@ -802,7 +802,7 @@
     "This is the same as @(tsee lex-*-h-char),
      but it operates on preprocessor states instead of parser states."))
   (b* (((reterr) nil (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
@@ -857,7 +857,7 @@
     "This is the same as @(tsee lex-*-q-char),
      but it operates on preprocessor states instead of parser states."))
   (b* (((reterr) nil (irr-position) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char)
         (reterr-msg :where (position-to-msg pos)
                     :expected "any character other than ~
@@ -986,7 +986,7 @@
      but it operates on preprocessor states instead of parser states,
      and it returns a lexeme instead of a header name."))
   (b* (((reterr) (irr-plexeme) (irr-span) ppstate)
-       ((erp char first-pos ppstate) (pread-char ppstate)))
+       ((erp char first-pos ppstate) (read-pchar ppstate)))
     (cond
      ((not char)
       (reterr-msg :where (position-to-msg first-pos)
@@ -1075,7 +1075,7 @@
                     (new-ppstate ppstatep :hyp (ppstatep ppstate)))
        :parents nil
        (b* (((reterr) nil (irr-position) ppstate)
-            ((erp char pos ppstate) (pread-char ppstate)))
+            ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
            (reterr-msg :where (position-to-msg pos)
@@ -1108,7 +1108,7 @@
                     (new-ppstate ppstatep :hyp (ppstatep ppstate)))
        :parents nil
        (b* (((reterr) nil (irr-position) ppstate)
-            ((erp char pos ppstate) (pread-char ppstate)))
+            ((erp char pos ppstate) (read-pchar ppstate)))
          (cond
           ((not char) ; EOF
            (reterr-msg :where (position-to-msg pos)
@@ -1245,15 +1245,15 @@
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
      (b* (((reterr) nil (irr-position) ppstate)
-          ((erp char pos ppstate) (pread-char ppstate)))
+          ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; EOF
          (retok nil (position-fix current-pos) ppstate))
         ((utf8-= char 10) ; LF
-         (b* ((ppstate (punread-char ppstate))) ;
+         (b* ((ppstate (unread-pchar ppstate))) ;
            (retok nil (position-fix current-pos) ppstate)))
         ((utf8-= char 13) ; CR
-         (b* ((ppstate (punread-char ppstate))) ;
+         (b* ((ppstate (unread-pchar ppstate))) ;
            (retok nil (position-fix current-pos) ppstate)))
         (t ; other
          (b* (((erp content last-pos ppstate)
@@ -1314,7 +1314,7 @@
                   (new-ppstate ppstatep :hyp (ppstatep ppstate)))
      :parents nil
      (b* (((reterr) 0 (irr-position) ppstate)
-          ((erp char pos ppstate) (pread-char ppstate)))
+          ((erp char pos ppstate) (read-pchar ppstate)))
        (cond
         ((not char) ; end of file
          (retok 0 (position-fix prev-pos) ppstate))
@@ -1323,7 +1323,7 @@
                (plex-spaces-loop pos ppstate)))
            (retok (1+ nspaces) last-pos ppstate)))
         (t ; other
-         (b* ((ppstate (punread-char ppstate)))
+         (b* ((ppstate (unread-pchar ppstate)))
            (retok 0 (position-fix prev-pos) ppstate)))))
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
@@ -1382,7 +1382,7 @@
      including the handling of the context header flag."))
 
   (b* (((reterr) nil (irr-span) ppstate)
-       ((erp char pos ppstate) (pread-char ppstate))
+       ((erp char pos ppstate) (read-pchar ppstate))
        ((unless char) ; EOF
         (retok nil ; no lexeme
                (make-span :start pos :end pos)
@@ -1414,7 +1414,7 @@
              ppstate))
 
      ((utf8-= char 13) ; CR
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; CR EOF
           (retok (plexeme-newline (newline-cr))
@@ -1425,7 +1425,7 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; CR other
-          (b* ((ppstate (punread-char ppstate))) ; CR
+          (b* ((ppstate (unread-pchar ppstate))) ; CR
             (retok (plexeme-newline (newline-cr))
                    (make-span :start pos :end pos)
                    ppstate))))))
@@ -1435,7 +1435,7 @@
       (plex-pp-number nil (code-char char) pos ppstate))
 
      ((utf8-= char (char-code #\.)) ; .
-      (b* (((erp char2 & ppstate) (pread-char ppstate)))
+      (b* (((erp char2 & ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; . EOF
           (retok (plexeme-punctuator ".")
@@ -1445,10 +1445,10 @@
                (utf8-<= char2 (char-code #\9))) ; . 0-9
           (plex-pp-number t (code-char char2) pos ppstate))
          ((utf8-= char2 (char-code #\.)) ; . .
-          (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
+          (b* (((erp char3 pos3 ppstate) (read-pchar ppstate)))
             (cond
              ((not char3) ; . . EOF
-              (b* ((ppstate (punread-char ppstate))) ; .
+              (b* ((ppstate (unread-pchar ppstate))) ; .
                 (retok (plexeme-punctuator ".")
                        (make-span :start pos :end pos)
                        ppstate)))
@@ -1457,19 +1457,19 @@
                      (make-span :start pos :end pos3)
                      ppstate))
              (t ; . . other
-              (b* ((ppstate (punread-char ppstate)) ; . .
-                   (ppstate (punread-char ppstate))) ; .
+              (b* ((ppstate (unread-pchar ppstate)) ; . .
+                   (ppstate (unread-pchar ppstate))) ; .
                 (retok (plexeme-punctuator ".")
                        (make-span :start pos :end pos)
                        ppstate))))))
          (t ; . other
-          (b* ((ppstate (punread-char ppstate))) ; .
+          (b* ((ppstate (unread-pchar ppstate))) ; .
             (retok (plexeme-punctuator ".")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\u)) ; u
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; u EOF
           (retok (plexeme-ident (ident "u"))
@@ -1480,7 +1480,7 @@
          ((utf8-= char2 (char-code #\")) ; u "
           (plex-string-literal (eprefix-locase-u) pos ppstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
-          (b* (((erp char3 & ppstate) (pread-char ppstate)))
+          (b* (((erp char3 & ppstate) (read-pchar ppstate)))
             (cond
              ((not char3) ; u 8 EOF
               (retok (plexeme-ident (ident "u8"))
@@ -1489,15 +1489,15 @@
              ((utf8-= char3 (char-code #\")) ; u 8 "
               (plex-string-literal (eprefix-locase-u8) pos ppstate))
              (t ; u 8 other
-              (b* ((ppstate (punread-char ppstate)) ; u 8
-                   (ppstate (punread-char ppstate))) ; u
+              (b* ((ppstate (unread-pchar ppstate)) ; u 8
+                   (ppstate (unread-pchar ppstate))) ; u
                 (plex-identifier char pos ppstate))))))
          (t ; u other
-          (b* ((ppstate (punread-char ppstate))) ; u
+          (b* ((ppstate (unread-pchar ppstate))) ; u
             (plex-identifier char pos ppstate))))))
 
      ((utf8-= char (char-code #\U)) ; U
-      (b* (((erp char2 & ppstate) (pread-char ppstate)))
+      (b* (((erp char2 & ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; U EOF
           (retok (plexeme-ident (ident "U"))
@@ -1508,11 +1508,11 @@
          ((utf8-= char2 (char-code #\")) ; U "
           (plex-string-literal (eprefix-upcase-u) pos ppstate))
          (t ; U other
-          (b* ((ppstate (punread-char ppstate))) ; U
+          (b* ((ppstate (unread-pchar ppstate))) ; U
             (plex-identifier char pos ppstate))))))
 
      ((utf8-= char (char-code #\L)) ; L
-      (b* (((erp char2 & ppstate) (pread-char ppstate)))
+      (b* (((erp char2 & ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; L EOF
           (retok (plexeme-ident (ident "L"))
@@ -1523,7 +1523,7 @@
          ((utf8-= char2 (char-code #\")) ; L "
           (plex-string-literal (eprefix-upcase-l) pos ppstate))
          (t ; L other
-          (b* ((ppstate (punread-char ppstate))) ; L
+          (b* ((ppstate (unread-pchar ppstate))) ; L
             (plex-identifier char pos ppstate))))))
 
      ((or (and (utf8-<= (char-code #\A) char)
@@ -1538,12 +1538,12 @@
 
      ((utf8-= char (char-code #\")) ; "
       (if headerp
-          (b* ((ppstate (punread-char ppstate))) ;
+          (b* ((ppstate (unread-pchar ppstate))) ;
             (plex-header-name ppstate))
         (plex-string-literal nil pos ppstate)))
 
      ((utf8-= char (char-code #\/)) ; /
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; / EOF
           (retok (plexeme-punctuator "/")
@@ -1558,13 +1558,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; / other
-          (b* ((ppstate (punread-char ppstate))) ; /
+          (b* ((ppstate (unread-pchar ppstate))) ; /
             (retok (plexeme-punctuator "/")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\#)) ; #
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; # EOF
           (retok (plexeme-punctuator "#")
@@ -1575,7 +1575,7 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; # other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "#")
                    (make-span :start pos :end pos)
                    ppstate))))))
@@ -1595,7 +1595,7 @@
              ppstate))
 
      ((utf8-= char (char-code #\*)) ; *
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; * EOF
           (retok (plexeme-punctuator "*")
@@ -1606,13 +1606,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; * other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "*")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\^)) ; ^
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; ^ EOF
           (retok (plexeme-punctuator "^")
@@ -1623,13 +1623,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; ^ other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "^")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\!)) ; !
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; ! EOF
           (retok (plexeme-punctuator "!")
@@ -1640,13 +1640,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; ! other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "!")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\=)) ; =
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; = EOF
           (retok (plexeme-punctuator "=")
@@ -1657,13 +1657,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; = other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "=")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\:)) ; :
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; : EOF
           (retok (plexeme-punctuator ":")
@@ -1674,13 +1674,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; : other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator ":")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\&)) ; &
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; & EOF
           (retok (plexeme-punctuator "&")
@@ -1695,13 +1695,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; & other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "&")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\|)) ; |
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; | EOF
           (retok (plexeme-punctuator "|")
@@ -1716,13 +1716,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; | other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "|")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\+)) ; +
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; + EOF
           (retok (plexeme-punctuator "+")
@@ -1737,13 +1737,13 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; + other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "+")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\-)) ; -
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; - EOF
           (retok (plexeme-punctuator "-")
@@ -1762,20 +1762,20 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          (t ; - other
-          (b* ((ppstate (punread-char ppstate)))
+          (b* ((ppstate (unread-pchar ppstate)))
             (retok (plexeme-punctuator "-")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\>)) ; >
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; > EOF
           (retok (plexeme-punctuator ">")
                  (make-span :start pos :end pos)
                  ppstate))
          ((utf8-= char2 (char-code #\>)) ; > >
-          (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
+          (b* (((erp char3 pos3 ppstate) (read-pchar ppstate)))
             (cond
              ((not char3) ; > > EOF
               (retok (plexeme-punctuator ">>")
@@ -1786,7 +1786,7 @@
                      (make-span :start pos :end pos3)
                      ppstate))
              (t ; > > other
-              (b* ((ppstate (punread-char ppstate))) ; > >
+              (b* ((ppstate (unread-pchar ppstate))) ; > >
                 (retok (plexeme-punctuator ">>")
                        (make-span :start pos :end pos2)
                        ppstate))))))
@@ -1795,13 +1795,13 @@
                  (make-span :start pos :end pos)
                  ppstate))
          (t ; > other
-          (b* ((ppstate (punread-char ppstate))) ; >
+          (b* ((ppstate (unread-pchar ppstate))) ; >
             (retok (plexeme-punctuator ">")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\%)) ; %
-      (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+      (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
         (cond
          ((not char2) ; % EOF
           (retok (plexeme-punctuator "%")
@@ -1816,17 +1816,17 @@
                  (make-span :start pos :end pos2)
                  ppstate))
          ((utf8-= char2 (char-code #\:)) ; % :
-          (b* (((erp char3 & ppstate) (pread-char ppstate)))
+          (b* (((erp char3 & ppstate) (read-pchar ppstate)))
             (cond
              ((not char3) ; % : EOF
               (retok (plexeme-punctuator "%:")
                      (make-span :start pos :end pos2)
                      ppstate))
              ((utf8-= char3 (char-code #\%)) ; % : %
-              (b* (((erp char4 pos4 ppstate) (pread-char ppstate)))
+              (b* (((erp char4 pos4 ppstate) (read-pchar ppstate)))
                 (cond
                  ((not char4) ; % : % EOF
-                  (b* ((ppstate (punread-char ppstate))) ; % :
+                  (b* ((ppstate (unread-pchar ppstate))) ; % :
                     (retok (plexeme-punctuator "%:")
                            (make-span :start pos :end pos2)
                            ppstate)))
@@ -1835,34 +1835,34 @@
                          (make-span :start pos :end pos4)
                          ppstate))
                  (t ; % : % other
-                  (b* ((ppstate (punread-char ppstate)) ; % : %
-                       (ppstate (punread-char ppstate))) ; % :
+                  (b* ((ppstate (unread-pchar ppstate)) ; % : %
+                       (ppstate (unread-pchar ppstate))) ; % :
                     (retok (plexeme-punctuator "%:")
                            (make-span :start pos :end pos2)
                            ppstate))))))
              (t ; % : other
-              (b* ((ppstate (punread-char ppstate))) ; % :
+              (b* ((ppstate (unread-pchar ppstate))) ; % :
                 (retok (plexeme-punctuator "%:")
                        (make-span :start pos :end pos2)
                        ppstate))))))
          (t ; % other
-          (b* ((ppstate (punread-char ppstate))) ; %
+          (b* ((ppstate (unread-pchar ppstate))) ; %
             (retok (plexeme-punctuator "%")
                    (make-span :start pos :end pos)
                    ppstate))))))
 
      ((utf8-= char (char-code #\<)) ; <
       (if headerp
-          (b* ((ppstate (punread-char ppstate))) ;
+          (b* ((ppstate (unread-pchar ppstate))) ;
             (plex-header-name ppstate))
-        (b* (((erp char2 pos2 ppstate) (pread-char ppstate)))
+        (b* (((erp char2 pos2 ppstate) (read-pchar ppstate)))
           (cond
            ((not char2) ; < EOF
             (retok (plexeme-punctuator "<")
                    (make-span :start pos :end pos)
                    ppstate))
            ((utf8-= char2 (char-code #\<)) ; < <
-            (b* (((erp char3 pos3 ppstate) (pread-char ppstate)))
+            (b* (((erp char3 pos3 ppstate) (read-pchar ppstate)))
               (cond
                ((not char3) ; < < EOF
                 (retok (plexeme-punctuator "<<")
@@ -1873,7 +1873,7 @@
                        (make-span :start pos :end pos3)
                        ppstate))
                (t ; < < other
-                (b* ((ppstate (punread-char ppstate))) ; < <
+                (b* ((ppstate (unread-pchar ppstate))) ; < <
                   (retok (plexeme-punctuator "<<")
                          (make-span :start pos :end pos2)
                          ppstate))))))
@@ -1890,7 +1890,7 @@
                    (make-span :start pos :end pos2)
                    ppstate))
            (t ; < other
-            (b* ((ppstate (punread-char ppstate))) ; <
+            (b* ((ppstate (unread-pchar ppstate))) ; <
               (retok (plexeme-punctuator "<")
                      (make-span :start pos :end pos)
                      ppstate)))))))

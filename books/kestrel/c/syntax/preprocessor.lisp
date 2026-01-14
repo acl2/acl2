@@ -263,7 +263,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pread-token ((headerp booleanp) (ppstate ppstatep))
+(define read-ptoken ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontokens plexeme-listp)
                (token? plexeme-optionp)
@@ -284,28 +284,28 @@
        ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens token token-span ppstate) (pread-token headerp ppstate)))
+       ((erp nontokens token token-span ppstate) (read-ptoken headerp ppstate)))
     (retok (cons lexeme nontokens) token token-span ppstate))
   :measure (ppstate->size ppstate)
 
   ///
 
-  (defret plexeme-list-not-tokenp-of-pread-token
+  (defret plexeme-list-not-tokenp-of-read-ptoken
     (plexeme-list-not-tokenp nontokens)
     :hints (("Goal" :induct t)))
 
-  (defret plexeme-tokenp-of-pread-token
+  (defret plexeme-tokenp-of-read-ptoken
     (implies token?
              (plexeme-tokenp token?))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-token-uncond
+  (defret ppstate->size-of-read-ptoken-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-token-cond
+  (defret ppstate->size-of-read-ptoken-cond
     (implies (and (not erp)
                   token?)
              (<= (ppstate->size new-ppstate)
@@ -315,7 +315,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pread-token/newline ((headerp booleanp) (ppstate ppstatep))
+(define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontoknls plexeme-listp)
                (toknl? plexeme-optionp)
@@ -335,7 +335,7 @@
        ((when (not lexeme)) (retok nil nil span ppstate))
        ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
        ((erp nontoknls toknl toknl-span ppstate)
-        (pread-token/newline headerp ppstate)))
+        (read-ptoken/newline headerp ppstate)))
     (retok (cons lexeme nontoknls)
            toknl
            toknl-span
@@ -344,22 +344,22 @@
 
   ///
 
-  (defret plexeme-list-not-token/newline-p-of-pread-token/newline
+  (defret plexeme-list-not-token/newline-p-of-read-ptoken/newline
     (plexeme-list-not-token/newline-p nontoknls)
     :hints (("Goal" :induct t)))
 
-  (defret plexeme-token/newline-p-of-pread-token/newline
+  (defret plexeme-token/newline-p-of-read-ptoken/newline
     (implies token?
              (plexeme-token/newline-p toknl?))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-token/newline-uncond
+  (defret ppstate->size-of-read-ptoken/newline-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-token/newline-cond
+  (defret ppstate->size-of-read-ptoken/newline-cond
     (implies (and (not erp)
                   toknl?)
              (<= (ppstate->size new-ppstate)
@@ -369,7 +369,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
+(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a lexeme."
   :long
@@ -381,7 +381,7 @@
 
   ///
 
-  (defret ppstate->size-of-punread-lexeme
+  (defret ppstate->size-of-unread-plexeme
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
 
@@ -1160,10 +1160,10 @@
        (i.e. horizontal tab, vertical tab, and form feed)
        with spaces, for maximal liberality.
        Thus, we can accept all white space and comments in a directive,
-       as @(tsee pread-token/newline) does."))
+       as @(tsee read-ptoken/newline) does."))
     (b* (((reterr) nil nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate)))
+         ((erp nontoknls toknl span ppstate) (read-ptoken/newline nil ppstate)))
       (cond
        ((not toknl) ; EOF
         (if nontoknls
@@ -1178,7 +1178,7 @@
        ((plexeme-hashp toknl) ; #
         (b* ((nontoknls-before-hash nontoknls)
              ((erp nontoknls-after-hash toknl2 span2 ppstate)
-              (pread-token/newline nil ppstate)))
+              (read-ptoken/newline nil ppstate)))
           (cond
            ((not toknl2) ; # EOF
             (reterr-msg :where (position-to-msg (span->start span2))
@@ -1272,7 +1272,7 @@
                         :found (plexeme-to-msg toknl2))))))
        (t ; non-# -- text line
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (punread-lexeme toknl span ppstate))
+             (ppstate (unread-plexeme toknl span ppstate))
              ((erp rev-lexemes ppstate preprocessed state)
               (pproc-line-rest file
                                base-dir
@@ -1341,7 +1341,7 @@
        the included file is not self-contained,
        and we need to expand it in place:
        we put any unread character back into the current input bytes
-       (see documentation of @(tsee unread-char-to-bytes)),
+       (see documentation of @(tsee unread-pchar-to-bytes)),
        and we store the bytes from the file into the stobj
        (see documentation of @(tsee ppstate-add-bytes)).
        If the call of @(tsee pproc-file) returns some other error,
@@ -1369,7 +1369,7 @@
     (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
-          (pread-token/newline t ppstate)))
+          (read-ptoken/newline t ppstate)))
       (cond
        ((not toknl) ; # include EOF
         (reterr-msg :where (position-to-msg (span->start span))
@@ -1381,7 +1381,7 @@
                     :found (plexeme-to-msg toknl)))
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
-              (pread-token/newline nil ppstate))
+              (read-ptoken/newline nil ppstate))
              ((unless (and toknl2
                            (plexeme-case toknl2 :newline))) ; # include EOL
               (reterr-msg :where (position-to-msg (span->start span2))
@@ -1405,7 +1405,7 @@
                           state
                           (1- limit)))
              ((when (eq erp :not-self-contained))
-              (b* ((ppstate (unread-char-to-bytes ppstate))
+              (b* ((ppstate (unread-pchar-to-bytes ppstate))
                    ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
                 (retok (plexeme-list-fix rev-lexemes)
                        ppstate
@@ -1483,7 +1483,7 @@
        in the same way as an identifier that is not a macro name."))
     (b* (((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (pread-token/newline nil ppstate))
+         ((erp nontoknls toknl span ppstate) (read-ptoken/newline nil ppstate))
          (rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes))))
       (cond
        ((not toknl) ; EOF
