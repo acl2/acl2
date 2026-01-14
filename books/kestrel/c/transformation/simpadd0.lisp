@@ -2892,11 +2892,14 @@
       (implies (gout->thm-name gout)
                (and (expr-formalp expr)
                     (expr-formalp new-expr)))
-      :hyp (expr-case expr :ident)
+      :hyp (or (expr-case expr :ident)
+               (expr-case expr :const))
       :fn simpadd0-expr
       :hints ('(:in-theory (enable simpadd0-expr
                                    c$::expr-formalp-when-ident
-                                   xeq-expr-ident-formalp-when-thm-name))))
+                                   c$::expr-formalp-when-const
+                                   xeq-expr-ident-formalp-when-thm-name
+                                   xeq-expr-const-formalp-when-thm-name))))
     :skip-others t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
