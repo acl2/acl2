@@ -397,7 +397,13 @@
   (defruled expr-formalp-when-ident
     (implies (expr-case expr :ident)
              (equal (expr-formalp expr)
-                    (ident-formalp (expr-ident->ident expr))))))
+                    (ident-formalp (expr-ident->ident expr)))))
+
+  (defruled expr-formalp-when-const
+    (implies (expr-case expr :const)
+             (equal (expr-formalp expr)
+                    (const-formalp (expr-const->const expr))))
+    :enable expr-formalp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
