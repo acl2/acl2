@@ -208,182 +208,204 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-lexeme ((headerp booleanp) (ppstate ppstatep))
-  :returns (mv erp
-               (lexeme? plexeme-optionp)
-               (span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Lex a lexeme during preprocessing."
+(fty::defprod scfile
+  :short "Fixtype of self-contained files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level function of the lexer.
-     If there are pending lexmarks,
-     we return the first one if it is a lexeme
-     (and throw an error if it is a marker, for now).
-     If there are no pending lexmarks,
-     we call @(tsee plex-lexeme) to read a lexeme from the input."))
-  (b* (((reterr) nil (irr-span) ppstate)
-       (lexmarks (ppstate->lexmarks ppstate))
-       (size (ppstate->size ppstate))
-       ((when (consp lexmarks))
-        (b* ((lexmark (car lexmarks))
-             ((unless (lexmark-case lexmark :lexeme))
-              (raise "Internal error: unexpected marker ~x0." lexmark)
-              (reterr t))
-             (lexeme (lexmark-lexeme->lexeme lexmark))
-             (span (lexmark-lexeme->span lexmark))
-             ((unless (> size 0))
-              (raise "Internal error: size is 0 but there are pending lexemes.")
-              (reterr t))
-             (ppstate (update-ppstate->size (1- size) ppstate))
-             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
-          (retok lexeme span ppstate)))
-       ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
-       ((when (not lexeme?)) (retok nil span ppstate))
-       (lexeme lexeme?))
-    (retok lexeme span ppstate))
-  :no-function nil
+    "This captures the result of preprocessing a @(see self-contained) file:
+     the list of lexemes that forms the file after preprocessing
+     (which can be printed to bytes into a file in the file system),
+     and the macros defined by the file (bundled into a single scope alist)."))
+  ((lexemes plexeme-listp)
+   (macros macro-scopep))
+  :pred scfilep)
 
-  ///
+;;;;;;;;;;;;;;;;;;;;
 
-  (defret ppstate->size-of-read-lexeme-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix))))
-
-  (defret ppstate->size-of-read-lexeme-cond
-    (implies (and (not erp)
-                  lexeme?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable nfix)))))
+(defirrelevant irr-scfile
+  :short "An irrelevant self-contained file."
+  :type scfilep
+  :body (scfile nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-ptoken ((headerp booleanp) (ppstate ppstatep))
-  :returns (mv erp
-               (nontokens plexeme-listp)
-               (token? plexeme-optionp)
-               (token-span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token during preprocessing."
+(fty::defalist string-scfile-alist
+  :short "Fixtype of alists from strings to self-contained files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We lex zero or more non-tokens, until we find a token.
-     We return the list of non-tokens, and the token with its span.
-     If we reach the end of file, we return @('nil') as the token,
-     and a span consisting of just the current position.")
+    "We use these alists to keep track of which files
+     have been already preprocessed and are @(see self-contained).")
    (xdoc::p
-    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
-     see that function's documentation."))
-  (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
-       ((when (not lexeme)) (retok nil nil span ppstate))
-       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens token token-span ppstate) (read-ptoken headerp ppstate)))
-    (retok (cons lexeme nontokens) token token-span ppstate))
-  :measure (ppstate->size ppstate)
+    "These alists always have unique keys, i.e. there are no shadowed pairs;
+     this is not enforced in this fixtype.
+     The keys are file paths,
+     either absolute,
+     or relative to the base directory passed to the @(see preprocessor).")
+   (xdoc::p
+    "When all the files have been preprocessed,
+     this alist contains all the results from the preprocessing,
+     which is turned into a file set.
+     The non-@(see self-contained) files are not part of this alist,
+     because they have been expanded in place."))
+  :key-type string
+  :val-type scfile
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred string-scfile-alistp
+  :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defret plexeme-list-not-tokenp-of-read-ptoken
-    (plexeme-list-not-tokenp nontokens)
-    :hints (("Goal" :induct t)))
-
-  (defret plexeme-tokenp-of-read-ptoken
-    (implies token?
-             (plexeme-tokenp token?))
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-cond
-    (implies (and (not erp)
-                  token?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+  (defruled scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp
+    (implies (and (string-scfile-alistp alist)
+                  (assoc-equal key alist))
+             (scfilep (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
-  :returns (mv erp
-               (nontoknls plexeme-listp)
-               (toknl? plexeme-optionp)
-               (toknl-span spanp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
-  :short "Read a token or new line during preprocessing."
+(define string-scfile-alist-to-filepath-filedata-map
+  ((alist string-scfile-alistp))
+  :returns (map filepath-filedata-mapp)
+  :short "Turn (1) an alist from string to self-contained files
+          into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
    (xdoc::p
-    "New lines are significant in most situations during preprocessing,
-     i.e. they are not just white space to skip over.
-     In such situations,
-     we need to skip over non-new-line white space and comments,
-     but stop when we encounter either a new line or a token."))
-  (b* (((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
-       ((when (not lexeme)) (retok nil nil span ppstate))
-       ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontoknls toknl toknl-span ppstate)
-        (read-ptoken/newline headerp ppstate)))
-    (retok (cons lexeme nontoknls)
-           toknl
-           toknl-span
-           ppstate))
-  :measure (ppstate->size ppstate)
+    "The strings are wrapped into file paths;
+     as mentioned in @(tsee string-scfile-alist),
+     the alist has unique keys, so the order of the alist is immaterial.
+     The lists of lexemes are printed to bytes,
+     obtaining the file datas.")
+   (xdoc::p
+    "This is called on the alist at the end of the preprocessing."))
+  (b* (((when (endp alist)) nil)
+       ((cons string scfile) (car alist))
+       (bytes (plexemes-to-bytes (scfile->lexemes scfile)))
+       (filepath (filepath string))
+       (filedata (filedata bytes))
+       (map (string-scfile-alist-to-filepath-filedata-map (cdr alist))))
+    (omap::update filepath filedata map))
+  :verify-guards :after-returns)
 
-  ///
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret plexeme-list-not-token/newline-p-of-read-ptoken/newline
-    (plexeme-list-not-token/newline-p nontoknls)
-    :hints (("Goal" :induct t)))
+(fty::deftagsum macrep-mode
+  :short "Fixtype of macro replacement modes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Among other things,
+     the preprocessor goes through a sequence of lexemes,
+     expanding the macros in them
+     (including rescanning and further replacement [C17:6.10.3.4]),
+     until a stopping criterion is met.
+     The details of the stopping criterion,
+     and of some aspects of macro replacement,
+     vary depending on the situation.
+     We capture these different modes of operations via this fixtype:")
+   (xdoc::ul
+    (xdoc::li
+     "The @(':line') mode is for text lines (see ABNF grammar),
+      as well as for the rest of the lines of certain directives.
+      The stopping criterion is the end of the line,
+      and macro replacement is the normal one.")
+    (xdoc::li
+     "The @(':expr') mode is for the lines that must form constant expressions,
+      just after @('#if') or @('#elif').
+      The stopping criterion is the end of the line,
+      and macro replacement is modified
+      to handle the @('defined') operator [C17:6.10.1/1]
+      and to replace identifiers with 0 [C17:6.10.1/4].")
+    (xdoc::li
+     "The @(':arg-comma'), @(':arg-last'), and @(':arg-dots') modes
+      are for arguments of function-like macros [C17:6.10.3/10],
+      where macro replacement is the normal one,
+      and the stopping criterion is
+      a comma for @(':arg-comma'),
+      and a right parenthesis for @(':arg-last') and @(':arg-dots').
+      These apply to arguments whose corresponding formal parameter,
+      in the replacement list of the macro definition,
+      is not immediately preceded by @('#') or @('##')
+      and not immediately followed by @('##'),
+      because such arguments are not macro-expanded [C17:6.10.3.1/1];
+      that also includes the argument(s) corresponding to @('__VA_ARGS__')
+      [C17:6.10.3.1/2].
+      For a macro without the ellipsis,
+      all the arguments except the last are handled in the @(':arg-comma') mode,
+      while the last argument is handled in the @(':arg-last') mode;
+      if the macro has no parameters, there are no arguments to handle.
+      For a macro with the ellipsis,
+      all the arguments corresponding to named parameters
+      are handled in the @(':arg-comma') mode,
+      while the remaining argument/arguments (corresponding to the ellipsis)
+      is/are handled in the @(':arg-dots') mode.
+      The distinction between @(':arg-last') and @(':arg-dots') is that
+      the former signals an error if a comma is encountered,
+      while the latter does not,
+      because the comma is part of the arguments associated to @('__VA_ARGS__')
+      [C17:
+      (The right parentheses and commas mentioned here are the ones
+      outside nested matching parentheses [C17:6.10.3/10] [C17:6.10.3/11].)"))
+   (xdoc::p
+    "In situations in which the preprocessor goes through lexemes
+     with a certain stopping criterion but without macro replacements,
+     we do not use any of the modes defined by this fixtype.
+     Instead, we use simpler functions that
+     recursively go through lexemes until the stopping criterion.
+     An example is when collecting the replacement list of a macro
+     in a @('#define') directive."))
+  (:line ())
+  (:expr ())
+  (:arg-comma ())
+  (:arg-last ())
+  (:arg-dots ())
+  :pred macrep-modep)
 
-  (defret plexeme-token/newline-p-of-read-ptoken/newline
-    (implies token?
-             (plexeme-token/newline-p toknl?))
-    :hints (("Goal" :induct t)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret ppstate->size-of-read-ptoken/newline-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
+(fty::deftagsum groupend
+  :short "Fixtype of endings of groups."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here by `group' we mean the preprocessing notion
+     captured by the @('group') nonterminal in the ABNF grammar.
+     More accurately, the endings formalized here refer to optional groups:
+     a group consists of one or more group parts,
+     but these endings apply to sequences of zero or more group parts
+     (see @(tsee pproc-*-group-part)),
+     which are isomorphic to optional groups.")
+   (xdoc::p
+    "Looking at the grammar, an (optional) group may end:
+     with the end of file, for the top-level group;
+     or with one of the directives @('#elif'), @('#else'), and @('#endif')
+     (which are not part of the group itself, but follow it),
+     for groups nested in @('#if'), @('#ifdef'), and @('#ifndef') directives.
+     This fixtype captures these four possibilities."))
+  (:eof ())
+  (:elif ())
+  (:else ())
+  (:endif ())
+  :pred groupendp)
 
-  (defret ppstate->size-of-read-ptoken/newline-cond
-    (implies (and (not erp)
-                  toknl?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-groupend
+  :short "An irrelevant group ending."
+  :type groupendp
+  :body (groupend-eof))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
-  :short "Unread a lexeme."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We add the lexeme to the list of pending lexmarks.
-     See @(tsee ppstate)."))
-  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
-
-  ///
-
-  (defret ppstate->size-of-unread-plexeme
-    (equal (ppstate->size new-ppstate)
-           (1+ (ppstate->size ppstate)))))
+(fty::defoption groupend-option
+  groupend
+  :short "Fixtype of optional endings of groups."
+  :pred groupend-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,204 +616,182 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod scfile
-  :short "Fixtype of self-contained files."
+(define read-lexeme ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (lexeme? plexeme-optionp)
+               (span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Lex a lexeme during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This captures the result of preprocessing a @(see self-contained) file:
-     the list of lexemes that forms the file after preprocessing
-     (which can be printed to bytes into a file in the file system),
-     and the macros defined by the file (bundled into a single scope alist)."))
-  ((lexemes plexeme-listp)
-   (macros macro-scopep))
-  :pred scfilep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-scfile
-  :short "An irrelevant self-contained file."
-  :type scfilep
-  :body (scfile nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist string-scfile-alist
-  :short "Fixtype of alists from strings to self-contained files."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use these alists to keep track of which files
-     have been already preprocessed and are @(see self-contained).")
-   (xdoc::p
-    "These alists always have unique keys, i.e. there are no shadowed pairs;
-     this is not enforced in this fixtype.
-     The keys are file paths,
-     either absolute,
-     or relative to the base directory passed to the @(see preprocessor).")
-   (xdoc::p
-    "When all the files have been preprocessed,
-     this alist contains all the results from the preprocessing,
-     which is turned into a file set.
-     The non-@(see self-contained) files are not part of this alist,
-     because they have been expanded in place."))
-  :key-type string
-  :val-type scfile
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred string-scfile-alistp
-  :prepwork ((set-induction-depth-limit 1))
+    "This is the top-level function of the lexer.
+     If there are pending lexmarks,
+     we return the first one if it is a lexeme
+     (and throw an error if it is a marker, for now).
+     If there are no pending lexmarks,
+     we call @(tsee plex-lexeme) to read a lexeme from the input."))
+  (b* (((reterr) nil (irr-span) ppstate)
+       (lexmarks (ppstate->lexmarks ppstate))
+       (size (ppstate->size ppstate))
+       ((when (consp lexmarks))
+        (b* ((lexmark (car lexmarks))
+             ((unless (lexmark-case lexmark :lexeme))
+              (raise "Internal error: unexpected marker ~x0." lexmark)
+              (reterr t))
+             (lexeme (lexmark-lexeme->lexeme lexmark))
+             (span (lexmark-lexeme->span lexmark))
+             ((unless (> size 0))
+              (raise "Internal error: size is 0 but there are pending lexemes.")
+              (reterr t))
+             (ppstate (update-ppstate->size (1- size) ppstate))
+             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
+          (retok lexeme span ppstate)))
+       ((erp lexeme? span ppstate) (plex-lexeme headerp ppstate))
+       ((when (not lexeme?)) (retok nil span ppstate))
+       (lexeme lexeme?))
+    (retok lexeme span ppstate))
+  :no-function nil
 
   ///
 
-  (defruled scfilep-of-cdr-of-assoc-equal-when-string-scfile-alistp
-    (implies (and (string-scfile-alistp alist)
-                  (assoc-equal key alist))
-             (scfilep (cdr (assoc-equal key alist))))
-    :induct t
-    :enable assoc-equal))
+  (defret ppstate->size-of-read-lexeme-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret ppstate->size-of-read-lexeme-cond
+    (implies (and (not erp)
+                  lexeme?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define string-scfile-alist-to-filepath-filedata-map
-  ((alist string-scfile-alistp))
-  :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to self-contained files
-          into (2) a map from file paths to file data."
+(define read-ptoken ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (token-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Read a token during preprocessing."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The strings are wrapped into file paths;
-     as mentioned in @(tsee string-scfile-alist),
-     the alist has unique keys, so the order of the alist is immaterial.
-     The lists of lexemes are printed to bytes,
-     obtaining the file datas.")
+    "We lex zero or more non-tokens, until we find a token.
+     We return the list of non-tokens, and the token with its span.
+     If we reach the end of file, we return @('nil') as the token,
+     and a span consisting of just the current position.")
    (xdoc::p
-    "This is called on the alist at the end of the preprocessing."))
-  (b* (((when (endp alist)) nil)
-       ((cons string scfile) (car alist))
-       (bytes (plexemes-to-bytes (scfile->lexemes scfile)))
-       (filepath (filepath string))
-       (filedata (filedata bytes))
-       (map (string-scfile-alist-to-filepath-filedata-map (cdr alist))))
-    (omap::update filepath filedata map))
-  :verify-guards :after-returns)
+    "The @('headerp') flag has the same meaning as in @(tsee plex-lexeme):
+     see that function's documentation."))
+  (b* (((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontokens token token-span ppstate) (read-ptoken headerp ppstate)))
+    (retok (cons lexeme nontokens) token token-span ppstate))
+  :measure (ppstate->size ppstate)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(fty::deftagsum macrep-mode
-  :short "Fixtype of macro replacement modes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Among other things,
-     the preprocessor goes through a sequence of lexemes,
-     expanding the macros in them
-     (including rescanning and further replacement [C17:6.10.3.4]),
-     until a stopping criterion is met.
-     The details of the stopping criterion,
-     and of some aspects of macro replacement,
-     vary depending on the situation.
-     We capture these different modes of operations via this fixtype:")
-   (xdoc::ul
-    (xdoc::li
-     "The @(':line') mode is for text lines (see ABNF grammar),
-      as well as for the rest of the lines of certain directives.
-      The stopping criterion is the end of the line,
-      and macro replacement is the normal one.")
-    (xdoc::li
-     "The @(':expr') mode is for the lines that must form constant expressions,
-      just after @('#if') or @('#elif').
-      The stopping criterion is the end of the line,
-      and macro replacement is modified
-      to handle the @('defined') operator [C17:6.10.1/1]
-      and to replace identifiers with 0 [C17:6.10.1/4].")
-    (xdoc::li
-     "The @(':arg-comma'), @(':arg-last'), and @(':arg-dots') modes
-      are for arguments of function-like macros [C17:6.10.3/10],
-      where macro replacement is the normal one,
-      and the stopping criterion is
-      a comma for @(':arg-comma'),
-      and a right parenthesis for @(':arg-last') and @(':arg-dots').
-      These apply to arguments whose corresponding formal parameter,
-      in the replacement list of the macro definition,
-      is not immediately preceded by @('#') or @('##')
-      and not immediately followed by @('##'),
-      because such arguments are not macro-expanded [C17:6.10.3.1/1];
-      that also includes the argument(s) corresponding to @('__VA_ARGS__')
-      [C17:6.10.3.1/2].
-      For a macro without the ellipsis,
-      all the arguments except the last are handled in the @(':arg-comma') mode,
-      while the last argument is handled in the @(':arg-last') mode;
-      if the macro has no parameters, there are no arguments to handle.
-      For a macro with the ellipsis,
-      all the arguments corresponding to named parameters
-      are handled in the @(':arg-comma') mode,
-      while the remaining argument/arguments (corresponding to the ellipsis)
-      is/are handled in the @(':arg-dots') mode.
-      The distinction between @(':arg-last') and @(':arg-dots') is that
-      the former signals an error if a comma is encountered,
-      while the latter does not,
-      because the comma is part of the arguments associated to @('__VA_ARGS__')
-      [C17:
-      (The right parentheses and commas mentioned here are the ones
-      outside nested matching parentheses [C17:6.10.3/10] [C17:6.10.3/11].)"))
-   (xdoc::p
-    "In situations in which the preprocessor goes through lexemes
-     with a certain stopping criterion but without macro replacements,
-     we do not use any of the modes defined by this fixtype.
-     Instead, we use simpler functions that
-     recursively go through lexemes until the stopping criterion.
-     An example is when collecting the replacement list of a macro
-     in a @('#define') directive."))
-  (:line ())
-  (:expr ())
-  (:arg-comma ())
-  (:arg-last ())
-  (:arg-dots ())
-  :pred macrep-modep)
+  (defret plexeme-list-not-tokenp-of-read-ptoken
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defret plexeme-tokenp-of-read-ptoken
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
 
-(fty::deftagsum groupend
-  :short "Fixtype of endings of groups."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here by `group' we mean the preprocessing notion
-     captured by the @('group') nonterminal in the ABNF grammar.
-     More accurately, the endings formalized here refer to optional groups:
-     a group consists of one or more group parts,
-     but these endings apply to sequences of zero or more group parts
-     (see @(tsee pproc-*-group-part)),
-     which are isomorphic to optional groups.")
-   (xdoc::p
-    "Looking at the grammar, an (optional) group may end:
-     with the end of file, for the top-level group;
-     or with one of the directives @('#elif'), @('#else'), and @('#endif')
-     (which are not part of the group itself, but follow it),
-     for groups nested in @('#if'), @('#ifdef'), and @('#ifndef') directives.
-     This fixtype captures these four possibilities."))
-  (:eof ())
-  (:elif ())
-  (:else ())
-  (:endif ())
-  :pred groupendp)
+  (defret ppstate->size-of-read-ptoken-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-groupend
-  :short "An irrelevant group ending."
-  :type groupendp
-  :body (groupend-eof))
+  (defret ppstate->size-of-read-ptoken-cond
+    (implies (and (not erp)
+                  token?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption groupend-option
-  groupend
-  :short "Fixtype of optional endings of groups."
-  :pred groupend-optionp)
+(define read-ptoken/newline ((headerp booleanp) (ppstate ppstatep))
+  :returns (mv erp
+               (nontoknls plexeme-listp)
+               (toknl? plexeme-optionp)
+               (toknl-span spanp)
+               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Read a token or new line during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "New lines are significant in most situations during preprocessing,
+     i.e. they are not just white space to skip over.
+     In such situations,
+     we need to skip over non-new-line white space and comments,
+     but stop when we encounter either a new line or a token."))
+  (b* (((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (read-lexeme headerp ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-token/newline-p lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontoknls toknl toknl-span ppstate)
+        (read-ptoken/newline headerp ppstate)))
+    (retok (cons lexeme nontoknls)
+           toknl
+           toknl-span
+           ppstate))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-list-not-token/newline-p-of-read-ptoken/newline
+    (plexeme-list-not-token/newline-p nontoknls)
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-token/newline-p-of-read-ptoken/newline
+    (implies token?
+             (plexeme-token/newline-p toknl?))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken/newline-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken/newline-cond
+    (implies (and (not erp)
+                  toknl?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :short "Unread a lexeme."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add the lexeme to the list of pending lexmarks.
+     See @(tsee ppstate)."))
+  (push-lexmark (make-lexmark-lexeme :lexeme lexeme :span span) ppstate)
+
+  ///
+
+  (defret ppstate->size-of-unread-plexeme
+    (equal (ppstate->size new-ppstate)
+           (1+ (ppstate->size ppstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
