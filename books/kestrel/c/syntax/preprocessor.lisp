@@ -671,7 +671,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unread-plexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
+(define unread-lexeme ((lexeme plexemep) (span spanp) (ppstate ppstatep))
   :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
   :short "Unread a lexeme."
   :long
@@ -683,7 +683,7 @@
 
   ///
 
-  (defret ppstate->size-of-unread-plexeme
+  (defret ppstate->size-of-unread-lexeme
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
 
@@ -1295,7 +1295,7 @@
                         :found (plexeme-to-msg toknl2))))))
        (t ; non-# -- text line
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
-             (ppstate (unread-plexeme toknl span ppstate))
+             (ppstate (unread-lexeme toknl span ppstate))
              ((erp rev-lexemes ppstate preprocessed state)
               (pproc-line-rest file
                                base-dir
