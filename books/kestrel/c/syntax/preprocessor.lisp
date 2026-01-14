@@ -795,6 +795,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pproc-define ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :short "Preprocess a @('#define') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('define') identifier has been parsed.
+     We do not pass the comments and white space before and after the @('#'),
+     because we make no use of them, at lest for now."))
+  (b* (((reterr) ppstate))
+    (reterr (msg "#define directive not yet supported.")))) ; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc
   :short "Preprocess files and entities therein."
   :long
@@ -1238,9 +1252,18 @@
                                      ppstate
                                      state
                                      (1- limit))))
-                  (retok nil rev-lexemes ppstate preprocessed state)))
+                  (retok nil ; no group ending
+                         rev-lexemes
+                         ppstate
+                         preprocessed
+                         state)))
                ((equal directive "define") ; # define
-                (reterr (msg "#define directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-define ppstate)))
+                  (retok nil ; no group ending
+                         (plexeme-list-fix rev-lexemes)
+                         ppstate
+                         (string-scfile-alist-fix preprocessed)
+                         state)))
                ((equal directive "undef") ; # undef
                 (reterr (msg "#undef directive not yet supported."))) ; TODO
                ((equal directive "line") ; # line
