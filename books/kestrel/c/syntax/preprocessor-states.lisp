@@ -356,6 +356,21 @@
          (or (equal string "#")
              (equal string "%:")))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-hashhashp ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a double hash @('##')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the lexeme is the punctuator @('#'),
+     or also if the lexeme is the digraph @('%:%:') [C17:6.4.6/3]."))
+  (and (plexeme-case lexeme :punctuator)
+       (b* ((string (plexeme-punctuator->punctuator lexeme)))
+         (or (equal string "##")
+             (equal string "%:%:")))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lexmark
