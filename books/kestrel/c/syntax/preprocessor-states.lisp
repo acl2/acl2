@@ -343,6 +343,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plexeme-punctuatorp ((lexeme plexemep) (punctuator stringp))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a given punctuator."
+  (and (plexeme-case lexeme :punctuator)
+       (equal (plexeme-punctuator->punctuator lexeme)
+              (str-fix punctuator))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plexeme-hashp ((lexeme plexemep))
   :returns (yes/no booleanp)
   :short "Check if a lexeme is a hash @('#')."
@@ -355,6 +364,21 @@
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
          (or (equal string "#")
              (equal string "%:")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme-hashhashp ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a double hash @('##')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the lexeme is the punctuator @('#'),
+     or also if the lexeme is the digraph @('%:%:') [C17:6.4.6/3]."))
+  (and (plexeme-case lexeme :punctuator)
+       (b* ((string (plexeme-punctuator->punctuator lexeme)))
+         (or (equal string "##")
+             (equal string "%:%:")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,10 +448,11 @@
      but does not capture the fact that the single spaces
      only occur between two tokens,
      which should be also an invariant.
-     The list of lexemes excludes
-     the (mandatory [C17:6.10.3/3]) white space
+     The list of lexemes that forms the replacement list
+     excludes the (mandatory [C17:6.10.3/3]) white space
+     (and comments, which we keep but must treat as white space)
      between the name and the replacement list,
-     as well as the white space after the replacement list,
+     as well as the white space (and comments) after the replacement list,
      excluding the closing new line as well
      [C17:6.10.3/7].")
    (xdoc::p
@@ -435,25 +460,37 @@
      besides the replacement list,
      which we model as for object-like macros (see above),
      we have zero or more parameters, which are identifiers,
-     and an optional ellipsis parameter,
-     whose presence or absence we model as a boolean.
-     The list of lexemes excludes any white space between
-     the closing parenthesis of the parameters and the replacement list,
-     as well as the white space after the replacement list,
-     exclusing the closing new line as well
-     [C17:6.10.3/7]."))
-  (:object ((replace plexeme-list
-                     :reqfix (if (plexeme-list-token/space-p replace)
-                                 replace
+     an optional ellipsis parameter,
+     whose presence or absence we model as a boolean,
+     and a subset of the parameters that are, in the replacement list,
+     either preceded by @('#') or @('##') or followed by @('##').
+     This subset is modeled as a list, but treated as a set.
+     If the parameters include an ellipsis,
+     we need to count it as the @('__VA_ARGS__') identifier."))
+  (:object ((replist plexeme-list
+                     :reqfix (if (plexeme-list-token/space-p replist)
+                                 replist
                                nil)))
-   :require (plexeme-list-token/space-p replace))
+   :require (plexeme-list-token/space-p replist))
   (:function ((params ident-list)
               (ellipsis bool)
-              (replace plexeme-list
-                       :reqfix (if (plexeme-list-token/space-p replace)
-                                   replace
-                                 nil)))
-   :require (plexeme-list-token/space-p replace))
+              (replist plexeme-list
+                       :reqfix (if (plexeme-list-token/space-p replist)
+                                   replist
+                                 nil))
+              (hash-params ident-list
+                           :reqfix (if (subsetp-equal
+                                        hash-params
+                                        (if ellipsis
+                                            (cons (ident "__VA_ARGS__") params)
+                                          params))
+                                       hash-params
+                                     nil)))
+   :require (and (plexeme-list-token/space-p replist)
+                 (subsetp-equal hash-params
+                                (if ellipsis
+                                    (cons (ident "__VA_ARGS__") params)
+                                  params))))
   :pred macro-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -857,12 +894,12 @@
                     :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
-      (ienv :type (satisfies ienvp)
-            :initially ,(irr-ienv))
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
+      (ienv :type (satisfies ienvp)
+            :initially ,(irr-ienv))
       :renaming (;; field recognizers:
                  (bytessp raw-ppstate->bytess-p)
                  (bytess-currentp raw-ppstate->bytess-current-p)
@@ -871,9 +908,9 @@
                  (chars-readp raw-ppstate->chars-read-p)
                  (chars-unreadp raw-ppstate->chars-unread-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
-                 (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytess-length raw-ppstate->bytess-length)
                  (bytessi raw-ppstate->bytes)
@@ -884,9 +921,9 @@
                  (chars-read raw-ppstate->chars-read)
                  (chars-unread raw-ppstate->chars-unread)
                  (lexmarks raw-ppstate->lexmarks)
-                 (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (resize-bytess raw-update-ppstate->bytess-length)
                  (update-bytessi raw-update-ppstate->bytes)
@@ -897,9 +934,9 @@
                  (update-chars-read raw-update-ppstate->chars-read)
                  (update-chars-unread raw-update-ppstate->chars-unread)
                  (update-lexmarks raw-update-ppstate->lexmarks)
-                 (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros))))
+                 (update-macros raw-update-ppstate->macros)
+                 (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
 
@@ -909,6 +946,7 @@
                     ppstate
                   (non-exec (create-ppstate)))
          :exec ppstate)
+    :inline t
     ///
     (defrule ppstate-fix-when-ppstatep
       (implies (ppstatep ppstate)
@@ -962,29 +1000,34 @@
   (define ppstate->bytess-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->bytess-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-length ppstate)))
+         :exec (raw-ppstate->bytess-length ppstate))
+    :inline t)
 
   (define ppstate->bytes ((i natp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
     :returns (bytes byte-listp)
     (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->bytess-length)))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->bytess-current (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-current ppstate)))
+         :exec (raw-ppstate->bytess-current ppstate))
+    :inline t)
 
   (define ppstate->position (ppstate)
     :returns (position positionp)
     (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
-         :exec (raw-ppstate->position ppstate)))
+         :exec (raw-ppstate->position ppstate))
+    :inline t)
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-length ppstate)))
+         :exec (raw-ppstate->chars-length ppstate))
+    :inline t)
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -992,37 +1035,44 @@
     (char+position-fix
      (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
           :exec (raw-ppstate->char i ppstate)))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-read ppstate)))
+         :exec (raw-ppstate->chars-read ppstate))
+    :inline t)
 
   (define ppstate->chars-unread (ppstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-unread ppstate)))
+         :exec (raw-ppstate->chars-unread ppstate))
+    :inline t)
 
   (define ppstate->lexmarks (ppstate)
     :returns (lexmarks lexmark-listp)
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
-         :exec (raw-ppstate->lexmarks ppstate)))
-
-  (define ppstate->ienv (ppstate)
-    :returns (ienv ienvp)
-    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ienv ppstate)))
+         :exec (raw-ppstate->lexmarks ppstate))
+    :inline t)
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
-         :exec (raw-ppstate->size ppstate)))
+         :exec (raw-ppstate->size ppstate))
+    :inline t)
 
   (define ppstate->macros (ppstate)
     :returns (macros macro-tablep)
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
-         :exec (raw-ppstate->macros ppstate)))
+         :exec (raw-ppstate->macros ppstate))
+    :inline t)
+
+  (define ppstate->ienv (ppstate)
+    :returns (ienv ienvp)
+    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ienv ppstate))
+    :inline t)
 
   ;; writers:
 
@@ -1031,7 +1081,8 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-length (nfix length)
                                                     (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-length length ppstate)))
+         :exec (raw-update-ppstate->bytess-length length ppstate))
+    :inline t)
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
@@ -1040,6 +1091,7 @@
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->bytes i bytes ppstate))
+    :inline t
     :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
@@ -1047,21 +1099,24 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-current (nfix bytess-current)
                                                      (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-current bytess-current ppstate)))
+         :exec (raw-update-ppstate->bytess-current bytess-current ppstate))
+    :inline t)
 
   (define update-ppstate->position ((position positionp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->position (position-fix position)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->position position ppstate)))
+         :exec (raw-update-ppstate->position position ppstate))
+    :inline t)
 
   (define update-ppstate->chars-length ((length natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-length length ppstate)))
+         :exec (raw-update-ppstate->chars-length length ppstate))
+    :inline t)
 
   (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -1073,6 +1128,7 @@
                                                (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char i char+pos ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->chars-read ((chars-read natp) ppstate)
@@ -1080,41 +1136,47 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-read (nfix chars-read)
                                                  (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-read chars-read ppstate)))
+         :exec (raw-update-ppstate->chars-read chars-read ppstate))
+    :inline t)
 
   (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-unread (nfix chars-unread)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-unread chars-unread ppstate)))
+         :exec (raw-update-ppstate->chars-unread chars-unread ppstate))
+    :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
-
-  (define update-ppstate->ienv ((ienv ienvp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->ienv (ienv-fix ienv)
-                                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ienv ienv ppstate)))
+         :exec (raw-update-ppstate->lexmarks lexmarks ppstate))
+    :inline t)
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->size size ppstate)))
+         :exec (raw-update-ppstate->size size ppstate))
+    :inline t)
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->macros (macro-table-fix macros)
                                              (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->macros macros ppstate)))
+         :exec (raw-update-ppstate->macros macros ppstate))
+    :inline t)
+
+  (define update-ppstate->ienv ((ienv ienvp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ienv (ienv-fix ienv)
+                                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate))
+    :inline t)
 
   ;; readers over writers:
 
@@ -1376,7 +1438,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ppstate-add-bytes ((bytes byte-listp) (ppstate ppstatep))
-  :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :returns (mv erp (new-ppstate ppstatep))
   :short "Add some input bytes to a preprocessing state."
   :long
   (xdoc::topstring

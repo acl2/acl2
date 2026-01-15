@@ -2,10 +2,12 @@
 ; Written by Matt Kaufmann and Konrad Slind
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; For background, see file README.txt.
+
 ; This book provides a nice presentation of the result proved in
-; ex1-proof.lisp.  See that book for comments.  Here we include
-; non-locally only the translated HOL development from ex1-thy.lisp,
-; exhibiting the desired theorem proved from that translated HOL development.
+; ex1-proof.lisp.  Here we include non-locally only the translated HOL
+; development from ex1-thy.lisp, exhibiting the desired theorem proved from
+; that translated HOL development.
 
 ; See ex1-proof.lisp for comments about the proof, in particular about
 ; how to view the main result as a formalization of this prettier statement.
@@ -22,6 +24,12 @@
 (include-book "ex1-thy") ; translated HOL development
 
 (local (include-book "ex1-proof"))
+
+; Here is the HOL statement for the defgoal body below.  (This is an ASCII
+; version without quantifiers; see ex1.defhol for the unmodified version.)
+#|
+  (FST p = FST q & SND p = SND q) <=> (p = q)
+|#
 
 (defgoal pair_fst_snd_eq
   (implies
