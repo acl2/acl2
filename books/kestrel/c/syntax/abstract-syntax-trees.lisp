@@ -177,7 +177,21 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp)
+  :pred ident-listp
+
+  ///
+
+  (defruled true-listp-when-ident-listp
+    (implies (ident-listp idents)
+             (true-listp idents))
+    :induct t
+    :enable ident-listp)
+
+  (defrule ident-listp-of-add-to-set-equal
+    (equal (ident-listp (add-to-set-equal ident idents))
+           (and (identp ident)
+                (ident-listp idents)))
+    :enable add-to-set-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
