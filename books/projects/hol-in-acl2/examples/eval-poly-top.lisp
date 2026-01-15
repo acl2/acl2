@@ -2,6 +2,8 @@
 ; Written by Matt Kaufmann and Konrad Slind
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; For background, see file README.txt.
+
 ; This book provides a nice presentation of the result proved in
 ; eval-poly-proof.lisp.  See that book for comments.  Here we include
 ; non-locally only the translated HOL development from eval-poly-thy.lisp,
