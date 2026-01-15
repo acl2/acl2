@@ -224,7 +224,7 @@
   :type macro-tablep
   :body (macro-table nil nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define macro-lookup ((name identp) (table macro-tablep))
   :returns
@@ -397,3 +397,40 @@
        (new-scopes (cons new-scope (cdr old-scopes))))
     (change-macro-table table :scopes new-scopes))
   :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define macro-remove ((name identp) (table macro-tablep))
+  :returns (mv erp (new-table macro-tablep))
+  :short "Remove a macro from a macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through all the scopes and remove all occurrences.
+     Recall that we do not enforce unique keys within and across scopes.")
+   (xdoc::p
+    "This has no effect if the macro is absent,
+     consistently with [C17:6.10.3.5/2].")
+   (xdoc::p
+    "[C17:6.10.8/2] prohibits the removal of a predefined macro.
+     So we return an error if an attempt is made.
+     However, Clang allows that, so we may need to optionally relax this."))
+  (b* (((reterr) (irr-macro-table))
+       ((macro-table table) table)
+       ((when (member-equal (ident-fix name) table.predefined))
+        (reterr (msg "Cannot undefine the predefined macro ~x0."
+                     (ident-fix name))))
+       (new-scopes (macro-remove-in-scopes name table.scopes)))
+    (retok (change-macro-table table :scopes new-scopes)))
+
+  :prepwork
+  ((define macro-remove-in-scopes ((name identp) (scopes macro-scope-listp))
+     :returns (new-scopes macro-scope-listp)
+     :parents nil
+     (b* (((when (endp scopes)) nil)
+          (new-scope (remove-assoc-equal (ident-fix name)
+                                         (macro-scope-fix (car scopes))))
+          (new-scopes (macro-remove-in-scopes name (cdr scopes))))
+       (cons new-scope new-scopes))
+     :guard-hints
+     (("Goal" :in-theory (enable alistp-when-macro-scopep-rewrite))))))

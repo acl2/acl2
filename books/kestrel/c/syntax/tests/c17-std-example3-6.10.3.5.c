@@ -1,7 +1,7 @@
 #define x 3
 #define f(a) f(x * (a))
-// #undef x
-// #define x 2
+#undef x
+#define x 2
 #define g f
 #define z z[0]
 #define h g(\~{ }
