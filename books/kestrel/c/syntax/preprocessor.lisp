@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-lexemes")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 (include-book "preprocessor-reader")
@@ -124,7 +125,8 @@
      At some point we should integrate the preprocessor with the parser.")
    (xdoc::p
     "This preprocessor is still work in progress."))
-  :order-subtopics (preprocessor-states
+  :order-subtopics (preprocessor-lexemes
+                    preprocessor-states
                     preprocessor-messages
                     preprocessor-reader
                     preprocessor-lexer
