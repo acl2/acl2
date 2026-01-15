@@ -44,11 +44,19 @@ Trying the Demo:
    First, install Ruby and the required gems:
       conda install -y ruby
       gem install getopt hash_keyword_args
+   Certify the ACL2 Bridge books:
+      `cert.pl $ACL2_SYSTEM_BOOKS/centaur/bridge/top`
 
-   To try the demo, you'll need to first start an ACL2 Bridge, then run
+   To try the demo, you'll need to first start an ACL2 Bridge:
+      1. Start ACL2
+      2. At the ACL2> prompt:
+         ```
+         (include-book "centaur/bridge/top" :dir :system)
+         (bridge::start "./demo-bridge")
+         ```
+   then in a different terminal run
    "./demo.rb --help" for information on how to connect.  You can connect
    multiple clients at a time, of course.
-
 
 Questions:
 
