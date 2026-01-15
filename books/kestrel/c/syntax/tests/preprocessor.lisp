@@ -53,53 +53,56 @@
           state))
     state))
 
+;;;;;;;;;;;;;;;;;;;;
+
+; Specialization to one file.
+
+(defmacro test-preproc-1 (file expected)
+  `(test-preproc '(,file)
+                 :expected (fileset-of ,file ,expected)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc '("empty.c")
-              :expected (fileset-of "empty.c" ""))
+(test-preproc-1 "empty.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc '("whitespace.c")
-              :expected (fileset-of "whitespace.c"
-                                    (list 10
-                                          32 32 32 10 ; SP SP SP
-                                          9 10 ; HT
-                                          11 10 ; VT
-                                          12 10))) ; FF
+(test-preproc-1 "whitespace.c"
+                (list 10
+                      32 32 32 10 ; SP SP SP
+                      9 10 ; HT
+                      11 10 ; VT
+                      12 10)) ; FF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc '("comments.c")
-              :expected (fileset-of "comments.c"
-                                    "/* block
+(test-preproc-1 "comments.c"
+                "/* block
  * comment
  */
 
 // line comment
-"))
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc '("text.c")
-              :expected (fileset-of "text.c"
-                                    "int x = 0;
+(test-preproc-1 "text.c"
+                "int x = 0;
 
 void f(double y) {
   y = 0.1;
 }
-"))
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc '("null-directive.c")
-              :expected (fileset-of "null-directive.c"
-                                    "/*#*/
+(test-preproc-1 "null-directive.c"
+                "/*#*/
 /* comment */ /*#*/
 /*#*/ // comment
 /* comment */ /*#*/ // comment
     /*#*/
-"))
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
