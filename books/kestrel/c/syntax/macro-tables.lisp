@@ -41,29 +41,43 @@
    (xdoc::p
     "This does not include the name, which we represent separately.")
    (xdoc::p
-    "Aside from the name, an object-like macro [C17:6.10.3/9]
-     consists of its replacement list,
-     which is a sequence of zero or more preprocessing tokens.
-     To facilitate comparisons with multiple definitions of the same macro
+    "Both object-like and function-like macros have replacement lists,
+     which grammatically are sequences of zero or more preprocessing tokens.
+     Although white space and comments between such tokens
+     could be ignored if we always operated on tokens,
+     our "
+    (xdoc::seetopic "preprocessor-printer" "preprocessor printer")
+    " could print something incorrect without white space separation:
+     for instance, given")
+   (xdoc::codeblock
+    "#define M A B"
+    "M")
+   (xdoc::p
+    "should result in")
+   (xdoc::codeblock
+    "A B")
+   (xdoc::p
+    "and not in")
+   (xdoc::codeblock
+    "AB")
+   (xdoc::p
+    "Additionally, [C17:6.10.3/1] suggests that
+     the notion of `identical replacement lists'
+     involves considerations of white space separation between tokens.")
+   (xdoc::p
+    "To facilitate comparisons with multiple definitions of the same macro
      [C17:6.10.3/1] [C17:6.10.3/2],
-     we also keep track of white space separating tokens,
-     in the form of a single space between two tokens.
-     The invariant @(tsee plexeme-list-token/space-p) captures
-     the fact that we only have tokens and single spaces,
-     but does not capture the fact that the single spaces
-     only occur between two tokens,
-     which should be also an invariant.
-     The list of lexemes that forms the replacement list
-     excludes the (mandatory [C17:6.10.3/3]) white space
-     (and comments, which we keep but must treat as white space)
-     between the name and the replacement list,
-     as well as the white space (and comments) after the replacement list,
-     excluding the closing new line as well
-     [C17:6.10.3/7].")
+     we normalize the white space between tokens as single spaces
+     in our replacement lists, which we thus model as
+     lists of tokens and (single) spaces.
+     These spaces can only occur between two tokens,
+     but we currently do not capture this additional invariant.")
+   (xdoc::p
+    "Aside from the name, an object-like macro [C17:6.10.3/9]
+     consists of its replacement list.")
    (xdoc::p
     "For a function-like macro [C17:6.10.3/10],
      besides the replacement list,
-     which we model as for object-like macros (see above),
      we have zero or more parameters, which are identifiers,
      an optional ellipsis parameter,
      whose presence or absence we model as a boolean,
@@ -71,7 +85,8 @@
      either preceded by @('#') or @('##') or followed by @('##').
      This subset is modeled as a list, but treated as a set.
      If the parameters include an ellipsis,
-     we need to count it as the @('__VA_ARGS__') identifier."))
+     we need to count it as the @('__VA_ARGS__') identifier.
+     This subset is redundant, but convenient."))
   (:object ((replist plexeme-list
                      :reqfix (if (plexeme-list-token/space-p replist)
                                  replist
@@ -113,10 +128,11 @@
   (xdoc::topstring
    (xdoc::p
     "A file may define some macros, and then include another file.
-     When preprocessing the included file,
-     which may define its own macros,
-     the macros defined in the including file are also in scope.
+     When preprocessing the included file as @(see self-contained),
+     the included file may define its own macros,
+     while the macros defined in the including file are also in scope.
      If the included file includes a further file,
+     which we also try prepreocessing as @(see self-contained),
      the latter sees the macros of
      the two (directly and indirectly) including files.
      This leads to a natural stack-like structure
@@ -124,8 +140,7 @@
      where each scope corresponds to a file.
      [C17] does not have a notion of macro scopes,
      but our preprocessor uses this notion to determine
-     when included files are @(see self-contained),
-     in the precise sense that we define elsewhere.")
+     when included files are @(see self-contained).")
    (xdoc::p
     "The values of this fixtype represent a macro scope.
      The keys represent the names of the macros,
@@ -173,7 +188,8 @@
    (xdoc::p
     "As explained in @(tsee macro-scope),
      we organize macros in a stack of scopes,
-     i.e. a list of scopes corresponding to the files being preprocessed,
+     i.e. a list of scopes corresponding to the files
+     being preprocessed as @(see self-contained),
      the @(tsee car) being the innermost scope,
      and the list being empty only before any file is being preprocessed.
      We also have a separate scope of predefined macros [C17:6.10.8].")
@@ -185,14 +201,18 @@
      GCC allows redefinition of predefined macros,
      with the redefinition overriding the predefinition.")
    (xdoc::p
-    "We do not actually support the predefined macros yet,
-     but we already have a placeholder in the macro table.
-     It is not yet clear whether the best way to represent them
-     is as a macro scope,
-     given that some of them have dynamic definitions
-     (e.g. @('__LINE__') [C17:6.10.8.1/1]).
-     We may revise this part of the data structure
-     when we actually add support for predefined macros."))
+    "The predefined macros can be viewed as being in an outermost scope.
+     Their names and definitions depend on the C version,
+     and should be initialized accordingly.
+     Many predefined macros should be adequately modeled
+     with the same @(tsee macro-info) data as non-predefined ones.
+     A few predefined macros are special,
+     such as @('__LINE__') and @('__FILE__') [C17:6.10.10],
+     which do not have a fixed value:
+     these need to be recognized (by name)
+     and handled appropriately;
+     we model them as having empty replacement lists,
+     and include them in the predefined scope."))
   ((predefined macro-scope)
    (scopes macro-scope-list))
   :pred macro-tablep)
