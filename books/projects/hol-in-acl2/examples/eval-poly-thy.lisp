@@ -6,7 +6,7 @@
 
 (in-package "HOL")
 
-; (depends-on "ex1.defhol")
+; (depends-on "eval_poly.defhol")
 
 (include-book "../acl2/theories")
 
