@@ -343,6 +343,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plexeme-punctuatorp ((lexeme plexemep) (punctuator stringp))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a given punctuator."
+  (and (plexeme-case lexeme :punctuator)
+       (equal (plexeme-punctuator->punctuator lexeme)
+              (str-fix punctuator))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plexeme-hashp ((lexeme plexemep))
   :returns (yes/no booleanp)
   :short "Check if a lexeme is a hash @('#')."
