@@ -120,3 +120,86 @@ void f(double y) {
                                     "subdir/included2.h"
                                     "/*#*/ // null directive
 "))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "macros.c" "")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "c17-std-example-6.10.3.3.c" "")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "c17-std-example-6.10.3.4.c" "")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: handle macro replacement
+(test-preproc-1 "c17-std-example1-6.10.3.5.c"
+                "
+// int table[TABSIZE];
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "c17-std-example2-6.10.3.5.c" "")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: handle #undef directive
+; TODO: handle macro replacement
+(test-preproc-1 "c17-std-example3-6.10.3.5.c"
+                "// #undef x
+// #define x 2
+
+/*
+f(y+1) + f(f(z)) % t(t(g)(0) + t)(1);
+g(x+(3,4)-w) | h 5) & m
+      (f)^m(m);
+p() i[q()] = { q(1), r(2,3), r(4,), r(,5), r(,) };
+char c[2][6] = { str(hello), str() };
+*/
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: handle macro replacement
+(test-preproc-1 "c17-std-example4-6.10.3.5.c"
+                "
+/*
+debug(1, 2);
+fputs(str(strncmp(\"abc\\0d\", \"abc\", ’\\4’) // this goes away
+      == 0) str(: @\\n), s);
+#include xstr(INCFILE(2).h)
+glue(HIGH, LOW);
+xglue(HIGH, LOW)
+*/
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: handle macro replacement
+(test-preproc-1 "c17-std-example5-6.10.3.5.c"
+                "/*
+int j[] = { t(1,2,3), t(,4,5), t(6,,7), t(8,9,),
+t(10,,), t(,11,), t(,,12), t(,,) };
+*/
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: fails ([C17] is ambiguous)
+;(test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: handle macro replacement
+(test-preproc-1 "c17-std-example7-6.10.3.5.c"
+                "/*
+debug(\"Flag\");
+debug(\"X = %d\\n\", x);
+showlist(The first, second, and third items.);
+report(x>y, \"x is %d but y is %d\", x, y);
+*/
+")
