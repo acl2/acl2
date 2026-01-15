@@ -2043,8 +2043,8 @@
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (read-token/newline ppstate))
-             ((unless (and toknl2
-                           (plexeme-case toknl2 :newline))) ; # include EOL
+             ((unless (and toknl2 ; # include headername EOL
+                           (plexeme-case toknl2 :newline)))
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
