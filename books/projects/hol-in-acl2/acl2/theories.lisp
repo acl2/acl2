@@ -473,6 +473,22 @@
       `(with-output :off :all! :on error
          ,form))))
 
+(defun defhol-filename (name)
+  (declare (xargs :guard (symbolp name)))
+  (concatenate 'string
+               (string-downcase (symbol-name name))
+               ".defhol"))
+
+(defmacro import-theory (name &key prop hta-term hta-keys
+                              hol-name ; overrides name
+                              verbose)
+  (let ((filename (defhol-filename (or hol-name name))))
+    `(progn (open-theory ,name
+                         :prop ,prop :hta-term ,hta-term :hta-keys ,hta-keys)
+            (local (include-book "tools/eval-events-from-file" :dir :system))
+            (acl2::eval-events-from-file ,filename)
+            (close-theory :verbose ,verbose))))
+
 (defun defgoal-form1 (hol-name body tbl)
   (and body
        (case-match body
