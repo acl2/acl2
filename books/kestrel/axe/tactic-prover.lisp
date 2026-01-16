@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,7 +25,7 @@
 
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
-(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
+(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly, brings in skip-proofs ; todo: try rewriter-basic but we might need support for embedded dags
 ;(include-book "dag-size")
 (include-book "dagify") ; for dag-or-term-to-term
 (include-book "make-term-into-dag-basic")
