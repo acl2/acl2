@@ -147,12 +147,9 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle #undef directive
 ; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
-                "// #undef x
-// #define x 2
-
+                "
 /*
 f(y+1) + f(f(z)) % t(t(g)(0) + t)(1);
 g(x+(3,4)-w) | h 5) & m
@@ -189,8 +186,7 @@ t(10,,), t(,11,), t(,,12), t(,,) };
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: fails ([C17] is ambiguous)
-;(test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
+(test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

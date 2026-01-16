@@ -10,6 +10,8 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-lexemes")
+(include-book "macro-tables")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 (include-book "preprocessor-reader")
@@ -124,7 +126,9 @@
      At some point we should integrate the preprocessor with the parser.")
    (xdoc::p
     "This preprocessor is still work in progress."))
-  :order-subtopics (preprocessor-states
+  :order-subtopics (preprocessor-lexemes
+                    macro-tables
+                    preprocessor-states
                     preprocessor-messages
                     preprocessor-reader
                     preprocessor-lexer
@@ -1392,6 +1396,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pproc-undef ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#undef') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('define') identifier has been parsed.
+     We do not pass the comments and white space before and after the @('#'),
+     because we make no use of them, at lest for now.")
+   (xdoc::p
+    "We read an identifier, which is the name of the macro.
+     The name must not be the @('defined') identifier [C17:6.10.8/2].
+     We also ensure that we find a new line after the name,
+     possibly with some white space and comments in between.")
+   (xdoc::p
+    "We remove the macro from the table.
+     Note that @(tsee macro-remove) takes care of
+     ensuring that the macro is not a predefined one."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp & name? name?-span ppstate) (read-token/newline ppstate))
+       ((unless (and name?
+                     (plexeme-case name? :ident))) ; # undef name
+        (reterr-msg :where (position-to-msg (span->start name?-span))
+                    :expected "an identifier"
+                    :found (plexeme-to-msg name?)))
+       (name (plexeme-ident->ident name?))
+       ((when (equal name (ident "defined")))
+        (reterr (msg "Cannot undefine macro with name 'defined'.")))
+       ((erp & newline? newline?-span ppstate) (read-token/newline ppstate))
+       ((unless (and newline?
+                     (plexeme-case newline? :newline))) ; # undef name EOL
+        (reterr-msg :where (position-to-msg (span->start newline?-span))
+                    :expected "a new line"
+                    :found (plexeme-to-msg newline?)))
+       (macros (ppstate->macros ppstate))
+       ((erp new-macros) (macro-remove name macros))
+       (ppstate (update-ppstate->macros new-macros ppstate)))
+    (retok ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc
   :short "Preprocess files and entities therein."
   :long
@@ -1850,7 +1897,12 @@
                          (string-scfile-alist-fix preprocessed)
                          state)))
                ((equal directive "undef") ; # undef
-                (reterr (msg "#undef directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-undef ppstate)))
+                  (retok nil ; no group ending
+                         (plexeme-list-fix rev-lexemes)
+                         ppstate
+                         (string-scfile-alist-fix preprocessed)
+                         state)))
                ((equal directive "line") ; # line
                 (reterr (msg "#line directive not yet supported."))) ; TODO
                ((equal directive "error") ; # error
@@ -1991,8 +2043,8 @@
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (read-token/newline ppstate))
-             ((unless (and toknl2
-                           (plexeme-case toknl2 :newline))) ; # include EOL
+             ((unless (and toknl2 ; # include headername EOL
+                           (plexeme-case toknl2 :newline)))
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
