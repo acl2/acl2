@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -269,6 +269,7 @@
 (include-book "defthm-stp")
 
 ;; Legacy Axe utilities (many of these depend on skip-proofs):
+(include-book "evaluator-support")
 (include-book "evaluator")
 (include-book "instantiate-hyp")
 (include-book "dagify")
