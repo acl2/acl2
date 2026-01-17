@@ -5913,9 +5913,7 @@
     ;; booleanp-of-jz-condition
     ;; booleanp-of-jnz-condition
     acl2::getbit-0-of-bool-to-bit
-    acl2::equal-of-0-and-bool-to-bit ; alt version needed, or do equals get turned around?
-    acl2::equal-of-1-and-bool-to-bit ; alt version needed, or do equals get turned around?
-    acl2::equal-of-1-and-bitnot ; todo: add 0 version
+
     ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
     ;; todo: just include boolean-rules?:
     ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
