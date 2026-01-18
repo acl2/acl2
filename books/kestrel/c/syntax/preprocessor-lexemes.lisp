@@ -185,7 +185,29 @@
     (implies (plexeme-listp x)
              (true-listp x))
     :induct t
-    :enable plexeme-listp))
+    :enable plexeme-listp)
+
+  (defruled cdr-of-plexeme-list-fix
+    (equal (cdr (plexeme-list-fix x))
+           (plexeme-list-fix (cdr x)))
+    :enable plexeme-list-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist plexeme-option-list
+  :short "Fixtype of lists of optional preprocessing lexemes."
+  :elt-type plexeme-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred plexeme-option-listp
+
+  ///
+
+  (defrule plexeme-option-listp-when-plexeme-listp
+    (implies (plexeme-listp x)
+             (plexeme-option-listp x))
+    :induct t
+    :enable plexeme-option-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,7 +250,8 @@
   (plexeme-tokenp x)
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-tokenp))
+  (fty::deffixequiv plexeme-list-tokenp
+    :args ((x plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +262,8 @@
   :negatedp t
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-not-tokenp))
+  (fty::deffixequiv plexeme-list-not-tokenp
+    :args ((x plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,7 +289,8 @@
   (plexeme-token/newline-p x)
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-token/newline-p))
+  (fty::deffixequiv plexeme-list-token/newline-p
+    :args ((x plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -276,7 +301,8 @@
   :negatedp t
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-not-token/newline-p))
+  (fty::deffixequiv plexeme-list-not-token/newline-p
+    :args ((x plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,7 +327,8 @@
   (plexeme-token/space-p x)
   :elementp-of-nil t
   ///
-  (fty::deffixequiv plexeme-list-token/space-p))
+  (fty::deffixequiv plexeme-list-token/space-p
+    :args ((x plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
