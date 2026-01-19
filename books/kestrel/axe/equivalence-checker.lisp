@@ -24,8 +24,8 @@
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
-(include-book "rewriter") ;TODO: brings in JVM stuff and skip-proofs ; use rewriter-basic instead?
-;(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
+(include-book "rewriter") ;TODO: brings in JVM stuff...
+(include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
@@ -39,7 +39,7 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
-(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(include-book "kestrel/typed-lists-light/integer-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-list-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
@@ -62,7 +62,7 @@
 ;; mentions of axe-rules, amazing-rules-spec-and-dag, etc. in this file):
 (include-book "kestrel/bv-lists/packbv-theorems" :dir :system)
 (include-book "kestrel/bv-lists/bvplus-list" :dir :system)
-(local (include-book "kestrel/bv/arith" :dir :system))
+(include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
@@ -1681,15 +1681,12 @@
 
 ;;returns (mv term-or-nil difference) where if TERM-OR-NIL is non-nil, we found a match and DIFFERENCE is (nth i seq)-(nth i <seq-for-term>), for all i
 (defun find-term-with-constant-difference (seq term-seq-alist)
-  (declare (xargs :guard (and (integer-listp seq)
-                              (consp seq) ; ok?
-                              (alistp term-seq-alist))))
+;;  (declare (xargs :guard (alistp term-seq-alist)))
   (if (endp term-seq-alist)
       (mv nil nil)
     (let* ((entry (car term-seq-alist))
            (seq2 (cdr entry)))
-      (if (or (not (integer-listp seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
-              (not (equal (len seq) (len seq2))))
+      (if (not (acl2-number-listp seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
           (find-term-with-constant-difference seq (cdr term-seq-alist))
         (let ((first-diff (- (car seq) (car seq2))))
           ;;do we already have a function that computes something like this?:
@@ -1697,6 +1694,8 @@
               (mv (car entry) ;the term found
                   first-diff)
             (find-term-with-constant-difference seq (cdr term-seq-alist))))))))
+
+(skip-proofs (verify-guards find-term-with-constant-difference))
 
 ;use this more?
 (defun make-bvplus-term (size constant term)

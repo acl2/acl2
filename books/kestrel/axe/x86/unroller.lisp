@@ -63,8 +63,7 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
-(include-book "../evaluator-support")
-;(include-book "../evaluator") ; todo: this book has skip-proofs, for *axe-evaluator-functions* and to support making defuns
+(include-book "../evaluator") ; todo: this book has skip-proofs, for *axe-evaluator-functions* and to support making defuns
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -1317,7 +1316,7 @@
        (expected-formals (intersection-eq common-formals result-dag-vars))
        (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
-       ((mv erp events-for-defun)
+       ((mv erp defuns) ; defuns is nil or a singleton list
         (if (not produce-function)
             (mv (erp-nil) nil)
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
@@ -1353,13 +1352,7 @@
                                       (and ignored-vars
                                            `((ignore ,@ignored-vars)))))
                          ,function-body-untranslated)))
-            (mv (erp-nil)
-                (append (if termp
-                            nil
-                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
-                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
-                          )
-                        (list defun))))))
+            (mv (erp-nil) (list defun)))))
        ((when erp) (mv erp nil state))
        (produce-theorem (and produce-theorem
                              (if (not produce-function)
@@ -1386,7 +1379,7 @@
                                  defthm
                                `(skip-proofs ,defthm))))
                 (list defthm))))
-       (events (cons defconst-form (append events-for-defun defthms)))
+       (events (cons defconst-form (append defuns defthms)))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
        (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))

@@ -16,7 +16,7 @@
 ;; TODO: Re-enable support for 32-bit binaries.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/axe/tactic-prover" :dir :system) ; todo: includes skip-proofs
+(include-book "../tactic-prover") ; todo: try prover-basic, but it would need the :stp tactic
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
@@ -29,7 +29,6 @@
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "unroller")
 (include-book "tester-rules-bv")
-(include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")
