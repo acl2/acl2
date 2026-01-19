@@ -5,7 +5,7 @@
 
 # Cause the script to exit immediately upon failure
 set -e
-echo "acl2dir is $ACL2DIR"
+
 echo "Starting build-single.sh"
 echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
@@ -17,8 +17,6 @@ echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can 
 echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
 
 source $JENKINS_HOME/env.sh
-
-ACL2DIR=`pwd`
 
 if [ -z "$STARTJOB" ]; then
   echo "Setting STARTJOB to bash";
