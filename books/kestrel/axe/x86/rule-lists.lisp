@@ -5912,7 +5912,7 @@
     ;; booleanp-of-jnp-condition
     ;; booleanp-of-jz-condition
     ;; booleanp-of-jnz-condition
-    acl2::getbit-0-of-bool-to-bit
+    ;;acl2::getbit-0-of-bool-to-bit ; just use getbit-identity-axe
 
     ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
     ;; todo: just include boolean-rules?:
