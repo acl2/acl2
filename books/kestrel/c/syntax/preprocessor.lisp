@@ -23,6 +23,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -33,14 +34,6 @@
 (acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel subsetp-equal-of-add-to-set-equal
-  (equal (subsetp-equal (add-to-set-equal a x) y)
-         (and (member-equal a y)
-              (subsetp-equal x y)))
-  :enable add-to-set-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,7 +323,7 @@
      We capture these different modes of operations via this fixtype:")
    (xdoc::ul
     (xdoc::li
-     "The @(':line') mode is for text lines (see ABNF grammar),
+     "The @(':text') mode is for text lines (see ABNF grammar),
       as well as for the rest of the lines of certain directives.
       The stopping criterion is the end of the line,
       and macro replacement is the normal one.")
@@ -1436,6 +1429,510 @@
        (ppstate (update-ppstate->macros new-macros ppstate)))
     (retok ppstate))
   :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist ident-plexeme-list-alist
+  :short "Fixtype of alists from identifiers to lists of preprocessing lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to model the mapping of macro parameters
+     to the corresponding macro arguments."))
+  :key-type ident
+  :val-type plexeme-list
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :pred ident-plexeme-list-alistp
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled plexeme-listp-of-cdr-of-assoc-equal-when-ident-plexeme-list-alistp
+    (implies (and (ident-plexeme-list-alistp alist)
+                  (assoc-equal key alist))
+             (plexeme-listp (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replist-next-token ((replist plexeme-listp))
+  :guard (and (plexeme-list-token/space-p replist)
+              (consp replist))
+  :returns (mv (spacep booleanp) (token plexemep) (replist-rest plexeme-listp))
+  :short "Obtain the next token from a replacement list,
+          indicating whether it was preceded by space or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the next lexeme in the replacement list is a token, we return it,
+     indicating that it has no preceding space.
+     Otherwise, the lexeme must be a space (because of the guard),
+     and so there must be another lexeme, which must be a token,
+     and we return it, indicating that it was preceded by a space.")
+   (xdoc::p
+    "We also return the rest of the replacement list."))
+  (b* (((cons lexeme replist) replist)
+       ((when (plexeme-tokenp lexeme))
+        (mv nil (plexeme-fix lexeme) (plexeme-list-fix replist)))
+       ((when (endp replist))
+        (raise "Internal error: replacement list ends with space.")
+        (mv nil (irr-plexeme) nil))
+       ((cons token replist) replist)
+       ((unless (plexeme-tokenp token))
+        (raise "Internal error: replacement list has two consecutive spaces.")
+        (mv nil (irr-plexeme) nil)))
+    (mv t (plexeme-fix token) (plexeme-list-fix replist)))
+  :no-function nil
+  :prepwork ((local (in-theory (enable cdr-of-plexeme-list-fix))))
+
+  ///
+
+  (defret plexeme-tokenp-of-replist-next-token
+    (plexeme-tokenp token)
+    :hints (("Goal" :in-theory (enable irr-plexeme))))
+
+  (defret plexeme-list-token/space-p-of-replist-next-token
+    (plexeme-list-token/space-p replist-rest)
+    :hyp (plexeme-list-token/space-p replist))
+
+  (defret len-of-replist-next-token-decreases
+    (< (len replist-rest)
+       (len replist))
+    :hyp (consp replist)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-lexemes ((lexemes plexeme-listp))
+  :returns (stringlit stringlitp)
+  :short "Stringize a list of lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This implements the semantics of the @('#') operator [C17:6.10.3.2/2].
+     The term `stringize' and `destringize' occur in [C17]."))
+  (declare (ignore lexemes))
+  (irr-stringlit)) ; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-tokens ((token1 plexemep) (token2 plexemep))
+  :guard (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))
+  :returns (token plexemep)
+  :short "Join two tokens into one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to implement the @('##') operator [C17:6.10.3.3]."))
+  (declare (ignore token1 token2))
+  (irr-plexeme) ; TODO
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-tokens
+    (plexeme-tokenp token)
+    :hyp (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-optional-tokens ((token1? plexeme-optionp)
+                              (token2? plexeme-optionp))
+  :guard (and (or (not token1?) (plexeme-tokenp token1?))
+              (or (not token2?) (plexeme-tokenp token2?)))
+  :returns (token? plexeme-optionp)
+  ;; TODO
+  (if (or token1? token2?)
+      (irr-plexeme)
+    nil)
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-optional-tokens
+    (implies token?
+             (plexeme-tokenp token?))
+    :hyp (and (implies token1? (plexeme-tokenp token1?))
+              (implies token2? (plexeme-tokenp token2?))))
+
+  (defret join-optional-tokens-iff-first-or-second
+    (iff token? (or token1? token2?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-first-token ((lexemes plexeme-listp))
+  :returns (mv (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (lexemes-rest plexeme-listp))
+  :short "Find the first token in a list of lexemes, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no token, we return @('nil').
+     We also return the non-tokens that precede the token;
+     if there is no token, these are all the lexemes passed as input.
+     We also return the remaining lexemes."))
+  (b* (((when (endp lexemes)) (mv nil nil nil))
+       (lexeme (plexeme-fix (car lexemes)))
+       ((when (plexeme-tokenp lexeme))
+        (mv nil lexeme (plexeme-list-fix (cdr lexemes))))
+       ((mv nontokens token? lexemes-rest) (find-first-token (cdr lexemes))))
+    (mv (cons lexeme nontokens) token? lexemes-rest))
+
+  ///
+
+  (defret plexeme-tokenp-of-find-first-token
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-list-not-tokenp-of-find-first-token
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret len-of-find-first-token
+    (implies token?
+             (< (len lexemes-rest)
+                (len lexemes)))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-macro-arg ((arg plexeme-listp))
+  :returns (norm-arg plexeme-listp)
+  :short "Normalize a macro argument,
+          turning comments and white space (including new lines)
+          into single spaces between tokens."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When we calculate the arguments of a macro call,
+     each argument is a list of zero or more lexemes;
+     the calculation involves macro expansion within the arguments themselves,
+     unless the corresponding parameters in the macro's replacement list
+     are preceded by @('#') or @('##') or followed by @('##')
+     [C17:6.10.3.1/1].
+     Each calculated argument needs to replace the correspoding parameter
+     in the replacement list in order to realize the macro call
+     [C17:6.10.3/10].
+     The list of lexemes that forms an argument
+     could include comments and white space,
+     including new lines [C17:6.10.3/10].
+     Since we generally try to preserve comments and white space,
+     there might be reasons to preserve comments and white space
+     in the arguments passed to a macro;
+     but for now, to keep things simple,
+     we normalize all those comments and white space
+     to single spaces between tokens.
+     That is, given the list of lexemes that forms an argument,
+     we remove all the white space and comments at the start and end,
+     and we join all the contiguous white space and comments
+     into single spaces.
+     Note that the evaluation of @('#') [C17:6.10.3.2/2]
+     requires to normalize comments and white space that separated token
+     to single spaces,
+     so our normalization is consistent with that.")
+   (xdoc::p
+    "The resulting of lexemes is a sequence of tokens
+     with single spaces between some of the tokens.
+     This happens to be the same form in which
+     we store replacement lists in the macro table
+     (see @(tsee macro-info)),
+     but there is no need for them to have the same form.")
+   (xdoc::p
+    "This function performs this normalization.
+     The result satisfies @(tsee plexeme-list-token/space-p),
+     which captures some but not all of the constraints on the list."))
+  (normalize-macro-arg-loop t arg)
+
+  :prepwork
+  ((define normalize-macro-arg-loop ((startp booleanp) (arg plexeme-listp))
+     :returns (norm-arg plexeme-listp)
+     :parents nil
+     (b* (((mv nontokens token arg-rest) (find-first-token arg))
+          ((when (not token)) nil)
+          (norm-arg-rest (normalize-macro-arg-loop nil arg-rest)))
+       (append (if (or startp
+                       (not nontokens))
+                   nil
+                 (list (plexeme-spaces 1)))
+               (cons token
+                     norm-arg-rest)))
+     :measure (len arg)
+     :verify-guards :after-returns
+
+     ///
+
+     (defret plexeme-list-token/space-p-of-normalize-macro-arg-loop
+       (plexeme-list-token/space-p norm-arg)
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable plexeme-list-token/space-p
+                                   plexeme-token/space-p))))))
+
+  ///
+
+  (defret plexeme-list-token/space-p-of-normalize-macro-arg
+    (plexeme-list-token/space-p norm-arg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replace-macro-args ((replist plexeme-listp)
+                            (subst ident-plexeme-list-alistp))
+  :guard (plexeme-list-token/space-p replist)
+  :returns (replaced-replist plexeme-listp)
+  :short "In the replacement list of a function-like macro,
+          replace all the parameters with the corresponding arguments,
+          and evaluate the @('#') and @('##') operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The alist @('subst') is calculated elsewhere.
+     It consists of the parameter names as keys,
+     including @('__VA_ARGS__') if the macro has ellipsis,
+     and the corresponding list of lexemes as values.
+     The list of lexemes associated to each parameter
+     is generally fully replaced [C17:6.10.3.1],
+     unless it is preceded by @('#') or @('##') or followed by @('##'),
+     in which case the argument lexemes are not replaced.
+     Either way, the alist has the appropriate lists of lexemes here.
+     Those are already normalized via @(tsee normalize-macro-arg).")
+   (xdoc::p
+    "We go through the replacement list.
+     When we encounter a parameter of the macro,
+     we replace it with the corresponding argument in @('subst')
+     [C17:6.10.3.1].
+     When we encounter @('#'),
+     which must be followed by a parameter,
+     we stringize the argument corresponding to the parameter
+     [C17:6.10.3.2].
+     When we encounter @('##'),
+     which must be followed and preceded by a token,
+     we combine those tokens into one [C17:6.10.3.3].")
+   (xdoc::p
+    "For @('##'), while the token that follows
+     is accessible in the rest of @('replist'),
+     the preceding token is tracked via
+     the @('last-token/placemarker') parameter of the loop function.
+     But instead of a token, this may indicate a placemarker [C17:6.10.3.3],
+     which we model as @('nil').
+     We also @('nil') at the beginning of the replacement list,
+     in this case to indicate no token or placemarker;
+     since @('##') cannot start the replacement list,
+     there is no ambiguity in the use of @('nil') for these two purposes.")
+   (xdoc::p
+    "When we encounter a token in @('replist'),
+     it could be followed by @('##') or not.
+     If there is a @('##'),
+     the recursive call of the loop function,
+     which is passed the token as @('last-token/placemarker'),
+     joins that token with the one after the @('##');
+     thus, after calling the recursive loop function,
+     we must not add the token to the output list.
+     To handle this uniformly,
+     we must always leave to the recursive call
+     the responsibility of adding @('last-token/placemarker') if appropriate,
+     namely if it is not followed by @('##').
+     This makes the code a bit ore complicated.")
+   (xdoc::p
+    "Another complication arises from the treatment of
+     parameters adjacent to @('##'),
+     which are replaced with the tokens of the corresponding arguments,
+     which may be zero or more.
+     If zero, they are treated like placemarkers.
+     If non-zero, we need to take the last one (if before @('##'))
+     or the first one (if after @('##')),
+     as the operands of @('##').
+     For argument tokens following @('##'),
+     @('last-token/placemarker') becomes its last token,
+     unless the argument is a singleton list,
+     in which case @('last-token/placemarker') is the combined token.")
+   (xdoc::p
+    "Note that only the @('##') operators that occur in @('replist'),
+     and not any coming from the arguments in @('subst'),
+     are evaluated [C17:6.10.3.3/3]."))
+  (replace-macro-args-loop nil
+                           (plexeme-list-fix replist)
+                           (ident-plexeme-list-alist-fix subst))
+
+  :prepwork
+  ((define replace-macro-args-loop ((last-token/placemarker plexeme-optionp)
+                                    (replist plexeme-listp)
+                                    (subst ident-plexeme-list-alistp))
+     :guard (and (plexeme-list-token/space-p replist)
+                 (or (not last-token/placemarker)
+                     (plexeme-tokenp last-token/placemarker)))
+     :returns (replaced-replist plexeme-listp)
+     :parents nil
+     (b* ((last-token/placemarker (plexeme-option-fix last-token/placemarker))
+          ((when (endp replist))
+           ;; If we reach the end of REPLIST and we have a previous token,
+           ;; we must add it to the output, because the caller does not.
+           (and last-token/placemarker
+                (list (plexeme-fix last-token/placemarker))))
+          ((mv spacep token replist) (replist-next-token replist)))
+       (cond
+        ((plexeme-hashp token) ; #
+         (b* (;; REPLIST cannot end with #.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with #."))
+              ((mv & param replist) (replist-next-token replist))
+              ;; The following token must be a parameter.
+              ((unless (plexeme-case param :ident)) ; # param
+               (raise "Internal error: # is followed by non-identifier ~x0."
+                      param))
+              (param (plexeme-ident->ident param))
+              (param+arg (assoc-equal param
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((unless param+arg)
+               (raise "Internal error: # is followed by a non-parameter ~x0."
+                      param))
+              (arg (cdr param+arg))
+              ;; Combine # and ARG into TOKEN.
+              (stringlit (stringize-lexemes arg))
+              (token (plexeme-string stringlit)))
+           ;; Do not add TOKEN to the output here,
+           ;; because it might be followed by ##;
+           ;; let the recursive call handle TOKEN.
+           ;; But add LAST-TOKEN/PLACEMARKER if non NIL,
+           ;; because it is not followed by ##.
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   (replace-macro-args-loop token replist subst))))
+        ((plexeme-hashhashp token) ; ##
+         (b* (;; REPLIST cannot end with ##.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with ##."))
+              ((mv & token2 replist) (replist-next-token replist)))
+           (if (and (plexeme-case token2 :ident) ; ## param
+                    (assoc-equal (plexeme-ident->ident token2)
+                                 (ident-plexeme-list-alist-fix subst)))
+               ;; If the token after ## is a parameter,
+               ;; consider its corresponding argument ARG from SUBST.
+               (b* ((arg
+                     (cdr (assoc-equal (plexeme-ident->ident token2)
+                                       (ident-plexeme-list-alist-fix subst))))
+                    ;; The right operand of ## is
+                    ;; a placemarker if ARG is empty,
+                    ;; otherwise it is its first token.
+                    ((mv next-token/placemarker rest-arg)
+                     (if (consp arg)
+                         (mv (car arg) (cdr arg))
+                       (mv nil nil)))
+                    ((unless (or (not next-token/placemarker)
+                                 (plexeme-tokenp next-token/placemarker)))
+                     (raise "Internal error: ~x0 is not token."
+                            next-token/placemarker))
+                    ;; The left operand of ## is always
+                    ;; the LAST-TOKEN/PLACEMARKER value,
+                    ;; either NIL (placemarker) or a token.
+                    (token? (join-optional-tokens last-token/placemarker
+                                                  next-token/placemarker))
+                    ;; The LAST-TOKEN/PLACEMARKER to pass to the recursive call
+                    ;; is calculated as follows.
+                    ;; If both the left and right operands of ##
+                    ;; are placemarkers (NIL),
+                    ;; the result TOKEN? of ## is a placemarker,
+                    ;; and that is the new LAST-TOKEN/PLACEMARKER.
+                    ;; If the left operand of ## is a token
+                    ;; and the right one is a placemarker,
+                    ;; the result TOKEN? is the left operand,
+                    ;; and since ARG (and REST-ARG) is empty,
+                    ;; LAST-TOKEN/PLACEMARKER is the left operand.
+                    ;; If the left operand is a placemarker
+                    ;; and the right operand is a token (the first of ARG),
+                    ;; the result is that token;
+                    ;; if ARG only consists of that token,
+                    ;; the token also becomes LAST-TOKEN/PLACEMARKER,
+                    ;; otherwise we take the last token of REST-ARG.
+                    ;; If both left and right operands are tokens,
+                    ;; TOKEN? is their combination,
+                    ;; and LAST-TOKEN/PLACEMARKER is as in the previous case.
+                    (last-token/placemarker
+                     (if token?
+                         (if (consp rest-arg)
+                             (car (last rest-arg))
+                           token?)
+                       nil))
+                    ((unless (or (not last-token/placemarker)
+                                 (plexeme-tokenp last-token/placemarker)))
+                     (raise "Internal error: ~x0 is not a token."
+                            last-token/placemarker)))
+                 ;; The recursive call takes care of LAST-TOKEN/PLACEMARKER,
+                 ;; but if ARG has two or more tokens
+                 ;; (which is the case exactly when REST-ARG is not NIL),
+                 ;; here we need to add to the output
+                 ;; all but the last token of ARG.
+                 (append (and spacep (list (plexeme-spaces 1)))
+                         (and (consp rest-arg) (butlast arg 1))
+                         (replace-macro-args-loop last-token/placemarker
+                                                  replist
+                                                  subst)))
+             ;; If the token after ## is not a parameter,
+             ;; we combine it with LAST-TOKEN/PLACEMARKER,
+             ;; which always gives us a token because TOKEN2 is a token,
+             ;; and that resulting token is passed to the recursive call.
+             (b* ((token (join-optional-tokens last-token/placemarker token2)))
+               (append (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst))))))
+        ((plexeme-case token :ident) ; ident (param or not)
+         (b* ((ident (plexeme-ident->ident token))
+              (ident+arg (assoc-equal ident
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((when (not ident+arg))
+               ;; If the token is an identifier but not a parameter,
+               ;; it becomes the next LAST-TOKEN/PLACEMARKER.
+               ;; We add the previous LAST-TOKEN/PLACEMARKER if not NIL,
+               ;; because it is not followed by ##.
+               (append (and last-token/placemarker
+                            (list (plexeme-fix last-token/placemarker)))
+                       (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst)))
+              ;; If the token is a parameter,
+              ;; consider its correspoding argument ARG.
+              ;; If it is NIL, it is a placemarker passed to the recursive call.
+              ;; Otherwise, we pass its last token as LAST-TOKEN/PLACEMARKER
+              ;; to the recursive call.
+              ;; But the previous LAST-TOKEN/PLACEMARKER, if not NIL,
+              ;; must be added to the output,
+              ;; because it is not followed by ##.
+              (arg (cdr ident+arg))
+              ((mv arg-but-last arg-last)
+               (if (consp arg)
+                   (mv (butlast arg 1) (car (last arg)))
+                 (mv nil nil)))
+              ((unless (or (not arg-last)
+                           (plexeme-tokenp arg-last)))
+               (raise "Internal error: ~x0 is not a token." arg-last)))
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   arg-but-last
+                   (replace-macro-args-loop arg-last replist subst))))
+        (t ; other token
+         ;; This case is the same as that above
+         ;; of an identifier that is not a parameter.
+         (append (and last-token/placemarker
+                      (list (plexeme-fix last-token/placemarker)))
+                 (and spacep (list (plexeme-spaces 1)))
+                 (replace-macro-args-loop token replist subst)))))
+     :no-function nil
+     :measure (len replist)
+     :guard-hints
+     (("Goal" :in-theory (enable
+                          alistp-when-ident-plexeme-list-alistp-rewrite
+                          plexeme-tokenp
+                          true-listp-when-plexeme-listp
+                          listp)))
+     :prepwork ((local (in-theory (disable acl2::member-of-cons))))
+     :hooks nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
