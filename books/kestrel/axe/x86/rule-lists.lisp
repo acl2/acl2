@@ -1227,6 +1227,7 @@
     acl2::signed-byte-p-of-logext
     acl2::integerp-of--))
 
+;move?
 (defund arith-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::bvchop-of-*-becomes-bvmult
@@ -1242,6 +1243,8 @@
 
     acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
+
+    acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -2935,7 +2938,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
+            ;; acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -6028,8 +6031,8 @@
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
-            acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
-            acl2::<-becomes-bvlt-dag-gen-better2
+            ;; acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
+            ;; acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
