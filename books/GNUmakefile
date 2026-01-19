@@ -978,7 +978,7 @@ critpath.txt: $(OK_CERTS)
 # WARNING: If you change the basic target, consider updating the list
 # of its contents in :doc books-certification.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std-without-some-tests xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1103,6 +1103,12 @@ tools: $(TOOLS_BOOKS)
 
 .PHONY: tools-without-quicklisp
 tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
+
+# Because std/util/add-io-pairs-tests.lisp brings in some slow number theory
+# stuff that we don't want included in the basic target:
+.PHONY: std-without-some-tests
+STD_BOOKS := $(filter std/%, $(OK_CERTS))
+std-without-some-tests: $(filter-out std/util/add-io-pairs-tests%, $(STD_BOOKS))
 
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))
