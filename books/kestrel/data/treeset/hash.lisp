@@ -10,7 +10,7 @@
 
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "jenkins-hash")
+(include-book "kestrel/data/hash/jenkins" :dir :system)
 
 (set-induction-depth-limit 0)
 
@@ -28,6 +28,6 @@
       defined to allow us to easily switch hash functions if needed. To hash
       objects (e.g., for use with @(tsee heap<-with-hashes)), users should call
       this function instead of @(tsee jenkins-hash)."))
-  (jenkins-hash x)
+  (hash::jenkins x)
   :no-function t
   :inline t)

@@ -10,7 +10,6 @@
 
 (include-book "binary-tree-defs")
 (include-book "total-order")
-(include-book "sum-acl2-count-defs")
 (include-book "jenkins-hash")
 (include-book "hash")
 (include-book "bst-order-defs")

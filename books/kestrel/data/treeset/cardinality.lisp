@@ -13,9 +13,9 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "kestrel/data/sum-acl2-count-defs" :dir :system)
 
 (include-book "set-defs")
-(include-book "sum-acl2-count-defs")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -26,7 +26,7 @@
 
 (local (include-book "binary-tree"))
 (local (include-book "set"))
-(local (include-book "sum-acl2-count"))
+(local (include-book "kestrel/data/sum-acl2-count" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,12 +52,12 @@
                                            (rest trees))
                                     (+ 1 acc)))))
   :measure (acl2::nat-list-measure
-            (list (sum-acl2-count trees)
+            (list (hash::sum-acl2-count trees)
                   (len trees)))
   :hints (("Goal" :in-theory (enable o-p
                                      o<
                                      o-finp
-                                     sum-acl2-count
+                                     hash::sum-acl2-count
                                      nfix)))
   :guard-hints (("Goal" :in-theory (enable nfix))))
 

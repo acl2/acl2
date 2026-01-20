@@ -15,8 +15,6 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-(include-book "sum-acl2-count")
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))

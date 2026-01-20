@@ -1,4 +1,4 @@
-; Copyright (C) 2025 by Kestrel Institute
+; Copyright (C) 2025-2026 by Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "HASH")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -408,8 +408,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define jenkins-hash (x)
-  (declare (xargs :type-prescription (natp (jenkins-hash x)))
+(define jenkins (x)
+  (declare (xargs :type-prescription (natp (jenkins x)))
            (optimize (speed 3) (safety 0)))
   :returns (hash (unsigned-byte-p 32 hash))
   ;; Avoid clash with XDOC topic

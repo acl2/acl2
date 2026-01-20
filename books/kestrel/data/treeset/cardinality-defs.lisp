@@ -9,9 +9,9 @@
 (in-package "TREESET")
 
 (include-book "std/util/defredundant" :dir :system)
+(include-book "kestrel/data/sum-acl2-count-defs" :dir :system)
 
 (include-book "set-defs")
-(include-book "sum-acl2-count")
 
 (local (include-book "cardinality"))
 
