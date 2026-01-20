@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -41,6 +41,7 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                byte-list-listp
                 character-list
                 defirrelevant
                 defmacro+
@@ -59,6 +60,7 @@
                 nat-list
                 nat-list-fix
                 nat-optionp
+                nat-option-fix
                 nat-list-measure
                 nats=>string
                 packn-pos

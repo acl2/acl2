@@ -21,7 +21,6 @@
 (include-book "centaur/misc/tshell" :dir :system) ; needs to be non-local since it has Raw Lisp code
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; todo: Raw Lisp code
 (include-book "projects/x86isa/machine/other-non-det" :dir :system) ; todo: Raw Lisp code
-(include-book "coi/lists/portcullis" :dir :system) ; for the LIST package
 (include-book "tools/with-supporters" :dir :system)
 
 (defttag :unroller-x86-code-only)

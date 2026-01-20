@@ -389,6 +389,10 @@
     "XDOC support for a number of HTML @(see xdoc::entities) was added.
      In particular, many letter variants with diacritics.")
 
+   (xdoc::p
+    "Added utility @(tsee eval-events-from-file), to create an event that
+     evaluates events from a file.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")

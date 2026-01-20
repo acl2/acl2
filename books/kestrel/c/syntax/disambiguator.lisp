@@ -3021,6 +3021,7 @@
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
+            (table (dimb-pop-scope table))
             (table (dimb-pop-scope table)))
          (retok (make-stmt-for-expr :init new-init
                                     :test new-test
@@ -3034,6 +3035,7 @@
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
+            (table (dimb-pop-scope table))
             (table (dimb-pop-scope table)))
          (retok (make-stmt-for-declon :init new-init
                                       :test new-test
@@ -3047,6 +3049,7 @@
             ((erp new-next table) (dimb-expr-option stmt.next table))
             (table (dimb-push-scope table))
             ((erp new-body table) (dimb-stmt stmt.body table))
+            (table (dimb-pop-scope table))
             (table (dimb-pop-scope table)))
          (declon/stmt-case
           decl/expr

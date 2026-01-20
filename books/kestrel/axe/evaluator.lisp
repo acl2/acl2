@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; See evaluator-basic.lisp for a newer evaluator which may often be more useful.
+
 ;clean this up!
 
 ;todo: reduce the amount of input that needs to be given to make the evaluator, also check that unguarded replacements are correct
@@ -367,7 +369,7 @@
 ;;           (contiguousp contiguousp arg1)
            ;(bit-listp bit-listp arg1) ;unguarded
            ;; (bitnot-list bitnot-list arg1)
-           (LIST::|2SET| LIST::|2SET| arg1)
+;           (LIST::|2SET| LIST::|2SET| arg1)
 ;           (new-ad new-ad arg1)
            (rkeys rkeys arg1)
            (key-list key-list arg1)

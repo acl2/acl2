@@ -1241,3 +1241,17 @@ void bar() {
   "typedef float _Float16;
 "
   :extensions :clang)
+
+(test-valid
+  "int f(void) {
+   void * foo;
+   for (;;) {}
+}
+
+int g(void) {
+   goto foo;
+foo:
+   return 0;
+}
+"
+  :extensions gcc)
