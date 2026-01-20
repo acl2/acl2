@@ -7,3 +7,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "HASH")
+
+(include-book "kestrel/data/portcullis" :dir :system)

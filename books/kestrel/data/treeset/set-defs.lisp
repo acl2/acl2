@@ -1,4 +1,4 @@
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,30 +8,34 @@
 
 (in-package "TREESET")
 
-(include-book "std/util/defredundant" :dir :system)
+(include-book "internal/tree-defs")
+(include-book "internal/bst-defs")
+(include-book "internal/heap-defs")
 
-(include-book "binary-tree-defs")
-(include-book "bst-defs")
-(include-book "heap-defs")
-
+(local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "set"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
   :names (setp
-          sfix
-          set-equiv
+          empty
+          fix
+          equiv
           emptyp
           head
-          left
-          right
-          to-list))
+          set-all-acl2-numberp
+          set-all-symbolp
+          set-all-eqlablep
+          acl2-number-setp
+          symbol-setp
+          eqlable-setp
+          ))
 
-(add-macro-alias set-equiv set-equiv$inline)
-(add-macro-alias emptyp emptyp$inline)
-(add-macro-alias head head$inline)
-(add-macro-alias left left$inline)
-(add-macro-alias right right$inline)
+;; (add-macro-alias set-equiv set-equiv$inline)
+;; (add-macro-alias emptyp emptyp$inline)
+;; (add-macro-alias head head$inline)
+;; (add-macro-alias left left$inline)
+;; (add-macro-alias right right$inline)
 
-(defequiv set-equiv)
+(defequiv equiv)

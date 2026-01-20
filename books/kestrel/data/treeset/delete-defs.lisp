@@ -1,4 +1,4 @@
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,21 +8,25 @@
 
 (in-package "TREESET")
 
-(include-book "std/util/defredundant" :dir :system)
-
-(include-book "bst-order-defs")
-(include-book "join-defs")
+(include-book "internal/join-defs")
+(include-book "internal/delete-defs")
 (include-book "set-defs")
 
+(local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tree-delete
-          delete-macro-loop
-          delete1
-          delete))
+  :names (delete-macro-loop
+          delete-macro-fn
+          delete
+          delete$inline
+          delete-=
+          delete-eq
+          delete-eql
+          tail
+          ))
 
-(add-macro-alias delete1 delete1$inline)
-(add-macro-fn delete delete1$inline t)
+;; (add-macro-alias delete1 delete1$inline)
+;; (add-macro-fn delete delete1$inline t)

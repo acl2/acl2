@@ -1,0 +1,136 @@
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TREESET")
+
+(include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
+
+(include-book "../set-defs")
+(include-book "../in-defs")
+(include-book "../cardinality-defs")
+(include-book "../insert-defs")
+
+(include-book "random")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag :benchmarking)
+(set-raw-mode t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "COMMON-LISP")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun mk-random-nat-set (cardinality max)
+  (multiple-value-bind
+   (set state)
+   (treeset::mk-random-nat-set cardinality max acl2::state)
+   set))
+
+(defun mk-random-nat-oset (cardinality max)
+  (multiple-value-bind
+   (set state)
+   (treeset::mk-random-nat-oset cardinality max acl2::state)
+   set))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun measure (fn)
+  (let ((start (get-internal-real-time)))
+    (funcall fn)
+    (/ (- (get-internal-real-time) start)
+       internal-time-units-per-second)))
+
+(defun benchmark (fn &key (iterations 100))
+  (let ((times (sort
+                (loop repeat iterations
+                      collect (funcall fn))
+                #'<)))
+    (nth (floor iterations 2) times)))
+
+(defun benchmark-measure (fn &key (iterations 100))
+  (benchmark (lambda () (measure (funcall fn)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defun get-random-in (list length)
+;;   (nth (random length) list))
+
+(defun get-random-in (vec length)
+  (aref vec (random length)))
+
+(defun get-random-nat-not-in (set max)
+  (let ((nat (random max)))
+    (if (treeset::in nat set)
+        (get-random-nat-not-in max set)
+      nat)))
+
+;; (defun get-random-not/in-loop (list-length set vec set-length max prob acc)
+;;   (if (= list-length 0)
+;;       acc
+;;     (let ((in (if (= prob 0)
+;;                   nil
+;;                 (if (= prob 1)
+;;                     t
+;;                   (< (random 1.0) prob))))
+;;           (elem (if in
+;;                     (get-random-in vec set-length)
+;;                   (get-random-nat-not-in set max))))
+;;       (get-random-not/in-loop (- list-length 1) set vec max prop (cons elem acc)))))
+
+;; (defun get-random-not/in (list-length set max prob)
+;;   (let* ((vec (coerce (treeset::to-oset set) 'vector))
+;;          (set-length (length vec)))
+;;     (get-random-not/in-loop list-length set vec set-length max prob nil)))
+
+(defun get-random-not/in (list-length set max prob)
+  (let* ((vec (coerce (treeset::to-oset set) 'vector))
+         (set-length (length vec)))
+    (loop repeat list-length
+          collect (if (cond ((= prob 0) nil)
+                            ((= prob 1) t)
+                            (t (< (random 1.0) prob)))
+                      (get-random-in vec set-length)
+                      (get-random-nat-not-in set max)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defun measure-in (set list length max prob)
+;;   (let* ((in (if (= prob 0)
+;;                  nil
+;;                (if (= prob 1)
+;;                    t
+;;                  (< (random 1.0) prob))))
+;;          (elem (if in
+;;                    (get-random-in list length)
+;;                  (get-random-nat-not-in max set))))
+;;     (measure (lambda () (treeset::in elem set)))))
+
+(defun measure-in-= (set list length max prob)
+  (let* ((in (if (= prob 0)
+                 nil
+               (if (= prob 1)
+                   t
+                 (< (random 1.0) prob))))
+         (elem (if in
+                   (get-random-in list length)
+                 (get-random-nat-not-in max set))))
+    (measure (lambda () (treeset::in elem set :test =)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun benchmark-in-=-nat-set (max length prob iterations)
+  (let* ((set (mk-random-nat-set length max))
+         (list (treeset::to-oset set)))
+    (benchmark (lambda () (measure-in-= set list length max prob))
+               :iterations iterations)))
+
+(benchmark-in-=-nat-set (expt 2 60) 25000 0.5 1000)

@@ -1,4 +1,4 @@
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,17 +8,18 @@
 
 (in-package "TREESET")
 
-(include-book "std/util/defredundant" :dir :system)
-
-(include-book "binary-tree-defs")
-(include-book "join-defs")
+(include-book "internal/diff-defs")
 (include-book "set-defs")
-(include-book "split-defs")
 
+(local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "diff"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tree-diff
-          diff))
+  :names (diff
+          diff$inline
+          diff-=
+          diff-eq
+          diff-eql
+          ))

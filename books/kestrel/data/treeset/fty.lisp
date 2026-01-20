@@ -14,10 +14,12 @@
 
 (set-induction-depth-limit 0)
 
+(local (include-book "set"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffixtype set
   :pred setp
-  :fix sfix
-  :equiv set-equiv
-  :hints (("Goal" :in-theory (enable set-equiv))))
+  :fix fix
+  :equiv equiv
+  :hints (("Goal" :in-theory (enable equiv))))

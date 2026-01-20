@@ -1,4 +1,4 @@
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -8,21 +8,23 @@
 
 (in-package "TREESET")
 
-(include-book "std/util/defredundant" :dir :system)
-
-(include-book "binary-tree-defs")
+(include-book "internal/tree-defs")
+(include-book "internal/union-defs")
 (include-book "set-defs")
-(include-book "split-defs")
 
+(local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "union"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tree-union
-          union-macro-loop
-          binary-union
-          union))
+  :names (union-macro-loop
+          union-macro-fn
+          union
+          union$inline
+          union-=
+          union-eq
+          union-eql))
 
-(add-macro-alias binary-union binary-union$inline)
-(add-macro-fn union binary-union$inline t)
+;; (add-macro-alias binary-union binary-union$inline)
+;; (add-macro-fn union binary-union$inline t)
