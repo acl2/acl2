@@ -44,7 +44,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ set
-  :parents (acl2::kestrel-books)
+  :parents (data::data-lib)
   :short "A tree-based implementation of finite sets."
   :long
   (xdoc::topstring

@@ -6,15 +6,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "DATA")
+(in-package "ACL2")
 
-(include-book "hash/top")
-(include-book "treeset/top")
+(include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc data-lib
-  :parents (kestrel-books)
-  :short
-  (xdoc::topstring
-    "A library for efficient data structures."))
+(defpkg "DATA"
+  (union-eq '(*fixnum-bits*
+              defxdoc+
+              int-equiv
+              nat-equiv
+              )
+            (set-difference-eq *std-pkg-symbols*
+                               '#!std(list-fix
+                                      ))))
