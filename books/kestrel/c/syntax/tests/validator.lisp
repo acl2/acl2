@@ -1216,3 +1216,17 @@ void bar() {
  "register int *foo asm (\"r12\");
 "
  :gcc t)
+
+(test-valid
+  "int f(void) {
+   void * foo;
+   for (;;) {}
+}
+
+int g(void) {
+   goto foo;
+foo:
+   return 0;
+}
+"
+  :gcc t)
