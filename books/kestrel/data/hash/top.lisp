@@ -1,4 +1,4 @@
-; Copyright (C) 2026 by Kestrel Institute
+; Copyright (C) 2025 by Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
