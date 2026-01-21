@@ -50,7 +50,14 @@
      ". This function may be used in combination with @(tsee from-oset) to go
       back and forth between the two representations. There are rules relating
       all of the primitive operations (@(tsee in), @(tsee insert), @(tsee
-      union), etc.)."))
+      union), etc.).")
+   (xdoc::p
+     "We provide a @(see acl2::ruleset), @('to-oset-theory'), to aggressively
+      rewrite @(see treeset)s into @(see set::std/osets). To rewrite in the
+      other direction (i.e., from @(see set::std/osets) to @(see treeset)s), we
+      provide the @('from-oset-theory') ruleset. To use one ruleset, the other
+      must be explicitly disabled. If the other ruleset is not disabled, expect
+      rewrite loops."))
   :returns (oset set::setp
                  :hints (("Goal" :in-theory (enable fix
                                                     setp

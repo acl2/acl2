@@ -18,9 +18,9 @@
 
 (include-book "internal/subset-defs")
 (include-book "set-defs")
+(include-book "to-oset-defs")
 (include-book "in-defs")
 (include-book "cardinality-defs")
-(include-book "to-oset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -32,8 +32,8 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/subset"))
 (local (include-book "internal/antisymmetry"))
-(local (include-book "to-oset"))
 (local (include-book "set"))
+(local (include-book "to-oset"))
 (local (include-book "in"))
 (local (include-book "cardinality"))
 

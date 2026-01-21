@@ -17,11 +17,11 @@
 (include-book "internal/tree-defs")
 (include-book "internal/union-defs")
 (include-book "set-defs")
+(include-book "to-oset-defs")
 (include-book "in-defs")
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
-(include-book "to-oset-defs")
 (include-book "generic-typed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -41,13 +41,13 @@
 (local (include-book "internal/union"))
 (local (include-book "internal/in-order"))
 (local (include-book "set"))
+(local (include-book "to-oset"))
 (local (include-book "cardinality"))
 (local (include-book "in"))
 (local (include-book "insert"))
 (local (include-book "delete"))
 (local (include-book "subset"))
 (local (include-book "extensionality"))
-(local (include-book "to-oset"))
 (local (include-book "generic-typed"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,7 +450,7 @@
          (from-oset (set::union (to-oset x)
                                 (to-oset y)))))
 
-(add-to-ruleset from-oset-theory '(union-becomes-oset-union))
+(add-to-ruleset to-oset-theory '(union-becomes-oset-union))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

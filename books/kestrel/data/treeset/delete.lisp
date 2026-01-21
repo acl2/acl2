@@ -42,6 +42,7 @@
 (local (include-book "internal/in"))
 (local (include-book "internal/in-order"))
 (local (include-book "set"))
+(local (include-book "to-oset"))
 (local (include-book "cardinality"))
 (local (include-book "in"))
 (local (include-book "subset"))

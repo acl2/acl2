@@ -26,7 +26,7 @@
 (program)
 
 (make-event (er-progn (set-check-invariant-risk nil)
-                      (value '(value-triple :success))))
+                      (acl2::value '(value-triple :success))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

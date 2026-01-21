@@ -317,6 +317,12 @@
            (emptyp set))
   :rule-classes :forward-chaining)
 
+;; This definition is useful for proving emptiness by extensionality.
+(defruled emptyp-alt-definition
+  (equal (emptyp set)
+         (equal (fix set) (empty)))
+  :rule-classes :definition)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head ((set setp))

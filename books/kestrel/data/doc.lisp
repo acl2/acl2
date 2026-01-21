@@ -14,7 +14,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc data-lib
-  :parents (kestrel-books)
+  :parents (acl2::kestrel-books)
   :short
   (xdoc::topstring
     "A library for efficient data structures."))

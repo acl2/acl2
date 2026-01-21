@@ -163,12 +163,6 @@
   (subset (diff x y) x)
   :enable pick-a-point)
 
-;; MOVE
-(defruled emptyp-alt-definition
-  (equal (emptyp set)
-         (equal (fix set) (empty)))
-  :rule-classes :definition)
-
 ;; TODO: clean up proof?
 (defrule subset-of-arg1-and-diff
   (implies (subset x (diff x y))
@@ -399,6 +393,15 @@
                                      (to-oset y)))))
 
 (add-to-ruleset to-oset-theory '(diff-becomes-oset-difference))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule cardinality-of-diff
+  (equal (cardinality (diff x y))
+         (- (cardinality x)
+            (cardinality (intersect x y))))
+  :enable to-oset-theory
+  :disable from-oset-theory)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

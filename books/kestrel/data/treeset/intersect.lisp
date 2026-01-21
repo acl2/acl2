@@ -17,12 +17,12 @@
 (include-book "internal/tree-defs")
 (include-book "internal/intersect-defs")
 (include-book "set-defs")
+(include-book "to-oset-defs")
 (include-book "cardinality-defs")
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
 (include-book "union-defs")
-(include-book "to-oset-defs")
 (include-book "generic-typed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -42,8 +42,8 @@
 (local (include-book "internal/intersect"))
 (local (include-book "internal/in"))
 (local (include-book "internal/in-order"))
-(local (include-book "to-oset"))
 (local (include-book "set"))
+(local (include-book "to-oset"))
 (local (include-book "in"))
 (local (include-book "cardinality"))
 (local (include-book "subset"))
@@ -523,6 +523,39 @@
   :rule-classes :linear
   :enable to-oset-theory
   :disable from-oset-theory)
+
+(defrule cardinality-of-union
+  (equal (cardinality (union x y))
+         (- (+ (cardinality x) (cardinality y))
+            (cardinality (intersect x y))))
+  :enable to-oset-theory
+  :disable from-oset-theory)
+
+(defruled cardinality-of-intersect
+  (equal (cardinality (intersect x y))
+         (+ (cardinality x) (cardinality y)
+            (- (cardinality (union x y))))))
+
+(theory-invariant (incompatible! (:rewrite cardinality-of-union)
+                                 (:rewrite cardinality-of-intersect)))
+
+(defrule equal-of-cardinality-of-intersect
+  (equal (equal (cardinality (intersect x y)) (cardinality x))
+         (subset x y))
+  :enable to-oset-theory
+  :disable from-oset-theory)
+
+(defrule <-of-cardinality-of-intersect
+  (equal (< (cardinality (intersect x y)) (cardinality x))
+         (not (subset x y)))
+  :enable to-oset-theory
+  :disable from-oset-theory)
+
+(defrule cardinality-of-intersect-when-not-subset-linear
+  (implies (not (subset x y))
+           (< (cardinality (intersect x y))
+              (cardinality x)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

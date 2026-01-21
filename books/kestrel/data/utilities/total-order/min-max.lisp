@@ -35,7 +35,7 @@
            data::<<-rules)
   :disable acl2::<<-trichotomy)
 
-(defrule max-<<-distributes-over-min-<<
+(defruled max-<<-distributes-over-min-<<
   (equal (max-<< x (min-<< y z))
          (min-<< (max-<< x y)
                  (max-<< x z)))
@@ -50,14 +50,12 @@
 (defrule min-<<-absorb-max-<<
   (equal (min-<< x (max-<< x y))
          x)
-  :enable (min-<<
-           max-<<))
+  :enable max-<<)
 
 (defrule max-<<-absorb-min-<<
   (equal (max-<< x (min-<< x y))
          x)
-  :enable (min-<<
-           max-<<))
+  :enable max-<<)
 
 (defrule <<-of-max-<<-and-min-<<
   (not (<< (max-<< x y) (min-<< x y)))
