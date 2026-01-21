@@ -605,7 +605,7 @@
   nil
 
   (local
-   (defthmd lemma-1
+   (defthm lemma-1
      (implies (and (quadratic-extensions-p exts)
                    (equal (len coords1) (expt 2 (len exts)))
                    (rational-listp coords1)
@@ -647,7 +647,7 @@
                                                (cdr exts)))
                           (expt 2 (len (cdr exts))))
                    ))
-     :INSTRUCTIONS (:PROMOTE :S (:DROP 1 3 4 5) :PROVE)
+     ;:INSTRUCTIONS (:PROMOTE :S (:DROP 1 3 4 5) :PROVE)
      ))
 
   (defthm rational-listp-product-coords
@@ -693,7 +693,7 @@
     )
 
   (local
-   (defthmd lemma-2
+   (defthm lemma-2
      (implies (and (quadratic-extensions-p exts)
                    (equal (len coords1) (expt 2 (len exts)))
                    (rational-listp coords1)
@@ -715,7 +715,40 @@
                                                        coords2)
                                                (cdr exts)))))))
 
+  (local
+   (defthm lemma-3
+       (implies (consp exts)
+                (equal (take (expt 2 (len (cdr exts)))
+                             (all-products exts))
+                       (all-products (cdr exts))))))
 
+  (local
+   (defthm lemma-4
+       (implies (consp exts)
+                (equal (nthcdr (expt 2 (len (cdr exts)))
+                               (all-products exts))
+                       (scale-prods (car exts)
+                                    (all-products (cdr exts)))))))
+
+
+  (local
+   (defthmd lemma-5
+       (implies (is-linear-combination-p x exts)
+                (equal (eval-linear-combination (is-linear-combination-p-witness x exts)
+                                                (all-products exts))
+                       x))))
+
+  (local
+   (defthm lemma-6
+       (implies (quadratic-extensions-p exts)
+                (equal (eval-linear-combination
+                        (is-linear-combination-p-witness (expt (car exts) 2) (cdr exts))
+                        (all-products (cdr exts)))
+                       (expt (car exts) 2)))
+     :hints (("Goal"
+              :use ((:instance lemma-5
+                               (x (expt (car exts) 2))
+                               (exts exts)))))))
 
 
   (defthm product-of-linear-combinations
@@ -731,67 +764,44 @@
                                                 (all-products exts))
                        (eval-linear-combination coords2
                                                 (all-products exts)))))
-    :instructions ((:induct (product-coords coords1 coords2 exts))
-                   :prove :promote (:use lemma-1)
-                   :promote (:forwardchain 1)
-                   (:demote 12)
-                   :promote (:use lemma-2)
-                   :promote (:forwardchain 1)
-                   (:demote 24)
-                   :promote (:forwardchain 2)
-                   (:forwardchain 2)
-                   (:forwardchain 2)
-                   (:forwardchain 2)
-                   (:forwardchain 2)
-                   (:dv 1)
-                   (:dv 1)
-                   :x :up
-                   (:rewrite eval-linear-combination-split)
-                   (:dv 1)
-                   :s :up :s (:dv 1)
-                   (:rewrite sum-of-linear-combinations)
-                   (:dv 1)
-                   := :up (:dv 2)
-                   := (:dv 1)
-                   (:= (expt (car exts) 2))
-                   :up (:dv 2)
-                   := :up :up :nx (:dv 2)
-                   (:dv 1)
-                   (:rewrite nthcdr-of-append)
-                   :up
-                   (:rewrite sum-of-linear-combinations)
-                   (:dv 1)
-                   := :nx := :top (:dv 2)
-                   (:rewrite eval-linear-combination-product-split-1)
-                   (:dv 1)
-                   (:= t)
-                   :up :s (:dv 1)
-                   := :nx (:dv 2)
-                   := :top
-                   (:in-theory (disable eval-linear-combination
-                                        is-linear-combination-p
-                                        quadratic-extensions-p))
-                   :s :prove
-                   :prove :prove :prove :prove (:dv 1)
-                   (:rewrite len-append)
-                   (:dv 1)
-                   (:rewrite len-add-coords)
-                   (:rewrite len-product-coords)
-                   :nx (:rewrite len-add-coords)
-                   (:rewrite len-product-coords)
-                   :up :up (:demote 1)
-                   :drop
-                   :prove (:rewrite rational-listp-append)
-                   (:rewrite rational-list-p-add-coords)
-                   (:rewrite rational-listp-product-coords)
-                   (:rewrite rational-listp-product-coords)
-                   (:rewrite rational-list-p-add-coords)
-                   (:rewrite rational-listp-product-coords)
-                   (:rewrite rational-listp-product-coords)
-                   :prove)
+    :INSTRUCTIONS ((:INDUCT (PRODUCT-COORDS COORDS1 COORDS2 EXTS))
+                 :S :PROMOTE (:DEMOTE 2)
+                 (:DV 1)
+                 (:DV 1)
+                 :S :UP :S :TOP :PROMOTE (:DEMOTE 2)
+                 (:DV 1)
+                 (:DV 1)
+                 :S :UP :S :TOP :PROMOTE (:DEMOTE 2)
+                 (:DV 1)
+                 (:DV 1)
+                 :S :UP :S :TOP :PROMOTE (:DEMOTE 2)
+                 (:DV 1)
+                 (:DV 1)
+                 :S :UP :S :TOP :PROMOTE (:DEMOTE 2)
+                 (:DV 1)
+                 (:DV 1)
+                 :S :UP :S (:DV 1)
+                 (:DV 1)
+                 :UP :TOP :PROMOTE (:DV 1)
+                 (:REWRITE EVAL-LINEAR-COMBINATION-SPLIT)
+                 :S (:DV 1)
+                 (:DV 2)
+                 (:REWRITE SUM-OF-LINEAR-COMBINATIONS)
+                 :UP :UP (:DV 2)
+                 (:REWRITE SUM-OF-LINEAR-COMBINATIONS)
+                 (:DV 2)
+                 := :TOP :S (:DV 2)
+                 (:DV 1)
+                 (:REWRITE EVAL-LINEAR-COMBINATION-SPLIT)
+                 :S
+                 :NX (:REWRITE EVAL-LINEAR-COMBINATION-SPLIT)
+                 :S :TOP
+                 :S :S
+                 :S :S
+                 :S :S
+                 :S :S)
     )
   )
-
 
 (defthm is-linear-combination-p-is-closed-multiplication
   (implies (and (quadratic-extensions-p exts)

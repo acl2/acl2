@@ -339,7 +339,7 @@
    :hints (("Goal"
 	    :in-theory (enable interval-definition-theory)))))
 
-(definv pos-exp
+(definv1 pos-exp
     :domain           (interval 0 nil)
     :range            (interval 1 nil)
     :inverse-interval exp-interval)
@@ -437,13 +437,62 @@
   :hints (("Goal"
            :in-theory (disable radiuspart))))
 
+(local
+ (defthmd exp-ln-lemma
+     (implies (and (realp y)
+                   (< 0 y)
+                   (< y 1))
+              (equal (acl2-exp (pos-exp-inverse (/ y)))
+                     (/ y)))
+   :hints (("Goal"
+            :use ((:instance  pos-exp-inverse-exists
+                             (y (/ y))))
+            :in-theory (e/d (inside-interval-p
+                             interval)
+                            (pos-exp-inverse-exists))))
+   ))
+
+(local
+ (defthmd exp-ln-lemma-2
+     (implies (and (realp y)
+                   (not (equal y 0))
+                   (<= 0 y)
+                   (< y 1))
+              (equal (acl2-exp (pos-exp-inverse (/ y)))
+                     (/ y)))
+   :hints (("Goal"
+             :use (:instance pos-exp-inverse-exists (y (/ y)))
+             :in-theory (e/d (interval inside-interval-p)
+                             (pos-exp-inverse-exists))))
+   ))
+
+
 (defthm exp-ln
-  (implies (not (equal (fix y) 0))
-           (equal (acl2-exp (acl2-ln y)) y))
+    (implies (not (equal (fix y) 0))
+             (equal (acl2-exp (acl2-ln y)) y))
   :hints (("Goal"
-           :in-theory (disable anglepart
-                               radiuspart
-                               e^ix-cos-i-sin))))
+           :use ((:instance correctness-of-polar-form (x y))
+                 (:instance correctness-of-polar-form (x (/ y)))
+                 (:instance exp-ln-lemma (y (radiuspart (/ y))))
+                 (:instance (:theorem
+                             (implies (and (acl2-numberp y)
+                                           (not (equal y 0)))
+                                      (not (equal (/ y) 0)))))
+                 (:instance radiuspart-is-zero-only-for-zero (x (/ y)))
+                 (:instance exp-ln-lemma-2 (y (radiuspart y)))
+                 (:instance pos-exp-inverse-exists (y (radiuspart y)))
+                 (:instance pos-exp-inverse-exists (y (/ (radiuspart y))))
+                 )
+           :in-theory (e/d (interval
+                            inside-interval-p)
+                           (anglepart
+                            radiuspart
+                            e^ix-cos-i-sin
+                            radiuspart-is-zero-only-for-zero
+                            EQUAL-*-/-2
+                            <-UNARY-/-POSITIVE-LEFT
+                            EQUAL-/
+                            )))))
 
 (local
  (defthm +-complex
@@ -734,6 +783,30 @@
 		 )
 	   :in-theory (disable uniqueness-of-ln-for-positive exp-sum acl2-exp-ln-for-positive ACL2-LN-FOR-POSITIVE))))
 
+(local
+ (defthm radiuspart-exp
+     (implies (acl2-numberp x)
+              (equal (radiuspart (acl2-exp x))
+                     (acl2-exp (realpart x))))
+   :hints (("Goal"
+            :use ((:instance complex-definition
+                             (x (realpart x))
+                             (y (imagpart x)))
+                  (:instance exp-sum
+                             (x (realpart x))
+                             (y (* #C(0 1) (imagpart X))))
+                  (:instance radiuspart-*
+                             (x (ACL2-EXP (realpart X)))
+                             (y (ACL2-EXP (* #C(0 1) (imagpart X)))))
+                  )
+            :in-theory (disable radiuspart
+                                anglepart
+                                exp-sum
+                                radiuspart-*
+                                E^IX-COS-I-SIN
+                                (radiuspart))))
+   ))
+
 (defthm ln-exp
   (implies (and (acl2-numberp x)
                 (<= 0 (imagpart x))
@@ -755,5 +828,3 @@
            (equal (acl2-ln y) x)))
 
 (in-theory (disable acl2-ln (acl2-ln)))
-
-

@@ -11,15 +11,15 @@
 (set-match-free-default :once)
 
 (encapsulate
- ((cr-fn1 (x) t)
-  (cr-fn2 (x) t)
+ ((cr-fn1 (context x) t)
+  (cr-fn2 (context x) t)
   (cr-fn2-domain () t)
   (cr-fn2-range () t))
 
  ;; Our witness continuous function is the identity function.
 
- (local (defun cr-fn1 (x) (realfix x)))
- (local (defun cr-fn2 (x) (realfix x)))
+ (local (defun cr-fn1 (context x) (declare (ignore context)) (realfix x)))
+ (local (defun cr-fn2 (context x) (declare (ignore context)) (realfix x)))
  (local (defun cr-fn2-domain () (interval 0 1)))
  (local (defun cr-fn2-range () (interval 0 1)))
 
@@ -64,18 +64,18 @@
  ;; The functions return real values (even for improper arguments).
 
  (defthm cr-fn1-real
-     (realp (cr-fn1 x))
+     (realp (cr-fn1 context x))
    :rule-classes (:rewrite :type-prescription))
 
  (defthm cr-fn2-real
-     (realp (cr-fn2 x))
+     (realp (cr-fn2 context x))
    :rule-classes (:rewrite :type-prescription))
 
  ;; The range of fn2 is inside the domain of fn1
 
  (defthm cr-fn2-range-in-domain-of-fn2
      (implies (inside-interval-p x (cr-fn2-domain))
-	      (inside-interval-p (cr-fn2 x) (cr-fn2-range))))
+	      (inside-interval-p (cr-fn2 context x) (cr-fn2-range))))
 
  ;; If x is a standard real and y1 and y2 are two arbitrary reals
  ;; close to x, then (rdfn(x)-rdfn(y1))/(x-y1) is close to
@@ -85,25 +85,33 @@
 
  (defthm cr-fn1-differentiable
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (cr-fn2-range))
 		 (inside-interval-p y1 (cr-fn2-range))
 		 (inside-interval-p y2 (cr-fn2-range))
 		 (i-close x y1) (not (= x y1))
 		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (cr-fn1 x) (cr-fn1 y1)) (- x y1)))
-		 (i-close (/ (- (cr-fn1 x) (cr-fn1 y1)) (- x y1))
-			  (/ (- (cr-fn1 x) (cr-fn1 y2)) (- x y2))))))
+	    (and (i-limited (/ (- (cr-fn1 context x) (cr-fn1 context y1))
+                               (- x y1)))
+		 (i-close (/ (- (cr-fn1 context x) (cr-fn1 context y1))
+                             (- x y1))
+			  (/ (- (cr-fn1 context x) (cr-fn1 context y2))
+                             (- x y2))))))
 
  (defthm cr-fn2-differentiable
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (cr-fn2-domain))
 		 (inside-interval-p y1 (cr-fn2-domain))
 		 (inside-interval-p y2 (cr-fn2-domain))
 		 (i-close x y1) (not (= x y1))
 		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (cr-fn2 x) (cr-fn2 y1)) (- x y1)))
-		 (i-close (/ (- (cr-fn2 x) (cr-fn2 y1)) (- x y1))
-			  (/ (- (cr-fn2 x) (cr-fn2 y2)) (- x y2))))))
+	    (and (i-limited (/ (- (cr-fn2 context x) (cr-fn2 context y1))
+                               (- x y1)))
+		 (i-close (/ (- (cr-fn2 context x) (cr-fn2 context y1))
+                             (- x y1))
+			  (/ (- (cr-fn2 context x) (cr-fn2 context y2))
+                             (- x y2))))))
 
 
  )
@@ -113,46 +121,56 @@
 
 (defthm cr-fn1-differentiable-part1
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-range))
 		  (inside-interval-p y1 (cr-fn2-range))
 		  (i-close x y1) (not (= x y1)))
-	     (i-limited (/ (- (cr-fn1 x) (cr-fn1 y1)) (- x y1))))
+	     (i-limited (/ (- (cr-fn1 context x) (cr-fn1 context y1))
+                           (- x y1))))
   :hints (("Goal"
 	   :use ((:instance cr-fn1-differentiable (y2 y1)))
 	   :in-theory nil)))
 
 (defthm cr-fn1-differentiable-part2
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-range))
 		  (inside-interval-p y1 (cr-fn2-range))
 		  (inside-interval-p y2 (cr-fn2-range))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (i-close (/ (- (cr-fn1 x) (cr-fn1 y1)) (- x y1))
-		      (/ (- (cr-fn1 x) (cr-fn1 y2)) (- x y2))))
+	     (i-close (/ (- (cr-fn1 context x) (cr-fn1 context y1))
+                         (- x y1))
+		      (/ (- (cr-fn1 context x) (cr-fn1 context y2))
+                         (- x y2))))
   :hints (("Goal"
 	   :use ((:instance cr-fn1-differentiable))
 	   :in-theory nil)))
 
 (defthm cr-fn2-differentiable-part1
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-domain))
 		  (inside-interval-p y1 (cr-fn2-domain))
 		  (i-close x y1) (not (= x y1)))
-	     (i-limited (/ (- (cr-fn2 x) (cr-fn2 y1)) (- x y1))))
+	     (i-limited (/ (- (cr-fn2 context x) (cr-fn2 context y1))
+                           (- x y1))))
   :hints (("Goal"
 	   :use ((:instance cr-fn2-differentiable (y2 y1)))
 	   :in-theory nil)))
 
 (defthm cr-fn2-differentiable-part2
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-domain))
 		  (inside-interval-p y1 (cr-fn2-domain))
 		  (inside-interval-p y2 (cr-fn2-domain))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (i-close (/ (- (cr-fn2 x) (cr-fn2 y1)) (- x y1))
-		      (/ (- (cr-fn2 x) (cr-fn2 y2)) (- x y2))))
+	     (i-close (/ (- (cr-fn2 context x) (cr-fn2 context y1))
+                         (- x y1))
+		      (/ (- (cr-fn2 context x) (cr-fn2 context y2))
+                         (- x y2))))
   :hints (("Goal"
 	   :use ((:instance cr-fn2-differentiable))
 	   :in-theory nil)))
@@ -160,11 +178,12 @@
 ;; It follows by functional instantiation that both cr-fn1 and cr-fn2 are continuous
 
 (defthm cr-fn1-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (cr-fn2-range))
-		 (i-close x y)
-		 (inside-interval-p y (cr-fn2-range)))
-	    (i-close (cr-fn1 x) (cr-fn1 y)))
+  (implies (and (standardp x)
+                (standardp context)
+		(inside-interval-p x (cr-fn2-range))
+		(i-close x y)
+		(inside-interval-p y (cr-fn2-range)))
+	   (i-close (cr-fn1 context x) (cr-fn1 context y)))
 
   :hints (("Goal"
 	   :by (:functional-instance rdfn-continuous
@@ -180,10 +199,11 @@
 
 (defthm cr-fn2-continuous
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (cr-fn2-domain))
 		 (i-close x y)
 		 (inside-interval-p y (cr-fn2-domain)))
-	    (i-close (cr-fn2 x) (cr-fn2 y)))
+	    (i-close (cr-fn2 context x) (cr-fn2 context y)))
 
   :hints (("Goal"
 	   :by (:functional-instance rdfn-continuous
@@ -201,23 +221,27 @@
 
 (encapsulate
 
- ( ((differential-cr-fn1 * *) => *) )
+ ( ((differential-cr-fn1 * * *) => *) )
 
  (local
-  (defun differential-cr-fn1 (x eps)
-    (/ (- (cr-fn1 (+ x eps)) (cr-fn1 x)) eps)))
+  (defun differential-cr-fn1 (context x eps)
+    (/ (- (cr-fn1 context (+ x eps))
+          (cr-fn1 context x))
+       eps)))
 
  (defthm differential-cr-fn1-definition
    (implies (and (inside-interval-p x (cr-fn2-range))
                  (inside-interval-p (+ x eps) (cr-fn2-range)))
-            (equal (differential-cr-fn1 x eps)
-                   (/ (- (cr-fn1 (+ x eps)) (cr-fn1 x)) eps)))))
+            (equal (differential-cr-fn1 context x eps)
+                   (/ (- (cr-fn1 context (+ x eps))
+                         (cr-fn1 context x))
+                      eps)))))
 
 (defthm realp-differential-cr-fn1
   (implies (and (inside-interval-p x (cr-fn2-range))
 		(inside-interval-p (+ x eps) (cr-fn2-range))
 		(realp eps))
-	   (realp (differential-cr-fn1 x eps)))
+	   (realp (differential-cr-fn1 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-cr-fn1)
@@ -226,10 +250,11 @@
 
 (defthm differential-cr-fn1-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-range))
 		  (inside-interval-p (+ x eps) (cr-fn2-range))
 		  (i-small eps))
-	     (i-limited (differential-cr-fn1 x eps)))
+	     (i-limited (differential-cr-fn1 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-cr-fn1)
@@ -241,32 +266,33 @@
 
 (encapsulate
 
- ( ((derivative-cr-fn1 *) => *) )
+ ( ((derivative-cr-fn1 * *) => *) )
 
  (local
-  (defun-std derivative-cr-fn1 (x)
+  (defun-std derivative-cr-fn1 (context x)
     (if (inside-interval-p x (cr-fn2-range))
         (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-range))
-            (standard-part (differential-cr-fn1 x (/ (i-large-integer))))
+            (standard-part (differential-cr-fn1 context x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-range))
-	      (standard-part (differential-cr-fn1 x (- (/ (i-large-integer)))))
+	      (standard-part (differential-cr-fn1 context x (- (/ (i-large-integer)))))
             'error))
       'error)))
 
  (defthm derivative-cr-fn1-definition
    (implies (and (inside-interval-p x (cr-fn2-range))
-                 (standardp x))
-            (equal (derivative-cr-fn1 x)
+                 (standardp x)
+                 (standardp context))
+            (equal (derivative-cr-fn1 context x)
                    (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-range))
-                       (standard-part (differential-cr-fn1 x (/ (i-large-integer))))
+                       (standard-part (differential-cr-fn1 context x (/ (i-large-integer))))
                      (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-range))
-                         (standard-part (differential-cr-fn1 x (- (/ (i-large-integer)))))
+                         (standard-part (differential-cr-fn1 context x (- (/ (i-large-integer)))))
                        'error)))))
  )
 
 (defthm real-derivative-cr-fn1
     (implies (inside-interval-p x (cr-fn2-range))
-	     (realp (derivative-cr-fn1 x)))
+	     (realp (derivative-cr-fn1 context x)))
   :hints (("Goal"
 	   :by (:functional-instance derivative-well-defined
 				     (derivative-rdfn derivative-cr-fn1)
@@ -277,11 +303,12 @@
 (defthm differential-cr-fn1-close
    (implies (and (inside-interval-p x (cr-fn2-range))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-range))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-cr-fn1 x eps))
-		   (derivative-cr-fn1 x)))
+	    (equal (standard-part (differential-cr-fn1 context x eps))
+		   (derivative-cr-fn1 context x)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-close
 				     (derivative-rdfn derivative-cr-fn1)
@@ -293,23 +320,25 @@
 
 (encapsulate
 
- ( ((differential-cr-fn2 * *) => *) )
+ ( ((differential-cr-fn2 * * *) => *) )
 
  (local
-  (defun differential-cr-fn2 (x eps)
-    (/ (- (cr-fn2 (+ x eps)) (cr-fn2 x)) eps)))
+  (defun differential-cr-fn2 (context x eps)
+    (/ (- (cr-fn2 context (+ x eps)) (cr-fn2 context x)) eps)))
 
  (defthm differential-cr-fn2-definition
    (implies (and (inside-interval-p x (cr-fn2-domain))
                  (inside-interval-p (+ x eps) (cr-fn2-domain)))
-            (equal (differential-cr-fn2 x eps)
-                   (/ (- (cr-fn2 (+ x eps)) (cr-fn2 x)) eps)))))
+            (equal (differential-cr-fn2 context x eps)
+                   (/ (- (cr-fn2 context (+ x eps))
+                         (cr-fn2 context x))
+                      eps)))))
 
 (defthm realp-differential-cr-fn2
   (implies (and (inside-interval-p x (cr-fn2-domain))
 		(inside-interval-p (+ x eps) (cr-fn2-domain))
 		(realp eps))
-	   (realp (differential-cr-fn2 x eps)))
+	   (realp (differential-cr-fn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-cr-fn2)
@@ -318,10 +347,11 @@
 
 (defthm differential-cr-fn2-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-domain))
 		  (inside-interval-p (+ x eps) (cr-fn2-domain))
 		  (i-small eps))
-	     (i-limited (differential-cr-fn2 x eps)))
+	     (i-limited (differential-cr-fn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-cr-fn2)
@@ -332,32 +362,33 @@
 (in-theory (disable differential-cr-fn2-definition))
 
 (encapsulate
- ( ((derivative-cr-fn2 *) => *) )
+ ( ((derivative-cr-fn2 * *) => *) )
 
  (local
-  (defun-std derivative-cr-fn2 (x)
+  (defun-std derivative-cr-fn2 (context x)
     (if (inside-interval-p x (cr-fn2-domain))
         (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-domain))
-            (standard-part (differential-cr-fn2 x (/ (i-large-integer))))
+            (standard-part (differential-cr-fn2 context x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-domain))
-	      (standard-part (differential-cr-fn2 x (- (/ (i-large-integer)))))
+	      (standard-part (differential-cr-fn2 context x (- (/ (i-large-integer)))))
             'error))
       'error)))
 
  (defthm derivative-cr-fn2-definition
    (implies (and (inside-interval-p x (cr-fn2-domain))
-                 (standardp x))
-            (equal (derivative-cr-fn2 x)
+                 (standardp x)
+                 (standardp context))
+            (equal (derivative-cr-fn2 context x)
                    (if (inside-interval-p (+ x (/ (i-large-integer))) (cr-fn2-domain))
-                       (standard-part (differential-cr-fn2 x (/ (i-large-integer))))
+                       (standard-part (differential-cr-fn2 context x (/ (i-large-integer))))
                      (if (inside-interval-p (- x (/ (i-large-integer))) (cr-fn2-domain))
-                         (standard-part (differential-cr-fn2 x (- (/ (i-large-integer)))))
+                         (standard-part (differential-cr-fn2 context x (- (/ (i-large-integer)))))
                        'error)))))
  )
 
 (defthm real-derivative-cr-fn2
     (implies (inside-interval-p x (cr-fn2-domain))
-	     (realp (derivative-cr-fn2 x)))
+	     (realp (derivative-cr-fn2 context x)))
   :hints (("Goal"
 	   :by (:functional-instance derivative-well-defined
 				     (derivative-rdfn derivative-cr-fn2)
@@ -368,11 +399,12 @@
 (defthm differential-cr-fn2-close
    (implies (and (inside-interval-p x (cr-fn2-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-domain))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-cr-fn2 x eps))
-		   (derivative-cr-fn2 x)))
+	    (equal (standard-part (differential-cr-fn2 context x eps))
+		   (derivative-cr-fn2 context x)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-close
 				     (derivative-rdfn derivative-cr-fn2)
@@ -386,13 +418,16 @@
 
 (local
  (defthm-std standard-cr-fn1
-     (implies (standardp x)
-	      (standardp (cr-fn1 x)))))
+     (implies (and (standardp x)
+                   (standardp context))
+	      (standardp (cr-fn1 context x)))))
+
 
 (local
  (defthm-std standard-cr-fn2
-     (implies (standardp x)
-	      (standardp (cr-fn2 x)))))
+     (implies (and (standardp x)
+                   (standardp context))
+	      (standardp (cr-fn2 context x)))))
 
 ;; The differentials of the functions are close to each other and the derivatives
 
@@ -414,6 +449,7 @@
 (local
  (defthm close-differential-cr-fn1
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-range))
 		   (realp eps1)
 		   (not (equal eps1 0))
@@ -423,12 +459,12 @@
 		   (not (equal eps2 0))
 		   (i-small eps2)
 		   (inside-interval-p (+ x eps2) (cr-fn2-range)))
-	      (i-close (differential-cr-fn1 x eps1)
-		       (differential-cr-fn1 x eps2)))
+	      (i-close (differential-cr-fn1 context x eps1)
+		       (differential-cr-fn1 context x eps2)))
    :hints (("Goal"
 	    :use ((:instance close-if-same-standard-part
-			     (x (differential-cr-fn1 x eps1))
-			     (y (differential-cr-fn1 x eps2)))
+			     (x (differential-cr-fn1 context x eps1))
+			     (y (differential-cr-fn1 context x eps2)))
 		  (:instance differential-cr-fn1-close
 			     (eps eps1))
 		  (:instance differential-cr-fn1-close
@@ -438,6 +474,7 @@
 (local
  (defthm close-differential-cr-fn2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (realp eps1)
 		   (not (equal eps1 0))
@@ -447,12 +484,12 @@
 		   (not (equal eps2 0))
 		   (i-small eps2)
 		   (inside-interval-p (+ x eps2) (cr-fn2-domain)))
-	      (i-close (differential-cr-fn2 x eps1)
-		       (differential-cr-fn2 x eps2)))
+	      (i-close (differential-cr-fn2 context x eps1)
+		       (differential-cr-fn2 context x eps2)))
    :hints (("Goal"
 	    :use ((:instance close-if-same-standard-part
-			     (x (differential-cr-fn2 x eps1))
-			     (y (differential-cr-fn2 x eps2)))
+			     (x (differential-cr-fn2 context x eps1))
+			     (y (differential-cr-fn2 context x eps2)))
 		  (:instance differential-cr-fn2-close
 			     (eps eps1))
 		  (:instance differential-cr-fn2-close
@@ -462,6 +499,7 @@
 (local
  (defthm close-cr-fn1-eps1-eps2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-range))
 		   (realp eps1)
 		   (not (equal eps1 0))
@@ -471,16 +509,16 @@
 		   (not (equal eps2 0))
 		   (i-small eps2)
 		   (inside-interval-p (+ x eps2) (cr-fn2-range)))
-	      (i-close (cr-fn1 (+ x eps1))
-		       (cr-fn1 (+ x eps2))))
+	      (i-close (cr-fn1 context (+ x eps1))
+		       (cr-fn1 context (+ x eps2))))
    :hints (("Goal"
 	    :use ((:instance i-close-transitive
-			     (x (cr-fn1 (+ x eps1)))
-			     (y (cr-fn1 x))
-			     (z (cr-fn1 (+ x eps2))))
+			     (x (cr-fn1 context (+ x eps1)))
+			     (y (cr-fn1 context x))
+			     (z (cr-fn1 context (+ x eps2))))
 		  (:instance i-close-symmetric
-			     (x (cr-fn1 x))
-			     (y (cr-fn1 (+ x eps1))))
+			     (x (cr-fn1 context x))
+			     (y (cr-fn1 context (+ x eps1))))
 		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
@@ -499,6 +537,7 @@
 (local
  (defthm close-cr-fn2-eps1-eps2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (realp eps1)
 		   (not (equal eps1 0))
@@ -508,16 +547,16 @@
 		   (not (equal eps2 0))
 		   (i-small eps2)
 		   (inside-interval-p (+ x eps2) (cr-fn2-domain)))
-	      (i-close (cr-fn2 (+ x eps1))
-		       (cr-fn2 (+ x eps2))))
+	      (i-close (cr-fn2 context (+ x eps1))
+		       (cr-fn2 context (+ x eps2))))
    :hints (("Goal"
 	    :use ((:instance i-close-transitive
-			     (x (cr-fn2 (+ x eps1)))
-			     (y (cr-fn2 x))
-			     (z (cr-fn2 (+ x eps2))))
+			     (x (cr-fn2 context (+ x eps1)))
+			     (y (cr-fn2 context x))
+			     (z (cr-fn2 context (+ x eps2))))
 		  (:instance i-close-symmetric
-			     (x (cr-fn2 x))
-			     (y (cr-fn2 (+ x eps1))))
+			     (x (cr-fn2 context x))
+			     (y (cr-fn2 context (+ x eps1))))
 		  (:instance i-close-to-small-sum
 			     (x x)
 			     (eps eps1))
@@ -535,15 +574,16 @@
 (local
  (defthm limited-cr-fn1-eps
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-range))
 		   (realp eps)
 		   (i-small eps)
 		   (inside-interval-p (+ x eps) (cr-fn2-range)))
-	      (i-limited (cr-fn1 (+ x eps))))
+	      (i-limited (cr-fn1 context (+ x eps))))
    :hints (("Goal"
 	    :use ((:instance i-close-limited
-			     (x (cr-fn1 x))
-			     (y (cr-fn1 (+ x eps))))
+			     (x (cr-fn1 context x))
+			     (y (cr-fn1 context (+ x eps))))
 		  (:instance cr-fn1-continuous
 			     (x x)
 			     (y (+ x eps)))
@@ -558,15 +598,16 @@
 (local
  (defthm limited-cr-fn2-eps
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (realp eps)
 		   (i-small eps)
 		   (inside-interval-p (+ x eps) (cr-fn2-domain)))
-	      (i-limited (cr-fn2 (+ x eps))))
+	      (i-limited (cr-fn2 context (+ x eps))))
    :hints (("Goal"
 	    :use ((:instance i-close-limited
-			     (x (cr-fn2 x))
-			     (y (cr-fn2 (+ x eps))))
+			     (x (cr-fn2 context x))
+			     (y (cr-fn2 context (+ x eps))))
 		  (:instance cr-fn2-continuous
 			     (x x)
 			     (y (+ x eps)))
@@ -581,52 +622,75 @@
 ;; Now we define the composition and its derivative
 
 (encapsulate
- ( ((cr-fn1-o-fn2 *) => *) )
+    ( ((cr-fn1-o-fn2 * *) => *)
+      ((cr-car-context *) => *)
+      ((cr-cdr-context *) => *)
+      )
+
+    (local
+     (defun cr-car-context (context)
+       (car context)))
+
+    (local
+     (defun cr-cdr-context (context)
+       (cdr context)))
 
  (local
-  (defun cr-fn1-o-fn2 (x)
-    (cr-fn1 (cr-fn2 x))))
+  (defun cr-fn1-o-fn2 (context x)
+    (cr-fn1 (cr-car-context context) (cr-fn2 (cr-cdr-context context) x))))
 
  (defthm cr-fn1-o-fn2-definition
    (implies (inside-interval-p x (cr-fn2-domain))
-            (equal (cr-fn1-o-fn2 x)
-                   (cr-fn1 (cr-fn2 x)))))
+            (equal (cr-fn1-o-fn2 context x)
+                   (cr-fn1 (cr-car-context context) (cr-fn2 (cr-cdr-context context) x)))))
  )
 
+
 (encapsulate
- ( ((differential-cr-fn1-o-fn2 * *) => *) )
+ ( ((differential-cr-fn1-o-fn2 * * *) => *) )
 
  (local
-  (defun differential-cr-fn1-o-fn2 (x eps)
-    (if (equal (cr-fn2 (+ x eps)) (cr-fn2 x))
+  (defun differential-cr-fn1-o-fn2 (context x eps)
+    (if (equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+               (cr-fn2 (cr-cdr-context context) x))
         0
-      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-	 (differential-cr-fn2 x eps)))))
+        (* (differential-cr-fn1 (cr-car-context context)
+                                (cr-fn2 (cr-cdr-context context) x)
+                                (- (cr-fn2 (cr-cdr-context context) (+ x eps))
+                                   (cr-fn2 (cr-cdr-context context) x)))
+	 (differential-cr-fn2 (cr-cdr-context context) x eps)))))
 
  (defthm differential-cr-fn1-o-fn2-definition
    (implies (and (inside-interval-p x (cr-fn2-domain))
                  (inside-interval-p (+ x eps) (cr-fn2-domain)))
-            (equal (differential-cr-fn1-o-fn2 x eps)
-                   (if (equal (cr-fn2 (+ x eps)) (cr-fn2 x))
+            (equal (differential-cr-fn1-o-fn2 context x eps)
+                   (if (equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+                              (cr-fn2 (cr-cdr-context context) x))
                        0
-                     (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-                        (differential-cr-fn2 x eps))))))
+                       (* (differential-cr-fn1 (cr-car-context context)
+                                               (cr-fn2 (cr-cdr-context context) x)
+                                               (- (cr-fn2 (cr-cdr-context context)
+                                                          (+ x eps))
+                                                  (cr-fn2 (cr-cdr-context context)
+                                                          x)))
+                        (differential-cr-fn2 (cr-cdr-context context) x eps))))))
  )
 
 
 (encapsulate
- ( ((derivative-cr-fn1-o-fn2 *) => *) )
+ ( ((derivative-cr-fn1-o-fn2 * *) => *) )
 
  (local
-  (defun derivative-cr-fn1-o-fn2 (x)
-    (* (derivative-cr-fn1 (cr-fn2 x))
-       (derivative-cr-fn2 x))))
+  (defun derivative-cr-fn1-o-fn2 (context x)
+    (* (derivative-cr-fn1 (cr-car-context context) (cr-fn2 (cr-cdr-context context) x))
+       (derivative-cr-fn2 (cr-cdr-context context) x))))
 
  (defthm derivative-cr-fn1-o-fn2-definition
    (implies (inside-interval-p x (cr-fn2-domain))
-            (equal (derivative-cr-fn1-o-fn2 x)
-                   (* (derivative-cr-fn1 (cr-fn2 x))
-                      (derivative-cr-fn2 x)))))
+            (equal (derivative-cr-fn1-o-fn2 context x)
+                   (* (derivative-cr-fn1 (cr-car-context context)
+                                         (cr-fn2 (cr-cdr-context context) x))
+                      (derivative-cr-fn2 (cr-cdr-context context) x)))))
  )
 
 ;; First we show that the differential really is the differential of the
@@ -637,23 +701,33 @@
 
  (local
   (defthm lemma-1
-      (implies (and (not (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
+      (implies (and (not (equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+                                (cr-fn2 (cr-cdr-context context) x)))
                     (inside-interval-p x (cr-fn2-domain))
                     (inside-interval-p (+ x eps) (cr-fn2-domain)))
-	       (equal (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x))
-		      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-			 (- (cr-fn2 (+ x eps)) (cr-fn2 x)))))
+	       (equal (- (cr-fn1-o-fn2 context (+ x eps))
+                         (cr-fn1-o-fn2 context x))
+		      (* (differential-cr-fn1 (cr-car-context context)
+                                              (cr-fn2 (cr-cdr-context context) x)
+                                              (- (cr-fn2 (cr-cdr-context context)
+                                                         (+ x eps))
+                                                 (cr-fn2 (cr-cdr-context context) x)))
+			 (- (cr-fn2 (cr-cdr-context context) (+ x eps))
+                            (cr-fn2 (cr-cdr-context context) x)))))
     :hints (("Goal"
 	     :use ((:instance INVERSE-OF-*
-			      (x (- (cr-fn2 (+ x eps)) (cr-fn2 x))))
+			      (x (- (cr-fn2 (cr-cdr-context context) (+ x eps))
+                                    (cr-fn2 (cr-cdr-context context) x))))
                    (:instance cr-fn2-range-in-domain-of-fn2
+                              (context (cr-cdr-context context))
                               (x (+ x eps)))
                    (:instance cr-fn2-range-in-domain-of-fn2
+                              (context (cr-cdr-context context))
                               (x x))
-		   (:theorem (equal (+ (CR-FN2 X)
-				       (CR-FN2 (+ X EPS))
-				       (- (CR-FN2 X)))
-				    (CR-FN2 (+ X EPS))))
+		   (:theorem (equal (+ (CR-FN2 (cr-cdr-context context) X)
+				       (CR-FN2 (cr-cdr-context context)(+ X EPS))
+				       (- (CR-FN2 (cr-cdr-context context)X)))
+				    (CR-FN2 (cr-cdr-context context) (+ X EPS))))
 		   )
 	     :in-theory '(differential-cr-fn1-definition
                           commutativity-of-*
@@ -671,11 +745,18 @@
   (defthm lemma-2
       (implies (and (inside-interval-p x (cr-fn2-domain))
                     (inside-interval-p (+ x eps) (cr-fn2-domain)))
-               (equal (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x))
-                      (* (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 (+ x eps)) (cr-fn2 x)))
-                         (- (cr-fn2 (+ x eps)) (cr-fn2 x)))))
+               (equal (- (cr-fn1-o-fn2 context (+ x eps))
+                         (cr-fn1-o-fn2 context x))
+                      (* (differential-cr-fn1 (cr-car-context context)
+                                              (cr-fn2 (cr-cdr-context context) x)
+                                              (- (cr-fn2 (cr-cdr-context context)
+                                                         (+ x eps))
+                                                 (cr-fn2 (cr-cdr-context context) x)))
+                         (- (cr-fn2 (cr-cdr-context context) (+ x eps))
+                            (cr-fn2 (cr-cdr-context context) x)))))
     :hints (("Goal"
-	     :cases ((equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
+	     :cases ((equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+                            (cr-fn2 (cr-cdr-context context) x)))
 	     :use ((:instance lemma-1))
 	     :in-theory (disable lemma-1 cr-fn1-o-fn2-definition))
 	    ("Subgoal 1"
@@ -686,8 +767,10 @@
  (defthm expand-differential-cr-fn1-o-fn2
    (implies (and (inside-interval-p x (cr-fn2-domain))
                  (inside-interval-p (+ x eps) (cr-fn2-domain)))
-            (equal (differential-cr-fn1-o-fn2 x eps)
-                   (/ (- (cr-fn1-o-fn2 (+ x eps)) (cr-fn1-o-fn2 x)) eps)))
+            (equal (differential-cr-fn1-o-fn2 context x eps)
+                   (/ (- (cr-fn1-o-fn2 context (+ x eps))
+                         (cr-fn1-o-fn2 context x))
+                      eps)))
    :hints (("Goal"
 	    :in-theory '(lemma-2
 			 differential-cr-fn1-o-fn2-definition
@@ -705,13 +788,15 @@
 
 (defthm derivative-cr-fn2-must-be-zero
     (implies (and (standardp x)
-		   (inside-interval-p x (cr-fn2-domain))
-		   (realp eps)
-		   (not (equal eps 0))
-		   (i-small eps)
-		   (inside-interval-p (+ x eps) (cr-fn2-domain))
-		   (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
-	     (equal (derivative-cr-fn2 x) 0))
+                  (standardp context)
+		  (inside-interval-p x (cr-fn2-domain))
+		  (realp eps)
+		  (not (equal eps 0))
+		  (i-small eps)
+		  (inside-interval-p (+ x eps) (cr-fn2-domain))
+		  (equal (cr-fn2 context (+ x eps))
+                         (cr-fn2 context x)))
+	     (equal (derivative-cr-fn2 context x) 0))
   :hints (("Goal"
 	   :use ((:instance differential-cr-fn2-close))
 	   :in-theory '(differential-cr-fn2-definition
@@ -722,32 +807,48 @@
 
 (defthm differential-cr-fn1-o-fn2-must-be-zero
     (implies (and (standardp x)
-		   (inside-interval-p x (cr-fn2-domain))
-		   (realp eps)
-		   (not (equal eps 0))
-		   (i-small eps)
-		   (inside-interval-p (+ x eps) (cr-fn2-domain))
-		   (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
-	     (equal (differential-cr-fn1-o-fn2 x eps) 0))
+                  (standardp context)
+		  (inside-interval-p x (cr-fn2-domain))
+		  (realp eps)
+		  (not (equal eps 0))
+		  (i-small eps)
+		  (inside-interval-p (+ x eps) (cr-fn2-domain))
+		  (equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+                         (cr-fn2 (cr-cdr-context context) x)))
+	     (equal (differential-cr-fn1-o-fn2 context x eps) 0))
   :hints (("Goal"
 	   :in-theory '(differential-cr-fn1-o-fn2-definition
 			inverse-of-+)
 	   )))
 
+(local
+ (defthm-std car-standard
+     (implies (standardp context)
+              (standardp (cr-car-context context)))))
+
+(local
+ (defthm-std cdr-standard
+     (implies (standardp context)
+              (standardp (cr-cdr-context context)))))
+
 ;; And of course, the derivative of fn1-o-fn2(x) is also 0
 
 (defthm derivative-cr-fn1-o-fn2-must-be-zero
     (implies (and (standardp x)
-		   (inside-interval-p x (cr-fn2-domain))
-		   (realp eps)
-		   (not (equal eps 0))
-		   (i-small eps)
-		   (inside-interval-p (+ x eps) (cr-fn2-domain))
-		   (equal (cr-fn2 (+ x eps)) (cr-fn2 x)))
-	     (equal (derivative-cr-fn1-o-fn2 x) 0))
+                  (standardp context)
+		  (inside-interval-p x (cr-fn2-domain))
+		  (realp eps)
+		  (not (equal eps 0))
+		  (i-small eps)
+		  (inside-interval-p (+ x eps) (cr-fn2-domain))
+		  (equal (cr-fn2 (cr-cdr-context context) (+ x eps))
+                         (cr-fn2 (cr-cdr-context context) x)))
+	     (equal (derivative-cr-fn1-o-fn2 context x) 0))
   :hints (("Goal"
 	   :in-theory '(derivative-cr-fn2-must-be-zero
-			derivative-cr-fn1-o-fn2-definition)
+			derivative-cr-fn1-o-fn2-definition
+                        car-standard
+                        cdr-standard)
 	   )))
 
 ;; So, let's get the easy case out of the way.  When
@@ -796,7 +897,7 @@
  (local
   (defthm lemma-6
       (implies (inside-interval-p x (cr-fn2-domain))
-	       (equal (differential-cr-fn1-o-fn2 x 0)
+	       (equal (differential-cr-fn1-o-fn2 context x 0)
 		      0))
     :hints (("goal"
              :use ((:instance differential-cr-fn1-o-fn2-definition
@@ -823,7 +924,7 @@
   (defthm lemma-8
       (implies (and (inside-interval-p x (cr-fn2-domain))
                     (inside-interval-p y2 (cr-fn2-domain)))
-	       (realp (differential-cr-fn2 x (+ (- x) y2))))
+	       (realp (differential-cr-fn2 context x (+ (- x) y2))))
     :hints (("Goal"
 	     :in-theory (enable differential-cr-fn2-definition)))
     :rule-classes (:type-prescription :rewrite)))
@@ -872,16 +973,21 @@
   (defthm lemma-10
       (implies (and (inside-interval-p x (cr-fn2-domain))
                     (inside-interval-p y2 (cr-fn2-domain))
-		    (i-limited (DIFFERENTIAL-CR-FN1 (CR-FN2 X)
-						    (+ (- (CR-FN2 X)) (CR-FN2 Y2))))
-		    (EQUAL (STANDARD-PART (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2)))
+		    (i-limited (DIFFERENTIAL-CR-FN1 (cr-car-context context)
+                                                    (CR-FN2 (cr-cdr-context context) X)
+						    (+ (- (CR-FN2 (cr-cdr-context context) X))
+                                                          (CR-FN2 (cr-cdr-context context) Y2))))
+		    (EQUAL (STANDARD-PART (DIFFERENTIAL-CR-FN2 (cr-cdr-context context) X (+ (- X) Y2)))
 			   0))
-	       (i-close 0 (DIFFERENTIAL-CR-FN1-O-FN2 X (+ (- X) Y2))))
+	       (i-close 0 (DIFFERENTIAL-CR-FN1-O-FN2 context X (+ (- X) Y2))))
     :hints (("Goal"
 	     :use ((:instance STANDARD-PART-OF-TIMES
-			      (x (DIFFERENTIAL-CR-FN1 (CR-FN2 X)
-						      (+ (- (CR-FN2 X)) (CR-FN2 Y2))))
-			      (y (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2))))
+			      (x (DIFFERENTIAL-CR-FN1 (cr-car-context context)
+                                                      (CR-FN2 (cr-cdr-context context) X)
+						      (+ (- (CR-FN2 (cr-cdr-context context)
+                                                                    X))
+                                                         (CR-FN2 (cr-cdr-context context) Y2))))
+			      (y (DIFFERENTIAL-CR-FN2 (cr-cdr-context context) X (+ (- X) Y2))))
                    (:instance DIFFERENTIAL-CR-FN1-O-FN2-definition
                               (x x)
                               (eps (- y2 x)))
@@ -903,15 +1009,23 @@
 
  (defthm cr-fn1-o-fn2-differentiable-for-trivial-case
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (inside-interval-p y2 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
 		   (i-close x y2) (not (= x y2))
-		   (equal (cr-fn2 y1) (cr-fn2 x)))
-	      (and (i-limited (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1)))
-		   (i-close (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1))
-			    (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y2)) (- x y2)))))
+		   (equal (cr-fn2 (cr-cdr-context context) y1)
+                          (cr-fn2 (cr-cdr-context context) x)))
+	      (and (i-limited (/ (- (cr-fn1-o-fn2 context x)
+                                    (cr-fn1-o-fn2 context y1))
+                                 (- x y1)))
+		   (i-close (/ (- (cr-fn1-o-fn2 context x)
+                                  (cr-fn1-o-fn2 context y1))
+                               (- x y1))
+			    (/ (- (cr-fn1-o-fn2 context x)
+                                  (cr-fn1-o-fn2 context y2))
+                               (- x y2)))))
    :hints (("Goal"
 	    :use ((:instance expand-differential-cr-fn1-o-fn2
 			     (x x)
@@ -923,23 +1037,31 @@
 			     (x x)
 			     (eps (- y1 x)))
 		  (:instance derivative-cr-fn2-must-be-zero
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y1 x)))
 		  (:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y2))
 		  (:instance cr-fn1-continuous
-			     (x (cr-fn2 x))
-			     (y (cr-fn2 y2)))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (y (cr-fn2 (cr-cdr-context context) y2)))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y2) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y2)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance differential-cr-fn2-close
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y2 x)))
 		  (:instance limited-cr-fn1-eps
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y2) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y2)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  )
 	    :in-theory '(inside-interval-is-real
 			 commutativity-of-+
@@ -958,6 +1080,8 @@
 			 cr-fn2-range-in-domain-of-fn2
 			 cr-fn2-real
 			 i-close-reflexive
+                         car-standard
+                         cdr-standard
 			 )))
    )
  )
@@ -978,7 +1102,7 @@
   (defthm lemma-0
     (implies (and (inside-interval-p x (cr-fn2-range))
                   (inside-interval-p (+ x eps) (cr-fn2-range)))
-             (acl2-numberp (differential-cr-fn1 x eps)))
+             (acl2-numberp (differential-cr-fn1 context x eps)))
     :hints (("Goal"
 	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
@@ -998,22 +1122,29 @@
 
  (defthm limited-differential-cr-fn1-after-fn2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
-		   (not (equal (cr-fn2 y1) (cr-fn2 x))))
-	      (i-limited (differential-cr-fn1 (cr-fn2 x)
-					      (- (cr-fn2 y1) (cr-fn2 x)))))
+		   (not (equal (cr-fn2 (cr-cdr-context context) y1)
+                               (cr-fn2 (cr-cdr-context context) x))))
+	      (i-limited (differential-cr-fn1 (cr-car-context context)
+                                              (cr-fn2 (cr-cdr-context context) x)
+					      (- (cr-fn2 (cr-cdr-context context) y1)
+                                                 (cr-fn2 (cr-cdr-context context) x)))))
    :hints (("Goal"
 	    :use ((:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y1))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y1) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y1)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance (:theorem (implies (and (realp x) (realp y)) (realp (+ x (- y)))))
-			     (x (CR-FN2 X))
-			     (y (CR-FN2 Y1)))
+			     (x (CR-FN2 (cr-cdr-context context) X))
+			     (y (CR-FN2 (cr-cdr-context context) Y1)))
 		  )
 	    :in-theory '(standard-cr-fn2
 			 cr-fn1-real
@@ -1024,6 +1155,8 @@
 			 associativity-of-+
 			 minus-cancellation-on-left
 			 fix
+                         car-standard
+                         cdr-standard
 			 lemma-0
 			 lemma-2))))
  )
@@ -1045,13 +1178,15 @@
 
  (defthm cr-fn1-o-fn2-differentiable-part1-lemma
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1)))
-	      (i-limited (differential-cr-fn1-o-fn2 x (- y1 x))))
+	      (i-limited (differential-cr-fn1-o-fn2 context x (- y1 x))))
    :hints (("Goal"
 	    :use ((:instance limited-differential-cr-fn1-after-fn2)
 		  (:instance differential-cr-fn2-limited
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y1 x)))
 		  )
@@ -1064,6 +1199,8 @@
 			 fix
 			 inside-interval-is-real
 			 lemma-2
+                         car-standard
+                         cdr-standard
 			 )
 	    )))
  )
@@ -1091,10 +1228,13 @@
 
  (defthm cr-fn1-o-fn2-differentiable-part1
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1)))
-	      (i-limited (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1))))
+	      (i-limited (/ (- (cr-fn1-o-fn2 context x)
+                               (cr-fn1-o-fn2 context y1))
+                            (- x y1))))
    :hints (("Goal"
 	    :use ((:instance expand-differential-cr-fn1-o-fn2
 			     (x x)
@@ -1162,7 +1302,7 @@
   (defthm lemma-0
     (implies (and (inside-interval-p x (cr-fn2-range))
                   (inside-interval-p (+ x eps) (cr-fn2-range)))
-             (acl2-numberp (differential-cr-fn1 x eps)))
+             (acl2-numberp (differential-cr-fn1 context x eps)))
     :hints (("Goal"
 	     :use ((:instance differential-cr-fn1-definition))))
     :rule-classes (:rewrite :type-prescription)))
@@ -1182,41 +1322,65 @@
 
  (defthm close-differential-cr-fn1-after-fn2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (inside-interval-p y2 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
 		   (i-close x y2) (not (= x y1))
-		   (not (equal (cr-fn2 y1) (cr-fn2 x)))
-		   (not (equal (cr-fn2 y2) (cr-fn2 x))))
-	      (i-close (differential-cr-fn1 (cr-fn2 x)
-					    (- (cr-fn2 y1) (cr-fn2 x)))
-		       (differential-cr-fn1 (cr-fn2 x)
-					    (- (cr-fn2 y2) (cr-fn2 x)))))
+		   (not (equal (cr-fn2 (cr-cdr-context context) y1)
+                               (cr-fn2 (cr-cdr-context context) x)))
+		   (not (equal (cr-fn2 (cr-cdr-context context) y2)
+                               (cr-fn2 (cr-cdr-context context) x))))
+	      (i-close (differential-cr-fn1 (cr-car-context context)
+                                            (cr-fn2 (cr-cdr-context context) x)
+					    (- (cr-fn2 (cr-cdr-context context) y1)
+                                               (cr-fn2 (cr-cdr-context context) x)))
+		       (differential-cr-fn1 (cr-car-context context)
+                                            (cr-fn2 (cr-cdr-context context) x)
+					    (- (cr-fn2 (cr-cdr-context context) y2)
+                                               (cr-fn2 (cr-cdr-context context) x)))))
    :hints (("Goal"
 	    :use ((:instance close-times-2
-			     (x1 (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 y1) (cr-fn2 x))))
-			     (x2 (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 y2) (cr-fn2 x))))
-			     (y1 (differential-cr-fn2 x (- y1 x)))
-			     (y2 (differential-cr-fn2 x (- y2 x))))
+			     (x1 (differential-cr-fn1 (cr-car-context context)
+                                                      (cr-fn2 (cr-cdr-context context)
+                                                              x)
+                                                      (- (cr-fn2 (cr-cdr-context context) y1)
+                                                         (cr-fn2 (cr-cdr-context context) x))))
+			     (x2 (differential-cr-fn1 (cr-car-context context)
+                                                      (cr-fn2 (cr-cdr-context context) x)
+                                                      (- (cr-fn2 (cr-cdr-context context) y2)
+                                                         (cr-fn2 (cr-cdr-context context) x))))
+			     (y1 (differential-cr-fn2 (cr-cdr-context context) x (- y1 x)))
+			     (y2 (differential-cr-fn2 (cr-cdr-context context) x (- y2 x))))
 		  (:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y1))
 		  (:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y2))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y1) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y1)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y2) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y2)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance differential-cr-fn1-close
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y1) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y1)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance differential-cr-fn1-close
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y2) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y2)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  )
 	    :in-theory '(standard-cr-fn2
 			 cr-fn1-real
@@ -1231,6 +1395,8 @@
 			 fix
 			 close-if-same-standard-part
 			 =
+                         car-standard
+                         cdr-standard
 			 lemma-0
 			 lemma-2))))
  )
@@ -1270,57 +1436,77 @@
       (implies (and (equal (+ (- x) y) 0)
 		    (acl2-numberp x)
 		    (acl2-numberp y))
-	       (equal (cr-fn2 y) (cr-fn2 x)))
+	       (equal (cr-fn2 (cr-cdr-context context) y)
+                      (cr-fn2 (cr-cdr-context context) x)))
     :hints (("Goal"
 	     :use ((:instance lemma-3))
 	     :in-theory nil))))
 
 
  (defthm cr-fn1-o-fn2-differentiable-part2-lemma
-       (implies (and (standardp x)
+     (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (inside-interval-p y2 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
 		   (i-close x y2) (not (= x y1))
-		   (not (equal (cr-fn2 y1) (cr-fn2 x)))
-		   (not (equal (cr-fn2 y2) (cr-fn2 x))))
-	      (i-close (differential-cr-fn1-o-fn2 x (- y1 x))
-		       (differential-cr-fn1-o-fn2 x (- y2 x))))
+		   (not (equal (cr-fn2 (cr-cdr-context context) y1)
+                               (cr-fn2 (cr-cdr-context context) x)))
+		   (not (equal (cr-fn2 (cr-cdr-context context) y2)
+                               (cr-fn2 (cr-cdr-context context) x))))
+	      (i-close (differential-cr-fn1-o-fn2 context x (- y1 x))
+		       (differential-cr-fn1-o-fn2 context x (- y2 x))))
    :hints (("Goal"
 	    :use ((:instance close-differential-cr-fn1-after-fn2)
 		  (:instance differential-cr-fn2-limited
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y1 x)))
 		  (:instance differential-cr-fn2-limited
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y2 x)))
 		  (:instance close-times-2
-			     (x1 (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 y1) (cr-fn2 x))))
-			     (x2 (differential-cr-fn1 (cr-fn2 x) (- (cr-fn2 y2) (cr-fn2 x))))
-			     (y1 (differential-cr-fn2 x (- y1 x)))
-			     (y2 (differential-cr-fn2 x (- y2 x))))
+			     (x1 (differential-cr-fn1 (cr-car-context context)
+                                                      (cr-fn2 (cr-cdr-context context) x)
+                                                      (- (cr-fn2 (cr-cdr-context context) y1)
+                                                         (cr-fn2 (cr-cdr-context context) x))))
+			     (x2 (differential-cr-fn1 (cr-car-context context)
+                                                      (cr-fn2 (cr-cdr-context context) x)
+                                                      (- (cr-fn2 (cr-cdr-context context) y2)
+                                                         (cr-fn2 (cr-cdr-context context) x))))
+			     (y1 (differential-cr-fn2 (cr-cdr-context context) x (- y1 x)))
+			     (y2 (differential-cr-fn2 (cr-cdr-context context) x (- y2 x))))
 		  (:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y1))
 		  (:instance cr-fn2-continuous
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (y y2))
 		  (:instance differential-cr-fn2-close
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y1 x)))
 		  (:instance differential-cr-fn2-close
+                             (context (cr-cdr-context context))
 			     (x x)
 			     (eps (- y2 x)))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y1) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y1)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance differential-cr-fn1-limited
-			     (x (cr-fn2 x))
-			     (eps (- (cr-fn2 y2) (cr-fn2 x))))
+                             (context (cr-car-context context))
+			     (x (cr-fn2 (cr-cdr-context context) x))
+			     (eps (- (cr-fn2 (cr-cdr-context context) y2)
+                                     (cr-fn2 (cr-cdr-context context) x))))
 		  (:instance close-if-same-standard-part
-			     (x (DIFFERENTIAL-CR-FN2 X (+ (- X) Y1)))
-			     (y (DIFFERENTIAL-CR-FN2 X (+ (- X) Y2))))
+			     (x (DIFFERENTIAL-CR-FN2 (cr-cdr-context context) X (+ (- X) Y1)))
+			     (y (DIFFERENTIAL-CR-FN2 (cr-cdr-context context) X (+ (- X) Y2))))
 		  )
 	    :in-theory '(differential-cr-fn1-o-fn2-definition
 			 i-limited-times
@@ -1338,6 +1524,8 @@
 			 cr-fn2-range-in-domain-of-fn2
 			 cr-fn1-real
 			 cr-fn2-real
+                         car-standard
+                         cdr-standard
 			 )
 	    )))
  )
@@ -1363,13 +1551,18 @@
 
  (defthm cr-fn1-o-fn2-differentiable-part2
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (cr-fn2-domain))
 		   (inside-interval-p y1 (cr-fn2-domain))
 		   (inside-interval-p y2 (cr-fn2-domain))
 		   (i-close x y1) (not (= x y1))
 		   (i-close x y2) (not (= x y2)))
-	      (i-close (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1))
-		       (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y2)) (- x y2))))
+	      (i-close (/ (- (cr-fn1-o-fn2 context x)
+                             (cr-fn1-o-fn2 context y1))
+                          (- x y1))
+		       (/ (- (cr-fn1-o-fn2 context x)
+                             (cr-fn1-o-fn2 context y2))
+                          (- x y2))))
    :hints (("Goal"
 	    :use ((:instance expand-differential-cr-fn1-o-fn2
 			     (x x)
@@ -1392,15 +1585,22 @@
  )
 
 (defthm cr-fn1-o-fn2-differentiable
-   (implies (and (standardp x)
-		 (inside-interval-p x (cr-fn2-domain))
-		 (inside-interval-p y1 (cr-fn2-domain))
-		 (inside-interval-p y2 (cr-fn2-domain))
-		 (i-close x y1) (not (= x y1))
-		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited  (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1)))
-		 (i-close (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y1)) (- x y1))
-			  (/ (- (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y2)) (- x y2)))))
+  (implies (and (standardp x)
+                (standardp context)
+		(inside-interval-p x (cr-fn2-domain))
+		(inside-interval-p y1 (cr-fn2-domain))
+		(inside-interval-p y2 (cr-fn2-domain))
+		(i-close x y1) (not (= x y1))
+		(i-close x y2) (not (= x y2)))
+	   (and (i-limited  (/ (- (cr-fn1-o-fn2 context x)
+                                  (cr-fn1-o-fn2 context y1))
+                               (- x y1)))
+		(i-close (/ (- (cr-fn1-o-fn2 context x)
+                               (cr-fn1-o-fn2 context y1))
+                            (- x y1))
+			 (/ (- (cr-fn1-o-fn2 context x)
+                               (cr-fn1-o-fn2 context y2))
+                            (- x y2)))))
   :hints (("Goal"
 	   :use (cr-fn1-o-fn2-differentiable-part1
 		 cr-fn1-o-fn2-differentiable-part2)
@@ -1408,14 +1608,17 @@
 	   )))
 
 (defthm cr-fn1-o-fn2-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (cr-fn2-domain))
-		 (i-close x y)
-		 (inside-interval-p y (cr-fn2-domain)))
-	    (i-close (cr-fn1-o-fn2 x) (cr-fn1-o-fn2 y)))
+    (implies (and (standardp x)
+                  (standardp context)
+		  (inside-interval-p x (cr-fn2-domain))
+		  (i-close x y)
+		  (inside-interval-p y (cr-fn2-domain)))
+	     (i-close (cr-fn1-o-fn2 context x)
+                      (cr-fn1-o-fn2 context y)))
   :hints (("Goal"
 	   :use ((:functional-instance rdfn-continuous
-                                       (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                       (rdfn (lambda (context x)
+                                               (realfix (cr-fn1-o-fn2 context x))))
                                        (rdfn-domain cr-fn2-domain))))
 	  ("Subgoal 3"
 	   :use ((:instance cr-fn1-o-fn2-differentiable))
@@ -1427,11 +1630,12 @@
   (implies (and (inside-interval-p x (cr-fn2-domain))
 		(inside-interval-p (+ x eps) (cr-fn2-domain))
 		(realp eps))
-	   (realp (differential-cr-fn1-o-fn2 x eps)))
+	   (realp (differential-cr-fn1-o-fn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                     (rdfn (lambda (context x)
+                                             (realfix (cr-fn1-o-fn2 context x))))
 				     (rdfn-domain cr-fn2-domain))
 	   :in-theory (enable differential-cr-fn1-definition
                               differential-cr-fn2-definition)
@@ -1442,14 +1646,16 @@
 
 (defthm differential-cr-fn1-o-fn2-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (cr-fn2-domain))
 		  (inside-interval-p (+ x eps) (cr-fn2-domain))
 		  (i-small eps))
-	     (i-limited (differential-cr-fn1-o-fn2 x eps)))
+	     (i-limited (differential-cr-fn1-o-fn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                     (rdfn (lambda (context x)
+                                             (realfix (cr-fn1-o-fn2 context x))))
 				     (rdfn-domain cr-fn2-domain)))))
 
 (in-theory (disable differential-cr-fn1-o-fn2-definition))
@@ -1499,38 +1705,46 @@
  (defthm derivative-fn1-o-fn2-is-close-to-differential
    (implies (and (inside-interval-p x (cr-fn2-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps)
 		 (not (equal 0 eps))
 		 (i-small eps)
 		 (inside-interval-p (+ eps x) (cr-fn2-domain)))
-    (equal (* (derivative-cr-fn2 x)
-	      (derivative-cr-fn1 (cr-fn2 x)))
-	   (standard-part (differential-cr-fn1-o-fn2 x eps))))
+    (equal (* (derivative-cr-fn2 (cr-cdr-context context) x)
+	      (derivative-cr-fn1 (cr-car-context context) (cr-fn2 (cr-cdr-context context) x)))
+	   (standard-part (differential-cr-fn1-o-fn2 context x eps))))
    :hints (("Goal"
 	    :use ((:instance differential-cr-fn1-o-fn2-definition)))
 	   ("Subgoal 2"
-	    :use ((:instance derivative-cr-fn2-must-be-zero))
+	    :use ((:instance derivative-cr-fn2-must-be-zero
+                             (context (cr-cdr-context context))))
 	    :in-theory (disable derivative-cr-fn2-must-be-zero))
 	  ("Subgoal 1"
 	   :use ((:instance standard-part-of-times
-			    (x (differential-cr-fn2 x eps))
-			    (y (differential-cr-fn1 (cr-fn2 x)
-                                                  (+ (- (cr-fn2 x))
-                                                     (cr-fn2 (+ eps x))))))
+			    (x (differential-cr-fn2 (cr-cdr-context context) x eps))
+			    (y (differential-cr-fn1 (cr-car-context context)
+                                                    (cr-fn2 (cr-cdr-context context) x)
+                                                  (+ (- (cr-fn2 (cr-cdr-context context) x))
+                                                     (cr-fn2 (cr-cdr-context context) (+ eps x))))))
 		 (:instance differential-cr-fn1-limited
-			    (x (cr-fn2 x))
-			    (eps (+ (- (cr-fn2 x)) (cr-fn2 (+ eps x)))))
+                            (context (cr-car-context context))
+			    (x (cr-fn2 (cr-cdr-context context) x))
+			    (eps (+ (- (cr-fn2 (cr-cdr-context context) x))
+                                    (cr-fn2 (cr-cdr-context context) (+ eps x)))))
 		 (:instance cr-fn2-continuous
+                            (context (cr-cdr-context context))
 			    (x x)
 			    (y (+ eps x)))
 		 (:instance i-close-to-small-sum)
 		 (:instance differential-cr-fn2-close
+                            (context (cr-cdr-context context))
 			    (x x)
 			    (eps eps))
 		 (:instance differential-cr-fn1-close
-			    (x (cr-fn2 x))
-			    (eps (- (cr-fn2 (+ eps x))
-				    (cr-fn2 x))))
+			    (context (cr-car-context context))
+			    (x (cr-fn2 (cr-cdr-context context) x))
+			    (eps (- (cr-fn2 (cr-cdr-context context) (+ eps x))
+				    (cr-fn2 (cr-cdr-context context) x))))
 		 )
 	   :in-theory (e/d (i-close)
 			   (standard-part-of-times
@@ -1544,12 +1758,13 @@
 
 (defthm real-derivative-cr-fn1-o-fn2
     (implies (inside-interval-p x (cr-fn2-domain))
-	     (realp (derivative-cr-fn1-o-fn2 x)))
+	     (realp (derivative-cr-fn1-o-fn2 context x)))
   :hints (("Goal"
 	   :by (:functional-instance derivative-well-defined
 				     (derivative-rdfn derivative-cr-fn1-o-fn2)
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                     (rdfn (lambda (context x)
+                                             (realfix (cr-fn1-o-fn2 context x))))
 				     (rdfn-domain cr-fn2-domain)))
 	  ("Subgoal 3"
 	   :use ((:instance derivative-fn1-o-fn2-is-close-to-differential
@@ -1565,17 +1780,18 @@
 (defthm differential-cr-fn1-o-fn2-close
    (implies (and (inside-interval-p x (cr-fn2-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (cr-fn2-domain))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-cr-fn1-o-fn2 x eps))
-		   (derivative-cr-fn1-o-fn2 x)))
+	    (equal (standard-part (differential-cr-fn1-o-fn2 context x eps))
+		   (derivative-cr-fn1-o-fn2 context x)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-close
 				     (derivative-rdfn derivative-cr-fn1-o-fn2)
 				     (differential-rdfn differential-cr-fn1-o-fn2)
-                                     (rdfn (lambda (x) (realfix (cr-fn1-o-fn2 x))))
+                                     (rdfn (lambda (context x)
+                                             (realfix (cr-fn1-o-fn2 context x))))
 				     (rdfn-domain cr-fn2-domain)))))
 
 (in-theory (disable derivative-cr-fn1-o-fn2-definition))
-

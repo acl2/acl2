@@ -19,12 +19,13 @@
 (set-match-free-default :once)
 
 (encapsulate
- ((icfn (x) t)
+ ((icfn (context x) t)
   (icfn-domain () t)
   (icfn-range () t)
   (icfn-inv-interval (y) t))
 
- (local (defun icfn (x) (realfix x)))
+ (local (defun icfn (context x) (declare (ignore context))
+               (realfix x)))
  (local (defun icfn-domain () (interval nil nil)))
  (local (defun icfn-range () (interval nil nil)))
  (local (defun icfn-inv-interval (y) (interval y y)))
@@ -60,12 +61,12 @@
 
  (defthm icfn-in-range
      (implies (inside-interval-p x (icfn-domain))
-	      (inside-interval-p (icfn x) (icfn-range))))
+	      (inside-interval-p (icfn context x) (icfn-range))))
 
  ; Regardless of the input, the function is real
 
  (defthm icfn-real
-     (realp (icfn x))
+     (realp (icfn context x))
    :rule-classes (:rewrite :type-prescription))
 
  ; We restrict ourselves to increasing functions
@@ -73,7 +74,7 @@
  (defthm icfn-is-1-to-1
      (implies (and (inside-interval-p x1 (icfn-domain))
 		   (inside-interval-p x2 (icfn-domain))
-		   (equal (icfn x1) (icfn x2)))
+		   (equal (icfn context x1) (icfn context x2)))
 	      (equal x1 x2))
    :rule-classes nil)
 
@@ -90,24 +91,25 @@
 		     (subinterval-p estimate (icfn-domain))
 		     (interval-left-inclusive-p estimate)
 		     (interval-right-inclusive-p estimate)
-		     (or (and (<= (icfn x1) y)
-			      (<= y (icfn x2)))
-			 (and (>= (icfn x1) y)
-			      (>= y (icfn x2)))))))
+		     (or (and (<= (icfn context x1) y)
+			      (<= y (icfn context x2)))
+			 (and (>= (icfn context x1) y)
+			      (>= y (icfn context x2)))))))
    :rule-classes nil)
 
  ; The function is continuous over its range
 
  (defthm icfn-continuous
      (implies (and (standardp x1)
+                   (standardp context)
 		   (inside-interval-p x1 (icfn-domain))
 		   (i-close x1 x2)
 		   (inside-interval-p x2 (icfn-domain)))
-	      (i-close (icfn x1) (icfn x2))))
+	      (i-close (icfn context x1) (icfn context x2))))
  )
 
 (local
- (defun find-zero-increasing-n (a z i n eps)
+ (defun find-zero-increasing-n (context a z i n eps)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (realp a)
 	    (integerp i)
@@ -115,8 +117,8 @@
 	    (< i n)
 	    (realp eps)
 	    (< 0 eps)
-	    (< (icfn (+ a eps)) z))
-       (find-zero-increasing-n (+ a eps) z (1+ i) n eps)
+	    (< (icfn context (+ a eps)) z))
+       (find-zero-increasing-n context (+ a eps) z (1+ i) n eps)
        (realfix a))))
 
 (local
@@ -126,7 +128,8 @@
 		   (realp b)
 		   (realp z)
 		   )
-	      (i-limited (find-zero-increasing-n a
+	      (i-limited (find-zero-increasing-n context
+                                                 a
 						 z
 						 0
 						 (i-large-integer)
@@ -145,13 +148,14 @@
 	   )))
 
 (local
- (defun-std find-zero-increasing (a b z)
+ (defun-std find-zero-increasing (context a b z)
    (if (and (realp a)
 	    (realp b)
 	    (realp z)
 	    (< a b))
        (standard-part
-	(find-zero-increasing-n a
+	(find-zero-increasing-n context
+                                a
 				z
 				0
 				(i-large-integer)
@@ -159,7 +163,7 @@
        0)))
 
 (local
- (defun find-zero-decreasing-n (a z i n eps)
+ (defun find-zero-decreasing-n (context a z i n eps)
    (declare (xargs :measure (nfix (1+ (- n i)))))
    (if (and (realp a)
 	    (integerp i)
@@ -167,8 +171,8 @@
 	    (< i n)
 	    (realp eps)
 	    (< 0 eps)
-	    (< z (icfn (+ a eps))))
-       (find-zero-decreasing-n (+ a eps) z (1+ i) n eps)
+	    (< z (icfn context (+ a eps))))
+       (find-zero-decreasing-n context (+ a eps) z (1+ i) n eps)
        (realfix a))))
 
 
@@ -179,7 +183,8 @@
 		   (realp b)
 		   (realp z)
 		   )
-	      (i-limited (find-zero-decreasing-n a
+	      (i-limited (find-zero-decreasing-n context
+                                                 a
 						 z
 						 0
 						 (i-large-integer)
@@ -193,13 +198,14 @@
 	    :in-theory (disable limited-find-zero-2-body)))))
 
 (local
- (defun-std find-zero-decreasing (a b z)
+ (defun-std find-zero-decreasing (context a b z)
    (if (and (realp a)
 	    (realp b)
 	    (realp z)
 	    (< a b))
        (standard-part
-	(find-zero-decreasing-n a
+	(find-zero-decreasing-n context
+                                a
 				z
 				0
 				(i-large-integer)
@@ -209,25 +215,27 @@
 
 
 (local
- (defun inverse-witness (y)
-   (if (equal (icfn (interval-left-endpoint (icfn-inv-interval y)))
+ (defun inverse-witness (context y)
+   (if (equal (icfn context (interval-left-endpoint (icfn-inv-interval y)))
 	      y)
        (interval-left-endpoint (icfn-inv-interval y))
-       (if (equal (icfn (interval-right-endpoint (icfn-inv-interval y)))
+       (if (equal (icfn context (interval-right-endpoint (icfn-inv-interval y)))
 		  y)
 	   (interval-right-endpoint (icfn-inv-interval y))
-	   (if (<= (icfn (interval-left-endpoint (icfn-inv-interval y)))
-		   (icfn (interval-right-endpoint (icfn-inv-interval y))))
-	       (find-zero-increasing (interval-left-endpoint (icfn-inv-interval y))
+	   (if (<= (icfn context (interval-left-endpoint (icfn-inv-interval y)))
+		   (icfn context (interval-right-endpoint (icfn-inv-interval y))))
+	       (find-zero-increasing context
+                                     (interval-left-endpoint (icfn-inv-interval y))
 				     (interval-right-endpoint (icfn-inv-interval y)) y)
-	       (find-zero-decreasing (interval-left-endpoint (icfn-inv-interval y))
+	       (find-zero-decreasing context
+                                     (interval-left-endpoint (icfn-inv-interval y))
 				     (interval-right-endpoint (icfn-inv-interval y)) y))))))
 
 (local
  (defthm inverse-witness-is-inverse
      (implies (inside-interval-p y (icfn-range))
-	      (and (inside-interval-p (inverse-witness y) (icfn-domain))
-		   (equal (icfn (inverse-witness y)) y)))
+	      (and (inside-interval-p (inverse-witness context y) (icfn-domain))
+		   (equal (icfn context (inverse-witness context y)) y)))
    :hints (("Goal"
 	    :use ((:instance
 		   (:functional-instance intermediate-value-theorem
@@ -252,14 +260,16 @@
 		  (:instance inside-interval-p-squeeze
 			     (a (interval-left-endpoint (icfn-inv-interval y)))
 			     (b (interval-right-endpoint (icfn-inv-interval y)))
-			     (c (find-zero-decreasing (interval-left-endpoint (icfn-inv-interval y))
+			     (c (find-zero-decreasing context
+                                                      (interval-left-endpoint (icfn-inv-interval y))
 						      (interval-right-endpoint (icfn-inv-interval y))
 						      y))
 			     (interval (icfn-domain)))
 		  (:instance inside-interval-p-squeeze
 			     (a (interval-left-endpoint (icfn-inv-interval y)))
 			     (b (interval-right-endpoint (icfn-inv-interval y)))
-			     (c (find-zero-increasing (interval-left-endpoint (icfn-inv-interval y))
+			     (c (find-zero-increasing context
+                                                      (interval-left-endpoint (icfn-inv-interval y))
 						      (interval-right-endpoint (icfn-inv-interval y))
 						      y))
 			     (interval (icfn-domain)))
@@ -272,38 +282,45 @@
 
 
 (local
- (defun-sk icfn-is-onto-predicate (y)
+ (defun-sk icfn-is-onto-predicate (context y)
    (exists (x)
 	   (and (inside-interval-p x (icfn-domain))
-		(equal (icfn x) y)))))
+		(equal (icfn context x) y)))))
 
 
 (local
  (defthm icfn-is-onto
      (implies (inside-interval-p y (icfn-range))
-	      (icfn-is-onto-predicate y))
+	      (icfn-is-onto-predicate context y))
    :hints (("Goal"
-	    :use ((:instance icfn-is-onto-predicate-suff (x (inverse-witness y)) (y y))
+	    :use ((:instance icfn-is-onto-predicate-suff (x (inverse-witness context y)) (y y))
 		  (:instance inverse-witness-is-inverse))
 	    :in-theory (disable inverse-witness-is-inverse)))))
 
-(defchoose icfn-inverse (x) (y)
+(defchoose icfn-inverse (x) (context y)
   (if (inside-interval-p y (icfn-range))
       (and (inside-interval-p x (icfn-domain))
-	   (equal (icfn x) y))
+	   (equal (icfn context x) y))
       (realp x)))
 
 (defthm icfn-inverse-exists
     (implies (inside-interval-p y (icfn-range))
-	     (and (inside-interval-p (icfn-inverse y) (icfn-domain))
-		  (equal (icfn (icfn-inverse y)) y)))
+	     (and (inside-interval-p (icfn-inverse context y) (icfn-domain))
+		  (equal (icfn context (icfn-inverse context y)) y)))
   :hints (("Goal"
 	   :by (:instance
 		(:functional-instance ifn-inverse-exists
-				      (ifn icfn)
-				      (ifn-is-onto-predicate icfn-is-onto-predicate)
-				      (ifn-is-onto-predicate-witness icfn-is-onto-predicate-witness)
-				      (ifn-inverse icfn-inverse)
+				      (ifn (lambda (y) (icfn context y)))
+				      (ifn-is-onto-predicate
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate context y)))
+				      (ifn-is-onto-predicate-witness
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate-witness
+                                          context y)))
+				      (ifn-inverse
+                                       (lambda (y)
+                                         (icfn-inverse context y)))
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range)))))))
 	  ("Subgoal 5"
@@ -317,19 +334,26 @@
 	  ("Subgoal 1.1"
 	   :use ((:instance inverse-witness-is-inverse)
 		 (:instance icfn-inverse
-			    (x (inverse-witness y))))
+			    (x (inverse-witness context y))))
 	   :in-theory (disable inverse-witness-is-inverse ))))
 
 
 (defthm icfn-inverse-is-real
-    (realp (icfn-inverse y))
+    (realp (icfn-inverse context y))
   :hints (("Goal"
 	   :by (:instance
 		(:functional-instance ifn-inverse-is-real
-				      (ifn icfn)
-				      (ifn-is-onto-predicate icfn-is-onto-predicate)
-				      (ifn-is-onto-predicate-witness icfn-is-onto-predicate-witness)
-				      (ifn-inverse icfn-inverse)
+				      (ifn (lambda (y) (icfn context y)))
+                                      (ifn-is-onto-predicate
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate context y)))
+				      (ifn-is-onto-predicate-witness
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate-witness
+                                          context y)))
+				      (ifn-inverse
+                                       (lambda (y)
+                                         (icfn-inverse context y)))
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range))))))))
     :rule-classes (:rewrite :type-prescription))
@@ -338,28 +362,42 @@
 (defthm icfn-inverse-unique
     (implies (and (inside-interval-p y (icfn-range))
 		  (inside-interval-p x (icfn-domain))
-		  (equal (icfn x) y))
-	     (equal (icfn-inverse y) x))
+		  (equal (icfn context x) y))
+	     (equal (icfn-inverse context y) x))
   :hints (("Goal"
 	   :by (:instance
 		(:functional-instance ifn-inverse-unique
-				      (ifn icfn)
-				      (ifn-is-onto-predicate icfn-is-onto-predicate)
-				      (ifn-is-onto-predicate-witness icfn-is-onto-predicate-witness)
-				      (ifn-inverse icfn-inverse)
+				      (ifn (lambda (y) (icfn context y)))
+                                      (ifn-is-onto-predicate
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate context y)))
+				      (ifn-is-onto-predicate-witness
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate-witness
+                                          context y)))
+				      (ifn-inverse
+                                       (lambda (y)
+                                         (icfn-inverse context y)))
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range)))))))))
 
 (defthm icfn-inverse-inverse-exists
     (implies (inside-interval-p x (icfn-domain))
-	     (equal (icfn-inverse (icfn x)) x))
+	     (equal (icfn-inverse context (icfn context x)) x))
   :hints (("Goal"
 	   :by (:instance
 		(:functional-instance ifn-inverse-inverse-exists
-				      (ifn icfn)
-				      (ifn-is-onto-predicate icfn-is-onto-predicate)
-				      (ifn-is-onto-predicate-witness icfn-is-onto-predicate-witness)
-				      (ifn-inverse icfn-inverse)
+				      (ifn (lambda (y) (icfn context y)))
+                                      (ifn-is-onto-predicate
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate context y)))
+				      (ifn-is-onto-predicate-witness
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate-witness
+                                          context y)))
+				      (ifn-inverse
+                                       (lambda (y)
+                                         (icfn-inverse context y)))
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range)))))))))
 
@@ -367,16 +405,23 @@
 (defthm icfn-inverse-is-1-to-1
     (implies (and (inside-interval-p y1 (icfn-range))
 		  (inside-interval-p y2 (icfn-range))
-		  (equal (icfn-inverse y1)
-			 (icfn-inverse y2)))
+		  (equal (icfn-inverse context y1)
+			 (icfn-inverse context y2)))
 	     (equal y1 y2))
   :hints (("Goal"
 	   :by (:instance
 		(:functional-instance ifn-inverse-is-1-to-1
-				      (ifn icfn)
-				      (ifn-is-onto-predicate icfn-is-onto-predicate)
-				      (ifn-is-onto-predicate-witness icfn-is-onto-predicate-witness)
-				      (ifn-inverse icfn-inverse)
+				      (ifn (lambda (y) (icfn context y)))
+                                      (ifn-is-onto-predicate
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate context y)))
+				      (ifn-is-onto-predicate-witness
+                                       (lambda (y)
+                                         (icfn-is-onto-predicate-witness
+                                          context y)))
+				      (ifn-inverse
+                                       (lambda (y)
+                                         (icfn-inverse context y)))
 				      (ifn-domain-p (lambda (x) (inside-interval-p x (icfn-domain))))
 				      (ifn-range-p  (lambda (y) (inside-interval-p y (icfn-range))))))))
   :rule-classes nil)
@@ -387,21 +432,21 @@
 ;; than both idfn(A) and idfn(C).  But then we use the IVT to find a point in (A,B) with the same value as idfn(C) -- or a point
 ;; in (B,C) with the same value as idfn(A).  Either way, that violates the 1-1ness of idfn.
 
-(defun-sk icfn-exists-intermediate-point (a b z)
+(defun-sk icfn-exists-intermediate-point (context a b z)
   (exists (x)
 	  (and (realp x)
 	       (< a x)
 	       (< x b)
-	       (equal (icfn x) z))))
+	       (equal (icfn context x) z))))
 
 (defthm icfn-intermediate-value-theorem-sk
     (implies (and (inside-interval-p a (icfn-domain))
 		  (inside-interval-p b (icfn-domain))
 		  (realp z)
 		  (< a b)
-		  (or (and (< (icfn a) z) (< z (icfn b)))
-		      (and (< z (icfn a)) (< (icfn b) z))))
-	      (icfn-exists-intermediate-point a b z))
+		  (or (and (< (icfn context a) z) (< z (icfn context b)))
+		      (and (< z (icfn context a)) (< (icfn context b) z))))
+	      (icfn-exists-intermediate-point context a b z))
   :hints (("Goal"
 ; Hint modified just before v3-5 release by Matt K. for fallout from
 ; "subversive" soundness fix.
@@ -426,17 +471,18 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (< (icfn a) (icfn b))
-		    (<= (icfn a) (icfn c)))
-	       (< (icfn b) (icfn c)))
+		    (< (icfn context a) (icfn context b))
+		    (<= (icfn context a) (icfn context c)))
+	       (< (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance icfn-intermediate-value-theorem-sk
 			      (a a)
 			      (b b)
-			      (z (icfn c)))
+			      (z (icfn context c)))
 		   (:instance icfn-is-1-to-1
 			      (x1 c)
-			      (x2 (icfn-exists-intermediate-point-witness a b (icfn c))))
+			      (x2 (icfn-exists-intermediate-point-witness
+                                   context a b (icfn context c))))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
 			      (x2 c))
@@ -446,7 +492,8 @@
 		   (:instance inside-interval-p-squeeze
 			      (a a)
 			      (b b)
-			      (c (icfn-exists-intermediate-point-witness a b (icfn c)))
+			      (c (icfn-exists-intermediate-point-witness
+                                  context a b (icfn context c)))
 			      (interval (icfn-domain)))
 		   )
 	     :in-theory (disable icfn-intermediate-value-theorem-sk
@@ -462,17 +509,19 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (< (icfn a) (icfn b))
-		    (<= (icfn c) (icfn a)))
-	       (< (icfn b) (icfn c)))
+                    ;; (standardp context)
+		    (< (icfn context a) (icfn context b))
+		    (<= (icfn context c) (icfn context a)))
+	       (< (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance icfn-intermediate-value-theorem-sk
 			      (a b)
 			      (b c)
-			      (z (icfn a)))
+			      (z (icfn context a)))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
-			      (x2 (icfn-exists-intermediate-point-witness b c (icfn a))))
+			      (x2 (icfn-exists-intermediate-point-witness
+                                   context b c (icfn context a))))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
 			      (x2 c))
@@ -482,7 +531,8 @@
 		   (:instance inside-interval-p-squeeze
 			      (a b)
 			      (b c)
-			      (c (icfn-exists-intermediate-point-witness b c (icfn a)))
+			      (c (icfn-exists-intermediate-point-witness
+                                  context b c (icfn context a)))
 			      (interval (icfn-domain)))
 		   )
 	     :in-theory (disable icfn-intermediate-value-theorem-sk
@@ -498,8 +548,8 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (< (icfn a) (icfn b)))
-	       (< (icfn b) (icfn c)))
+		    (< (icfn context a) (icfn context b)))
+	       (< (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance lemma-1a)
 		   (:instance lemma-1b))
@@ -514,17 +564,18 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (> (icfn a) (icfn b))
-		    (>= (icfn a) (icfn c)))
-	       (> (icfn b) (icfn c)))
+		    (> (icfn context a) (icfn context b))
+		    (>= (icfn context a) (icfn context c)))
+	       (> (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance icfn-intermediate-value-theorem-sk
 			      (a a)
 			      (b b)
-			      (z (icfn c)))
+			      (z (icfn context c)))
 		   (:instance icfn-is-1-to-1
 			      (x1 c)
-			      (x2 (icfn-exists-intermediate-point-witness a b (icfn c))))
+			      (x2 (icfn-exists-intermediate-point-witness
+                                   context a b (icfn context c))))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
 			      (x2 c))
@@ -534,7 +585,8 @@
 		   (:instance inside-interval-p-squeeze
 			      (a a)
 			      (b b)
-			      (c (icfn-exists-intermediate-point-witness a b (icfn c)))
+			      (c (icfn-exists-intermediate-point-witness
+                                  context a b (icfn context c)))
 			      (interval (icfn-domain)))
 		   )
 	     :in-theory (disable icfn-intermediate-value-theorem-sk
@@ -550,17 +602,18 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (> (icfn a) (icfn b))
-		    (>= (icfn c) (icfn a)))
-	       (> (icfn b) (icfn c)))
+		    (> (icfn context a) (icfn context b))
+		    (>= (icfn context c) (icfn context a)))
+	       (> (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance icfn-intermediate-value-theorem-sk
 			      (a b)
 			      (b c)
-			      (z (icfn a)))
+			      (z (icfn context a)))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
-			      (x2 (icfn-exists-intermediate-point-witness b c (icfn a))))
+			      (x2 (icfn-exists-intermediate-point-witness
+                                   context b c (icfn context a))))
 		   (:instance icfn-is-1-to-1
 			      (x1 a)
 			      (x2 c))
@@ -570,7 +623,8 @@
 		   (:instance inside-interval-p-squeeze
 			      (a b)
 			      (b c)
-			      (c (icfn-exists-intermediate-point-witness b c (icfn a)))
+			      (c (icfn-exists-intermediate-point-witness
+                                  context b c (icfn context a)))
 			      (interval (icfn-domain)))
 		   )
 	     :in-theory (disable icfn-intermediate-value-theorem-sk
@@ -586,8 +640,8 @@
 		    (inside-interval-p c (icfn-domain))
 		    (< a b)
 		    (< b c)
-		    (> (icfn a) (icfn b)))
-	       (> (icfn b) (icfn c)))
+		    (> (icfn context a) (icfn context b)))
+	       (> (icfn context b) (icfn context c)))
     :hints (("Goal"
 	     :use ((:instance lemma-2a)
 		   (:instance lemma-2b))
@@ -601,10 +655,10 @@
 		  (inside-interval-p c (icfn-domain))
 		  (< a b)
 		  (< b c))
-	     (or (and (< (icfn a) (icfn b))
-		      (< (icfn b) (icfn c)))
-		 (and (> (icfn a) (icfn b))
-		      (> (icfn b) (icfn c)))))
+	     (or (and (< (icfn context a) (icfn context b))
+		      (< (icfn context b) (icfn context c)))
+		 (and (> (icfn context a) (icfn context b))
+		      (> (icfn context b) (icfn context c)))))
    :hints (("Goal"
 	    :use ((:instance lemma-1)
 		  (:instance lemma-2)
@@ -977,8 +1031,9 @@
 				)))))
 
 (defthm-std standard-icfn
-    (implies (standardp x)
-	     (standardp (icfn x))))
+    (implies (and (standardp x)
+                  (standardp context))
+	     (standardp (icfn context x))))
 
 (encapsulate
  nil
@@ -990,13 +1045,13 @@
 		    (or (i-limited a) (i-limited b))
 		    (not (i-close a b))
 		    (< a b)
-		    (<= (icfn a) (icfn b)))
-	       (and (< (icfn a)
-		       (icfn (standard-part (innerpoint a b))))
-		    (< (icfn (standard-part (innerpoint a b)))
-		       (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
-		    (< (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b)))
-		       (icfn b))))
+		    (<= (icfn context a) (icfn context b)))
+	       (and (< (icfn context a)
+		       (icfn context (standard-part (innerpoint a b))))
+		    (< (icfn context (standard-part (innerpoint a b)))
+		       (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
+		    (< (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b)))
+		       (icfn context b))))
     :hints (("Goal"
 	     :use ((:instance icfn-is-monotonic
 			      (a a)
@@ -1022,13 +1077,13 @@
 		    (or (i-limited a) (i-limited b))
 		    (not (i-close a b))
 		    (< a b)
-		    (> (icfn a) (icfn b)))
-	       (and (> (icfn a)
-		       (icfn (standard-part (innerpoint a b))))
-		    (> (icfn (standard-part (innerpoint a b)))
-		       (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
-		    (> (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b)))
-		       (icfn b))))
+		    (> (icfn context a) (icfn context b)))
+	       (and (> (icfn context a)
+		       (icfn context (standard-part (innerpoint a b))))
+		    (> (icfn context (standard-part (innerpoint a b)))
+		       (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
+		    (> (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b)))
+		       (icfn context b))))
     :hints (("Goal"
 	     :use ((:instance icfn-is-monotonic
 			      (a a)
@@ -1087,18 +1142,19 @@
   (defthm lemma-5
       (implies (and (inside-interval-p a (icfn-domain))
 		    (inside-interval-p b (icfn-domain))
+                    (standardp context)
 		    (or (i-limited a) (i-limited b))
 		    (not (i-close a b))
 		    (< a b)
-		    (<= (icfn a) (icfn b)))
-	       (not (i-close (icfn a) (icfn b))))
+		    (<= (icfn context a) (icfn context b)))
+	       (not (i-close (icfn context a) (icfn context b))))
     :hints (("Goal"
 	     :use ((:instance lemma-1)
 		   (:instance lemma-3
-			      (a (icfn a))
-			      (x1 (icfn (standard-part (innerpoint a b))))
-			      (x2 (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
-			      (b (icfn b))))
+			      (a (icfn context a))
+			      (x1 (icfn context (standard-part (innerpoint a b))))
+			      (x2 (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
+			      (b (icfn context b))))
 	     :in-theory (disable lemma-1 lemma-3)))))
 
  (local
@@ -1108,15 +1164,16 @@
 		    (or (i-limited a) (i-limited b))
 		    (not (i-close a b))
 		    (< a b)
-		    (> (icfn a) (icfn b)))
-	       (not (i-close (icfn a) (icfn b))))
+                    (standardp context)
+		    (> (icfn context a) (icfn context b)))
+	       (not (i-close (icfn context a) (icfn context b))))
     :hints (("Goal"
 	     :use ((:instance lemma-2)
 		   (:instance lemma-4
-			      (a (icfn a))
-			      (x1 (icfn (standard-part (innerpoint a b))))
-			      (x2 (icfn (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
-			      (b (icfn b))))
+			      (a (icfn context a))
+			      (x1 (icfn context (standard-part (innerpoint a b))))
+			      (x2 (icfn context (standard-part (innerpoint (standard-part (innerpoint a b)) b))))
+			      (b (icfn context b))))
 	     :in-theory (disable lemma-2 lemma-4)))))
 
  (local
@@ -1125,8 +1182,9 @@
 		    (inside-interval-p b (icfn-domain))
 		    (or (i-limited a) (i-limited b))
 		    (not (i-close a b))
+                    (standardp context)
 		    (< a b))
-	       (not (i-close (icfn a) (icfn b))))
+	       (not (i-close (icfn context a) (icfn context b))))
     :hints (("Goal"
 	     :use ((:instance lemma-5)
 		   (:instance lemma-6))
@@ -1136,8 +1194,9 @@
      (implies (and (inside-interval-p a (icfn-domain))
 		   (inside-interval-p b (icfn-domain))
 		   (i-limited a)
+                   (standardp context)
 		   (not (i-close a b)))
-	      (not (i-close (icfn a) (icfn b))))
+	      (not (i-close (icfn context a) (icfn context b))))
    :hints (("Goal"
 	    :use ((:instance lemma-7)
 		  (:instance lemma-7 (a b) (b a)))
@@ -1150,6 +1209,216 @@
 		  f-in-range-hints range-interval-hints domain-interval-hints
 		  domain-non-trivial-hints range-non-trivial-hints inverse-hints
 		  )
+  (let* ((f-inverse        	   	     (if (null f-inverse) (u::pack-intern f f '-inverse) f-inverse))
+	 (f-inverse-exists 	   	     (u::pack-intern f-inverse f-inverse '-exists))
+	 (f-inverse-is-real                  (u::pack-intern f-inverse f-inverse '-is-real))
+	 (f-inverse-unique 	   	     (u::pack-intern f-inverse f-inverse '-unique))
+	 (f-inverse-inverse-exists 	     (u::pack-intern f-inverse f-inverse '-inverse-exists))
+	 (f-inverse-is-1-to-1      	     (u::pack-intern f-inverse f-inverse '-is-1-to-1))
+	 ;(f-is-monotonic        	     (u::pack-intern f-inverse f '-is-monotonic))
+	 (f-obligation-continuity  	     (u::pack-intern f f '-obligation-continuity))
+	 (f-obligation-interval-correctness  (u::pack-intern f f '-obligation-interval-correctness))
+	 (f-obligation-1-to-1                (u::pack-intern f f '-obligation-1-to-1))
+	 (f-obligation-real                  (u::pack-intern f f '-obligation-real))
+	 (f-obligation-in-range              (u::pack-intern f f '-obligation-in-range))
+	 (f-obligation-range-interval        (u::pack-intern f f '-obligation-range-interval))
+	 (f-obligation-domain-interval       (u::pack-intern f f '-obligation-domain-interval))
+	 (f-obligation-domain-non-trivial    (u::pack-intern f f '-obligation-domain-non-trivial))
+	 (f-obligation-range-non-trivial     (u::pack-intern f f '-obligation-range-non-trivial))
+	 (f-obligation-inverse               (u::pack-intern f f '-obligation-inverse))
+	 (domain                   	     (if (null domain) (interval nil nil) domain))
+	 (range                    	     (if (null range)  (interval nil nil) range))
+	 (inverse-interval         	     (if (null inverse-interval)  '(lambda (y) (interval y y)) inverse-interval))
+	 (inverse-hints                      (if (null inverse-hints) `(("Goal" :use ((:instance ,f-inverse)))) inverse-hints))
+	 )
+    `(encapsulate
+       nil
+
+       (local
+	(defthm ,f-obligation-continuity
+	    (implies (and (standardp context)
+                          (standardp x1)
+			  (inside-interval-p x1 ,domain)
+			  (i-close x1 x2)
+			  (inside-interval-p x2 ,domain))
+		     (i-close (,f context x1)
+			      (,f context x2)))
+	  :hints ,f-continuous-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-interval-correctness
+	    (implies (inside-interval-p y ,range)
+		     (let ((estimate (,inverse-interval y)))
+		       (let ((x1 (interval-left-endpoint estimate)))
+			 (let ((x2 (interval-right-endpoint estimate)))
+			   (and (interval-p estimate)
+				(subinterval-p estimate ,domain)
+				(interval-left-inclusive-p estimate)
+				(interval-right-inclusive-p estimate)
+				(or (and (<= (,f context x1) y)
+					 (<= y (,f context x2)))
+				    (and (<= y (,f context x1))
+					 (<= (,f context x2) y))))))))
+	  :hints ,interval-correctness-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-1-to-1
+	    (IMPLIES (AND (INSIDE-INTERVAL-P X1 ,domain)
+			  (INSIDE-INTERVAL-P X2 ,domain)
+			  (EQUAL (,f context X1) (,f context X2)))
+		     (EQUAL X1 X2))
+	  :hints ,f-1-to-1-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-real
+	    (realp (,f context x))
+	  :hints ,f-real-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-in-range
+	    (implies (inside-interval-p x ,domain)
+		     (inside-interval-p (,f context x) ,range))
+	  :hints ,f-in-range-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-range-interval
+	    (interval-p ,range)
+	  :hints ,range-interval-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-domain-interval
+	    (interval-p ,domain)
+	  :hints ,domain-interval-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-domain-non-trivial
+	    (or (null (interval-left-endpoint ,domain))
+		(null (interval-right-endpoint ,domain))
+		(< (interval-left-endpoint ,domain)
+		   (interval-right-endpoint ,domain)))
+	  :hints ,domain-non-trivial-hints
+	  :rule-classes (:built-in-clause)))
+
+       (local
+	(defthm ,f-obligation-range-non-trivial
+	    (or (null (interval-left-endpoint ,range))
+		(null (interval-right-endpoint ,range))
+		(< (interval-left-endpoint ,range)
+		   (interval-right-endpoint ,range)))
+	  :hints ,range-non-trivial-hints
+	  :rule-classes (:built-in-clause)))
+
+       (defchoose ,f-inverse (x) (context y)
+		  (if (inside-interval-p y ,range)
+		      (and (inside-interval-p x ,domain)
+			   (equal (,f context x) y))
+		      (realp x)))
+
+       (local
+	(defthm ,f-obligation-inverse
+	    (implies (if (inside-interval-p y ,range)
+			 (and (inside-interval-p x ,domain)
+			      (equal (,f context x) y))
+			 (realp x))
+		     (let ((x (,f-inverse context y)))
+		       (if (inside-interval-p y ,range)
+			   (and (inside-interval-p x ,domain)
+				(equal (,f context x) y))
+			   (realp x))))
+	  :hints ,inverse-hints
+	  :rule-classes (:built-in-clause)))
+
+       (defthm ,f-inverse-exists
+	   (implies (inside-interval-p y ,range)
+		    (and (inside-interval-p (,f-inverse context y) ,domain)
+			 (equal (,f context (,f-inverse context y)) y)))
+	 :hints (("Goal"
+		  :do-not '(preprocess)
+		  :use ((:functional-instance icfn-inverse-exists
+					      (icfn ,f)
+					      (icfn-domain (lambda () ,domain))
+					      (icfn-range (lambda () ,range))
+					      (icfn-inv-interval ,inverse-interval)
+					      (icfn-inverse ,f-inverse))))
+		 ("Subgoal 15"
+		  :use ((:instance ,f-obligation-inverse (y (,f context x)))))
+		 ("Subgoal 13"
+		  :use ((:instance ,f-obligation-inverse (y (,f context x)))))
+		 ("Subgoal 12"
+		  :use ((:instance ,f-obligation-inverse (y (,f context x)))))
+		 ("Subgoal 11"
+		  :use ((:instance ,f-obligation-inverse (y (,f context x)))))
+		 ("Subgoal 2"
+		  :use ((:instance ,f-obligation-domain-non-trivial)))
+		 ("Subgoal 1"
+		  :use ((:instance ,f-obligation-range-non-trivial)))
+		 ))
+
+       (defthm ,f-inverse-is-real
+	   (realp (,f-inverse context y))
+	 :hints (("goal"
+		  :use ((:functional-instance icfn-inverse-is-real
+					      (icfn ,f)
+					      (icfn-domain (lambda () ,domain))
+					      (icfn-range (lambda () ,range))
+					      (icfn-inv-interval ,inverse-interval)
+					      (icfn-inverse ,f-inverse)))))
+	 :rule-classes (:rewrite :type-prescription))
+
+       (defthm ,f-inverse-unique
+	   (implies (and (inside-interval-p y ,range)
+			 (inside-interval-p x ,domain)
+			 (equal (,f context x) y))
+		    (equal (,f-inverse context y) x))
+	 :hints (("goal"
+		  :use ((:functional-instance icfn-inverse-unique
+					      (icfn ,f)
+					      (icfn-domain (lambda () ,domain))
+					      (icfn-range (lambda () ,range))
+					      (icfn-inv-interval ,inverse-interval)
+					      (icfn-inverse ,f-inverse))))))
+
+       (defthm ,f-inverse-inverse-exists
+	   (implies (inside-interval-p x ,domain)
+		    (equal (,f-inverse context (,f context x)) x))
+	 :hints (("goal"
+		  :use ((:functional-instance icfn-inverse-inverse-exists
+					      (icfn ,f)
+					      (icfn-domain (lambda () ,domain))
+					      (icfn-range (lambda () ,range))
+					      (icfn-inv-interval ,inverse-interval)
+					      (icfn-inverse ,f-inverse))))))
+
+       (defthm ,f-inverse-is-1-to-1
+	   (implies (and (inside-interval-p y1 ,range)
+			 (inside-interval-p y2 ,range)
+			 (equal (,f-inverse context y1)
+				(,f-inverse context y2)))
+		    (equal y1 y2))
+	 :hints (("goal"
+		  :use ((:functional-instance icfn-inverse-is-1-to-1
+					      (icfn ,f)
+					      (icfn-domain (lambda () ,domain))
+					      (icfn-range (lambda () ,range))
+					      (icfn-inv-interval ,inverse-interval)
+					      (icfn-inverse ,f-inverse)))))
+	 :rule-classes nil)
+
+       )
+    ))
+
+(defmacro definv1 (f &key f-inverse domain range inverse-interval
+		   f-continuous-hints interval-correctness-hints f-1-to-1-hints f-real-hints
+		   f-in-range-hints range-interval-hints domain-interval-hints
+		   domain-non-trivial-hints range-non-trivial-hints inverse-hints
+		   )
   (let* ((f-inverse        	   	     (if (null f-inverse) (u::pack-intern f f '-inverse) f-inverse))
 	 (f-inverse-exists 	   	     (u::pack-intern f-inverse f-inverse '-exists))
 	 (f-inverse-is-real                  (u::pack-intern f-inverse f-inverse '-is-real))
@@ -1282,11 +1551,14 @@
 	 :hints (("Goal"
 		  :do-not '(preprocess)
 		  :use ((:functional-instance icfn-inverse-exists
-					      (icfn ,f)
+					      (icfn (lambda (context x)
+                                                      (,f x)))
 					      (icfn-domain (lambda () ,domain))
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
-					      (icfn-inverse ,f-inverse))))
+					      (icfn-inverse
+                                               (lambda (context y)
+                                                 (,f-inverse y))))))
 		 ("Subgoal 15"
 		  :use ((:instance ,f-obligation-inverse (y (,f x)))))
 		 ("Subgoal 13"
@@ -1305,11 +1577,14 @@
 	   (realp (,f-inverse y))
 	 :hints (("goal"
 		  :use ((:functional-instance icfn-inverse-is-real
-					      (icfn ,f)
+					      (icfn (lambda (context x)
+                                                      (,f x)))
 					      (icfn-domain (lambda () ,domain))
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
-					      (icfn-inverse ,f-inverse)))))
+					      (icfn-inverse
+                                               (lambda (context y)
+                                                 (,f-inverse y)))))))
 	 :rule-classes (:rewrite :type-prescription))
 
        (defthm ,f-inverse-unique
@@ -1319,22 +1594,28 @@
 		    (equal (,f-inverse y) x))
 	 :hints (("goal"
 		  :use ((:functional-instance icfn-inverse-unique
-					      (icfn ,f)
+					      (icfn (lambda (context x)
+                                                      (,f x)))
 					      (icfn-domain (lambda () ,domain))
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
-					      (icfn-inverse ,f-inverse))))))
+					      (icfn-inverse
+                                               (lambda (context y)
+                                                 (,f-inverse y))))))))
 
        (defthm ,f-inverse-inverse-exists
 	   (implies (inside-interval-p x ,domain)
 		    (equal (,f-inverse (,f x)) x))
 	 :hints (("goal"
 		  :use ((:functional-instance icfn-inverse-inverse-exists
-					      (icfn ,f)
+					      (icfn (lambda (context x)
+                                                      (,f x)))
 					      (icfn-domain (lambda () ,domain))
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
-					      (icfn-inverse ,f-inverse))))))
+					      (icfn-inverse
+                                               (lambda (context y)
+                                                 (,f-inverse y))))))))
 
        (defthm ,f-inverse-is-1-to-1
 	   (implies (and (inside-interval-p y1 ,range)
@@ -1344,44 +1625,35 @@
 		    (equal y1 y2))
 	 :hints (("goal"
 		  :use ((:functional-instance icfn-inverse-is-1-to-1
-					      (icfn ,f)
+					      (icfn (lambda (context x)
+                                                      (,f x)))
 					      (icfn-domain (lambda () ,domain))
 					      (icfn-range (lambda () ,range))
 					      (icfn-inv-interval ,inverse-interval)
-					      (icfn-inverse ,f-inverse)))))
+					      (icfn-inverse
+                                               (lambda (context y)
+                                                 (,f-inverse y)))))))
 	 :rule-classes nil)
 
-       #|
-       ; This is a property of f, not of f-inverse, so we should not include it in this macro
-
-       (defthm ,f-is-monotonic
-	   (implies (and (inside-interval-p a ,domain)
-			 (inside-interval-p b ,domain)
-			 (inside-interval-p c ,domain)
-			 (< a b)
-			 (< b c))
-		    (or (and (<= (,f a) (,f b))
-			     (<= (,f b) (,f c)))
-			(and (>= (,f a) (,f b))
-			     (>= (,f b) (,f c)))))
-	 :hints (("goal"
-		  :use ((:functional-instance icfn-is-monotonic
-					      (icfn ,f)
-					      (icfn-domain (lambda () ,domain))))))
-	 :rule-classes nil)
-       |#
        )
     ))
 
 
 #| Example:
 
-(defun idfunction (x) (realfix x))
+(defun idfunction (context x) (declare (ignore context)) (realfix x))
+
+(defun idfunction1 (x) (realfix x))
 
 (defun idfunction-interval (y)
   (interval (- y 1) (+ y 1)))
 
 (definv idfunction
+    :domain (interval nil nil)
+    :range (interval nil nil)
+    :inverse-interval idfunction-interval)
+
+(definv1 idfunction1
     :domain (interval nil nil)
     :range (interval nil nil)
     :inverse-interval idfunction-interval)

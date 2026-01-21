@@ -141,7 +141,9 @@
   :hints (("Goal"
 	   :use ((:instance
 		  (:functional-instance icfn-preserves-not-close
-					(icfn square)
+					(icfn
+                                         (lambda (context x)
+                                           (square x)))
 					(icfn-inv-interval square-interval)
 					(icfn-domain (lambda () (interval 0 nil)))
 					(icfn-range (lambda () (interval 0 nil))))

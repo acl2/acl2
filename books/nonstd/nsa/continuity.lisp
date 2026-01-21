@@ -23,12 +23,12 @@
 ;; arguments, and to satisfy the continuity criterion.
 
 (encapsulate
- ((rcfn (x) t)
+ ((rcfn (context x) t)
   (rcfn-domain () t))
 
  ;; Our witness continuous function is the identity function.
 
- (local (defun rcfn (x) (realfix x)))
+ (local (defun rcfn (context x) (declare (ignore context)) (realfix x)))
  (local (defun rcfn-domain () (interval nil nil)))
 
  ;; The interval really is an interval
@@ -43,7 +43,6 @@
      (implies (inside-interval-p x (rcfn-domain))
 	      (realp x))
    :rule-classes (:forward-chaining))
-
  ;; The interval is non-trivial
 
  (defthm rcfn-domain-non-trivial
@@ -56,25 +55,27 @@
  ;; The function returns real values (even for improper arguments).
 
  (defthm rcfn-real
-     (realp (rcfn x))
+   (realp (rcfn context x))
    :rule-classes (:rewrite :type-prescription))
 
  ;; If x is a standard real and y is a real close to x, then rcfn(x)
  ;; is close to rcfn(y).
 
  (defthm rcfn-continuous
-   (implies (and (standardp x)
+   (implies (and (standardp context)
+                 (standardp x)
 		 (inside-interval-p x (rcfn-domain))
 		 (i-close x y)
 		 (inside-interval-p y (rcfn-domain)))
-	    (i-close (rcfn x) (rcfn y))))
+	    (i-close (rcfn context x) (rcfn context y))))
  )
 
 ;; This used to be an axiom, but we can now prove it directly
 
 (defthm-std rcfn-standard
-    (implies (standardp x)
-	     (standardp (rcfn x)))
+    (implies (and (standardp x)
+                  (standardp context))
+	     (standardp (rcfn context x)))
   :rule-classes (:rewrite :type-prescription))
 
 
@@ -89,9 +90,10 @@
   (implies (and (interval-left-inclusive-p (rcfn-domain))
 		(interval-right-inclusive-p (rcfn-domain))
 		(inside-interval-p x (rcfn-domain))
+                (standardp context)
 		(i-close x y)
 		(inside-interval-p y (rcfn-domain)))
-	   (i-close (rcfn x) (rcfn y)))
+	   (i-close (rcfn context x) (rcfn context y)))
   :hints (("Goal"
 	   :use ((:instance rcfn-continuous
 			    (x (standard-part x))
@@ -104,12 +106,12 @@
 			    (y x)
 			    (z y))
 		 (:instance i-close-transitive
-			    (x (rcfn x))
-			    (y (rcfn (standard-part x)))
-			    (z (rcfn y)))
+			    (x (rcfn context x))
+			    (y (rcfn context (standard-part x)))
+			    (z (rcfn context y)))
 		 (:instance i-close-symmetric
-			    (x (rcfn (standard-part x)))
-			    (y (rcfn x)))
+			    (x (rcfn context (standard-part x)))
+			    (y (rcfn context x)))
 		 (:instance standard-part-inside-interval
 			    (x x)
 			    (interval (rcfn-domain)))
@@ -120,7 +122,7 @@
 
 ;; This function finds the largest a+i*eps so that f(a+i*eps)<z.
 
-(defun find-zero-n (a z i n eps)
+(defun find-zero-n (context a z i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (realp a)
 	   (integerp i)
@@ -128,15 +130,15 @@
 	   (< i n)
 	   (realp eps)
 	   (< 0 eps)
-	   (< (rcfn (+ a eps)) z))
-      (find-zero-n (+ a eps) z (1+ i) n eps)
+	   (< (rcfn context (+ a eps)) z))
+      (find-zero-n context (+ a eps) z (1+ i) n eps)
     (realfix a)))
 
 ;; We prove that f(a+i*eps)<z for the i chosen above.
 
 (defthm rcfn-find-zero-n-<-z
-  (implies (and (realp a) (< (rcfn a) z))
-	   (< (rcfn (find-zero-n a z i n eps)) z)))
+  (implies (and (realp a) (< (rcfn context a) z))
+	   (< (rcfn context (find-zero-n context a z i n eps)) z)))
 
 ;; Moreover, we show that f(a+i*eps+eps) >= z, so that the i chosen by
 ;; find-zero-n is the largest possible.
@@ -148,9 +150,10 @@
 		(< i n)
 		(realp eps)
 		(< 0 eps)
-		(< (rcfn a) z)
-		(< z (rcfn (+ a (* (- n i) eps)))))
-	   (<= z (rcfn (+ (find-zero-n a z i n eps)
+		(< (rcfn context a) z)
+		(< z (rcfn context (+ a (* (- n i) eps)))))
+	   (<= z (rcfn context
+                       (+ (find-zero-n context a z i n eps)
 			  eps)))))
 
 
@@ -158,7 +161,7 @@
 
 (defthm find-zero-n-lower-bound
   (implies (and (realp a) (realp eps) (< 0 eps))
-	   (<= a (find-zero-n a z i n eps))))
+	   (<= a (find-zero-n context a z i n eps))))
 
 ;; Moreover, the root found by find-zero-n can't be any larger than
 ;; b-eps.  That means it must be in the range [a,b)
@@ -181,7 +184,7 @@
 		 (<= i n)
 		 (realp eps)
 		 (< 0 eps))
-	    (<= (find-zero-n a z i n eps)
+	    (<= (find-zero-n context a z i n eps)
 		(+ a (* (- n i) eps))))
    :hints (("Subgoal *1/6.1"
 	    :use ((:instance lemma-1
@@ -217,8 +220,8 @@
 		 (realp eps)
 		 (< 0 eps)
 		 ;(< (rcfn a) z)
-		 (< z (rcfn (+ a (* (- n i) eps)))))
-	    (<= (+ eps (find-zero-n a z i n eps))
+		 (< z (rcfn context (+ a (* (- n i) eps)))))
+	    (<= (+ eps (find-zero-n context a z i n eps))
 		(+ a (* (- n i) eps))))
    :hints (("Subgoal *1/7"
 	    :use ((:instance lemma-3
@@ -271,13 +274,13 @@
 		 (<= (+ a (* (+ n (- i)) eps)) b)
 		 (realp eps)
 		 (< 0 eps))
-	    (i-limited (find-zero-n a z i n eps)))
+	    (i-limited (find-zero-n context a z i n eps)))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance find-zero-n-lower-bound)
 		  (:instance find-zero-n-upper-bound)
 		  (:instance lemma-1)
 		  (:instance limited-squeeze
-			     (x (find-zero-n a z i n eps))
+			     (x (find-zero-n context a z i n eps))
 			     (b (+ a (* (- n i) eps)))))
 	    :in-theory (disable lemma-1
 				find-zero-n-lower-bound
@@ -298,12 +301,12 @@
  (local
   (defthm lemma-1
     (implies (and (<= b a) (realp b))
-	     (equal (FIND-ZERO-N A Z 0 (I-LARGE-INTEGER)
+	     (equal (FIND-ZERO-N context A Z 0 (I-LARGE-INTEGER)
 				 (+ (- (* (/ (I-LARGE-INTEGER)) A))
 				    (* (/ (I-LARGE-INTEGER)) B)))
 		    (realfix a)))
     :hints (("Goal"
-	     :expand ((FIND-ZERO-N A Z 0 (I-LARGE-INTEGER)
+	     :expand ((FIND-ZERO-N context A Z 0 (I-LARGE-INTEGER)
 				   (+ (- (* (/ (I-LARGE-INTEGER)) A))
 				      (* (/ (I-LARGE-INTEGER)) B)))))
 	    ("Goal'"
@@ -333,7 +336,8 @@
    (implies (and (i-limited a)
 		 (i-limited b)
 		 (realp b))
-	    (i-limited (find-zero-n a
+	    (i-limited (find-zero-n context
+                                    a
 				    z
 				    0
 				    (i-large-integer)
@@ -362,7 +366,7 @@
 	    (REALP B)
 	    (REALP Z)
 	    (< A B))
-       (STANDARDP (STANDARD-PART (FIND-ZERO-N A Z 0 (I-LARGE-INTEGER)
+       (STANDARDP (STANDARD-PART (FIND-ZERO-N context A Z 0 (I-LARGE-INTEGER)
 					      (+ (- (* (/ (I-LARGE-INTEGER)) A))
 						 (* (/ (I-LARGE-INTEGER)) B))))))
     :hints (("Goal"
@@ -371,13 +375,14 @@
  ;; And now, here's a routine that finds a "zero" in a given [a,b]
  ;; range.
 
- (defun-std find-zero (a b z)
+ (defun-std find-zero (context a b z)
    (if (and (realp a)
 	    (realp b)
 	    (realp z)
 	    (< a b))
        (standard-part
-	(find-zero-n a
+	(find-zero-n context
+                     a
 		     z
 		     0
 		     (i-large-integer)
@@ -395,16 +400,17 @@
 (defthm rcfn-standard-part
   (implies (and (inside-interval-p x (rcfn-domain))
 		(inside-interval-p (standard-part x) (rcfn-domain))
+                (standardp context)
 		(i-limited x))
-	   (equal (rcfn (standard-part x))
-		  (standard-part (rcfn x))))
+	   (equal (rcfn context (standard-part x))
+		  (standard-part (rcfn context x))))
   :hints (("Goal"
 	   :use ((:instance rcfn-continuous
 			    (x (standard-part x))
 			    (y x))
 		 (:instance close-x-y->same-standard-part
-			    (x (RCFN (STANDARD-PART X)))
-			    (y (RCFN X))))
+			    (x (RCFN context (STANDARD-PART X)))
+			    (y (RCFN context X))))
 	   :in-theory (enable-disable (standards-are-limited)
 				      (rcfn-continuous
 				       rcfn-uniformly-continuous
@@ -444,7 +450,7 @@
 		  (<= i n)
 		  (realp eps)
 		  (< 0 eps))
-	     (<= (find-zero-n a z i n eps)
+	     (<= (find-zero-n context a z i n eps)
 		 (+ a (* (- n i) eps))))
     :hints (("Subgoal *1/6.1"
 	     :use ((:instance lemma-2
@@ -469,14 +475,14 @@
  (defthm-std find-zero-upper-bound
      (implies (and (realp a) (realp b) (realp z)
 		   (< a b))
-	      (<= (find-zero a b z) b))
+	      (<= (find-zero context a b z) b))
    :hints (("Goal"
 	    :use ((:instance lemma-3
 			     (i 0)
 			     (n (i-large-integer))
 			     (eps (/ (- b a) (i-large-integer))))
 		  (:instance standard-part-<=
-			     (x (find-zero-n a z 0 (i-large-integer)
+			     (x (find-zero-n context a z 0 (i-large-integer)
 					     (/ (- b a)
 						(i-large-integer))))
 			     (y b)))
@@ -488,17 +494,17 @@
  (local
   (defthm lemma-7
     (implies (and (realp a) (realp eps) (< 0 eps))
-	     (<= a (find-zero-n a z i n eps)))))
+	     (<= a (find-zero-n context a z i n eps)))))
 
  ;; And that means find-zero finds a root at least a.
 
  (defthm-std find-zero-lower-bound
      (implies (and (realp a) (realp b) (realp z) (< a b))
-	      (<= a (find-zero a b z)))
+	      (<= a (find-zero context a b z)))
    :hints (("Goal"
 	    :use ((:instance standard-part-<=
 			     (x a)
-			     (y (find-zero-n a z 0 (i-large-integer)
+			     (y (find-zero-n context a z 0 (i-large-integer)
 					     (/ (- b a)
 						(i-large-integer))))))
 	    :in-theory (disable standard-part-<=))))
@@ -510,12 +516,12 @@
 		  (inside-interval-p b (rcfn-domain))
 		  (< a b)
 		  (realp z))
-	     (inside-interval-p (find-zero a b z) (rcfn-domain)))
+	     (inside-interval-p (find-zero context a b z) (rcfn-domain)))
   :hints (("Goal"
 	   :use ((:instance inside-interval-p-squeeze
 			    (a a)
 			    (b b)
-			    (c (find-zero a b z))
+			    (c (find-zero context a b z))
 			    (interval (rcfn-domain)))
 		 (:instance find-zero-lower-bound)
 		 (:instance find-zero-upper-bound))
@@ -530,12 +536,12 @@
 		  (realp eps)
 		  (< 0 eps)
 		  (inside-interval-p (+ A (* (- N I) EPS)) (rcfn-domain)))
-	     (inside-interval-p (FIND-ZERO-N A Z I N EPS) (rcfn-domain)))
+	     (inside-interval-p (FIND-ZERO-N context A Z I N EPS) (rcfn-domain)))
   :hints (("Goal"
 	   :use ((:instance inside-interval-p-squeeze
 			    (a a)
 			    (b (+ A (* (- N I) EPS)))
-			    (c (find-zero-n a z i n eps))
+			    (c (find-zero-n context a z i n eps))
 			    (interval (rcfn-domain)))
 		 (:instance find-zero-n-lower-bound)
 		 (:instance find-zero-n-upper-bound))
@@ -548,12 +554,13 @@
 		(inside-interval-p b (rcfn-domain))
 		(< a b)
 		(realp z)
-		(< (rcfn a) z))
-	   (<= (rcfn (find-zero a b z)) z))
+		(< (rcfn context a) z))
+	   (<= (rcfn context (find-zero context a b z)) z))
   :hints (("Goal"
 	   :use ((:instance standard-part-<-2
 			    (x z)
-			    (y (rcfn (find-zero-n a z 0
+			    (y (rcfn context
+                                     (find-zero-n context a z 0
 						  (i-large-integer)
 						  (+ (- (* (/ (i-large-integer)) a))
 						     (* (/
@@ -582,7 +589,7 @@
 			    (interval (rcfn-domain))
 			    (a a)
 			    (b b)
-			    (c (find-zero-n a z 0
+			    (c (find-zero-n context a z 0
 					    (i-large-integer)
 					    (+ (- (* (/ (i-large-integer)) a))
 					       (* (/
@@ -592,7 +599,7 @@
 			    (a a)
 			    (b b)
 			    (c (standard-part
-				(find-zero-n a z 0
+				(find-zero-n context a z 0
 					     (i-large-integer)
 					     (+ (- (* (/ (i-large-integer)) a))
 						(* (/
@@ -600,26 +607,26 @@
 		 (:instance limited-squeeze
 			    (a a)
 			    (b b)
-			    (x (find-zero-n a z 0
+			    (x (find-zero-n context a z 0
 					    (i-large-integer)
 					    (+ (- (* (/ (i-large-integer)) a))
 					       (* (/
 						   (i-large-integer)) b)))))
 		 (:instance rcfn-standard-part
-			    (x (find-zero-n a z 0
+			    (x (find-zero-n context a z 0
 					    (i-large-integer)
 					    (+ (- (* (/ (i-large-integer)) a))
 					       (* (/
 						   (i-large-integer)) b)))))
 		 (:instance STANDARD-PART-<=
 			    (x a)
-			    (y (find-zero-n a z 0
+			    (y (find-zero-n context a z 0
 					    (i-large-integer)
 					    (+ (- (* (/ (i-large-integer)) a))
 					       (* (/
 						   (i-large-integer)) b)))))
 		 (:instance STANDARD-PART-<=
-			    (x (find-zero-n a z 0
+			    (x (find-zero-n context a z 0
 					    (i-large-integer)
 					    (+ (- (* (/ (i-large-integer)) a))
 					       (* (/
@@ -634,12 +641,13 @@
   (implies (and (interval-left-inclusive-p (rcfn-domain))
 		(interval-right-inclusive-p (rcfn-domain))
 		(inside-interval-p x (rcfn-domain))
+                (standardp context)
 		(i-limited x))
-	   (i-limited (rcfn x)))
+	   (i-limited (rcfn context x)))
   :hints (("Goal"
 	   :use ((:instance i-close-limited
-			    (x (rcfn (standard-part x)))
-			    (y (rcfn x)))
+			    (x (rcfn context (standard-part x)))
+			    (y (rcfn context x)))
 		 (:instance rcfn-continuous
 			    (x (standard-part x))
 			    (y x))
@@ -699,9 +707,9 @@
 		  (inside-interval-p b (rcfn-domain)) ;(standardp b)
 		  (< a b)
 		  (realp z) ;(standardp z)
-		  (< (rcfn a) z)
-		  (< z (rcfn b)))
-	     (inside-interval-p (find-zero-n a z 0 (i-large-integer)
+		  (< (rcfn context a) z)
+		  (< z (rcfn context b)))
+	     (inside-interval-p (find-zero-n context a z 0 (i-large-integer)
 						    (+ (- (* (/ (i-large-integer)) a))
 						       (* (/ (i-large-integer))
 							  b)))
@@ -716,11 +724,11 @@
 		  (inside-interval-p b (rcfn-domain)) ;(standardp b)
 		  (< a b)
 		  (realp z) ;(standardp z)
-		  (< (rcfn a) z)
-		  (< z (rcfn b)))
+		  (< (rcfn context a) z)
+		  (< z (rcfn context b)))
 	     (inside-interval-p (+ (- (* (/ (i-large-integer)) a))
 					  (* (/ (i-large-integer)) b)
-					  (find-zero-n a z 0 (i-large-integer)
+					  (find-zero-n context a z 0 (i-large-integer)
 						       (+ (- (* (/ (i-large-integer)) a))
 							  (* (/ (i-large-integer))
 							     b))))
@@ -733,7 +741,7 @@
 				      (* (/ (i-large-integer)) b))))
 		   (:instance (:theorem (implies (and (realp a) (realp eps) (realp f) (< 0 eps) (<= a f)) (<= a (+ f eps))))
 			      (a a)
-			      (f (find-zero-n a z 0 (i-large-integer)
+			      (f (find-zero-n context a z 0 (i-large-integer)
 						       (+ (- (* (/ (i-large-integer)) a))
 							  (* (/ (i-large-integer))
 							     b))))
@@ -744,7 +752,7 @@
 			      (b b)
 			      (c (+ (- (* (/ (i-large-integer)) a))
 					  (* (/ (i-large-integer)) b)
-					  (find-zero-n a z 0 (i-large-integer)
+					  (find-zero-n context a z 0 (i-large-integer)
 						       (+ (- (* (/ (i-large-integer)) a))
 							  (* (/ (i-large-integer))
 							     b)))))
@@ -761,44 +769,49 @@
 		  (inside-interval-p b (rcfn-domain)) (standardp b)
 		  (< a b)
 		  (realp z) (standardp z)
-		  (< (rcfn a) z)
-		  (< z (rcfn b)))
+                  (standardp context)
+		  (< (rcfn context a) z)
+		  (< z (rcfn context b)))
 	     (equal (standard-part
-		     (rcfn (+ (- (* (/ (i-large-integer)) a))
+		     (rcfn context
+                           (+ (- (* (/ (i-large-integer)) a))
 			      (* (/ (i-large-integer)) b)
-			      (find-zero-n a z 0 (i-large-integer)
+			      (find-zero-n context a z 0 (i-large-integer)
 					   (+ (- (* (/ (i-large-integer)) a))
 					      (* (/ (i-large-integer)) b))))))
 		    (standard-part
-		     (rcfn (find-zero-n a z 0 (i-large-integer)
+		     (rcfn context
+                           (find-zero-n context a z 0 (i-large-integer)
 					(+ (- (* (/ (i-large-integer)) a))
 					   (* (/ (i-large-integer))
 					      b)))))))
     :hints (("Goal"
 	     :use ((:instance close-x-y->same-standard-part
-			      (x (rcfn (find-zero-n a z 0 (i-large-integer)
+			      (x (rcfn context
+                                       (find-zero-n context a z 0 (i-large-integer)
 						    (+ (- (* (/ (i-large-integer)) a))
 						       (* (/ (i-large-integer))
 							  b)))))
-			      (y (rcfn (+ (- (* (/ (i-large-integer)) a))
+			      (y (rcfn context
+                                       (+ (- (* (/ (i-large-integer)) a))
 					  (* (/ (i-large-integer)) b)
-					  (find-zero-n a z 0 (i-large-integer)
+					  (find-zero-n context a z 0 (i-large-integer)
 						       (+ (- (* (/ (i-large-integer)) a))
 							  (* (/ (i-large-integer))
 							     b)))))))
 		   (:instance rcfn-uniformly-continuous
-			      (x (find-zero-n a z 0 (i-large-integer)
+			      (x (find-zero-n context a z 0 (i-large-integer)
 						    (+ (- (* (/ (i-large-integer)) a))
 						       (* (/ (i-large-integer))
 							  b))))
 			      (y (+ (- (* (/ (i-large-integer)) a))
 					  (* (/ (i-large-integer)) b)
-					  (find-zero-n a z 0 (i-large-integer)
+					  (find-zero-n context a z 0 (i-large-integer)
 						       (+ (- (* (/ (i-large-integer)) a))
 							  (* (/ (i-large-integer))
 							     b))))))
 		   (:instance lemma-3
-			      (x (find-zero-n a z 0 (i-large-integer)
+			      (x (find-zero-n context a z 0 (i-large-integer)
                                 (+ (- (* (/ (i-large-integer)) a))
                                    (* (/ (i-large-integer)) b))))
 			      (eps (+ (- (* (/ (i-large-integer)) a))
@@ -816,9 +829,9 @@
 		 (inside-interval-p b (rcfn-domain))
 		 (< a b)
 		 (realp z)
-		 (< (rcfn a) z)
-		 (< z (rcfn b)))
-	    (<= z (rcfn (find-zero a b z))))
+		 (< (rcfn context a) z)
+		 (< z (rcfn context b)))
+	    (<= z (rcfn context (find-zero context a b z))))
    :hints (("Goal"
 	    :use ((:instance rcfn-find-zero-n+eps->=-z
 			     (n (i-large-integer))
@@ -826,9 +839,10 @@
 			     (eps (/ (- b a) (i-large-integer))))
 		  (:instance standard-part-<=
 			     (x z)
-			     (y (RCFN (+ (- (* (/ (I-LARGE-INTEGER)) A))
+			     (y (RCFN context
+                                      (+ (- (* (/ (I-LARGE-INTEGER)) A))
 					 (* (/ (I-LARGE-INTEGER)) B)
-					 (FIND-ZERO-N A Z 0 (I-LARGE-INTEGER)
+					 (FIND-ZERO-N context A Z 0 (I-LARGE-INTEGER)
 						      (+ (- (* (/ (I-LARGE-INTEGER)) A))
 							 (* (/ (I-LARGE-INTEGER)) B)))))))
 		  )
@@ -846,12 +860,12 @@
 		 (inside-interval-p b (rcfn-domain))
 		 (realp z)
 		 (< a b)
-		 (< (rcfn a) z)
-		 (< z (rcfn b)))
-	    (and (realp (find-zero a b z))
-		 (< a (find-zero a b z))
-		 (< (find-zero a b z) b)
-		 (equal (rcfn (find-zero a b z))
+		 (< (rcfn context a) z)
+		 (< z (rcfn context b)))
+	    (and (realp (find-zero context a b z))
+		 (< a (find-zero context a b z))
+		 (< (find-zero context a b z) b)
+		 (equal (rcfn context (find-zero context a b z))
 			z)))
    :hints (("Goal"
 	    :use ((:instance rcfn-find-zero-<=-z)
@@ -881,12 +895,12 @@
 		 (inside-interval-p b (rcfn-domain))
 		 (realp z)
 		 (< a b)
-		 (< (rcfn a) z)
-		 (< z (rcfn b)))
-	    (and (realp (find-zero a b z))
-		 (< a (find-zero a b z))
-		 (< (find-zero a b z) b)
-		 (equal (rcfn (find-zero a b z))
+		 (< (rcfn context a) z)
+		 (< z (rcfn context b)))
+	    (and (realp (find-zero context a b z))
+		 (< a (find-zero context a b z))
+		 (< (find-zero context a b z) b)
+		 (equal (rcfn context (find-zero context a b z))
 			z)))
    :hints (("Goal"
 ; Changed by Matt K. after v4-3 to put every :use hint on "Goal".  The first
@@ -915,7 +929,7 @@
 
 ;; Now, what happens when f(a)>z and f(b)<z.  First, we find the root.
 
-(defun find-zero-n-2 (a z i n eps)
+(defun find-zero-n-2 (context a z i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (realp a)
 	   (integerp i)
@@ -923,8 +937,8 @@
 	   (< i n)
 	   (realp eps)
 	   (< 0 eps)
-	   (< z (rcfn (+ a eps))))
-      (find-zero-n-2 (+ a eps) z (1+ i) n eps)
+	   (< z (rcfn context (+ a eps))))
+      (find-zero-n-2 context (+ a eps) z (1+ i) n eps)
     (realfix a)))
 
 ;; The key theorem -- if -x is close to -y, then x is close to y.
@@ -947,7 +961,8 @@
 		(realp b)
 		(realp z)
 		)
-	   (i-limited (find-zero-n-2 a
+	   (i-limited (find-zero-n-2 context
+                                     a
 				     z
 				     0
 				     (i-large-integer)
@@ -957,23 +972,24 @@
 	    :use ((:instance
 		   (:functional-instance
 		    limited-find-zero-body
-		    (rcfn (lambda (x) (- (rcfn x))))
-		    (find-zero-n (lambda (a z i n
+		    (rcfn (lambda (context x) (- (rcfn context x))))
+		    (find-zero-n (lambda (context a z i n
 					    eps)
 				   (find-zero-n-2
-				    a (- z) i n eps))))
+				    context a (- z) i n eps))))
 		   (z (- z))))
 	    :in-theory (disable limited-find-zero-body))))
 
 ;; We define the root we want in the range [a,b)
 
-(defun-std find-zero-2 (a b z)
+(defun-std find-zero-2 (context a b z)
   (if (and (realp a)
 	   (realp b)
 	   (realp z)
 	   (< a b))
       (standard-part
-       (find-zero-n-2 a
+       (find-zero-n-2 context
+                      a
 		      z
 		      0
 		      (i-large-integer)
@@ -993,14 +1009,16 @@
  (defthmd definition-of-find-zero-2-lemma
    (implies (and (standardp a)
                  (standardp b)
-                 (standardp z))
-            (equal (find-zero-2 a b z)
+                 (standardp z)
+                 (standardp context))
+            (equal (find-zero-2 context a b z)
                    (if (and (realp a)
                             (realp b)
                             (realp z)
                             (< a b))
                        (standard-part
-                        (find-zero-n-2 a
+                        (find-zero-n-2 context
+                                       a
                                        z
                                        0
                                        (i-large-integer)
@@ -1011,14 +1029,16 @@
  (defthmd definition-of-find-zero-2-uminus-z
    (implies (and (standardp a)
                  (standardp b)
-                 (standardp z))
-            (equal (find-zero-2 a b (- z))
+                 (standardp z)
+                 (standardp context))
+            (equal (find-zero-2 context a b (- z))
                    (if (and (realp a)
                             (realp b)
                             (realp (- z))
                             (< a b))
                        (standard-part
-                        (find-zero-n-2 a
+                        (find-zero-n-2 context
+                                       a
                                        (- z)
                                        0
                                        (i-large-integer)
@@ -1034,25 +1054,25 @@
 		(inside-interval-p b (rcfn-domain))
 		(realp z)
 		(< a b)
-		(< z (rcfn a))
-		(< (rcfn b) z))
-	   (and (realp (find-zero-2 a b z))
-		(< a (find-zero-2 a b z))
-		(< (find-zero-2 a b z) b)
-		(equal (rcfn (find-zero-2 a b z))
+		(< z (rcfn context a))
+		(< (rcfn context b) z))
+	   (and (realp (find-zero-2 context a b z))
+		(< a (find-zero-2 context a b z))
+		(< (find-zero-2 context a b z) b)
+		(equal (rcfn context (find-zero-2 context a b z))
 		       z)))
   :hints (("Goal"
 	   :use ((:instance
 		  (:functional-instance
 		   intermediate-value-theorem
-		   (rcfn (lambda (x) (- (rcfn x))))
-		   (find-zero (lambda (a b z)
-				(find-zero-2 a b
+		   (rcfn (lambda (context x) (- (rcfn context x))))
+		   (find-zero (lambda (context a b z)
+				(find-zero-2 context a b
 					     (if (realp z) (- z) z))))
-		   (find-zero-n (lambda (a z i n
+		   (find-zero-n (lambda (context a z i n
 					   eps)
 				  (find-zero-n-2
-				   a (- z) i n eps))))
+				   context a (- z) i n eps))))
 		  (z (if (realp z) (- z) z))
 		  ))
 	   :in-theory (disable intermediate-value-theorem))
@@ -1061,12 +1081,12 @@
 
 ;; Now we state the intermediate value theorem using quantifiers
 
-(defun-sk exists-intermediate-point (a b z)
+(defun-sk exists-intermediate-point (context a b z)
   (exists (x)
 	  (and (realp x)
 	       (< a x)
 	       (< x b)
-	       (equal (rcfn x) z))))
+	       (equal (rcfn context x) z))))
 
 (local
  (defthm intermediate-value-theorem-1-sk
@@ -1074,12 +1094,12 @@
 		   (inside-interval-p b (rcfn-domain))
 		   (realp z)
 		   (< a b)
-		   (< (rcfn a) z)
-		   (< z (rcfn b)))
-	      (exists-intermediate-point a b z))
+		   (< (rcfn context a) z)
+		   (< z (rcfn context b)))
+	      (exists-intermediate-point context a b z))
    :hints (("Goal"
 	    :use ((:instance exists-intermediate-point-suff
-			     (x (find-zero a b z)))
+			     (x (find-zero context a b z)))
 		  (:instance intermediate-value-theorem))
 	    :in-theory (disable exists-intermediate-point-suff intermediate-value-theorem)))))
 
@@ -1089,12 +1109,12 @@
 		   (inside-interval-p b (rcfn-domain))
 		   (realp z)
 		   (< a b)
-		   (< z (rcfn a))
-		   (< (rcfn b) z))
-	      (exists-intermediate-point a b z))
+		   (< z (rcfn context a))
+		   (< (rcfn context b) z))
+	      (exists-intermediate-point context a b z))
    :hints (("Goal"
 	    :use ((:instance exists-intermediate-point-suff
-			     (x (find-zero-2 a b z)))
+			     (x (find-zero-2 context a b z)))
 		  (:instance intermediate-value-theorem-2))
 	    :in-theory (disable exists-intermediate-point-suff intermediate-value-theorem-2)))))
 
@@ -1103,15 +1123,14 @@
 		  (inside-interval-p b (rcfn-domain))
 		  (realp z)
 		  (< a b)
-		  (or (and (< (rcfn a) z) (< z (rcfn b)))
-		      (and (< z (rcfn a)) (< (rcfn b) z))))
-	      (exists-intermediate-point a b z))
+		  (or (and (< (rcfn context a) z) (< z (rcfn context b)))
+		      (and (< z (rcfn context a)) (< (rcfn context b) z))))
+	      (exists-intermediate-point context a b z))
   :hints (("Goal"
 	   :use ((:instance intermediate-value-theorem-1-sk)
 		 (:instance intermediate-value-theorem-2-sk))
 	   :in-theory nil))
   )
-
 
 ;; The next task is to prove the extreme theorems.  The approach is
 ;; similar to the intermediate-value theorem.  First, we define a
@@ -1119,7 +1138,7 @@
 ;; and then we find the maximum of the function at the points in the
 ;; grid.
 
-(defun find-max-rcfn-x-n (a max-x i n eps)
+(defun find-max-rcfn-x-n (context a max-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -1127,9 +1146,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (> (rcfn (+ a (* i eps))) (rcfn max-x))
-	  (find-max-rcfn-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-max-rcfn-x-n a max-x (1+ i) n eps))
+      (if (> (rcfn context (+ a (* i eps))) (rcfn context max-x))
+	  (find-max-rcfn-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-max-rcfn-x-n context a max-x (1+ i) n eps))
     max-x))
 
 ;; Since the function above takes in a "max-so-far" argument, it is
@@ -1137,7 +1156,8 @@
 ;; bound for the maximum.
 
 (defthm find-max-rcfn-x-n-is-monotone
-  (<= (rcfn max-x) (rcfn (find-max-rcfn-x-n a max-x i n eps))))
+    (<= (rcfn context max-x)
+        (rcfn context (find-max-rcfn-x-n context a max-x i n eps))))
 
 ;; Now, we can say that the maximum returned really is the maximum of
 ;; all the f(x) values at the points x on the grid.
@@ -1152,8 +1172,8 @@
 		(realp a)
 		(realp eps)
 		(< 0 eps))
-	   (<= (rcfn (+ a (* k eps)))
-	       (rcfn (find-max-rcfn-x-n a max-x i n eps))))
+	   (<= (rcfn context (+ a (* k eps)))
+	       (rcfn context (find-max-rcfn-x-n context a max-x i n eps))))
   :hints (("Subgoal *1/7"
 	   :use ((:instance find-max-rcfn-x-n-is-monotone))
 	   :in-theory (disable find-max-rcfn-x-n-is-monotone))))
@@ -1170,7 +1190,7 @@
 		(integerp i)
 		(integerp n)
 		(< 0 eps))
-	   (<= (find-max-rcfn-x-n a max-x i n eps) (+ a (* n eps))))
+	   (<= (find-max-rcfn-x-n context a max-x i n eps) (+ a (* n eps))))
   :hints (("Subgoal *1/1"
 	   :use ((:theorem
 		  (implies (and (< (+ a (* eps n)) (+ a (* i eps)))
@@ -1192,12 +1212,12 @@
 
 (defthm find-max-rcfn-x-n-lower-bound-lemma
   (implies (<= max-x (+ a (* i eps)))
-	   (<= max-x (find-max-rcfn-x-n a max-x i n eps))))
+	   (<= max-x (find-max-rcfn-x-n context a max-x i n eps))))
 
 ;; Now, we can fix the lower range of find-max-x-r-n
 
 (defthm find-max-rcfn-x-n-lower-bound
-  (<= a (find-max-rcfn-x-n a a 0 n eps))
+  (<= a (find-max-rcfn-x-n context a a 0 n eps))
   :hints (("Goal"
 	   :use ((:instance find-max-rcfn-x-n-lower-bound-lemma
 			    (max-x a)
@@ -1214,7 +1234,7 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-max-rcfn-x-n a a
+	   (i-limited (find-max-rcfn-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -1235,7 +1255,7 @@
 				 (<= a x)
 				 (<= x b))
 			    (i-limited x)))
-		  (x (find-max-rcfn-x-n a a 0 (i-large-integer)
+		  (x (find-max-rcfn-x-n context a a 0 (i-large-integer)
 				   (+ (- (* (/ (i-large-integer)) a))
 				      (* (/ (i-large-integer))
 					 b)))))))
@@ -1254,7 +1274,7 @@
     (implies (and (inside-interval-p a (rcfn-domain))
 		  (inside-interval-p b (rcfn-domain))
 		  (< a b))
-	     (inside-interval-p (find-max-rcfn-x-n a a
+	     (inside-interval-p (find-max-rcfn-x-n context a a
 						   0 (i-large-integer)
 						   (+ (- (* (/ (i-large-integer)) a))
 						      (* (/ (i-large-integer)) b)))
@@ -1263,7 +1283,7 @@
 	   :use ((:instance INSIDE-INTERVAL-P-SQUEEZE
 			    (a a)
 			    (b b)
-			    (c (find-max-rcfn-x-n a a
+			    (c (find-max-rcfn-x-n context a a
 						  0 (i-large-integer)
 						  (+ (- (* (/ (i-large-integer)) a))
 						     (* (/ (i-large-integer)) b))))
@@ -1282,11 +1302,11 @@
 ;; claim) finds the point x in [a,b] at which (rcfn x) achieves a
 ;; maximum.
 
-(defun-std find-max-rcfn-x (a b)
+(defun-std find-max-rcfn-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-max-rcfn-x-n a
+      (standard-part (find-max-rcfn-x-n context a
 				   a
 				   0
 				   (i-large-integer)
@@ -1300,11 +1320,12 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= a (find-max-rcfn-x a b)))
+	   (<= a (find-max-rcfn-x context a b)))
   :hints (("Goal'"
 	   :use ((:instance standard-part-<=
 			    (x a)
-			    (y (find-max-rcfn-x-n a
+			    (y (find-max-rcfn-x-n
+                                context a
 				   a
 				   0
 				   (i-large-integer)
@@ -1317,11 +1338,11 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= (find-max-rcfn-x a b) b))
+	   (<= (find-max-rcfn-x context a b) b))
 ; Matt K. v7-1 mod for ACL2 mod on 2/13/2015: "Goal''" changed to "Goal'".
   :hints (("Goal'"
 	   :use ((:instance standard-part-<=
-			    (x (find-max-rcfn-x-n a
+			    (x (find-max-rcfn-x-n context a
 				   a
 				   0
 				   (i-large-integer)
@@ -1342,12 +1363,12 @@
     (implies (and (inside-interval-p a interval)
 		  (inside-interval-p b interval)
 		  (< a b))
-	     (inside-interval-p (find-max-rcfn-x a b) interval))
+	     (inside-interval-p (find-max-rcfn-x context a b) interval))
   :hints (("Goal"
 	   :use ((:instance inside-interval-p-squeeze
 			    (a a)
 			    (b b)
-			    (c (find-max-rcfn-x a b))))
+			    (c (find-max-rcfn-x context a b))))
 	   :in-theory (disable inside-interval-p-squeeze)))
   )
 
@@ -1365,18 +1386,19 @@
 		(inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(< a b)
+                (standardp context)
 		(integerp k)
 		(<= 0 k)
 		(<= k (i-large-integer)))
-	   (<= (standard-part (rcfn (+ a (* k (/ (- b a)
+	   (<= (standard-part (rcfn context (+ a (* k (/ (- b a)
 						 (i-large-integer))))))
-	       (rcfn (find-max-rcfn-x a b))))
+	       (rcfn context (find-max-rcfn-x context a b))))
   :hints (("Goal"
 	   :use ((:instance standard-part-<=
-			    (x (rcfn (+ a (* k (/ (- b a)
+			    (x (rcfn context (+ a (* k (/ (- b a)
 						  (i-large-integer))))))
-			    (y (rcfn
-				      (find-max-rcfn-x-n a a 0
+			    (y (rcfn context
+				      (find-max-rcfn-x-n context a a 0
 						    (i-large-integer)
 						    (/ (- b a)
 						       (i-large-integer))))))
@@ -1386,7 +1408,7 @@
 			    (eps (/ (- b a) (i-large-integer)))
 			    (max-x a))
 		 (:instance rcfn-standard-part
-			    (x (FIND-MAX-RCFN-X-N A A 0 (I-LARGE-INTEGER)
+			    (x (FIND-MAX-RCFN-X-N context A A 0 (I-LARGE-INTEGER)
 						  (+ (- (* (/ (I-LARGE-INTEGER)) A))
 						     (* (/ (I-LARGE-INTEGER)) B)))))
 		 (:instance find-max-rcfn-x-inside-interval
@@ -1546,11 +1568,13 @@
 		(inside-interval-p (+ a (* n eps)) (rcfn-domain))
 		(realp x)
 		(standardp x)
+		(standardp context)
 		(<= (+ a (* i eps)) x)
 		(<= x (+ a (* n eps)))
 		(i-small eps))
-	   (i-close (rcfn x)
-		    (rcfn (+ a (* (upper-bound-of-grid a x i n eps)
+	   (i-close (rcfn context x)
+		    (rcfn context
+                          (+ a (* (upper-bound-of-grid a x i n eps)
 				  eps)))))
   :hints (("Goal"
 	   :use ((:instance rcfn-continuous
@@ -1591,17 +1615,19 @@
 		(inside-interval-p (+ a (* n eps)) (rcfn-domain))
 		(realp x)
 		(standardp x)
+                (standardp context)
 		(<= (+ a (* i eps)) x)
 		(<= x (+ a (* n eps)))
 		(i-small eps))
-	   (equal (standard-part (rcfn (+ a (* (upper-bound-of-grid a x i n eps)
+	   (equal (standard-part (rcfn context
+                                       (+ a (* (upper-bound-of-grid a x i n eps)
 					       eps))))
-		  (rcfn x)))
+		  (rcfn context x)))
   :hints (("Goal"
 	   :use ((:instance rcfn-x-close-to-rcfn-upper-bound-of-grid)
 		 (:instance close-x-y->same-standard-part
-			    (x (rcfn x))
-			    (y (rcfn (+ a (* (upper-bound-of-grid a x i n eps)
+			    (x (rcfn context x))
+			    (y (rcfn context (+ a (* (upper-bound-of-grid a x i n eps)
 					     eps))))))
 	   :in-theory (disable
 		       rcfn-x-close-to-rcfn-upper-bound-of-grid
@@ -1626,10 +1652,11 @@
 		(inside-interval-p b (rcfn-domain))
 		(standardp b)
 		(realp x) (standardp x)
+                (standardp context)
 		(<= a x)
 		(<= x b)
 		(< a b))
-	   (<= (rcfn x) (rcfn (find-max-rcfn-x a b))))
+	   (<= (rcfn context x) (rcfn context (find-max-rcfn-x context a b))))
   :hints (("Goal"
 	   :use ((:instance find-max-rcfn-is-maximum-of-grid
 			    (k (upper-bound-of-grid a x 0
@@ -1659,20 +1686,20 @@
 		(<= a x)
 		(<= x b)
 		(< a b))
-	   (<= (rcfn x) (rcfn (find-max-rcfn-x a b))))
+	   (<= (rcfn context x) (rcfn context (find-max-rcfn-x context a b))))
   :hints (("Goal"
 	   :in-theory (disable find-max-rcfn-x))))
 
 ;; Now we do it with quantifiers
 
-(defun-sk is-maximum-point (a b max)
+(defun-sk is-maximum-point (context a b max)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn x) (rcfn max)))))
+		   (<= (rcfn context x) (rcfn context max)))))
 
-(defun-sk achieves-maximum-point (a b)
+(defun-sk achieves-maximum-point (context a b)
   (exists (max)
 	  (implies (and (realp a)
 			(realp b)
@@ -1680,18 +1707,19 @@
 		   (and (realp max)
 			(<= a max)
 			(<= max b)
-			(is-maximum-point a b max)))))
+			(is-maximum-point context a b max)))))
 
 (defthm maximum-point-theorem-sk
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(< a b))
-	   (achieves-maximum-point a b))
+	   (achieves-maximum-point context a b))
   :hints (("Goal"
 	   :use ((:instance achieves-maximum-point-suff
-			    (max (find-max-rcfn-x a b)))
+			    (max (find-max-rcfn-x context a b)))
 		 (:instance find-max-rcfn-is-maximum
-			    (x (is-maximum-point-witness a b (find-max-rcfn-x a b)))))
+			    (x (is-maximum-point-witness context a b
+                                                         (find-max-rcfn-x context a b)))))
 	   :in-theory (disable achieves-maximum-point-suff
 			       find-max-rcfn-is-maximum))))
 
@@ -1700,7 +1728,7 @@
 ;; function above.  Shouldn't ACL2 be able to do this sort of thing by
 ;; itself?
 
-(defun find-min-rcfn-x-n (a min-x i n eps)
+(defun find-min-rcfn-x-n (context a min-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -1708,9 +1736,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (< (rcfn (+ a (* i eps))) (rcfn min-x))
-	  (find-min-rcfn-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-min-rcfn-x-n a min-x (1+ i) n eps))
+      (if (< (rcfn context (+ a (* i eps))) (rcfn context min-x))
+	  (find-min-rcfn-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-min-rcfn-x-n context a min-x (1+ i) n eps))
     min-x))
 
 ;; We have to prove that this function is limited.  Luckily, we can
@@ -1722,25 +1750,25 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-min-rcfn-x-n a a
+	   (i-limited (find-min-rcfn-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x-n-limited
-				       (rcfn (lambda (x) (- (rcfn
-							     x))))
+				       (rcfn (lambda (context x)
+                                               (- (rcfn context x))))
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       ))
 	   :in-theory (disable find-max-rcfn-x-n-limited))))
 
 ;; That justifies the definition of min-x.
 
-(defun-std find-min-rcfn-x (a b)
+(defun-std find-min-rcfn-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-min-rcfn-x-n a
+      (standard-part (find-min-rcfn-x-n context a
 				   a
 				   0
 				   (i-large-integer)
@@ -1757,11 +1785,11 @@
 		(<= a x)
 		(<= x b)
 		(< a b))
-	   (<= (rcfn (find-min-rcfn-x a b)) (rcfn x)))
+	   (<= (rcfn context (find-min-rcfn-x context a b)) (rcfn context x)))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-is-maximum
-				       (rcfn (lambda (x) (- (rcfn
-							     x))))
+				       (rcfn (lambda (context x)
+                                               (- (rcfn context x))))
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       (find-max-rcfn-x find-min-rcfn-x)))
 	   :in-theory (disable find-max-rcfn-is-maximum))))
@@ -1773,27 +1801,27 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= a (find-min-rcfn-x a b)))
+	   (<= a (find-min-rcfn-x context a b)))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x->=-a
-				       (rcfn (lambda (x) (- (rcfn
-							     x))))
+				       (rcfn (lambda (context x)
+                                               (- (rcfn context x))))
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       (find-max-rcfn-x find-min-rcfn-x)))
 	   :in-theory (disable find-max-rcfn-x->=-a))))
 
-;; And finally,, we want to show that min-x <= b -- again, just
+;; And finally, we want to show that min-x <= b -- again, just
 ;; instantiate the theorem about maximum!
 
 (defthm find-min-rcfn-x-<=-b
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= (find-min-rcfn-x a b) b))
+	   (<= (find-min-rcfn-x context a b) b))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x-<=-b
-				       (rcfn (lambda (x) (- (rcfn
-							     x))))
+				       (rcfn (lambda (context x)
+                                               (- (rcfn context x))))
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       (find-max-rcfn-x find-min-rcfn-x)))
 	   :in-theory (disable find-max-rcfn-x-<=-b))))
@@ -1804,25 +1832,25 @@
     (implies (and (inside-interval-p a interval)
 		  (inside-interval-p b interval)
 		  (< a b))
-	     (inside-interval-p (find-min-rcfn-x a b) interval))
+	     (inside-interval-p (find-min-rcfn-x context a b) interval))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x-inside-interval
-				       (rcfn (lambda (x) (- (rcfn
-							     x))))
+				       (rcfn (lambda (context x)
+                                               (- (rcfn context x))))
 				       (find-max-rcfn-x-n find-min-rcfn-x-n)
 				       (find-max-rcfn-x find-min-rcfn-x)))
 	   :in-theory (disable find-max-rcfn-x-inside-interval))))
 
 ;; Now we do it with quantifiers
 
-(defun-sk is-minimum-point (a b min)
+(defun-sk is-minimum-point (context a b min)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn min) (rcfn x)))))
+		   (<= (rcfn context min) (rcfn context x)))))
 
-(defun-sk achieves-minimum-point (a b)
+(defun-sk achieves-minimum-point (context a b)
   (exists (min)
 	  (implies (and (realp a)
 			(realp b)
@@ -1830,17 +1858,18 @@
 		   (and (realp min)
 			(<= a min)
 			(<= min b)
-			(is-minimum-point a b min)))))
+			(is-minimum-point context a b min)))))
 
 (defthm minimum-point-theorem-sk
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(< a b))
-	   (achieves-minimum-point a b))
+	   (achieves-minimum-point context a b))
   :hints (("Goal"
 	   :use ((:instance achieves-minimum-point-suff
-			    (min (find-min-rcfn-x a b)))
+			    (min (find-min-rcfn-x context a b)))
 		 (:instance find-min-rcfn-is-minimum
-			    (x (is-minimum-point-witness a b (find-min-rcfn-x a b)))))
+			    (x (is-minimum-point-witness context a b
+                                                         (find-min-rcfn-x context a b)))))
 	   :in-theory (disable achieves-minimum-point-suff
 			       find-min-rcfn-is-minimum))))

@@ -8,13 +8,13 @@
 (include-book "ftc-1")
 
 (encapsulate
- ( ((rcdfn *) => *)
-   ((rcdfn-prime *) => *)
+ ( ((rcdfn * *) => *)
+   ((rcdfn-prime * *) => *)
    ((rcdfn-domain) => *)
    )
 
-   (local (defun rcdfn (x) (declare (ignore x)) 0))
-   (local (defun rcdfn-prime (x) (declare (ignore x)) 0))
+   (local (defun rcdfn (context x) (declare (ignore context x)) 0))
+   (local (defun rcdfn-prime (context x) (declare (ignore context x)) 0))
    (local (defun rcdfn-domain () (interval 0 1)))
 
    (defthm intervalp-rcdfn-domain
@@ -34,43 +34,47 @@
      :rule-classes nil)
 
    (defthm rcdfn-real
-     (realp (rcdfn x))
+     (realp (rcdfn context x))
    :rule-classes (:rewrite :type-prescription))
 
    (defthm rcdfn-prime-real
-     (realp (rcdfn-prime x))
+     (realp (rcdfn-prime context x))
    :rule-classes (:rewrite :type-prescription))
 
    (defthm rcdfn-prime-is-derivative
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (rcdfn-domain))
 		   (inside-interval-p x1 (rcdfn-domain))
 		   (i-close x x1) (not (= x x1)))
-	      (i-close (/ (- (rcdfn x) (rcdfn x1)) (- x x1))
-		       (rcdfn-prime x))))
+	      (i-close (/ (- (rcdfn context x)
+                             (rcdfn context x1))
+                          (- x x1))
+		       (rcdfn-prime context x))))
 
    (defthm rcdfn-prime-continuous
      (implies (and (standardp x)
+                   (standardp context)
 		   (inside-interval-p x (rcdfn-domain))
 		   (i-close x x1)
 		   (inside-interval-p x1 (rcdfn-domain)))
-	      (i-close (rcdfn-prime x)
-		       (rcdfn-prime x1))))
+	      (i-close (rcdfn-prime context x)
+		       (rcdfn-prime context x1))))
    )
 
-(defun map-rcdfn-prime (p)
+(defun map-rcdfn-prime (context p)
   (if (consp p)
-      (cons (rcdfn-prime (car p))
-	    (map-rcdfn-prime (cdr p)))
+      (cons (rcdfn-prime context (car p))
+	    (map-rcdfn-prime context (cdr p)))
     nil))
 
-(defun riemann-rcdfn-prime (p)
+(defun riemann-rcdfn-prime (context p)
   (dotprod (deltas p)
-	   (map-rcdfn-prime (cdr p))))
+	   (map-rcdfn-prime context (cdr p))))
 
 (defthm realp-riemann-rcdfn-prime
   (implies (partitionp p)
-	   (realp (riemann-rcdfn-prime p))))
+	   (realp (riemann-rcdfn-prime context p))))
 
 (encapsulate
  nil
@@ -79,10 +83,11 @@
   (defthm limited-riemann-rcdfn-prime-small-partition
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
+                  (standardp context)
 		  (inside-interval-p a (rcdfn-domain))
 		  (inside-interval-p b (rcdfn-domain))
 		  (< a b))
-	     (i-limited (riemann-rcdfn-prime (make-small-partition a b))))
+	     (i-limited (riemann-rcdfn-prime context (make-small-partition a b))))
     :hints (("Goal"
 	     :by (:functional-instance limited-riemann-rcfn-small-partition
 				       (rcfn-domain rcdfn-domain)
@@ -96,24 +101,25 @@
 
 
 
- (defun-std strict-int-rcdfn-prime (a b)
+ (defun-std strict-int-rcdfn-prime (context a b)
    (if (and (realp a)
 	    (realp b)
 	    (inside-interval-p a (rcdfn-domain))
 	    (inside-interval-p b (rcdfn-domain))
 	    (< a b))
-       (standard-part (riemann-rcdfn-prime (make-small-partition a b)))
+       (standard-part (riemann-rcdfn-prime context (make-small-partition a b)))
      0))
  )
 
-(defun int-rcdfn-prime (a b)
+(defun int-rcdfn-prime (context a b)
   (if (<= a b)
-      (strict-int-rcdfn-prime a b)
-    (- (strict-int-rcdfn-prime b a))))
+      (strict-int-rcdfn-prime context a b)
+    (- (strict-int-rcdfn-prime context b a))))
 
 (defthm strict-int-rcdfn-prime-is-integral-of-rcdfn-prime
   (implies (and (standardp a)
 		(standardp b)
+                (standardp context)
 		(<= a b)
 		(inside-interval-p a (rcdfn-domain))
 		(inside-interval-p b (rcdfn-domain))
@@ -121,8 +127,8 @@
 		(equal (car p) a)
 		(equal (car (last p)) b)
 		(i-small (mesh p)))
-	   (i-close (riemann-rcdfn-prime p)
-		    (strict-int-rcdfn-prime a b)))
+	   (i-close (riemann-rcdfn-prime context p)
+		    (strict-int-rcdfn-prime context a b)))
   :hints (("Goal"
 	   :do-not-induct t
 	   :by (:functional-instance strict-int-rcfn-is-integral-of-rcfn
@@ -142,11 +148,13 @@
 		(inside-interval-p b (rcdfn-domain))
 		(inside-interval-p c (rcdfn-domain))
 		(standardp b)
+                (standardp context)
 		(i-close b c)
 		(not (equal b c)))
-	   (i-close (/ (- (int-rcdfn-prime a b) (int-rcdfn-prime a c))
+	   (i-close (/ (- (int-rcdfn-prime context a b)
+                          (int-rcdfn-prime context a c))
 		       (- b c))
-		    (rcdfn-prime b)))
+		    (rcdfn-prime context b)))
   :hints (("Goal"
 	   :by (:functional-instance ftc-1
 				     (rcfn-domain rcdfn-domain)
@@ -159,9 +167,9 @@
 	   ))
 
 (local
- (defun diff-fn (a x)
+ (defun diff-fn (context a x)
    (if (inside-interval-p a (rcdfn-domain))
-       (- (int-rcdfn-prime a x) (rcdfn x))
+       (- (int-rcdfn-prime context a x) (rcdfn context x))
      0
      )))
 
@@ -209,11 +217,14 @@
 (local
  (defthmd diff-fn-has-zero-derivative-1
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (rcdfn-domain))
 		 (i-close x x1)
 		 (inside-interval-p x1 (rcdfn-domain))
 		 (not (equal x x1)))
-	    (i-close (/ (- (diff-fn a x) (diff-fn a x1)) (- x x1))
+	    (i-close (/ (- (diff-fn context a x)
+                           (diff-fn context a x1))
+                        (- x x1))
 		     0))
    :hints (("Goal"
 	    :use ((:instance ftc-1-for-rcdfn
@@ -222,14 +233,14 @@
 			     (c x1))
 		  (:instance rcdfn-prime-is-derivative)
 		  (:instance close-minus
-			     (y1 (+ (* (rcdfn x) (/ (+ x (- x1))))
-				    (- (* (rcdfn x1) (/ (+ x (- x1)))))))
-			     (y2 (rcdfn-prime x))
-			     (x1 (+ (* (int-rcdfn-prime a x)
+			     (y1 (+ (* (rcdfn context x) (/ (+ x (- x1))))
+				    (- (* (rcdfn context x1) (/ (+ x (- x1)))))))
+			     (y2 (rcdfn-prime context x))
+			     (x1 (+ (* (int-rcdfn-prime context a x)
 				       (/ (+ x (- x1))))
-				    (- (* (int-rcdfn-prime a x1)
+				    (- (* (int-rcdfn-prime context a x1)
 					  (/ (+ x (- x1)))))))
-			     (x2 (rcdfn-prime x))))
+			     (x2 (rcdfn-prime context x))))
 	    :in-theory (disable rcdfn-prime-is-derivative
 				i-small-uminus
 				int-rcdfn-prime
@@ -243,18 +254,18 @@
   (local
    (defthm derivative-diff-fn-lemma
      (IMPLIES
-      (AND (STANDARDP A) (STANDARDP X))
+      (AND (STANDARDP A) (STANDARDP X) (standardp context))
       (STANDARDP
        (IF (INSIDE-INTERVAL-P X (RCDFN-DOMAIN))
 	   (COND ((INSIDE-INTERVAL-P (+ X (/ (I-LARGE-INTEGER)))
 				     (RCDFN-DOMAIN))
-		  (STANDARD-PART (* (+ (DIFF-FN A (+ X (/ (I-LARGE-INTEGER))))
-				       (- (DIFF-FN A X)))
+		  (STANDARD-PART (* (+ (DIFF-FN context A (+ X (/ (I-LARGE-INTEGER))))
+				       (- (DIFF-FN context A X)))
 				    (/ (/ (I-LARGE-INTEGER))))))
 		 ((INSIDE-INTERVAL-P (+ X (- (/ (I-LARGE-INTEGER))))
 				     (RCDFN-DOMAIN))
-		  (STANDARD-PART (* (+ (DIFF-FN A (+ X (- (/ (I-LARGE-INTEGER)))))
-				       (- (DIFF-FN A X)))
+		  (STANDARD-PART (* (+ (DIFF-FN context A (+ X (- (/ (I-LARGE-INTEGER)))))
+				       (- (DIFF-FN context A X)))
 				    (/ (- (/ (I-LARGE-INTEGER)))))))
 		 (T 'error))
 	   'error)))
@@ -275,13 +286,13 @@
 			       (eps (- (/ (i-large-integer)))))
 		    (:instance i-close-limited
 			       (x 0)
-			       (y (/ (+ (DIFF-FN A X)
-					(- (DIFF-FN A (+ X (/ (I-LARGE-INTEGER))))))
+			       (y (/ (+ (DIFF-FN context A X)
+					(- (DIFF-FN context A (+ X (/ (I-LARGE-INTEGER))))))
 				     (- (/ (I-LARGE-INTEGER))))))
 		    (:instance i-close-limited
 			       (x 0)
-			       (y (/ (+ (DIFF-FN A X)
-					(- (DIFF-FN A (+ X (- (/ (I-LARGE-INTEGER)))))))
+			       (y (/ (+ (DIFF-FN context A X)
+					(- (DIFF-FN context A (+ X (- (/ (I-LARGE-INTEGER)))))))
 				     (/ (I-LARGE-INTEGER)))))
 		    )
 	      :in-theory (disable diff-fn
@@ -293,19 +304,19 @@
      ;:rule-classes :rewrite
      ))
 
-  (defun differential-diff-fn (a x eps)
-    (/ (- (diff-fn a (+ x eps)) (diff-fn a x)) eps))
+  (defun differential-diff-fn (context a x eps)
+    (/ (- (diff-fn context a (+ x eps)) (diff-fn context a x)) eps))
 
   (local
    (in-theory '(derivative-diff-fn-lemma
 		differential-diff-fn)))
 
-  (defun-std derivative-diff-fn (a x)
+  (defun-std derivative-diff-fn (context a x)
     (if (inside-interval-p x (rcdfn-domain))
 	(if (inside-interval-p (+ x (/ (i-large-integer))) (rcdfn-domain))
-	    (standard-part (differential-diff-fn a x (/ (i-large-integer))))
+	    (standard-part (differential-diff-fn context a x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (rcdfn-domain))
-	      (standard-part (differential-diff-fn a x (- (/ (i-large-integer)))))
+	      (standard-part (differential-diff-fn context a x (- (/ (i-large-integer)))))
 	    'error))
       'error)
     )
@@ -470,7 +481,7 @@
 (local
  (defthm-std derivative-diff-is-zero
    (implies (inside-interval-p x (rcdfn-domain))
-	    (equal (derivative-diff-fn a x) 0))
+	    (equal (derivative-diff-fn context a x) 0))
    :hints (("Goal"
 	    :use ((:instance x-in-interval-implies-x+-eps-in-interval
 			     (eps (/ (i-large-integer))))
@@ -487,13 +498,13 @@
 			     (x x)
 			     (eps (- (/ (i-large-integer)))))
 		  (:instance close-minus-0
-			     (x (+ (- (* (i-large-integer) (diff-fn a x)))
+			     (x (+ (- (* (i-large-integer) (diff-fn context a x)))
 				   (* (i-large-integer)
-				      (diff-fn a (+ (/ (i-large-integer)) x))))))
+				      (diff-fn context a (+ (/ (i-large-integer)) x))))))
 		  (:instance close-minus-0
-			     (x (+ (- (* (i-large-integer) (diff-fn a x)))
+			     (x (+ (- (* (i-large-integer) (diff-fn context a x)))
 				   (* (i-large-integer)
-				      (diff-fn a (+ (- (/ (i-large-integer))) x)))))))
+				      (diff-fn context a (+ (- (/ (i-large-integer))) x)))))))
 	    :in-theory (disable diff-fn
 				standard-part-of-plus
 				i-close-to-small-sum)
@@ -543,23 +554,26 @@
  )
 
 (local
- (defun-sk exists-mvt-point-for-diff-fn ()
+ (defun-sk exists-mvt-point-for-diff-fn (context)
    (exists (x)
 	   (and (inside-interval-p x (rcdfn-subdomain))
 		(not (equal x (interval-left-endpoint (rcdfn-subdomain))))
 		(not (equal x (interval-right-endpoint (rcdfn-subdomain))))
-		(equal (derivative-diff-fn (interval-left-endpoint (rcdfn-subdomain)) x)
-		       (/ (- (diff-fn (interval-left-endpoint (rcdfn-subdomain))
+		(equal (derivative-diff-fn context (interval-left-endpoint (rcdfn-subdomain)) x)
+		       (/ (- (diff-fn context
+                                      (interval-left-endpoint (rcdfn-subdomain))
 				      (interval-right-endpoint (rcdfn-subdomain)))
-			     (diff-fn (interval-left-endpoint (rcdfn-subdomain))
+			     (diff-fn context
+                                      (interval-left-endpoint (rcdfn-subdomain))
 				      (interval-left-endpoint (rcdfn-subdomain))))
 			  (- (interval-right-endpoint (rcdfn-subdomain))
 			     (interval-left-endpoint (rcdfn-subdomain)))))))))
 
 (local
  (defthm-std rcdfn-prime-standard
-   (implies (standardp x)
-	    (standardp (rcdfn-prime x)))))
+   (implies (and (standardp x)
+                 (standardp context))
+	    (standardp (rcdfn-prime context x)))))
 
 (local
  (defthm left-endpoint-in-domain
@@ -585,7 +599,7 @@
  (defthm realp-strict-int-rcdfn-prime
    (implies (and (realp a)
 		 (realp b))
-	    (realp (strict-int-rcdfn-prime a b)))
+	    (realp (strict-int-rcdfn-prime context a b)))
    :hints (("Goal"
 	    :by (:functional-instance realp-strict-int-rcfn
 				      (strict-int-rcfn strict-int-rcdfn-prime)
@@ -596,7 +610,7 @@
 
 (local
  (defthm-std realp-strict-int-rcdfn-prime-stronger
-   (realp (strict-int-rcdfn-prime a b))
+   (realp (strict-int-rcdfn-prime context a b))
    :hints (("Goal"
 	    :cases ((not (realp a))
 		    (not (realp b))))
@@ -606,7 +620,7 @@
 
 (local
  (defthm realp-int-rcdfn-prime
-   (realp (int-rcdfn-prime a b))
+   (realp (int-rcdfn-prime context a b))
    ))
 
 (local
@@ -620,23 +634,26 @@
 
 (local
  (defthm mvt-theorem-sk-for-diff-fn
-   (exists-mvt-point-for-diff-fn)
+   (exists-mvt-point-for-diff-fn context)
    :hints (("Goal"
 	    :by (:functional-instance mvt-theorem-sk
 				      (exists-mvt-point exists-mvt-point-for-diff-fn)
 				      (exists-mvt-point-witness exists-mvt-point-for-diff-fn-witness)
 				      (rdfn-domain rcdfn-domain)
 				      (rdfn-subdomain rcdfn-subdomain)
-				      (rdfn (lambda (x)
-					      (diff-fn (interval-left-endpoint (rcdfn-subdomain))
+				      (rdfn (lambda (context x)
+					      (diff-fn context
+                                                       (interval-left-endpoint (rcdfn-subdomain))
 						       x)))
-				      (derivative-rdfn (lambda (x)
+				      (derivative-rdfn (lambda (context x)
 							 (derivative-diff-fn
+                                                          context
 							  (interval-left-endpoint (rcdfn-subdomain))
 							  x)))
 				      (differential-rdfn
-				       (lambda (x eps)
+				       (lambda (context x eps)
 					 (differential-diff-fn
+                                          context
 					  (interval-left-endpoint (rcdfn-subdomain))
 					  x
 					  eps)))
@@ -669,7 +686,7 @@
 (local
  (defthm strict-int-rcdfn-prime-a-a
    (implies (inside-interval-p a (rcdfn-domain))
-	    (equal (strict-int-rcdfn-prime a a) 0))
+	    (equal (strict-int-rcdfn-prime context a a) 0))
    :hints (("Goal"
 	    :by (:functional-instance strict-int-a-a
 				      (strict-int-rcfn strict-int-rcdfn-prime)
@@ -680,16 +697,16 @@
 
 (local
  (defthm diff-fn-of-a
-   (equal (diff-fn a a)
+   (equal (diff-fn context a a)
 	  (if (inside-interval-p a (rcdfn-domain))
-	      (- (rcdfn a))
+	      (- (rcdfn context a))
 	    0))))
 
 
 (local
  (defthm int-rcdfn-prime-a-a
    (implies (inside-interval-p a (rcdfn-domain))
-	    (equal (int-rcdfn-prime a a) 0))
+	    (equal (int-rcdfn-prime context a a) 0))
    :hints (("Goal"
 	    :use ((:instance strict-int-rcdfn-prime-a-a))
 	    :in-theory (e/d (int-rcdfn-prime)
@@ -700,15 +717,16 @@
 
 (local
  (defthm diff-fn-inside-interval
-   (equal (diff-fn (interval-left-endpoint (rcdfn-subdomain))
+   (equal (diff-fn context
+                   (interval-left-endpoint (rcdfn-subdomain))
 		   (interval-right-endpoint (rcdfn-subdomain)))
-	  (- (rcdfn (interval-left-endpoint (rcdfn-subdomain)))))
+	  (- (rcdfn context (interval-left-endpoint (rcdfn-subdomain)))))
    :hints (("Goal"
 	    :use ((:instance mvt-theorem-sk-for-diff-fn)
 		  (:instance exists-mvt-point-for-diff-fn)
 		  (:instance derivative-diff-is-zero
 			     (a (interval-left-endpoint (rcdfn-subdomain)))
-			     (x (exists-mvt-point-for-diff-fn-witness))))
+			     (x (exists-mvt-point-for-diff-fn-witness context))))
 	    :in-theory (disable int-rcdfn-prime))
 	   ("Subgoal 2"
 	    :use ((:instance rcdfn-subdomain-non-trivial))
@@ -723,8 +741,8 @@
    (implies (and (inside-interval-p a (rcdfn-domain))
 		 (inside-interval-p b (rcdfn-domain))
 		 (< a b))
-	    (equal (diff-fn a b)
-		   (- (rcdfn a))))
+	    (equal (diff-fn context a b)
+		   (- (rcdfn context a))))
    :hints (("Goal"
 	    :use ((:functional-instance diff-fn-inside-interval
 					(rcdfn-subdomain (lambda ()
@@ -741,9 +759,9 @@
    (implies (and (inside-interval-p a (rcdfn-domain))
 		 (inside-interval-p b (rcdfn-domain))
 		 (< a b))
-	    (equal (int-rcdfn-prime a b)
-		   (- (rcdfn b)
-		      (rcdfn a))))
+	    (equal (int-rcdfn-prime context a b)
+		   (- (rcdfn context b)
+		      (rcdfn context a))))
    :hints (("Goal"
 	    :use ((:instance diff-fn-expander))
 	    :in-theory (disable int-rcdfn-prime
@@ -754,17 +772,17 @@
  (defthmd int-rcdfn-reverse-bounds
    (implies (and (inside-interval-p a (rcdfn-domain))
 		 (inside-interval-p b (rcdfn-domain)))
-	    (equal (- (int-rcdfn-prime b a))
-		   (int-rcdfn-prime a b)))))
+	    (equal (- (int-rcdfn-prime context b a))
+		   (int-rcdfn-prime context a b)))))
 
 (local
  (defthm ftc-2-lemma-2
    (implies (and (inside-interval-p a (rcdfn-domain))
 		 (inside-interval-p b (rcdfn-domain))
 		 (> a b))
-	    (equal (int-rcdfn-prime a b)
-		   (- (rcdfn b)
-		      (rcdfn a))))
+	    (equal (int-rcdfn-prime context a b)
+		   (- (rcdfn context b)
+		      (rcdfn context a))))
    :hints (("Goal"
 	    :use ((:instance ftc-2-lemma (a b) (b a))
 		  (:instance int-rcdfn-reverse-bounds)
@@ -776,9 +794,9 @@
 (defthm ftc-2
   (implies (and (inside-interval-p a (rcdfn-domain))
 		(inside-interval-p b (rcdfn-domain)))
-	   (equal (int-rcdfn-prime a b)
-		  (- (rcdfn b)
-		     (rcdfn a))))
+	   (equal (int-rcdfn-prime context a b)
+		  (- (rcdfn context b)
+		     (rcdfn context a))))
    :hints (("Goal"
 	    :cases ((< a b) (> a b))
 	    :in-theory (disable int-rcdfn-prime

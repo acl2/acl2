@@ -7,15 +7,15 @@
 (include-book "make-partition")
 
 
-(defun map-rcfn (p)
+(defun map-rcfn (context p)
   (if (consp p)
-      (cons (rcfn (car p))
-	    (map-rcfn (cdr p)))
+      (cons (rcfn context (car p))
+	    (map-rcfn context (cdr p)))
     nil))
 
-(defun riemann-rcfn (p)
+(defun riemann-rcfn (context p)
   (dotprod (deltas p)
-	   (map-rcfn (cdr p))))
+	   (map-rcfn context (cdr p))))
 
 (local
  (defun map-const (p y)
@@ -24,13 +24,13 @@
 	     (map-const (cdr p) y))
      nil)))
 
-(defun rcfn-max-x (a b)
+(defun rcfn-max-x (context a b)
   (if (and (realp a)
 	   (realp b))
       (if (< a b)
-	  (find-max-rcfn-x a b)
+	  (find-max-rcfn-x context a b)
 	(if (< b a)
-	    (find-max-rcfn-x b a)
+	    (find-max-rcfn-x context b a)
 	  b))
     b))
 
@@ -41,21 +41,21 @@
 		(<= a x)
 		(<= x b)
 		(<= a b))
-	   (<= (rcfn x)
-	       (rcfn (rcfn-max-x a b)))))
+	   (<= (rcfn context x)
+	       (rcfn context (rcfn-max-x context a b)))))
 
 (defthm realp-max
   (implies (and (realp a)
 		(realp b))
-	   (realp (rcfn-max-x a b))))
+	   (realp (rcfn-max-x context a b))))
 
 (defthm max-between-a-and-b-1
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(<= a b)
 		)
-	   (and (<= a (rcfn-max-x a b))
-		(<= (rcfn-max-x a b) b)))
+	   (and (<= a (rcfn-max-x context a b))
+		(<= (rcfn-max-x context a b) b)))
   :rule-classes (:linear :rewrite)
   )
 
@@ -64,8 +64,8 @@
 		(inside-interval-p b (rcfn-domain))
 		(< b a)
 		)
-	   (and (<= b (rcfn-max-x a b))
-		(<= (rcfn-max-x a b) a)))
+	   (and (<= b (rcfn-max-x context a b))
+		(<= (rcfn-max-x context a b) a)))
   :rule-classes (:linear :rewrite)
   )
 
@@ -80,8 +80,8 @@
 		 (< a2 b2)
 		 (inside-interval-p a1 (rcfn-domain))
 		 (inside-interval-p b1 (rcfn-domain)))
-	    (<= (rcfn (find-max-rcfn-x a2 b2))
-		(rcfn (find-max-rcfn-x a1 b1))))
+	    (<= (rcfn context (find-max-rcfn-x context a2 b2))
+		(rcfn context (find-max-rcfn-x context a1 b1))))
    :hints (("Goal"
 	    :use ((:instance find-max-rcfn-x-inside-interval
 			     (a a2)
@@ -90,7 +90,7 @@
 		  (:instance find-max-rcfn-is-maximum
 			     (a a1)
 			     (b b1)
-			     (x (find-max-rcfn-x a2 b2))))
+			     (x (find-max-rcfn-x context a2 b2))))
 	    :in-theory (e/d (interval-definition-theory)
 				       (find-max-rcfn-x-inside-interval
 					find-max-rcfn-is-maximum))))))
@@ -106,19 +106,20 @@
 		 (<= a2 b2)
 		 (inside-interval-p a1 (rcfn-domain))
 		 (inside-interval-p b1 (rcfn-domain)))
-	    (<= (rcfn (rcfn-max-x a2 b2))
-		(rcfn (rcfn-max-x a1 b1))))
+	    (<= (rcfn context (rcfn-max-x context a2 b2))
+		(rcfn context (rcfn-max-x context a1 b1))))
    :hints (("Goal"
 	    :use ((:instance find-max-rcfn-x-sub-interval-1))))))
 
 (in-theory (disable rcfn-max-x))
 
 (local
- (defun riemann-max-rcfn (p)
+ (defun riemann-max-rcfn (context p)
    (dotprod (deltas p)
 	    (map-const (cdr p)
-		       (rcfn (rcfn-max-x (car p)
-				    (car (last p))))))))
+		       (rcfn context (rcfn-max-x context
+                                                 (car p)
+				                 (car (last p))))))))
 
 (local
  (defun point-wise-<= (xs ys)
@@ -224,31 +225,45 @@
 	    (point-wise-<= (map-const p y1)
 			   (map-const p y2)))))
 
+
 (local
  (defthm point-wise-<=-map-rcfn-map-max-rcfn
    (implies (and (partitionp p)
 		 (inside-interval-p (car p) (rcfn-domain))
 		 (inside-interval-p (car (last p)) (rcfn-domain)))
-	    (point-wise-<= (map-rcfn p)
+	    (point-wise-<= (map-rcfn context p)
 			   (map-const p
-				      (rcfn (rcfn-max-x (car p)
-						   (car (last p)))))))
-   :hints (("Subgoal *1/2"
+				      (rcfn context
+                                            (rcfn-max-x context
+                                                        (car p)
+						        (car (last p)))))))
+   :hints (("Goal" :induct (partitionp p))
+           ("Subgoal *1/2"
 	    :use ((:instance max-x-is-max
 			     (a (car p))
 			     (b (car (last (cdr p))))
 			     (x (car p)))
 		  (:instance partition-first-inside-domain-hint)
 		  (:instance point-wise-<=-transitive
-			     (xs (map-rcfn (cdr p)))
+			     (xs (map-rcfn context (cdr p)))
 			     (ys (map-const (cdr p)
-					    (rcfn (rcfn-max-x (cadr p) (car (last (cdr p)))))))
+					    (rcfn context
+                                                  (rcfn-max-x context
+                                                              (cadr p)
+                                                              (car (last (cdr p)))))))
 			     (zs (map-const (cdr p)
-					    (rcfn (rcfn-max-x (car p) (car (last (cdr p))))))))
+					    (rcfn context
+                                                  (rcfn-max-x context
+                                                              (car p)
+                                                              (car (last (cdr p))))))))
 		  (:instance point-wise-<=-map-const
 			     (p p)
-			     (y1 (rcfn (rcfn-max-x (cadr p) (car (last (cdr p))))))
-			     (y2 (rcfn (rcfn-max-x (car p) (car (last (cdr p)))))))
+			     (y1 (rcfn context (rcfn-max-x context
+                                                           (cadr p)
+                                                           (car (last (cdr p))))))
+			     (y2 (rcfn context (rcfn-max-x context
+                                                           (car p)
+                                                           (car (last (cdr p)))))))
 		  (:instance partition-second-inside-domain-hint)
 		  (:instance max-x-sub-interval
 			     (a1 (car p))
@@ -275,15 +290,17 @@
    (implies (and (partitionp p)
 		 (inside-interval-p (car p) (rcfn-domain))
 		 (inside-interval-p (car (last p)) (rcfn-domain)))
-	    (<= (riemann-rcfn p)
-		(riemann-max-rcfn p)))
+	    (<= (riemann-rcfn context p)
+		(riemann-max-rcfn context p)))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance point-wise-<=-implies-dotprod-bounded-2
 			     (xs (deltas p))
-			     (ys (map-rcfn (cdr p)))
+			     (ys (map-rcfn context (cdr p)))
 			     (zs (map-const (cdr p)
-					    (rcfn (rcfn-max-x (car p)
-							 (car (last p)))))))
+					    (rcfn context
+                                                  (rcfn-max-x context
+                                                              (car p)
+							      (car (last p)))))))
 		  (:instance point-wise-<=-map-rcfn-map-max-rcfn
 			     (p p))
 		  )
@@ -313,14 +330,17 @@
 (local
  (defthmd simplify-riemann-max-rcfn
    (implies (partitionp p)
-	    (equal (riemann-max-rcfn p)
-		   (* (rcfn (rcfn-max-x (car p) (car (last p))))
+	    (equal (riemann-max-rcfn context p)
+		   (* (rcfn context
+                            (rcfn-max-x context (car p) (car (last p))))
 		      (- (car (last p))
 			 (car p)))))
    :hints (("goal"
 	    :use ((:instance simplify-riemann-max-rcfn-lemma
 			     (p p)
-			     (k (rcfn (rcfn-max-x (car p) (car (last p)))))))))
+			     (k (rcfn context (rcfn-max-x context
+                                                          (car p)
+                                                          (car (last p)))))))))
    ))
 
 
@@ -328,8 +348,8 @@
   (implies (and (partitionp p)
 		(inside-interval-p (car p) (rcfn-domain))
 		(inside-interval-p (car (last p)) (rcfn-domain)))
-	   (<= (riemann-rcfn p)
-	       (* (rcfn (rcfn-max-x (car p) (car (last p))))
+	   (<= (riemann-rcfn context p)
+	       (* (rcfn context (rcfn-max-x context (car p) (car (last p))))
 		  (- (car (last p))
 		     (car p)))))
   :hints (("Goal"
@@ -337,13 +357,13 @@
 		 (:instance riemann-rcfn-bounded-above-lemma))))
   )
 
-(defun rcfn-min-x (a b)
+(defun rcfn-min-x (context a b)
   (if (and (realp a)
 	   (realp b))
       (if (< a b)
-	  (find-min-rcfn-x a b)
+	  (find-min-rcfn-x context a b)
 	(if (< b a)
-	    (find-min-rcfn-x b a)
+	    (find-min-rcfn-x context b a)
 	  b))
     b))
 
@@ -354,21 +374,21 @@
 		(<= a x)
 		(<= x b)
 		(<= a b))
-	   (<= (rcfn (rcfn-min-x a b))
-	       (rcfn x))))
+	   (<= (rcfn context (rcfn-min-x context a b))
+	       (rcfn context x))))
 
 (defthm realp-min
   (implies (and (realp a)
 		(realp b))
-	   (realp (rcfn-min-x a b))))
+	   (realp (rcfn-min-x context a b))))
 
 (defthm min-between-a-and-b-1
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(<= a b)
 		)
-	   (and (<= a (rcfn-min-x a b))
-		(<= (rcfn-min-x a b) b)))
+	   (and (<= a (rcfn-min-x context a b))
+		(<= (rcfn-min-x context a b) b)))
   :rule-classes (:linear :rewrite)
   )
 
@@ -377,8 +397,8 @@
 		(inside-interval-p b (rcfn-domain))
 		(< b a)
 		)
-	   (and (<= b (rcfn-min-x a b))
-		(<= (rcfn-min-x a b) a)))
+	   (and (<= b (rcfn-min-x context a b))
+		(<= (rcfn-min-x context a b) a)))
   :rule-classes (:linear :rewrite)
   )
 
@@ -393,8 +413,8 @@
 		 (< a2 b2)
 		 (inside-interval-p a1 (rcfn-domain))
 		 (inside-interval-p b1 (rcfn-domain)))
-	    (<= (rcfn (find-min-rcfn-x a1 b1))
-		(rcfn (find-min-rcfn-x a2 b2))))
+	    (<= (rcfn context (find-min-rcfn-x context a1 b1))
+		(rcfn context (find-min-rcfn-x context a2 b2))))
    :hints (("Goal"
 	    :use ((:instance find-min-rcfn-x-inside-interval
 			     (a a2)
@@ -403,7 +423,7 @@
 		  (:instance find-min-rcfn-is-minimum
 			     (a a1)
 			     (b b1)
-			     (x (find-min-rcfn-x a2 b2))))
+			     (x (find-min-rcfn-x context a2 b2))))
 	    :in-theory (e/d (interval-definition-theory)
 				       (find-min-rcfn-x-inside-interval
 					find-min-rcfn-is-minimum))))))
@@ -419,8 +439,8 @@
 		 (<= a2 b2)
 		 (inside-interval-p a1 (rcfn-domain))
 		 (inside-interval-p b1 (rcfn-domain)))
-	    (<= (rcfn (rcfn-min-x a1 b1))
-		(rcfn (rcfn-min-x a2 b2))))
+	    (<= (rcfn context (rcfn-min-x context a1 b1))
+		(rcfn context (rcfn-min-x context a2 b2))))
    :hints (("Goal"
 	    :use ((:instance find-min-rcfn-x-sub-interval-1))))))
 
@@ -428,11 +448,11 @@
 (in-theory (disable rcfn-min-x))
 
 (local
- (defun riemann-min-rcfn (p)
+ (defun riemann-min-rcfn (context p)
    (dotprod (deltas p)
 	    (map-const (cdr p)
-		       (rcfn (rcfn-min-x (car p)
-				    (car (last p))))))))
+		       (rcfn context (rcfn-min-x context (car p)
+				                 (car (last p))))))))
 
 (local
  (defthm point-wise-<=-map-rcfn-map-min-rcfn
@@ -440,10 +460,13 @@
 		 (inside-interval-p (car p) (rcfn-domain))
 		 (inside-interval-p (car (last p)) (rcfn-domain)))
 	    (point-wise-<= (map-const p
-				      (rcfn (rcfn-min-x (car p)
-						   (car (last p)))))
-			   (map-rcfn p)))
-   :hints (("Subgoal *1/2"
+				      (rcfn context
+                                            (rcfn-min-x context
+                                                        (car p)
+						        (car (last p)))))
+			   (map-rcfn context p)))
+   :hints (("Goal" :induct (partitionp p))
+           ("Subgoal *1/2"
 	    :use ((:instance min-x-is-min
 			     (a (car p))
 			     (b (car (last (cdr p))))
@@ -451,14 +474,26 @@
 		  (:instance partition-first-inside-domain-hint)
 		  (:instance point-wise-<=-transitive
 			     (xs (map-const (cdr p)
-					    (rcfn (rcfn-min-x (car p) (car (last (cdr p)))))))
+					    (rcfn context
+                                                  (rcfn-min-x context
+                                                              (car p)
+                                                              (car (last (cdr p)))))))
 			     (ys (map-const (cdr p)
-					    (rcfn (rcfn-min-x (cadr p) (car (last (cdr p)))))))
-			     (zs (map-rcfn (cdr p))))
+					    (rcfn context
+                                                  (rcfn-min-x context
+                                                              (cadr p)
+                                                              (car (last (cdr p)))))))
+			     (zs (map-rcfn context (cdr p))))
 		  (:instance point-wise-<=-map-const
 			     (p p)
-			     (y1 (rcfn (rcfn-min-x (car p) (car (last (cdr p))))))
-			     (y2 (rcfn (rcfn-min-x (cadr p) (car (last (cdr p)))))))
+			     (y1 (rcfn context
+                                       (rcfn-min-x context
+                                                   (car p)
+                                                   (car (last (cdr p))))))
+			     (y2 (rcfn context
+                                       (rcfn-min-x context
+                                                   (cadr p)
+                                                   (car (last (cdr p)))))))
 		  (:instance partition-second-inside-domain-hint)
 		  (:instance min-x-sub-interval
 			     (a1 (car p))
@@ -479,15 +514,17 @@
    (implies (and (partitionp p)
 		 (inside-interval-p (car p) (rcfn-domain))
 		 (inside-interval-p (car (last p)) (rcfn-domain)))
-	    (<= (riemann-min-rcfn p)
-		(riemann-rcfn p)))
+	    (<= (riemann-min-rcfn context p)
+		(riemann-rcfn context p)))
    :hints (("Goal" :do-not-induct t
 	    :use ((:instance point-wise-<=-implies-dotprod-bounded-2
 			     (xs (deltas p))
 			     (ys (map-const (cdr p)
-					    (rcfn (rcfn-min-x (car p)
-							 (car (last p))))))
-			     (zs (map-rcfn (cdr p))))
+					    (rcfn context
+                                                  (rcfn-min-x context
+                                                              (car p)
+							      (car (last p))))))
+			     (zs (map-rcfn context (cdr p))))
 		  (:instance point-wise-<=-map-rcfn-map-min-rcfn
 			     (p p))
 		  )
@@ -499,14 +536,20 @@
 (local
  (defthmd simplify-riemann-min-rcfn
    (implies (partitionp p)
-	    (equal (riemann-min-rcfn p)
-		   (* (rcfn (rcfn-min-x (car p) (car (last p))))
+	    (equal (riemann-min-rcfn context p)
+		   (* (rcfn context
+                            (rcfn-min-x context
+                                        (car p)
+                                        (car (last p))))
 		      (- (car (last p))
 			 (car p)))))
    :hints (("goal"
 	    :use ((:instance simplify-riemann-max-rcfn-lemma
 			     (p p)
-			     (k (rcfn (rcfn-min-x (car p) (car (last p)))))))))
+			     (k (rcfn context
+                                      (rcfn-min-x context
+                                                  (car p)
+                                                  (car (last p)))))))))
    ))
 
 
@@ -514,10 +557,13 @@
   (implies (and (partitionp p)
 		(inside-interval-p (car p) (rcfn-domain))
 		(inside-interval-p (car (last p)) (rcfn-domain)))
-	   (<= (* (rcfn (rcfn-min-x (car p) (car (last p))))
+	   (<= (* (rcfn context
+                        (rcfn-min-x context
+                                    (car p)
+                                    (car (last p))))
 		  (- (car (last p))
 		     (car p)))
-	       (riemann-rcfn p)))
+	       (riemann-rcfn context p)))
   :hints (("Goal"
 	   :use ((:instance simplify-riemann-min-rcfn)
 		 (:instance riemann-rcfn-bounded-below-lemma))))
@@ -526,16 +572,19 @@
 (local
  (defthm-std lower-bound-is-standard
    (implies (and (standardp a)
-		 (standardp b))
-	    (standardp (* (rcfn (rcfn-min-x a b))
+		 (standardp b)
+                 (standardp context))
+	    (standardp (* (rcfn context
+                                (rcfn-min-x context a b))
 			  (- b a))))))
 
 
 (local
  (defthm-std upper-bound-is-standard
       (implies (and (standardp a)
-		    (standardp b))
-	       (standardp (* (rcfn (rcfn-max-x a b))
+		    (standardp b)
+                    (standardp context))
+	       (standardp (* (rcfn context (rcfn-max-x context a b))
 			     (- b a))))))
 
 (local
@@ -545,11 +594,11 @@
 		 (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
 		 (< a b))
-	    (and (<= (* (rcfn (rcfn-min-x a b))
+	    (and (<= (* (rcfn context (rcfn-min-x context a b))
 			(- b a))
-		     (riemann-rcfn (make-small-partition a b)))
-		 (<= (riemann-rcfn (make-small-partition a b))
-		     (* (rcfn (rcfn-max-x a b))
+		     (riemann-rcfn context (make-small-partition a b)))
+		 (<= (riemann-rcfn context (make-small-partition a b))
+		     (* (rcfn context (rcfn-max-x context a b))
 			(- b a)))))
    :hints (("Goal"
 	    :use ((:instance riemann-rcfn-bounded-below
@@ -565,22 +614,23 @@
 
 (defthm realp-riemann-rcfn
   (implies (partitionp p)
-	   (realp (riemann-rcfn p))))
+	   (realp (riemann-rcfn context p))))
 
 (defthm limited-riemann-rcfn-small-partition
   (implies (and (realp a) (standardp a)
 		(realp b) (standardp b)
+                (standardp context)
 		(inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(< a b))
-	   (i-limited (riemann-rcfn (make-small-partition a b))))
+	   (i-limited (riemann-rcfn context (make-small-partition a b))))
   :hints (("Goal"
 	   :use ((:instance limited-squeeze
-			    (a (* (rcfn (rcfn-min-x a b))
+			    (a (* (rcfn context (rcfn-min-x context a b))
 				  (- b a)))
-			    (b (* (rcfn (rcfn-max-x a b))
+			    (b (* (rcfn context (rcfn-max-x context a b))
 				  (- b a)))
-			    (x (riemann-rcfn (make-small-partition a b))))
+			    (x (riemann-rcfn context (make-small-partition a b))))
 		 (:instance strict-int-rcfn-body-bounded)
 		 (:instance lower-bound-is-standard)
 		 (:instance upper-bound-is-standard)
@@ -595,13 +645,13 @@
 
  (local (in-theory (disable riemann-rcfn)))
 
- (defun-std strict-int-rcfn (a b)
+ (defun-std strict-int-rcfn (context a b)
    (if (and (realp a)
 	    (realp b)
 	    (inside-interval-p a (rcfn-domain))
 	    (inside-interval-p b (rcfn-domain))
 	    (< a b))
-       (standard-part (riemann-rcfn (make-small-partition a b)))
+       (standard-part (riemann-rcfn context (make-small-partition a b)))
      0))
  )
 
@@ -611,29 +661,29 @@
 		 (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
 		 (< a b))
-	    (and (<= (* (rcfn (rcfn-min-x a b))
+	    (and (<= (* (rcfn context (rcfn-min-x context a b))
 			(- b a))
-		     (strict-int-rcfn a b))
-		 (<= (strict-int-rcfn a b)
-		     (* (rcfn (rcfn-max-x a b))
+		     (strict-int-rcfn context a b))
+		 (<= (strict-int-rcfn context a b)
+		     (* (rcfn context (rcfn-max-x context a b))
 			(- b a)))))
    :hints (("Goal"
 	    :use ((:instance strict-int-rcfn-body-bounded)
  		  (:instance standard-part-<=
-			     (x (* (rcfn (rcfn-min-x a b))
+			     (x (* (rcfn context (rcfn-min-x context a b))
 				   (- b a)))
-			     (y (riemann-rcfn (make-small-partition a b))))
+			     (y (riemann-rcfn context (make-small-partition a b))))
  		  (:instance standard-part-<=
-			     (x (riemann-rcfn (make-small-partition a b)))
-			     (y (* (rcfn (rcfn-max-x a b))
+			     (x (riemann-rcfn context (make-small-partition a b)))
+			     (y (* (rcfn context (rcfn-max-x context a b))
 				   (- b a))))
 		  (:instance lower-bound-is-standard)
 		  (:instance upper-bound-is-standard)
 		  (:instance standard-part-of-standardp
-			     (x (* (rcfn (rcfn-min-x a b))
+			     (x (* (rcfn context (rcfn-min-x context a b))
 				   (- b a))))
 		  (:instance standard-part-of-standardp
-			     (x (* (rcfn (rcfn-max-x a b))
+			     (x (* (rcfn context (rcfn-max-x context a b))
 				   (- b a))))
 		  )
 	    :in-theory (disable strict-int-rcfn-body-bounded
@@ -654,17 +704,17 @@
         (next-gte x (cdr p))
       nil)))
 
-(defun map-rcfn-refinement (p1 p2)
+(defun map-rcfn-refinement (context p1 p2)
   ;; p1 should be a refinement of p2
   (if (consp p1)
-      (cons (rcfn (next-gte (car p1) p2))
-            (map-rcfn-refinement (cdr p1) p2))
+      (cons (rcfn context (next-gte (car p1) p2))
+            (map-rcfn-refinement context (cdr p1) p2))
     nil))
 
-(defun riemann-rcfn-refinement (p1 p2)
+(defun riemann-rcfn-refinement (context p1 p2)
   ;; p1 should be a refinement of p2
   (dotprod (deltas p1)
-           (map-rcfn-refinement (cdr p1) p2)))
+           (map-rcfn-refinement context (cdr p1) p2)))
 
 (defun abslist (x)
   ;; pointwise absolute values of list x
@@ -735,15 +785,15 @@
  (defthm nth-index-map-rcfn
    (implies (and (<= 0 index)
 		 (< index (len p)))
-	    (equal (nth index (map-rcfn p))
-		   (rcfn (nth index p))))))
+	    (equal (nth index (map-rcfn context p))
+		   (rcfn context (nth index p))))))
 
 (local
  (defthm nth-index-map-rcfn-refinement
    (implies (and (<= 0 index)
 		 (< index (len p1)))
-	    (equal (nth index (map-rcfn-refinement p1 p2))
-		   (rcfn (next-gte (nth index p1) p2))))))
+	    (equal (nth index (map-rcfn-refinement context p1 p2))
+		   (rcfn context (next-gte (nth index p1) p2))))))
 
 (local
  (defthm next-gte-is-within-mesh
@@ -842,9 +892,10 @@
 		(interval-left-inclusive-p interval)
 		(interval-right-inclusive-p interval)
 		(inside-interval-p x interval)
+                (standardp context)
 		(i-close x y)
 		(inside-interval-p y interval))
-	   (i-close (rcfn x) (rcfn y)))
+	   (i-close (rcfn context x) (rcfn context y)))
   :hints (("Goal"
 	   :use ((:instance rcfn-continuous
 			    (x (standard-part x))
@@ -857,12 +908,12 @@
 			    (y x)
 			    (z y))
 		 (:instance i-close-transitive
-			    (x (rcfn x))
-			    (y (rcfn (standard-part x)))
-			    (z (rcfn y)))
+			    (x (rcfn context x))
+			    (y (rcfn context (standard-part x)))
+			    (z (rcfn context y)))
 		 (:instance i-close-symmetric
-			    (x (rcfn (standard-part x)))
-			    (y (rcfn x)))
+			    (x (rcfn context (standard-part x)))
+			    (y (rcfn context x)))
 		 (:instance standard-part-inside-interval
 			    (x x)
 			    (interval interval))
@@ -898,13 +949,14 @@
    (implies (and (partitionp p2)
 		 (standardp (car p2))
 		 (standardp (car (last p2)))
+                 (standardp context)
 		 (inside-interval-p (car p2) (rcfn-domain))
 		 (inside-interval-p (car (last p2)) (rcfn-domain))
 		 (i-small (mesh p2))
 		 (<= (car p2) x)
 		 (<= x (car (last p2)))
 		 (realp x))
-	    (i-close (rcfn x) (rcfn (next-gte x p2))))
+	    (i-close (rcfn context x) (rcfn context (next-gte x p2))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance next-gte-close
@@ -1370,50 +1422,54 @@
 
 (local
  (defthm real-listp-map-rcfn
-   (real-listp (map-rcfn p1))))
+   (real-listp (map-rcfn context p1))))
 
 (local
  (defthm real-listp-map-rcfn-refinement
-   (real-listp (map-rcfn-refinement p1 p2))))
+   (real-listp (map-rcfn-refinement context p1 p2))))
 
 (local
  (defthm len-map-rcfn
-   (equal (len (map-rcfn p))
+   (equal (len (map-rcfn context p))
 	  (len p))))
 
 (local
  (defthm len-map-rcfn-refinement
-   (equal (len (map-rcfn-refinement p1 p2))
+   (equal (len (map-rcfn-refinement context p1 p2))
 	  (len p1))))
 
 (local
  (defthm abs-dotprod-deltas-6
    (implies (strong-refinement-p p1 p2)
 	    (<= (abs (- (dotprod (deltas p1)
-				 (map-rcfn (cdr p1)))
+				 (map-rcfn context (cdr p1)))
 			(dotprod (deltas p1)
-				 (map-rcfn-refinement (cdr p1) p2))))
+				 (map-rcfn-refinement context (cdr p1) p2))))
 		(* (abs (- (nth (index-for-large-element
-				 (abslist (difflist (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))
+				 (abslist (difflist (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))
 				 (maxlist (abslist (difflist
-						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))))
-				(map-rcfn (cdr p1)))
+						    (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))))
+				(map-rcfn context (cdr p1)))
 			   (nth (index-for-large-element
-				 (abslist (difflist (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))
+				 (abslist (difflist (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))
 				 (maxlist (abslist (difflist
-						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))))
-				(map-rcfn-refinement (cdr p1) p2))))
+						    (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))))
+				(map-rcfn-refinement context (cdr p1) p2))))
 		   (span p1))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance abs-dotprod-deltas-5
 			     (p p1)
-			     (ys (map-rcfn (cdr p1)))
-			     (zs (map-rcfn-refinement (cdr p1) p2)))
+			     (ys (map-rcfn context (cdr p1)))
+			     (zs (map-rcfn-refinement context (cdr p1) p2)))
 		  )
 	    :in-theory (disable nth last partitionp real-listp
 				deltas dotprod index-for-large-element
@@ -1426,24 +1482,30 @@
  (defthm abs-dotprod-deltas-7
    (implies (strong-refinement-p p1 p2)
 	    (<= (abs (- (dotprod (deltas p1)
-				 (map-rcfn (cdr p1)))
+				 (map-rcfn context (cdr p1)))
 			(dotprod (deltas p1)
-				 (map-rcfn-refinement (cdr p1) p2))))
-		(* (abs (- (rcfn (nth (index-for-large-element
-				       (abslist (difflist (map-rcfn (cdr p1))
-							  (map-rcfn-refinement (cdr p1) p2)))
+				 (map-rcfn-refinement context (cdr p1) p2))))
+		(* (abs (- (rcfn context
+                                 (nth (index-for-large-element
+				       (abslist (difflist (map-rcfn context (cdr p1))
+							  (map-rcfn-refinement
+                                                           context (cdr p1) p2)))
 				       (maxlist (abslist (difflist
-							  (map-rcfn (cdr p1))
-							  (map-rcfn-refinement (cdr p1) p2)))))
+							  (map-rcfn context (cdr p1))
+							  (map-rcfn-refinement
+                                                           context (cdr p1) p2)))))
 				      (cdr p1)))
-			   (rcfn (next-gte (nth (index-for-large-element
+			   (rcfn context
+                                 (next-gte (nth (index-for-large-element
 						 (abslist (difflist
-							   (map-rcfn (cdr p1))
-							   (map-rcfn-refinement (cdr p1) p2)))
+							   (map-rcfn context (cdr p1))
+							   (map-rcfn-refinement
+                                                            context (cdr p1) p2)))
 						 (maxlist (abslist
 							   (difflist
-							    (map-rcfn (cdr p1))
-							    (map-rcfn-refinement (cdr p1) p2)))))
+							    (map-rcfn context (cdr p1))
+							    (map-rcfn-refinement
+                                                             context (cdr p1) p2)))))
 						(cdr p1))
 					   p2))))
 		   (span p1))))
@@ -1452,24 +1514,29 @@
 	    :use ((:instance abs-dotprod-deltas-6)
 		  (:instance nth-index-map-rcfn
 			     (index (index-for-large-element
-				     (abslist (difflist (map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2)))
+				     (abslist (difflist (map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2)))
 				     (maxlist (abslist (difflist
-							(map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2))))))
+							(map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2))))))
 			     (p (cdr p1)))
 		  (:instance nth-index-map-rcfn-refinement
 			     (index (index-for-large-element
-				     (abslist (difflist (map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2)))
+				     (abslist (difflist (map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2)))
 				     (maxlist (abslist (difflist
-							(map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2))))))
+							(map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2))))))
 			     (p1 (cdr p1))
 			     (p2 p2))
 		  (:instance index-for-large-element-upper-bound-better
-			     (xs (abslist (difflist (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))))
+			     (xs (abslist (difflist (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))))
 		  )
 	    :in-theory (disable nth last partitionp real-listp
 				deltas dotprod index-for-large-element
@@ -1578,25 +1645,32 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-close (rcfn (nth (index-for-large-element
-				 (abslist (difflist (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))
+	    (i-close (rcfn context
+                           (nth (index-for-large-element
+				 (abslist (difflist (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))
 				 (maxlist (abslist (difflist
-						    (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))))
+						    (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))))
 				(cdr p1)))
-		     (rcfn (next-gte (nth (index-for-large-element
+		     (rcfn context
+                           (next-gte (nth (index-for-large-element
 					   (abslist (difflist
-						     (map-rcfn (cdr p1))
-						     (map-rcfn-refinement (cdr p1) p2)))
+						     (map-rcfn context (cdr p1))
+						     (map-rcfn-refinement
+                                                      context (cdr p1) p2)))
 					   (maxlist (abslist
 						     (difflist
-						      (map-rcfn (cdr p1))
-						      (map-rcfn-refinement (cdr p1) p2)))))
+						      (map-rcfn context (cdr p1))
+						      (map-rcfn-refinement
+                                                       context (cdr p1) p2)))))
 					  (cdr p1))
 				     p2))))
    :hints (("Goal"
@@ -1604,38 +1678,52 @@
 	    :use ((:instance rcfn-next-gte-close
 			     (x (nth (index-for-large-element
 				      (abslist (difflist
-						(map-rcfn (cdr p1))
-						(map-rcfn-refinement (cdr p1) p2)))
+						(map-rcfn context (cdr p1))
+						(map-rcfn-refinement
+                                                 context (cdr p1) p2)))
 				      (maxlist (abslist
 						(difflist
-						 (map-rcfn (cdr p1))
-						 (map-rcfn-refinement (cdr p1) p2)))))
+						 (map-rcfn context (cdr p1))
+						 (map-rcfn-refinement
+                                                  context (cdr p1) p2)))))
 				     (cdr p1)))
 			     (p2 p2))
 		  (:instance index-for-large-element-upper-bound-better
-			     (xs (abslist (difflist (map-rcfn (cdr p1))
-						    (map-rcfn-refinement (cdr p1) p2)))))
+			     (xs (abslist (difflist (map-rcfn context (cdr p1))
+						    (map-rcfn-refinement
+                                                     context (cdr p1) p2)))))
 		  (:instance realp-nth
 			     (list (cdr p1))
 			     (index (index-for-large-element
-				     (abslist (difflist (map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2)))
-				     (maxlist (abslist (difflist (map-rcfn (cdr p1))
-								 (map-rcfn-refinement (cdr p1) p2)))))))
+				     (abslist (difflist (map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2)))
+				     (maxlist (abslist (difflist (map-rcfn
+                                                                  context (cdr p1))
+								 (map-rcfn-refinement
+                                                                  context (cdr p1) p2)))))))
 		  (:instance nth-cdr-partition-lower-bound
 			     (p p1)
 			     (index (index-for-large-element
-				     (abslist (difflist (map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2)))
-				     (maxlist (abslist (difflist (map-rcfn (cdr p1))
-								 (map-rcfn-refinement (cdr p1) p2)))))))
+				     (abslist (difflist (map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2)))
+				     (maxlist (abslist (difflist (map-rcfn
+                                                                  context (cdr p1))
+								 (map-rcfn-refinement
+                                                                  context (cdr p1) p2)))))))
 		  (:instance nth-cdr-partition-upper-bound
 			     (p p1)
 			     (index (index-for-large-element
-				     (abslist (difflist (map-rcfn (cdr p1))
-							(map-rcfn-refinement (cdr p1) p2)))
-				     (maxlist (abslist (difflist (map-rcfn (cdr p1))
-								 (map-rcfn-refinement (cdr p1) p2))))))))
+				     (abslist (difflist (map-rcfn context (cdr p1))
+							(map-rcfn-refinement
+                                                         context (cdr p1) p2)))
+				     (maxlist (abslist (difflist (map-rcfn
+                                                                  context (cdr p1))
+								 (map-rcfn-refinement
+                                                                  context
+                                                                  (cdr p1)
+                                                                  p2))))))))
 	    :in-theory (disable nth last partitionp real-listp
 				deltas dotprod index-for-large-element
 				maxlist abs abs-dotprod-deltas-6
@@ -1667,46 +1755,59 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-small (abs (- (rcfn (nth (index-for-large-element
-					 (abslist (difflist (map-rcfn (cdr p1))
-							    (map-rcfn-refinement (cdr p1) p2)))
+	    (i-small (abs (- (rcfn context
+                                   (nth (index-for-large-element
+					 (abslist (difflist (map-rcfn context (cdr p1))
+							    (map-rcfn-refinement
+                                                             context (cdr p1) p2)))
 					 (maxlist (abslist (difflist
-							    (map-rcfn (cdr p1))
-							    (map-rcfn-refinement (cdr p1) p2)))))
+							    (map-rcfn context (cdr p1))
+							    (map-rcfn-refinement
+                                                             context (cdr p1) p2)))))
 					(cdr p1)))
-			     (rcfn (next-gte (nth (index-for-large-element
+			     (rcfn context
+                                   (next-gte (nth (index-for-large-element
 						   (abslist (difflist
-							     (map-rcfn (cdr p1))
-							     (map-rcfn-refinement (cdr p1) p2)))
+							     (map-rcfn context (cdr p1))
+							     (map-rcfn-refinement
+                                                              context (cdr p1) p2)))
 						   (maxlist (abslist
 							     (difflist
-							      (map-rcfn (cdr p1))
-							      (map-rcfn-refinement (cdr p1) p2)))))
+							      (map-rcfn context (cdr p1))
+							      (map-rcfn-refinement
+                                                               context (cdr p1) p2)))))
 						  (cdr p1))
 					     p2))))))
       :hints (("Goal"
 	       :do-not-induct t
 	       :use ((:instance rcfn-next-gte-close-in-partition)
 		     (:instance small-abs-close-diff
-				(x1 (rcfn (nth (index-for-large-element
-						(abslist (difflist (map-rcfn (cdr p1))
-								   (map-rcfn-refinement (cdr p1) p2)))
+				(x1 (rcfn context
+                                          (nth (index-for-large-element
+						(abslist (difflist (map-rcfn context (cdr p1))
+								   (map-rcfn-refinement
+                                                                    context (cdr p1) p2)))
 						(maxlist (abslist (difflist
-								   (map-rcfn (cdr p1))
-								   (map-rcfn-refinement (cdr p1) p2)))))
+								   (map-rcfn context (cdr p1))
+								   (map-rcfn-refinement
+                                                                    context (cdr p1) p2)))))
 					       (cdr p1))))
-				(x2 (rcfn (next-gte (nth (index-for-large-element
+				(x2 (rcfn context
+                                          (next-gte (nth (index-for-large-element
 							  (abslist (difflist
-								    (map-rcfn (cdr p1))
-								    (map-rcfn-refinement (cdr p1) p2)))
+								    (map-rcfn context (cdr p1))
+								    (map-rcfn-refinement
+                                                                     context (cdr p1) p2)))
 							  (maxlist (abslist
 								    (difflist
-								     (map-rcfn (cdr p1))
-								     (map-rcfn-refinement (cdr p1) p2)))))
+								     (map-rcfn context (cdr p1))
+								     (map-rcfn-refinement
+                                                                      context (cdr p1) p2)))))
 							 (cdr p1))
 						    p2))))
 		     )
@@ -1728,25 +1829,32 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-small (* (abs (- (rcfn (nth (index-for-large-element
-					    (abslist (difflist (map-rcfn (cdr p1))
-							       (map-rcfn-refinement (cdr p1) p2)))
+	    (i-small (* (abs (- (rcfn context
+                                      (nth (index-for-large-element
+					    (abslist (difflist (map-rcfn context (cdr p1))
+							       (map-rcfn-refinement
+                                                                context (cdr p1) p2)))
 					    (maxlist (abslist (difflist
-							       (map-rcfn (cdr p1))
-							       (map-rcfn-refinement (cdr p1) p2)))))
+							       (map-rcfn context (cdr p1))
+							       (map-rcfn-refinement
+                                                                context (cdr p1) p2)))))
 					   (cdr p1)))
-				(rcfn (next-gte (nth (index-for-large-element
+				(rcfn context
+                                      (next-gte (nth (index-for-large-element
 						      (abslist (difflist
-								(map-rcfn (cdr p1))
-								(map-rcfn-refinement (cdr p1) p2)))
+								(map-rcfn context (cdr p1))
+								(map-rcfn-refinement
+                                                                 context (cdr p1) p2)))
 						      (maxlist (abslist
 								(difflist
-								 (map-rcfn (cdr p1))
-								 (map-rcfn-refinement (cdr p1) p2)))))
+								 (map-rcfn context (cdr p1))
+								 (map-rcfn-refinement
+                                                                  context (cdr p1) p2)))))
 						     (cdr p1))
 						p2))))
 			(span p1))))
@@ -1755,21 +1863,23 @@
 	       :use ((:instance rcfn-next-gte-abs-small-in-partition)
 		     (:instance limited*small->small
 				(x (span p1))
-				(y (abs (- (rcfn (nth (index-for-large-element
-						       (abslist (difflist (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2)))
+				(y (abs (- (rcfn context
+                                                 (nth (index-for-large-element
+						       (abslist (difflist (map-rcfn context (cdr p1))
+									  (map-rcfn-refinement context (cdr p1) p2)))
 						       (maxlist (abslist (difflist
-									  (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2)))))
+									  (map-rcfn context (cdr p1))
+									  (map-rcfn-refinement context (cdr p1) p2)))))
 						      (cdr p1)))
-					   (rcfn (next-gte (nth (index-for-large-element
+					   (rcfn context
+                                                 (next-gte (nth (index-for-large-element
 								 (abslist (difflist
-									   (map-rcfn (cdr p1))
-									   (map-rcfn-refinement (cdr p1) p2)))
+									   (map-rcfn context (cdr p1))
+									   (map-rcfn-refinement context (cdr p1) p2)))
 								 (maxlist (abslist
 									   (difflist
-									    (map-rcfn (cdr p1))
-									    (map-rcfn-refinement (cdr p1) p2)))))
+									    (map-rcfn context (cdr p1))
+									    (map-rcfn-refinement context (cdr p1) p2)))))
 								(cdr p1))
 							   p2))))))
 		     (:instance span-limited
@@ -1811,25 +1921,28 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (realp (* (abs (- (rcfn (nth (index-for-large-element
-					  (abslist (difflist (map-rcfn (cdr p1))
-							     (map-rcfn-refinement (cdr p1) p2)))
+	    (realp (* (abs (- (rcfn context
+                                    (nth (index-for-large-element
+					  (abslist (difflist (map-rcfn context (cdr p1))
+							     (map-rcfn-refinement context (cdr p1) p2)))
 					  (maxlist (abslist (difflist
-							     (map-rcfn (cdr p1))
-							     (map-rcfn-refinement (cdr p1) p2)))))
+							     (map-rcfn context (cdr p1))
+							     (map-rcfn-refinement context (cdr p1) p2)))))
 					 (cdr p1)))
-			      (rcfn (next-gte (nth (index-for-large-element
+			      (rcfn context
+                                    (next-gte (nth (index-for-large-element
 						    (abslist (difflist
-							      (map-rcfn (cdr p1))
-							      (map-rcfn-refinement (cdr p1) p2)))
+							      (map-rcfn context (cdr p1))
+							      (map-rcfn-refinement context (cdr p1) p2)))
 						    (maxlist (abslist
 							      (difflist
-							       (map-rcfn (cdr p1))
-							       (map-rcfn-refinement (cdr p1) p2)))))
+							       (map-rcfn context (cdr p1))
+							       (map-rcfn-refinement context (cdr p1) p2)))))
 						   (cdr p1))
 					      p2))))
 		      (span p1))))))
@@ -1839,36 +1952,39 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
 	    (i-close (dotprod (deltas p1)
-			      (map-rcfn (cdr p1)))
+			      (map-rcfn context (cdr p1)))
 		     (dotprod (deltas p1)
-			      (map-rcfn-refinement (cdr p1) p2))))
+			      (map-rcfn-refinement context (cdr p1) p2))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance small-if-abs-<=-small
 			     (x (- (dotprod (deltas p1)
-					    (map-rcfn (cdr p1)))
+					    (map-rcfn context (cdr p1)))
 				   (dotprod (deltas p1)
-					    (map-rcfn-refinement (cdr p1) p2))))
-			     (y (* (abs (- (rcfn (nth (index-for-large-element
-						       (abslist (difflist (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2)))
+					    (map-rcfn-refinement context (cdr p1) p2))))
+			     (y (* (abs (- (rcfn context
+                                                 (nth (index-for-large-element
+						       (abslist (difflist (map-rcfn context (cdr p1))
+									  (map-rcfn-refinement context (cdr p1) p2)))
 						       (maxlist (abslist (difflist
-									  (map-rcfn (cdr p1))
-									  (map-rcfn-refinement (cdr p1) p2)))))
+									  (map-rcfn context (cdr p1))
+									  (map-rcfn-refinement context (cdr p1) p2)))))
 						      (cdr p1)))
-					   (rcfn (next-gte (nth (index-for-large-element
+					   (rcfn context
+                                                 (next-gte (nth (index-for-large-element
 								 (abslist (difflist
-									   (map-rcfn (cdr p1))
-									   (map-rcfn-refinement (cdr p1) p2)))
+									   (map-rcfn context (cdr p1))
+									   (map-rcfn-refinement context (cdr p1) p2)))
 								 (maxlist (abslist
 									   (difflist
-									    (map-rcfn (cdr p1))
-									    (map-rcfn-refinement (cdr p1) p2)))))
+									    (map-rcfn context (cdr p1))
+									    (map-rcfn-refinement context (cdr p1) p2)))))
 								(cdr p1))
 							   p2))))
 				   (span p1))))
@@ -1953,9 +2069,9 @@
 	 (< (car p2) (car p3))
 	 (equal (cadr p2) (car (last p3))))
     (equal
-     (map-rcfn-refinement p3 p2)
+     (map-rcfn-refinement context p3 p2)
      (my-make-list (len p3)
-		   (rcfn (cadr p2)))))
+		   (rcfn context (cadr p2)))))
    :hints (("Subgoal *1/1.5"
 	    :use ((:instance next-gte-for-first
 			     (p (cdr p2))
@@ -2033,10 +2149,11 @@
 	 (consp (cdr p2))
 	 (strong-refinement-p p1 p2))
     (equal
-     (map-rcfn-refinement (cdr (co-member (cadr p2) p1))
+     (map-rcfn-refinement context
+                          (cdr (co-member (cadr p2) p1))
 			  p2)
      (my-make-list (len (cdr (co-member (cadr p2) p1)))
-		   (rcfn (cadr p2)))))))
+		   (rcfn context (cadr p2)))))))
 
 
 (local
@@ -2049,12 +2166,12 @@
 (local
  (defthm cdr-map-rcfn-refinement
    (implies (consp p1)
-	    (equal (cdr (map-rcfn-refinement p1 p2))
-		   (map-rcfn-refinement (cdr p1) p2)))))
+	    (equal (cdr (map-rcfn-refinement context p1 p2))
+		   (map-rcfn-refinement context (cdr p1) p2)))))
 
 (local
  (defthm len-cdr-map-rcfn-refinement
-   (equal (len (cdr (map-rcfn-refinement p1 p2)))
+   (equal (len (cdr (map-rcfn-refinement context p1 p2)))
 	  (len (cdr p1)))))
 
 (local
@@ -2153,16 +2270,17 @@
 		 (partitionp p2)
 		 (consp (cdr p2))
 		 (strong-refinement-p p1 p2))
-	    (equal (riemann-rcfn-refinement (co-member (cadr p2) p1)
+	    (equal (riemann-rcfn-refinement context
+                                            (co-member (cadr p2) p1)
 					    p2)
 		   (* (- (cadr p2) (car p2))
-		      (rcfn (cadr p2)))))))
+		      (rcfn context (cadr p2)))))))
 
 
 
 (local
  (defthm consp-map-rcfn-refinement
-   (equal (consp (map-rcfn-refinement p1 p2))
+   (equal (consp (map-rcfn-refinement context p1 p2))
 	  (consp p1))))
 
 (local
@@ -2175,9 +2293,9 @@
 
 (local
  (defthm map-rcfn-refinement-append
-   (equal (map-rcfn-refinement (append p1 p2) p3)
-	  (append (map-rcfn-refinement p1 p3)
-		  (map-rcfn-refinement p2 p3)))))
+   (equal (map-rcfn-refinement context (append p1 p2) p3)
+	  (append (map-rcfn-refinement context p1 p3)
+		  (map-rcfn-refinement context p2 p3)))))
 
 (local
  (defthm map-times-append
@@ -2212,10 +2330,10 @@
 (local
  (defthm riemann-rcfn-cons
   (implies (consp p)
-           (equal (riemann-rcfn (cons a p))
+           (equal (riemann-rcfn context (cons a p))
                   (+ (* (- (car p) a)
-                        (rcfn (car p)))
-                     (riemann-rcfn p))))))
+                        (rcfn context (car p)))
+                     (riemann-rcfn context p))))))
 
 (local
  (defthm map-rcfn-refinement-cdr-2
@@ -2223,8 +2341,8 @@
 		 (< (car p2) a)
 		 (partitionp p1)
 		 (partitionp p2))
-	    (equal (map-rcfn-refinement p1 (cdr p2))
-		   (map-rcfn-refinement p1 p2)))))
+	    (equal (map-rcfn-refinement context p1 (cdr p2))
+		   (map-rcfn-refinement context p1 p2)))))
 
 (local
  (defthm riemann-rcfn-refinement-cdr-2
@@ -2232,8 +2350,8 @@
 		 (< (car p2) a)
 		 (partitionp p1)
 		 (partitionp p2))
-	    (equal (riemann-rcfn-refinement p1 (cdr p2))
-		   (riemann-rcfn-refinement p1 p2)))
+	    (equal (riemann-rcfn-refinement context p1 (cdr p2))
+		   (riemann-rcfn-refinement context p1 p2)))
    :hints (("Goal"
 	    :cases ((consp (cdr p1))))
 	   ("Subgoal 1"
@@ -2263,9 +2381,9 @@
    (implies (and (consp p1)
 		 (consp p2)
 		 (equal (car (last p1)) (car p2)))
-	    (equal (riemann-rcfn-refinement (append p1 (cdr p2)) p3)
-		   (+ (riemann-rcfn-refinement p1 p3)
-		      (riemann-rcfn-refinement p2 p3))))))
+	    (equal (riemann-rcfn-refinement context (append p1 (cdr p2)) p3)
+		   (+ (riemann-rcfn-refinement context p1 p3)
+		      (riemann-rcfn-refinement context p2 p3))))))
 
 (local
  (defthm equal-riemann-rcfn-refinement-reduction-helper-1-back-1
@@ -2273,11 +2391,12 @@
 		 (partitionp p2)
 		 (consp (cdr p2))
 		 (strong-refinement-p p1 p2))
-	    (equal (riemann-rcfn-refinement (member (cadr p2) p1)
+	    (equal (riemann-rcfn-refinement context
+                                            (member (cadr p2) p1)
 					    p2)
-		   (- (riemann-rcfn-refinement p1 p2)
+		   (- (riemann-rcfn-refinement context p1 p2)
 		      (* (- (cadr p2) (car p2))
-			 (rcfn (cadr p2))))))
+			 (rcfn context (cadr p2))))))
    :rule-classes nil
    :hints (("Goal"
 	    :in-theory
@@ -2293,11 +2412,11 @@
 
 (local
  (defthm riemann-rcfn-alternative
-   (equal (riemann-rcfn p)
+   (equal (riemann-rcfn context p)
 	  (if (and (consp p) (consp (cdr p)))
-	      (+ (riemann-rcfn (cdr p))
+	      (+ (riemann-rcfn context (cdr p))
 		 (* (- (cadr p) (car p))
-		    (rcfn (cadr p))))
+		    (rcfn context (cadr p))))
 	    0))
    :rule-classes :definition))
 
@@ -2306,12 +2425,13 @@
    (implies (and (partitionp p1)
 		 (partitionp p2)
 		 (consp (cdr p2))
-		 (equal (riemann-rcfn-refinement (member (cadr p2) p1)
+		 (equal (riemann-rcfn-refinement context
+                                                 (member (cadr p2) p1)
 						 p2)
-			(riemann-rcfn (cdr p2)))
+			(riemann-rcfn context (cdr p2)))
 		 (strong-refinement-p p1 p2))
-	    (equal (riemann-rcfn-refinement p1 p2)
-		   (riemann-rcfn p2)))
+	    (equal (riemann-rcfn-refinement context p1 p2)
+		   (riemann-rcfn context p2)))
    :hints (("Goal" :use equal-riemann-rcfn-refinement-reduction-helper-1-back-1))))
 
 (local
@@ -2324,12 +2444,13 @@
    (implies (and (partitionp p1)
 		 (partitionp p2)
 		 (consp (cdr p2))
-		 (equal (riemann-rcfn-refinement (member (cadr p2) p1)
+		 (equal (riemann-rcfn-refinement context
+                                                 (member (cadr p2) p1)
 						 (cdr p2))
-			(riemann-rcfn (cdr p2)))
+			(riemann-rcfn context (cdr p2)))
 		 (strong-refinement-p p1 p2))
-	    (equal (riemann-rcfn-refinement p1 p2)
-		   (riemann-rcfn p2)))
+	    (equal (riemann-rcfn-refinement context p1 p2)
+		   (riemann-rcfn context p2)))
    :hints (("Goal" :in-theory
 	    (disable
 	     riemann-rcfn-refinement riemann-rcfn member
@@ -2346,12 +2467,13 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-close (riemann-rcfn p1)
-		     (riemann-rcfn-refinement p1 p2)))
+	    (i-close (riemann-rcfn context p1)
+		     (riemann-rcfn-refinement context p1 p2)))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance dotprods-close-in-partition))
@@ -2453,15 +2575,15 @@
    (implies (and (consp p2)
 		 (not (consp (cdr p2)))
 		 (strong-refinement-p p1 p2))
-	    (equal (riemann-rcfn-refinement p1 p2)
+	    (equal (riemann-rcfn-refinement context p1 p2)
 		   0))
    ))
 
 (local
  (defthm riemann-rcfn-refinement-is-riemann-rcfn
    (implies (strong-refinement-p p1 p2)
-	    (equal (riemann-rcfn-refinement p1 p2)
-		   (riemann-rcfn p2)))
+	    (equal (riemann-rcfn-refinement context p1 p2)
+		   (riemann-rcfn context p2)))
    :hints (("Goal"
 	    :in-theory (disable strong-refinement-p
 				riemann-rcfn-refinement
@@ -2474,12 +2596,13 @@
    (implies (and (strong-refinement-p p1 p2)
 		 (standardp (car p1))
 		 (standardp (car (last p1)))
+                 (standardp context)
 		 (< (car p1) (car (last p1)))
 		 (inside-interval-p (car p1) (rcfn-domain))
 		 (inside-interval-p (car (last p1)) (rcfn-domain))
 		 (i-small (mesh p2)))
-	    (i-close (riemann-rcfn p1)
-		     (riemann-rcfn p2)))
+	    (i-close (riemann-rcfn context p1)
+		     (riemann-rcfn context p2)))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance riemann-refinement-close-in-partition)
@@ -2563,12 +2686,13 @@
 		 (< a b)
 		 (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
+                 (standardp context)
 		 (partitionp p)
 		 (equal (car p) a)
 		 (equal (car (last p)) b)
 		 (i-small (mesh p)))
-	    (i-close (riemann-rcfn p)
-		     (riemann-rcfn (common-refinement (make-small-partition a b) p))))
+	    (i-close (riemann-rcfn context p)
+		     (riemann-rcfn context (common-refinement (make-small-partition a b) p))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance riemann-sums-close-in-partition
@@ -2594,12 +2718,13 @@
 		 (< a b)
 		 (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
+                 (standardp context)
 		 (partitionp p)
 		 (equal (car p) a)
 		 (equal (car (last p)) b)
 		 (i-small (mesh p)))
-	    (i-close (riemann-rcfn (make-small-partition a b))
-		     (riemann-rcfn (common-refinement (make-small-partition a b) p))))
+	    (i-close (riemann-rcfn context (make-small-partition a b))
+		     (riemann-rcfn context( common-refinement (make-small-partition a b) p))))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance riemann-sums-close-in-partition
@@ -2620,12 +2745,13 @@
 		 (< a b)
 		 (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
+                 (standardp context)
 		 (partitionp p)
 		 (equal (car p) a)
 		 (equal (car (last p)) b)
 		 (i-small (mesh p)))
-	    (i-close (riemann-rcfn (make-small-partition a b))
-		     (riemann-rcfn p)))
+	    (i-close (riemann-rcfn context (make-small-partition a b))
+		     (riemann-rcfn context p)))
    :hints (("Goal"
 	    :do-not-induct t
 	    :use ((:instance riemann-sum-small-partition-close-to-common-in-partition)
@@ -2641,7 +2767,7 @@
  (defthm riemann-rcfn-trivial-partition
    (implies (and (partitionp p)
 		 (equal (car p) (car (last p))))
-	    (equal (riemann-rcfn p) 0))))
+	    (equal (riemann-rcfn context p) 0))))
 
 (defthm strict-int-rcfn-is-integral-of-rcfn
   (implies (and (standardp a)
@@ -2649,12 +2775,13 @@
 		(<= a b)
 		(inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
+                (standardp context)
 		(partitionp p)
 		(equal (car p) a)
 		(equal (car (last p)) b)
 		(i-small (mesh p)))
-	   (i-close (riemann-rcfn p)
-		    (strict-int-rcfn a b)))
+	   (i-close (riemann-rcfn context p)
+		    (strict-int-rcfn context a b)))
   :hints (("Goal"
 	   :do-not-induct t
 	   :use ((:instance riemann-sum-close-to-small-in-partition))
@@ -2668,7 +2795,8 @@
 	  ("Subgoal 2"
 	   :do-not-induct t
 	   :use ((:instance standard-part-close
-			    (x (riemann-rcfn (make-small-partition (car p)
+			    (x (riemann-rcfn context
+                                             (make-small-partition (car p)
 								   (car (last p)))))))
 	   :in-theory (disable standard-part-close
 			       make-small-partition
@@ -2681,7 +2809,7 @@
 
 (defthm-std strict-int-a-a
   (implies (inside-interval-p a (rcfn-domain))
-	   (equal (strict-int-rcfn a a) 0))
+	   (equal (strict-int-rcfn context a a) 0))
   :hints (("Goal"
 	   :use ((:instance strict-int-rcfn-is-integral-of-rcfn
 			    (a a)
@@ -2694,15 +2822,15 @@
 
 
 
-(defun int-rcfn (a b)
+(defun int-rcfn (context a b)
   (if (<= a b)
-      (strict-int-rcfn a b)
-    (- (strict-int-rcfn b a))))
+      (strict-int-rcfn context a b)
+    (- (strict-int-rcfn context b a))))
 
 (defthm-std realp-strict-int-rcfn
   (implies (and (realp a)
 		(realp b))
-	   (realp (strict-int-rcfn a b)))
+	   (realp (strict-int-rcfn context a b)))
   :hints (("Goal"
 	   :do-not-induct t
 	   :use ((:instance realp-riemann-rcfn
@@ -2715,11 +2843,11 @@
    (implies (and (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
 		 (<= a b))
-	    (and (<= (* (rcfn (rcfn-min-x a b))
+	    (and (<= (* (rcfn context (rcfn-min-x context a b))
 			(- b a))
-		     (int-rcfn a b))
-		 (<= (int-rcfn a b)
-		     (* (rcfn (rcfn-max-x a b))
+		     (int-rcfn context a b))
+		 (<= (int-rcfn context a b)
+		     (* (rcfn context (rcfn-max-x context a b))
 			(- b a)))))
    :hints (("Goal"
 	    :use ((:instance strict-int-rcfn-bounded))
@@ -2729,8 +2857,8 @@
 (defthm min-x-commutative
   (implies (and (realp a)
 		(realp b))
-	   (equal (rcfn-min-x b a)
-		  (rcfn-min-x a b)))
+	   (equal (rcfn-min-x context b a)
+		  (rcfn-min-x context a b)))
   :hints (("Goal"
 	   :in-theory (enable rcfn-min-x)))
   )
@@ -2738,8 +2866,8 @@
 (defthm max-x-commutative
   (implies (and (realp a)
 		(realp b))
-	   (equal (rcfn-max-x b a)
-		  (rcfn-max-x a b)))
+	   (equal (rcfn-max-x context b a)
+		  (rcfn-max-x context a b)))
   :hints (("Goal"
 	   :in-theory (enable rcfn-max-x)))
   )
@@ -2748,11 +2876,11 @@
    (implies (and (inside-interval-p a (rcfn-domain))
 		 (inside-interval-p b (rcfn-domain))
 		 (< b a))
-	    (and (<= (* (rcfn (rcfn-max-x a b))
+	    (and (<= (* (rcfn context (rcfn-max-x context a b))
 			(- b a))
-		     (int-rcfn a b))
-		 (<= (int-rcfn a b)
-		     (* (rcfn (rcfn-min-x a b))
+		     (int-rcfn context a b))
+		 (<= (int-rcfn context a b)
+		     (* (rcfn context (rcfn-min-x context a b))
 			(- b a)))))
    :hints (("Goal"
 	    :use ((:instance int-rcfn-bounded (a b) (b a)))
@@ -2767,9 +2895,9 @@
   (implies (and (inside-interval-p a (rcfn-domain))
 		(inside-interval-p b (rcfn-domain))
 		(inside-interval-p c (rcfn-domain)))
-	   (equal (+ (int-rcfn a c)
-		     (int-rcfn c b))
-		  (int-rcfn a b)))
+	   (equal (+ (int-rcfn context a c)
+		     (int-rcfn context c b))
+		  (int-rcfn context a b)))
   :hints (("Goal"
 	   :use ((:functional-instance split-integral-by-subintervals
 				       (rifn rcfn)
@@ -2790,7 +2918,7 @@
 (defthm realp-int-rcfn
   (implies (and (realp a)
 		(realp b))
-	   (realp (int-rcfn a b)))
+	   (realp (int-rcfn context a b)))
   )
 
 (in-theory (disable int-rcfn))

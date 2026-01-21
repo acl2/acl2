@@ -31,12 +31,12 @@
 ;; standard arguments, and to satisfy the differentiability criterion.
 
 (encapsulate
- ((rdfn (x) t)
+ ((rdfn (context x) t)
   (rdfn-domain () t))
 
  ;; Our witness continuous function is the identity function.
 
- (local (defun rdfn (x) (realfix x)))
+ (local (defun rdfn (context x) (declare (ignore context)) (realfix x)))
  (local (defun rdfn-domain () (interval 0 1)))
 
  ;; The interval really is an interval
@@ -64,7 +64,7 @@
  ;; The function returns real values (even for improper arguments).
 
  (defthm rdfn-real
-     (realp (rdfn x))
+     (realp (rdfn context x))
    :rule-classes (:rewrite :type-prescription))
 
  ;; If x is a standard real and y1 and y2 are two arbitrary reals
@@ -75,14 +75,18 @@
 
  (defthm rdfn-differentiable
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (rdfn-domain))
 		 (inside-interval-p y1 (rdfn-domain))
 		 (inside-interval-p y2 (rdfn-domain))
 		 (i-close x y1) (not (= x y1))
 		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (rdfn x) (rdfn y1)) (- x y1)))
-		 (i-close (/ (- (rdfn x) (rdfn y1)) (- x y1))
-			  (/ (- (rdfn x) (rdfn y2)) (- x y2))))))
+	    (and (i-limited (/ (- (rdfn context x) (rdfn context y1))
+                               (- x y1)))
+		 (i-close (/ (- (rdfn context x) (rdfn context y1))
+                             (- x y1))
+			  (/ (- (rdfn context x) (rdfn context y2))
+                             (- x y2))))))
 
  )
 
@@ -128,14 +132,15 @@
 
  (defthm rdfn-continuous
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (rdfn-domain))
 		 (i-close x y)
 		 (inside-interval-p y (rdfn-domain)))
-	    (i-close (rdfn x) (rdfn y)))
+	    (i-close (rdfn context x) (rdfn context y)))
    :hints (("Goal"
 	    :use ((:instance rdfn-differentiable (y1 y) (y2 y))
 		  (:instance lemma-1
-			     (x (+ (rdfn x) (- (rdfn y))))
+			     (x (+ (rdfn context x) (- (rdfn context y))))
 			     (y (+ x (- y)))))
 	    :in-theory (enable-disable (i-close)
 				       (rdfn-differentiable
@@ -145,7 +150,7 @@
 ;; So now, we want to find the maximum of rdfn.  We do this by
 ;; defining the functions of find-max-x from the rcfn case.
 
-(defun find-max-rdfn-x-n (a max-x i n eps)
+(defun find-max-rdfn-x-n (context a max-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -153,9 +158,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (> (rdfn (+ a (* i eps))) (rdfn max-x))
-	  (find-max-rdfn-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-max-rdfn-x-n a max-x (1+ i) n eps))
+      (if (> (rdfn context (+ a (* i eps))) (rdfn context max-x))
+	  (find-max-rdfn-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-max-rdfn-x-n context a max-x (1+ i) n eps))
     max-x))
 
 ;; To use defun-std, we need to establish that the max-x-n function is
@@ -167,7 +172,7 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-max-rdfn-x-n a a
+	   (i-limited (find-max-rdfn-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -183,11 +188,12 @@
 
 ;; And so, we can use defun-std to get the maximum of rdfn on [a,b].
 
-(defun-std find-max-rdfn-x (a b)
+(defun-std find-max-rdfn-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-max-rdfn-x-n a
+      (standard-part (find-max-rdfn-x-n context
+                                        a
 					a
 					0
 					(i-large-integer)
@@ -204,7 +210,7 @@
 		(<= a x)
 		(<= x b)
 		(< a b))
-	   (<= (rdfn x) (rdfn (find-max-rdfn-x a b))))
+	   (<= (rdfn context x) (rdfn context (find-max-rdfn-x context a b))))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-is-maximum
 				       (find-max-rcfn-x-n find-max-rdfn-x-n)
@@ -221,7 +227,7 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= a (find-max-rdfn-x a b)))
+	   (<= a (find-max-rdfn-x context a b)))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x->=-a
 				       (find-max-rcfn-x-n find-max-rdfn-x-n)
@@ -236,7 +242,7 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= (find-max-rdfn-x a b) b))
+	   (<= (find-max-rdfn-x context a b) b))
   :hints (("Goal"
 	   :use ((:functional-instance find-max-rcfn-x-<=-b
 				       (find-max-rcfn-x-n find-max-rdfn-x-n)
@@ -248,7 +254,7 @@
 ;; Arrrgh!  Now we have to do it all over again for minimums!  Here's
 ;; the definition of the minimum function.
 
-(defun find-min-rdfn-x-n (a min-x i n eps)
+(defun find-min-rdfn-x-n (context a min-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -256,9 +262,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (< (rdfn (+ a (* i eps))) (rdfn min-x))
-	  (find-min-rdfn-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-min-rdfn-x-n a min-x (1+ i) n eps))
+      (if (< (rdfn context (+ a (* i eps))) (rdfn context min-x))
+	  (find-min-rdfn-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-min-rdfn-x-n context a min-x (1+ i) n eps))
     min-x))
 
 ;; Of course, it's limited.
@@ -269,7 +275,7 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-min-rdfn-x-n a a
+	   (i-limited (find-min-rdfn-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -282,11 +288,11 @@
 
 ;; And so we can use defun-std to get the "real" minimum value.
 
-(defun-std find-min-rdfn-x (a b)
+(defun-std find-min-rdfn-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-min-rdfn-x-n a
+      (standard-part (find-min-rdfn-x-n context a
 				   a
 				   0
 				   (i-large-integer)
@@ -302,7 +308,8 @@
 		(<= a x)
 		(<= x b)
 		(< a b))
-	   (<= (rdfn (find-min-rdfn-x a b)) (rdfn x)))
+	   (<= (rdfn context (find-min-rdfn-x context a b))
+               (rdfn context x)))
   :hints (("Goal"
 	   :use ((:functional-instance find-min-rcfn-is-minimum
 				       (find-min-rcfn-x-n find-min-rdfn-x-n)
@@ -317,7 +324,7 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= a (find-min-rdfn-x a b)))
+	   (<= a (find-min-rdfn-x context a b)))
   :hints (("Goal"
 	   :use ((:functional-instance find-min-rcfn-x->=-a
 				       (find-min-rcfn-x-n find-min-rdfn-x-n)
@@ -332,7 +339,7 @@
   (implies (and (realp a)
 		(realp b)
 		(< a b))
-	   (<= (find-min-rdfn-x a b) b))
+	   (<= (find-min-rdfn-x context a b) b))
   :hints (("Goal"
 	   :use ((:functional-instance find-min-rcfn-x-<=-b
 				       (find-min-rcfn-x-n find-min-rdfn-x-n)
@@ -352,9 +359,11 @@
 		(< a b)
 		(<= a x)
 		(<= x b)
-		(= (rcfn (find-min-rcfn-x a b))
-		   (rcfn (find-max-rcfn-x a b))))
-	   (equal (equal (rcfn (find-min-rcfn-x a b)) (rcfn x)) t))
+		(= (rcfn context (find-min-rcfn-x context a b))
+		   (rcfn context (find-max-rcfn-x context a b))))
+	   (equal (equal (rcfn context (find-min-rcfn-x context a b))
+                         (rcfn context x))
+                  t))
   :hints (("Goal"
 	   :use ((:instance find-min-rcfn-is-minimum)
 		 (:instance find-max-rcfn-is-maximum))
@@ -371,9 +380,11 @@
 		(< a b)
 		(<= a x)
 		(<= x b)
-		(= (rdfn (find-min-rdfn-x a b))
-		   (rdfn (find-max-rdfn-x a b))))
-	   (equal (equal (rdfn (find-min-rdfn-x a b)) (rdfn x)) t))
+		(= (rdfn context (find-min-rdfn-x context a b))
+		   (rdfn context (find-max-rdfn-x context a b))))
+	   (equal (equal (rdfn context (find-min-rdfn-x context a b))
+                         (rdfn context x))
+                  t))
   :hints (("Goal"
 	   :use ((:functional-instance min=max->-constant-rcfn
 				       (find-min-rcfn-x-n find-min-rdfn-x-n)
@@ -387,17 +398,18 @@
 ;; Now, let's define the differential of rdfn.
 
 (encapsulate
- ( ((differential-rdfn * *) => * ) )
+ ( ((differential-rdfn * * *) => * ) )
 
  (local
-  (defun differential-rdfn (x eps)
-    (/ (- (rdfn (+ x eps)) (rdfn x)) eps)))
+  (defun differential-rdfn (context x eps)
+    (/ (- (rdfn context (+ x eps)) (rdfn context x)) eps)))
 
  (defthm differential-rdfn-definition
    (implies (and (force (inside-interval-p x (rdfn-domain)))
 		 (force (inside-interval-p (+ x eps) (rdfn-domain))))
-	    (equal (differential-rdfn x eps)
-		   (/ (- (rdfn (+ x eps)) (rdfn x)) eps)))))
+	    (equal (differential-rdfn context x eps)
+		   (/ (- (rdfn context (+ x eps)) (rdfn context x))
+                      eps)))))
 
 ;; An obvious fact is that the differential is a real number.
 
@@ -405,16 +417,17 @@
   (implies (and (inside-interval-p x (rdfn-domain))
 		(inside-interval-p (+ x eps) (rdfn-domain))
 		(realp eps))
-	   (realp (differential-rdfn x eps))))
+	   (realp (differential-rdfn context x eps))))
 
 ;; Differential-rdfn is limited when x and eps are in the right range
 
 (defthm differential-rdfn-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (rdfn-domain))
 		  (inside-interval-p (+ x eps) (rdfn-domain))
 		  (i-small eps))
-	     (i-limited (differential-rdfn x eps)))
+	     (i-limited (differential-rdfn context x eps)))
   :hints (("Goal"
 	   :use ((:instance rdfn-differentiable
 			    (x x)
@@ -545,9 +558,9 @@
 		(< a b)
 		(realp eps)
 		(< (abs eps) (/ (- b a) 2))
-		(= (rdfn (find-min-rdfn-x a b))
-		   (rdfn (find-max-rdfn-x a b))))
-	   (equal (differential-rdfn (/ (+ a b) 2) eps) 0))
+		(= (rdfn context (find-min-rdfn-x context a b))
+		   (rdfn context (find-max-rdfn-x context a b))))
+	   (equal (differential-rdfn context (/ (+ a b) 2) eps) 0))
   :hints (("Goal"
 	   :use ((:instance min=max->-constant-rdfn
 			    (x (+ (* 1/2 a) (* 1/2 b))))
@@ -566,12 +579,14 @@
 		(< a b)
 		(realp eps)
 		(< 0 eps)
-		(< a (- (find-max-rdfn-x a b) eps))
-		(< (+ (find-max-rdfn-x a b) eps) b))
-	   (<= (differential-rdfn (find-max-rdfn-x a b) eps) 0))
+		(< a (- (find-max-rdfn-x context a b) eps))
+		(< (+ (find-max-rdfn-x context a b) eps) b))
+	   (<= (differential-rdfn context
+                                  (find-max-rdfn-x context a b) eps)
+               0))
   :hints (("Goal"
 	   :use ((:instance inner-point+eps-in-interval
-			    (x (find-max-rdfn-x a b))))
+			    (x (find-max-rdfn-x context a b))))
 	   :in-theory (disable inner-point+eps-in-interval)))
   )
 
@@ -584,12 +599,14 @@
 		(< a b)
 		(realp eps)
 		(< 0 eps)
-		(< a (- (find-max-rdfn-x a b) eps))
-		(< (+ (find-max-rdfn-x a b) eps) b))
-	   (<= 0 (differential-rdfn (find-max-rdfn-x a b) (- eps))))
+		(< a (- (find-max-rdfn-x context a b) eps))
+		(< (+ (find-max-rdfn-x context a b) eps) b))
+	   (<= 0 (differential-rdfn context
+                                    (find-max-rdfn-x context a b)
+                                    (- eps))))
   :hints (("Goal"
 	   :use ((:instance inner-point+eps-in-interval
-			    (x (find-max-rdfn-x a b))))
+			    (x (find-max-rdfn-x context a b))))
 	   :in-theory (disable inner-point+eps-in-interval)))
   )
 
@@ -602,12 +619,14 @@
 		(< a b)
 		(realp eps)
 		(< 0 eps)
-		(< a (- (find-min-rdfn-x a b) eps))
-		(< (+ (find-min-rdfn-x a b) eps) b))
-	   (<= 0 (differential-rdfn (find-min-rdfn-x a b) eps)))
+		(< a (- (find-min-rdfn-x context a b) eps))
+		(< (+ (find-min-rdfn-x context a b) eps) b))
+	   (<= 0 (differential-rdfn context
+                                    (find-min-rdfn-x context a b)
+                                    eps)))
   :hints (("Goal"
 	   :use ((:instance inner-point+eps-in-interval
-			    (x (find-min-rdfn-x a b))))
+			    (x (find-min-rdfn-x context a b))))
 	   :in-theory (disable inner-point+eps-in-interval)))
   )
 
@@ -619,12 +638,15 @@
 		(< a b)
 		(realp eps)
 		(< 0 eps)
-		(< a (- (find-min-rdfn-x a b) eps))
-		(< (+ (find-min-rdfn-x a b) eps) b))
-	   (<= (differential-rdfn (find-min-rdfn-x a b) (- eps)) 0))
+		(< a (- (find-min-rdfn-x context a b) eps))
+		(< (+ (find-min-rdfn-x context a b) eps) b))
+	   (<= (differential-rdfn context
+                                  (find-min-rdfn-x context a b)
+                                  (- eps))
+               0))
     :hints (("Goal"
 	   :use ((:instance inner-point+eps-in-interval
-			    (x (find-min-rdfn-x a b))))
+			    (x (find-min-rdfn-x context a b))))
 	   :in-theory (disable inner-point+eps-in-interval)))
     )
 
@@ -673,9 +695,10 @@
 
 (defthm standard-find-min-max-rdfn
   (implies (and (realp a) (standardp a)
-		(realp b) (standardp b))
-	   (and (standardp (find-min-rdfn-x a b))
-		(standardp (find-max-rdfn-x a b))))
+		(realp b) (standardp b)
+                (standardp context))
+	   (and (standardp (find-min-rdfn-x context a b))
+		(standardp (find-max-rdfn-x context a b))))
   :hints (("Goal"
 	   :in-theory (enable find-min-rdfn-x find-max-rdfn-x))))
 
@@ -685,19 +708,20 @@
 (defthm rolles-theorem-lemma-2e
   (implies (and (inside-interval-p a (rdfn-domain)) (standardp a)
 		(inside-interval-p b (rdfn-domain)) (standardp b)
+                (standardp context)
 		(< a b)
-		(< a (find-max-rdfn-x a b))
-		(< (find-max-rdfn-x a b) b)
+		(< a (find-max-rdfn-x context a b))
+		(< (find-max-rdfn-x context a b) b)
 		(realp eps)
 		(< 0 eps)
 		(i-small eps))
-	   (and (< a (- (find-max-rdfn-x a b) eps))
-		(< (+ (find-max-rdfn-x a b) eps) b)))
+	   (and (< a (- (find-max-rdfn-x context a b) eps))
+		(< (+ (find-max-rdfn-x context a b) eps) b)))
   :hints (("Goal"
 	   :use ((:instance small-squeeze-standard-1
-			    (x (find-max-rdfn-x a b)))
+			    (x (find-max-rdfn-x context a b)))
 		 (:instance small-squeeze-standard-2
-			    (x (find-max-rdfn-x a b))))
+			    (x (find-max-rdfn-x context a b))))
 	   :in-theory (disable small-squeeze-standard-1
 			       small-squeeze-standard-2))))
 
@@ -706,19 +730,20 @@
 (defthm rolles-theorem-lemma-2f
   (implies (and (inside-interval-p a (rdfn-domain)) (standardp a)
 		(inside-interval-p b (rdfn-domain)) (standardp b)
+                (standardp context)
 		(< a b)
-		(< a (find-min-rdfn-x a b))
-		(< (find-min-rdfn-x a b) b)
+		(< a (find-min-rdfn-x context a b))
+		(< (find-min-rdfn-x context a b) b)
 		(realp eps)
 		(< 0 eps)
 		(i-small eps))
-	   (and (< a (- (find-min-rdfn-x a b) eps))
-		(< (+ (find-min-rdfn-x a b) eps) b)))
+	   (and (< a (- (find-min-rdfn-x context a b) eps))
+		(< (+ (find-min-rdfn-x context a b) eps) b)))
   :hints (("Goal"
 	   :use ((:instance small-squeeze-standard-1
-			    (x (find-min-rdfn-x a b)))
+			    (x (find-min-rdfn-x context a b)))
 		 (:instance small-squeeze-standard-2
-			    (x (find-min-rdfn-x a b))))
+			    (x (find-min-rdfn-x context a b))))
 	   :in-theory (disable small-squeeze-standard-1
 			       small-squeeze-standard-2))))
 
@@ -727,12 +752,14 @@
 ;; since that'll be an interior point.  Otherwise, we pick whichever
 ;; of min-x or max-x is interior.
 
-(defun rolles-critical-point (a b)
-  (if (equal (rdfn (find-min-rdfn-x a b)) (rdfn (find-max-rdfn-x a b)))
+(defun rolles-critical-point (context a b)
+  (if (equal (rdfn context (find-min-rdfn-x context a b))
+             (rdfn context (find-max-rdfn-x context a b)))
       (/ (+ a b) 2)
-    (if (equal (rdfn (find-min-rdfn-x a b)) (rdfn a))
-	(find-max-rdfn-x a b)
-      (find-min-rdfn-x a b))))
+      (if (equal (rdfn context (find-min-rdfn-x context a b))
+                 (rdfn context a))
+	  (find-max-rdfn-x context a b)
+          (find-min-rdfn-x context a b))))
 
 ;; OK now, if rdfn achieves its minimum at a, then the maximum is an
 ;; interior point.
@@ -741,12 +768,13 @@
   (implies (and (inside-interval-p a (rdfn-domain))
 		(inside-interval-p b (rdfn-domain))
 		(< a b)
-		(= (rdfn a) (rdfn b))
-		(not (= (rdfn (find-min-rdfn-x a b))
-			(rdfn (find-max-rdfn-x a b))))
-		(= (rdfn (find-min-rdfn-x a b)) (rdfn a)))
-	   (and (< a (find-max-rdfn-x a b))
-		(< (find-max-rdfn-x a b) b)))
+		(= (rdfn context a) (rdfn context b))
+		(not (= (rdfn context (find-min-rdfn-x context a b))
+			(rdfn context (find-max-rdfn-x context a b))))
+		(= (rdfn context (find-min-rdfn-x context a b))
+                   (rdfn context a)))
+	   (and (< a (find-max-rdfn-x context a b))
+		(< (find-max-rdfn-x context a b) b)))
   :hints (("Goal"
 	   :use ((:instance find-max-rdfn-x->=-a)
 		 (:instance find-max-rdfn-x-<=-b))
@@ -760,12 +788,13 @@
   (implies (and (inside-interval-p a (rdfn-domain))
 		(inside-interval-p b (rdfn-domain))
 		(< a b)
-		(= (rdfn a) (rdfn b))
-		(not (= (rdfn (find-min-rdfn-x a b))
-			(rdfn (find-max-rdfn-x a b))))
-		(not (= (rdfn (find-min-rdfn-x a b)) (rdfn a))))
-	   (and (< a (find-min-rdfn-x a b))
-		(< (find-min-rdfn-x a b) b)))
+		(= (rdfn context a) (rdfn context b))
+		(not (= (rdfn context (find-min-rdfn-x context a b))
+			(rdfn context (find-max-rdfn-x context a b))))
+		(not (= (rdfn context (find-min-rdfn-x context a b))
+                        (rdfn context a))))
+	   (and (< a (find-min-rdfn-x context a b))
+		(< (find-min-rdfn-x context a b) b)))
   :hints (("Goal"
 	   :use ((:instance find-min-rdfn-x->=-a)
 		 (:instance find-min-rdfn-x-<=-b))
@@ -1008,9 +1037,10 @@
 (defthm differential-rdfn-x-large-integer-right-endpoint
     (implies (and (inside-interval-p x (rdfn-domain))
 		  (standardp x)
+                  (standardp context)
 		  (not (equal (interval-right-endpoint (rdfn-domain)) x)))
-	     (and (realp (differential-rdfn x (/ (i-large-integer))))
-		  (i-limited (differential-rdfn x (/ (i-large-integer))))))
+	     (and (realp (differential-rdfn context x (/ (i-large-integer))))
+		  (i-limited (differential-rdfn context x (/ (i-large-integer))))))
   :hints (("Goal"
 	   :use ((:instance differential-rdfn-limited
 			    (x x)
@@ -1025,9 +1055,10 @@
 (defthm differential-rdfn-x-large-integer-left-endpoint
     (implies (and (inside-interval-p x (rdfn-domain))
 		  (standardp x)
+                  (standardp context)
 		  (not (equal (interval-left-endpoint (rdfn-domain)) x)))
-	     (and (realp (differential-rdfn x (- (/ (i-large-integer)))))
-		  (i-limited (differential-rdfn x (- (/ (i-large-integer)))))))
+	     (and (realp (differential-rdfn context x (- (/ (i-large-integer)))))
+		  (i-limited (differential-rdfn context x (- (/ (i-large-integer)))))))
   :hints (("Goal"
 	   :use ((:instance differential-rdfn-limited
 			    (x x)
@@ -1086,37 +1117,39 @@
 ;; epsilon.
 
 (encapsulate
- ( ((derivative-rdfn *) => *) )
+ ( ((derivative-rdfn * *) => *) )
 
  (local
-  (defun-std derivative-rdfn (x)
+  (defun-std derivative-rdfn (context x)
     (if (inside-interval-p x (rdfn-domain))
 	(if (inside-interval-p (+ x (/ (i-large-integer))) (rdfn-domain))
-	    (standard-part (differential-rdfn x (/ (i-large-integer))))
+	    (standard-part (differential-rdfn context x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (rdfn-domain))
-	      (standard-part (differential-rdfn x (- (/ (i-large-integer)))))
+	      (standard-part (differential-rdfn context x (- (/ (i-large-integer)))))
 	    'error))
       'error)))
 
  (defthm derivative-rdfn-definition
    (implies (and (inside-interval-p x (rdfn-domain))
-		 (standardp x))
-	    (equal (derivative-rdfn x)
+		 (standardp x)
+                 (standardp context))
+	    (equal (derivative-rdfn context x)
 		   (if (inside-interval-p (+ x (/ (i-large-integer))) (rdfn-domain))
-		       (standard-part (differential-rdfn x (/ (i-large-integer))))
+		       (standard-part (differential-rdfn context x (/ (i-large-integer))))
 		     (if (inside-interval-p (- x (/ (i-large-integer))) (rdfn-domain))
-			 (standard-part (differential-rdfn x (- (/ (i-large-integer)))))
+			 (standard-part (differential-rdfn context x (- (/ (i-large-integer)))))
 		       'error))))))
 
 ;; When x is in the domain, the derivative is well-defined
 
 (defthmd derivative-rdfn-definition-clean
   (implies (and (inside-interval-p x (rdfn-domain))
-		(standardp x))
-	   (equal (derivative-rdfn x)
+		(standardp x)
+                (standardp context))
+	   (equal (derivative-rdfn context x)
 		  (if (inside-interval-p (+ x (/ (i-large-integer))) (rdfn-domain))
-		      (standard-part (differential-rdfn x (/ (i-large-integer))))
-		    (standard-part (differential-rdfn x (- (/ (i-large-integer))))))))
+		      (standard-part (differential-rdfn context x (/ (i-large-integer))))
+		    (standard-part (differential-rdfn context x (- (/ (i-large-integer))))))))
   :hints (("Goal"
 	   :use ((:instance non-trivial-interval-not-both-endpoints)
 		 (:instance differential-rdfn-limited
@@ -1145,7 +1178,7 @@
 
 (defthm-std derivative-well-defined
     (implies (inside-interval-p x (rdfn-domain))
-	     (realp (derivative-rdfn x)))
+	     (realp (derivative-rdfn context x)))
     :hints (("Goal"
 	   :use ((:instance derivative-rdfn-definition-clean)
 		 (:instance non-trivial-interval-not-both-endpoints)
@@ -1181,12 +1214,13 @@
 (defthm rdfn-differentiable-2a
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps1) (i-small eps1) (not (= eps1 0))
 		 (inside-interval-p (+ x eps1) (rdfn-domain))
 		 (realp eps2) (i-small eps2) (not (= eps2 0))
 		 (inside-interval-p (+ x eps2) (rdfn-domain)))
-	    (i-close (differential-rdfn x eps1)
-		     (differential-rdfn x eps2)))
+	    (i-close (differential-rdfn context x eps1)
+		     (differential-rdfn context x eps2)))
    :hints (("Goal"
 	    :use ((:instance rdfn-differentiable
 			     (y1 (+ x eps1))
@@ -1200,9 +1234,10 @@
 (defthm rdfn-differentiable-2b
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (rdfn-domain)))
-	    (i-limited (differential-rdfn x eps)))
+	    (i-limited (differential-rdfn context x eps)))
    :hints (("Goal"
 	    :use ((:instance rdfn-differentiable
 			     (y1 (+ x eps))
@@ -1227,11 +1262,12 @@
 (defthm differential-rdfn-close
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (rdfn-domain))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-rdfn x eps))
-		   (derivative-rdfn x)))
+	    (equal (standard-part (differential-rdfn context x eps))
+		   (derivative-rdfn context x)))
    :hints (("Goal"
 	    :use ((:instance rdfn-differentiable-2a
 			     (eps1 eps)
@@ -1245,11 +1281,11 @@
 		  (:instance rdfn-differentiable-2b
 			     (eps (- (/ (i-large-integer)))))
 		  (:instance close-same-standard-part
-			     (x (differential-rdfn x eps))
-			     (y (differential-rdfn x (/ (i-large-integer)))))
+			     (x (differential-rdfn context x eps))
+			     (y (differential-rdfn context x (/ (i-large-integer)))))
 		  (:instance close-same-standard-part
-			     (x (differential-rdfn x eps))
-			     (y (differential-rdfn x (- (/ (i-large-integer))))))
+			     (x (differential-rdfn context x eps))
+			     (y (differential-rdfn context x (- (/ (i-large-integer))))))
 		  (:instance non-trivial-interval-eps-or--eps
 			     (x x)
 			     (eps (/ (i-large-integer)))))
@@ -1266,20 +1302,21 @@
 (defthm derivative-==-0a
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (rdfn-domain))
-		 (<= 0 (differential-rdfn x eps))
+		 (<= 0 (differential-rdfn context x eps))
 		 (inside-interval-p (- x eps) (rdfn-domain))
-		 (<= (differential-rdfn x (- eps)) 0)
+		 (<= (differential-rdfn context x (- eps)) 0)
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (= 0 (derivative-rdfn x)))
+	    (= 0 (derivative-rdfn context x)))
    :rule-classes nil ; changed for v2-6
    :hints (("Goal"
 	    :use ((:instance standard-part-<=
 			     (x 0)
-			     (y (differential-rdfn x eps)))
+			     (y (differential-rdfn context x eps)))
 		  (:instance standard-part-<=
-			     (x (differential-rdfn x (- eps)))
+			     (x (differential-rdfn context x (- eps)))
 			     (y 0))
 		  (:instance differential-rdfn-close)
 		  (:instance differential-rdfn-close
@@ -1296,21 +1333,22 @@
 (defthm derivative-==-0b
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (rdfn-domain))
-		 (<= (differential-rdfn x eps) 0)
-		 (<= 0 (differential-rdfn x (- eps)))
+		 (<= (differential-rdfn context x eps) 0)
+		 (<= 0 (differential-rdfn context x (- eps)))
 		 (inside-interval-p (- x eps) (rdfn-domain))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (= 0 (derivative-rdfn x)))
+	    (= 0 (derivative-rdfn context x)))
    :rule-classes nil ; changed for v2-6
    :hints (("Goal"
 	    :use ((:instance standard-part-<=
-			     (x (differential-rdfn x eps))
+			     (x (differential-rdfn context x eps))
 			     (y 0))
 		  (:instance standard-part-<=
 			     (x 0)
-			     (y (differential-rdfn x (- eps))))
+			     (y (differential-rdfn context x (- eps))))
 		  (:instance differential-rdfn-close)
 		  (:instance differential-rdfn-close
 			     (eps (- eps))))
@@ -1328,7 +1366,7 @@
     (implies (and (inside-interval-p a interval)
 		  (inside-interval-p b interval)
 		  (< a b))
-	     (inside-interval-p (find-min-rdfn-x a b) interval))
+	     (inside-interval-p (find-min-rdfn-x context a b) interval))
   :hints (("Goal"
 	   :by (:functional-instance find-min-rcfn-x-inside-interval
 				     (find-min-rcfn-x-n find-min-rdfn-x-n)
@@ -1340,7 +1378,7 @@
     (implies (and (inside-interval-p a interval)
 		  (inside-interval-p b interval)
 		  (< a b))
-	     (inside-interval-p (find-max-rdfn-x a b) interval))
+	     (inside-interval-p (find-max-rdfn-x context a b) interval))
   :hints (("Goal"
 	   :by (:functional-instance find-max-rcfn-x-inside-interval
 				     (find-max-rcfn-x-n find-max-rdfn-x-n)
@@ -1442,18 +1480,19 @@
 		  (standardp a)
 		  (inside-interval-p b interval)
 		  (standardp b)
-		  (not (equal (find-min-rdfn-x a b) a))
-		  (not (equal (find-min-rdfn-x a b) b))
+                  (standardp context)
+		  (not (equal (find-min-rdfn-x context a b) a))
+		  (not (equal (find-min-rdfn-x context a b) b))
 		  (< a b))
-	     (and (inside-interval-p (+ (/ (i-large-integer)) (find-min-rdfn-x a b)) interval)
-		  (inside-interval-p (+ (- (/ (i-large-integer))) (find-min-rdfn-x a b)) interval)
-		  (inside-interval-p (find-min-rdfn-x a b) interval)))
+	     (and (inside-interval-p (+ (/ (i-large-integer)) (find-min-rdfn-x context a b)) interval)
+		  (inside-interval-p (+ (- (/ (i-large-integer))) (find-min-rdfn-x context a b)) interval)
+		  (inside-interval-p (find-min-rdfn-x context a b) interval)))
   :hints (("Goal"
 	   :use ((:instance find-min-rdfn-x-inside-interval)
 		 (:instance FIND-MIN-RDFN-X->=-A)
 		 (:instance FIND-MIN-RDFN-X-<=-B)
 		 (:instance x+-/i-large-integer-inside-interval
-			    (x (find-min-rdfn-x a b))))
+			    (x (find-min-rdfn-x context a b))))
 	   :in-theory (disable find-min-rdfn-x-inside-interval x+-/i-large-integer-inside-interval
 			       FIND-MIN-RDFN-X->=-A FIND-MIN-RDFN-X-<=-B))))
 
@@ -1463,50 +1502,52 @@
 		  (standardp interval)
 		  (inside-interval-p a interval)
 		  (standardp a)
+                  (standardp context)
 		  (inside-interval-p b interval)
 		  (standardp b)
-		  (not (equal (find-max-rdfn-x a b) a))
-		  (not (equal (find-max-rdfn-x a b) b))
+                  (standardp context)
+		  (not (equal (find-max-rdfn-x context a b) a))
+		  (not (equal (find-max-rdfn-x context a b) b))
 		  (< a b))
-	     (and (inside-interval-p (+ (/ (i-large-integer)) (find-max-rdfn-x a b)) interval)
-		  (inside-interval-p (+ (- (/ (i-large-integer))) (find-max-rdfn-x a b)) interval)
-		  (inside-interval-p (find-max-rdfn-x a b) interval)))
+	     (and (inside-interval-p (+ (/ (i-large-integer)) (find-max-rdfn-x context a b)) interval)
+		  (inside-interval-p (+ (- (/ (i-large-integer))) (find-max-rdfn-x context a b)) interval)
+		  (inside-interval-p (find-max-rdfn-x context a b) interval)))
   :hints (("Goal"
 	   :use ((:instance find-max-rdfn-x-inside-interval)
 		 (:instance FIND-MAX-RDFN-X->=-A)
 		 (:instance FIND-MAX-RDFN-X-<=-B)
 		 (:instance x+-/i-large-integer-inside-interval
-			    (x (find-max-rdfn-x a b))))
+			    (x (find-max-rdfn-x context a b))))
 	   :in-theory (disable find-max-rdfn-x-inside-interval x+-/i-large-integer-inside-interval
 			       FIND-MAX-RDFN-X->=-A FIND-MAX-RDFN-X-<=-B))))
 
 (defthm rolles-theorem-lemma-5
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (< a (rolles-critical-point a b))))
+	     (< a (rolles-critical-point context a b))))
 
 (defthm rolles-theorem-lemma-6
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (< (rolles-critical-point a b) b)))
+	     (< (rolles-critical-point context a b) b)))
 
 (defthm rolles-theorem-lemma-7
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (realp (rolles-critical-point a b))))
+	     (realp (rolles-critical-point context a b))))
 
 (defthm-std rolles-theorem-lemma-8
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (equal (derivative-rdfn (rolles-critical-point a b)) 0))
+	     (equal (derivative-rdfn context (rolles-critical-point context a b)) 0))
   :hints (("Subgoal 3"
 	   :use ((:instance rolles-theorem-lemma-1
 			    (eps (/ (i-large-integer))))
@@ -1524,7 +1565,7 @@
 			    (eps (/ (i-large-integer))))
 		 (:instance rolles-theorem-lemma-3b)
 		 (:instance derivative-==-0a
-			    (x (find-min-rdfn-x a b))
+			    (x (find-min-rdfn-x context a b))
 			    (eps (/ (i-large-integer)))))
 	   :in-theory (disable rolles-theorem-lemma-2c
 			       rolles-theorem-lemma-2d
@@ -1540,7 +1581,7 @@
 			    (eps (/ (i-large-integer))))
 		 (:instance rolles-theorem-lemma-3a)
 		 (:instance derivative-==-0b
-			    (x (find-max-rdfn-x a b))
+			    (x (find-max-rdfn-x context a b))
 			    (eps (/ (i-large-integer))))
 		 )
 	   :in-theory (disable rolles-theorem-lemma-2a
@@ -1551,32 +1592,34 @@
 (defthm rolles-theorem
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (and (realp (rolles-critical-point a b))
-		  (< a (rolles-critical-point a b))
-		  (< (rolles-critical-point a b) b)
-		  (equal (derivative-rdfn (rolles-critical-point a b)) 0)))
+	     (and (realp (rolles-critical-point context a b))
+		  (< a (rolles-critical-point context a b))
+		  (< (rolles-critical-point context a b) b)
+		  (equal (derivative-rdfn context
+                                          (rolles-critical-point context a b))
+                         0)))
   :hints (("Goal"
 	   :in-theory (disable rolles-critical-point)))
   )
 
-(defun-sk exists-critical-point (a b)
+(defun-sk exists-critical-point (context a b)
   (exists (x)
 	  (and (realp x)
 	       (< a x)
 	       (< x b)
-	       (equal (derivative-rdfn x) 0))))
+	       (equal (derivative-rdfn context x) 0))))
 
 (defthm rolles-theorem-sk
     (implies (and (inside-interval-p a (rdfn-domain))
 		  (inside-interval-p b (rdfn-domain))
-		  (= (rdfn a) (rdfn b))
+		  (= (rdfn context a) (rdfn context b))
 		  (< a b))
-	     (exists-critical-point a b))
+	     (exists-critical-point context a b))
   :hints (("Goal"
 	   :use ((:instance exists-critical-point-suff
-			    (x (rolles-critical-point a b)))
+			    (x (rolles-critical-point context a b)))
 		 (:instance rolles-theorem))
 	   :in-theory (disable exists-critical-point-suff rolles-theorem))))
 
@@ -1647,14 +1690,14 @@
    )
  )
 
-(defun rdfn2 (x)
+(defun rdfn2 (context x)
   (let ((a (interval-left-endpoint (rdfn-subdomain)))
 	(b (interval-right-endpoint (rdfn-subdomain))))
-    (+ (rdfn x)
-       (- (* (- (rdfn b) (rdfn a))
+    (+ (rdfn context x)
+       (- (* (- (rdfn context b) (rdfn context a))
 	     (- (realfix x) a)
 	     (/ (- b a))))
-       (- (rdfn a)))))
+       (- (rdfn context a)))))
 (in-theory (disable (rdfn2)))
 
 ;; rdfn2 always returns a real number.
@@ -1677,18 +1720,21 @@
   :rule-classes (:rewrite :type-prescription :generalize))
 
 (defthm rdfn2-real
-    (realp (rdfn2 x))
+    (realp (rdfn2 context x))
   :rule-classes (:rewrite :type-prescription))
 
 ;; And a limited number when x is standard.
 
 (defthm-std rdfn2-standard
-  (implies (standardp x)
-	   (standardp (rdfn2 x))))
+  (implies (and (standardp x)
+                (standardp context))
+	   (standardp (rdfn2 context x))))
 
 (defthm rdfn2-limited
-  (implies (standardp x)
-	   (i-limited (rdfn2 x)))
+  (implies (and (standardp x)
+                (standardp context))
+	   (i-limited (rdfn2 context
+                             x)))
   :hints (("Goal" :in-theory (enable-disable (standards-are-limited)
 					     (rdfn2)))))
 
@@ -1714,11 +1760,11 @@
  (defthm rdfn2-diff
      (implies (and (realp x)
 		   (realp y))
-	      (equal (+ (rdfn2 x) (- (rdfn2 y)))
-		     (+ (rdfn x)
-			(- (rdfn y))
-			(- (* (+ (rdfn (interval-right-endpoint (rdfn-subdomain)))
-				 (- (rdfn (interval-left-endpoint (rdfn-subdomain)))))
+	      (equal (+ (rdfn2 context x) (- (rdfn2 context y)))
+		     (+ (rdfn context x)
+			(- (rdfn context y))
+			(- (* (+ (rdfn context (interval-right-endpoint (rdfn-subdomain)))
+				 (- (rdfn context (interval-left-endpoint (rdfn-subdomain)))))
 			      (+ x (- y))
 			      (/ (+ (interval-right-endpoint (rdfn-subdomain))
 				    (- (interval-left-endpoint (rdfn-subdomain)))))))))))
@@ -1789,34 +1835,57 @@
   (defthm lemma-2
     (implies (and (not (equal (- x y1) 0))
 		  (realp x)
-		  (realp y)
+		  ;(realp y)
 		  (realp y1))
-	     (equal (/ (+ (rdfn2 x) (- (rdfn2 y1))) (+ x (- y1)))
-		    (+ (* (+ (rdfn x)
-			     (- (rdfn y1)))
+	     (equal (/ (+ (rdfn2 context x) (- (rdfn2 context y1)))
+                       (+ x (- y1)))
+		    (+ (* (+ (rdfn context x)
+			     (- (rdfn context y1)))
 			  (/ (- x y1)))
-		       (- (* (+ (rdfn (interval-right-endpoint (rdfn-subdomain)))
-				(- (rdfn (interval-left-endpoint (rdfn-subdomain)))))
+		       (- (* (+ (rdfn context (interval-right-endpoint (rdfn-subdomain)))
+				(- (rdfn context (interval-left-endpoint (rdfn-subdomain)))))
 			     (/ (+ (interval-right-endpoint (rdfn-subdomain))
 				   (- (interval-left-endpoint (rdfn-subdomain))))))))))
     :hints (("Goal"
-	     :in-theory (disable rdfn2)))))
+             :use ((:instance lemma-1
+                              (x x)
+                              (y y1)
+                              (a (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+                                       (INTERVAL-RIGHT-ENDPOINT
+                                        (RDFN-SUBDOMAIN)))))
+                              (b (RDFN CONTEXT
+                                       (INTERVAL-LEFT-ENDPOINT
+                                        (RDFN-SUBDOMAIN)))))
+                   (:instance lemma-1
+                              (x x)
+                              (y y1)
+                              (a (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+                                       (INTERVAL-RIGHT-ENDPOINT
+                                        (RDFN-SUBDOMAIN)))))
+                              (b (RDFN CONTEXT
+                                       (INTERVAL-RIGHT-ENDPOINT
+                                        (RDFN-SUBDOMAIN)))))
+                   )
+	     :in-theory (disable rdfn2 lemma-1 lemma-1a)))))
 
  ;; The second part of that is limited, because rdfn is a standard
  ;; function.
 
  (local
   (defthm-std lemma-3a
-      (implies (standardp x)
-	       (standardp (rdfn x)))))
+      (implies (and (standardp x)
+                    (standardp context))
+	       (standardp (rdfn context x)))))
 
  (local
   (defthm-std lemma-3b
-      (standardp (rdfn (interval-left-endpoint (rdfn-subdomain))))))
+      (implies (standardp context)
+               (standardp (rdfn context (interval-left-endpoint (rdfn-subdomain)))))))
 
  (local
   (defthm-std lemma-3c
-      (standardp (rdfn (interval-right-endpoint (rdfn-subdomain))))))
+      (implies (standardp context)
+               (standardp (rdfn context (interval-right-endpoint (rdfn-subdomain)))))))
 
  (local
   (defthm-std lemma-3d
@@ -1825,12 +1894,13 @@
 
  (local
   (defthm lemma-3
-      (i-limited (+ (* (rdfn (interval-left-endpoint (rdfn-subdomain)))
-		       (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
-			     (interval-right-endpoint (rdfn-subdomain)))))
-		    (- (* (rdfn (interval-right-endpoint (rdfn-subdomain)))
-			  (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
-				(interval-right-endpoint (rdfn-subdomain))))))))
+      (implies (standardp context)
+               (i-limited (+ (* (rdfn context (interval-left-endpoint (rdfn-subdomain)))
+		                (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
+			              (interval-right-endpoint (rdfn-subdomain)))))
+		             (- (* (rdfn context (interval-right-endpoint (rdfn-subdomain)))
+			           (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
+				         (interval-right-endpoint (rdfn-subdomain)))))))))
     :hints (("Goal" :in-theory (enable standards-are-limited)))))
 
  ;; This first part of the sum is limited, just because rdfn is
@@ -1839,23 +1909,26 @@
  (local
   (defthm lemma-4
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (rdfn-domain))
 		  (inside-interval-p y1 (rdfn-domain))
 		  (i-close x y1) (not (= x y1)))
-	     (i-limited (* (+ (rdfn2 x) (- (rdfn2 y1))) (/ (+ x (- y1))))))
+	     (i-limited (* (+ (rdfn2 context x) (- (rdfn2 context y1)))
+                           (/ (+ x (- y1))))))
     :hints (("Goal"
 	     :use ((:instance i-limited-plus
-			      (x (+ (* (rdfn (interval-left-endpoint (rdfn-subdomain)))
+			      (x (+ (* (rdfn context (interval-left-endpoint (rdfn-subdomain)))
 				       (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
 					     (interval-right-endpoint (rdfn-subdomain)))))
-				    (- (* (rdfn (interval-right-endpoint (rdfn-subdomain)))
+				    (- (* (rdfn context (interval-right-endpoint (rdfn-subdomain)))
 					  (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
 						(interval-right-endpoint (rdfn-subdomain))))))))
-			      (y (+ (* (rdfn x) (/ (+ x (- y1))))
-				    (- (* (rdfn y1) (/ (+ x (- y1))))))))
+			      (y (+ (* (rdfn context x) (/ (+ x (- y1))))
+				    (- (* (rdfn context y1) (/ (+ x (- y1))))))))
 		   (:instance rdfn-differentiable (y2 y1))
-		   (:instance lemma-2))
-	     :in-theory (disable rdfn-differentiable lemma-2
+		   (:instance lemma-2)
+                   (:instance lemma-3))
+	     :in-theory (disable rdfn-differentiable lemma-2 lemma-3
 				 )))))
 
  ;; This is a trivial simplification!
@@ -1870,14 +1943,15 @@
 
  (defthm rdfn2-differentiable
    (implies (and (standardp x)
+                 (standardp context)
 		 (inside-interval-p x (rdfn-domain))
 		 (inside-interval-p y1 (rdfn-domain))
 		 (inside-interval-p y2 (rdfn-domain))
 		 (i-close x y1) (not (= x y1))
 		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (rdfn2 x) (rdfn2 y1)) (- x y1)))
-		 (i-close (/ (- (rdfn2 x) (rdfn2 y1)) (- x y1))
-			  (/ (- (rdfn2 x) (rdfn2 y2)) (- x y2)))))
+	    (and (i-limited (/ (- (rdfn2 context x) (rdfn2 context y1)) (- x y1)))
+		 (i-close (/ (- (rdfn2 context x) (rdfn2 context y1)) (- x y1))
+			  (/ (- (rdfn2 context x) (rdfn2 context y2)) (- x y2)))))
    :hints (("Goal"
 	    :use ((:instance lemma-4))
 	    :in-theory (disable rdfn2 rdfn2-diff lemma-4))
@@ -1892,7 +1966,7 @@
 ;; To apply Rolle's theorem to rdfn2, we have to define the max-x-n
 ;; routine to find the maximum of rdfn2 on a given grid.
 
-(defun find-max-rdfn2-x-n (a max-x i n eps)
+(defun find-max-rdfn2-x-n (context a max-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -1900,9 +1974,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (> (rdfn2 (+ a (* i eps))) (rdfn2 max-x))
-	  (find-max-rdfn2-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-max-rdfn2-x-n a max-x (1+ i) n eps))
+      (if (> (rdfn2 context (+ a (* i eps))) (rdfn2 context max-x))
+	  (find-max-rdfn2-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-max-rdfn2-x-n context a max-x (1+ i) n eps))
     max-x))
 
 ;; And we need to show that's limited (by functional instantiate).  We cannot instantiate
@@ -1916,7 +1990,7 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-max-rdfn2-x-n a a
+	   (i-limited (find-max-rdfn2-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -1935,11 +2009,12 @@
 
 ;; And then, of course, we introduce the true maximum max-x.
 
-(defun-std find-max-rdfn2-x (a b)
+(defun-std find-max-rdfn2-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-max-rdfn2-x-n a
+      (standard-part (find-max-rdfn2-x-n context
+                                         a
 					 a
 					 0
 					 (i-large-integer)
@@ -1951,7 +2026,7 @@
 ;; Foots!  Now we do it *again* for the minimum....sigh.  This is why
 ;; we need to use defchoose to pick the min/max.
 
-(defun find-min-rdfn2-x-n (a min-x i n eps)
+(defun find-min-rdfn2-x-n (context a min-x i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (integerp i)
 	   (integerp n)
@@ -1959,9 +2034,9 @@
 	   (realp a)
 	   (realp eps)
 	   (< 0 eps))
-      (if (< (rdfn2 (+ a (* i eps))) (rdfn2 min-x))
-	  (find-min-rdfn2-x-n a (+ a (* i eps)) (1+ i) n eps)
-	(find-min-rdfn2-x-n a min-x (1+ i) n eps))
+      (if (< (rdfn2 context (+ a (* i eps))) (rdfn2 context min-x))
+	  (find-min-rdfn2-x-n context a (+ a (* i eps)) (1+ i) n eps)
+	(find-min-rdfn2-x-n context a min-x (1+ i) n eps))
     min-x))
 
 ;; The minimum is limited, yada, yada, yada....
@@ -1972,7 +2047,7 @@
 		(realp b)
 		(i-limited b)
 		(< a b))
-	   (i-limited (find-min-rdfn2-x-n a a
+	   (i-limited (find-min-rdfn2-x-n context a a
 				    0 (i-large-integer)
 				    (+ (- (* (/ (i-large-integer)) a))
 				       (* (/ (i-large-integer)) b)))))
@@ -1984,11 +2059,11 @@
 
 ;; And we use defun-std to get the "real" minimum.
 
-(defun-std find-min-rdfn2-x (a b)
+(defun-std find-min-rdfn2-x (context a b)
   (if (and (realp a)
 	   (realp b)
 	   (< a b))
-      (standard-part (find-min-rdfn2-x-n a
+      (standard-part (find-min-rdfn2-x-n context a
 				   a
 				   0
 				   (i-large-integer)
@@ -1997,33 +2072,37 @@
 
 ;; Now, we define the critical point for rdfn2.
 
-(defun rolles-critical-point-2 (a b)
-  (if (equal (rdfn2 (find-min-rdfn2-x a b)) (rdfn2 (find-max-rdfn2-x a b)))
+(defun rolles-critical-point-2 (context a b)
+  (if (equal (rdfn2 context (find-min-rdfn2-x context a b))
+             (rdfn2 context (find-max-rdfn2-x context a b)))
       (/ (+ a b) 2)
-    (if (equal (rdfn2 (find-min-rdfn2-x a b)) (rdfn2 a))
-	(find-max-rdfn2-x a b)
-      (find-min-rdfn2-x a b))))
+      (if (equal (rdfn2 context (find-min-rdfn2-x context a b))
+                 (rdfn2 context a))
+	(find-max-rdfn2-x context a b)
+      (find-min-rdfn2-x context a b))))
 
 ;; And we define "differentials" for rdfn2.
 
 (encapsulate
- ( ((differential-rdfn2 * *) => *) )
+ ( ((differential-rdfn2 * * *) => *) )
 
  (local
-  (defun differential-rdfn2 (x eps)
-    (/ (- (rdfn2 (+ x eps)) (rdfn2 x)) eps)))
+  (defun differential-rdfn2 (context x eps)
+    (/ (- (rdfn2 context (+ x eps)) (rdfn2 context x)) eps)))
 
  (defthm differential-rdfn2-definition
    (implies (and (inside-interval-p x (rdfn-domain))
 		 (inside-interval-p (+ x eps) (rdfn-domain)))
-	    (equal (differential-rdfn2 x eps)
-		   (/ (- (rdfn2 (+ x eps)) (rdfn2 x)) eps)))))
+	    (equal (differential-rdfn2 context x eps)
+		   (/ (- (rdfn2 context (+ x eps))
+                         (rdfn2 context x))
+                      eps)))))
 
 (defthm realp-differential-rdfn2
   (implies (and (inside-interval-p x (rdfn-domain))
 		(inside-interval-p (+ x eps) (rdfn-domain))
 		(realp eps))
-	   (realp (differential-rdfn2 x eps)))
+	   (realp (differential-rdfn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-rdfn2)
@@ -2033,10 +2112,11 @@
 
 (defthm differential-rdfn2-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (rdfn-domain))
 		  (inside-interval-p (+ x eps) (rdfn-domain))
 		  (i-small eps))
-	     (i-limited (differential-rdfn2 x eps)))
+	     (i-limited (differential-rdfn2 context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-rdfn2)
@@ -2048,12 +2128,12 @@
 
 ;; And, of course, derivatives for rdfn2.
 
-(defun-std derivative-rdfn2 (x)
+(defun-std derivative-rdfn2 (context x)
   (if (inside-interval-p x (rdfn-domain))
       (if (inside-interval-p (+ x (/ (i-large-integer))) (rdfn-domain))
-	  (standard-part (differential-rdfn2 x (/ (i-large-integer))))
+	  (standard-part (differential-rdfn2 context x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (rdfn-domain))
-	      (standard-part (differential-rdfn2 x (- (/ (i-large-integer)))))
+	      (standard-part (differential-rdfn2 context x (- (/ (i-large-integer)))))
 	      'error))
       'error))
 
@@ -2063,12 +2143,12 @@
 (defthm rolles-theorem-2
   (implies (and (inside-interval-p a (rdfn-domain))
 		(inside-interval-p b (rdfn-domain))
-		(= (rdfn2 a) (rdfn2 b))
+		(= (rdfn2 context a) (rdfn2 context b))
 		(< a b))
-	   (and (realp (rolles-critical-point-2 a b))
-		(< a (rolles-critical-point-2 a b))
-		(< (rolles-critical-point-2 a b) b)
-		(equal (derivative-rdfn2 (rolles-critical-point-2 a b)) 0)))
+	   (and (realp (rolles-critical-point-2 context a b))
+		(< a (rolles-critical-point-2 context a b))
+		(< (rolles-critical-point-2 context a b) b)
+		(equal (derivative-rdfn2 context (rolles-critical-point-2 context a b)) 0)))
   :hints (("Goal"
 	   :by (:functional-instance rolles-theorem
 				     (find-min-rdfn-x-n find-min-rdfn2-x-n)
@@ -2090,7 +2170,7 @@
 ;; is obviously zero.
 
 (defthm rdfn2-a
-  (equal (rdfn2 (interval-left-endpoint (rdfn-subdomain))) 0))
+  (equal (rdfn2 context (interval-left-endpoint (rdfn-subdomain))) 0))
 
 ;; The second one is also zero, but that takes some algebra.....
 
@@ -2131,7 +2211,7 @@
  ;; And so (rdfn2 b) is equal to zero!
 
  (defthm rdfn2-b
-   (equal (rdfn2 (interval-right-endpoint (rdfn-subdomain))) 0))
+   (equal (rdfn2 context (interval-right-endpoint (rdfn-subdomain))) 0))
  )
 
 ;; Now, let's specialize Rolle's theorem for the specific endpoints we
@@ -2160,15 +2240,20 @@
 	     :in-theory (disable inside-interval-p-contains-right-endpoint)))))
 
  (defthm rolles-theorem-2-specialized
-     (and (realp (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+     (and (realp (rolles-critical-point-2 context
+                                          (interval-left-endpoint (rdfn-subdomain))
 					  (interval-right-endpoint (rdfn-subdomain))))
 	  (< (interval-left-endpoint (rdfn-subdomain))
-	     (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+	     (rolles-critical-point-2 context
+                                      (interval-left-endpoint (rdfn-subdomain))
 				      (interval-right-endpoint (rdfn-subdomain))))
-	  (< (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+	  (< (rolles-critical-point-2 context
+                                      (interval-left-endpoint (rdfn-subdomain))
 				      (interval-right-endpoint (rdfn-subdomain)))
 	     (interval-right-endpoint (rdfn-subdomain)))
-	  (equal (derivative-rdfn2 (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+	  (equal (derivative-rdfn2 context
+                                   (rolles-critical-point-2 context
+                                                            (interval-left-endpoint (rdfn-subdomain))
 							    (interval-right-endpoint (rdfn-subdomain))))
 		 0))
    :hints (("Goal"
@@ -2183,8 +2268,10 @@
 ;; the critical point must be small.
 
 (defthm-std standard-rolles-critical-point-2
-    (standardp (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-					(interval-right-endpoint (rdfn-subdomain)))))
+    (implies (standardp context)
+             (standardp (rolles-critical-point-2 context
+                                                 (interval-left-endpoint (rdfn-subdomain))
+					         (interval-right-endpoint (rdfn-subdomain))))))
 
 (local
  (defthm internal-point-inside-interval
@@ -2200,7 +2287,8 @@
    ))
 
 (defthm inside-interval-rolles-critical-point-2
-  (inside-interval-p (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+  (inside-interval-p (rolles-critical-point-2 context
+                                              (interval-left-endpoint (rdfn-subdomain))
 					      (interval-right-endpoint (rdfn-subdomain)))
 		     (rdfn-subdomain))
   :hints (("Goal"
@@ -2208,7 +2296,8 @@
 		 (:instance inside-interval-p-squeeze
 			    (a (interval-left-endpoint (rdfn-subdomain)))
 			    (b (interval-right-endpoint (rdfn-subdomain)))
-			    (c (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+			    (c (rolles-critical-point-2 context
+                                                        (interval-left-endpoint (rdfn-subdomain))
 							(interval-right-endpoint (rdfn-subdomain))))
 			    (interval (rdfn-subdomain)))
 		 )
@@ -2228,18 +2317,22 @@
 
 (defthm inside-interval-rolles-critical-point-2+eps
     (implies (and (realp eps)
-		  (i-small eps))
-	     (inside-interval-p (+ (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+		  (i-small eps)
+                  (standardp context))
+	     (inside-interval-p (+ (rolles-critical-point-2 context
+                                                            (interval-left-endpoint (rdfn-subdomain))
 							    (interval-right-endpoint (rdfn-subdomain)))
 				   eps)
 				(rdfn-subdomain)))
   :hints (("Goal"
 	   :use ((:instance inside-interval-x+eps
-			    (x (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+			    (x (rolles-critical-point-2 context
+                                                        (interval-left-endpoint (rdfn-subdomain))
 							(interval-right-endpoint (rdfn-subdomain))))
 			    (interval (rdfn-subdomain)))
 		 (:instance inside-interval-x-eps
-			    (x (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+			    (x (rolles-critical-point-2 context
+                                                        (interval-left-endpoint (rdfn-subdomain))
 							(interval-right-endpoint (rdfn-subdomain))))
 			    (interval (rdfn-subdomain)))
 		 (:instance rolles-theorem-2-specialized)
@@ -2250,28 +2343,50 @@
 
 (defthm inside-interval-rolles-critical-point-2+eps-2
     (implies (and (realp eps)
-		  (i-small eps))
+		  (i-small eps)
+                  (standardp context))
 	     (inside-interval-p (+ eps
-				   (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+				   (rolles-critical-point-2 context
+                                                            (interval-left-endpoint (rdfn-subdomain))
 							    (interval-right-endpoint (rdfn-subdomain))))
 				(rdfn-subdomain)))
     :hints (("Goal"
 	     :use ((:instance inside-interval-rolles-critical-point-2+eps)))))
 
 (defthm inside-interval-rolles-critical-point-+-/i-large-integer
-    (inside-interval-p (+ (/ (i-large-integer))
-			  (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-						   (interval-right-endpoint (rdfn-subdomain))))
-		       (rdfn-subdomain))
+    (implies (standardp context)
+             (inside-interval-p (+ (/ (i-large-integer))
+			           (rolles-critical-point-2 context
+                                                            (interval-left-endpoint (rdfn-subdomain))
+						            (interval-right-endpoint (rdfn-subdomain))))
+		                (rdfn-subdomain)))
   :hints (("Goal"
 	   :use ((:instance inside-interval-rolles-critical-point-2+eps
 			    (eps (/ (i-large-integer)))))
 	   :in-theory (disable inside-interval-rolles-critical-point-2+eps))))
 
+(local
+ (defthm rolle-theorem-2-corollary-lemma
+     (implies (standardp context)
+              (INSIDE-INTERVAL-P (+ (/ (I-LARGE-INTEGER))
+                                    (ROLLES-CRITICAL-POINT-2 CONTEXT
+                                                             (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))
+                                                             (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))
+                                 (RDFN-DOMAIN)))
+   :hints (("Goal" :use ((:instance
+                          inside-interval-rolles-critical-point-2+eps-2
+                          (eps (/ (i-large-integer)))))
+                   :in-theory (disable
+                               inside-interval-rolles-critical-point-2+eps-2
+                               INSIDE-INTERVAL-ROLLES-CRITICAL-POINT-+-/I-LARGE-INTEGER)))))
+
 (defthm rolles-theorem-2-corollary
-  (i-small (differential-rdfn2 (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-							(interval-right-endpoint (rdfn-subdomain)))
-			       (/ (i-large-integer))))
+  (implies (standardp context)
+           (i-small (differential-rdfn2 context
+                                        (rolles-critical-point-2 context
+                                                                 (interval-left-endpoint (rdfn-subdomain))
+							         (interval-right-endpoint (rdfn-subdomain)))
+			                (/ (i-large-integer)))))
   :hints (("Goal"
 	   :use ((:instance rolles-theorem-2-specialized))
 	   :in-theory (enable-disable (i-small derivative-rdfn2)
@@ -2310,12 +2425,12 @@
 		 (inside-interval-p (+ x eps) (rdfn-subdomain))
 		 (realp eps)
 		 (not (= eps 0)))
-	    (equal (differential-rdfn x eps)
-		   (+ (* (+ (- (rdfn (interval-left-endpoint (rdfn-subdomain))))
-			    (rdfn (interval-right-endpoint (rdfn-subdomain))))
+	    (equal (differential-rdfn context x eps)
+		   (+ (* (+ (- (rdfn context (interval-left-endpoint (rdfn-subdomain))))
+			    (rdfn context (interval-right-endpoint (rdfn-subdomain))))
 			 (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
 			       (interval-right-endpoint (rdfn-subdomain)))))
-		      (differential-rdfn2 x eps))))
+		      (differential-rdfn2 context x eps))))
    :hints (("Goal"
 	    :in-theory (enable differential-rdfn-definition
 			       differential-rdfn2-definition))))
@@ -2330,13 +2445,28 @@
 ;; at the critical point must be equal to the slope of the line from a
 ;; to b!
 
+(defthm inside-interval-rolles-critical-point-2-better
+  (inside-interval-p (rolles-critical-point-2 context
+                                              (interval-left-endpoint (rdfn-subdomain))
+					      (interval-right-endpoint (rdfn-subdomain)))
+		     (rdfn-domain))
+  :hints (("Goal"
+           :use ((:instance inside-interval-rolles-critical-point-2))
+           :in-theory (disable ROLLES-THEOREM-2-SPECIALIZED
+                               inside-interval-rolles-critical-point-2))))
+
 (defthm expand-derivative-rolles-critical-point-2
-    (equal (derivative-rdfn (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-						     (interval-right-endpoint (rdfn-subdomain))))
-	   (STANDARD-PART
-	    (DIFFERENTIAL-RDFN (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-						     (interval-right-endpoint (rdfn-subdomain)))
-			       (/ (I-LARGE-INTEGER)))))
+    (implies (standardp context)
+             (equal (derivative-rdfn context
+                                     (rolles-critical-point-2 context
+                                                              (interval-left-endpoint (rdfn-subdomain))
+						              (interval-right-endpoint (rdfn-subdomain))))
+	            (STANDARD-PART
+	             (DIFFERENTIAL-RDFN context
+                                        (rolles-critical-point-2 context
+                                                                 (interval-left-endpoint (rdfn-subdomain))
+						                 (interval-right-endpoint (rdfn-subdomain)))
+			                (/ (I-LARGE-INTEGER))))))
   :hints (("Goal"
 	   :in-theory (enable derivative-rdfn-definition))))
 
@@ -2346,7 +2476,8 @@
  (local
   (defthm lemma-1
       (REALP
-       (ROLLES-CRITICAL-POINT-2 (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))
+       (ROLLES-CRITICAL-POINT-2 context
+                                (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))
 				(INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))))
  (local
   (defthm lemma-2
@@ -2363,48 +2494,70 @@
 
  (local
   (defthm-std lemma-4
-      (STANDARDP (+ (* (RDFN (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))
-		       (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
-			     (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))))
-		    (* (- (RDFN (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))))
-		       (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
-			     (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))))))))
+      (implies (standardp context)
+               (STANDARDP (+ (* (RDFN context (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))
+		                (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+			              (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))))
+		             (* (- (RDFN context
+                                         (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))))
+		                (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+			              (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))))))))
 
- (defthm mvt-theorem
-     (equal (derivative-rdfn (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+ (local
+  (defthm-std lemma-5
+      (implies (standardp context)
+               (STANDARDP (+ (* (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+                           (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))
+                     (RDFN CONTEXT
+                           (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))
+                  (* (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
+                           (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))
+                     (- (RDFN CONTEXT
+                              (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))))))))))
+
+ (defthm-std mvt-theorem
+     (equal (derivative-rdfn context
+                             (rolles-critical-point-2 context
+                                                      (interval-left-endpoint (rdfn-subdomain))
 						      (interval-right-endpoint (rdfn-subdomain))))
-	    (/ (- (rdfn (interval-right-endpoint (rdfn-subdomain)))
-		  (rdfn (interval-left-endpoint (rdfn-subdomain))))
+	    (/ (- (rdfn context (interval-right-endpoint (rdfn-subdomain)))
+		  (rdfn context (interval-left-endpoint (rdfn-subdomain))))
 	       (- (interval-right-endpoint (rdfn-subdomain))
 		  (interval-left-endpoint (rdfn-subdomain)))))
    :hints (("Goal"
 	    :use ((:instance standard-part-of-plus
-			     (x (differential-rdfn2 (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
-									     (interval-right-endpoint (rdfn-subdomain)))
+			     (x (differential-rdfn2 context
+                                                    (rolles-critical-point-2
+                                                     context
+                                                     (interval-left-endpoint (rdfn-subdomain))
+						     (interval-right-endpoint (rdfn-subdomain)))
 						    (/ (i-large-integer))))
-			     (y (+ (- (* (rdfn (interval-left-endpoint (rdfn-subdomain)))
+			     (y (+ (- (* (rdfn context (interval-left-endpoint (rdfn-subdomain)))
 					 (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
 					       (interval-right-endpoint (rdfn-subdomain))))))
-				   (* (rdfn (interval-right-endpoint (rdfn-subdomain)))
+				   (* (rdfn context (interval-right-endpoint (rdfn-subdomain)))
 				      (/ (+ (- (interval-left-endpoint (rdfn-subdomain)))
 					    (interval-right-endpoint (rdfn-subdomain))))))))
 		  (:instance mvt-theorem-lemma
-			     (x (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+			     (x (rolles-critical-point-2 context
+                                                         (interval-left-endpoint (rdfn-subdomain))
 							 (interval-right-endpoint (rdfn-subdomain))))
 			     (eps (/ (i-large-integer))))
 		  (:instance lemma-3
 			     (eps (DIFFERENTIAL-RDFN2
-				   (ROLLES-CRITICAL-POINT-2 (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))
+                                   context
+				   (ROLLES-CRITICAL-POINT-2 context
+                                                            (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))
 							    (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))
 				   (/ (I-LARGE-INTEGER))))
-			     (x (+ (* (RDFN (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))
+			     (x (+ (* (RDFN context (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))
 				      (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
 					    (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN)))))
-				   (* (- (RDFN (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))))
+				   (* (- (RDFN context (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN))))
 				      (/ (+ (- (INTERVAL-LEFT-ENDPOINT (RDFN-SUBDOMAIN)))
 					    (INTERVAL-RIGHT-ENDPOINT (RDFN-SUBDOMAIN))))))))
 		  )
-	    :in-theory '(lemma-1 lemma-2 lemma-4 expand-derivative-rolles-critical-point-2
+	    :in-theory '(lemma-1 lemma-2 lemma-4 lemma-5 expand-derivative-rolles-critical-point-2
 			 commutativity-of-* commutativity-of-+ distributivity
 			 rolles-theorem-2-corollary
 			 inside-interval-rolles-critical-point-2
@@ -2413,22 +2566,23 @@
 			 ))))
  )
 
-(defun-sk exists-mvt-point ()
+(defun-sk exists-mvt-point (context)
   (exists (x)
 	  (and (inside-interval-p x (rdfn-subdomain))
 	       (not (equal x (interval-left-endpoint (rdfn-subdomain))))
 	       (not (equal x (interval-right-endpoint (rdfn-subdomain))))
-	       (equal (derivative-rdfn x)
-		      (/ (- (rdfn (interval-right-endpoint (rdfn-subdomain)))
-			    (rdfn (interval-left-endpoint (rdfn-subdomain))))
+	       (equal (derivative-rdfn context x)
+		      (/ (- (rdfn context (interval-right-endpoint (rdfn-subdomain)))
+			    (rdfn context (interval-left-endpoint (rdfn-subdomain))))
 			 (- (interval-right-endpoint (rdfn-subdomain))
 			    (interval-left-endpoint (rdfn-subdomain))))))))
 
 (defthm mvt-theorem-sk
-    (exists-mvt-point)
+    (exists-mvt-point context)
     :hints (("Goal"
 	     :use ((:instance exists-mvt-point-suff
-			      (x (rolles-critical-point-2 (interval-left-endpoint (rdfn-subdomain))
+			      (x (rolles-critical-point-2 context
+                                                          (interval-left-endpoint (rdfn-subdomain))
 							  (interval-right-endpoint (rdfn-subdomain)))))
 		   (:instance mvt-theorem)
 		   (:instance rolles-theorem-2-specialized))

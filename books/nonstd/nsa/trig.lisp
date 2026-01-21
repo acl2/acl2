@@ -965,7 +965,7 @@
 
 ;; This function will find a root of the cosine function.
 
-(defun find-zero-cos-n-2 (a z i n eps)
+(defun find-zero-cos-n-2  (a z i n eps)
   (declare (xargs :measure (nfix (1+ (- n i)))))
   (if (and (realp a)
 	   (integerp i)
@@ -998,9 +998,11 @@
 					    (* (/ (i-large-integer)) b)))))
    :hints (("Goal"
 	    :by (:functional-instance limited-find-zero-2-body
-					(rcfn (lambda (x) (acl2-cosine (realfix x))))
-					(rcfn-domain (lambda () (interval nil nil)))
-					(find-zero-n-2 find-zero-cos-n-2))
+				      (rcfn (lambda (context x) (acl2-cosine (realfix x))))
+				      (rcfn-domain (lambda () (interval nil nil)))
+				      (find-zero-n-2
+                                       (lambda (context a z i n eps)
+                                         (find-zero-cos-n-2 a z i n eps))))
 ; Added after v4-3 by Matt K.:
             :in-theory (disable (tau-system))
             )
@@ -1033,10 +1035,14 @@
   :hints (("Goal"
 	   :use ((:instance
 		  (:functional-instance intermediate-value-theorem-2
-					(rcfn (lambda (x) (acl2-cosine (realfix x))))
+					(rcfn (lambda (context x) (acl2-cosine (realfix x))))
 					(rcfn-domain (lambda () (interval nil nil)))
-					(find-zero-2 find-zero-cos-2)
-					(find-zero-n-2 find-zero-cos-n-2))
+					(find-zero-2
+                                         (lambda (context a b z)
+                                           (find-zero-cos-2 a b z)))
+					(find-zero-n-2
+                                         (lambda (context a z i n eps)
+                                           (find-zero-cos-n-2 a z i n eps))))
 		  (a 0)
 		  (b 2)
 		  (z 0)))

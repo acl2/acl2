@@ -18,45 +18,46 @@
 
 (encapsulate
  (
-  ((fi *) => *)
-  ((fi-domain) => *)
-  ((f-prime *) => *)
-  ((fi-prime *) => *)
-  (fi-range () t)
+  ((usub-fi * *) => *)
+  ((usub-fi-domain) => *)
+  ((usub-f-prime * *) => *)
+  ((usub-fi-prime * *) => *)
+  (usub-fi-range () t)
   (consta () t)
   )
 
- (local (defun fi (x) (declare (ignore x)) 0))
- (local (defun fi-domain () (interval 0 1)))
- (local (defun f-prime (x) (declare (ignore x)) 0))
- (local (defun fi-prime (x) (declare (ignore x)) 0))
- (local (defun fi-range () (interval 0 1)))
- (local (defun consta() 1))
+ (local (defun usub-fi (contexti x) (declare (ignore contexti x)) 0))
+ (local (defun usub-fi-domain () (interval 0 1)))
+ (local (defun usub-f-prime (contextf x) (declare (ignore contextf x)) 0))
+ (local (defun usub-fi-prime (contexti x) (declare (ignore contexti x)) 0))
+ (local (defun usub-fi-range () (interval 0 1)))
+ (local (defun consta () 1))
 
  (defthmd consta-def
-   (and (inside-interval-p (consta) (fi-range))
+   (and (inside-interval-p (consta) (usub-fi-range))
 	(standardp (consta))
 	)
    )
 
- (defthm f-prime-real
-   (realp (f-prime x))
+ (defthm usub-f-prime-real
+   (realp (usub-f-prime contextf x))
    :rule-classes (:rewrite :type-prescription))
 
- (defthm f-prime-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-range))
-		 (i-close x x1)
-		 (inside-interval-p x1 (fi-range)))
-	    (i-close (f-prime x)
-		     (f-prime x1))))
+ (defthm usub-f-prime-continuous
+     (implies (and (standardp x)1
+                   (standardp contextf)
+		   (inside-interval-p x (usub-fi-range))
+		   (i-close x x1)
+		   (inside-interval-p x1 (usub-fi-range)))
+	      (i-close (usub-f-prime contextf x)
+		       (usub-f-prime contextf x1))))
 
- (defthm fi-real
-   (realp (fi x))
+ (defthm usub-fi-real
+   (realp (usub-fi contexti x))
    :rule-classes (:rewrite :type-prescription))
 
- (defthm fi-prime-real
-   (realp (fi-prime x))
+ (defthm usub-fi-prime-real
+   (realp (usub-fi-prime contexti x))
    :rule-classes (:rewrite :type-prescription))
 
  (local (defthm i-close-0-lemma
@@ -68,13 +69,15 @@
 		   (equal (* 0 (/ (+ x (- x1)))) 0))
 	  ))
 
- (defthm fi-prime-is-derivative
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain))
-		 (i-close x x1) (not (= x x1)))
-	    (i-close (/ (- (fi x) (fi x1)) (- x x1))
-		     (fi-prime x)))
+ (defthm usub-fi-prime-is-derivative
+     (implies (and (standardp x)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p x1 (usub-fi-domain))
+		   (i-close x x1) (not (= x x1)))
+	      (i-close (/ (- (usub-fi contexti x) (usub-fi contexti x1))
+                          (- x x1))
+		       (usub-fi-prime contexti x)))
    :hints (("goal"
 	    :use (
 		  (:instance i-close-0-lemma (x x) (x1 x1))
@@ -82,58 +85,58 @@
 	    ))
    )
 
- (defthm fi-prime-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (i-close x x1)
-		 (inside-interval-p x1 (fi-domain)))
-	    (i-close (fi-prime x)
-		     (fi-prime x1))))
+ (defthm usub-fi-prime-continuous
+     (implies (and (standardp x)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (i-close x x1)
+		   (inside-interval-p x1 (usub-fi-domain)))
+	      (i-close (usub-fi-prime contexti x)
+		       (usub-fi-prime contexti x1))))
 
- (defthm intervalp-fi-range
-   (interval-p (fi-range))
+ (defthm intervalp-usub-fi-range
+   (interval-p (usub-fi-range))
    :rule-classes (:type-prescription :rewrite))
 
- (defthm fi-range-non-trivial
-   (or (null (interval-left-endpoint (fi-range)))
-       (null (interval-right-endpoint (fi-range)))
-       (< (interval-left-endpoint (fi-range))
-	  (interval-right-endpoint (fi-range))))
+ (defthm usub-fi-range-non-trivial
+   (or (null (interval-left-endpoint (usub-fi-range)))
+       (null (interval-right-endpoint (usub-fi-range)))
+       (< (interval-left-endpoint (usub-fi-range))
+	  (interval-right-endpoint (usub-fi-range))))
    :rule-classes nil)
 
- (defthm intervalp-fi-domain
-   (interval-p (fi-domain))
+ (defthm intervalp-usub-fi-domain
+   (interval-p (usub-fi-domain))
    :rule-classes (:type-prescription :rewrite))
 
- (defthm fi-domain-non-trivial
-   (or (null (interval-left-endpoint (fi-domain)))
-       (null (interval-right-endpoint (fi-domain)))
-       (< (interval-left-endpoint (fi-domain))
-	  (interval-right-endpoint (fi-domain))))
+ (defthm usub-fi-domain-non-trivial
+   (or (null (interval-left-endpoint (usub-fi-domain)))
+       (null (interval-right-endpoint (usub-fi-domain)))
+       (< (interval-left-endpoint (usub-fi-domain))
+	  (interval-right-endpoint (usub-fi-domain))))
    :rule-classes nil)
 
- (defthm fi-range-in-domain-of-f
-   (implies (inside-interval-p x (fi-domain))
-	    (inside-interval-p (fi x) (fi-range))))
+ (defthm usub-fi-range-in-domain-of-f
+   (implies (inside-interval-p x (usub-fi-domain))
+	    (inside-interval-p (usub-fi contexti x) (usub-fi-range))))
 
  )
 
-(defthm fi-range-real
-  (implies (inside-interval-p x (fi-range))
+(defthm usub-fi-range-real
+  (implies (inside-interval-p x (usub-fi-range))
 	   (realp x))
   :rule-classes (:forward-chaining))
 
-(defthm fi-domain-real
-  (implies (inside-interval-p x (fi-domain))
+(defthm usub-fi-domain-real
+  (implies (inside-interval-p x (usub-fi-domain))
 	   (realp x))
   :rule-classes (:forward-chaining))
 
 
-(defthm-std fi-der-std
-  (implies (standardp x)
-           (standardp (fi-prime x))
-           )
-  )
+(defthm-std usub-fi-der-std
+    (implies (and (standardp x)
+                  (standardp contexti))
+             (standardp (usub-fi-prime contexti x))))
 
 (encapsulate
  ()
@@ -150,56 +153,74 @@
     ))
 
  (local
-  (defthm fi-differentiable-lemma1
-    (implies (and (standardp x)
-		  (inside-interval-p x (fi-domain))
-		  (inside-interval-p y1 (fi-domain))
-		  (i-close x y1) (not (= x y1)))
-	     (and (i-limited (/ (- (fi x) (fi y1)) (- x y1)))))
+  (defthm usub-fi-differentiable-lemma1
+      (implies (and (standardp x)
+                    (standardp contexti)
+		    (inside-interval-p x (usub-fi-domain))
+		    (inside-interval-p y1 (usub-fi-domain))
+		    (i-close x y1) (not (= x y1)))
+	       (and (i-limited (/ (- (usub-fi contexti x)
+                                     (usub-fi contexti y1))
+                                  (- x y1)))))
     :hints (("goal"
-	     :use ((:instance fi-der-std)
-		   (:instance standards-are-limited-forward (x (fi-prime x)))
-		   (:instance fi-prime-is-derivative (x x) (x1 y1))
-		   (:instance i-close-symmetric (x (/ (- (fi x) (fi y1)) (- x y1))) (y (fi-prime x)))
-		   (:instance i-close-limited (x (fi-prime x)) (y (/ (- (fi x) (fi y1)) (- x y1))))
-		   (:instance fi-real)
-		   (:instance fi-real (x y1))
-		   (:instance fi-domain-real)
-		   (:instance fi-domain-real (x y1))
-		   (:instance lemma-1 (a (/ (- (fi x) (fi y1)) (- x y1))) (b (fi-prime x))))
+	     :use ((:instance usub-fi-der-std)
+		   (:instance standards-are-limited-forward (x (usub-fi-prime contexti x)))
+		   (:instance usub-fi-prime-is-derivative (x x) (x1 y1))
+		   (:instance i-close-symmetric (x (/ (- (usub-fi contexti x)
+                                                         (usub-fi contexti y1))
+                                                      (- x y1)))
+                              (y (usub-fi-prime contexti x)))
+		   (:instance i-close-limited (x (usub-fi-prime contexti x))
+                              (y (/ (- (usub-fi contexti x) (usub-fi contexti y1)) (- x y1))))
+		   (:instance usub-fi-real)
+		   (:instance usub-fi-real (x y1))
+		   (:instance usub-fi-domain-real)
+		   (:instance usub-fi-domain-real (x y1))
+		   (:instance lemma-1 (a (/ (- (usub-fi contexti x)
+                                               (usub-fi contexti y1))
+                                            (- x y1)))
+                              (b (usub-fi-prime contexti x))))
 	     ))
     ))
 
  (local
-  (defthm fi-differentiable-lemma2
-    (implies (and (standardp x)
-		  (inside-interval-p x (fi-domain))
-		  (inside-interval-p y1 (fi-domain))
-		  (inside-interval-p y2 (fi-domain))
-		  (i-close x y1) (not (= x y1))
-		  (i-close x y2) (not (= x y2)))
-	     (i-close (/ (- (fi x) (fi y1)) (- x y1))
-		      (/ (- (fi x) (fi y2)) (- x y2))))
+  (defthm usub-fi-differentiable-lemma2
+      (implies (and (standardp x)
+                    (standardp contexti)
+		    (inside-interval-p x (usub-fi-domain))
+		    (inside-interval-p y1 (usub-fi-domain))
+		    (inside-interval-p y2 (usub-fi-domain))
+		    (i-close x y1) (not (= x y1))
+		    (i-close x y2) (not (= x y2)))
+	     (i-close (/ (- (usub-fi contexti x) (usub-fi contexti y1)) (- x y1))
+		      (/ (- (usub-fi contexti x) (usub-fi contexti y2)) (- x y2))))
     :hints (("goal"
-	     :use ((:instance fi-prime-is-derivative (x x) (x1 y1))
-		   (:instance fi-prime-is-derivative (x x) (x1 y2))
-		   (:instance i-close-reflexive (x (fi-prime x))))
+	     :use ((:instance usub-fi-prime-is-derivative (x x) (x1 y1))
+		   (:instance usub-fi-prime-is-derivative (x x) (x1 y2))
+		   (:instance i-close-reflexive (x (usub-fi-prime contexti x))))
 	     ))
     ))
 
- (defthm fi-differentiable
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p y1 (fi-domain))
-		 (inside-interval-p y2 (fi-domain))
-		 (i-close x y1) (not (= x y1))
-		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (fi x) (fi y1)) (- x y1)))
-		 (i-close (/ (- (fi x) (fi y1)) (- x y1))
-			  (/ (- (fi x) (fi y2)) (- x y2)))))
+ (defthm usub-fi-differentiable
+     (implies (and (standardp x)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p y1 (usub-fi-domain))
+		   (inside-interval-p y2 (usub-fi-domain))
+		   (i-close x y1) (not (= x y1))
+		   (i-close x y2) (not (= x y2)))
+	      (and (i-limited (/ (- (usub-fi contexti x)
+                                    (usub-fi contexti y1))
+                                 (- x y1)))
+		   (i-close (/ (- (usub-fi contexti x)
+                                  (usub-fi contexti y1))
+                               (- x y1))
+			    (/ (- (usub-fi contexti x)
+                                  (usub-fi contexti y2))
+                               (- x y2)))))
    :hints(("goal"
-	   :use ((:instance fi-differentiable-lemma1)
-		 (:instance fi-differentiable-lemma2))
+	   :use ((:instance usub-fi-differentiable-lemma1)
+		 (:instance usub-fi-differentiable-lemma2))
 	   ))
    )
  )
@@ -371,142 +392,158 @@
  )
 
 (local
- (defthm-std standard-f-prime
-   (implies (standardp x)
-	    (standardp (f-prime x)))))
+ (defthm-std standard-usub-f-prime
+     (implies (and (standardp x)
+                   (standardp contextf))
+	      (standardp (usub-f-prime contextf x)))))
 
 (local
- (defthm-std standard-fi-prime
-   (implies (standardp x)
-	    (standardp (fi-prime x)))))
+ (defthm-std standard-usub-fi-prime
+     (implies (and (standardp x)
+                   (standardp contexti))
+	      (standardp (usub-fi-prime contexti x)))))
 
 
 (encapsulate
  (
-  ((f-o-fi *) => *)
-  ((differential-cr-f * *) => *)
-  ((differential-cr-fi * *) => *)
-  ((f *) => *)
-  ((map-f-prime-1 *) => *)
-  ((riemann-f-prime-1 *) => *)
-  ((strict-int-f-prime-1 * *) => *)
-  ((int-f-prime-1 * *) => *)
+  ((usub-f-o-fi * *) => *)
+  ((differential-cr-usub-f * * *) => *)
+  ((differential-cr-usub-fi * * *) => *)
+  ((usub-f * *) => *)
+  ((map-usub-f-prime-1 * *) => *)
+  ((riemann-usub-f-prime-1 * *) => *)
+  ((strict-int-usub-f-prime-1 * * *) => *)
+  ((int-usub-f-prime-1 * * *) => *)
+  ((usub-car-context *) => *)
+  ((usub-cdr-context *) => *)
   )
 
+    (local
+     (defun usub-car-context (context) (car context)))
+
+    (local
+     (defun usub-cdr-context (context) (cdr context)))
+
  (local
-  (defun map-f-prime-1 (p)
+  (defun map-usub-f-prime-1 (contextf p)
     (if (consp p)
-	(cons (f-prime (car p))
-	      (map-f-prime-1 (cdr p)))
+	(cons (usub-f-prime contextf (car p))
+	      (map-usub-f-prime-1 contextf (cdr p)))
       nil))
   )
 
  (local
-  (defun riemann-f-prime-1 (p)
+  (defun riemann-usub-f-prime-1 (contextf p)
     (dotprod (deltas p)
-	     (map-f-prime-1 (cdr p))))
+	     (map-usub-f-prime-1 contextf (cdr p))))
   )
 
  (local
-  (defthm limited-riemann-f-prime-small-partition
+  (defthm limited-riemann-usub-f-prime-small-partition
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
-		  (inside-interval-p a (fi-range))
-		  (inside-interval-p b (fi-range))
+                  (standardp contextf)
+		  (inside-interval-p a (usub-fi-range))
+		  (inside-interval-p b (usub-fi-range))
 		  (< a b))
-	     (i-limited (riemann-f-prime-1 (make-small-partition a b))))
+	     (i-limited (riemann-usub-f-prime-1 contextf (make-small-partition a b))))
     :hints (("goal"
-	     :use (
-		   (:functional-instance limited-riemann-rcfn-small-partition
-					 (rcfn-domain fi-range)
-					 (riemann-rcfn riemann-f-prime-1)
-					 (map-rcfn map-f-prime-1)
-					 (rcfn f-prime)
-					 )
+	     :use ((:instance
+		    (:functional-instance limited-riemann-rcfn-small-partition
+					  (rcfn-domain usub-fi-range)
+					  (riemann-rcfn riemann-usub-f-prime-1)
+					  (map-rcfn map-usub-f-prime-1)
+					  (rcfn usub-f-prime)
+					  )
+                    (context contextf))
 		   )
 	     :in-theory (enable interval-definition-theory)
 	     )
 	    ("subgoal 1"
-	     :use ((:instance fi-range-non-trivial))
+	     :use ((:instance usub-fi-range-non-trivial))
 	     )
 	    )
     )
   )
 
- (local (in-theory (disable riemann-f-prime-1)))
- (local (defun-std strict-int-f-prime-1 (a b)
+ (local (in-theory (disable riemann-usub-f-prime-1)))
+ (local (defun-std strict-int-usub-f-prime-1 (contextf a b)
 	  (if (and (realp a)
 		   (realp b)
-		   (inside-interval-p a (fi-range))
-		   (inside-interval-p b (fi-range))
+		   (inside-interval-p a (usub-fi-range))
+		   (inside-interval-p b (usub-fi-range))
 		   (< a b))
-	      (standard-part (riemann-f-prime-1 (make-small-partition a b)))
+	      (standard-part (riemann-usub-f-prime-1 contextf (make-small-partition a b)))
 	    0)))
 
  (local
-  (defun int-f-prime-1 (a b)
+  (defun int-usub-f-prime-1 (contextf a b)
     (if (<= a b)
-	(strict-int-f-prime-1 a b)
-      (- (strict-int-f-prime-1 b a))))
+	(strict-int-usub-f-prime-1 contextf a b)
+      (- (strict-int-usub-f-prime-1 contextf b a))))
   )
 
  (local
   (defthm ftc-1-fprime
-    (implies (and (inside-interval-p a (fi-range))
-		  (inside-interval-p b (fi-range))
-		  (inside-interval-p c (fi-range))
+    (implies (and (inside-interval-p a (usub-fi-range))
+		  (inside-interval-p b (usub-fi-range))
+		  (inside-interval-p c (usub-fi-range))
 		  (standardp b)
+                  (standardp contextf)
 		  (i-close b c)
 		  (not (equal b c)))
-	     (i-close (/ (- (int-f-prime-1 a b) (int-f-prime-1 a c))
+	     (i-close (/ (- (int-usub-f-prime-1 contextf a b)
+                            (int-usub-f-prime-1 contextf a c))
 			 (- b c))
-		      (f-prime b)))
+		      (usub-f-prime contextf b)))
     :hints (("goal"
-	     :use ((:functional-instance ftc-1
-					 (int-rcfn int-f-prime-1)
-					 (strict-int-rcfn strict-int-f-prime-1)
-					 (map-rcfn map-f-prime-1)
-					 (riemann-rcfn riemann-f-prime-1)
-					 (rcfn f-prime)
-					 (rcfn-domain fi-range)
-					 )
+	     :use ((:instance
+                    (:functional-instance ftc-1
+					  (int-rcfn int-usub-f-prime-1)
+					  (strict-int-rcfn strict-int-usub-f-prime-1)
+					  (map-rcfn map-usub-f-prime-1)
+					  (riemann-rcfn riemann-usub-f-prime-1)
+					  (rcfn usub-f-prime)
+					  (rcfn-domain usub-fi-range)
+					  )
+                    (context contextf))
 		   )
 	     ))
     )
   )
 
  (local
-  (defthm realp-strict-int-f-prime
+  (defthm realp-strict-int-usub-f-prime
     (implies (and (realp a)
 		  (realp b))
-	     (realp (strict-int-f-prime-1 a b)))
+	     (realp (strict-int-usub-f-prime-1 contextf a b)))
     :hints (("goal"
 	     :by (:functional-instance realp-strict-int-rcfn
-				       (strict-int-rcfn strict-int-f-prime-1)
-				       (rcfn-domain fi-range)
-				       (rcfn f-prime)
-				       (riemann-rcfn riemann-f-prime-1)
-				       (map-rcfn map-f-prime-1))))))
+				       (strict-int-rcfn strict-int-usub-f-prime-1)
+				       (rcfn-domain usub-fi-range)
+				       (rcfn usub-f-prime)
+				       (riemann-rcfn riemann-usub-f-prime-1)
+				       (map-rcfn map-usub-f-prime-1))))))
 
  (local
-  (defthm-std realp-strict-int-f-prime-stronger
-    (realp (strict-int-f-prime-1 a b))
+  (defthm-std realp-strict-int-usub-f-prime-stronger
+    (realp (strict-int-usub-f-prime-1 contextf a b))
     :hints (("goal"
 	     :cases ((not (realp a))
 		     (not (realp b))))
 	    ("subgoal 3"
-	     :use ((:instance realp-strict-int-f-prime)))
+	     :use ((:instance realp-strict-int-usub-f-prime)))
 	    )))
 
  (local
-  (defthm realp-int-f-prime
-    (realp (int-f-prime-1 a b))
+  (defthm realp-int-usub-f-prime
+    (realp (int-usub-f-prime-1 contextf a b))
     )
   )
 
  (local
-  (defun f(x)
-    (int-f-prime-1 (consta) x)
+  (defun usub-f (contextf x)
+    (int-usub-f-prime-1 contextf (consta) x)
     )
   )
 
@@ -515,14 +552,15 @@
    nil
 
    (local
-    (defthm int-f-prime-1-lemma-1
+    (defthm int-usub-f-prime-1-lemma-1
       (implies
-       (standardp x)
-       (standardp (int-f-prime-1 (consta) x))
+       (and (standardp x)
+            (standardp contextf))
+       (standardp (int-usub-f-prime-1 contextf (consta) x))
        )
       :hints (("goal"
 	       :use (
-		     (:instance fi-range-real (x x))
+		     (:instance usub-fi-range-real (x x))
 		     (:instance consta-def)
 		     )
 	       ))
@@ -530,33 +568,36 @@
     )
 
    (local
-    (in-theory '(int-f-prime-1-lemma-1)))
-   (defun-std  f (x)
-     (int-f-prime-1 (consta) x)
+    (in-theory '(int-usub-f-prime-1-lemma-1)))
+   (defun-std  f (contextf x)
+     (int-usub-f-prime-1 contextf (consta) x)
      )
    )
   )
 
- (defthm f-real
-   (realp (f x))
+ (defthm usub-f-real
+   (realp (usub-f contextf x))
    :hints (("goal"
 	    :use (
-		  (:definition f)
-		  (:instance realp-int-f-prime
+		  (:definition usub-f)
+		  (:instance realp-int-usub-f-prime
 			     (a (consta))
 			     (b x))
 		  )
-	    :in-theory (disable int-f-prime-1)
+	    :in-theory (disable int-usub-f-prime-1)
 	    ))
    )
 
- (defthm f-prime-is-derivative
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-range))
-		 (inside-interval-p x1 (fi-range))
-		 (i-close x x1) (not (= x x1)))
-	    (i-close (/ (- (f x) (f x1)) (- x x1))
-		     (f-prime x)))
+ (defthm usub-f-prime-is-derivative
+     (implies (and (standardp x)
+                   (standardp contextf)
+		   (inside-interval-p x (usub-fi-range))
+		   (inside-interval-p x1 (usub-fi-range))
+		   (i-close x x1) (not (= x x1)))
+	      (i-close (/ (- (usub-f contextf x)
+                             (usub-f contextf x1))
+                          (- x x1))
+		       (usub-f-prime contextf x)))
    :hints (("goal"
 	    :use ((:instance ftc-1-fprime
 			     (b x)
@@ -568,77 +609,87 @@
 	    ))
    )
 
- (defthm f-differentiable
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-range))
-		 (inside-interval-p y1 (fi-range))
-		 (inside-interval-p y2 (fi-range))
-		 (i-close x y1) (not (= x y1))
-		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (f x) (f y1)) (- x y1)))
-		 (i-close (/ (- (f x) (f y1)) (- x y1))
-			  (/ (- (f x) (f y2)) (- x y2)))))
+ (defthm usub-f-differentiable
+     (implies (and (standardp x)
+                   (standardp contextf)
+		   (inside-interval-p x (usub-fi-range))
+		   (inside-interval-p y1 (usub-fi-range))
+		   (inside-interval-p y2 (usub-fi-range))
+		   (i-close x y1) (not (= x y1))
+		   (i-close x y2) (not (= x y2)))
+	      (and (i-limited (/ (- (usub-f contextf x)
+                                    (usub-f contextf y1))
+                                 (- x y1)))
+		   (i-close (/ (- (usub-f contextf x) (usub-f contextf y1))
+                               (- x y1))
+			    (/ (- (usub-f contextf x) (usub-f contextf y2))
+                               (- x y2)))))
    :hints (("goal"
-	    :use ((:instance f-prime-is-derivative
+	    :use ((:instance usub-f-prime-is-derivative
 			     (x x)
 			     (x1 y1)
 			     )
-		  (:instance f-prime-is-derivative
+		  (:instance usub-f-prime-is-derivative
 			     (x x)
 			     (x1 y2)
 			     )
-		  (:instance standard-f-prime)
+		  (:instance standard-usub-f-prime)
 		  (:instance standards-are-limited-forward
-			     (x (f-prime x))
+			     (x (usub-f-prime contextf x))
 			     )
 		  )
 	    ))
    )
 
  (local
-  (defun f-o-fi (x)
-    (f (fi x))))
+  (defun usub-f-o-fi (context x)
+    (usub-f (usub-car-context context) (usub-fi (usub-cdr-context context) x))))
 
  (local
-  (defun differential-cr-f (x eps)
-    (/ (- (f (+ x eps)) (f x)) eps)))
+  (defun differential-cr-usub-f (contextf x eps)
+    (/ (- (usub-f contextf (+ x eps)) (usub-f contextf x)) eps)))
  (local
-  (defun differential-cr-fi (x eps)
-    (/ (- (fi (+ x eps)) (fi x)) eps)))
+  (defun differential-cr-usub-fi (contexti x eps)
+    (/ (- (usub-fi contexti (+ x eps)) (usub-fi contexti x)) eps)))
 
- (defthm f-o-fi-equal
-   (implies (inside-interval-p x (fi-domain))
-	    (equal (f-o-fi x) (f (fi x))))
+ (defthm usub-f-o-fi-equal
+   (implies (inside-interval-p x (usub-fi-domain))
+	    (equal (usub-f-o-fi context x)
+                   (usub-f (usub-car-context context) (usub-fi (usub-cdr-context context) x))))
    )
 
- (defthm f-o-fi-real
-   (realp (f-o-fi x))
+ (defthm usub-f-o-fi-real
+   (realp (usub-f-o-fi context x))
    :rule-classes (:rewrite :type-prescription))
 
- (defthm differential-cr-f-definition
-   (implies (and (inside-interval-p x (fi-range))
-		 (inside-interval-p (+ x eps) (fi-range)))
-	    (equal (differential-cr-f x eps)
-		   (/ (- (f (+ x eps)) (f x)) eps))))
+ (defthm differential-cr-usub-f-definition
+   (implies (and (inside-interval-p x (usub-fi-range))
+		 (inside-interval-p (+ x eps) (usub-fi-range)))
+	    (equal (differential-cr-usub-f contextf x eps)
+		   (/ (- (usub-f contextf (+ x eps))
+                         (usub-f contextf x))
+                      eps))))
 
- (defthm differential-cr-fi-definition
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain)))
-	    (equal (differential-cr-fi x eps)
-		   (/ (- (fi (+ x eps)) (fi x)) eps))))
+ (defthm differential-cr-usub-fi-definition
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain)))
+	    (equal (differential-cr-usub-fi contexti x eps)
+		   (/ (- (usub-fi contexti (+ x eps))
+                         (usub-fi contexti x))
+                      eps))))
  )
 
 (local
  (defthm-std standard-fi-range
-   (standardp (fi-range))))
+   (standardp (usub-fi-range))))
 
 (local
- (defthm-std standard-fi-range-left-endpoint
-   (standardp (interval-left-endpoint (fi-range)))))
+ (defthm-std standard-usub-fi-range-left-endpoint
+   (standardp (interval-left-endpoint (usub-fi-range)))))
 
 (local
- (defthm-std standard-fi-range-right-endpoint
-   (standardp (interval-right-endpoint (fi-range)))))
+ (defthm-std standard-usub-fi-range-right-endpoint
+   (standardp (interval-right-endpoint (usub-fi-range)))))
 
 (local
  (defthm standard-part-eps
@@ -726,32 +777,32 @@
 
 (local
  (defthm x-in-interval-implies-x+-eps-in-interval
-   (implies (and (inside-interval-p x (fi-range))
+   (implies (and (inside-interval-p x (usub-fi-range))
 		 (standardp x)
 		 (realp eps)
 		 (i-small eps)
 		 (< 0 eps))
-	    (or (inside-interval-p (+ x eps) (fi-range))
-		(inside-interval-p (- x eps) (fi-range))))
+	    (or (inside-interval-p (+ x eps) (usub-fi-range))
+		(inside-interval-p (- x eps) (usub-fi-range))))
    :hints (("goal"
 	    :use (
-		  (:instance fi-range-non-trivial)
+		  (:instance usub-fi-range-non-trivial)
 		  (:instance x-in-interval-implies-x+-eps-in-interval-1
 		  	     (x x)
 		  	     (eps eps)
-		  	     (x1 (interval-left-endpoint (fi-range))))
+		  	     (x1 (interval-left-endpoint (usub-fi-range))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-1
 		  	     (x x)
 		  	     (eps (- eps))
-		  	     (x1 (interval-left-endpoint (fi-range))))
+		  	     (x1 (interval-left-endpoint (usub-fi-range))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-2
 		  	     (x x)
 		  	     (eps eps)
-		  	     (x2 (interval-right-endpoint (fi-range))))
+		  	     (x2 (interval-right-endpoint (usub-fi-range))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-2
 		  	     (x x)
 		  	     (eps (- eps))
-		  	     (x2 (interval-right-endpoint (fi-range))))
+		  	     (x2 (interval-right-endpoint (usub-fi-range))))
 		  )
 	    )
 	   ("subgoal 9"
@@ -772,24 +823,25 @@
  ()
  (local (include-book "arithmetic-5/top" :dir :system))
 
- (defthm f-prime-definition
-   (implies (and (inside-interval-p x (fi-range))
-		 (standardp x))
-	    (equal (f-prime x)
-		   (if (inside-interval-p (+ x (/ (i-large-integer))) (fi-range))
-		       (standard-part (differential-cr-f x (/ (i-large-integer))))
-		     (if (inside-interval-p (- x (/ (i-large-integer))) (fi-range))
-			 (standard-part (differential-cr-f x (- (/ (i-large-integer)))))
+ (defthm usub-f-prime-definition
+   (implies (and (inside-interval-p x (usub-fi-range))
+		 (standardp x)
+                 (standardp contextf))
+	    (equal (usub-f-prime contextf x)
+		   (if (inside-interval-p (+ x (/ (i-large-integer))) (usub-fi-range))
+		       (standard-part (differential-cr-usub-f contextf x (/ (i-large-integer))))
+		     (if (inside-interval-p (- x (/ (i-large-integer))) (usub-fi-range))
+			 (standard-part (differential-cr-usub-f contextf x (- (/ (i-large-integer)))))
 		       'error))))
 
    :hints (("goal"
 	    :use (
-		  (:instance standard-f-prime)
+		  (:instance standard-usub-f-prime)
 		  (:instance x-in-interval-implies-x+-eps-in-interval
 			     (x x)
 			     (eps (/ (i-large-integer))))
 		  (:instance i-large-lemma)
-		  (:instance f-prime-is-derivative (x x)
+		  (:instance usub-f-prime-is-derivative (x x)
 			     (x1 (+ x (/ (i-large-integer))))
 			     )
 		  (:instance i-close-plus-lemma-2
@@ -797,10 +849,10 @@
 			     (x  (+ (/ (i-large-integer)) x))
 			     )
 		  (:instance close-stdpart-lemma2
-			     (x (f-prime x))
-			     (y (differential-cr-f x (/ (i-large-integer))))
+			     (x (usub-f-prime contextf x))
+			     (y (differential-cr-usub-f contextf x (/ (i-large-integer))))
 			     )
-		  (:instance f-prime-is-derivative (x x)
+		  (:instance usub-f-prime-is-derivative (x x)
 			     (x1 (+ x (-(/ (i-large-integer)))))
 			     )
 		  (:instance i-close-plus-lemma-2
@@ -808,8 +860,8 @@
 			     (y (+ (- (/ (i-large-integer))) x))
 			     )
 		  (:instance close-stdpart-lemma2
-			     (x (f-prime x))
-			     (y (differential-cr-f x (- (/ (i-large-integer)))))
+			     (x (usub-f-prime contextf x))
+			     (y (differential-cr-usub-f contextf x (- (/ (i-large-integer)))))
 			     )
 		  )
 	    ))
@@ -817,45 +869,45 @@
  )
 
 (local
- (defthm-std standard-fi-domain
-   (standardp (fi-domain))))
+ (defthm-std standard-usub-fi-domain
+   (standardp (usub-fi-domain))))
 
 (local
- (defthm-std standard-fi-domain-left-endpoint
-   (standardp (interval-left-endpoint (fi-domain)))))
+ (defthm-std standard-usub-fi-domain-left-endpoint
+   (standardp (interval-left-endpoint (usub-fi-domain)))))
 
 (local
- (defthm-std standard-fi-domain-right-endpoint
-   (standardp (interval-right-endpoint (fi-domain)))))
+ (defthm-std standard-usub-fi-domain-right-endpoint
+   (standardp (interval-right-endpoint (usub-fi-domain)))))
 
 (local
- (defthm x-in-interval-implies-x+-eps-in-interval-fi-domain
-   (implies (and (inside-interval-p x (fi-domain))
+ (defthm x-in-interval-implies-x+-eps-in-interval-usub-fi-domain
+   (implies (and (inside-interval-p x (usub-fi-domain))
 		 (standardp x)
 		 (realp eps)
 		 (i-small eps)
 		 (< 0 eps))
-	    (or (inside-interval-p (+ x eps) (fi-domain))
-		(inside-interval-p (- x eps) (fi-domain))))
+	    (or (inside-interval-p (+ x eps) (usub-fi-domain))
+		(inside-interval-p (- x eps) (usub-fi-domain))))
    :hints (("goal"
 	    :use (
-		  (:instance fi-domain-non-trivial)
+		  (:instance usub-fi-domain-non-trivial)
 		  (:instance x-in-interval-implies-x+-eps-in-interval-1
 			     (x x)
 			     (eps eps)
-			     (x1 (interval-left-endpoint (fi-domain))))
+			     (x1 (interval-left-endpoint (usub-fi-domain))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-1
 			     (x x)
 			     (eps (- eps))
-			     (x1 (interval-left-endpoint (fi-domain))))
+			     (x1 (interval-left-endpoint (usub-fi-domain))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-2
 			     (x x)
 			     (eps eps)
-			     (x2 (interval-right-endpoint (fi-domain))))
+			     (x2 (interval-right-endpoint (usub-fi-domain))))
 		  (:instance x-in-interval-implies-x+-eps-in-interval-2
 			     (x x)
 			     (eps (- eps))
-			     (x2 (interval-right-endpoint (fi-domain))))
+			     (x2 (interval-right-endpoint (usub-fi-domain))))
 		  )
 	    )
 	   ("subgoal 9"
@@ -874,26 +926,27 @@
 (encapsulate
  ()
  (local (include-book "arithmetic-5/top" :dir :system))
- (defthm fi-prime-definition
-   (implies (and (inside-interval-p x (fi-domain))
-		 (standardp x))
-	    (equal (fi-prime x)
-		   (if (inside-interval-p (+ x (/ (i-large-integer))) (fi-domain))
-		       (standard-part (differential-cr-fi x (/ (i-large-integer))))
-		     (if (inside-interval-p (- x (/ (i-large-integer))) (fi-domain))
-			 (standard-part (differential-cr-fi x (- (/ (i-large-integer)))))
+ (defthm usub-fi-prime-definition
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (standardp x)
+                 (standardp contexti))
+	    (equal (usub-fi-prime contexti x)
+		   (if (inside-interval-p (+ x (/ (i-large-integer))) (usub-fi-domain))
+		       (standard-part (differential-cr-usub-fi contexti x (/ (i-large-integer))))
+		     (if (inside-interval-p (- x (/ (i-large-integer))) (usub-fi-domain))
+			 (standard-part (differential-cr-usub-fi contexti x (- (/ (i-large-integer)))))
 		       'error))))
 
    :hints (("goal"
 	    :use (
-		  (:instance standard-fi-prime)
-		  (:instance x-in-interval-implies-x+-eps-in-interval-fi-domain
+		  (:instance standard-usub-fi-prime)
+		  (:instance x-in-interval-implies-x+-eps-in-interval-usub-fi-domain
 		  	     (x x)
 		  	     (eps (/ (i-large-integer))))
-		  (:instance fi-prime-is-derivative (x x)
+		  (:instance usub-fi-prime-is-derivative (x x)
 		  	     (x1 (+ x (/ (i-large-integer))))
 		  	     )
-		  (:instance fi-prime-is-derivative (x x)
+		  (:instance usub-fi-prime-is-derivative (x x)
 		  	     (x1 (- x (/ (i-large-integer))))
 		  	     )
 		  (:instance i-close-plus-lemma-2
@@ -905,12 +958,12 @@
 		  	     (x  (+ (/ (i-large-integer)) x))
 		  	     )
 		  (:instance close-stdpart-lemma2
-		  	     (x (fi-prime x))
-		  	     (y (differential-cr-fi x (/ (i-large-integer))))
+		  	     (x (usub-fi-prime contexti x))
+		  	     (y (differential-cr-usub-fi contexti x (/ (i-large-integer))))
 		  	     )
 		  (:instance close-stdpart-lemma2
-		  	     (x (fi-prime x))
-		  	     (y (differential-cr-fi x (- (/ (i-large-integer)))))
+		  	     (x (usub-fi-prime contexti x))
+		  	     (y (differential-cr-usub-fi contexti x (- (/ (i-large-integer)))))
 		  	     )
 		  )
 	    ))
@@ -918,208 +971,215 @@
  )
 
 (local
- (defthm realp-differential-cr-f
-   (implies (and (inside-interval-p x (fi-range))
-		 (inside-interval-p (+ x eps) (fi-range))
+ (defthm realp-differential-cr-usub-f
+   (implies (and (inside-interval-p x (usub-fi-range))
+		 (inside-interval-p (+ x eps) (usub-fi-range))
 		 (realp eps))
-	    (realp (differential-cr-f x eps)))
+	    (realp (differential-cr-usub-f contextf x eps)))
    :hints (("goal"
-	    :use (:functional-instance realp-differential-rdfn
-				       (differential-rdfn differential-cr-f)
-				       (rdfn f)
-				       (rdfn-domain fi-range)))
+	    :use ((:instance
+                   (:functional-instance realp-differential-rdfn
+				         (differential-rdfn differential-cr-usub-f)
+				         (rdfn usub-f)
+				         (rdfn-domain usub-fi-range))
+                   (context contextf))))
 	   ("subgoal 3"
-	    :use (:instance f-differentiable)
-	    )
-
+	    :use (:instance usub-f-differentiable
+                            (contextf context)))
 	   ("subgoal 2"
-	    :use (:instance fi-range-non-trivial)
-	    )
-
-	   ("subgoal 7"
-	    :use (:instance fi-differentiable
-			    (x x)
-			    (y1 y1)
-			    (y2 y2))
-	    )
-	   )
+	    :use (:instance usub-fi-range-non-trivial))
+           )
    )
  )
 
 (local
- (defthm differential-cr-f-limited
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-range))
-		 (inside-interval-p (+ x eps) (fi-range))
-		 (i-small eps))
-	    (i-limited (differential-cr-f x eps)))
+ (defthm differential-cr-usub-f-limited
+     (implies (and (standardp x)
+                   (standardp contextf)
+		   (inside-interval-p x (usub-fi-range))
+		   (inside-interval-p (+ x eps) (usub-fi-range))
+		   (i-small eps))
+	    (i-limited (differential-cr-usub-f contextf x eps)))
    :hints (("goal"
-	    :use ((:functional-instance differential-cr-fn1-limited
-					(differential-cr-fn1 differential-cr-f)
-					(cr-fn1 f)
-					(cr-fn2-range fi-range)
-					(cr-fn2 fi)
-					(cr-fn2-domain fi-domain))
-
-		  ))
+	    :use ((:instance
+                   (:functional-instance differential-cr-fn1-limited
+					 (differential-cr-fn1 differential-cr-usub-f)
+					 (cr-fn1 usub-f)
+					 (cr-fn2-range usub-fi-range)
+					 (cr-fn2 usub-fi)
+					 (cr-fn2-domain usub-fi-domain)
+                                         (cr-car-context usub-car-context)
+                                         (cr-cdr-context usub-cdr-context)
+                                         )
+                   (context contextf))))
 	   ("subgoal 2"
-	    :use (:instance  f-real)
-	    )
+	    :use (:instance  usub-f-real))
 	   ("subgoal 3"
-	    :use (:instance fi-domain-non-trivial)
-	    )
+	    :use (:instance usub-fi-domain-non-trivial))
 	   ("subgoal 4"
-	    :use (:instance fi-range-non-trivial)
-	    )
+	    :use (:instance usub-fi-range-non-trivial))
 	   ("subgoal 6"
-	    :use (:instance f-differentiable
-			    (x x)
-			    (y1 y1)
-			    (y2 y2))
-	    )
+	    :use ((:instance usub-f-differentiable
+                             (contextf context)
+			     (x x)
+			     (y1 y1)
+			     (y2 y2))))
 	   ("subgoal 7"
-	    :use (:instance fi-differentiable
+	    :use (:instance usub-fi-differentiable
+                            (contexti context)
 			    (x x)
 			    (y1 y1)
-			    (y2 y2))
-	    )
+			    (y2 y2)))
 	   ))
  )
 
-(local (in-theory (disable differential-cr-f-definition)))
-(local (in-theory (disable f-prime-definition)))
+(local (in-theory (disable differential-cr-usub-f-definition)))
+(local (in-theory (disable usub-f-prime-definition)))
 
 (local
- (defthm realp-differential-cr-fi
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain))
+ (defthm realp-differential-cr-usub-fi
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain))
 		 (realp eps))
-	    (realp (differential-cr-fi x eps)))
+	    (realp (differential-cr-usub-fi contexti x eps)))
    :hints (("goal"
-	    :by (:functional-instance realp-differential-rdfn
-				      (differential-rdfn differential-cr-fi)
-				      (rdfn fi)
-				      (rdfn-domain fi-domain)))
-
-
+	    :by (:instance
+                 (:functional-instance realp-differential-rdfn
+				       (differential-rdfn differential-cr-usub-fi)
+				       (rdfn usub-fi)
+				       (rdfn-domain usub-fi-domain))
+                 (context contexti)))
 	   ("subgoal 3"
-	    :use (:instance fi-differentiable)
+	    :use (:instance usub-fi-differentiable
+                            (contexti context))
 	    )
 
 	   ("subgoal 2"
-	    :use (:instance fi-domain-non-trivial)
-	    )
-
-	   ("subgoal 7"
-	    :use (:instance fi-differentiable
-			    (x x)
-			    (y1 y1)
-			    (y2 y2))
+	    :use (:instance usub-fi-domain-non-trivial)
 	    )
 	   ))
  )
 
 (local
- (defthm differential-cr-fi-limited
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain))
-		 (i-small eps))
-	    (i-limited (differential-cr-fi x eps)))
+ (defthm differential-cr-usub-fi-limited
+     (implies (and (standardp x)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p (+ x eps) (usub-fi-domain))
+		   (i-small eps))
+	      (i-limited (differential-cr-usub-fi contexti x eps)))
    :hints (("goal"
-	    :by (:functional-instance differential-rdfn-limited
-				      (differential-rdfn differential-cr-fi)
-				      (rdfn fi)
-				      (rdfn-domain fi-domain)))))
+	    :by (:instance
+                 (:functional-instance differential-rdfn-limited
+				       (differential-rdfn differential-cr-usub-fi)
+				       (rdfn usub-fi)
+				       (rdfn-domain usub-fi-domain))
+                 (context contexti)
+                 ))))
  )
 
-(local (in-theory (disable differential-cr-fi-definition)))
-(local (in-theory (disable fi-prime-definition)))
+(local (in-theory (disable differential-cr-usub-fi-definition)))
+(local (in-theory (disable usub-fi-prime-definition)))
 
 (encapsulate
- (((differential-cr-f-o-fi * *) => *))
+ (((differential-cr-usub-f-o-fi * * *) => *))
  (local
-  (defun differential-cr-f-o-fi (x eps)
-    (if (equal (fi (+ x eps)) (fi x))
+  (defun differential-cr-usub-f-o-fi (context x eps)
+    (if (equal (usub-fi (usub-cdr-context context) (+ x eps)) (usub-fi (usub-cdr-context context) x))
 	0
-      (* (differential-cr-f (fi x) (- (fi (+ x eps)) (fi x)))
-	 (differential-cr-fi x eps))))
+        (* (differential-cr-usub-f (usub-car-context context)
+                              (usub-fi (usub-cdr-context context) x)
+                              (- (usub-fi (usub-cdr-context context) (+ x eps))
+                                 (usub-fi (usub-cdr-context context) x)))
+	 (differential-cr-usub-fi (usub-cdr-context context) x eps))))
   )
 
- (defthm differential-cr-f-o-fi-definition
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain)))
-	    (equal (differential-cr-f-o-fi x eps)
-		   (if (equal (fi (+ x eps)) (fi x))
+ (defthm differential-cr-usub-f-o-fi-definition
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain)))
+	    (equal (differential-cr-usub-f-o-fi context x eps)
+		   (if (equal (usub-fi (usub-cdr-context context) (+ x eps))
+                              (usub-fi (usub-cdr-context context) x))
 		       0
-		     (* (differential-cr-f (fi x) (- (fi (+ x eps)) (fi x)))
-			(differential-cr-fi x eps))))))
+		       (* (differential-cr-usub-f (usub-car-context context)
+                                             (usub-fi (usub-cdr-context context) x)
+                                             (- (usub-fi (usub-cdr-context context)
+                                                         (+ x eps))
+                                                (usub-fi (usub-cdr-context context) x)))
+			(differential-cr-usub-fi (usub-cdr-context context) x eps))))))
  )
 
 
 (encapsulate
- (((derivative-cr-f-o-fi *) => *))
+ (((derivative-cr-usub-f-o-fi * *) => *))
 
  (local
-  (defun derivative-cr-f-o-fi (x)
-    (* (f-prime (fi x))
-       (fi-prime x)))
+  (defun derivative-cr-usub-f-o-fi (context x)
+    (* (usub-f-prime (usub-car-context context) (usub-fi (usub-cdr-context context) x))
+       (usub-fi-prime (usub-cdr-context context) x)))
   )
 
- (defthm derivative-cr-f-o-fi-definition
-   (implies (inside-interval-p x (fi-domain))
-	    (equal (derivative-cr-f-o-fi x)
-		   (* (f-prime (fi x))
-		      (fi-prime x)))))
+ (defthm derivative-cr-usub-f-o-fi-definition
+   (implies (inside-interval-p x (usub-fi-domain))
+	    (equal (derivative-cr-usub-f-o-fi context x)
+		   (* (usub-f-prime (usub-car-context context) (usub-fi (usub-cdr-context context) x))
+		      (usub-fi-prime (usub-cdr-context context) x)))))
  )
 
 (local
- (defthm differential-cr-f-o-fi-close
-   (implies (and (inside-interval-p x (fi-domain))
+ (defthm differential-cr-usub-f-o-fi-close
+   (implies (and (inside-interval-p x (usub-fi-domain))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
-		 (inside-interval-p (+ x eps) (fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-cr-f-o-fi x eps))
-		   (derivative-cr-f-o-fi x)))
+	    (equal (standard-part (differential-cr-usub-f-o-fi context x eps))
+		   (derivative-cr-usub-f-o-fi context x)))
    :hints (("goal"
 	    :use (:functional-instance differential-cr-fn1-o-fn2-close
-				       (derivative-cr-fn1-o-fn2 derivative-cr-f-o-fi)
-				       (differential-cr-fn1-o-fn2 differential-cr-f-o-fi)
-				       (cr-fn1-o-fn2 f-o-fi)
-				       (cr-fn2-domain fi-domain)
-				       (cr-fn2-range fi-range)
-				       (cr-fn1 f)
-				       (cr-fn2 fi)
-				       (derivative-cr-fn2 fi-prime)
-				       (derivative-cr-fn1 f-prime)
-				       (differential-cr-fn1 differential-cr-f)
-				       (differential-cr-fn2 differential-cr-fi)))
+				       (derivative-cr-fn1-o-fn2 derivative-cr-usub-f-o-fi)
+				       (differential-cr-fn1-o-fn2 differential-cr-usub-f-o-fi)
+				       (cr-fn1-o-fn2 usub-f-o-fi)
+				       (cr-fn2-domain usub-fi-domain)
+				       (cr-fn2-range usub-fi-range)
+				       (cr-fn1 usub-f)
+				       (cr-fn2 usub-fi)
+                                       (cr-car-context usub-car-context)
+                                       (cr-cdr-context usub-cdr-context)
+				       (derivative-cr-fn2 usub-fi-prime)
+				       (derivative-cr-fn1 usub-f-prime)
+				       (differential-cr-fn1 differential-cr-usub-f)
+				       (differential-cr-fn2 differential-cr-usub-fi)))
 
-	   ("subgoal 4"
-	    :use (:instance fi-prime-definition)
+	   ("subgoal 5"
+	    :use (:instance usub-fi-prime-definition
+                            (contexti context))
 	    )
-	   ("subgoal 3"
-	    :use (:instance differential-cr-fi-definition)
+	   ("subgoal 4"
+	    :use (:instance differential-cr-usub-fi-definition
+                            (contexti context))
 	    )
 
 	   ("subgoal 2"
-	    :use (:instance f-prime-definition)
+	    :use (:instance usub-f-prime-definition
+                            (contextf context))
 	    )
 	   ))
  )
 
 (local
- (defthm differential-cr-f-o-fi-close-1
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain))
-		 (i-close x x1) (not (= x x1)))
-	    (equal (standard-part (differential-cr-f-o-fi x (- x1 x)))
-		   (derivative-cr-f-o-fi x))
+ (defthm differential-cr-usub-f-o-fi-close-1
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p x1 (usub-fi-domain))
+		   (i-close x x1) (not (= x x1)))
+	      (equal (standard-part (differential-cr-usub-f-o-fi context x (- x1 x)))
+		     (derivative-cr-usub-f-o-fi context x))
 	    )
    :hints(("goal"
-	   :use ((:instance differential-cr-f-o-fi-close
+	   :use ((:instance differential-cr-usub-f-o-fi-close
 			    (x x)
 			    (eps (- x1 x))
 			    )
@@ -1132,24 +1192,26 @@
  )
 
 (local
- (defthm expand-differential-cr-f-o-fi
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain)))
-	    (equal (differential-cr-f-o-fi x eps)
-		   (/ (- (f-o-fi (+ x eps)) (f-o-fi x)) eps)))
+ (defthm expand-differential-cr-usub-f-o-fi
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain)))
+	    (equal (differential-cr-usub-f-o-fi context x eps)
+		   (/ (- (usub-f-o-fi context (+ x eps)) (usub-f-o-fi context x)) eps)))
    :hints (("goal"
 	    :use (:functional-instance expand-differential-cr-fn1-o-fn2
-				       (derivative-cr-fn1-o-fn2 derivative-cr-f-o-fi)
-				       (differential-cr-fn1-o-fn2 differential-cr-f-o-fi)
-				       (cr-fn1-o-fn2 f-o-fi)
-				       (cr-fn2-domain fi-domain)
-				       (cr-fn2-range fi-range)
-				       (cr-fn1 f)
-				       (cr-fn2 fi)
-				       (derivative-cr-fn2 fi-prime)
-				       (derivative-cr-fn1 f-prime)
-				       (differential-cr-fn1 differential-cr-f)
-				       (differential-cr-fn2 differential-cr-fi)))
+				       (derivative-cr-fn1-o-fn2 derivative-cr-usub-f-o-fi)
+				       (differential-cr-fn1-o-fn2 differential-cr-usub-f-o-fi)
+				       (cr-fn1-o-fn2 usub-f-o-fi)
+				       (cr-fn2-domain usub-fi-domain)
+				       (cr-fn2-range usub-fi-range)
+				       (cr-fn1 usub-f)
+				       (cr-fn2 usub-fi)
+                                       (cr-car-context usub-car-context)
+                                       (cr-cdr-context usub-cdr-context)
+				       (derivative-cr-fn2 usub-fi-prime)
+				       (derivative-cr-fn1 usub-f-prime)
+				       (differential-cr-fn1 differential-cr-usub-f)
+				       (differential-cr-fn2 differential-cr-usub-fi)))
 	   )
    )
  )
@@ -1218,76 +1280,110 @@
  (local
   (defthm lemma
     (implies (and
-	      (inside-interval-p x (fi-domain))
-	      (inside-interval-p x1 (fi-domain)))
+	      (inside-interval-p x (usub-fi-domain))
+	      (inside-interval-p x1 (usub-fi-domain)))
 	     (equal (+ x1 x (- x1)) x)
 	     )
     ))
 
- (defthmd expand-differential-cr-f-o-fi-1
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain)))
-	    (equal (differential-cr-f-o-fi x1 (- x x1))
-		   (/ (- (f-o-fi x) (f-o-fi x1)) (- x x1))))
+ (defthmd expand-differential-cr-usub-f-o-fi-1
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p x1 (usub-fi-domain)))
+	    (equal (differential-cr-usub-f-o-fi context x1 (- x x1))
+		   (/ (- (usub-f-o-fi context x)
+                         (usub-f-o-fi context x1))
+                      (- x x1))))
    :hints (("goal"
-	    :use ((:instance expand-differential-cr-f-o-fi
+	    :use ((:instance expand-differential-cr-usub-f-o-fi
 			     (x x1)
 			     (eps (- x x1))
 			     )
-		  (:instance fi-domain-real)
+		  (:instance usub-fi-domain-real)
 		  (:instance lemma)
 		  )
-	    :in-theory '(expand-differential-cr-f-o-fi)
+	    :in-theory '(expand-differential-cr-usub-f-o-fi)
 	    ))
    )
 
- (defthmd expand-differential-cr-f-o-fi-2
-   (implies (and (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain)))
-	    (equal (differential-cr-f-o-fi x (- x1 x))
-		   (/ (- (f-o-fi x) (f-o-fi x1)) (- x x1))))
+ (defthmd expand-differential-cr-usub-f-o-fi-2
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p x1 (usub-fi-domain)))
+	    (equal (differential-cr-usub-f-o-fi context x (- x1 x))
+		   (/ (- (usub-f-o-fi context x)
+                         (usub-f-o-fi context x1))
+                      (- x x1))))
    :hints (("goal"
-	    :use ((:instance expand-differential-cr-f-o-fi-1
+	    :use ((:instance expand-differential-cr-usub-f-o-fi-1
 			     (x x1)
 			     (x1 x)
 			     )
-		  (:instance fi-domain-real(x x))
-		  (:instance fi-domain-real(x x1))
+		  (:instance usub-fi-domain-real(x x))
+		  (:instance usub-fi-domain-real(x x1))
 		  (:instance lemma-1
-			     (a (f-o-fi x))
-			     (b (f-o-fi x1))
+			     (a (usub-f-o-fi context x))
+			     (b (usub-f-o-fi context x1))
 			     (c x)
 			     (d x1)
 			     )
-		  (:instance f-o-fi-real(x x))
-		  (:instance f-o-fi-real(x x1))
+		  (:instance usub-f-o-fi-real(x x))
+		  (:instance usub-f-o-fi-real(x x1))
 		  )
-	    :in-theory '(expand-differential-cr-f-o-fi-1)
+	    :in-theory '(expand-differential-cr-usub-f-o-fi-1)
 	    )
 	   ))
  )
 
 (local
- (defthm differential-cr-f-o-fi-limited
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p (+ x eps) (fi-domain))
-		 (i-small eps))
-	    (i-limited (differential-cr-f-o-fi x eps)))
+ (defthm expand-differential-cr-usub-f-o-fi
+   (implies (and (inside-interval-p x (usub-fi-domain))
+		 (inside-interval-p (+ x eps) (usub-fi-domain)))
+	    (equal (differential-cr-usub-f-o-fi context x eps)
+		   (/ (- (usub-f-o-fi context (+ x eps))
+                         (usub-f-o-fi context x))
+                      eps)))
+   :hints (("goal"
+	    :use (:functional-instance expand-differential-cr-fn1-o-fn2
+				       (derivative-cr-fn1-o-fn2 derivative-cr-usub-f-o-fi)
+				       (differential-cr-fn1-o-fn2 differential-cr-usub-f-o-fi)
+				       (cr-fn1-o-fn2 usub-f-o-fi)
+				       (cr-fn2-domain usub-fi-domain)
+				       (cr-fn2-range usub-fi-range)
+				       (cr-fn1 usub-f)
+				       (cr-fn2 usub-fi)
+                                       (cr-car-context usub-car-context)
+                                       (cr-cdr-context usub-cdr-context)
+				       (derivative-cr-fn2 usub-fi-prime)
+				       (derivative-cr-fn1 usub-f-prime)
+				       (differential-cr-fn1 differential-cr-usub-f)
+				       (differential-cr-fn2 differential-cr-usub-fi)))
+	   )
+   )
+ )
+
+(local
+ (defthm differential-cr-usub-f-o-fi-limited
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p (+ x eps) (usub-fi-domain))
+		   (i-small eps))
+	      (i-limited (differential-cr-usub-f-o-fi context x eps)))
 
    :hints (("goal"
 	    :use (:functional-instance differential-cr-fn1-o-fn2-limited
-				       (derivative-cr-fn1-o-fn2 derivative-cr-f-o-fi)
-				       (differential-cr-fn1-o-fn2 differential-cr-f-o-fi)
-				       (cr-fn1-o-fn2 f-o-fi)
-				       (cr-fn2-domain fi-domain)
-				       (cr-fn2-range fi-range)
-				       (cr-fn1 f)
-				       (cr-fn2 fi)
-				       (derivative-cr-fn2 fi-prime)
-				       (derivative-cr-fn1 f-prime)
-				       (differential-cr-fn1 differential-cr-f)
-				       (differential-cr-fn2 differential-cr-fi)))
+				       (derivative-cr-fn1-o-fn2 derivative-cr-usub-f-o-fi)
+				       (differential-cr-fn1-o-fn2 differential-cr-usub-f-o-fi)
+				       (cr-fn1-o-fn2 usub-f-o-fi)
+				       (cr-fn2-domain usub-fi-domain)
+				       (cr-fn2-range usub-fi-range)
+				       (cr-fn1 usub-f)
+				       (cr-fn2 usub-fi)
+                                       (cr-car-context usub-car-context)
+                                       (cr-cdr-context usub-cdr-context)
+				       (derivative-cr-fn2 usub-fi-prime)
+				       (derivative-cr-fn1 usub-f-prime)
+				       (differential-cr-fn1 differential-cr-usub-f)
+				       (differential-cr-fn2 differential-cr-usub-fi)))
 	   )
    )
  )
@@ -1297,20 +1393,21 @@
  (local
   (defthm lemma
     (implies (and
-	      (inside-interval-p x (fi-domain))
-	      (inside-interval-p x1 (fi-domain)))
+	      (inside-interval-p x (usub-fi-domain))
+	      (inside-interval-p x1 (usub-fi-domain)))
 	     (equal (+ x x1 (- x)) x1)
 	     )
     ))
 
- (defthmd derivative-cr-f-o-fi-limited-1
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain))
-		 (i-close x x1) (not (= x x1)))
-	    (i-limited (differential-cr-f-o-fi x (- x1 x))))
+ (defthmd derivative-cr-usub-f-o-fi-limited-1
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p x1 (usub-fi-domain))
+		   (i-close x x1) (not (= x x1)))
+	      (i-limited (differential-cr-usub-f-o-fi context x (- x1 x))))
    :hints (("goal"
-	    :use ((:instance differential-cr-f-o-fi-limited
+	    :use ((:instance differential-cr-usub-f-o-fi-limited
 			     (x x)
 			     (eps (- x1 x))
 			     )
@@ -1322,39 +1419,43 @@
 			     (x x1)
 			     (y x))
 		  )
-	    :in-theory '(differential-cr-f-o-fi-limited)
+	    :in-theory '(differential-cr-usub-f-o-fi-limited)
 	    ))
    )
  )
 
 (local
- (defthm derivative-cr-f-o-fi-is-derivative
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain))
-		 (i-close x x1) (not (= x x1)))
-	    (i-close (/ (- (f-o-fi x) (f-o-fi x1)) (- x x1))
-		     (derivative-cr-f-o-fi x))
-	    )
+ (defthm derivative-cr-usub-f-o-fi-is-derivative
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p x1 (usub-fi-domain))
+		   (i-close x x1) (not (= x x1)))
+	      (i-close (/ (- (usub-f-o-fi context x)
+                             (usub-f-o-fi context x1))
+                          (- x x1))
+		       (derivative-cr-usub-f-o-fi context x))
+	      )
 
    :hints (("goal"
 	    :use(
-		 (:instance expand-differential-cr-f-o-fi-2
+		 (:instance expand-differential-cr-usub-f-o-fi-2
 			    (x x)
 			    (x1 x1))
-		 (:instance  derivative-cr-f-o-fi-limited-1
+		 (:instance  derivative-cr-usub-f-o-fi-limited-1
 			     (x x)
 			     (x1 x1))
 		 (:instance standard-part-close
-			    (x (differential-cr-f-o-fi x (- x1 x)))
+			    (x (differential-cr-usub-f-o-fi context x (- x1 x)))
 			    )
-		 (:instance differential-cr-f-o-fi-close-1
+		 (:instance differential-cr-usub-f-o-fi-close-1
 			    (x x)
 			    (x1 x1))
 		 (:instance i-close-lemma1
-			    (x (standard-part (differential-cr-f-o-fi x (- x1 x))))
-			    (y (differential-cr-f-o-fi x (- x1 x)))
-			    (z (derivative-cr-f-o-fi x))
+			    (x (standard-part
+                                (differential-cr-usub-f-o-fi context x (- x1 x))))
+			    (y (differential-cr-usub-f-o-fi context x (- x1 x)))
+			    (z (derivative-cr-usub-f-o-fi context x))
 			    )
 		 )
 	    ))
@@ -1362,128 +1463,107 @@
  )
 
 (local
- (defthm real-derivative-cr-f-o-fi
-   (implies (inside-interval-p x (fi-domain))
-	    (realp (derivative-cr-f-o-fi x)))
+ (defthm real-derivative-cr-usub-f-o-fi
+   (implies (inside-interval-p x (usub-fi-domain))
+	    (realp (derivative-cr-usub-f-o-fi context x)))
    :hints (("goal"
 	    :use (:functional-instance real-derivative-cr-fn1-o-fn2
-				       (derivative-cr-fn1-o-fn2 derivative-cr-f-o-fi)
-				       (differential-cr-fn1-o-fn2 differential-cr-f-o-fi)
-				       (cr-fn1-o-fn2 f-o-fi)
-				       (cr-fn2-domain fi-domain)
-				       (cr-fn2-range fi-range)
-				       (cr-fn1 f)
-				       (cr-fn2 fi)
-				       (derivative-cr-fn2 fi-prime)
-				       (derivative-cr-fn1 f-prime)
-				       (differential-cr-fn1 differential-cr-f)
-				       (differential-cr-fn2 differential-cr-fi)))
+				       (derivative-cr-fn1-o-fn2 derivative-cr-usub-f-o-fi)
+				       (differential-cr-fn1-o-fn2 differential-cr-usub-f-o-fi)
+				       (cr-fn1-o-fn2 usub-f-o-fi)
+				       (cr-fn2-domain usub-fi-domain)
+				       (cr-fn2-range usub-fi-range)
+				       (cr-fn1 usub-f)
+				       (cr-fn2 usub-fi)
+                                       (cr-car-context usub-car-context)
+                                       (cr-cdr-context usub-cdr-context)
+				       (derivative-cr-fn2 usub-fi-prime)
+				       (derivative-cr-fn1 usub-f-prime)
+				       (differential-cr-fn1 differential-cr-usub-f)
+				       (differential-cr-fn2 differential-cr-usub-fi)))
 	   )
    )
  )
 
-(defun f-o-fi-prime (x)
-  (if (inside-interval-p x (fi-domain))
-      (derivative-cr-f-o-fi x)
+(defun usub-f-o-fi-prime (context x)
+  (if (inside-interval-p x (usub-fi-domain))
+      (derivative-cr-usub-f-o-fi context x)
     0)
   )
 
 (local
- (defthm f-o-fi-prime-real
-   (realp (f-o-fi-prime x))
+ (defthm usub-f-o-fi-prime-real
+   (realp (usub-f-o-fi-prime context x))
    :hints (("goal"
-	    :use (:instance real-derivative-cr-f-o-fi)
+	    :use (:instance real-derivative-cr-usub-f-o-fi)
 	    ))
    )
  )
 
 (local
- (defthm f-o-fi-prime-is-derivative
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (inside-interval-p x1 (fi-domain))
-		 (i-close x x1) (not (= x x1)))
-	    (i-close (/ (- (f-o-fi x) (f-o-fi x1)) (- x x1))
-		     (f-o-fi-prime x)))
+ (defthm usub-f-o-fi-prime-is-derivative
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (inside-interval-p x1 (usub-fi-domain))
+		   (i-close x x1) (not (= x x1)))
+	      (i-close (/ (- (usub-f-o-fi context x)
+                             (usub-f-o-fi context x1))
+                          (- x x1))
+		       (usub-f-o-fi-prime context x)))
    :hints (("goal"
 	    :use (
-		  (:instance  derivative-cr-f-o-fi-is-derivative)
+		  (:instance  derivative-cr-usub-f-o-fi-is-derivative)
 		  )
-	    :in-theory '(f-o-fi-prime derivative-cr-f-o-fi-is-derivative)
+	    :in-theory '(usub-f-o-fi-prime derivative-cr-usub-f-o-fi-is-derivative)
 	    ))
    )
  )
 
 (local
- (defthm-std fi-standard-1
-   (implies (standardp x)
-	    (standardp (fi x))
+ (defthm-std usub-fi-standard
+     (implies (and (standardp x)
+                   (standardp contexti))
+	      (standardp (usub-fi contexti x))
+	      )
+   )
+ )
+
+(local
+ (defthm-std usub-fi-prime-standard
+     (implies (and (standardp x)
+                   (standardp contexti))
+	      (standardp (usub-fi-prime contexti x))
 	    )
    )
  )
 
 (local
- (defthm fi-standard
-   (implies (standard-numberp x)
-	    (standard-numberp (fi x))
+ (defthm-std usub-f-prime-f-standard
+     (implies (and (standardp x)
+                   (standardp context))
+	      (standardp (usub-f-prime (car context)
+                                       (usub-fi (cadr context) x)))
 	    )
+   )
+ )
+
+(local
+ (defthm usub-f-continuous
+     (implies (and (standardp x)
+                   (standardp contextf)
+		   (inside-interval-p x (usub-fi-range))
+		   (i-close x y)
+		   (inside-interval-p y (usub-fi-range))
+		   )
+	      (i-close (usub-f contextf x)
+                       (usub-f contextf y)))
    :hints (("goal"
-	    :use (:instance fi-standard-1)
-	    ))
-   )
- )
-
-(local
- (defthm-std fi-prime-standard-1
-   (implies (standardp x)
-	    (standardp (fi-prime x))
-	    )
-   )
- )
-
-(local
- (defthm fi-prime-standard
-   (implies (standard-numberp x)
-	    (standard-numberp (fi-prime x))
-	    )
-   :hints (("goal"
-	    :use (:instance fi-prime-standard-1)
-	    ))
-   )
- )
-
-(local
- (defthm-std f-prime-f-standard-1
-   (implies (standardp x)
-	    (standardp (f-prime (fi x)))
-	    )
-   )
- )
-
-(local
- (defthm f-prime-f-standard
-   (implies (standard-numberp x)
-	    (standard-numberp (f-prime (fi x)))
-	    )
-   :hints (("goal"
-	    :use (:instance f-prime-f-standard-1)
-	    ))
-   )
- )
-
-(local
- (defthm f-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-range))
-		 (i-close x y)
-		 (inside-interval-p y (fi-range))
-		 )
-	    (i-close (f x) (f y))
-	    )
-   :hints (("goal"
-	    :use ((:functional-instance rdfn-continuous
-					(rdfn f)
-					(rdfn-domain fi-range))
+	    :use ((:instance
+                   (:functional-instance rdfn-continuous
+					 (rdfn usub-f)
+					 (rdfn-domain usub-fi-range))
+                   (context contextf))
 		  )
 	    ))
    )
@@ -1491,88 +1571,108 @@
 
 
 (local
- (defthm fi-prime-real-1
+ (defthm usub-fi-prime-real-1
    (implies (realp x)
-	    (realp (fi-prime x)))
+	    (realp (usub-fi-prime contexti x)))
    )
  )
 
 (local
- (defthm f-prime-fi-real-1
+ (defthm usub-f-prime-usub-fi-real-1
    (implies (realp x)
-	    (realp (f-prime (fi x))))
+	    (realp (usub-f-prime contextf (usub-fi contexti x))))
    )
  )
 
 (local
- (defthm fi-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (i-close x y)
-		 (inside-interval-p y (fi-domain))
-		 )
-	    (i-close (fi x) (fi y))
+ (defthm usub-fi-continuous
+     (implies (and (standardp x)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (i-close x y)
+		   (inside-interval-p y (usub-fi-domain))
+		   )
+	      (i-close (usub-fi contexti x) (usub-fi contexti y))
 	    )
    :hints (("goal"
-	    :use ((:functional-instance rdfn-continuous
-					(rdfn fi)
-					(rdfn-domain fi-domain))
+	    :use ((:instance
+                   (:functional-instance rdfn-continuous
+					 (rdfn usub-fi)
+					 (rdfn-domain usub-fi-domain))
+                   (context contexti))
 		  )
 	    ))
    )
  )
 
 (local
- (defthm f-prime-fi-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (i-close x x1)
-		 (inside-interval-p x1 (fi-domain))
-		 )
-	    (i-close (f-prime (fi x))
-		     (f-prime (fi x1))))
+ (defthm usub-f-prime-usub-fi-continuous
+     (implies (and (standardp x)
+                   (standardp contextf)
+                   (standardp contexti)
+		   (inside-interval-p x (usub-fi-domain))
+		   (i-close x x1)
+		   (inside-interval-p x1 (usub-fi-domain))
+		   )
+	    (i-close (usub-f-prime contextf (usub-fi contexti x))
+		     (usub-f-prime contextf (usub-fi contexti x1))))
    :hints (("goal"
-	    :use ((:instance f-prime-continuous)
-		  (:instance fi-range-in-domain-of-f (x x))
-		  (:instance fi-range-in-domain-of-f (x x1))
+	    :use ((:instance usub-f-prime-continuous)
+		  (:instance usub-fi-range-in-domain-of-f (x x))
+		  (:instance usub-fi-range-in-domain-of-f (x x1))
 		  )
 	    ))
    ))
 
 (local
- (defthm f-o-fi-prime-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (fi-domain))
-		 (i-close x x1)
-		 (inside-interval-p x1 (fi-domain))
+ (defthm-std standard-usub-car-context
+     (implies (standardp context)
+              (standardp (usub-car-context context)))))
+
+(local
+ (defthm-std standard-usub-cdr-context
+     (implies (standardp context)
+              (standardp (usub-cdr-context context)))))
+
+(local
+ (defthm usub-f-o-fi-prime-continuous
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (usub-fi-domain))
+		   (i-close x x1)
+		   (inside-interval-p x1 (usub-fi-domain))
 		 )
-	    (i-close (f-o-fi-prime x)
-		     (f-o-fi-prime x1)))
+	    (i-close (usub-f-o-fi-prime context x)
+		     (usub-f-o-fi-prime context x1)))
    :hints (("goal"
-	    :in-theory (enable standards-are-limited)
+            :use ((:instance usub-f-prime-usub-fi-continuous
+                             (contextf usub-car-context)
+                             (contexti usub-cdr-context)))
+	    :in-theory (e/d (standards-are-limited)
+                            (usub-f-prime-usub-fi-continuous))
 	    )
 	   )
    )
  )
 
-(local (in-theory (disable f-o-fi-prime)))
+(local (in-theory (disable usub-f-o-fi-prime)))
 
-(defun map-f-o-fi-prime (p)
+(defun map-usub-f-o-fi-prime (context p)
   (if (consp p)
-      (cons (f-o-fi-prime (car p))
-	    (map-f-o-fi-prime (cdr p)))
+      (cons (usub-f-o-fi-prime context (car p))
+	    (map-usub-f-o-fi-prime context (cdr p)))
     nil))
 
-(defun riemann-f-o-fi-prime (p)
+(defun riemann-usub-f-o-fi-prime (context p)
   (dotprod (deltas p)
-	   (map-f-o-fi-prime (cdr p))))
+	   (map-usub-f-o-fi-prime context (cdr p))))
 
 (local
- (defthm realp-riemann-f-o-fi-prime
+ (defthm realp-riemann-usub-f-o-fi-prime
    (implies (partitionp p)
-	    (realp (riemann-f-o-fi-prime p)))
+	    (realp (riemann-usub-f-o-fi-prime context p)))
    :hints (("goal"
-	    :use (:instance  f-o-fi-prime-real)
+	    :use (:instance  usub-f-o-fi-prime-real)
 	    ))
    )
  )
@@ -1581,228 +1681,248 @@
  nil
 
  (local
-  (defthmd limited-riemann-f-o-fi-prime-small-partition-lemma
+  (defthmd limited-riemann-usub-f-o-fi-prime-small-partition-lemma
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
-		  (inside-interval-p a (fi-domain))
-		  (inside-interval-p b (fi-domain))
+                  (standardp context)
+		  (inside-interval-p a (usub-fi-domain))
+		  (inside-interval-p b (usub-fi-domain))
 		  (< a b))
-	     (i-limited (riemann-f-o-fi-prime (make-small-partition a b))))
+	     (i-limited (riemann-usub-f-o-fi-prime context (make-small-partition a b))))
     :hints (("goal"
 	     :by (:functional-instance limited-riemann-rcfn-small-partition
-				       (rcfn-domain fi-domain)
-				       (rcfn f-o-fi-prime)
-				       (map-rcfn map-f-o-fi-prime)
-				       (riemann-rcfn riemann-f-o-fi-prime)))
+				       (rcfn-domain usub-fi-domain)
+				       (rcfn usub-f-o-fi-prime)
+				       (map-rcfn map-usub-f-o-fi-prime)
+				       (riemann-rcfn riemann-usub-f-o-fi-prime)))
 	    ("subgoal 2"
-	     :use ((:instance fi-domain-non-trivial)))))
+	     :use ((:instance usub-fi-domain-non-trivial)))))
   )
 
- (defthmd limited-riemann-f-o-fi-prime-small-partition
+ (defthmd limited-riemann-usub-f-o-fi-prime-small-partition
    (implies (and (realp a) (standardp a)
 		 (realp b) (standardp b)
-		 (inside-interval-p a (fi-domain))
-		 (inside-interval-p b (fi-domain))
+                 (standardp context)
+		 (inside-interval-p a (usub-fi-domain))
+		 (inside-interval-p b (usub-fi-domain))
 		 (< a b))
-	    (standardp (standard-part(riemann-f-o-fi-prime (make-small-partition a b)))))
+	    (standardp (standard-part (riemann-usub-f-o-fi-prime
+                                       context (make-small-partition a b)))))
    :hints (("goal"
-	    :use ((:instance limited-riemann-f-o-fi-prime-small-partition-lemma)
-		  (:instance standardp-standard-part (x (riemann-f-o-fi-prime (make-small-partition a b)))))
+	    :use ((:instance limited-riemann-usub-f-o-fi-prime-small-partition-lemma)
+		  (:instance standardp-standard-part
+                             (x (riemann-usub-f-o-fi-prime context
+                                                           (make-small-partition a b)))))
 	    ))
    )
 
  (local (in-theory nil))
- (local (in-theory (enable limited-riemann-f-o-fi-prime-small-partition)))
+ (local (in-theory (enable limited-riemann-usub-f-o-fi-prime-small-partition)))
 
- (defun-std strict-int-f-o-fi-prime (a b)
+ (defun-std strict-int-usub-f-o-fi-prime (context a b)
    (if (and (realp a)
 	    (realp b)
-	    (inside-interval-p a (fi-domain))
-	    (inside-interval-p b (fi-domain))
+	    (inside-interval-p a (usub-fi-domain))
+	    (inside-interval-p b (usub-fi-domain))
 	    (< a b))
-       (standard-part (riemann-f-o-fi-prime (make-small-partition a b)))
+       (standard-part (riemann-usub-f-o-fi-prime context (make-small-partition a b)))
      0))
  )
 
-(defun int-f-o-fi-prime (a b)
+(defun int-usub-f-o-fi-prime (context a b)
   (if (<= a b)
-      (strict-int-f-o-fi-prime a b)
-    (- (strict-int-f-o-fi-prime b a))))
+      (strict-int-usub-f-o-fi-prime context a b)
+    (- (strict-int-usub-f-o-fi-prime context b a))))
 
-(local  (in-theory (disable f-o-fi-equal)))
+(local  (in-theory (disable usub-f-o-fi-equal)))
 
 (local
  (defthmd ftc-2-usub
-   (implies (and (inside-interval-p a (fi-domain))
-		 (inside-interval-p b (fi-domain)))
-	    (equal (int-f-o-fi-prime a b)
-		   (- (f-o-fi b)
-		      (f-o-fi a))))
+   (implies (and (inside-interval-p a (usub-fi-domain))
+		 (inside-interval-p b (usub-fi-domain)))
+	    (equal (int-usub-f-o-fi-prime context a b)
+		   (- (usub-f-o-fi context b)
+		      (usub-f-o-fi context a))))
    :hints (("goal"
 	    :use ((:functional-instance ftc-2
-					(rcdfn-domain fi-domain)
-					(int-rcdfn-prime int-f-o-fi-prime)
-					(riemann-rcdfn-prime riemann-f-o-fi-prime)
-					(map-rcdfn-prime map-f-o-fi-prime)
-					(rcdfn f-o-fi)
-					(rcdfn-prime f-o-fi-prime)
-					(strict-int-rcdfn-prime strict-int-f-o-fi-prime))))
+					(rcdfn-domain usub-fi-domain)
+					(int-rcdfn-prime int-usub-f-o-fi-prime)
+					(riemann-rcdfn-prime riemann-usub-f-o-fi-prime)
+					(map-rcdfn-prime map-usub-f-o-fi-prime)
+					(rcdfn usub-f-o-fi)
+					(rcdfn-prime usub-f-o-fi-prime)
+					(strict-int-rcdfn-prime strict-int-usub-f-o-fi-prime))))
 
 
 	   ("subgoal 7"
-	    :use ((:instance f-o-fi-prime-is-derivative)))
+	    :use ((:instance usub-f-o-fi-prime-is-derivative)))
 	   ("subgoal 8"
-	    :use ((:instance f-o-fi-real)))
+	    :use ((:instance usub-f-o-fi-real)))
 	   ("subgoal 6"
-	    :use ((:instance  fi-domain-non-trivial)))
+	    :use ((:instance  usub-fi-domain-non-trivial)))
 	   )
    )
  )
 
 (local
  (defthmd ftc2-usub-equal
-   (implies (and (inside-interval-p a (fi-domain))
-		 (inside-interval-p b (fi-domain)))
-	    (equal (int-f-o-fi-prime a b)
-		   (- (f (fi b))
-		      (f (fi a)))))
+   (implies (and (inside-interval-p a (usub-fi-domain))
+		 (inside-interval-p b (usub-fi-domain)))
+	    (equal (int-usub-f-o-fi-prime context a b)
+		   (- (usub-f (usub-car-context context) (usub-fi (usub-cdr-context context) b))
+		      (usub-f (usub-car-context context) (usub-fi (usub-cdr-context context) a)))))
    :hints (("goal"
 	    :use ((:instance ftc-2-usub)
-		  (:instance f-o-fi-equal(x a))
-		  (:instance f-o-fi-equal(x b))
+		  (:instance usub-f-o-fi-equal(x a))
+		  (:instance usub-f-o-fi-equal(x b))
 		  )
 
 	    ))
    )
  )
 
-(defun map-f-prime (p)
+(defun map-usub-f-prime (contextf p)
   (if (consp p)
-      (cons (f-prime (car p))
-	    (map-f-prime (cdr p)))
+      (cons (usub-f-prime contextf (car p))
+	    (map-usub-f-prime contextf (cdr p)))
     nil))
 
-(defun riemann-f-prime (p)
+(defun riemann-usub-f-prime (contextf p)
   (dotprod (deltas p)
-	   (map-f-prime (cdr p))))
+	   (map-usub-f-prime contextf (cdr p))))
 
 (local
- (defthm realp-riemann-f-prime
+ (defthm realp-riemann-usub-f-prime
    (implies (partitionp p)
-	    (realp (riemann-f-prime p))))
+	    (realp (riemann-usub-f-prime contextf p))))
  )
 
 (encapsulate
  nil
 
  (local
-  (defthmd limited-riemann-f-prime-small-partition-lemma
+  (defthmd limited-riemann-usub-f-prime-small-partition-lemma
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
-		  (inside-interval-p a (fi-range))
-		  (inside-interval-p b (fi-range))
+                  (standardp contextf)
+		  (inside-interval-p a (usub-fi-range))
+		  (inside-interval-p b (usub-fi-range))
 		  (< a b))
-	     (i-limited (riemann-f-prime (make-small-partition a b))))
+	     (i-limited (riemann-usub-f-prime contextf
+                                              (make-small-partition a b))))
     :hints (("goal"
 	     :by (:functional-instance limited-riemann-rcfn-small-partition
-				       (rcfn-domain fi-range)
-				       (rcfn f-prime)
-				       (map-rcfn map-f-prime)
-				       (riemann-rcfn riemann-f-prime))
-	     :in-theory (disable f-prime-definition)
+				       (rcfn-domain usub-fi-range)
+				       (rcfn usub-f-prime)
+				       (map-rcfn map-usub-f-prime)
+				       (riemann-rcfn riemann-usub-f-prime))
+	     :in-theory (disable usub-f-prime-definition)
 	     )
 	    ("subgoal 2"
-	     :use ((:instance fi-range-non-trivial)))
+	     :use ((:instance usub-fi-range-non-trivial)))
 	    )))
 
- (defthmd limited-riemann-f-prime-small-partition
+ (defthmd limited-riemann-usub-f-prime-small-partition
    (implies (and (realp a) (standardp a)
 		 (realp b) (standardp b)
-		 (inside-interval-p a (fi-range))
-		 (inside-interval-p b (fi-range))
+                 (standardp contextf)
+		 (inside-interval-p a (usub-fi-range))
+		 (inside-interval-p b (usub-fi-range))
 		 (< a b))
-	    (standardp (standard-part(riemann-f-prime (make-small-partition a b)))))
+	    (standardp (standard-part (riemann-usub-f-prime contextf (make-small-partition a b)))))
    :hints (("goal"
-	    :use ((:instance limited-riemann-f-prime-small-partition-lemma)
-		  (:instance standardp-standard-part (x (riemann-f-prime (make-small-partition a b)))))
+	    :use ((:instance limited-riemann-usub-f-prime-small-partition-lemma)
+		  (:instance standardp-standard-part
+                             (x (riemann-usub-f-prime contextf (make-small-partition a b)))))
 	    ))
    )
 
  (local (in-theory nil))
- (local (in-theory (enable limited-riemann-f-prime-small-partition)))
+ (local (in-theory (enable limited-riemann-usub-f-prime-small-partition)))
 
- (defun-std strict-int-f-prime (a b)
+ (defun-std strict-int-usub-f-prime (contextf a b)
    (if (and (realp a)
 	    (realp b)
-	    (inside-interval-p a (fi-range))
-	    (inside-interval-p b (fi-range))
+	    (inside-interval-p a (usub-fi-range))
+	    (inside-interval-p b (usub-fi-range))
 	    (< a b))
-       (standard-part (riemann-f-prime (make-small-partition a b)))
+       (standard-part (riemann-usub-f-prime contextf (make-small-partition a b)))
      0))
  )
 
-(defun int-f-prime (a b)
+(defun int-usub-f-prime (contextf a b)
   (if (<= a b)
-      (strict-int-f-prime a b)
-    (- (strict-int-f-prime b a))))
+      (strict-int-usub-f-prime contextf a b)
+    (- (strict-int-usub-f-prime contextf b a))))
 
 
 (local
  (defthmd ftc-2-usub-1
-   (implies (and (inside-interval-p a (fi-range))
-		 (inside-interval-p b (fi-range)))
-	    (equal (int-f-prime a b)
-		   (- (f b)
-		      (f a))))
+   (implies (and (inside-interval-p a (usub-fi-range))
+		 (inside-interval-p b (usub-fi-range)))
+	    (equal (int-usub-f-prime contextf a b)
+		   (- (usub-f contextf b)
+		      (usub-f contextf a))))
    :hints (("goal"
-	    :use (:functional-instance ftc-2
-				       (rcdfn-domain fi-range)
-				       (int-rcdfn-prime int-f-prime)
-				       (riemann-rcdfn-prime riemann-f-prime)
-				       (map-rcdfn-prime map-f-prime)
-				       (rcdfn f)
-				       (rcdfn-prime f-prime)
-				       (strict-int-rcdfn-prime strict-int-f-prime))
-
-	    :in-theory (disable f-prime-definition)
+	    :use ((:instance
+                   (:functional-instance ftc-2
+				         (rcdfn-domain usub-fi-range)
+				         (int-rcdfn-prime int-usub-f-prime)
+				         (riemann-rcdfn-prime riemann-usub-f-prime)
+				         (map-rcdfn-prime map-usub-f-prime)
+				         (rcdfn usub-f)
+				         (rcdfn-prime usub-f-prime)
+				         (strict-int-rcdfn-prime
+                                          strict-int-usub-f-prime))
+                   (context contextf)))
+	    :in-theory (disable usub-f-prime-definition)
 	    )
 	   ("subgoal 7"
-	    :use ((:instance f-prime-is-derivative)))
+	    :use ((:instance usub-f-prime-is-derivative
+                             (contextf context))))
 	   ("subgoal 8"
-	    :use ((:instance f-real)))
+	    :use ((:instance usub-f-real
+                             (contextf context))))
 	   ("subgoal 6"
-	    :use ((:instance  fi-range-non-trivial)))
+	    :use ((:instance  usub-fi-range-non-trivial)))
 	   )
    )
  )
 
 (local
  (defthmd ftc2-usub-1-equal
-   (implies (and (inside-interval-p a (fi-domain))
-		 (inside-interval-p b (fi-domain)))
-	    (equal (int-f-prime (fi a) (fi b))
-		   (- (f (fi b))
-		      (f (fi a)))))
+   (implies (and (inside-interval-p a (usub-fi-domain))
+		 (inside-interval-p b (usub-fi-domain)))
+	    (equal (int-usub-f-prime contextf
+                                     (usub-fi contexti a)
+                                     (usub-fi contexti b))
+		   (- (usub-f contextf (usub-fi contexti b))
+		      (usub-f contextf (usub-fi contexti a)))))
    :hints (("goal"
 	    :use (
-		  (:instance ftc-2-usub-1 (a (fi a))
-			     (b (fi b))
+		  (:instance ftc-2-usub-1
+                             (a (usub-fi contexti a))
+			     (b (usub-fi contexti b))
 			     )
 		  )
 	    ))
    )
  )
 
-(defthm usubstitution-f-o-fi
-  (implies (and (inside-interval-p a (fi-domain))
-		(inside-interval-p b (fi-domain)))
-	   (equal (int-f-prime (fi a) (fi b))
-		  (int-f-o-fi-prime a b)))
+(defthm usubstitution-usub-f-o-fi
+  (implies (and (inside-interval-p a (usub-fi-domain))
+		(inside-interval-p b (usub-fi-domain)))
+	   (equal (int-usub-f-prime (usub-car-context context)
+                                    (usub-fi (usub-cdr-context context) a)
+                                    (usub-fi (usub-cdr-context context) b))
+		  (int-usub-f-o-fi-prime context a b)))
   :hints (("goal"
 	   :use (
-		 (:instance ftc2-usub-1-equal)
+		 (:instance ftc2-usub-1-equal
+                            (contextf (usub-car-context context))
+                            (contexti (usub-cdr-context context)))
 		 (:instance ftc2-usub-equal)
 		 )
-	   :in-theory (disable int-f-o-fi-prime int-f-prime)
+	   :in-theory (disable int-usub-f-o-fi-prime int-usub-f-prime)
 	   ))
   )

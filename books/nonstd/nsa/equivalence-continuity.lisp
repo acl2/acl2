@@ -9,7 +9,7 @@
 
 ;; Part 1: The nonstd definition of continuity implies the classical definition
 
-(defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-f (x0 eps delta)
+(defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-f (context x0 eps delta)
   (forall (x)
 	  (implies (and (inside-interval-p x (rcfn-domain))
 			(inside-interval-p x0 (rcfn-domain))
@@ -19,29 +19,33 @@
 			(< 0 eps)
 			(< (abs (- x x0)) delta)
 			(not (equal x x0)))
-		   (< (abs (- (rcfn x) (rcfn x0))) eps)))
+		   (< (abs (- (rcfn context x)
+                              (rcfn context x0)))
+                      eps)))
   :rewrite :direct)
 
-(defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-f (x0 eps)
+(defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-f (context x0 eps)
   (exists (delta)
 	  (implies (and (inside-interval-p x0 (rcfn-domain))
 			(standardp x0)
+                        (standardp context)
 			(realp eps)
 			(standardp eps)
 			(< 0 eps))
 		   (and (standardp delta)
 			(realp delta)
 			(< 0 delta)
-			(forall-x-within-delta-of-x0-f-x-within-epsilon-of-f x0 eps delta))))
+			(forall-x-within-delta-of-x0-f-x-within-epsilon-of-f context x0 eps delta))))
   :classicalp nil)
 
 (defthmd rcfn-is-continuous-using-classical-criterion
    (implies (and (inside-interval-p x0 (rcfn-domain))
 		 (standardp x0)
+                 (standardp context)
 		 (realp eps)
 		 (standardp eps)
 		 (< 0 eps))
-	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-f x0 eps))
+	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-f context x0 eps))
    :hints (("Goal"
 	    :by (:functional-instance rlfn-classic-has-a-limit-using-classical-criterion
 				      (rlfn rcfn)
@@ -70,10 +74,10 @@
 ;; Part 2: The classical definition of continuity implies the nonstd definition
 
 (encapsulate
- ((rcfn-classical (x) t)
+ ((rcfn-classical (context x) t)
   (rcfn-classical-domain () t))
 
- (local (defun rcfn-classical (x) (declare (ignore x)) 0))
+ (local (defun rcfn-classical (context x) (declare (ignore context x)) 0))
  (local (defun rcfn-classical-domain () (interval nil nil)))
 
  (defthm intervalp-rcfn-classical-domain
@@ -93,10 +97,10 @@
    :rule-classes nil)
 
  (defthm rcfn-classical-real
-     (realp (rcfn-classical x))
+     (realp (rcfn-classical context x))
    :rule-classes (:rewrite :type-prescription))
 
- (defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-f (x0 eps delta)
+ (defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-f (context x0 eps delta)
    (forall (x)
 	   (implies (and (inside-interval-p x (rcfn-classical-domain))
 			 (inside-interval-p x0 (rcfn-classical-domain))
@@ -106,29 +110,33 @@
 			 (< 0 eps)
 			 (< (abs (- x x0)) delta)
 			 (not (equal x x0)))
-		    (< (abs (- (rcfn-classical x) (rcfn-classical x0))) eps)))
+		    (< (abs (- (rcfn-classical context x)
+                               (rcfn-classical context x0)))
+                       eps)))
    :rewrite :direct)
 
- (defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-classical-f (x0 eps)
+ (defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-classical-f (context x0 eps)
    (exists (delta)
 	   (implies (and (inside-interval-p x0 (rcfn-classical-domain))
 			 (standardp x0)
+                         (standardp context)
 			 (realp eps)
 			 (standardp eps)
 			 (< 0 eps))
 		    (and (standardp delta)
 			 (realp delta)
 			 (< 0 delta)
-			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-f x0 eps delta))))
+			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-classical-f context x0 eps delta))))
    :classicalp nil)
 
  (defthmd rcfn-classic-is-continuous
    (implies (and (inside-interval-p x0 (rcfn-classical-domain))
 		 (standardp x0)
+                 (standardp context)
 		 (realp eps)
 		 (standardp eps)
 		 (< 0 eps))
-	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-classical-f x0 eps))
+	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-classical-f context x0 eps))
    :hints (("Goal"
 	    :use ((:instance exists-standard-delta-for-x0-to-make-x-within-epsilon-of-classical-f-suff
 			     (delta 1))
@@ -140,12 +148,14 @@
  )
 
 (defthm rcfn-classical-is-continuous-using-nonstandard-criterion
-  (implies (and (standardp x0)
-		(inside-interval-p x0 (rcfn-classical-domain))
-		(i-close x x0)
-		(inside-interval-p x (rcfn-classical-domain))
-		(not (equal x x0)))
-	   (i-close (rcfn-classical x) (rcfn-classical x0)))
+    (implies (and (standardp x0)
+                  (standardp context)
+		  (inside-interval-p x0 (rcfn-classical-domain))
+		  (i-close x x0)
+		  (inside-interval-p x (rcfn-classical-domain))
+		  (not (equal x x0)))
+	     (i-close (rcfn-classical context x)
+                      (rcfn-classical context x0)))
   :hints (("Goal"
 	   :by (:functional-instance rlfn-classical-has-a-limit-using-nonstandard-criterion
 				     (rlfn-classical rcfn-classical)
@@ -171,21 +181,23 @@
 ;; Corollaries: Show the intermediate value theorem and extreme value theorems hold
 ;; for the classical definition
 
-(defun-sk exists-intermediate-point-classical (a b z)
+(defun-sk exists-intermediate-point-classical (context a b z)
   (exists (x)
 	  (and (realp x)
 	       (< a x)
 	       (< x b)
-	       (equal (rcfn-classical x) z))))
+	       (equal (rcfn-classical context x) z))))
 
 (defthm intermediate-value-theorem-classical-sk
     (implies (and (inside-interval-p a (rcfn-classical-domain))
 		  (inside-interval-p b (rcfn-classical-domain))
 		  (realp z)
 		  (< a b)
-		  (or (and (< (rcfn-classical a) z) (< z (rcfn-classical b)))
-		      (and (< z (rcfn-classical a)) (< (rcfn-classical b) z))))
-	      (exists-intermediate-point-classical a b z))
+		  (or (and (< (rcfn-classical context a) z)
+                           (< z (rcfn-classical context b)))
+		      (and (< z (rcfn-classical context a))
+                           (< (rcfn-classical context b) z))))
+	      (exists-intermediate-point-classical context a b z))
   :hints (("Goal"
 	   :by (:functional-instance intermediate-value-theorem-sk
 				     (rcfn rcfn-classical)
@@ -199,14 +211,15 @@
 	  ("Subgoal 2"
 	   :use ((:instance rcfn-classical-domain-non-trivial)))))
 
-(defun-sk is-maximum-point-of-rcfn-classical (a b max)
+(defun-sk is-maximum-point-of-rcfn-classical (context a b max)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn-classical x) (rcfn-classical max)))))
+		   (<= (rcfn-classical context x)
+                       (rcfn-classical context max)))))
 
-(defun-sk rcfn-classical-achieves-maximum-point (a b)
+(defun-sk rcfn-classical-achieves-maximum-point (context a b)
   (exists (max)
 	  (implies (and (realp a)
 			(realp b)
@@ -214,13 +227,13 @@
 		   (and (realp max)
 			(<= a max)
 			(<= max b)
-			(is-maximum-point-of-rcfn-classical a b max)))))
+			(is-maximum-point-of-rcfn-classical context a b max)))))
 
 (defthm maximum-point-theorem-classical-sk
   (implies (and (inside-interval-p a (rcfn-classical-domain))
 		(inside-interval-p b (rcfn-classical-domain))
 		(< a b))
-	   (rcfn-classical-achieves-maximum-point a b))
+	   (rcfn-classical-achieves-maximum-point context a b))
   :hints (("Goal"
 	   :by (:functional-instance maximum-point-theorem-sk
 				     (rcfn rcfn-classical)
@@ -237,14 +250,15 @@
 	   :use ((:instance is-maximum-point-of-rcfn-classical-necc)))))
 
 
-(defun-sk is-minimum-point-of-rcfn-classical (a b min)
+(defun-sk is-minimum-point-of-rcfn-classical (context a b min)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn-classical min) (rcfn-classical x)))))
+		   (<= (rcfn-classical context min)
+                       (rcfn-classical context x)))))
 
-(defun-sk rcfn-classical-achieves-minimum-point (a b)
+(defun-sk rcfn-classical-achieves-minimum-point (context a b)
   (exists (min)
 	  (implies (and (realp a)
 			(realp b)
@@ -252,13 +266,13 @@
 		   (and (realp min)
 			(<= a min)
 			(<= min b)
-			(is-minimum-point-of-rcfn-classical a b min)))))
+			(is-minimum-point-of-rcfn-classical context a b min)))))
 
 (defthm minimum-point-theorem-classical-sk
   (implies (and (inside-interval-p a (rcfn-classical-domain))
 		(inside-interval-p b (rcfn-classical-domain))
 		(< a b))
-	   (rcfn-classical-achieves-minimum-point a b))
+	   (rcfn-classical-achieves-minimum-point context a b))
   :hints (("Goal"
 	   :by (:functional-instance minimum-point-theorem-sk
 				     (rcfn rcfn-classical)
@@ -278,10 +292,10 @@
 ;; Part 3: The hyperreal definition of continuity implies the classical definition
 
 (encapsulate
- ((rcfn-hyper (x) t)
+ ((rcfn-hyper (context x) t)
   (rcfn-hyper-domain () t))
 
- (local (defun rcfn-hyper (x) (declare (ignore x)) 0))
+ (local (defun rcfn-hyper (context x) (declare (ignore context x)) 0))
  (local (defun rcfn-hyper-domain () (interval nil nil)))
 
  (defthm intervalp-rcfn-hyper-domain
@@ -301,10 +315,10 @@
    :rule-classes nil)
 
  (defthm rcfn-hyper-real
-     (realp (rcfn-hyper x))
+     (realp (rcfn-hyper context x))
    :rule-classes (:rewrite :type-prescription))
 
- (defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f (x0 eps delta)
+ (defun-sk forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f (context x0 eps delta)
    (forall (x)
 	   (implies (and (inside-interval-p x (rcfn-hyper-domain))
 			 (inside-interval-p x0 (rcfn-hyper-domain))
@@ -314,10 +328,12 @@
 			 (< 0 eps)
 			 (< (abs (- x x0)) delta)
 			 (not (equal x x0)))
-		    (< (abs (- (rcfn-hyper x) (rcfn-hyper x0))) eps)))
+		    (< (abs (- (rcfn-hyper context x)
+                               (rcfn-hyper context x0)))
+                       eps)))
    :rewrite :direct)
 
- (defun-sk exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f (x0 eps)
+ (defun-sk exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f (context x0 eps)
    (exists (delta)
 	   (implies (and (inside-interval-p x0 (rcfn-hyper-domain))
 			 ;(standardp x0)
@@ -327,7 +343,7 @@
 		    (and ;(standardp delta)
 			 (realp delta)
 			 (< 0 delta)
-			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f x0 eps delta)))))
+			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f context x0 eps delta)))))
 
  (defthmd rcfn-hyper-is-continuous
    (implies (and (inside-interval-p x0 (rcfn-hyper-domain))
@@ -335,7 +351,7 @@
 		 (realp eps)
 		 ;(standardp eps)
 		 (< 0 eps))
-	    (exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f x0 eps))
+	    (exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f context x0 eps))
    :hints (("Goal"
 	    :use ((:instance exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f-suff
 			     (delta 1))
@@ -346,48 +362,53 @@
 	    :in-theory (disable abs))))
  )
 
-(defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-hyper-f (x0 eps)
+(defun-sk exists-standard-delta-for-x0-to-make-x-within-epsilon-of-hyper-f (context x0 eps)
    (exists (delta)
 	   (implies (and (inside-interval-p x0 (rcfn-hyper-domain))
 			 (standardp x0)
+                         (standardp context)
 			 (realp eps)
 			 (standardp eps)
 			 (< 0 eps))
 		    (and (standardp delta)
 			 (realp delta)
 			 (< 0 delta)
-			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f x0 eps delta))))
+			 (forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f context x0 eps delta))))
    :classicalp nil)
 
 (defthm-std standard-exists-delta-for-x0-to-make-x-within-epsilon-of-hyper-f-witness
-  (implies (and (standardp x0)
-		(standardp eps))
-	   (standardp (EXISTS-DELTA-FOR-X0-TO-MAKE-X-WITHIN-EPSILON-OF-HYPER-F-WITNESS
-		       X0 EPS))))
+    (implies (and (standardp x0)
+                  (standardp context)
+		  (standardp eps))
+	     (standardp (EXISTS-DELTA-FOR-X0-TO-MAKE-X-WITHIN-EPSILON-OF-HYPER-F-WITNESS
+		       context X0 EPS))))
 
 (defthmd rcfn-hyper-is-continuous-using-standard-criterion
    (implies (and (inside-interval-p x0 (rcfn-hyper-domain))
 		 (standardp x0)
+                 (standardp context)
 		 (realp eps)
 		 (standardp eps)
 		 (< 0 eps))
-	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-hyper-f x0 eps))
+	    (exists-standard-delta-for-x0-to-make-x-within-epsilon-of-hyper-f context x0 eps))
    :hints (("Goal"
 	    :use ((:instance rcfn-hyper-is-continuous)
 		  (:instance exists-standard-delta-for-x0-to-make-x-within-epsilon-of-hyper-f-suff
 			     (delta (EXISTS-DELTA-FOR-X0-TO-MAKE-X-WITHIN-EPSILON-OF-HYPER-F-WITNESS
-				     X0 EPS))))
+				     context X0 EPS))))
 	    :in-theory (disable rcfn-hyper-is-continuous
 				forall-x-within-delta-of-x0-f-x-within-epsilon-of-hyper-f)
 	    )))
 
 (defthm rcfn-hyper-is-continuous-using-nonstandard-criterion
-  (implies (and (standardp x0)
-		(inside-interval-p x0 (rcfn-hyper-domain))
-		(i-close x x0)
-		(inside-interval-p x (rcfn-hyper-domain))
-		(not (equal x x0)))
-	   (i-close (rcfn-hyper x) (rcfn-hyper x0)))
+    (implies (and (standardp x0)
+                  (standardp context)
+		  (inside-interval-p x0 (rcfn-hyper-domain))
+		  (i-close x x0)
+		  (inside-interval-p x (rcfn-hyper-domain))
+		  (not (equal x x0)))
+	     (i-close (rcfn-hyper context x)
+                      (rcfn-hyper context x0)))
   :hints (("Goal"
 	   :by (:functional-instance rcfn-classical-is-continuous-using-nonstandard-criterion
 				     (rcfn-classical rcfn-hyper)
@@ -414,21 +435,23 @@
 ;; Corollaries: Show the intermediate value theorem and extreme value theorems hold
 ;; for the hyperreal definition
 
-(defun-sk exists-intermediate-point-hyper (a b z)
+(defun-sk exists-intermediate-point-hyper (context a b z)
   (exists (x)
 	  (and (realp x)
 	       (< a x)
 	       (< x b)
-	       (equal (rcfn-hyper x) z))))
+	       (equal (rcfn-hyper context x) z))))
 
 (defthm intermediate-value-theorem-hyper-sk
   (implies (and (inside-interval-p a (rcfn-hyper-domain))
 		(inside-interval-p b (rcfn-hyper-domain))
 		(realp z)
 		(< a b)
-		(or (and (< (rcfn-hyper a) z) (< z (rcfn-hyper b)))
-		    (and (< z (rcfn-hyper a)) (< (rcfn-hyper b) z))))
-	   (exists-intermediate-point-hyper a b z))
+		(or (and (< (rcfn-hyper context a) z)
+                         (< z (rcfn-hyper context b)))
+		    (and (< z (rcfn-hyper context a))
+                         (< (rcfn-hyper context b) z))))
+	   (exists-intermediate-point-hyper context a b z))
   :hints (("Goal"
 	   :by (:functional-instance intermediate-value-theorem-classical-sk
 				     (rcfn-classical rcfn-hyper)
@@ -445,14 +468,15 @@
 				     (exists-intermediate-point-classical-witness exists-intermediate-point-hyper-witness)))
 	  ))
 
-(defun-sk is-maximum-point-of-rcfn-hyper (a b max)
+(defun-sk is-maximum-point-of-rcfn-hyper (context a b max)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn-hyper x) (rcfn-hyper max)))))
+		   (<= (rcfn-hyper context x)
+                       (rcfn-hyper context max)))))
 
-(defun-sk rcfn-hyper-achieves-maximum-point (a b)
+(defun-sk rcfn-hyper-achieves-maximum-point (context a b)
   (exists (max)
 	  (implies (and (realp a)
 			(realp b)
@@ -460,13 +484,13 @@
 		   (and (realp max)
 			(<= a max)
 			(<= max b)
-			(is-maximum-point-of-rcfn-hyper a b max)))))
+			(is-maximum-point-of-rcfn-hyper context a b max)))))
 
 (defthm maximum-point-theorem-hyper-sk
   (implies (and (inside-interval-p a (rcfn-hyper-domain))
 		(inside-interval-p b (rcfn-hyper-domain))
 		(< a b))
-	   (rcfn-hyper-achieves-maximum-point a b))
+	   (rcfn-hyper-achieves-maximum-point context a b))
   :hints (("Goal"
 	   :by (:functional-instance maximum-point-theorem-classical-sk
 				     (rcfn-classical rcfn-hyper)
@@ -490,14 +514,15 @@
 	   :use ((:instance is-maximum-point-of-rcfn-hyper-necc)))
 	  ))
 
-(defun-sk is-minimum-point-of-rcfn-hyper (a b min)
+(defun-sk is-minimum-point-of-rcfn-hyper (context a b min)
   (forall (x)
 	  (implies (and (realp x)
 			(<= a x)
 			(<= x b))
-		   (<= (rcfn-hyper min) (rcfn-hyper x)))))
+		   (<= (rcfn-hyper context min)
+                       (rcfn-hyper context x)))))
 
-(defun-sk rcfn-hyper-achieves-minimum-point (a b)
+(defun-sk rcfn-hyper-achieves-minimum-point (context a b)
   (exists (min)
 	  (implies (and (realp a)
 			(realp b)
@@ -505,13 +530,13 @@
 		   (and (realp min)
 			(<= a min)
 			(<= min b)
-			(is-minimum-point-of-rcfn-hyper a b min)))))
+			(is-minimum-point-of-rcfn-hyper context a b min)))))
 
 (defthm minimum-point-theorem-hyper-sk
   (implies (and (inside-interval-p a (rcfn-hyper-domain))
 		(inside-interval-p b (rcfn-hyper-domain))
 		(< a b))
-	   (rcfn-hyper-achieves-minimum-point a b))
+	   (rcfn-hyper-achieves-minimum-point context a b))
   :hints (("Goal"
 	   :by (:functional-instance minimum-point-theorem-classical-sk
 				     (rcfn-classical rcfn-hyper)
@@ -533,4 +558,3 @@
 	   :use ((:instance rcfn-hyper-achieves-minimum-point-suff)))
 	  ("Subgoal 2"
 	   :use ((:instance is-minimum-point-of-rcfn-hyper-necc)))))
-

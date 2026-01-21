@@ -41,19 +41,19 @@
  (defthm intervalp-der-sqrt-domain
    (interval-p (c-domain))
    )
- 
+
  (defthm c-der-lemma
    (implies (and (standardp x)
 		 (inside-interval-p x (c-domain))
 		 (inside-interval-p y (c-domain))
-		 (i-close x y) 
+		 (i-close x y)
 		 (not (= x y))
 		 )
 	    (i-close (/ (- (c x) (c y)) (- x y)) (c-derivative x)))
    )
 
  (defthm c-der-continuous
-   (implies 
+   (implies
     (and (standardp x)
 	 (inside-interval-p x (c-domain))
 	 (inside-interval-p y (c-domain))
@@ -87,7 +87,7 @@
 	     :in-theory (enable nsa-theory)
 	     ))
     ))
- 
+
  (local
   (defthm c-differentiable-lemma1
     (implies (and (standardp x)
@@ -125,7 +125,7 @@
 		   (:instance i-close-reflexive (x (c-derivative x))))
 	     ))
     ))
- 
+
  (defthm c-differentiable
    (implies (and (standardp x)
 		 (inside-interval-p x (c-domain))
@@ -165,7 +165,7 @@
 		 (:instance fix (x (- y)))
 		 (:instance standard-part-of-uminus (x y))
 		 (:instance inverse-of-+-as=0 (a (standard-part x)) (b (standard-part y)))
-		 
+
 		 (:instance realpart-imagpart-elim (x x))
 		 (:instance realpart-imagpart-elim (x y))
 		 (:instance standard-part-of-complex (x (realpart x)) (y (imagpart x)))
@@ -177,7 +177,7 @@
 			    (y2 (standard-part (imagpart y))))
 		 )
 	   :in-theory (enable nsa-theory)
-	   ))	  
+	   ))
   )
 
 (defthmd rc-ic-der-cont
@@ -206,7 +206,7 @@
 (defthmd rc-der-std
   (implies (standardp x)
 	   (standardp (rc-derivative x)))
-  
+
   :hints (("Goal"
 	   :use (
 		 (:instance c-der-std (x x))
@@ -242,7 +242,7 @@
 (defthmd ic-der-std
   (implies (standardp x)
 	   (standardp (ic-derivative x)))
-  
+
   :hints (("Goal"
 	   :use (
 		 (:instance c-der-std (x x))
@@ -257,7 +257,7 @@
 		(inside-interval-p y (c-domain))
 		(i-close x y))
 	   (i-close (ic-der-sqr x) (ic-der-sqr y)))
-  
+
   :hints (("Goal"
 	   :use (
 		 (:instance ic-der-std(x x))
@@ -305,7 +305,7 @@
 		(i-small (- x y))
 		)
 	   (i-close x y))
-  
+
   :hints (("Goal"
 	   :use (
 		 (:instance i-close-plus-lemma(x x) )
@@ -318,7 +318,7 @@
   (implies (and (i-close x1 x2)
 		(i-close y1 y2))
 	   (i-close (+ x1 y1) (+ x2 y2)))
-  
+
   :hints (("Goal"
 	   :use (
 		 (:instance i-small-plus-lemma (x x1) (y x2))
@@ -335,8 +335,8 @@
 		(inside-interval-p y (c-domain))
                 (i-close x y))
            (i-close (der-sqr-sum x) (der-sqr-sum y)))
-  
-  
+
+
   :hints (("Goal"
            :use (
                  (:instance ic-der-sqr-cont (x x) (y y))
@@ -354,9 +354,9 @@
 
 (encapsulate
  ()
- 
+
  (local (include-book  "arithmetic/inequalities" :dir :system))
- 
+
  (local
   (defthm ineq-lemma1
     (implies (and (realp x1)
@@ -367,8 +367,8 @@
 		  )
 	     (> (* x1 x1) (* x1 x2)))
     ))
- 
- 
+
+
  (local
   (defthm ineq-lemma2
     (implies (and (realp x1)
@@ -379,7 +379,7 @@
 		  )
 	     (>= (* x1 x2) (* x2 x2)))
     ))
- 
+
  (local
   (defthm ineq-lemma3
     (implies (and (realp a)
@@ -389,8 +389,8 @@
 		  (>= b c))
 	     (> a c))
     ))
- 
- 
+
+
  (local
   (defthm ineq-lemma4
     (implies (and (realp x1)
@@ -399,9 +399,9 @@
 		  (>= x2 0)
 		  (> x1 x2))
 	     (> (* x1 x1) (* x2 x2)))
-    
+
     :hints (("Goal"
-	     
+
 	     :use (
 		   (:instance ineq-lemma1 (x1 x1) (x2 x2))
 		   (:instance ineq-lemma2 (x1 x1) (x2 x2))
@@ -410,7 +410,7 @@
 	     ))
     ))
 
- (local 
+ (local
   (defthm root-close-lemma-1
     (implies (and (realp y1)
 		  (realp y2)
@@ -424,7 +424,7 @@
 	     :in-theory (enable i-close i-small)
 	     ))
     ))
- 
+
  (local
   (defthm root-close-lemma-2
     (implies (and (realp y1)
@@ -444,7 +444,7 @@
 		   )
 	     ))
     ))
- 
+
  (local
   (defthm square-is-standard
     (implies (and (i-limited y1)
@@ -452,10 +452,10 @@
 	     (equal (* (standard-part y1) (standard-part y1))
 		    (standard-part (square y1))
 		    ))
-    
+
     ))
- 
- (local  
+
+ (local
   (defthm root-close-lemma-3
     (implies (and (realp y1)
 		  (realp y2)
@@ -466,7 +466,7 @@
 		  (not (i-close y1 y2))
 		  )
 	     (not (= (standard-part (square y1)) (standard-part (square y2)))))
-    
+
     :hints (("Goal"
 	     :use (
 		   (:instance root-close-lemma-2 (y1 y1) (y2 y2))
@@ -489,7 +489,7 @@
 	     :in-theory (enable i-close i-small)
 	     ))
     ))
- 
+
  (local
   (defthm root-close-lemma-6
     (implies (and (realp y1)
@@ -501,8 +501,8 @@
 		  (not (i-close y1 y2))
 		  )
 	     (not (i-close (square y1) (square y2))))
-    
-    :hints (("Goal"         
+
+    :hints (("Goal"
 	     :use (
 		   (:instance root-close-lemma-3 (y1 y1) (y2 y2))
 		   (:instance root-close-lemma (y1 (square y1)) (y2 (square y2)))
@@ -510,40 +510,40 @@
 	     :in-theory (disable root-close-lemma root-close-lemma-3 square )
 	     ))
     ))
- 
- (local 
+
+ (local
   (defthm sqrt-real-lemma
     (implies (realp x)
 	     (realp (acl2-sqrt x)))
     ))
- 
- (local  
+
+ (local
   (defthm sqrt>=0-lemma
     (implies (and (i-limited x)
 		  (realp x)
 		  (>= x 0))
 	     (>= (acl2-sqrt x) 0))
     ))
- 
- (local 
+
+ (local
   (defthm standard-limited-lemma
     (implies (and (standardp x)
 		  (realp x)
 		  )
 	     (i-limited x))
     ))
- 
- (local  
+
+ (local
   (defthm close-limited-lemma
     (implies (and (standardp x1)
 		  (realp x1)
 		  (i-close x1 x2))
 	     (i-limited x2))
     ))
- 
+
  (local
   (defthm root-close-f
-    (implies 
+    (implies
      (and (standardp x1)
 	  (realp x1)
 	  (realp x2)
@@ -568,27 +568,27 @@
 	     :in-theory (disable limited-sqrt acl2-sqrt)
 	     ))
     ))
- 
- 
+
+
  (local
   (defthm rc-der-real
     (implies (realp x)
 	     (realp (rc-derivative x))
 	     )
     ))
- 
- (local 
+
+ (local
   (defthm ic-der-real
     (implies (realp x)
 	     (realp (ic-derivative x))
 	     )
     ))
- 
- (local 
+
+ (local
   (defthm der-sqr-sum-real
     (implies (realp x)
 	     (realp (der-sqr-sum x)))
-    
+
     :hints (("Goal"
 	     :use(
 		  (:instance rc-der-real (x x))
@@ -597,7 +597,7 @@
 	     :in-theory (disable rc-derivative ic-derivative)
 	     ))
     ))
- 
+
  (local
   (defthm der-sqr-sum>=0
     (implies (realp x)
@@ -606,13 +606,13 @@
 	     :in-theory (disable rc-derivative ic-derivative)
 	     ))
     ))
- 
- 
+
+
  (defthm der-sqr-sum-standard
    (implies (standardp x)
 	    (standardp (der-sqr-sum x))
 	    )
-   
+
    :hints (("Goal"
 	    :use(
 		 (:instance rc-der-std (x x))
@@ -621,28 +621,28 @@
 	    :in-theory (disable rc-derivative ic-derivative)
 	    ))
    )
- 
+
  (defthm der-sum-sqrt-cont
    (implies (and (standardp x)
 		 (inside-interval-p x (c-domain))
 		 (inside-interval-p y (c-domain))
 		 (i-close x y)
 		 )
-	    (i-close (der-sum-sqrt x) 
+	    (i-close (der-sum-sqrt x)
 		     (der-sum-sqrt y)
 		     ))
-   
+
    :hints (("Goal"
 	    :use (
 		  (:instance der-sqr-sum-standard(x x))
-		  (:instance der-sqr-sum-real (x x)) 
+		  (:instance der-sqr-sum-real (x x))
 		  (:instance der-sqr-sum-real (x y))
 		  (:instance der-sqr-sum>=0 (x x))
 		  (:instance der-sqr-sum>=0 (x y))
 		  (:instance der-sqr-sum-cont (x x) (y y) )
 		  (:instance root-close-f (x1 (der-sqr-sum x)) (x2 (der-sqr-sum y)))
 		  )
-	    :in-theory (disable der-sqr-sum ) 
+	    :in-theory (disable der-sqr-sum )
 	    ))
    )
  )
@@ -668,15 +668,22 @@
                 (inside-interval-p b (c-domain))
                 (< a b))
            (i-limited (riemann-der-sum-sqrt (make-small-partition a b))))
-  
+
   :hints (("Goal"
-           :use (
-                 (:functional-instance limited-riemann-rcfn-small-partition
-				       (rcfn-domain c-domain)
-				       (riemann-rcfn riemann-der-sum-sqrt)
-				       (map-rcfn map-der-sum-sqrt)
-				       (rcfn der-sum-sqrt)
-				       )
+           :use ((:instance
+                  (:functional-instance limited-riemann-rcfn-small-partition
+				        (rcfn-domain c-domain)
+				        (riemann-rcfn
+                                         (lambda (context x)
+                                           (riemann-der-sum-sqrt x)))
+				        (map-rcfn
+                                         (lambda (context x)
+                                           (map-der-sum-sqrt x)))
+				        (rcfn
+                                         (lambda (context x)
+                                           (der-sum-sqrt x)))
+				        )
+                  (context 0))
                  )
            )
 	  ("Subgoal 1"
@@ -692,10 +699,10 @@
 
 (encapsulate
  ()
- 
+
  (local (in-theory (disable riemann-der-sum-sqrt)))
- 
- (local 
+
+ (local
   (defthm limited-riemann-der-sum-sqrt-small-partition-1
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
@@ -703,7 +710,7 @@
 		  (inside-interval-p b (c-domain))
 		  (< a b))
 	     (standardp( standard-part(riemann-der-sum-sqrt (make-small-partition a b)))))
-    
+
     :hints (("Goal"
 	     :use (
 		   (:instance limited-riemann-der-sum-sqrt-small-partition(a a) (b b) )
@@ -711,7 +718,7 @@
 	     :in-theory (disable riemann-der-sum-sqrt)
 	     ))
     ))
- 
+
  (defun-std strict-int-der-sum-sqrt (a b)
    (if (and (realp a)
 	    (realp b)
@@ -734,16 +741,25 @@
                 (i-small (mesh p)))
            (i-close (riemann-der-sum-sqrt p)
                     (strict-int-der-sum-sqrt a b)))
-  
+
   :hints (("Goal"
-           :use (
-                 (:functional-instance strict-int-rcfn-is-integral-of-rcfn
-				       (rcfn-domain c-domain)
-				       (riemann-rcfn riemann-der-sum-sqrt)
-				       (strict-int-rcfn strict-int-der-sum-sqrt)
-				       (map-rcfn map-der-sum-sqrt)
-				       (rcfn der-sum-sqrt)
-				       )
+           :use ((:instance
+                  (:functional-instance strict-int-rcfn-is-integral-of-rcfn
+				        (rcfn-domain c-domain)
+				        (riemann-rcfn
+                                         (lambda (context x)
+                                           (riemann-der-sum-sqrt x)))
+				        (strict-int-rcfn
+                                         (lambda (context a b)
+                                           (strict-int-der-sum-sqrt a b)))
+				        (map-rcfn
+                                         (lambda (context x)
+                                           (map-der-sum-sqrt x)))
+				        (rcfn
+                                         (lambda (context x)
+                                           (der-sum-sqrt x)))
+				        )
+                  (context 0))
                  )
            ))
   )

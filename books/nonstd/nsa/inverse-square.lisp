@@ -122,7 +122,7 @@
 	    :in-theory (enable interval-definition-theory)))
    :rule-classes (:built-in-clause)))
 
-(definv square :domain (interval 0 nil) :range (interval 0 nil) :inverse-interval square-interval)
+(definv1 square :domain (interval 0 nil) :range (interval 0 nil) :inverse-interval square-interval)
 
 (include-book "sqrt")
 

@@ -3,7 +3,7 @@
 (include-book "exp-minimal")
 
 (local
- (defderivative sin-eqn-deriv 
+ (defderivative sin-eqn-deriv
    (/ (- (acl2-exp (* #c(0 1) x))
          (acl2-exp (* #c(0 -1) x)))
       #c(0 2))))
@@ -20,9 +20,9 @@
                     (acl2-cosine x)))
   :hints (("Goal" :use (:instance sin-eqn-deriv)
            :in-theory (enable acl2-sine acl2-cosine))))
-   
+
 (local
- (defderivative cos-eqn-deriv 
+ (defderivative cos-eqn-deriv
    (/ (+ (ACL2-EXP (* #C(0 1) X))
          (ACL2-EXP (* #C(0 -1) X)))
       2)))
@@ -38,7 +38,7 @@
                     (- (acl2-sine x))))
   :hints (("Goal" :use (:instance cos-eqn-deriv)
            :in-theory (enable acl2-sine acl2-cosine))))
-   
+
 ; Now to integrate sine and cosine into the differentiator. First
 ; we make the -close theorems.
 
@@ -79,32 +79,32 @@
            (standardp (acl2-cosine x)))
   :hints (("Goal" :in-theory (enable acl2-cosine))))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-sine
  (acl2-sine x)
  (acl2-numberp x))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-sine-prime
  (acl2-cosine x)
  (acl2-numberp x))
 
-(def-elem-derivative acl2-sine 
+(def-elem-derivative acl2-sine
   elem-sine
   (acl2-numberp x)
   (acl2-cosine x))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-cosine
  (acl2-cosine x)
  (acl2-numberp x))
 
-(differentiable-criteria-expr 
+(differentiable-criteria-expr
  elem-cosine-prime
  (- (acl2-sine x))
  (acl2-numberp x))
 
-(def-elem-derivative acl2-cosine 
+(def-elem-derivative acl2-cosine
   elem-cosine
   (acl2-numberp x)
   (- (acl2-sine x)))
@@ -113,7 +113,7 @@
 
 
 (local
- (defderivative tangent-derivative-lemma 
+ (defderivative tangent-derivative-lemma
    (acl2-tangent x)))
 
 (local
@@ -124,7 +124,7 @@
                           (acl2-sine x)
                           (acl2-sine x)))
                   (/ (* (acl2-cosine x) (acl2-cosine x)))))
-  :hints (("goal" 
+  :hints (("goal"
            :in-theory (disable sin**2+cos**2)
            :use (:instance sin**2+cos**2)))))
 
@@ -140,7 +140,7 @@
                           (acl2-tangent y))
                        (- x y))
                     (/ (* (acl2-cosine x) (acl2-cosine x)))))
-  :hints (("Goal" 
+  :hints (("Goal"
            :use ((:instance tangent-derivative-lemma)))))
 
 ; No point making the differentiator aware of tangent -- it just expands to

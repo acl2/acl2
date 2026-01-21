@@ -69,7 +69,7 @@
 (defthm-std integral-of-single-point
   (implies (and (realp a)
 		(inside-interval-p a (domain-rifn)))
-	   (equal (strict-int-rifn a a) 0))
+	   (equal (strict-int-rifn context a a) 0))
   :hints (("Goal'"
 	   :use ((:instance strict-int-rifn-is-integral-of-rifn
 			    (a a)
@@ -77,7 +77,7 @@
 			    (p (list a)))
 		 (:instance close-to-standard-is-close-1
 			    (x 0)
-			    (y (strict-int-rifn a a)))
+			    (y (strict-int-rifn context a a)))
 		 )
 	   :in-theory (disable strict-int-rifn-is-integral-of-rifn)))
   )
@@ -92,18 +92,18 @@
 		 (inside-interval-p b (domain-rifn))
 		 (or (equal c a)
 		     (equal c b)))
-	    (equal (+ (strict-int-rifn a c)
-		      (strict-int-rifn c b))
-		   (strict-int-rifn a b)))))
+	    (equal (+ (strict-int-rifn context a c)
+		      (strict-int-rifn context c b))
+		   (strict-int-rifn context a b)))))
 
 (local
  (defthm riemann-sum-append
    (implies (and (partitionp p1)
 		 (partitionp p2)
 		 (equal (car (last p1)) (car p2)))
-	    (equal (riemann-rifn (append p1 (cdr p2)))
-		   (+ (riemann-rifn p1)
-		      (riemann-rifn p2))))
+	    (equal (riemann-rifn context (append p1 (cdr p2)))
+		   (+ (riemann-rifn context p1)
+		      (riemann-rifn context p2))))
    ))
 
 (local
@@ -138,9 +138,9 @@
 		 (inside-interval-p b (domain-rifn))
 		 (< a c)
 		 (< c b))
-	    (equal (+ (strict-int-rifn a c)
-		      (strict-int-rifn c b))
-		   (strict-int-rifn a b)))
+	    (equal (+ (strict-int-rifn context a c)
+		      (strict-int-rifn context c b))
+		   (strict-int-rifn context a b)))
    :hints (("Goal"
 	    :use ((:instance strict-int-rifn-is-integral-of-rifn
 			     (a a)
@@ -156,18 +156,18 @@
 			     (b b)
 			     (p (make-small-partition c b)))
 		  (:instance i-close-plus
-			     (x1 (riemann-rifn (make-small-partition a c)))
-			     (x2 (strict-int-rifn a c))
-			     (y1 (riemann-rifn (make-small-partition c b)))
-			     (y2 (strict-int-rifn c b)))
+			     (x1 (riemann-rifn context (make-small-partition a c)))
+			     (x2 (strict-int-rifn context a c))
+			     (y1 (riemann-rifn context (make-small-partition c b)))
+			     (y2 (strict-int-rifn context c b)))
 		  (:instance close-to-standard-is-close-1
-			     (x (+ (strict-int-rifn a c) (strict-int-rifn c b)))
-			     (y (strict-int-rifn a b)))
+			     (x (+ (strict-int-rifn context a c) (strict-int-rifn context c b)))
+			     (y (strict-int-rifn context a b)))
 		  (:instance i-close-transitive
-			     (x (+ (strict-int-rifn a c) (strict-int-rifn c b)))
-			     (y (+ (riemann-rifn (make-small-partition a c))
-				   (riemann-rifn (make-small-partition c b))))
-			     (z (strict-int-rifn a b)))
+			     (x (+ (strict-int-rifn context a c) (strict-int-rifn context c b)))
+			     (y (+ (riemann-rifn context (make-small-partition a c))
+				   (riemann-rifn context (make-small-partition c b))))
+			     (z (strict-int-rifn context a b)))
 		  (:instance inside-interval-p-squeeze
 			     (a a)
 			     (b b)
@@ -189,9 +189,9 @@
 		 (inside-interval-p a (domain-rifn))
 		 (inside-interval-p b (domain-rifn))
 		 (inside-interval-p c (domain-rifn)))
-	    (equal (+ (int-rifn a c)
-		      (int-rifn c b))
-		   (int-rifn a b)))
+	    (equal (+ (int-rifn context a c)
+		      (int-rifn context c b))
+		   (int-rifn context a b)))
    :hints (("Goal"
 	    :cases ((or (= a c) (= b c))
 		    (and (< a c) (< c b))
@@ -203,8 +203,8 @@
 		(realp b)
 		(inside-interval-p a (domain-rifn))
 		(inside-interval-p b (domain-rifn)))
-	   (equal (- (int-rifn a b))
-		  (int-rifn b a))))
+	   (equal (- (int-rifn context a b))
+		  (int-rifn context b a))))
 
 (defthmd split-integral-by-subintervals
   (implies (and (realp a)
@@ -213,9 +213,9 @@
 		(inside-interval-p a (domain-rifn))
 		(inside-interval-p b (domain-rifn))
 		(inside-interval-p c (domain-rifn)))
-	   (equal (+ (int-rifn a c)
-		     (int-rifn c b))
-		  (int-rifn a b)))
+	   (equal (+ (int-rifn context a c)
+		     (int-rifn context c b))
+		  (int-rifn context a b)))
   :hints (("Goal"
 	   :cases ((< a b) (< b a)))
 	  ("Subgoal 3"

@@ -11,12 +11,12 @@
 (set-match-free-default :once)
 
 (encapsulate
- ((idfn (x) t)
+ ((idfn (context x) t)
   (idfn-domain () t)
   (idfn-range () t)
   (idfn-inv-interval (y) t))
 
- (local (defun idfn (x) (realfix x)))
+ (local (defun idfn (context x) (declare (ignore context)) (realfix x)))
  (local (defun idfn-domain () (interval nil nil)))
  (local (defun idfn-range () (interval nil nil)))
  (local (defun idfn-inv-interval (y) (interval y y)))
@@ -51,12 +51,12 @@
 
  (defthm idfn-in-range
      (implies (inside-interval-p x (idfn-domain))
-	      (inside-interval-p (idfn x) (idfn-range))))
+	      (inside-interval-p (idfn context x) (idfn-range))))
 
  ; Regardless of the input, the function is real
 
  (defthm idfn-real
-     (realp (idfn x))
+     (realp (idfn context x))
    :rule-classes (:rewrite :type-prescription))
 
  ; We restrict ourselves to increasing functions
@@ -64,7 +64,7 @@
  (defthm idfn-is-1-to-1
      (implies (and (inside-interval-p x1 (idfn-domain))
 		   (inside-interval-p x2 (idfn-domain))
-		   (equal (idfn x1) (idfn x2)))
+		   (equal (idfn context x1) (idfn context x2)))
 	      (equal x1 x2))
    :rule-classes nil)
 
@@ -81,43 +81,46 @@
 		     (subinterval-p estimate (idfn-domain))
 		     (interval-left-inclusive-p estimate)
 		     (interval-right-inclusive-p estimate)
-		     (or (and (<= (idfn x1) y)
-			      (<= y (idfn x2)))
-			 (and (>= (idfn x1) y)
-			      (>= y (idfn x2)))))))
+		     (or (and (<= (idfn context x1) y)
+			      (<= y (idfn context x2)))
+			 (and (>= (idfn context x1) y)
+			      (>= y (idfn context x2)))))))
    :rule-classes nil)
 
  ; The function is differentiable on its range
 
  (defthm idfn-differentiable
-   (implies (and (standardp x)
-		 (inside-interval-p x (idfn-domain))
-		 (inside-interval-p y1 (idfn-domain))
-		 (inside-interval-p y2 (idfn-domain))
-		 (i-close x y1) (not (= x y1))
-		 (i-close x y2) (not (= x y2)))
-	    (and (i-limited (/ (- (idfn x) (idfn y1)) (- x y1)))
-		 (i-close (/ (- (idfn x) (idfn y1)) (- x y1))
-			  (/ (- (idfn x) (idfn y2)) (- x y2))))))
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (idfn-domain))
+		   (inside-interval-p y1 (idfn-domain))
+		   (inside-interval-p y2 (idfn-domain))
+		   (i-close x y1) (not (= x y1))
+		   (i-close x y2) (not (= x y2)))
+	      (and (i-limited (/ (- (idfn context x) (idfn context y1)) (- x y1)))
+		   (i-close (/ (- (idfn context x) (idfn context y1)) (- x y1))
+			    (/ (- (idfn context x) (idfn context y2)) (- x y2))))))
 
   ; But the derivative is never zero over the range
 
  (defthm idfn-differential-not-small
-   (implies (and (standardp x)
-		 (inside-interval-p x (idfn-domain))
-		 (inside-interval-p y1 (idfn-domain))
-		 (i-close x y1) (not (= x y1)))
-	    (not (i-small (/ (- (idfn x) (idfn y1)) (- x y1))))))
+     (implies (and (standardp x)
+                   (standardp context)
+		   (inside-interval-p x (idfn-domain))
+		   (inside-interval-p y1 (idfn-domain))
+		   (i-close x y1) (not (= x y1)))
+	      (not (i-small (/ (- (idfn context x) (idfn context y1)) (- x y1))))))
  )
 
 ; The function is continuous over its range
 
 (defthm idfn-continuous
     (implies (and (standardp x1)
+                  (standardp context)
 		  (inside-interval-p x1 (idfn-domain))
 		  (i-close x1 x2)
 		  (inside-interval-p x2 (idfn-domain)))
-	     (i-close (idfn x1) (idfn x2)))
+	     (i-close (idfn context x1) (idfn context x2)))
   :hints (("Goal"
 	   :use ((:instance (:functional-instance rdfn-continuous
 						  (rdfn-domain idfn-domain)
@@ -156,10 +159,10 @@
 		  (inside-interval-p c (idfn-domain))
 		  (< a b)
 		  (< b c))
-	     (or (and (< (idfn a) (idfn b))
-		      (< (idfn b) (idfn c)))
-		 (and (> (idfn a) (idfn b))
-		      (> (idfn b) (idfn c)))))
+	     (or (and (< (idfn context a) (idfn context b))
+		      (< (idfn context b) (idfn context c)))
+		 (and (> (idfn context a) (idfn context b))
+		      (> (idfn context b) (idfn context c)))))
   :hints (("Goal"
 	   :by (:functional-instance icfn-is-monotonic
 				     (icfn idfn)
@@ -184,15 +187,17 @@
 ; The function maps values that are far apart to results that are far apart
 
 (defthm-std standard-idfn-inverse
-    (implies (standardp x)
-	     (standardp (idfn-inverse x))))
+    (implies (and (standardp x)
+                  (standardp context))
+	     (standardp (idfn-inverse context x))))
 
 (defthm idfn-preserves-not-close
     (implies (and (inside-interval-p a (idfn-domain))
 		  (inside-interval-p b (idfn-domain))
 		  (i-limited a)
+                  (standardp context)
 		  (not (i-close a b)))
-	     (not (i-close (idfn a) (idfn b))))
+	     (not (i-close (idfn context a) (idfn context b))))
   :hints (("Goal"
 	   :by (:functional-instance icfn-preserves-not-close
 				     (icfn idfn)
@@ -208,14 +213,16 @@
 (local
  (defthm idfn-inverse-continuous-local
      (implies (and (standardp x1)
+                   (standardp context)
 		   (inside-interval-p x1 (idfn-range))
 		   (i-close x1 x2)
 		   (inside-interval-p x2 (idfn-range)))
-	      (i-close (idfn-inverse x1) (idfn-inverse x2)))
+	      (i-close (idfn-inverse context x1)
+                       (idfn-inverse context x2)))
    :hints (("Goal"
 	    :use ((:instance idfn-preserves-not-close
-			     (a (idfn-inverse x1))
-			     (b (idfn-inverse x2)))
+			     (a (idfn-inverse context x1))
+			     (b (idfn-inverse context x2)))
 		  (:instance idfn-inverse-exists
 			     (y x1))
 		  (:instance idfn-inverse-exists
@@ -233,9 +240,12 @@
     (implies (and (inside-interval-p y1 (idfn-range))
 		  (inside-interval-p y2 (idfn-range))
 		  )
-	     (equal (/ (- (idfn-inverse y1) (idfn-inverse y2))
-		       (- (idfn (idfn-inverse y1)) (idfn (idfn-inverse y2))))
-		    (/ (- (idfn-inverse y1) (idfn-inverse y2))
+	     (equal (/ (- (idfn-inverse context y1)
+                          (idfn-inverse context y2))
+		       (- (idfn context (idfn-inverse context y1))
+                          (idfn context (idfn-inverse context y2))))
+		    (/ (- (idfn-inverse context y1)
+                          (idfn-inverse context y2))
 		       (- y1 y2))))
   :hints (("Goal"
 	   :use ((:instance IDFN-INVERSE-EXISTS (y y1))
@@ -246,17 +256,21 @@
 ; Now let's define the differential functions
 
 (encapsulate
- ( ((differential-idfn * *) => *) )
+ ( ((differential-idfn * * *) => *) )
 
  (local
-  (defun differential-idfn (x eps)
-    (/ (- (idfn (+ x eps)) (idfn x)) eps)))
+  (defun differential-idfn (context x eps)
+    (/ (- (idfn context (+ x eps))
+          (idfn context x))
+       eps)))
 
  (defthm differential-idfn-definition
    (implies (and (inside-interval-p x (idfn-domain))
 		 (inside-interval-p (+ x eps) (idfn-domain)))
-	    (equal (differential-idfn x eps)
-		   (/ (- (idfn (+ x eps)) (idfn x)) eps))))
+	    (equal (differential-idfn context x eps)
+		   (/ (- (idfn context (+ x eps))
+                         (idfn context x))
+                      eps))))
  )
 
 ;; Here we include the "usual" theorems about differential-idfn
@@ -278,22 +292,29 @@
 
 
 (encapsulate
- ( ((derivative-idfn *) => *) )
+ ( ((derivative-idfn * *) => *) )
 
  (local
   (defthm limited-derivative-idfn-body
-    (implies
-     (standardp x)
-     (standardp
-      (if (inside-interval-p x (idfn-domain))
-	  (cond ((inside-interval-p (+ x (/ (i-large-integer)))
-				    (idfn-domain))
-		 (standard-part (differential-idfn x (/ (i-large-integer)))))
-		((inside-interval-p (+ x (- (/ (i-large-integer))))
-				    (idfn-domain))
-		 (standard-part (differential-idfn x (- (/ (i-large-integer))))))
-		(t 'error))
-	'error)))
+      (implies
+       (and (standardp x)
+            (standardp context))
+       (standardp
+        (if (inside-interval-p x (idfn-domain))
+	    (cond ((inside-interval-p (+ x (/ (i-large-integer)))
+				      (idfn-domain))
+		   (standard-part
+                    (differential-idfn context
+                                       x
+                                       (/ (i-large-integer)))))
+		  ((inside-interval-p (+ x (- (/ (i-large-integer))))
+				      (idfn-domain))
+		   (standard-part
+                    (differential-idfn context
+                                       x
+                                       (- (/ (i-large-integer))))))
+		  (t 'error))
+	    'error)))
     :hints (("Goal"
 	     :in-theory (disable standard-part-of-plus))
 	    ("Subgoal 2"
@@ -315,30 +336,41 @@
  (local (in-theory '(limited-derivative-idfn-body)))
 
  (local
-  (defun-std derivative-idfn (x)
+  (defun-std derivative-idfn (context x)
     (if (inside-interval-p x (idfn-domain))
-	(if (inside-interval-p (+ x (/ (i-large-integer))) (idfn-domain))
-	    (standard-part (differential-idfn x (/ (i-large-integer))))
+	(if (inside-interval-p (+ x (/ (i-large-integer)))
+                               (idfn-domain))
+	    (standard-part
+             (differential-idfn context x (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (idfn-domain))
-	      (standard-part (differential-idfn x (- (/ (i-large-integer)))))
+	      (standard-part
+               (differential-idfn context x (- (/ (i-large-integer)))))
 	    'error))
       'error)))
 
  (defthm derivative-idfn-definition
    (implies (and (inside-interval-p x (idfn-domain))
-		 (standardp x))
-	    (equal (derivative-idfn x)
+		 (standardp x)
+                 (standardp context))
+	    (equal (derivative-idfn context x)
 		   (if (inside-interval-p (+ x (/ (i-large-integer))) (idfn-domain))
-		       (standard-part (differential-idfn x (/ (i-large-integer))))
+		       (standard-part
+                        (differential-idfn context
+                                           x
+                                           (/ (i-large-integer))))
 		     (if (inside-interval-p (- x (/ (i-large-integer))) (idfn-domain))
-			 (standard-part (differential-idfn x (- (/ (i-large-integer)))))
+			 (standard-part
+                          (differential-idfn context
+                                             x
+                                             (- (/ (i-large-integer)))))
 		       'error)))))
  )
 
-(defun differential-idfn-inverse-local (x eps)
-  (/ (differential-idfn (idfn-inverse x)
-			(- (idfn-inverse (+ x eps))
-			   (idfn-inverse x)))))
+(defun differential-idfn-inverse-local (context x eps)
+  (/ (differential-idfn context
+                        (idfn-inverse context x)
+			(- (idfn-inverse context (+ x eps))
+			   (idfn-inverse context x)))))
 
 ; So the important lemma is that the definition of differential-idfn-inverse-local is appropriate
 
@@ -347,8 +379,10 @@
 		  (inside-interval-p (+ x eps) (idfn-range))
 		  (realp eps)
 		  )
-	     (equal (differential-idfn-inverse-local x eps)
-		    (/ (- (idfn-inverse (+ x eps)) (idfn-inverse x)) eps)))
+	     (equal (differential-idfn-inverse-local context x eps)
+		    (/ (- (idfn-inverse context (+ x eps))
+                          (idfn-inverse context x))
+                       eps)))
   :hints (("Goal"
 	   :use ((:instance convert-inverse-differentials (y1 (+ x eps)) (y2 x))
 		 (:instance IDFN-INVERSE-EXISTS (y x))
@@ -392,12 +426,13 @@
 	    (* (+ b (- a)) (/ c)))))
 
 (defthm idfn-differential-actual-not-small
-   (implies (and (standardp x)
-		 (inside-interval-p x (idfn-domain))
-		 (inside-interval-p (+ x eps) (idfn-domain))
-		 (i-small eps)
-		 (not (= eps 0)))
-	    (not (i-small (differential-idfn x eps))))
+    (implies (and (standardp x)
+                  (standardp context)
+		  (inside-interval-p x (idfn-domain))
+		  (inside-interval-p (+ x eps) (idfn-domain))
+		  (i-small eps)
+		  (not (= eps 0)))
+	     (not (i-small (differential-idfn context x eps))))
   :hints (("Goal"
 	   :use ((:instance idfn-differential-not-small
 			    (x x)
@@ -435,19 +470,22 @@
 (local
  (defthm lemma-4
      (implies (inside-interval-p x (idfn-range))
-	      (realp (idfn-inverse x)))
+	      (realp (idfn-inverse context x)))
    :rule-classes (:type-prescription :rewrite)))
 
 (defthm idfn-inverse-differentiable-part1-lemma
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p y1 (idfn-range))
 		  (i-close x y1) (not (= x y1)))
-	     (i-limited (differential-idfn-inverse-local x (- y1 x))))
+	     (i-limited (differential-idfn-inverse-local
+                         context x (- y1 x))))
   :hints (("Goal"
 	   :use ((:instance idfn-differential-actual-not-small
-			    (x (idfn-inverse x))
-			    (eps (- (idfn-inverse y1) (idfn-inverse x))))
+			    (x (idfn-inverse context x))
+			    (eps (- (idfn-inverse context y1)
+                                    (idfn-inverse context x))))
 		 (:instance idfn-inverse-continuous-local
 			    (x1 x)
 			    (x2 y1))
@@ -488,10 +526,13 @@
 
 (defthm idfn-inverse-differentiable-part1
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p y1 (idfn-range))
 		  (i-close x y1) (not (= x y1)))
-	     (i-limited (/ (- (idfn-inverse x) (idfn-inverse y1)) (- x y1))))
+	     (i-limited (/ (- (idfn-inverse context x)
+                              (idfn-inverse context y1))
+                           (- x y1))))
   :hints (("Goal"
 	   :use ((:instance idfn-inverse-differentiable-part1-lemma)
 		 (:instance expand-differential-idfn-inverse-local
@@ -513,13 +554,14 @@
 
 (defthm close-differential-idfn
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-domain))
 		  (inside-interval-p (+ x eps1) (idfn-domain))
 		  (inside-interval-p (+ x eps2) (idfn-domain))
 		  (i-small eps1) (not (= eps1 0))
 		  (i-small eps2) (not (= eps2 0)))
-	     (i-close (differential-idfn x eps1)
-		      (differential-idfn x eps2)))
+	     (i-close (differential-idfn context x eps1)
+		      (differential-idfn context x eps2)))
   :hints (("Goal"
 	   :use ((:instance idfn-differentiable
 			    (x x)
@@ -604,10 +646,11 @@
 
 (defthm not-small-differential-idfn
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-domain))
 		  (inside-interval-p (+ x eps) (idfn-domain))
 		  (i-small eps) (not (= eps 0)))
-	     (not (i-small (differential-idfn x eps))))
+	     (not (i-small (differential-idfn context x eps))))
   :hints (("Goal"
 	   :use ((:instance idfn-differential-not-small
 			    (x x)
@@ -630,18 +673,19 @@
 
 (defthm close-differential-/-idfn
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-domain))
 		  (inside-interval-p (+ x eps1) (idfn-domain))
 		  (inside-interval-p (+ x eps2) (idfn-domain))
 		  (i-small eps1) (not (= eps1 0))
 		  (i-small eps2) (not (= eps2 0)))
-	     (i-close (/ (differential-idfn x eps1))
-		      (/ (differential-idfn x eps2))))
+	     (i-close (/ (differential-idfn context x eps1))
+		      (/ (differential-idfn context x eps2))))
   :hints (("Goal"
 	   :use ((:instance close-differential-idfn)
 		 (:instance i-close-/
-			    (x (differential-idfn x eps1))
-			    (y (differential-idfn x eps2))))
+			    (x (differential-idfn context x eps1))
+			    (y (differential-idfn context x eps2))))
 	   :in-theory '(not-small-differential-idfn)
 	   )))
 
@@ -655,20 +699,25 @@
 
 (defthm idfn-inverse-differentiable-part2-lemma
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p y1 (idfn-range))
 		  (inside-interval-p y2 (idfn-range))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (i-close (differential-idfn-inverse-local x (- y1 x))
-		      (differential-idfn-inverse-local x (- y2 x))))
+	     (i-close (differential-idfn-inverse-local context
+                                                       x
+                                                       (- y1 x))
+		      (differential-idfn-inverse-local context
+                                                       x
+                                                       (- y2 x))))
   :hints (("Goal"
 	   :use ((:instance close-differential-/-idfn
-			    (x (idfn-inverse x))
-			    (eps1 (- (idfn-inverse y1)
-				     (idfn-inverse x)))
-			    (eps2 (- (idfn-inverse y2)
-				     (idfn-inverse x))))
+			    (x (idfn-inverse context x))
+			    (eps1 (- (idfn-inverse context y1)
+				     (idfn-inverse context x)))
+			    (eps2 (- (idfn-inverse context y2)
+				     (idfn-inverse context x))))
 		 (:instance idfn-inverse-continuous-local
 			    (x1 x)
 			    (x2 y1))
@@ -700,13 +749,18 @@
 
 (defthm idfn-inverse-differentiable-part2
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p y1 (idfn-range))
 		  (inside-interval-p y2 (idfn-range))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (i-close (/ (- (idfn-inverse x) (idfn-inverse y1)) (- x y1))
-		      (/ (- (idfn-inverse x) (idfn-inverse y2)) (- x y2))))
+	     (i-close (/ (- (idfn-inverse context x)
+                            (idfn-inverse context y1))
+                         (- x y1))
+		      (/ (- (idfn-inverse context x)
+                            (idfn-inverse context y2))
+                         (- x y2))))
   :hints (("Goal"
 	   :use ((:instance idfn-inverse-differentiable-part2-lemma)
 		 (:instance expand-differential-idfn-inverse-local
@@ -725,14 +779,21 @@
 
 (defthm idfn-inverse-differentiable
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p y1 (idfn-range))
 		  (inside-interval-p y2 (idfn-range))
 		  (i-close x y1) (not (= x y1))
 		  (i-close x y2) (not (= x y2)))
-	     (and (i-limited (/ (- (idfn-inverse x) (idfn-inverse y1)) (- x y1)))
-		  (i-close (/ (- (idfn-inverse x) (idfn-inverse y1)) (- x y1))
-			   (/ (- (idfn-inverse x) (idfn-inverse y2)) (- x y2)))))
+	     (and (i-limited (/ (- (idfn-inverse context x)
+                                   (idfn-inverse context y1))
+                                (- x y1)))
+		  (i-close (/ (- (idfn-inverse context x)
+                                 (idfn-inverse context y1))
+                              (- x y1))
+			   (/ (- (idfn-inverse context x)
+                                 (idfn-inverse context y2))
+                              (- x y2)))))
   :hints (("Goal"
 	   :use (idfn-inverse-differentiable-part1
 		 idfn-inverse-differentiable-part2)
@@ -741,33 +802,44 @@
 ;; Now we define the differential and derivative functions and get the correctness results
 
 (encapsulate
- ( ((differential-idfn-inverse * *) => *) )
+ ( ((differential-idfn-inverse * * *) => *) )
 
  (local
-  (defun differential-idfn-inverse (x eps)
-    (/ (- (idfn-inverse (+ x eps)) (idfn-inverse x)) eps)))
+  (defun differential-idfn-inverse (context x eps)
+    (/ (- (idfn-inverse context (+ x eps))
+          (idfn-inverse context x))
+       eps)))
 
  (defthm differential-idfn-inverse-definition
    (implies (and (inside-interval-p x (idfn-range))
 		 (inside-interval-p (+ x eps) (idfn-range)))
-	    (equal (differential-idfn-inverse x eps)
-		   (/ (- (idfn-inverse (+ x eps)) (idfn-inverse x)) eps))))
+	    (equal (differential-idfn-inverse context x eps)
+		   (/ (- (idfn-inverse context (+ x eps))
+                         (idfn-inverse context x))
+                      eps))))
  )
 
 (encapsulate
- ( ((derivative-idfn-inverse *) => *) )
+ ( ((derivative-idfn-inverse * *) => *) )
 
  (defthm limited-derivative-idfn-inverse-body
    (implies
-    (standardp x)
+    (and (standardp x)
+         (standardp context))
     (standardp
      (if (inside-interval-p x (idfn-range))
 	 (cond ((inside-interval-p (+ x (/ (i-large-integer)))
 				   (idfn-range))
-		(standard-part (differential-idfn-inverse x (/ (i-large-integer)))))
+		(standard-part
+                 (differential-idfn-inverse context
+                                            x
+                                            (/ (i-large-integer)))))
 	       ((inside-interval-p (+ x (- (/ (i-large-integer))))
 				   (idfn-range))
-		(standard-part (differential-idfn-inverse x (- (/ (i-large-integer))))))
+		(standard-part
+                 (differential-idfn-inverse context
+                                            x
+                                            (- (/ (i-large-integer))))))
 	       (t 'error))
        'error)))
    :hints (("Goal"
@@ -791,33 +863,47 @@
  (local (in-theory '(limited-derivative-idfn-inverse-body)))
 
  (local
-  (defun-std derivative-idfn-inverse (x)
+  (defun-std derivative-idfn-inverse (context x)
     (if (inside-interval-p x (idfn-range))
 	(if (inside-interval-p (+ x (/ (i-large-integer))) (idfn-range))
-	    (standard-part (differential-idfn-inverse x (/ (i-large-integer))))
+	    (standard-part
+             (differential-idfn-inverse context
+                                        x
+                                        (/ (i-large-integer))))
 	  (if (inside-interval-p (- x (/ (i-large-integer))) (idfn-range))
-	      (standard-part (differential-idfn-inverse x (- (/ (i-large-integer)))))
+	      (standard-part
+               (differential-idfn-inverse context
+                                          x
+                                          (- (/ (i-large-integer)))))
 	    'error))
       'error)))
 
  (defthm derivative-idfn-inverse-definition
    (implies (and (inside-interval-p x (idfn-range))
-		 (standardp x))
-	    (equal (derivative-idfn-inverse x)
+		 (standardp x)
+                 (standardp context))
+	    (equal (derivative-idfn-inverse context x)
 		   (if (inside-interval-p (+ x (/ (i-large-integer))) (idfn-range))
-		       (standard-part (differential-idfn-inverse x (/ (i-large-integer))))
+		       (standard-part
+                        (differential-idfn-inverse context
+                                                   x
+                                                   (/ (i-large-integer))))
 		     (if (inside-interval-p (- x (/ (i-large-integer))) (idfn-range))
-			 (standard-part (differential-idfn-inverse x (- (/ (i-large-integer)))))
+			 (standard-part
+                          (differential-idfn-inverse context
+                                                     x
+                                                     (- (/ (i-large-integer)))))
 		       'error)))))
  )
 
 (defthm idfn-inverse-continuous
-   (implies (and (standardp x)
-		 (inside-interval-p x (idfn-range))
-		 (i-close x y)
-		 (inside-interval-p y (idfn-range)))
-	    (i-close (idfn-inverse x) (idfn-inverse y)))
-
+    (implies (and (standardp x)
+                  (standardp context)
+		  (inside-interval-p x (idfn-range))
+		  (i-close x y)
+		  (inside-interval-p y (idfn-range)))
+	     (i-close (idfn-inverse context x)
+                      (idfn-inverse context y)))
   :hints (("Goal"
 	   :by (:functional-instance rdfn-continuous
 				     (rdfn idfn-inverse)
@@ -832,7 +918,7 @@
   (implies (and (inside-interval-p x (idfn-range))
 		(inside-interval-p (+ x eps) (idfn-range))
 		(realp eps))
-	   (realp (differential-idfn-inverse x eps)))
+	   (realp (differential-idfn-inverse context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance realp-differential-rdfn
 				     (differential-rdfn differential-idfn-inverse)
@@ -844,10 +930,11 @@
 
 (defthm differential-idfn-inverse-limited
     (implies (and (standardp x)
+                  (standardp context)
 		  (inside-interval-p x (idfn-range))
 		  (inside-interval-p (+ x eps) (idfn-range))
 		  (i-small eps))
-	     (i-limited (differential-idfn-inverse x eps)))
+	     (i-limited (differential-idfn-inverse context x eps)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-limited
 				     (differential-rdfn differential-idfn-inverse)
@@ -858,7 +945,7 @@
 
 (defthm real-derivative-idfn-inverse
     (implies (inside-interval-p x (idfn-range))
-	     (realp (derivative-idfn-inverse x)))
+	     (realp (derivative-idfn-inverse context x)))
   :hints (("Goal"
 	   :by (:functional-instance derivative-well-defined
 				     (derivative-rdfn derivative-idfn-inverse)
@@ -869,11 +956,13 @@
 (defthm differential-idfn-inverse-close
    (implies (and (inside-interval-p x (idfn-range))
 		 (standardp x)
+                 (standardp context)
 		 (realp eps) (i-small eps) (not (= eps 0))
 		 (inside-interval-p (+ x eps) (idfn-range))
 		 (syntaxp (not (equal eps (/ (i-large-integer))))))
-	    (equal (standard-part (differential-idfn-inverse x eps))
-		   (derivative-idfn-inverse x)))
+	    (equal (standard-part
+                    (differential-idfn-inverse context x eps))
+		   (derivative-idfn-inverse context x)))
   :hints (("Goal"
 	   :by (:functional-instance differential-rdfn-close
 				     (derivative-rdfn derivative-idfn-inverse)
@@ -882,4 +971,3 @@
 				     (rdfn-domain idfn-range)))))
 
 (in-theory (disable derivative-idfn-inverse-definition))
-

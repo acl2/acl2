@@ -1,4 +1,4 @@
-(in-package "ACL2")
+ (in-package "ACL2")
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (include-book "nonstd/nsa/intervals" :dir :system)
@@ -114,31 +114,31 @@
   (maxlist (deltas p)))
 
 (encapsulate
- ( ((rifn *) => *)
-   ((strict-int-rifn * *) => *)
+ ( ((rifn * *) => *)
+   ((strict-int-rifn * * *) => *)
    ((domain-rifn) => *)
    ;((map-rifn *) => *)
    ;((riemann-rifn *) => *)
    )
 
  (local
-  (defun rifn (x)
-    (declare (ignore x))
+  (defun rifn (context x)
+    (declare (ignore context x))
     0))
 
  (defthm rifn-real
    (implies (realp x)
-	    (realp (rifn x))))
+	    (realp (rifn context x))))
 
  (local
-  (defun strict-int-rifn (a b)
-    (declare (ignore a b))
+  (defun strict-int-rifn (context a b)
+    (declare (ignore context a b))
     0))
 
  (defthm strict-int-rifn-real
    (implies (and (realp a)
 		 (realp b))
-	    (realp (strict-int-rifn a b))))
+	    (realp (strict-int-rifn context a b))))
 
  (local
   (defun domain-rifn ()
@@ -151,52 +151,54 @@
 		 (not (equal (interval-left-endpoint (domain-rifn))
 			     (interval-right-endpoint (domain-rifn)))))))
 
- (defun map-rifn (p)
+ (defun map-rifn (context p)
    ;; map rifn over the list p
    (if (consp p)
-       (cons (rifn (car p))
-	     (map-rifn (cdr p)))
+       (cons (rifn context (car p))
+	     (map-rifn context (cdr p)))
      nil))
 
- (defun riemann-rifn (p)
+ (defun riemann-rifn (context p)
    ;; for partition p, take the Riemann sum of rifn over p using right
    ;; endpoints
    (dotprod (deltas p)
-	    (map-rifn (cdr p))))
+	    (map-rifn context (cdr p))))
 
- (defun int-rifn (a b)
+ (defun int-rifn (context a b)
    (if (<= a b)
-       (strict-int-rifn a b)
-     (- (strict-int-rifn b a))))
+       (strict-int-rifn context a b)
+     (- (strict-int-rifn context b a))))
 
  (local
   (defthm map-rifn-zero
     (implies (consp p)
-	     (equal (car (map-rifn p)) 0))))
+	     (equal (car (map-rifn context p)) 0))))
 
  (local
   (defthm riemann-rifn-zero
     (implies (partitionp p)
-	     (equal (riemann-rifn p) 0))))
+	     (equal (riemann-rifn context p) 0))))
 
  (defthm strict-int-rifn-is-integral-of-rifn
    (implies (and (standardp a)
 		 (standardp b)
 		 (<= a b)
+                 (standardp context)
 		 (inside-interval-p a (domain-rifn))
 		 (inside-interval-p b (domain-rifn))
 		 (partitionp p)
 		 (equal (car p) a)
 		 (equal (car (last p)) b)
 		 (i-small (mesh p)))
-	    (i-close (riemann-rifn p)
-		     (strict-int-rifn a b))))
+	    (i-close (riemann-rifn context p)
+		     (strict-int-rifn context a b))))
  )
 
 (defthm-std standardp-strict-int-rifn
   (implies (and (standardp a)
-		(standardp b))
-	   (standardp (strict-int-rifn a b))))
+		(standardp b)
+                (standardp context))
+	   (standardp (strict-int-rifn context a b))))
 
 (defthm true-listp-partition
   (implies (partitionp p)
@@ -205,6 +207,3 @@
 (defthm real-listp-partition
   (implies (partitionp p)
 	   (real-listp p)))
-
-
-
