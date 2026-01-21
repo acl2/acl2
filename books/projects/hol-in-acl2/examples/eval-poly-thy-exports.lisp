@@ -19,6 +19,10 @@
 ; upon evaluating the include-book form above.
 (set-enforce-redundancy t)
 
+(DEFUN HOL::EVAL-POLY$HTA NIL
+  (DECLARE (XARGS :GUARD T))
+  (HTA0))
+
 ; The first argument of encapsulate is the list of signatures of function
 ; symbols introduced.  The other arguments can be divided into groups as
 ; explained in comments below.

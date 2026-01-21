@@ -10,4 +10,4 @@
 
 (include-book "../acl2/theories")
 
-(zf::import-theory eval-poly :hol-name eval_poly)
+(import-theory eval-poly :hol-name eval_poly)
