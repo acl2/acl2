@@ -91,16 +91,12 @@
      in order to inhibit its (direct or indirect) recursive expansion
      [C17:6.10.3.4/2].")
    (xdoc::p
-    "The @(':placemarker') summand is used as described in [C17:6.10.3.3],
-     to handle the @('##') operator.")
-   (xdoc::p
     "Only lexemes have spans associated with them.
      The markers are artifacts, not an actual part of the input files."))
   (:lexeme ((lexeme plexeme)
             (span span)))
   (:start ((macro ident)))
   (:end ((macro ident)))
-  (:placemarker ())
   :pred lexmarkp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -207,10 +203,7 @@
       The @(':start') and @(':end') markers are added around that expansion,
       to delimit that the expansion comes from a certain macro,
       so that we can prevent recursive expansion,
-      as explained in more detail elsewhere.
-      The pending list of lexmarks in the preprocessing state
-      actually never contains @(':placemarker') markers;
-      we should sharpen the type of this stobj component accordingly.")
+      as explained in more detail elsewhere.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
