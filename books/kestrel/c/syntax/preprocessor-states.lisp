@@ -108,6 +108,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption lexmark-option
+  lexmark
+  :short "Fixtype of optional lexmarks."
+  :pred lexmark-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist lexmark-list
   :short "Fixtype of lists of lexmarks."
   :elt-type lexmark
