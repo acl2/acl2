@@ -31,18 +31,30 @@
   (FST p = FST q & SND p = SND q) <=> (p = q)
 |#
 
-(defgoal pair_fst_snd_eq
-  (implies
-   (and (alist-subsetp (ex1$hta) hta)
-        (hpp p hta)
-        (equal (hp-type p) (typ (:hash a b)))
-        (hpp q hta)
-        (equal (hp-type q) (typ (:hash a b)))
-        (force (ex1$prop)))
-   (equal (hp= (hp-and
-                (hp= (hap* (fst (typ (:arrow* (:hash a b) a))) p)
-                     (hap* (fst (typ (:arrow* (:hash a b) a))) q))
-                (hp= (hap* (snd (typ (:arrow* (:hash a b) b))) p)
-                     (hap* (snd (typ (:arrow* (:hash a b) b))) q)))
-               (hp= p q))
-          (hp-true))))
+; The call below can be generated as follows.
+;   (include-book "projects/hol-in-acl2/examples/ex1-thy" :dir :system)
+;   (in-package "HOL")
+;   (find-goal pair_fst_snd_eq)
+; Although the call below of defgoal expands to a corresponding defthm call
+; with name HOL{PAIR_FST_SND_EQ}, it first checks that its formula is the
+; translation of the defhol form with the given name (in this case,
+; pair_fst_snd_eq) from the corresponding defhol form (in this case, at the end
+; of file ex1.defhol).
+(DEFGOAL
+  PAIR_FST_SND_EQ
+  (IMPLIES (AND (ALIST-SUBSETP (EX1$HTA) HTA)
+                (HPP P HTA)
+                (EQUAL (HP-TYPE P) (TYP (:HASH A B)))
+                (HPP Q HTA)
+                (EQUAL (HP-TYPE Q) (TYP (:HASH A B)))
+                (FORCE (EX1$PROP)))
+           (EQUAL (HP= (HP-AND (HP= (HAP* (FST (TYP (:ARROW* (:HASH A B) A)))
+                                          P)
+                                    (HAP* (FST (TYP (:ARROW* (:HASH A B) A)))
+                                          Q))
+                               (HP= (HAP* (SND (TYP (:ARROW* (:HASH A B) B)))
+                                          P)
+                                    (HAP* (SND (TYP (:ARROW* (:HASH A B) B)))
+                                          Q)))
+                       (HP= P Q))
+                  (HP-TRUE))))

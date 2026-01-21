@@ -455,7 +455,7 @@
                axioms))
           ((not (alistp theorems))
            (er soft ctx
-               "The :THEOREME entry in the :HOL-THEORY table is ~x0, which ~
+               "The :THEOREMS entry in the :HOL-THEORY table is ~x0, which ~
                 is not a symbol-alistp!"
                theorems))
           (t (value (close-theory-encapsulate
@@ -537,3 +537,11 @@
             ',name ',body (caddr form)))
        (t
         (value (list* 'defthm (cadr form) ',body ',rest)))))))
+
+(defmacro hol::find-goal (name)
+  (declare (xargs :guard (symbolp name)))
+  `(let ((form (defgoal-form ',name (w state))))
+     (and (consp form)
+          (assert$ (and (eq (car form) 'defthm)
+                        (eq (cadr form) (hol-name ',name)))
+                   (list* 'defgoal ',name (cddr form))))))
