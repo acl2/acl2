@@ -140,6 +140,16 @@
                                      (x (- x))))
              :in-theory (disable rational-exponent)))))
 
+(defthmd rational-exponent-correct-abs
+  (implies (and (rationalp x)
+                (not (equal 0 x)))
+           (and (<= (expt 2 (rational-exponent x)) (abs x))
+                (< (abs x) (* 2 (expt 2 (rational-exponent x))))))
+  :hints (("goal" :use ((:instance rational-exponent-correct-positive
+                         (x (abs x))))
+           :in-theory (disable rational-exponent-correct-positive)))
+  :rule-classes :linear)
+
 (define rational-significand ((x rationalp))
   ;; :guard (not (eql x 0))
   :returns (scand)
@@ -456,7 +466,27 @@
              (< (rational-exponent x) 0))
     :hints (("Goal" :use ((:instance rational-exponent-less-than-power-of-2
                                      (n 0)))))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthmd rational-exponent-unique
+    (implies (And (< x (* 2 (expt 2 n)))
+                  (<= (expt 2 n) x)
+                  (integerp n)
+                  (rationalp x))
+             (equal (rational-exponent x) n))
+    :hints (("goal" :use ((:instance rational-exponent-gte-power-of-2)
+                          (:instance rational-exponent-less-than-power-of-2
+                           (n (+ 1 n))))
+             :expand ((expt 2 (+ 1 n))))))
+
+  (defthmd rational-exponent-unique-abs
+    (implies (And (< (abs x) (* 2 (expt 2 n)))
+                  (<= (expt 2 n) (abs x))
+                  (integerp n)
+                  (rationalp x))
+             (equal (rational-exponent x) n))
+    :hints (("goal" :use ((:instance rational-exponent-unique
+                           (x (abs x))))))))
 
 
 (define rational-exponent-rec ((x rationalp))

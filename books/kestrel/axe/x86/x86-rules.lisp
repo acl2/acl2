@@ -12,7 +12,7 @@
 (in-package "X")
 
 ;; This book contains supporting material that is Axe-specific (e.g., rules
-;; that use axe-syntaxp or axe-bind-free).
+;; that use axe-syntaxp, axe-bind-free, or axe-smt).
 
 ;; TODO: Factor out any non-Axe-specific stuff
 
@@ -23,7 +23,14 @@
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
+;(include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
+(include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
+(include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
 (include-book "kestrel/x86/floats" :dir :system)
+(include-book "kestrel/x86/read-and-write2" :dir :system)
+(include-book "kestrel/x86/support64" :dir :system)
+(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
@@ -37,6 +44,7 @@
 ;; mostly to suppress messages (but does this slow down anything?):
 ;; todo: have this print :redundant when it is
 (add-known-boolean canonical-address-p$inline)
+(add-known-boolean unsigned-canonical-address-p)
 (add-known-boolean canonical-address-listp)
 (add-known-boolean disjoint-p)
 (add-known-boolean program-at)
@@ -73,6 +81,14 @@
 (add-known-boolean infp)
 (add-known-boolean nanp)
 
+(add-known-boolean in-region48p)
+(add-known-boolean subregion48p)
+(add-known-boolean disjoint-regions48p)
+
+(add-known-boolean in-region64p)
+(add-known-boolean subregion64p)
+(add-known-boolean disjoint-regions64p)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: move
@@ -87,7 +103,8 @@
 (defthmd aref1-rewrite ;for axe
   (implies (and (not (equal :header n))
                 (not (equal :default n))
-                (assoc-equal n l))
+                (assoc-equal n l) ; optimize using a binding-hyp
+                )
            (equal (aref1 name l n)
                   (lookup-equal n l)))
   :hints (("Goal" :in-theory (enable lookup-equal aref1))))
@@ -342,9 +359,6 @@
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 
-
-
-
 (def-constant-opener vex->vvvv$inline)
 (def-constant-opener vex->l$inline)
 (def-constant-opener vex->pp$inline)
@@ -389,13 +403,25 @@
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
-(defopeners acl2::get-symbol-entry-mach-o)
+(def-constant-opener in-region48p)
+(def-constant-opener subregion48p)
+(def-constant-opener disjoint-regions48p)
+
+(def-constant-opener in-region64p)
+(def-constant-opener subregion64p)
+(def-constant-opener disjoint-regions64p)
+(def-constant-opener unsigned-canonical-address-p)
+
+(acl2::def-constant-opener seg-regp)
+(acl2::def-constant-opener integer-range-p)
+
+(defopeners acl2::get-symbol-table-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
 (defopeners acl2::get-section-number-mach-o-aux)
 
 (defopeners addresses-of-subsequent-stack-slots-aux)
 
-(defopeners acl2::get-pe-section-aux)
+(defopeners acl2::get-pe-section-info-aux)
 (defopeners acl2::lookup-pe-symbol)
 
 (defopeners simd-add-spec)
@@ -410,13 +436,11 @@
 ;; For use by Axe.  Can't disable since this is in :rule-classes nil.
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)
-                              (quotep flag2)
-                              ))
+                              (quotep flag2)))
                 (axe-syntaxp (lighter-dargp flag2 flag1))
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
-                (member-eq flag2 *flags*)
-                )
+                (member-eq flag2 *flags*))
            (equal (set-flag flag1 val1 (set-flag flag2 val2 x86))
                   (set-flag flag2 val2 (set-flag flag1 val1 x86))))
   :hints (("Goal" :use (:instance set-flag-of-set-flag-diff)
@@ -426,12 +450,14 @@
 ;; For use by Axe.
 ;; todo: package
 (defthmd x86isa::idiv-spec-64-trim-arg1-axe-all
-  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x :all dag-array))
            (equal (idiv-spec-64 x y)
                   (idiv-spec-64 (trim 128 x) y)))
   :hints (("Goal" :in-theory (enable trim idiv-spec-64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; old scheme (deprecate)
 
 ;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (to save time).
@@ -458,7 +484,8 @@
 (defthmd run-until-stack-shorter-than-or-reach-pc-base-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (stack-shorter-thanp old-rsp x86))
+                (or (stack-shorter-thanp old-rsp x86)
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-base))))
@@ -469,11 +496,146 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-opener))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; new scheme (deprecate in favor of newer scheme below):
+
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (to save time).
+;; (defthmd run-until-rsp-is-base-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (equal rsp (xr :rgf *rsp* x86)))
+;;            (equal (run-until-rsp-is rsp x86)
+;;                   x86))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-base))))
+
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+;; (defthmd run-until-rsp-is-opener-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (not (equal rsp (xr :rgf *rsp* x86))))
+;;            (equal (run-until-rsp-is rsp x86)
+;;                   (run-until-rsp-is rsp (x86-fetch-decode-execute x86))))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-opener))))
+
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (to save time).
+;; (defthmd run-until-rsp-is-or-reach-pc-base-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (or (equal rsp (xr :rgf *rsp* x86))
+;;                     (memberp (rip x86) stop-pcs)))
+;;            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
+;;                   x86))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-base))))
+
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+;; (defthmd run-until-rsp-is-or-reach-pc-opener-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (not (equal rsp (xr :rgf *rsp* x86)))
+;;                 (not (memberp (rip x86) stop-pcs)))
+;;            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
+;;                   (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86))))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-opener))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; newer scheme, 64-bit:
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-rsp-is-above-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (rsp-is-abovep old-rsp x86))
+           (equal (run-until-rsp-is-above old-rsp x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-rsp-is-above-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-rsp-is-above-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (rsp-is-abovep old-rsp x86)))
+           (equal (run-until-rsp-is-above old-rsp x86)
+                  (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-rsp-is-above-opener))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-rsp-is-above-or-reach-pc-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (or (rsp-is-abovep old-rsp x86)
+                    (memberp (rip x86) stop-pcs)))
+           (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-rsp-is-above-or-reach-pc-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (rsp-is-abovep old-rsp x86))
+                (not (memberp (rip x86) stop-pcs)))
+           (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
+                  (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-opener))))
+
+;; newer scheme, 32-bit:
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-esp-is-above-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (esp-is-abovep old-esp x86))
+           (equal (run-until-esp-is-above old-esp x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-esp-is-above-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (esp-is-abovep old-esp x86)))
+           (equal (run-until-esp-is-above old-esp x86)
+                  (run-until-esp-is-above old-esp (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-opener))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-esp-is-above-or-reach-pc-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (or (esp-is-abovep old-esp x86)
+                    (memberp (eip x86) stop-pcs)))
+           (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-esp-is-above-or-reach-pc-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (esp-is-abovep old-esp x86))
+                (not (memberp (eip x86) stop-pcs)))
+           (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
+                  (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-opener))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -545,7 +707,7 @@
                                  (rex-byte acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|))
                             (if flg (!ms (let ((x86isa::erp nil))
                                            (cons (list ctx
-                                                       :rip (rip x86)
+                                                       :rip (x86isa::rip x86)
                                                        :error-in-reading-prefixes flg)
                                                  x86isa::erp))
                                          x86)
@@ -557,7 +719,7 @@
                                                       x86)
                                   (if flg (!ms (let ((x86isa::erp nil))
                                                  (cons (list ctx
-                                                             :rip (rip x86)
+                                                             :rip (x86isa::rip x86)
                                                              :increment-error flg)
                                                        x86isa::erp))
                                                x86)
@@ -569,7 +731,7 @@
                                           (mv nil 0 x86))
                                         (cond (flg (!ms (let ((x86isa::erp nil))
                                                           (cons (list ctx
-                                                                      :rip (rip x86)
+                                                                      :rip (x86isa::rip x86)
                                                                       :les/lds-distinguishing-byte-read-error flg)
                                                                 x86isa::erp))
                                                         x86))
@@ -581,7 +743,7 @@
                                                  (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                  (if flg (!ms (let ((x86isa::erp nil))
                                                                 (cons (list ctx
-                                                                            :rip (rip x86)
+                                                                            :rip (x86isa::rip x86)
                                                                             :vex-byte1-increment-error flg)
                                                                       x86isa::erp))
                                                               x86)
@@ -598,7 +760,7 @@
                                                        (mv nil 0 x86))
                                                      (cond (flg (!ms (let ((x86isa::erp nil))
                                                                        (cons (list ctx
-                                                                                   :rip (rip x86)
+                                                                                   :rip (x86isa::rip x86)
                                                                                    :bound-distinguishing-byte-read-error flg)
                                                                              x86isa::erp))
                                                                      x86))
@@ -610,7 +772,7 @@
                                                               (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
                                                               (if flg (!ms (let ((x86isa::erp nil))
                                                                              (cons (list ctx
-                                                                                         :rip (rip x86)
+                                                                                         :rip (x86isa::rip x86)
                                                                                          :evex-byte1-increment-error flg)
                                                                                    x86isa::erp))
                                                                            x86)
@@ -632,7 +794,7 @@
                                                                   (let ((modr/m acl2::|(THE (UNSIGNED-BYTE 8) MODR/M)|))
                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                    (cons (list ctx
-                                                                                               :rip (rip x86)
+                                                                                               :rip (x86isa::rip x86)
                                                                                                :modr/m-byte-read-error flg)
                                                                                          x86isa::erp))
                                                                                  x86)
@@ -641,7 +803,7 @@
                                                                           (mv nil temp-rip))
                                                                         (if flg (!ms (let ((x86isa::erp nil))
                                                                                        (cons (list ctx
-                                                                                                   :rip (rip x86)
+                                                                                                   :rip (x86isa::rip x86)
                                                                                                    :increment-error flg)
                                                                                              x86isa::erp))
                                                                                      x86)
@@ -657,7 +819,7 @@
                                                                               (let ((sib acl2::|(THE (UNSIGNED-BYTE 8) SIB)|))
                                                                                 (if flg (!ms (let ((x86isa::erp nil))
                                                                                                (cons (list ctx
-                                                                                                           :rip (rip x86)
+                                                                                                           :rip (x86isa::rip x86)
                                                                                                            :sib-byte-read-error flg)
                                                                                                      x86isa::erp))
                                                                                              x86)
@@ -666,7 +828,7 @@
                                                                                       (mv nil temp-rip))
                                                                                     (if flg (!ms (let ((x86isa::erp nil))
                                                                                                    (cons (list ctx
-                                                                                                               :rip (rip x86)
+                                                                                                               :rip (x86isa::rip x86)
                                                                                                                :increment-error flg)
                                                                                                          x86isa::erp))
                                                                                                  x86)
@@ -678,9 +840,11 @@
   :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
                                      x86-operation-mode))))
 
-(defopeners bv-array-read-chunk-little)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A scheme for removing shadowed writes
+
+;; WARNING: Keep in sync with the analogous scheme for RISC-V:
 
 ;; An alias of clear
 (defund clear-extend (n addr x86)
@@ -712,13 +876,14 @@
   (implies (and (axe-syntaxp (and (syntactic-call-of 'write x86 dag-array) ; avoid loops and undesired patterns
                                   (not (and (acl2::dargs-equalp n1 n2 dag-array)
                                             (acl2::dargs-equalp ad1 ad2 dag-array)))))
-                (integerp ad1)
+                ;(integerp ad1)
                 (unsigned-byte-p 48 n1)
                 ;(integerp ad2)
                 (unsigned-byte-p 48 n2))
            (equal (clear-extend n1 ad1 (write n2 ad2 val x86))
                   (clear-extend n1 ad1 (write n2 ad2 val (clear-extend n1 ad1 x86)))))
-  :hints (("Goal" :in-theory (enable clear-extend))))
+  :hints (("Goal" :cases ((integerp ad1)) ; todo: generalize write-of-write-of-write-same
+           :in-theory (enable clear-extend))))
 
 ;; We've found the write to be cleared
 (defthmd clear-extend-of-write-finish
@@ -729,13 +894,14 @@
   :hints (("Goal" :in-theory (enable clear-extend clear-retract))))
 
 (defthmd clear-extend-of-write-of-clear-retract
-  (implies (and (integerp ad1)
+  (implies (and; (integerp ad1)
                 (unsigned-byte-p 48 n1)
                 ;(integerp ad2)
                 (unsigned-byte-p 48 n2))
            (equal (clear-extend n1 ad1 (write n2 ad2 val (clear-retract n1 ad1 x86)))
                   (clear-retract n1 ad1 (write n2 ad2 val x86))))
-  :hints (("Goal" :in-theory (enable clear-retract clear-extend))))
+  :hints (("Goal" :cases ((integerp ad1))
+           :in-theory (enable clear-retract clear-extend))))
 
 (defthmd write-of-clear-retract ; add -same to name
   (implies (and ;(integerp ad)
@@ -810,9 +976,9 @@
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
   (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
-                (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
+                (equal (mxcsrbits->daz mxcsr) 0)
+                (equal (mxcsrbits->im mxcsr) 1)
+                (equal (mxcsrbits->dm mxcsr) 1))
            (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
@@ -820,9 +986,9 @@
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
   (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
-                (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
+                (equal (mxcsrbits->daz mxcsr) 0)
+                (equal (mxcsrbits->im mxcsr) 1)
+                (equal (mxcsrbits->dm mxcsr) 1))
            (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
@@ -833,3 +999,202 @@
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; or do we want a rule that has a disjoint-regions hyp, so we don't have to rephrase such things in BV terms?
+;; this can help if we have two subregions of the same region (same base address)
+(defthmd read-of-write-irrel-bv-axe-smt
+  (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2))) ; these 2 hyps are the opened form of disjoint-regions48p
+                (axe-smt (bvle 48 n1 (bvminus 48 addr2 addr1)))
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 addr1 (write n2 addr2 val x86))
+                  (read n1 addr1 x86)))
+  :hints (("Goal" :use (:instance read-of-write-irrel-gen)
+                  :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+
+;; Good for subregions of corresponding, larger disjoint regions.
+(defthm read-of-write-when-disjoint-regions48p-gen-smt
+  (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+;; Alt version of the rule just above (disjoint-regions48p hyp commuted)
+(defthm read-of-write-when-disjoint-regions48p-gen-smt-alt
+  (implies (and (disjoint-regions48p len2 start2 len1 start1) ; todo: rename vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+
+
+;; ;; drop?
+;; (defthmd canonical-address-p-when-bvlt-of-bvplus-axe-smt
+;;   (implies (and (signed-byte-p 64 x)
+;;                 (axe-smt (bvlt 64 (bvplus 64 140737488355328 x) 281474976710656)))
+;;            (canonical-address-p x))
+;;   :hints (("Goal" :cases ((< x 0))
+;;            :in-theory (enable canonical-address-p bvlt signed-byte-p
+;;                               acl2::bvchop-when-negative-lemma))))
+
+(defthm unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt
+  (implies (and (canonical-regionp len ad2) ;free vars
+                ;; (in-region64p ad len ad2) ; instead, we use the 2 hyps below
+                (natp len)
+                (axe-smt (bvlt 64 (bvminus 64 ad ad2) len)) ; add is in the region
+                (integerp ad)
+                (integerp ad2))
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :use unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus
+           :in-theory (disable unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: replace.  same for other registers?
+(defthm integerp-of-rsp-gen
+  (integerp (rsp x86))
+  :hints (("Goal" :in-theory (enable rsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd signed-byte-p-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (signed-byte-p 64 (+ x y))))
+
+(defthmd logext-64-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (equal (logext 64 (+ x y))
+                  (+ x y))))
+
+(defthm signed-byte-p-of-xr-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (xr :rip nil x86)))
+  :hints (("Goal" :use (:instance x86isa::i48p-xr-rip (i nil))
+           :in-theory (e/d (x86isa::rip) (x86isarip-becomes-rip
+                                          xr-becomes-rip
+                                          x86isa::i48p-xr-rip
+                                          x86isa::elem-p-of-xr-rip)))))
+
+(defthm signed-byte-p-of-rip
+  (implies (and (<= 48 n)
+                (integerp n))
+           (signed-byte-p n (x86isa::rip x86)))
+  :hints (("Goal" :in-theory (e/d (x86isa::rip)
+                                  (x86isarip-becomes-rip
+                                   xr-becomes-rip
+                                   )))))
+
+(defthm x86isa::canonical-address-p-of-rip
+  (canonical-address-p (x86isa::rip x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
+
+;; used in the loop-lifter?
+(defthm x86isa::canonical-address-p-of-xr-of-rip
+  (canonical-address-p (xr :rip nil x86))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-!rflagsbits->af (integerp (!rflagsbits->af af rflags)))
+(defthm integerp-of-!rflagsbits->cf (integerp (!rflagsbits->cf cf rflags)))
+(defthm integerp-of-!rflagsbits->of (integerp (!rflagsbits->of of rflags)))
+(defthm integerp-of-!rflagsbits->pf (integerp (!rflagsbits->pf pf rflags)))
+(defthm integerp-of-!rflagsbits->sf (integerp (!rflagsbits->sf sf rflags)))
+(defthm integerp-of-!rflagsbits->zf (integerp (!rflagsbits->zf zf rflags)))
+(defthm integerp-of-!rflagsbits->res1 (integerp (!rflagsbits->res1 res1 rflags)))
+(defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
+(defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))
+
+;; Uses the SMT solver to try to show that an address is canonical.
+(defthm unsigned-canonical-address-p-smt
+  (implies (axe-smt (bvlt 64 (bvminus 64 ad *base-of-canonical*) *len-of-canonical*)) ; just the def
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+
+(defthm read-when-equal-of-read-bytes-and-subregion48p-smt
+  (implies (and (equal bytes (read-bytes n2 ad2 x86))
+
+                ;; expanded version of (subregion48p n1 ad1 n2 ad2):
+                (not (zp n1))
+                (axe-smt (bvlt 48 (bvminus 48 ad1 ad2) n2)) ; (in-region48p ad1 n2 ad2)
+                (bvle 48 n1 n2)
+                (axe-smt (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)))
+
+
+                (natp n1)
+                (< n1 (expt 2 48))
+                (unsigned-byte-p 48 n2)
+                (integerp ad1)
+                (integerp ad2))
+           (equal (read n1 ad1 x86)
+                  (bv-array-read-chunk-little n1 8 (len bytes)
+                                              (bvminus 48 ad1 ad2)
+                                              bytes)))
+  :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion48p
+                  :in-theory (e/d (subregion48p in-region48p) (read-when-equal-of-read-bytes-and-subregion48p)))))
+
+(defthm set-rip-of-bv-array-read-split-cases-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (< len 20) ; todo: how many cases do we want to allow?
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
+                (axe-smt (bvle (ceiling-of-lg len) index (+ -1 len))) ; todo?
+                (posp len)
+                (natp index))
+           (equal (set-rip (bv-array-read size len index data) x86)
+                  ;; bv-array-read-cases here will then get unrolled:
+                  (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
+  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))

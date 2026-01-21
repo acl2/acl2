@@ -645,7 +645,7 @@
             (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
                      (equal (len (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))
                             (nfix n))))
-    (verify-guards las-to-pas :guard-debug t))
+    (verify-guards las-to-pas))
 
   (define read-from-physical-memory ((p-addrs physical-address-listp)
                                      x86)

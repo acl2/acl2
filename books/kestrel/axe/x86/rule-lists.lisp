@@ -47,7 +47,7 @@
 (acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
 
 ;; Most of these are just names of functions to open
-(defun instruction-rules ()
+(defund instruction-rules ()
   (declare (xargs :guard t))
   (append '(x86isa::gpr-arith/logic-spec-1 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-2 ;; dispatches based on operation
@@ -68,6 +68,7 @@
             x86isa::gpr-adc-spec-2-alt-def
             x86isa::gpr-adc-spec-4-alt-def
             x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
+            x86isa::open-carry-of-rflagsbits->cf
             open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
             open-carry-of-cf-spec16
             open-carry-of-cf-spec32
@@ -201,7 +202,7 @@
                                   x86isa::x86-cwd/cdq/cqo))))
 
 ;; todo: can we just use list-rules?
-(defun list-rules-x86 ()
+(defund list-rules-x86 ()
   (declare (xargs :guard t))
   '(atom ;open to expose consp
     car-cons
@@ -219,7 +220,7 @@
 
 ;; For 64-bit mode and low-level 32-bit mode proofs.
 ;; When using these, also include (read-rules) and (write-rules).
-(defun linear-memory-rules ()
+(defund linear-memory-rules ()
   (declare (xargs :guard t))
   '(;; Rules about reads:
 
@@ -312,15 +313,6 @@
 
 ;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
-;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
-(defund program-at-rules ()
-  (declare (xargs :guard t))
-  '(program-at-of-write
-    x86isa::program-at-of-if
-    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
-    program-at-of-set-undef ; do we not need something like this?
-    program-at-of-set-mxcsr
-    ))
 
 ;; Now we just go to read
 ;; (defun read-byte-rules ()
@@ -333,7 +325,7 @@
 ;;     ))
 
 ;todo: some are only needed with the new normal forms
-(defun read-rules ()
+(defund read-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
@@ -345,26 +337,47 @@
     read-of-set-undef
     read-of-set-mxcsr
 
-    read-when-program-at ; trying just this one
-    ;; since read-when-program-at can introduce bv-array-read-chunk-little
-    ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
+    ;; read-when-program-at ; drop
+    ;; since read-when-program-at / read-when-equal-of-read-bytes-and-subregion48p can introduce bv-array-read-chunk-little
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
+    acl2::bv-array-read-chunk-little-trim-index-axe
+    acl2::packbvs-little-constant-opener
+    acl2::packbv-little-constant-opener
+    acl2::map-bvsx-constant-opener
+    acl2::map-bvplus-val-constant-opener
+    acl2::bv-array-read-shorten-when-in-first-half-smt
+    acl2::bv-array-read-shorten-when-in-second-half-smt
+    acl2::bv-array-read-shorten-when-not-max-smt
+    acl2::bv-array-read-shorten-when-not-zero-smt
+
+    ;; these push computation into the array elements:
+    ;; could drop these if we could split bv-array-reads into cases deep within set-rip contexts (and lift the resulting IFs):
+    acl2::bvsx-of-bv-array-read-constant-array
+    acl2::bvplus-of-bv-array-read-constant-array-smt
+
     ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
     read-of-logext
-    read-when-equal-of-read
-    read-when-equal-of-read-alt
+    ;read-when-equal-of-read ; non-bv, drop?
+    ;read-when-equal-of-read-alt ; non-bv, drop?
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
     trim-of-read
     slice-of-read
     svblt-of-read-trim-arg2
-    svblt-of-read-trim-arg3))
+    svblt-of-read-trim-arg3
 
+    ;; we will just unroll read-chunks (at least for now):
+    read-chunks-base
+    read-chunks-unroll
+
+    read-of-bvplus-tighten))
+
+;; Mostly for 64-bit mode
 ;todo: some are only needed with the new normal forms
 (defund write-rules ()
   (declare (xargs :guard t))
@@ -392,31 +405,141 @@
     ;; write-of-write-of-write-of-write-of-write-same
 
     write-of-bvchop-arg3-gen
+    write-of-bvplus-tighten
+    ))
+
+(defund region-rules ()
+  (declare (xargs :guard t))
+  '( ;; WARNING: Keep in sync with the list for 64 bits below
+    in-region48p-cancel-constants-1-1+
+    in-region48p-cancel-constants-1+-1
+    in-region48p-cancel-constants-1+-1+
+    in-region48p-cancel-1-1+
+    in-region48p-cancel-1+-1
+    in-region48p-cancel-1+-1+
+    in-region48p-cancel-1-2
+    in-region48p-cancel-2-1
+    in-region48p-cancel-1+-2
+    in-region48p-cancel-2-1+
+    in-region48p-cancel-2+-1
+    in-region48p-cancel-1-3
+    in-region48p-cancel-3-1
+    in-region48p-cancel-2-2
+    in-region48p-when-non-negative-and-negative-range
+    in-region48p-of-0-arg3 ; introduces bvlt
+    in-region48p-of-bvchop-arg1
+    in-region48p-of-bvchop-arg3
+    in-region48p-of-bvsx-arg1
+    in-region48p-of-bvsx-arg3
+    in-region48p-same
+
+    ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regions48p-cancel-1-1+
+    disjoint-regions48p-cancel-1+-1
+    disjoint-regions48p-cancel-1+-1+
+    disjoint-regions48p-cancel-1-2
+    disjoint-regions48p-cancel-2-1
+    disjoint-regions48p-cancel-1+-2
+    disjoint-regions48p-cancel-2-1+
+    disjoint-regions48p-cancel-2-2
+    disjoint-regions48p-cancel-2+-2
+    disjoint-regions48p-of-bvplus-of-constant-and-constant
+    subregion48p-cancel-1-1
+    subregion48p-cancel-1+-1
+    subregion48p-cancel-1-1+
+    subregion48p-cancel-2-1
+    subregion48p-cancel-2-1+
+    subregion48p-cancel-1-2
+    subregion48p-cancel-1+-2
+    subregion48p-cancel-2-2
+    subregion48p-cancel-constants-1+-1
+    subregion48p-cancel-constants-1+-1+
+    subregion48p-reduce-sizes
+    ;; subregion48p-same-ads-same-lens ; consider this
+    subregion48p-when-non-negative-and-negative-range
+    subregion48p-of-1-arg1 ; introduces in-region48p
+    acl2::bvminus-of-bvplus-same
+    subregion48p-of-bvchop-arg2
+    subregion48p-of-bvchop-arg4
+    disjoint-regions48p-of-bvchop-arg2
+    disjoint-regions48p-of-bvchop-arg4
+    disjoint-regions48p-of-logext-arg2
+    disjoint-regions48p-of-logext-arg4
+    disjoint-regions48p-of-bvplus-tighten-arg2
+    disjoint-regions48p-of-bvplus-tighten-arg4
+    acl2::bvmult-tighten-when-power-of-2p-axe ; helps rules like in-region48p-when-non-negative-and-negative-range fire
+    ))
+
+;; ;; Non-SMT-amendable read-of-write rules:
+;; (defund read-and-write-rules-non-bv ()
+;;   (declare (xargs :guard t))
+;;   '(read-of-write-irrel
+;;     read-of-write-when-separate
+;;     ))
+
+;; SMT-amendable read-of-write rules:
+(defund read-and-write-rules-bv ()
+  (declare (xargs :guard t))
+  '(read-of-write-when-disjoint-regions48p-gen
+    read-of-write-when-disjoint-regions48p-gen-alt
+    read-of-write-when-disjoint-regions48p ; for different regions with the same base address?
+    read-of-write-of-write-irrel-inner-bv ; can clarify failures
+    read-of-write-of-write-of-write-same-middle-bv ; can clarify failures
+    in-region48p-of-+-arg1
+    in-region48p-of-+-arg3
+    in-region48p-of-logext-arg1
+    in-region48p-of-logext-arg3
+    in-region48p-of-bvplus-tighten-arg1
+    in-region48p-of-bvplus-tighten-arg3
+    subregion48p-of-+-arg2
+    subregion48p-of-+-arg4
+    disjoint-regions48p-of-+-arg2
+    disjoint-regions48p-of-+-arg4
+    read-of-+-arg2
+    write-of-+-arg2
+
+    ;; move these?
+    read-when-equal-of-read-bytes-and-subregion48p ; for a program-at-like hyp ; introduces bv-array-read-chunk-little
+    read-when-equal-of-read-bytes-and-subregion48p-alt
+    read-when-equal-of-read-and-subregion48p ; for a program-at-like hyp  ; needed?
+    read-when-equal-of-read-and-subregion48p-alt ; needed?
+    ;; todo: move these?:
+    acl2::bvchop-of-+-becomes-bvplus
+    ;;acl2::bvplus-of-*-arg1
+    ;;acl2::bvplus-of-*-arg2
+    acl2::bvminus-of-bvplus-tighten-arg2
+    acl2::bvminus-of-bvplus-tighten-arg3
+    acl2::bvplus-of-+-arg2 ; can we remove special cases for converting args of bvplus?
+    acl2::bvplus-of-+-arg3
     ))
 
 ;; Rules about the actual functions READ and WRITE.
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
-  '(read-1-of-write-1-diff
+  (append
+  '(read-1-of-write-1-diff ; uses 'not equal' in the hyp
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
+    read-of-write-within ; uses mostly bv hyps
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
-    read-of-write-irrel
-    read-of-write-irrel2 ; rename to have separate in the name
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    read-1-of-write-within-new))
+    read-1-of-write-within-new
+    )
+  (region-rules)))
 
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
   (declare (xargs :guard t))
-  '(xr-becomes-fault
+  '(;; Introduce fault, etc:
+    xr-becomes-fault
     xr-becomes-ms
     xr-becomes-mxcsr
     xr-becomes-undef
+    ;; Introduce set-fault, etc:
     xw-becomes-set-fault
     xw-becomes-set-ms
     xw-becomes-set-mxcsr
@@ -427,12 +550,14 @@
     !undef-becomes-set-undef))
 
 ;; todo: some of these are write-over-write rules
-(defund read-over-write-rules ()
+;; These are used for both 32 and 64 bit modes.
+;; Most of these are for the new normal form (fault, etc.)
+(defund read-over-write-rules-common ()
   (declare (xargs :guard t))
   '( ; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
-    ;; app-view-of-set-ms
+    ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
     app-view-of-!rflags
@@ -554,6 +679,20 @@
     undef-of-write-to-segment
     undef-of-write-byte-to-segment
 
+    set-rax-high-of-write-to-segment
+    set-rbx-high-of-write-to-segment
+    set-rcx-high-of-write-to-segment
+    set-rdx-high-of-write-to-segment
+    set-rsp-high-of-write-to-segment
+    set-rbp-high-of-write-to-segment
+
+    set-rax-high-of-write-byte-to-segment
+    set-rbx-high-of-write-byte-to-segment
+    set-rcx-high-of-write-byte-to-segment
+    set-rdx-high-of-write-byte-to-segment
+    set-rsp-high-of-write-byte-to-segment
+    set-rbp-high-of-write-byte-to-segment
+
     mxcsr-of-write-to-segment
     mxcsr-of-write-byte-to-segment
     ))
@@ -585,10 +724,9 @@
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
-(defun state-rules ()
+(defund state-rules ()
   (declare (xargs :guard t))
   '(
-    ;x86isa::x86p-set-flag
     force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
@@ -610,7 +748,13 @@
 
     x86isa::rflagsbits$inline-constant-opener
 
-    x86isa::!rflagsbits->af$inline-constant-opener ; why just this one?
+    x86isa::!rflagsbits->ac$inline-constant-opener
+    x86isa::!rflagsbits->af$inline-constant-opener
+    x86isa::!rflagsbits->cf$inline-constant-opener
+    x86isa::!rflagsbits->of$inline-constant-opener
+    x86isa::!rflagsbits->pf$inline-constant-opener
+    x86isa::!rflagsbits->sf$inline-constant-opener
+    x86isa::!rflagsbits->zf$inline-constant-opener
 
     x86isa::rflagsbits->ac$inline-constant-opener
     x86isa::rflagsbits->af$inline-constant-opener
@@ -638,6 +782,13 @@
     x86isa::rflagsbits-fix$inline-constant-opener
 
     unsigned-byte-p-of-rflagsbits
+
+    unsigned-byte-p-of-rflagsbits->af
+    unsigned-byte-p-of-rflagsbits->cf
+    unsigned-byte-p-of-rflagsbits->of
+    unsigned-byte-p-of-rflagsbits->pf
+    unsigned-byte-p-of-rflagsbits->sf
+    unsigned-byte-p-of-rflagsbits->zf
 
     ;; These introduce get-flag:
     rflagsbits->cf$inline-of-xr
@@ -754,6 +905,17 @@
     !rflags-does-nothing
 ;;     x86isa::!rflags$inline
 
+    ;; For these, we can look inside !rflagsbits->cf, because it is not an argument to !rflags
+    getbit-of-!rflagsbits->af
+    getbit-of-!rflagsbits->cf
+    getbit-of-!rflagsbits->pf
+    getbit-of-!rflagsbits->of
+    getbit-of-!rflagsbits->sf
+    getbit-of-!rflagsbits->zf
+    getbit-of-!rflagsbits->res1
+    getbit-of-!rflagsbits->res2
+    getbit-of-!rflagsbits->res3
+
 ;;     x86isa::!rflagsbits->ac$inline
 ;;     x86isa::!rflagsbits->af$inline
 ;;     x86isa::!rflagsbits->cf$inline ;it would be better if these called rflagsbits?
@@ -762,27 +924,27 @@
 ;;     x86isa::!rflagsbits->sf$inline
 ;;     x86isa::!rflagsbits->zf$inline
 
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res1$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->cf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->pf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->id$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vip$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vif$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->ac$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vm$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->rf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res4$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->nt$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->of$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->df$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->intf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->tf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->sf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->zf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res3$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->af$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res2$inline
-;;     x86isa::unsigned-byte-p-2-of-rflagsbits->iopl$inline ;this one is 2 bits
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res1$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->cf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->pf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->id$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vip$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vif$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->ac$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vm$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->rf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res4$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->nt$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->of$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->df$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->intf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->tf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->sf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->zf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res3$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->af$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res2$inline
+    x86isa::unsigned-byte-p-2-of-rflagsbits->iopl$inline ;this one is 2 bits
 
 ;;     ;x86isa::rflagsbits->ac$inline
 ;;     ;X86ISA::RFLAGSBITS$INLINE
@@ -802,7 +964,7 @@
     ;; mv-nth-1-of-rb-1-of-set-rip
     ))
 
-(defun decoding-and-dispatch-rules ()
+(defund decoding-and-dispatch-rules ()
   (declare (xargs :guard t))
   '(x86isa::two-byte-opcode-execute ;todo: restrict to constants?  ;big case split
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep ; axe can't eval this
@@ -827,10 +989,14 @@
     x86isa::prefixes->adr$inline
     x86isa::prefixes->nxt$inline
     ;; x86isa::prefixes->rep$inline-constant-opener ; for floating point?
-
-    x86isa::!prefixes->nxt$inline ; why are these needed?
-    x86isa::!prefixes->num$inline
+    x86isa::!prefixes->num$inline ; why are these needed?
+    x86isa::!prefixes->lck$inline
+    x86isa::!prefixes->rep$inline
+    x86isa::!prefixes->seg$inline
     x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->adr$inline
+    x86isa::!prefixes->nxt$inline
+
     ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
@@ -921,7 +1087,7 @@
     x86isa::vex-0f-execute
 ))
 
-(defun x86-type-rules ()
+(defund x86-type-rules ()
   (declare (xargs :guard t))
   '(x86isa::unsigned-byte-p-of-cf-spec8
     x86isa::unsigned-byte-p-of-cf-spec16
@@ -1046,10 +1212,22 @@
 
     acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
 
+    integerp-of-!rflagsbits->af
+    integerp-of-!rflagsbits->cf
+    integerp-of-!rflagsbits->of
+    integerp-of-!rflagsbits->pf
+    integerp-of-!rflagsbits->sf
+    integerp-of-!rflagsbits->zf
+    integerp-of-!rflagsbits->res1
+    integerp-of-!rflagsbits->res2
+    integerp-of-!rflagsbits->res3
+
     ;;todo: not x86-specific
     acl2::integerp-of-logext
+    acl2::signed-byte-p-of-logext
     acl2::integerp-of--))
 
+;move?
 (defund arith-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::bvchop-of-*-becomes-bvmult
@@ -1062,7 +1240,11 @@
     acl2::bvif-of-+-arg3
     acl2::bvif-of---arg3
     acl2::bvif-of---arg4
+
+    acl2::mod-becomes-bvchop-when-power-of-2p
     ;; todo: more
+
+    acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -1082,10 +1264,10 @@
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
     acl2::loghead-becomes-bvchop
-    acl2::bvchop-of-lognot-becomes-bvnot
-    acl2::bvchop-of-logand-becomes-bvand
-    acl2::bvchop-of-logior-becomes-bvor
-    acl2::bvchop-of-logxor-becomes-bvxor
+    ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
+    ;;acl2::bvchop-of-logior-becomes-bvor
+    ;;acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
 
     acl2::logapp-becomes-bvcat-bind-free-axe
@@ -1114,10 +1296,14 @@
 ;; Rules to introduce our BV operators (todo: move these):
 (defund bitops-to-bv-rules ()
   (declare (xargs :guard t))
-  '(acl2::part-select-width-low-becomes-slice
+  '(;; Rules to handle part-select-width-low:
+    acl2::part-select-width-low-becomes-slice ; for when low and width are constants
 
+    ;; should we instead go to putbits?
+    ;; TODO: Think about the case when sizes/indices are not constant
     acl2::slice-of-part-install-width-low ; introduces bvcat
     acl2::bvchop-of-part-install-width-low-becomes-bvcat
+    ;; getbit rule?
     acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
     acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
     acl2::part-install-width-low-becomes-bvcat-32
@@ -1125,7 +1311,7 @@
     acl2::part-install-width-low-becomes-bvcat-128
     acl2::part-install-width-low-becomes-bvcat-256
     acl2::part-install-width-low-becomes-bvcat-512
-    acl2::integerp-of-part-install-width-low$inline ; needed?
+    acl2::integerp-of-part-install-width-low ; needed?
 
     acl2::rotate-right-becomes-rightrotate
     acl2::rotate-left-becomes-leftrotate
@@ -1158,11 +1344,11 @@
     acl2::rotate-right-constant-opener))
 
 ;todo: classify these
-(defun x86-bv-rules ()
+(defund x86-bv-rules ()
   (declare (xargs :guard t))
   '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
-    acl2::logext-of-bvplus-64 ;somewhat unusual
+    ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
@@ -1175,10 +1361,32 @@
     acl2::bvlt-of-bvplus-1-cancel
     acl2::bvlt-of-bvplus-1-cancel-alt
     acl2::bvsx-when-unsigned-byte-p ; without this, we'd need rules like bvsx-of-read (when the read is small)
+
+    acl2::bvlt-trim-arg1-axe-all
+    acl2::bvlt-trim-arg2-axe-all
+
+    acl2::bvuminus-trim-axe-all ; needed to resolve a read
+
+    acl2::bvlt-of-bvmult-of-expt-arg2-constant-version2
+    acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
+
+    acl2::bvplus-of-bvplus-tighten-arg3 ; new
+    acl2::logext-of-+-of-logext-arg2
+
+    acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
+
+    ;; needed to shorten arrays by making the indices obviously smaller bvs:
+    acl2::bvchop-tighten-when-not-bvlt-of-constant
+    acl2::bvchop-tighten-when-bvlt-of-constant
+
+    acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2
+    acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
+
+    acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
     ))
 
 ;; ;not used?
-;; (defun canonical-address-rules ()
+;; (defund canonical-address-rules ()
 ;;  (declare (xargs :guard t))
 ;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
 ;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
@@ -1192,7 +1400,7 @@
 ;;     x86isa::i48-when-canonical-address-p))
 
 ;; These are about if but are not 'if lifting' rules.
-(defun if-rules ()
+(defund if-rules ()
   (declare (xargs :guard t))
   '(acl2::if-nil-t
     acl2::if-of-t-and-nil-becomes-bool-fix
@@ -1239,7 +1447,7 @@
 
 ;these help with conditional branches
 ;but see if-lifting strategies below for ifs on state transformers.
-(defun if-lifting-rules ()
+(defund if-lifting-rules ()
   (declare (xargs :guard t))
   '(x86isa::app-view-of-if
     ;x86isa::program-at-of-if
@@ -1247,7 +1455,7 @@
     x86isa::alignment-checking-enabled-p-of-if
     x86isa::64-bit-modep-of-if
     x86isa::ctri-of-if
-    x86isa::canonical-address-p-of-if
+    x86isa::canonical-address-p-of-if ; not always needed
     get-flag-of-if
     ;; feature-flag-of-if
     read-of-if
@@ -1292,7 +1500,7 @@
 ;;   xr-of-if ; too much?  need ms
 ;;   x86isa::alignment-checking-enabled-p-of-if
 
-(defun simple-opener-rules ()
+(defund simple-opener-rules ()
   (declare (xargs :guard t))
   '(; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
@@ -1300,7 +1508,7 @@
 ;; These open the branch conditions, without trying to make the expressions nice.
 ;; Instead, consider adding more rules like jle-condition-rewrite-1.
 ;; TODO: Some of these are only for 64 or only for 32 bit mode?
-;; (defun branch-condition-openers ()
+;; (defund branch-condition-openers ()
 ;;  (declare (xargs :guard t))
 ;;   '(jo-condition
 ;;     jno-condition
@@ -1320,7 +1528,7 @@
 ;;     jnle-condition))
 
 ;; these are for functions axe can't evaluate
-(defun constant-opener-rules ()
+(defund constant-opener-rules ()
   (declare (xargs :guard t))
   '(x86isa::zf-spec$inline-constant-opener
 
@@ -1376,10 +1584,9 @@
     x86isa::sub-sf-spec64-constant-opener
     x86isa::sub-zf-spec64-constant-opener
 
-    ;;acl2::bool->bit$inline-constant-opener
-;    byte-ify-base
-;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
-;    x86isa::byte-listp-base-1
+    ;; byte-ify-base
+    ;; x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
+    ;; x86isa::byte-listp-base-1
 
     jo-condition-constant-opener
     jno-condition-constant-opener
@@ -1402,23 +1609,29 @@
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
 
     acl2::logmask$inline-constant-opener ; add to evaluator?
-    ;acl2::binary-logand-constant-opener
-    ))
+    ;;acl2::binary-logand-constant-opener
 
-(defun get-prefixes-openers ()
+    subregion48p-constant-opener
+    in-region48p-constant-opener
+    disjoint-regions48p-constant-opener))
+
+;; too: update this list
+(defund get-prefixes-openers ()
   (declare (xargs :guard t))
-  '(x86isa::get-prefixes-base-1
+  '(;; x86isa::get-prefixes-base-1; error case
     ;; x86isa::get-prefixes-base-2 ; error case
     ;; x86isa::get-prefixes-base-3 ; error case
     x86isa::get-prefixes-base-4
     ;; x86isa::get-prefixes-base-5 ; error case
-    x86isa::get-prefixes-base-6
+    ;; x86isa::get-prefixes-base-6 ; error case
     ;; x86isa::get-prefixes-base-7 ; error case
     ;; x86isa::get-prefixes-base-8 ; error case
+    ;; x86isa::get-prefixes-base-9 ; error case
     x86isa::get-prefixes-unroll-1
     x86isa::get-prefixes-unroll-2
     x86isa::get-prefixes-unroll-3
     x86isa::get-prefixes-unroll-4
+    x86isa::get-prefixes-unroll-5
     ;; x86isa::get-prefixes-opener-lemma-no-prefix-byte
     ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple
     ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple
@@ -1429,16 +1642,17 @@
 (set-axe-rule-priority x86isa::get-prefixes-base-1 1) ; try late (unusual case)
 
 ;todo: separate out the 64-bit rules
-(defun segment-base-and-bounds-rules-general ()
+(defund segment-base-and-bounds-rules-general ()
   (declare (xargs :guard t))
   '(x86isa::segment-base-and-bounds-of-xw ; needed?
     segment-base-and-bounds-of-set-flag
     segment-base-and-bounds-of-set-undef
     segment-base-and-bounds-of-set-mxcsr
     ;; segment-base-and-bounds-of-set-ms
+    integerp-of-mv-nth-0-of-segment-base-and-bounds-gen
     ))
 
-(defun segment-base-and-bounds-rules-64 ()
+(defund segment-base-and-bounds-rules-64 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
@@ -1449,12 +1663,21 @@
     segment-base-and-bounds-of-set-rdx
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-r8
+    segment-base-and-bounds-of-set-r9
+    segment-base-and-bounds-of-set-r10
+    segment-base-and-bounds-of-set-r11
+    segment-base-and-bounds-of-set-r12
+    segment-base-and-bounds-of-set-r13
+    segment-base-and-bounds-of-set-r14
+    segment-base-and-bounds-of-set-r15
+
     segment-base-and-bounds-of-set-flag
 ;    segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
 
-(defun segment-base-and-bounds-rules-32 ()
+(defund segment-base-and-bounds-rules-32 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-eip
     segment-base-and-bounds-of-set-eax
@@ -1463,14 +1686,23 @@
     segment-base-and-bounds-of-set-edx
     segment-base-and-bounds-of-set-esp
     segment-base-and-bounds-of-set-ebp
+    segment-base-and-bounds-of-set-rax-high
+    segment-base-and-bounds-of-set-rbx-high
+    segment-base-and-bounds-of-set-rcx-high
+    segment-base-and-bounds-of-set-rdx-high
+    segment-base-and-bounds-of-set-rsp-high
+    segment-base-and-bounds-of-set-rbp-high
     segment-base-and-bounds-of-write-to-segment
     segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
-(defun get-prefixes-rules64 ()
+;; todo: more?
+(defund get-prefixes-rules64 ()
   (declare (xargs :guard t))
   '(mv-nth-0-of-get-prefixes-of-set-rip
     mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rbx
+    mv-nth-0-of-get-prefixes-of-set-rcx
     mv-nth-0-of-get-prefixes-of-set-rdx
     mv-nth-0-of-get-prefixes-of-set-rsi
     mv-nth-0-of-get-prefixes-of-set-rdi
@@ -1478,13 +1710,15 @@
     mv-nth-0-of-get-prefixes-of-set-rbp
     mv-nth-1-of-get-prefixes-of-set-rip
     mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rbx
+    mv-nth-1-of-get-prefixes-of-set-rcx
     mv-nth-1-of-get-prefixes-of-set-rdx
     mv-nth-1-of-get-prefixes-of-set-rsi
     mv-nth-1-of-get-prefixes-of-set-rdi
     mv-nth-1-of-get-prefixes-of-set-rsp
     mv-nth-1-of-get-prefixes-of-set-rbp))
 
-(defun float-rules ()
+(defund float-rules ()
   (declare (xargs :guard t))
   '(is-nan-intro ; targets an IF
     is-nan-intro-from-boolif
@@ -1495,6 +1729,8 @@
     not-mv-nth-0-of-sse-cmp
 
     integerp-of-mxcsr
+    integerp-of-indef ; has shown up in a branch of boolif
+    integerp-of-qnanize ; has shown up in a branch of boolif
     ;; maybe drop these:
     ;;integerp-of-xr-mxcsr
     ;;x86isa::n32p-xr-mxcsr ; targets unsigned-byte-p-of-mxcsr
@@ -1584,6 +1820,8 @@
     sse-cmp-of-bvchop-arg2
     sse-cmp-of-bvchop-arg3
     sse-cmp-of-bvchop-arg4
+    sse-cmp-of-bvcat-irrel-arg2
+    sse-cmp-of-bvcat-irrel-arg3
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
     integerp-of-mv-nth-2-of-sse-cmp
     mv-nth-1-of-sse-cmp-of-mv-nth-2-of-sse-cmp
@@ -1625,7 +1863,10 @@
     x86isa::fp-decode-constant-opener
     x86isa::fp-to-rat-constant-opener
     rtl::bias-constant-opener
-    rtl::expw-constant-opener))
+    rtl::expw-constant-opener
+
+    acl2::boolif-when-integerp-arg2
+    acl2::boolif-when-integerp-arg3))
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
@@ -1641,84 +1882,417 @@
 ;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
 (set-axe-rule-priority acl2::bvchop-identity 1)
 
-(defund symbolic-execution-rules ()
+;; for 32-bit mode, without :stop-pcs
+(defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
-  '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
-    run-until-stack-shorter-than-opener-axe ; not for IFs
-    run-until-stack-shorter-than-base-axe ; not for IFs
-    stack-shorter-thanp
-    run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+  '(    ;; newer scheme, 32-bit:
+    run-until-return4
+    run-until-esp-is-above-opener-axe ; not for IFs
+    run-until-esp-is-above-base-axe ; not for IFs
+    run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    esp-is-abovep
+
+    acl2::bvminus-of-bvplus-same-arg2 ; todo: move to more fundamental rule-list
     ))
 
-;; Extra rules to support the :stop-pcs option:
-(defund symbolic-execution-rules-with-stop-pcs ()
+;; for 64-bit mode, without :stop-pcs
+(defund symbolic-execution-rules64 ()
+  (declare (xargs :guard t))
+  '(;run-until-return ; we always open this, to expose run-until-stack-shorter-than
+    ;run-until-stack-shorter-than-opener-axe ; not for IFs
+    ;run-until-stack-shorter-than-base-axe ; not for IFs
+    ;run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ;stack-shorter-thanp
+
+    ;; new scheme:
+    ;; run-until-return32
+    ;; run-until-return64
+    ;; run-until-rsp-is-opener-axe ; not for IFs
+    ;; run-until-rsp-is-base-axe ; not for IFs
+    ;; run-until-rsp-is-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    acl2::equal-of-+-cancel-2
+
+    ;; newer scheme:
+    run-until-return3
+    run-until-rsp-is-above-opener-axe ; not for IFs
+    run-until-rsp-is-above-base-axe ; not for IFs
+    run-until-rsp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    rsp-is-abovep
+    acl2::bvminus-of-bvplus-same-arg2 ; more like this?
+    ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
+    ;; acl2::bvminus-of-+-arg3
+    acl2::bvminus-of-+-cancel-arg3))
+
+;; for 32-bit mode, with :stop-pcs
+;;newer-scheme, 32-bits:
+(defund symbolic-execution-rules-with-stop-pcs32 ()
+  (declare (xargs :guard t))
+  '(run-until-return-or-reach-pc4
+    run-until-esp-is-above-or-reach-pc-opener-axe
+    run-until-esp-is-above-or-reach-pc-base-axe
+    run-until-esp-is-above-or-reach-pc-of-if-arg2
+    esp-is-abovep))
+
+;; for 64-bit mode, with :stop-pcs
+;; todo: do we have any tests of this?
+(defund symbolic-execution-rules-with-stop-pcs64 ()
   (declare (xargs :guard t))
   '(run-until-return-or-reach-pc ; we always open this, to expose run-until-stack-shorter-than
     run-until-stack-shorter-than-or-reach-pc-opener-axe ; not for IFs
     run-until-stack-shorter-than-or-reach-pc-base-axe ; not for IFs
     ;; stack-shorter-thanp
     run-until-stack-shorter-than-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
-    ))
 
-(defun separate-rules ()
+    ;; new scheme:
+    ;; run-until-return-or-reach-pc32
+    ;; run-until-return-or-reach-pc64
+    ;; run-until-rsp-is-or-reach-pc-opener-axe ; not for IFs
+    ;; run-until-rsp-is-or-reach-pc-base-axe ; not for IFs
+    ;; stack-shorter-thanp
+    ;; run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+
+    ;;newer-scheme:
+    run-until-return-or-reach-pc3
+    run-until-rsp-is-above-or-reach-pc-opener-axe
+    run-until-rsp-is-above-or-reach-pc-base-axe
+    acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check
+    acl2::memberp-of-cons-same ; for resolving the stop-pcs check
+    acl2::memberp-of-nil ; for resolving the stop-pcs check
+    acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+    run-until-rsp-is-above-or-reach-pc-of-if-arg2
+    rsp-is-abovep
+    acl2::bvminus-of-bvplus-same-arg2
+    ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
+    ;; acl2::bvminus-of-+-arg3
+    acl2::bvminus-of-+-cancel-arg3))
+
+;; todo: consider making a 32-bit variant (see above)
+(defund symbolic-execution-rules-loop-lifter ()
   (declare (xargs :guard t))
-  '(x86isa::separate-normalize-r-w-x-1
-    x86isa::separate-normalize-r-w-x-2
-    x86isa::not-separate-self
-    x86isa::separate-of-plus
-    x86isa::separate-of-plus-alt
-    x86isa::separate-below-and-above
-    x86isa::separate-below-and-above-alt
-    x86isa::separate-lemma-1
-    x86isa::separate-lemma-1-alt
-    x86isa::separate-lemma-1b
-    x86isa::separate-lemma-1b-alt
-    x86isa::separate-lemma-2b
-    x86isa::separate-lemma-2b-alt
-    x86isa::separate-lemma-3
-    x86isa::separate-lemma-3-alt
-    x86isa::separate-of-if-arg3
-    x86isa::separate-of-if-arg6
-    x86isa::separate-below-and-above-offset
-    x86isa::separate-below-and-above-offset-alt
-    x86isa::separate-same-lemma-1
-    x86isa::separate-same-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1
-    x86isa::separate-from-separate-lemma-1b
-    x86isa::separate-from-separate-lemma-1c
-    x86isa::separate-from-separate-lemma-1d
-    x86isa::separate-from-separate-lemma-1-alt
-    x86isa::separate-from-separate-lemma-1b-alt
-    x86isa::separate-from-separate-lemma-1c-alt
-    x86isa::separate-from-separate-lemma-1d-alt
-    ;; these 2 may subsume much of the stuff above:
-    x86isa::separate-when-separate
-    x86isa::separate-when-separate-alt
-    ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
-    ;;x86isa::not-equal-when-separate
-    ;;x86isa::not-equal-when-separate-alt
-    x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
-    x86isa::not-equal-constant-when-separate-of-constants-alt
-    acl2::equal-of-+-combine-constants
-    acl2::equal-of-+-combine-constants-alt
-    acl2::equal-of-+-and-+-cancel-constants
+  '(;stack-height-increased-wrt
+    rsp-is-abovep
+    run-until-exit-segment-or-hit-loop-header-opener
+    run-until-exit-segment-or-hit-loop-header-base-case-1
+    run-until-exit-segment-or-hit-loop-header-base-case-2
+    run-until-exit-segment-or-hit-loop-header-base-case-3
+    run-until-exit-segment-or-hit-loop-header-of-if-split))
+
+;; todo: deprecate?
+;; (defund separate-rules ()
+;;   (declare (xargs :guard t))
+;;   '(x86isa::separate-normalize-r-w-x-1
+;;     x86isa::separate-normalize-r-w-x-2
+;;     x86isa::not-separate-self
+;;     x86isa::separate-of-plus
+;;     x86isa::separate-of-plus-alt
+;;     x86isa::separate-below-and-above
+;;     x86isa::separate-below-and-above-alt
+;;     x86isa::separate-lemma-1
+;;     x86isa::separate-lemma-1-alt
+;;     x86isa::separate-lemma-1b
+;;     x86isa::separate-lemma-1b-alt
+;;     x86isa::separate-lemma-2b
+;;     x86isa::separate-lemma-2b-alt
+;;     x86isa::separate-lemma-3
+;;     x86isa::separate-lemma-3-alt
+;;     x86isa::separate-of-if-arg3
+;;     x86isa::separate-of-if-arg6
+;;     x86isa::separate-below-and-above-offset
+;;     x86isa::separate-below-and-above-offset-alt
+;;     x86isa::separate-same-lemma-1
+;;     x86isa::separate-same-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1
+;;     x86isa::separate-from-separate-lemma-1b
+;;     x86isa::separate-from-separate-lemma-1c
+;;     x86isa::separate-from-separate-lemma-1d
+;;     x86isa::separate-from-separate-lemma-1-alt
+;;     x86isa::separate-from-separate-lemma-1b-alt
+;;     x86isa::separate-from-separate-lemma-1c-alt
+;;     x86isa::separate-from-separate-lemma-1d-alt
+;;     ;; these 2 may subsume much of the stuff above:
+;;     x86isa::separate-when-separate
+;;     x86isa::separate-when-separate-alt
+;;     ;; these may be expensive but seem necessary in some cases
+;;     ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
+;;     ;;x86isa::not-equal-when-separate
+;;     ;;x86isa::not-equal-when-separate-alt
+;;     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
+;;     x86isa::not-equal-constant-when-separate-of-constants-alt
+;;     acl2::equal-of-+-combine-constants
+;;     acl2::equal-of-+-combine-constants-alt
+;;     acl2::equal-of-+-and-+-cancel-constants
+;;     ))
+
+;; (defund canonical-rules-non-bv ()
+;;   (declare (xargs :guard t))
+;;   '(booleanp-of-canonical-address-p
+;;     x86isa::canonical-address-p-of-logext-48
+;;     x86isa::logext-48-does-nothing-when-canonical-address-p
+;;     ;; x86isa::create-canonical-address-list-1
+;;     ;; x86isa::canonical-address-listp-of-cons
+;;     ;; x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
+;;     ;; x86isa::member-p-of-create-canonical-address-list-same
+;;     ;; x86isa::canonical-address-listp-create-canonical-address-list
+;;     ;; x86isa::pos-and-create-canonical-address-list
+;;     ;; x86isa::car-create-canonical-address-list
+;;     x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
+;;     ;;will axe try all free variable matches?
+;;     ;; x86isa::canonical-address-p-between-special1
+;;     ;; x86isa::canonical-address-p-between-special2
+;;     ;; x86isa::canonical-address-p-between-special3
+;;     ;; x86isa::canonical-address-p-between-special4
+;;     x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
+;;     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+;;     ;; x86isa::member-p-canonical-address-listp
+;;     ;; x86isa::true-listp-create-canonical-address-list
+;;     ;; x86isa::len-of-create-canonical-address-list
+;;     x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+;;     x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
+;;     ;; x86isa::subset-p-two-create-canonical-address-lists-same-base-address
+;;     x86isa::canonical-address-p-of-logext-64
+;;     ;; x86isa::no-duplicates-p-create-canonical-address-list
+;;     ;; x86isa::not-member-p-canonical-address-listp-when-disjoint-p
+;;     ;; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
+;;     ;; <-when-canonical-address-p
+;;     ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
+;;     x86isa::write-canonical-address-to-memory
+;;     ;; x86isa::canonical-address-listp-of-cdr
+;;     ;; x86isa::car-create-canonical-address-list
+;;     ;; x86isa::cdr-create-canonical-address-list
+;;     ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+;;     ;; signed-byte-p-when-between-canonical-addresses
+;;     x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
+;;     ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
+;;     logext-64-of-+-when-canonical-and-canonical
+;;     ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
+;;     ;; canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
+;;     ;; canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
+;;     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
+;;     x86isa::canonical-address-p-of-i48
+;;     x86isa::i48-when-canonical-address-p
+;;     ;; x86isa::canonical-address-p-of-if
+;;     acl2::logext-of-bvplus-64 ; new, to get rid of bvplus
+;;     ))
+
+(defund unsigned-canonical-rules ()
+  (declare (xargs :guard t))
+  '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
+    ;; canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop-strong ; todo: consider this
+
+    unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
+    unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt ; calls STP ; todo: consider going to STP from in-regionp (only when nothing else works)
+    unsigned-canonical-address-p-smt ; calls SMT on the address expression
+
+    canonical-regionp-of-+-arg2 ; todo: general convert rule?
+
+    unsigned-canonical-address-p-of-bvif ; lifts the if ; todo: go to boolif?
+    unsigned-canonical-address-p-of-if ; lifts the if ; todo: go to boolif?
+    unsigned-canonical-address-p-of-bvsx-64-48 ; always true
+    unsigned-canonical-address-p-of-bvchop
+    unsigned-canonical-address-p-constant-opener
+    unsigned-canonical-address-p-of-+-when-small
+    unsigned-canonical-address-p-of-bvplus-when-small
+
+    bvsx-64-48-of-bvplus-48-when-unsigned-canonical-address-p
+    write-of-logext-arg2 ; move? use a general trim rule?
+    acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
+    bvsx-when-unsigned-canonical-address-p))
+
+(defund canonical-rules-bv ()
+  (declare (xargs :guard t))
+  '(
+    ;; these are for the full, 64-bit address space:
+    ;; WARNING: Keep in sync with the list for 48 bits above
+    in-region64p-of-bvchop-arg1
+    in-region64p-of-bvchop-arg3
+    in-region64p-of-bvsx-arg1
+    in-region64p-of-bvsx-arg3
+    in-region64p-same
+    in-region64p-cancel-constants-1-1+
+    in-region64p-cancel-constants-1+-1
+    in-region64p-cancel-constants-1+-1+
+    in-region64p-cancel-1-1+
+    in-region64p-cancel-1+-1
+    in-region64p-cancel-1+-1+
+    in-region64p-cancel-1-2
+    in-region64p-cancel-2-1
+    in-region64p-cancel-2+-1
+    in-region64p-cancel-1+-2
+    in-region64p-cancel-2-1+
+    in-region64p-cancel-2+-1
+    in-region64p-cancel-1-3
+    in-region64p-cancel-3-1
+    in-region64p-cancel-2-2
+    in-region64p-when-non-negative-and-negative-range
+    in-region64p-of-0-arg3 ; introduces bvlt
+    in-region64p-of-+-arg1
+    in-region64p-of-+-arg3
+
+    subregion64p-constant-opener
+    in-region64p-constant-opener
+    disjoint-regions64p-constant-opener
+
+    ;; some of these might become unnecesary after we switch to hiding the signed values
+    ;x86isa::add-to-*ip-of-*64-bit-mode*-safe
+    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ; could generalize
+    ;;acl2::logext-of-plus-of-logext
+    ;;write-of-logext-arg2
+    ;;set-rip-of-+-of-logext
+    set-rip-of-+-of-bvplus
+    set-rip-of-+-of-logext
+    ;;x86isa::logext-48-does-nothing-when-canonical-address-p
+    acl2::bvplus-of-logext-arg3-convert-to-bv ; crucial
+    acl2::bvsx-convert-arg3-to-bv-axe ; crucial
+
+    x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
 
+;use in lifter-rules-common?
+(defund zmm-rules-common ()
+  (declare (xargs :guard t))
+  '(zmmi-becomes-zmm
+    xr-becomes-zmm
+
+    zmm-of-set-flag
+    zmm-of-!rflags
+    zmm-of-set-mxcsr
+    zmm-of-set-undef
+    ;; zmm-of-write-byte
+    zmm-of-write
+    ;; zmm-of-write-bytes
+
+    xw-becomes-set-zmm
+    !zmmi-becomes-set-zmm
+
+    zmm-of-set-zmm-same
+    zmm-of-set-zmm-diff
+
+    64-bit-modep-of-set-zmm
+    alignment-checking-enabled-p-of-set-zmm
+    app-view-of-set-zmm
+    ctri-of-set-zmm
+    fault-of-set-zmm
+    get-flag-of-set-zmm
+    ms-of-set-zmm
+    mxcsr-of-set-zmm
+    undef-of-set-zmm
+    x86p-of-set-zmm
+
+    set-zmm-of-set-zmm-same
+    set-zmm-of-set-zmm-diff-constant-version
+
+    set-flag-of-set-zmm
+    !rflags-of-set-zmm
+    set-undef-of-set-zmm
+    set-mxcsr-of-set-zmm
+
+    part-install-width-low-of-zmm-becomes-bvcat))
+
+(defund zmm-rules64 ()
+  (declare (xargs :guard t))
+  (append '(zmm-of-set-rip
+            zmm-of-set-rax
+            zmm-of-set-rbx
+            zmm-of-set-rcx
+            zmm-of-set-rdx
+            zmm-of-set-rsi
+            zmm-of-set-rdi
+            zmm-of-set-r8
+            zmm-of-set-r9
+            zmm-of-set-r10
+            zmm-of-set-r11
+            zmm-of-set-r12
+            zmm-of-set-r13
+            zmm-of-set-r14
+            zmm-of-set-r15
+            zmm-of-set-rsp
+            zmm-of-set-rbp
+
+            rip-of-set-zmm
+            rax-of-set-zmm
+            rbx-of-set-zmm
+            rcx-of-set-zmm
+            rdx-of-set-zmm
+            rsi-of-set-zmm
+            rdi-of-set-zmm
+            r8-of-set-zmm
+            r9-of-set-zmm
+            r10-of-set-zmm
+            r11-of-set-zmm
+            r12-of-set-zmm
+            r13-of-set-zmm
+            r14-of-set-zmm
+            r15-of-set-zmm
+            rsp-of-set-zmm
+            rbp-of-set-zmm
+
+            ;; read-byte-of-set-zmm ; needed?
+            read-of-set-zmm
+            ;; read-bytes-of-set-zmm ; needed?
+
+            set-zmm-of-set-rip
+            set-zmm-of-set-rax
+            set-zmm-of-set-rbx
+            set-zmm-of-set-rcx
+            set-zmm-of-set-rdx
+            set-zmm-of-set-rsi
+            set-zmm-of-set-rdi
+            set-zmm-of-set-r8
+            set-zmm-of-set-r9
+            set-zmm-of-set-r10
+            set-zmm-of-set-r11
+            set-zmm-of-set-r12
+            set-zmm-of-set-r13
+            set-zmm-of-set-r14
+            set-zmm-of-set-r15
+            set-zmm-of-set-rbp
+            set-zmm-of-set-rsp
+
+            write-of-set-zmm)
+          (zmm-rules-common)))
+
+(defund zmm-rules32 ()
+  (declare (xargs :guard t))
+  ;; for now (eventually keep zmm and make rules like the rules have for eax in 32-bit mode):
+  '(zmmi   ; exposes zmmi$a
+    zmmi$a ; exposes xr
+
+    !zmmi   ; exposes !zmmi$a
+    !zmmi$a ; exposes xw
+    )
+  ;; (append '(zmm-of-set-rax
+  ;;           zmm-of-set-rbx
+  ;;           zmm-of-set-rcx
+  ;;           zmm-of-set-rdx
+  ;;           zmm-of-set-rip)
+  ;;         (zmm-rules-common))
+  )
+
+;move
+(defund acl2::ash-rules ()
+  (declare (xargs :guard t))
+  '(acl2::ash-negative-becomes-slice-axe
+    acl2::ash-of-0-arg1
+    acl2::ash-of-0-arg2
+    common-lisp::ash-constant-opener ; acl2::open-ash-positive-constants
+    acl2::bvchop-of-ash-left-shift
+    acl2::integerp-of-ash))
+
+;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
-(defun lifter-rules-common ()
+(defund lifter-rules-common ()
   (declare (xargs :guard t))
-  (append (symbolic-execution-rules)
-          (read-over-write-rules) ; todo: don't use all these
+  (append (read-over-write-rules-common) ; todo: don't use all these?
           (shadowed-write-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (read-write-set-flag-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
           ;; trying these, though they are not yet as clean as they could be:
-          (acl2::trim-rules)
-          (acl2::trim-helper-rules)
+          ;; (acl2::trim-rules) ;; without these, float-macho-64 is not as nice (but better safe trim rules may help with that (e.g., when both branches of a bvif are safe to trim))
           (acl2::unsigned-byte-p-rules)
           (constant-opener-rules)
           (simple-opener-rules)
@@ -1728,19 +2302,20 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
-          (separate-rules)
+          ;; (separate-rules) ; todo: don't always use these
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
           (logops-rules)
           (acl2::bv-of-logext-rules)
+          (acl2::ash-rules)
           (arith-to-bv-rules)
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (if-lifting-rules)
-          (acl2::convert-to-bv-rules)
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           '(acl2::boolor-of-non-nil)
           (segment-base-and-bounds-rules-general)
           (float-rules)
@@ -1748,12 +2323,20 @@
           (acl2::bvif-rules)
           (bitops-rules)
           (acl2::if-becomes-bvif-rules)
+          '(acl2::if-becomes-bvif-1-axe
+            acl2::if-becomes-bvif-2-axe
+            acl2::if-becomes-bvif-3-axe
+            acl2::if-becomes-bvif-4-axe)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
+          '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
           *signed-recognizers* ;; these are just signed-byte-p
-          '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
+          '(acl2::boolif-of-if-arg1
+            acl2::boolif-of-if-arg2
+            acl2::boolif-of-if-arg3
+            ;; It would be nice if all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
             ;; xw-of-rflags-and-set-flag
@@ -1813,8 +2396,6 @@
 
             poor-mans-quotep-constant-opener
 
-            booleanp-of-canonical-address-p
-
             the-check
             ;; get-prefixes:
             ;; todo: drop these if we are no longer using xw:
@@ -1824,36 +2405,19 @@
 
             ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
-            x86isa::canonical-address-p-of-logext-48
-            x86isa::logext-48-does-nothing-when-canonical-address-p
-
-;            x86isa::create-canonical-address-list-1
-
-;            x86isa::canonical-address-listp-of-cons
-;            x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
-;            x86isa::member-p-of-create-canonical-address-list-same
-;            x86isa::canonical-address-listp-create-canonical-address-list
-;            x86isa::pos-and-create-canonical-address-list
-
             inverse-of-+
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-;            x86isa::car-create-canonical-address-list
-            x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
-            ;;will axe try all free variable matches?
-            ;; x86isa::canonical-address-p-between-special1
-            ;; x86isa::canonical-address-p-between-special2
-            ;; x86isa::canonical-address-p-between-special3
-            ;; x86isa::canonical-address-p-between-special4
-            x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
+            ;; some of these can be needed for x86isa::canonical-address-p-between: ; move to canonical-rules-non-bv?
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
             acl2::<-of-+-cancel-second-of-more-and-only ; more? rename
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
+            acl2::<-of-+-cancel-1-3
             acl2::<-of-+-cancel-3-1
 
             acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness ; todo: make these 3 names more similar?
@@ -1862,10 +2426,11 @@
 
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
-            x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
-;            x86isa::member-p-canonical-address-listp
+            acl2::integerp-when-signed-byte-p
+
+            ;; acl2::acl2-numberp-when-signed-byte-p
+
             acl2::fold-consts-in-+
-            acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
@@ -1885,21 +2450,18 @@
             ;;x86isa::xr-xw-intra-array-field
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
-            x86isa::program-at-xw-in-app-view
+            ;; x86isa::program-at-xw-in-app-view
             ;x86isa::xr-wb
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             ;x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
-;            x86isa::true-listp-create-canonical-address-list
-;            x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
-            x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+
             ;x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
             x86isa::x86-operand-to-reg/mem         ;shilpi leaves this enabled
             x86isa::mv-nth-becomes-nth-when-constants
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             acl2::distributivity-of-minus-over-+
             acl2::commutativity-2-of-+-when-constant
 
@@ -1915,19 +2477,14 @@
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
-            acl2::ash-of-0
-            ;acl2::fix-when-acl2-numberp
-            ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
+            ;acl2::acl2-numberp-of-+
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-undef
 
             ;; x86isa::rb-wb-disjoint-eric
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             ;; x86isa::rb-wb-subset
-;            x86isa::subset-p-two-create-canonical-address-lists-same-base-address
-            x86isa::canonical-address-p-of-logext-64
             ;;x86isa::xw-xw-intra-array-field-shadow-writes
             ;;x86isa::xw-xw-intra-simple-field-shadow-writes
             x86isa::xw-xw-shadow-writes
@@ -1935,15 +2492,15 @@
             x86isa::xw-xw-intra-field-arrange-writes ;axe puts in a loop-stopper hyp
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
-;            x86isa::no-duplicates-p-create-canonical-address-list
             ;acl2::slice-becomes-bvchop
             ;acl2::bvchop-of-bvchop
             ;acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
-            acl2::open-ash-positive-constants
             acl2::logext-of-bvchop-same
             acl2::logext-identity
+            acl2::logext-of-+-of-logext-arg1
+            acl2::logext-of-+-of-logext-arg2
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
@@ -1961,7 +2518,7 @@
             ;; x86isa::program-at-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
-            acl2::getbit-of-slice-both
+            acl2::getbit-of-slice-gen
 
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
@@ -1975,24 +2532,15 @@
 
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
-;            x86isa::not-member-p-canonical-address-listp-when-disjoint-p
-; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
-;<-when-canonical-address-p
 
             ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
-            x86isa::write-canonical-address-to-memory
-;            x86isa::canonical-address-listp-of-cdr
-;            x86isa::car-create-canonical-address-list
-;            x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
             x86isa::if-of-xr-app-view
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
 
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
@@ -2000,19 +2548,13 @@
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
 
-;signed-byte-p-when-between-canonical-addresses
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
 
             x86isa::<-of-logext-and-+-of-constant
-            x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-            ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
-            x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
             x86isa::undef-flg$notinline
@@ -2024,7 +2566,6 @@
             ;x86isa::wb-xw-in-app-view
 
             ;acl2::bvchop-of-bvmult
-            acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
             acl2::natp-of-nfix
@@ -2032,26 +2573,21 @@
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
 
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
-            acl2::bvplus-of-unary-minus
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
             x86isa::elem-p-of-xr-rflags ; unsigned-byte-p-32-of-rflags
              ;targets unsigned-byte-p-of-rflags
-;                    acl2::bvcat-trim-arg4-axe-all
- ;                   acl2::bvcat-trim-arg2-axe-all
+            ;; acl2::bvcat-trim-arg4-axe-all
+            ;; acl2::bvcat-trim-arg2-axe-all
 
             ;x86isa::64-bit-modep-of-mv-nth-1-of-wb
 
             ;;todo: include all of the lifter rules:
-            x86isa::canonical-address-p-of-i48
-            x86isa::i48-when-canonical-address-p
+
             x86isa::select-address-size$inline
-            ;x86isa::canonical-address-p-of-if
 
             cf-spec64-when-unsigned-byte-p
 
@@ -2173,6 +2709,7 @@
             ;acl2::bvplus-trim-leading-constant
             ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
+            acl2::bvchop-subst-constant-alt
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
             gl::gl-mbe-fn ;used by bitops.  yuck.
@@ -2203,7 +2740,16 @@
             x86isa::!ms ; todo: use set-ms?
             x86isa::!ms$a
 
-            acl2::bv-array-read-shorten-axe
+            acl2::bv-array-read-shorten-axe ; i suppose this could lead to making several arrays, each with the same prefix...
+            ;; these can discard bytes from large executable segments:
+            acl2::bv-array-read-shorten-when-bvlt
+            acl2::bv-array-read-shorten-when-not-bvlt
+
+            acl2::bv-array-read-convert-arg3-to-bv-axe
+            ;;acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
+            ;;acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
+
+
             acl2::integerp-of-if-strong
 
             x86isa::feature-flags-constant-opener  ; move
@@ -2223,9 +2769,11 @@
 
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
+            ;; these are only for SSE?
             xmmi-size$inline ; dispatches to rx32, etc
-            !xmmi-size$inline ; dispatched to wx32, etc
+            !xmmi-size$inline ; dispatches to wx32, etc
 
+            ;; these are for AVX, etc?
             zmmi-size$inline ; dispatches to rz32, etc
             !zmmi-size$inline ; dispatches to wz32, etc
 
@@ -2249,15 +2797,8 @@
             wz256$inline
             wz512$inline
 
-            zmmi ; exposes zmmi$a
-            zmmi$a ; exposes xr
-
-            !zmmi ; exposes !zmmi$a
-            !zmmi$a ; exposes xw
-
             x86isa::x86-operand-to-zmm/mem
 
-            acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
 
             ;; See books/projects/x86isa/utils/basic-structs.lisp
@@ -2306,7 +2847,17 @@
             40bits-fix
             45bits-fix
             54bits-fix
-            64bits-fix)))
+            64bits-fix
+
+            ;; maybe eventually remove, but needed for the loop lifter (at least remove other mentions)
+            ;; x86isa::integerp-when-canonical-address-p-cheap
+
+            ;; x86isa::canonical-address-p-of-rip ; needed for loop-lifter, at least
+
+            ;; these seemed to break things - todo: why?
+            ;; acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            ;; acl2::signed-byte-p-of-+-of---becomes-bv-claim ; todo: alt version?
+            )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -2318,125 +2869,25 @@
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
-;; Used in both versions of the lifter
-;; TODO: Split into 32-bit and 64-bit rules:
-(defun assumption-simplification-rules ()
-  (declare (xargs :guard t))
-  (append
-   '(standard-state-assumption
-     standard-state-assumption-32
-     standard-assumptions-core-64
-     standard-state-assumption-64
-     standard-assumptions-mach-o-64
-     standard-assumptions-elf-64
-     standard-assumptions-pe-64
-     bytes-loaded-at-address-64
-     ;; Mach-O stuff:
-     acl2::get-mach-o-code
-     acl2::subroutine-address-mach-o
-     acl2::get-mach-o-symbol-table
-     acl2::get-mach-o-code-address
-     acl2::get-mach-o-section-base-1
-     acl2::get-mach-o-section-base-2
-     acl2::get-mach-o-section-unroll
-     acl2::get-mach-o-segment-base-1
-     acl2::get-mach-o-segment-base-2
-     acl2::get-mach-o-segment-unroll-1
-     acl2::get-mach-o-segment-unroll-2
-     acl2::get-symbol-entry-mach-o-base-1
-     acl2::get-symbol-entry-mach-o-base-2
-     acl2::get-symbol-entry-mach-o-unroll
-     acl2::get-text-section-number-mach-o
-     acl2::get-all-sections-from-mach-o
-     acl2::get-all-sections-from-mach-o-load-commands-base
-     acl2::get-all-sections-from-mach-o-load-commands-unroll
-     acl2::get-all-sections-from-mach-o-load-command
-     acl2::get-section-number-mach-o
-     acl2::get-section-number-mach-o-aux-base-1
-     acl2::get-section-number-mach-o-aux-base-2
-     acl2::get-section-number-mach-o-aux-unroll
-     acl2::get-mach-o-load-command-base-1
-     acl2::get-mach-o-load-command-base-2
-     acl2::get-mach-o-load-command-unroll
-     ;; PE stuff:
-     acl2::get-pe-sections
-     acl2::get-pe-section
-     acl2::get-pe-text-section
-     acl2::get-pe-section-info-bytes
-     acl2::get-pe-text-section-bytes
-     acl2::get-pe-section-aux-base-1
-     acl2::get-pe-section-aux-base-2
-     acl2::get-pe-section-aux-unroll
-     acl2::lookup-pe-symbol-base-1
-     acl2::lookup-pe-symbol-base-2
-     acl2::lookup-pe-symbol-unroll
-     acl2::subroutine-address-within-text-section-pe-64
-     ;; ELF stuff:
-     lookup-equal-safe
-     acl2::subroutine-address-elf
-     acl2::parsed-elf-symbol-table
-     acl2::get-elf-section-address
-     acl2::get-elf-section-bytes
-     acl2::get-elf-code
-     acl2::get-elf-code-address
-     acl2::get-elf-section-header-base-1
-     acl2::get-elf-section-header-base-2
-     acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address
-     acl2::get-elf-symbol-address-aux-base-1
-     acl2::get-elf-symbol-address-aux-base-2
-     acl2::get-elf-symbol-address-aux-unroll
 
-     acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
-     acl2::mv-nth-of-if
-     acl2::mv-nth-of-cons-safe
-     x86isa::canonical-address-p-of-if
-     the-check
-     lookup-eq-safe
-     eql ; just include base-rules?
-     acl2::+-commutative-axe
-     unicity-of-0
-     ;; all-addreses-of-stack-slots
-
-     rgfi rgfi$a ;expose xr -- why?  shouldn't we then turn these into get-rax, set-rax, etc?  we could use the (get-register-intro-rules64) but only for the non-loop-lifter
-     x86isa::integerp-of-xr-rgf ; drop if we are not using this normal form?
-     x86isa::fix-of-xr-rgf-4 ; drop if we are not using this normal form?
-
-     x86isa::canonical-address-p$inline-constant-opener
-     addresses-of-subsequent-stack-slots
-     ;; addresses-of-subsequent-stack-slots-aux-base
-     ;; addresses-of-subsequent-stack-slots-aux-unroll
-     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux ; seems needed, for assumption simplification
-     x86isa::canonical-address-listp-of-cons
-     x86isa::canonical-address-p-between-special1
-     x86isa::canonical-address-p-between-special2
-     x86isa::canonical-address-p-between-special3
-     acl2::fold-consts-in-+
-     x86isa::canonical-address-listp-of-nil
-     acl2::integerp-of-+-when-integerp-1-cheap
-     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
-     acl2::fix-when-integerp
-     acl2::equal-same)
-   (acl2::lookup-rules)))
-
-;move?
-;todo: most of these are not myif rules
-;; only used in loop-lifter
-(defun myif-rules ()
-  (declare (xargs :guard t))
-  (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-of-t-and-nil-when-booleanp
-            acl2::myif-nil-t
-            ;; acl2::boolif-of-nil-and-t ;redundant?
-            )
-          (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y-becomes-boolor
-          ;; acl2::boolif-x-y-x-becomes-booland
-          ;; acl2::boolif-same-branches
-          ;; acl2::boolif-when-quotep-arg1
-          ;; acl2::boolif-when-quotep-arg2
-          ;; acl2::boolif-when-quotep-arg3)
-          ))
+;; ;move?
+;; ;todo: most of these are not myif rules
+;; ;; only used in loop-lifter
+;; (defund myif-rules ()
+;;   (declare (xargs :guard t))
+;;   (append '(acl2::myif-same-branches ;add to lifter-rules?
+;;             acl2::myif-of-t-and-nil-when-booleanp
+;;             acl2::myif-nil-t
+;;             ;; acl2::boolif-of-nil-and-t ;redundant?
+;;             )
+;;           (acl2::boolean-rules)
+;;           ;; '(acl2::boolif-x-x-y-becomes-boolor
+;;           ;; acl2::boolif-x-y-x-becomes-booland
+;;           ;; acl2::boolif-same-branches
+;;           ;; acl2::boolif-when-quotep-arg1
+;;           ;; acl2::boolif-when-quotep-arg2
+;;           ;; acl2::boolif-when-quotep-arg3)
+;;           ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2460,14 +2911,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Used in loop-lifter (old normal form) and unroller (new normal form)
 ;; todo: move some of these to lifter-rules-common
-(defun lifter-rules32 ()
+(defund lifter-rules32 ()
   (declare (xargs :guard t))
   (set-difference-equal
    (append (lifter-rules-common)
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
            (step-opener-rules32)
+           (zmm-rules32)
           '(;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple-32
@@ -2485,7 +2938,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
+            ;; acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -2516,13 +2969,6 @@
             data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
-            data-segment-writeable-bit-of-set-eip
-            data-segment-writeable-bit-of-set-eax
-            data-segment-writeable-bit-of-set-ebx
-            data-segment-writeable-bit-of-set-ecx
-            data-segment-writeable-bit-of-set-edx
-            data-segment-writeable-bit-of-set-esp
-            data-segment-writeable-bit-of-set-ebp
 
             code-segment-descriptor-attributesbits->r-of-bvchop
             data-segment-descriptor-attributesbits->w-of-bvchop
@@ -2559,7 +3005,7 @@
      acl2::bvminus-of-+-arg2
      acl2::bvminus-of-+-arg3)))
 
-(defun new-memory-rules32 ()
+(defund new-memory-rules32 ()
   (declare (xargs :guard t))
   '(;; Rules to introduce read-from-segment:
     mv-nth-1-of-rme08-becomes-read-from-segment
@@ -2571,10 +3017,11 @@
     mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
 ;    read-of-mv-nth-1-of-ea-to-la-becomes-read-from-segment
 
-    ;; Type rules for read-from-segment:
+    ;; Type rules, etc for read-from-segment:
     read-from-segment-not-negative
     unsigned-byte-p-of-read-from-segment
     integerp-of-read-from-segment
+    slice-of-read-from-segment-too-high
 
     ;; Read-over-write rules for read-from-segment:
     read-from-segment-of-write-to-segment-same
@@ -2587,6 +3034,12 @@
     read-from-segment-of-set-edx
     read-from-segment-of-set-esp
     read-from-segment-of-set-ebp
+    read-from-segment-of-set-rax-high
+    read-from-segment-of-set-rbx-high
+    read-from-segment-of-set-rcx-high
+    read-from-segment-of-set-rdx-high
+    read-from-segment-of-set-rsp-high
+    read-from-segment-of-set-rbp-high
     read-from-segment-of-xw
     read-from-segment-of-set-flag
     read-from-segment-of-set-undef
@@ -2594,6 +3047,9 @@
     ;; read-from-segment-of-set-ms
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
+
+    ;; write-to-segment-of-bvchop ; todo: rename and uncomment here
+    write-to-segment-of-bvchop-arg4
 
     write-to-segment-of-write-to-segment-same
     write-to-segment-of-write-to-segment-diff-axe
@@ -2667,6 +3123,12 @@
     read-byte-from-segment-of-set-edx
     read-byte-from-segment-of-set-esp
     read-byte-from-segment-of-set-ebp
+    read-byte-from-segment-of-set-rax-high
+    read-byte-from-segment-of-set-rbx-high
+    read-byte-from-segment-of-set-rcx-high
+    read-byte-from-segment-of-set-rdx-high
+    read-byte-from-segment-of-set-rsp-high
+    read-byte-from-segment-of-set-rbp-high
     read-byte-from-segment-of-set-flag
     read-byte-from-segment-of-set-undef
     read-byte-from-segment-of-set-mxcsr
@@ -2698,9 +3160,14 @@
     write-to-segment-of-write-to-segment-included
     ))
 
+;; The new normal form uses:
+;; EAX, etc.
+;; SET-EAX, etc.
+;; RAX-HIGH, etc. (these should go away)
+;; what else?
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 ;; todo: restrict this to memory stuff?
-(defun new-normal-form-rules32 ()
+(defund new-normal-form-rules32 ()
   (declare (xargs :guard t))
   (append
   '(;; Introduce register writers:
@@ -2710,12 +3177,46 @@
     xw-becomes-set-edx
     xw-becomes-set-esp
     xw-becomes-set-ebp
+    set-rax-high-of-bvchop
+    set-rbx-high-of-bvchop
+    set-rcx-high-of-bvchop
+    set-rdx-high-of-bvchop
+    set-rsp-high-of-bvchop
+    set-rbp-high-of-bvchop
+    set-rax-high-does-nothing
+    set-rbx-high-does-nothing
+    set-rcx-high-does-nothing
+    set-rdx-high-does-nothing
+    set-rsp-high-does-nothing
+    set-rbp-high-does-nothing
 
-    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
-    read-*ip-becomes-eip
+    rax-high-of-write-byte-to-segment
+    rbx-high-of-write-byte-to-segment
+    rcx-high-of-write-byte-to-segment
+    rdx-high-of-write-byte-to-segment
+    rsp-high-of-write-byte-to-segment
+    rbp-high-of-write-byte-to-segment
+
+    rax-high-of-write-to-segment
+    rbx-high-of-write-to-segment
+    rcx-high-of-write-to-segment
+    rdx-high-of-write-to-segment
+    rsp-high-of-write-to-segment
+    rbp-high-of-write-to-segment
+
+    ;; rax-high-of-write-bytes-to-segment
+    ;; rbx-high-of-write-bytes-to-segment
+    ;; rcx-high-of-write-bytes-to-segment
+    ;; rdx-high-of-write-bytes-to-segment
+    ;; rsp-high-of-write-bytes-to-segment
+    ;; rbp-high-of-write-bytes-to-segment
+
+    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning -- eip now returns a u32)
     xr-becomes-eip
     rip-becomes-eip
+    read-*ip-becomes-eip
 
+    ;; Introduce set-eip
     xw-becomes-set-eip
     !rip-becomes-set-eip
 
@@ -2727,6 +3228,20 @@
     xr-becomes-ebp
     xr-becomes-esp
 
+    data-segment-writeable-bit-of-set-eip
+    data-segment-writeable-bit-of-set-eax
+    data-segment-writeable-bit-of-set-ebx
+    data-segment-writeable-bit-of-set-ecx
+    data-segment-writeable-bit-of-set-edx
+    data-segment-writeable-bit-of-set-esp
+    data-segment-writeable-bit-of-set-ebp
+    data-segment-writeable-bit-of-set-rax-high
+    data-segment-writeable-bit-of-set-rbx-high
+    data-segment-writeable-bit-of-set-rcx-high
+    data-segment-writeable-bit-of-set-rdx-high
+    data-segment-writeable-bit-of-set-rsp-high
+    data-segment-writeable-bit-of-set-rbp-high
+
     get-flag-of-set-eip
     get-flag-of-set-eax
     get-flag-of-set-ebx
@@ -2734,6 +3249,12 @@
     get-flag-of-set-edx
     get-flag-of-set-esp
     get-flag-of-set-ebp
+    get-flag-of-set-rax-high
+    get-flag-of-set-rbx-high
+    get-flag-of-set-rcx-high
+    get-flag-of-set-rdx-high
+    get-flag-of-set-rsp-high
+    get-flag-of-set-rbp-high
 
     program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
@@ -2742,6 +3263,12 @@
     program-at-of-set-edx
     program-at-of-set-esp
     program-at-of-set-ebp
+    program-at-of-set-rax-high
+    program-at-of-set-rbx-high
+    program-at-of-set-rcx-high
+    program-at-of-set-rdx-high
+    program-at-of-set-rsp-high
+    program-at-of-set-rbp-high
 
     code-segment-readable-bit-of-set-eip
     code-segment-readable-bit-of-set-eax
@@ -2750,6 +3277,12 @@
     code-segment-readable-bit-of-set-edx
     code-segment-readable-bit-of-set-esp
     code-segment-readable-bit-of-set-ebp
+    code-segment-readable-bit-of-set-rax-high
+    code-segment-readable-bit-of-set-rbx-high
+    code-segment-readable-bit-of-set-rcx-high
+    code-segment-readable-bit-of-set-rdx-high
+    code-segment-readable-bit-of-set-rsp-high
+    code-segment-readable-bit-of-set-rbp-high
 
     acl2::bvchop-numeric-bound ; move
     acl2::fix-of-ifix ; move
@@ -2773,6 +3306,8 @@
     x86isa::rme08-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme08
     x86isa::rme16-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme16
 
+    ;xr-of-set-reg-high-irrel
+
     ;; Rules about EIP/SET-EIP:
     xw-of-set-eip-irrel
     xr-of-set-eip-irrel
@@ -2785,6 +3320,7 @@
     set-edx-of-set-eip
     set-esp-of-set-eip
     set-ebp-of-set-eip
+
     eip-of-set-eip
     eip-of-set-eax
     eip-of-set-ebx
@@ -2792,11 +3328,32 @@
     eip-of-set-edx
     eip-of-set-esp
     eip-of-set-ebp
+    eip-of-set-rax-high
+    eip-of-set-rbx-high
+    eip-of-set-rcx-high
+    eip-of-set-rdx-high
+    eip-of-set-rsp-high
+    eip-of-set-rbp-high
     eip-of-xw-irrel
 ;eip-of-xw-of-rip ;drop?
     not-mv-nth-0-of-add-to-*ip
 ;mv-nth-1-of-add-to-*ip
     mv-nth-1-of-add-to-*ip-gen
+
+    set-eax-of-bvchop
+    set-ebx-of-bvchop
+    set-ecx-of-bvchop
+    set-edx-of-bvchop
+    set-ebp-of-bvchop
+    set-esp-of-bvchop
+
+    set-eax-when-equal-eax ; could restrict to when the val is (eax x86)
+    set-ebx-when-equal-ebx
+    set-ecx-when-equal-ecx
+    set-edx-when-equal-edx
+    set-esp-when-equal-esp
+    set-ebp-when-equal-ebp
+    set-undef-of-undef-same-gen ; rename?  ; in case set-reg-high is inside the set-undef
 
     undef-of-set-eip
     undef-of-set-eax
@@ -2805,6 +3362,122 @@
     undef-of-set-edx
     undef-of-set-esp
     undef-of-set-ebp
+    undef-of-set-rax-high
+    undef-of-set-rbx-high
+    undef-of-set-rcx-high
+    undef-of-set-rdx-high
+    undef-of-set-rsp-high
+    undef-of-set-rbp-high
+
+    set-rax-high-of-set-eax
+    set-rax-high-of-set-ebx
+    set-rax-high-of-set-ecx
+    set-rax-high-of-set-edx
+    set-rax-high-of-set-esp
+    set-rax-high-of-set-ebp
+
+    set-rbx-high-of-set-eax
+    set-rbx-high-of-set-ebx
+    set-rbx-high-of-set-ecx
+    set-rbx-high-of-set-edx
+    set-rbx-high-of-set-esp
+    set-rbx-high-of-set-ebp
+
+    set-rcx-high-of-set-eax
+    set-rcx-high-of-set-ebx
+    set-rcx-high-of-set-ecx
+    set-rcx-high-of-set-edx
+    set-rcx-high-of-set-esp
+    set-rcx-high-of-set-ebp
+
+    set-rdx-high-of-set-eax
+    set-rdx-high-of-set-ebx
+    set-rdx-high-of-set-ecx
+    set-rdx-high-of-set-edx
+    set-rdx-high-of-set-esp
+    set-rdx-high-of-set-ebp
+
+    set-rsp-high-of-set-eax
+    set-rsp-high-of-set-ebx
+    set-rsp-high-of-set-ecx
+    set-rsp-high-of-set-edx
+    set-rsp-high-of-set-esp
+    set-rsp-high-of-set-ebp
+
+    set-rbp-high-of-set-eax
+    set-rbp-high-of-set-ebx
+    set-rbp-high-of-set-ecx
+    set-rbp-high-of-set-edx
+    set-rbp-high-of-set-esp
+    set-rbp-high-of-set-ebp
+
+    set-rax-high-of-set-eip
+    set-rbx-high-of-set-eip
+    set-rcx-high-of-set-eip
+    set-rdx-high-of-set-eip
+    set-rsp-high-of-set-eip
+    set-rbp-high-of-set-eip
+
+    set-rax-high-of-set-eax
+    set-rax-high-of-set-ebx
+    set-rax-high-of-set-ecx
+    set-rax-high-of-set-edx
+    set-rax-high-of-set-esp
+    set-rax-high-of-set-ebp
+    set-rbx-high-of-set-eax
+    set-rbx-high-of-set-ebx
+    set-rbx-high-of-set-ecx
+    set-rbx-high-of-set-edx
+    set-rbx-high-of-set-esp
+    set-rbx-high-of-set-ebp
+    set-rcx-high-of-set-eax
+    set-rcx-high-of-set-ebx
+    set-rcx-high-of-set-ecx
+    set-rcx-high-of-set-edx
+    set-rcx-high-of-set-esp
+    set-rcx-high-of-set-ebp
+    set-rdx-high-of-set-eax
+    set-rdx-high-of-set-ebx
+    set-rdx-high-of-set-ecx
+    set-rdx-high-of-set-edx
+    set-rdx-high-of-set-esp
+    set-rdx-high-of-set-ebp
+    set-rsp-high-of-set-eax
+    set-rsp-high-of-set-ebx
+    set-rsp-high-of-set-ecx
+    set-rsp-high-of-set-edx
+    set-rsp-high-of-set-esp
+    set-rsp-high-of-set-ebp
+    set-rbp-high-of-set-eax
+    set-rbp-high-of-set-ebx
+    set-rbp-high-of-set-ecx
+    set-rbp-high-of-set-edx
+    set-rbp-high-of-set-esp
+    set-rbp-high-of-set-ebp
+
+    set-rax-high-of-set-flag
+    set-rbx-high-of-set-flag
+    set-rcx-high-of-set-flag
+    set-rdx-high-of-set-flag
+    set-rsp-high-of-set-flag
+    set-rbp-high-of-set-flag
+
+    set-rax-high-of-!rflags
+    set-rbx-high-of-!rflags
+    set-rcx-high-of-!rflags
+    set-rdx-high-of-!rflags
+    set-rsp-high-of-!rflags
+    set-rbp-high-of-!rflags
+
+    set-rax-high-of-set-undef
+    set-rbx-high-of-set-undef
+    set-rcx-high-of-set-undef
+    set-rdx-high-of-set-undef
+    set-rsp-high-of-set-undef
+    set-rbp-high-of-set-undef
+
+    ;; set-reg-high-of-set-reg-high-same
+    ;; set-reg-high-of-set-reg-high-diff
 
     mxcsr-of-set-eip
     mxcsr-of-set-eax
@@ -2813,6 +3486,12 @@
     mxcsr-of-set-edx
     mxcsr-of-set-esp
     mxcsr-of-set-ebp
+    mxcsr-of-set-rax-high
+    mxcsr-of-set-rbx-high
+    mxcsr-of-set-rcx-high
+    mxcsr-of-set-rdx-high
+    mxcsr-of-set-rsp-high
+    mxcsr-of-set-rbp-high
 
     ms-of-set-eip
     ms-of-set-eax
@@ -2821,6 +3500,12 @@
     ms-of-set-edx
     ms-of-set-esp
     ms-of-set-ebp
+    ms-of-set-rax-high
+    ms-of-set-rbx-high
+    ms-of-set-rcx-high
+    ms-of-set-rdx-high
+    ms-of-set-rsp-high
+    ms-of-set-rbp-high
 
     fault-of-set-eip
     fault-of-set-eax
@@ -2829,6 +3514,12 @@
     fault-of-set-edx
     fault-of-set-esp
     fault-of-set-ebp
+    fault-of-set-rax-high
+    fault-of-set-rbx-high
+    fault-of-set-rcx-high
+    fault-of-set-rdx-high
+    fault-of-set-rsp-high
+    fault-of-set-rbp-high
 
     ;; bury set-undef deep in the term:
     set-undef-of-set-eip
@@ -2862,6 +3553,13 @@
     ;; edi-of-set-flag
     ;todo: more?
 
+    rax-high-of-set-flag
+    rbx-high-of-set-flag
+    rcx-high-of-set-flag
+    rdx-high-of-set-flag
+    rbp-high-of-set-flag
+    rsp-high-of-set-flag
+
     eax-of-set-undef
     ebx-of-set-undef
     ecx-of-set-undef
@@ -2872,6 +3570,13 @@
     ;; edi-of-set-undef
     ;todo: more?
 
+    rax-high-of-set-undef
+    rbx-high-of-set-undef
+    rcx-high-of-set-undef
+    rdx-high-of-set-undef
+    rbp-high-of-set-undef
+    rsp-high-of-set-undef
+
     eax-of-set-mxcsr
     ebx-of-set-mxcsr
     ecx-of-set-mxcsr
@@ -2881,6 +3586,13 @@
     ;; esi-of-set-mxcsr
     ;; edi-of-set-mxcsr
     ;todo: more?
+
+    rax-high-of-set-mxcsr
+    rbx-high-of-set-mxcsr
+    rcx-high-of-set-mxcsr
+    rdx-high-of-set-mxcsr
+    rbp-high-of-set-mxcsr
+    rsp-high-of-set-mxcsr
 
     ;; Rules about add-to-*sp
     not-mv-nth-0-of-add-to-*sp
@@ -2900,7 +3612,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
+    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop ; todo: involved in loops!
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
     natp-of-+-of-esp-lemma
@@ -2964,6 +3677,12 @@
     x86p-of-set-edx
     x86p-of-set-esp
     x86p-of-set-ebp
+    x86p-of-set-rax-high
+    x86p-of-set-rbx-high
+    x86p-of-set-rcx-high
+    x86p-of-set-rdx-high
+    x86p-of-set-rsp-high
+    x86p-of-set-rbp-high
 
     ;; Rules about segment-is-32-bitsp
     segment-is-32-bitsp-of-set-eip
@@ -2973,6 +3692,12 @@
     segment-is-32-bitsp-of-set-edx
     segment-is-32-bitsp-of-set-esp
     segment-is-32-bitsp-of-set-ebp
+    segment-is-32-bitsp-of-set-rax-high
+    segment-is-32-bitsp-of-set-rbx-high
+    segment-is-32-bitsp-of-set-rcx-high
+    segment-is-32-bitsp-of-set-rdx-high
+    segment-is-32-bitsp-of-set-rsp-high
+    segment-is-32-bitsp-of-set-rbp-high
     segment-is-32-bitsp-of-set-flag
     segment-is-32-bitsp-of-set-undef
     segment-is-32-bitsp-of-set-mxcsr
@@ -2986,6 +3711,12 @@
     32-bit-segment-size-of-set-edx
     32-bit-segment-size-of-set-esp
     32-bit-segment-size-of-set-ebp
+    32-bit-segment-size-of-set-rax-high
+    32-bit-segment-size-of-set-rbx-high
+    32-bit-segment-size-of-set-rcx-high
+    32-bit-segment-size-of-set-rdx-high
+    32-bit-segment-size-of-set-rsp-high
+    32-bit-segment-size-of-set-rbp-high
     32-bit-segment-size-of-set-flag
     32-bit-segment-size-of-set-undef
     32-bit-segment-size-of-set-mxcsr
@@ -2999,6 +3730,12 @@
     32-bit-segment-start-of-set-edx
     32-bit-segment-start-of-set-esp
     32-bit-segment-start-of-set-ebp
+    32-bit-segment-start-of-set-rax-high
+    32-bit-segment-start-of-set-rbx-high
+    32-bit-segment-start-of-set-rcx-high
+    32-bit-segment-start-of-set-rdx-high
+    32-bit-segment-start-of-set-rsp-high
+    32-bit-segment-start-of-set-rbp-high
     32-bit-segment-start-of-set-flag
     32-bit-segment-start-of-set-undef
     32-bit-segment-start-of-set-mxcsr
@@ -3012,6 +3749,12 @@
     segment-expand-down-bit-of-set-edx
     segment-expand-down-bit-of-set-esp
     segment-expand-down-bit-of-set-ebp
+    segment-expand-down-bit-of-set-rax-high
+    segment-expand-down-bit-of-set-rbx-high
+    segment-expand-down-bit-of-set-rcx-high
+    segment-expand-down-bit-of-set-rdx-high
+    segment-expand-down-bit-of-set-rsp-high
+    segment-expand-down-bit-of-set-rbp-high
     segment-expand-down-bit-of-set-flag
     segment-expand-down-bit-of-set-undef
     segment-expand-down-bit-of-set-mxcsr
@@ -3025,6 +3768,12 @@
     well-formed-32-bit-segmentp-of-set-edx
     well-formed-32-bit-segmentp-of-set-esp
     well-formed-32-bit-segmentp-of-set-ebp
+    well-formed-32-bit-segmentp-of-set-rax-high
+    well-formed-32-bit-segmentp-of-set-rbx-high
+    well-formed-32-bit-segmentp-of-set-rcx-high
+    well-formed-32-bit-segmentp-of-set-rdx-high
+    well-formed-32-bit-segmentp-of-set-rsp-high
+    well-formed-32-bit-segmentp-of-set-rbp-high
     well-formed-32-bit-segmentp-of-set-flag
     well-formed-32-bit-segmentp-of-set-undef
     well-formed-32-bit-segmentp-of-set-mxcsr
@@ -3038,6 +3787,12 @@
     segments-separate-of-set-edx
     segments-separate-of-set-esp
     segments-separate-of-set-ebp
+    segments-separate-of-set-rax-high
+    segments-separate-of-set-rbx-high
+    segments-separate-of-set-rcx-high
+    segments-separate-of-set-rdx-high
+    segments-separate-of-set-rsp-high
+    segments-separate-of-set-rbp-high
     segments-separate-of-set-flag
     segments-separate-of-set-undef
     segments-separate-of-set-mxcsr
@@ -3051,6 +3806,12 @@
     code-and-stack-segments-separate-of-set-edx
     code-and-stack-segments-separate-of-set-esp
     code-and-stack-segments-separate-of-set-ebp
+    code-and-stack-segments-separate-of-set-rax-high
+    code-and-stack-segments-separate-of-set-rbx-high
+    code-and-stack-segments-separate-of-set-rcx-high
+    code-and-stack-segments-separate-of-set-rdx-high
+    code-and-stack-segments-separate-of-set-rsp-high
+    code-and-stack-segments-separate-of-set-rbp-high
     code-and-stack-segments-separate-of-set-flag
     code-and-stack-segments-separate-of-set-undef
     code-and-stack-segments-separate-of-set-mxcsr
@@ -3064,6 +3825,12 @@
     alignment-checking-enabled-p-of-set-edx
     alignment-checking-enabled-p-of-set-esp
     alignment-checking-enabled-p-of-set-ebp
+    alignment-checking-enabled-p-of-set-rax-high
+    alignment-checking-enabled-p-of-set-rbx-high
+    alignment-checking-enabled-p-of-set-rcx-high
+    alignment-checking-enabled-p-of-set-rdx-high
+    alignment-checking-enabled-p-of-set-rsp-high
+    alignment-checking-enabled-p-of-set-rbp-high
 
     eax-of-set-ebx
     eax-of-set-ecx
@@ -3096,7 +3863,70 @@
     ebp-of-set-edx
     ebp-of-set-esp
 
+    eax-of-set-rbx-high
+    eax-of-set-rcx-high
+    eax-of-set-rdx-high
+    eax-of-set-rsp-high
+    eax-of-set-rbp-high
+    ebx-of-set-rax-high
+    ebx-of-set-rcx-high
+    ebx-of-set-rdx-high
+    ebx-of-set-rsp-high
+    ebx-of-set-rbp-high
+    ecx-of-set-rax-high
+    ecx-of-set-rbx-high
+    ecx-of-set-rdx-high
+    ecx-of-set-rsp-high
+    ecx-of-set-rbp-high
+    edx-of-set-rax-high
+    edx-of-set-rbx-high
+    edx-of-set-rcx-high
+    edx-of-set-rsp-high
+    edx-of-set-rbp-high
+    esp-of-set-rax-high
+    esp-of-set-rbx-high
+    esp-of-set-rcx-high
+    esp-of-set-rdx-high
+    esp-of-set-rbp-high
+    ebp-of-set-rax-high
+    ebp-of-set-rbx-high
+    ebp-of-set-rcx-high
+    ebp-of-set-rdx-high
+    ebp-of-set-rsp-high
+
+    rax-high-of-set-ebx
+    rax-high-of-set-ecx
+    rax-high-of-set-edx
+    rax-high-of-set-esp
+    rax-high-of-set-ebp
+    rbx-high-of-set-eax
+    rbx-high-of-set-ecx
+    rbx-high-of-set-edx
+    rbx-high-of-set-esp
+    rbx-high-of-set-ebp
+    rcx-high-of-set-eax
+    rcx-high-of-set-ebx
+    rcx-high-of-set-edx
+    rcx-high-of-set-esp
+    rcx-high-of-set-ebp
+    rdx-high-of-set-eax
+    rdx-high-of-set-ebx
+    rdx-high-of-set-ecx
+    rdx-high-of-set-esp
+    rdx-high-of-set-ebp
+    rsp-high-of-set-eax
+    rsp-high-of-set-ebx
+    rsp-high-of-set-ecx
+    rsp-high-of-set-edx
+    rsp-high-of-set-ebp
+    rbp-high-of-set-eax
+    rbp-high-of-set-ebx
+    rbp-high-of-set-ecx
+    rbp-high-of-set-edx
+    rbp-high-of-set-esp
+
     ;; Rules about esp
+    ;; esp-of-set-reg-high
     esp-of-set-eip
     esp-of-set-flag
     esp-of-set-undef
@@ -3113,6 +3943,12 @@
     64-bit-modep-of-set-edx
     64-bit-modep-of-set-esp
     64-bit-modep-of-set-ebp
+    64-bit-modep-of-set-rax-high
+    64-bit-modep-of-set-rbx-high
+    64-bit-modep-of-set-rcx-high
+    64-bit-modep-of-set-rdx-high
+    64-bit-modep-of-set-rsp-high
+    64-bit-modep-of-set-rbp-high
 
     ;; Rules about app-view
 
@@ -3123,6 +3959,12 @@
     app-view-of-set-edx
     app-view-of-set-esp
     app-view-of-set-ebp
+    app-view-of-set-rax-high
+    app-view-of-set-rbx-high
+    app-view-of-set-rcx-high
+    app-view-of-set-rdx-high
+    app-view-of-set-rsp-high
+    app-view-of-set-rbp-high
 
     ;; Rules about code-segment-well-formedp
     code-segment-well-formedp-of-xw ;; lets us drop most state updates
@@ -3133,6 +3975,12 @@
     code-segment-well-formedp-of-set-edx
     code-segment-well-formedp-of-set-esp
     code-segment-well-formedp-of-set-ebp
+    code-segment-well-formedp-of-set-rax-high
+    code-segment-well-formedp-of-set-rbx-high
+    code-segment-well-formedp-of-set-rcx-high
+    code-segment-well-formedp-of-set-rdx-high
+    code-segment-well-formedp-of-set-rsp-high
+    code-segment-well-formedp-of-set-rbp-high
     code-segment-well-formedp-of-set-flag
     code-segment-well-formedp-of-set-undef
     code-segment-well-formedp-of-set-mxcsr
@@ -3146,14 +3994,20 @@
     code-segment-assumptions32-for-code-of-set-edx
     code-segment-assumptions32-for-code-of-set-esp
     code-segment-assumptions32-for-code-of-set-ebp
+    code-segment-assumptions32-for-code-of-set-rax-high
+    code-segment-assumptions32-for-code-of-set-rbx-high
+    code-segment-assumptions32-for-code-of-set-rcx-high
+    code-segment-assumptions32-for-code-of-set-rdx-high
+    code-segment-assumptions32-for-code-of-set-rsp-high
+    code-segment-assumptions32-for-code-of-set-rbp-high
     code-segment-assumptions32-for-code-of-set-flag
     code-segment-assumptions32-for-code-of-set-undef
     code-segment-assumptions32-for-code-of-set-mxcsr
 
     unsigned-byte-p-of-+-of-esp
-    eff-addr-okp-of-+-of-esp-positive-offset
-    eff-addrs-okp-of-+-of-esp-positive-offset
-    eff-addrs-okp-of-+-of-esp-negative-offset
+    eff-addr-okp-of-+-of-esp-positive-offset ; todo: bv version
+    eff-addrs-okp-of-+-of-esp-positive-offset ; todo: bv version
+    eff-addrs-okp-of-+-of-esp-negative-offset ; todo: bv version
 
     eff-addrs-okp-of-esp
     sep-eff-addr-ranges ;; we leave this enabled, at least for now
@@ -3168,11 +4022,11 @@
     segments-separate-of-code-and-stack
     write-*ip-inline-becomes-xw
 
-    ;segment-min-eff-addr32-of-set-undef
-;segment-min-eff-addr32-of-set-eip ;drop?
-;segment-max-eff-addr32-of-set-eip ;drop?
+    ;;segment-min-eff-addr32-of-set-undef
+    ;;segment-min-eff-addr32-of-set-eip ;drop?
+    ;;segment-max-eff-addr32-of-set-eip ;drop?
 
-;    ea-to-la-of-set-eip
+    ;; ea-to-la-of-set-eip
 
     eff-addr-okp-of-xw-irrel
     eff-addr-okp-of-set-eip
@@ -3182,6 +4036,12 @@
     eff-addr-okp-of-set-edx
     eff-addr-okp-of-set-esp
     eff-addr-okp-of-set-ebp
+    eff-addr-okp-of-set-rax-high
+    eff-addr-okp-of-set-rbx-high
+    eff-addr-okp-of-set-rcx-high
+    eff-addr-okp-of-set-rdx-high
+    eff-addr-okp-of-set-rsp-high
+    eff-addr-okp-of-set-rbp-high
 
     eff-addrs-okp-of-xw-irrel
     eff-addrs-okp-of-set-flag
@@ -3194,6 +4054,12 @@
     eff-addrs-okp-of-set-edx
     eff-addrs-okp-of-set-esp
     eff-addrs-okp-of-set-ebp
+    eff-addrs-okp-of-set-rax-high
+    eff-addrs-okp-of-set-rbx-high
+    eff-addrs-okp-of-set-rcx-high
+    eff-addrs-okp-of-set-rdx-high
+    eff-addrs-okp-of-set-rsp-high
+    eff-addrs-okp-of-set-rbp-high
 
     eff-addrs-okp-of-1 ;simplifies to just eff-addr-okp
     segment-is-32-bitsp-intro-code
@@ -3214,6 +4080,7 @@
     set-flag-of-set-esp
     set-flag-of-set-ebp
 
+    ;; read of write of same register
     eax-of-set-eax
     ebx-of-set-ebx
     ecx-of-set-ecx
@@ -3221,11 +4088,27 @@
     esp-of-set-esp
     ebp-of-set-ebp
 
+    ;; eax-of-set-reg-high
     eax-of-set-eip
+    ;; ebx-of-set-reg-high
     ebx-of-set-eip
+    ;; ecx-of-set-reg-high
     ecx-of-set-eip
+    ;; edx-of-set-reg-high
     edx-of-set-eip
+    ;; ebp-of-set-reg-high
     ebp-of-set-eip
+    ;esp-of-set-eip
+
+    rax-high-of-set-eip
+    ;; ebx-of-set-reg-high
+    rbx-high-of-set-eip
+    ;; ecx-of-set-reg-high
+    rcx-high-of-set-eip
+    ;; edx-of-set-reg-high
+    rdx-high-of-set-eip
+    ;; ebp-of-set-reg-high
+    rbp-high-of-set-eip
     ;esp-of-set-eip
 
     set-ebx-of-set-eax
@@ -3244,19 +4127,42 @@
     set-ebp-of-set-edx
     set-ebp-of-set-esp
 
+    set-rbx-high-of-set-rax-high
+    set-rcx-high-of-set-rax-high
+    set-rdx-high-of-set-rax-high
+    set-rsp-high-of-set-rax-high
+    set-rbp-high-of-set-rax-high
+    set-rcx-high-of-set-rbx-high
+    set-rdx-high-of-set-rbx-high
+    set-rsp-high-of-set-rbx-high
+    set-rbp-high-of-set-rbx-high
+    set-rdx-high-of-set-rcx-high
+    set-rsp-high-of-set-rcx-high
+    set-rbp-high-of-set-rcx-high
+    set-rsp-high-of-set-rdx-high
+    set-rbp-high-of-set-rdx-high
+    set-rbp-high-of-set-rsp-high
+
     xr-of-set-eax
     xr-of-set-ebx
     xr-of-set-ecx
     xr-of-set-edx
     xr-of-set-esp
     xr-of-set-ebp
+    xr-of-set-rax-high
+    xr-of-set-rbx-high
+    xr-of-set-rcx-high
+    xr-of-set-rdx-high
+    xr-of-set-rsp-high
+    xr-of-set-rbp-high
 
-    xr-of-set-esp-same ;todo hack
-    xr-of-esp-and-set-eax
-    xr-of-esp-and-set-ebx
-    xr-of-esp-and-set-ecx
-    xr-of-esp-and-set-edx
-    xr-of-esp-and-set-ebp
+
+;    xr-of-set-esp-same ;todo hack
+    ;; xr-of-esp-and-set-eax
+    ;; xr-of-esp-and-set-ebx
+    ;; xr-of-esp-and-set-ecx
+    ;; xr-of-esp-and-set-edx
+    ;; xr-of-esp-and-set-ebp
 
     set-eax-of-set-eax
     set-ebx-of-set-ebx
@@ -3264,6 +4170,12 @@
     set-edx-of-set-edx
     set-esp-of-set-esp
     set-ebp-of-set-ebp
+    set-rax-high-of-set-rax-high
+    set-rbx-high-of-set-rbx-high
+    set-rcx-high-of-set-rcx-high
+    set-rdx-high-of-set-rdx-high
+    set-rsp-high-of-set-rsp-high
+    set-rbp-high-of-set-rbp-high
 
     segment-is-32-bitsp-of-if
     esp-of-if
@@ -3276,7 +4188,9 @@
     esp-of-xw
     ebp-of-xw
 
-    bvplus-of-constant-and-esp-when-overflow ; caused loops with turning + into bvplus
+    ;; would like to get rid of this (and use bvplus instead of +), but that will require BV versions of rules like eff-addrs-okp-of-+-of-esp-positive-offset.
+
+    bvplus-of-constant-and-esp-when-overflow ; todo: caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
     ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes eax.  TODO: Go directly
@@ -3307,8 +4221,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Used by the unroller and loop-lifter.
-(defun lifter-rules64 ()
+;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
+(defund lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
           (if-lowering-rules64)
@@ -3318,8 +4232,11 @@
           (write-rules)
           (read-and-write-rules)
           (segment-base-and-bounds-rules-64)
+          (zmm-rules64)
           '(read-byte-becomes-read ; (read-byte-rules) ; read-byte can come from read-bytes
-            len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
+            len-of-read-bytes nth-of-read-bytes ; read-bytes can come from an output-extractor
+            acl2::integerp-of-+ ; helps with nth-of-read-bytes
+            )
           (get-prefixes-rules64)
           (step-opener-rules64)
           '(;; todo move these to the new-normal-form lists:
@@ -3335,11 +4252,18 @@
             x86isa::write-*sp-when-64-bit-modep ; puts in !rgfi -- todo: go to set-rsp
             ;; todo: combine these:
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep)))
+            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
+            ;; todo: more like these?:
+            set-rip-of-bvchop
+            set-rip-of-logext
+            set-rip-of-bvif-split ; we must resolve the RIP to keep going
+            set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
+            acl2::bv-array-read-cases-opener
+            )))
 
-(defund new-normal-form-rules64 ()
+(defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))
-  '(;; these target xr-of-rgf:
+  '(;; these target xr-of-rgf and introduce RAX, etc:
     xr-becomes-rax
     xr-becomes-rbx
     xr-becomes-rcx
@@ -3357,85 +4281,82 @@
     xr-becomes-rsp
     xr-becomes-rbp
 
-    signed-byte-p-64-of-rax
-    signed-byte-p-64-of-rbx
-    signed-byte-p-64-of-rcx
-    signed-byte-p-64-of-rdx
-    signed-byte-p-64-of-rsi
-    signed-byte-p-64-of-rdi
-    signed-byte-p-64-of-r8
-    signed-byte-p-64-of-r9
-    signed-byte-p-64-of-r10
-    signed-byte-p-64-of-r11
-    signed-byte-p-64-of-r12
-    signed-byte-p-64-of-r13
-    signed-byte-p-64-of-r14
-    signed-byte-p-64-of-r15
-    signed-byte-p-64-of-rsp
-    signed-byte-p-64-of-rbp
-
-    integerp-of-rax
-    integerp-of-rbx
-    integerp-of-rcx
-    integerp-of-rdx
-    integerp-of-rsi
-    integerp-of-rdi
-    integerp-of-r8
-    integerp-of-r9
-    integerp-of-r10
-    integerp-of-r11
-    integerp-of-r12
-    integerp-of-r13
-    integerp-of-r14
-    integerp-of-r15
-    integerp-of-rsp
-    integerp-of-rbp
-
-    fix-of-rax
-    fix-of-rbx
-    fix-of-rcx
-    fix-of-rdx
-    fix-of-rsi
-    fix-of-rdi
-    fix-of-r8
-    fix-of-r9
-    fix-of-r10
-    fix-of-r11
-    fix-of-r12
-    fix-of-r13
-    fix-of-r14
-    fix-of-r15
-    fix-of-rsp
-    fix-of-rbp
-
     ;; Rules about rip/set-rip:
     xr-becomes-rip ; introduces rip
     !rip-becomes-set-rip
     xw-becomes-set-rip
+    x86isarip-becomes-rip
 
-    xw-of-set-rip-irrel
-    xr-of-set-rip-irrel
-    set-rip-of-set-rip
+    xw-becomes-set-rax
+    xw-becomes-set-rbx
+    xw-becomes-set-rcx
+    xw-becomes-set-rdx
+    xw-becomes-set-rsi
+    xw-becomes-set-rdi
+    xw-becomes-set-r8
+    xw-becomes-set-r9
+    xw-becomes-set-r10
+    xw-becomes-set-r11
+    xw-becomes-set-r12
+    xw-becomes-set-r13
+    xw-becomes-set-r14
+    xw-becomes-set-r15
+    xw-becomes-set-rsp
+    xw-becomes-set-rbp
+    ;; xw-becomes-set-error
 
-    ;; bring rip to the front:
-    set-rax-of-set-rip
-    set-rbx-of-set-rip
-    set-rcx-of-set-rip
-    set-rdx-of-set-rip
-    set-rsi-of-set-rip
-    set-rdi-of-set-rip
-    set-r8-of-set-rip
-    set-r9-of-set-rip
-    set-r10-of-set-rip
-    set-r11-of-set-rip
-    set-r12-of-set-rip
-    set-r13-of-set-rip
-    set-r14-of-set-rip
-    set-r15-of-set-rip
-    set-rsp-of-set-rip
-    set-rbp-of-set-rip
 
-    rax-of-set-rip
+    ;; Reading/writing registers (or parts of registers).
+    rgfi-size$inline ; dispatches to rr08, etc.
+    ;; These 4 go directly to the appropriate accessor, e.g., rax:
+    rr08-to-normal-form64
+    rr16-to-normal-form64
+    rr32-to-normal-form64
+    rr64-to-normal-form64
+    rgfi-becomes-rax
+    rgfi-becomes-rbx
+    rgfi-becomes-rcx
+    rgfi-becomes-rdx
+    rgfi-becomes-rsi
+    rgfi-becomes-rdi
+    rgfi-becomes-r8
+    rgfi-becomes-r9
+    rgfi-becomes-r10
+    rgfi-becomes-r11
+    rgfi-becomes-r12
+    rgfi-becomes-r13
+    rgfi-becomes-r14
+    rgfi-becomes-r15
+    rgfi-becomes-rsp
+    rgfi-becomes-rbp
+
+    !rgfi-size$inline ; dispatches to wr08, etc.
+    ;; These 4 go directly to the appropriate functions, e.g., set-rax:
+    wr08-to-normal-form64
+    wr16-to-normal-form64
+    wr32-to-normal-form64
+    wr64-to-normal-form64
+    !rgfi-becomes-set-rax
+    !rgfi-becomes-set-rbx
+    !rgfi-becomes-set-rcx
+    !rgfi-becomes-set-rdx
+    !rgfi-becomes-set-rsi
+    !rgfi-becomes-set-rdi
+    !rgfi-becomes-set-r8
+    !rgfi-becomes-set-r9
+    !rgfi-becomes-set-r10
+    !rgfi-becomes-set-r11
+    !rgfi-becomes-set-r12
+    !rgfi-becomes-set-r13
+    !rgfi-becomes-set-r14
+    !rgfi-becomes-set-r15
+    !rgfi-becomes-set-rsp
+    !rgfi-becomes-set-rbp
+    ))
+
+(defund new-normal-form-rules64-read-of-write ()
+  (declare (xargs :guard t))
+  '(rax-of-set-rip
     rbx-of-set-rip
     rcx-of-set-rip
     rdx-of-set-rip
@@ -3469,24 +4390,6 @@
     rsp-of-xw
     rbp-of-xw
 
-    set-flag-of-set-rip
-    set-flag-of-set-rax
-    set-flag-of-set-rbx
-    set-flag-of-set-rcx
-    set-flag-of-set-rdx
-    set-flag-of-set-rsi
-    set-flag-of-set-rdi
-    set-flag-of-set-r8
-    set-flag-of-set-r9
-    set-flag-of-set-r10
-    set-flag-of-set-r11
-    set-flag-of-set-r12
-    set-flag-of-set-r13
-    set-flag-of-set-r14
-    set-flag-of-set-r15
-    set-flag-of-set-rsp
-    set-flag-of-set-rbp
-
     rip-of-set-rip
     rip-of-set-rax
     rip-of-set-rbx
@@ -3508,6 +4411,7 @@
     rip-of-write ; todo: more
     rip-of-set-flag
 
+
     ;; read of write, same register
     rax-of-set-rax
     rbx-of-set-rbx
@@ -3526,13 +4430,11 @@
     rsp-of-set-rsp
     rbp-of-set-rbp
 
+
     ;; undef-of-write-byte ; todo: does write-byte actually get introduced?
-
     ;; mxcsr-of-write-byte
-
     ;; ms-of-write-byte
-
-;    fault-of-write-byte ; todo: move?
+    ;; fault-of-write-byte
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -3570,8 +4472,8 @@
     x86p-of-set-rsp
     x86p-of-set-rbp
 
-    ;; needed to resolve (xr ':ms 'nil ...)
-    xr-of-set-rip-irrel
+    ;; was needed to resolve (xr ':ms 'nil ...)
+    xr-of-set-rip-irrel ; do we still need these?
     xr-of-set-rax-irrel
     xr-of-set-rbx-irrel
     xr-of-set-rcx-irrel
@@ -3626,6 +4528,24 @@
     ;; read-byte-of-set-rbp
     ;; read-byte-of-set-undef
     ;; read-byte-of-set-mxcsr
+
+    read-chunks-of-set-rip
+    read-chunks-of-set-rax
+    read-chunks-of-set-rbx
+    read-chunks-of-set-rcx
+    read-chunks-of-set-rdx
+    read-chunks-of-set-rsi
+    read-chunks-of-set-rdi
+    read-chunks-of-set-r8
+    read-chunks-of-set-r9
+    read-chunks-of-set-r10
+    read-chunks-of-set-r11
+    read-chunks-of-set-r12
+    read-chunks-of-set-r13
+    read-chunks-of-set-r14
+    read-chunks-of-set-r15
+    read-chunks-of-set-rsp
+    read-chunks-of-set-rbp
 
     get-flag-of-set-rip
     get-flag-of-set-rax
@@ -4054,24 +4974,6 @@
     fault-of-set-rsp
     fault-of-set-rbp
 
-    xw-becomes-set-rax
-    xw-becomes-set-rbx
-    xw-becomes-set-rcx
-    xw-becomes-set-rdx
-    xw-becomes-set-rsi
-    xw-becomes-set-rdi
-    xw-becomes-set-r8
-    xw-becomes-set-r9
-    xw-becomes-set-r10
-    xw-becomes-set-r11
-    xw-becomes-set-r12
-    xw-becomes-set-r13
-    xw-becomes-set-r14
-    xw-becomes-set-r15
-    xw-becomes-set-rsp
-    xw-becomes-set-rbp
-    ;; xw-becomes-set-error
-
     ;; Rules about 64-bit-modep
     64-bit-modep-of-set-rip
     64-bit-modep-of-set-rax
@@ -4162,248 +5064,6 @@
     r14-of-if
     r15-of-if
 
-    ;; set-rip-of-myif
-    ;; set-rax-of-myif
-    ;; set-rbx-of-myif
-    ;; set-rcx-of-myif
-    ;; set-rdx-of-myif
-    ;; set-rsi-of-myif
-    ;; set-rdi-of-myif
-    ;; set-r8-of-myif
-    ;; set-r9-of-myif
-    ;; set-r10-of-myif ; todo: more?
-    ;; set-rsp-of-myif
-    ;; set-rbp-of-myif
-
-    write-of-set-rip
-    write-of-set-rax
-    write-of-set-rbx
-    write-of-set-rcx
-    write-of-set-rdx
-    write-of-set-rsi
-    write-of-set-rdi
-    write-of-set-r8
-    write-of-set-r9
-    write-of-set-r10
-    write-of-set-r11
-    write-of-set-r12
-    write-of-set-r13
-    write-of-set-r14
-    write-of-set-r15
-    write-of-set-rsp
-    write-of-set-rbp
-
-;    write-byte-of-set-rip
-
-    ;; bury set-undef deep in the term:
-    set-undef-of-set-rax
-    set-undef-of-set-rbx
-    set-undef-of-set-rcx
-    set-undef-of-set-rdx
-    set-undef-of-set-rdi
-    set-undef-of-set-rsi
-    set-undef-of-set-r8
-    set-undef-of-set-r9
-    set-undef-of-set-r10
-    set-undef-of-set-r11
-    set-undef-of-set-r12
-    set-undef-of-set-r13
-    set-undef-of-set-r14
-    set-undef-of-set-r15
-    set-undef-of-set-rsp
-    set-undef-of-set-rbp
-
-;    set-undef-of-write-byte
-
-    set-rbx-of-set-rax
-    set-rcx-of-set-rax
-    set-rdx-of-set-rax
-    set-rsi-of-set-rax
-    set-rdi-of-set-rax
-    set-r8-of-set-rax
-    set-r9-of-set-rax
-    set-r10-of-set-rax
-    set-r11-of-set-rax
-    set-r12-of-set-rax
-    set-r13-of-set-rax
-    set-r14-of-set-rax
-    set-r15-of-set-rax
-    set-rsp-of-set-rax
-    set-rbp-of-set-rax
-
-    set-rcx-of-set-rbx
-    set-rdx-of-set-rbx
-    set-rsi-of-set-rbx
-    set-rdi-of-set-rbx
-    set-r8-of-set-rbx
-    set-r9-of-set-rbx
-    set-r10-of-set-rbx
-    set-r11-of-set-rbx
-    set-r12-of-set-rbx
-    set-r13-of-set-rbx
-    set-r14-of-set-rbx
-    set-r15-of-set-rbx
-    set-rsp-of-set-rbx
-    set-rbp-of-set-rbx
-
-    set-rdx-of-set-rcx
-    set-rsi-of-set-rcx
-    set-rdi-of-set-rcx
-    set-r8-of-set-rcx
-    set-r9-of-set-rcx
-    set-r10-of-set-rcx
-    set-r11-of-set-rcx
-    set-r12-of-set-rcx
-    set-r13-of-set-rcx
-    set-r14-of-set-rcx
-    set-r15-of-set-rcx
-    set-rsp-of-set-rcx
-    set-rbp-of-set-rcx
-
-    set-rsi-of-set-rdx
-    set-rdi-of-set-rdx
-    set-r8-of-set-rdx
-    set-r9-of-set-rdx
-    set-r10-of-set-rdx
-    set-r11-of-set-rdx
-    set-r12-of-set-rdx
-    set-r13-of-set-rdx
-    set-r14-of-set-rdx
-    set-r15-of-set-rdx
-    set-rsp-of-set-rdx
-    set-rbp-of-set-rdx
-
-    set-rdi-of-set-rsi
-    set-r8-of-set-rsi
-    set-r9-of-set-rsi
-    set-r10-of-set-rsi
-    set-r11-of-set-rsi
-    set-r12-of-set-rsi
-    set-r13-of-set-rsi
-    set-r14-of-set-rsi
-    set-r15-of-set-rsi
-    set-rsp-of-set-rsi
-    set-rbp-of-set-rsi
-
-    set-r8-of-set-rdi
-    set-r9-of-set-rdi
-    set-r10-of-set-rdi
-    set-r11-of-set-rdi
-    set-r12-of-set-rdi
-    set-r13-of-set-rdi
-    set-r14-of-set-rdi
-    set-r15-of-set-rdi
-    set-rsp-of-set-rdi
-    set-rbp-of-set-rdi
-
-    set-r9-of-set-r8
-    set-r10-of-set-r8
-    set-r11-of-set-r8
-    set-r12-of-set-r8
-    set-r13-of-set-r8
-    set-r14-of-set-r8
-    set-r15-of-set-r8
-    set-rsp-of-set-r8
-    set-rbp-of-set-r8
-
-    set-r10-of-set-r9
-    set-r11-of-set-r9
-    set-r12-of-set-r9
-    set-r13-of-set-r9
-    set-r14-of-set-r9
-    set-r15-of-set-r9
-    set-rsp-of-set-r9
-    set-rbp-of-set-r9
-
-    set-r11-of-set-r10
-    set-r12-of-set-r10
-    set-r13-of-set-r10
-    set-r14-of-set-r10
-    set-r15-of-set-r10
-    set-rsp-of-set-r10
-    set-rbp-of-set-r10
-
-    set-r12-of-set-r11
-    set-r13-of-set-r11
-    set-r14-of-set-r11
-    set-r15-of-set-r11
-    set-rsp-of-set-r11
-    set-rbp-of-set-r11
-
-    set-r13-of-set-r12
-    set-r14-of-set-r12
-    set-r15-of-set-r12
-    set-rsp-of-set-r12
-    set-rbp-of-set-r12
-
-    set-r14-of-set-r13
-    set-r15-of-set-r13
-    set-rsp-of-set-r13
-    set-rbp-of-set-r13
-
-    set-r15-of-set-r14
-    set-rsp-of-set-r14
-    set-rbp-of-set-r14
-
-    set-rsp-of-set-r15
-    set-rbp-of-set-r15
-
-    set-rbp-of-set-rsp
-
-    ;; set of set of the same register:
-    set-rax-of-set-rax
-    set-rbx-of-set-rbx
-    set-rcx-of-set-rcx
-    set-rdx-of-set-rdx
-    set-rdi-of-set-rdi
-    set-rsi-of-set-rsi
-    set-r8-of-set-r8
-    set-r9-of-set-r9
-    set-r10-of-set-r10
-    set-r11-of-set-r11
-    set-r12-of-set-r12
-    set-r13-of-set-r13
-    set-r14-of-set-r14
-    set-r15-of-set-r15
-    set-rsp-of-set-rsp
-    set-rbp-of-set-rbp
-
-    ;; Write of read of the same register (state terms can differ):
-    set-rax-of-rax-same-gen
-    set-rbx-of-rbx-same-gen
-    set-rcx-of-rcx-same-gen
-    set-rdx-of-rdx-same-gen
-    set-rdi-of-rdi-same-gen
-    set-rsi-of-rsi-same-gen
-    set-r8-of-r8-same-gen
-    set-r9-of-r9-same-gen
-    set-r10-of-r10-same-gen
-    set-r11-of-r11-same-gen
-    set-r12-of-r12-same-gen
-    set-r13-of-r13-same-gen
-    set-r14-of-r14-same-gen
-    set-r15-of-r15-same-gen
-    set-rsp-of-rsp-same-gen
-    set-rbp-of-rbp-same-gen
-
-    !rflags-of-set-rip
-    !rflags-of-set-rax
-    !rflags-of-set-rbx
-    !rflags-of-set-rcx
-    !rflags-of-set-rdx
-    !rflags-of-set-rdi
-    !rflags-of-set-rsi
-    !rflags-of-set-r8
-    !rflags-of-set-r9
-    !rflags-of-set-r10
-    !rflags-of-set-r11
-    !rflags-of-set-r12
-    !rflags-of-set-r13
-    !rflags-of-set-r14
-    !rflags-of-set-r15
-    !rflags-of-set-rsp
-    !rflags-of-set-rbp
-
     rax-of-!rflags
     rbx-of-!rflags
     rcx-of-!rflags
@@ -4460,61 +5120,507 @@
     ;; mv-nth-1-of-rme-size-of-set-r15
     ;; mv-nth-1-of-rme-size-of-set-rsp
     ;; mv-nth-1-of-rme-size-of-set-rbp
+    ))
 
-    if-of-set-rip-and-set-rip-same
+(defund new-normal-form-rules64 ()
+  (declare (xargs :guard t))
+  (append
+   (new-normal-form-rules64-intro)
+   (new-normal-form-rules64-read-of-write)
+   '(unsigned-byte-p-64-of-rax
+     unsigned-byte-p-64-of-rbx
+     unsigned-byte-p-64-of-rcx
+     unsigned-byte-p-64-of-rdx
+     unsigned-byte-p-64-of-rsi
+     unsigned-byte-p-64-of-rdi
+     unsigned-byte-p-64-of-r8
+     unsigned-byte-p-64-of-r9
+     unsigned-byte-p-64-of-r10
+     unsigned-byte-p-64-of-r11
+     unsigned-byte-p-64-of-r12
+     unsigned-byte-p-64-of-r13
+     unsigned-byte-p-64-of-r14
+     unsigned-byte-p-64-of-r15
+     unsigned-byte-p-64-of-rsp
+     unsigned-byte-p-64-of-rbp
 
-    ;; Reading/writing registers (or parts of registers).
-    rgfi-size$inline ; dispatches to rr08, etc.
-    ;; These 4 go directly to the appropriate accessor, e.g., rax:
-    rr08-to-normal-form64
-    rr16-to-normal-form64
-    rr32-to-normal-form64
-    rr64-to-normal-form64
-    rgfi-becomes-rax
-    rgfi-becomes-rbx
-    rgfi-becomes-rcx
-    rgfi-becomes-rdx
-    rgfi-becomes-rsi
-    rgfi-becomes-rdi
-    rgfi-becomes-r8
-    rgfi-becomes-r9
-    rgfi-becomes-r10
-    rgfi-becomes-r11
-    rgfi-becomes-r12
-    rgfi-becomes-r13
-    rgfi-becomes-r14
-    rgfi-becomes-r15
-    rgfi-becomes-rsp
-    rgfi-becomes-rbp
+     integerp-of-rax
+     integerp-of-rbx
+     integerp-of-rcx
+     integerp-of-rdx
+     integerp-of-rsi
+     integerp-of-rdi
+     integerp-of-r8
+     integerp-of-r9
+     integerp-of-r10
+     integerp-of-r11
+     integerp-of-r12
+     integerp-of-r13
+     integerp-of-r14
+     integerp-of-r15
+     integerp-of-rsp-gen ; integerp-of-rsp
+     integerp-of-rbp
 
-    !rgfi-size$inline ; dispatches to wr08, etc.
-    ;; These 4 go directly to the appropriate functions, e.g., set-rax:
-    wr08-to-normal-form64
-    wr16-to-normal-form64
-    wr32-to-normal-form64
-    wr64-to-normal-form64
-    !rgfi-becomes-set-rax
-    !rgfi-becomes-set-rbx
-    !rgfi-becomes-set-rcx
-    !rgfi-becomes-set-rdx
-    !rgfi-becomes-set-rsi
-    !rgfi-becomes-set-rdi
-    !rgfi-becomes-set-r8
-    !rgfi-becomes-set-r9
-    !rgfi-becomes-set-r10
-    !rgfi-becomes-set-r11
-    !rgfi-becomes-set-r12
-    !rgfi-becomes-set-r13
-    !rgfi-becomes-set-r14
-    !rgfi-becomes-set-r15
-    !rgfi-becomes-set-rsp
-    !rgfi-becomes-set-rbp))
+     fix-of-rax
+     fix-of-rbx
+     fix-of-rcx
+     fix-of-rdx
+     fix-of-rsi
+     fix-of-rdi
+     fix-of-r8
+     fix-of-r9
+     fix-of-r10
+     fix-of-r11
+     fix-of-r12
+     fix-of-r13
+     fix-of-r14
+     fix-of-r15
+     fix-of-rsp
+     fix-of-rbp
+
+     xw-of-set-rip-irrel ; do we still need these?
+
+     ;; bring rip to the front:
+     set-rax-of-set-rip
+     set-rbx-of-set-rip
+     set-rcx-of-set-rip
+     set-rdx-of-set-rip
+     set-rsi-of-set-rip
+     set-rdi-of-set-rip
+     set-r8-of-set-rip
+     set-r9-of-set-rip
+     set-r10-of-set-rip
+     set-r11-of-set-rip
+     set-r12-of-set-rip
+     set-r13-of-set-rip
+     set-r14-of-set-rip
+     set-r15-of-set-rip
+     set-rsp-of-set-rip
+     set-rbp-of-set-rip
+
+     set-flag-of-set-rip
+     set-flag-of-set-rax
+     set-flag-of-set-rbx
+     set-flag-of-set-rcx
+     set-flag-of-set-rdx
+     set-flag-of-set-rsi
+     set-flag-of-set-rdi
+     set-flag-of-set-r8
+     set-flag-of-set-r9
+     set-flag-of-set-r10
+     set-flag-of-set-r11
+     set-flag-of-set-r12
+     set-flag-of-set-r13
+     set-flag-of-set-r14
+     set-flag-of-set-r15
+     set-flag-of-set-rsp
+     set-flag-of-set-rbp
+
+     ;; set-rip-of-myif
+     ;; set-rax-of-myif
+     ;; set-rbx-of-myif
+     ;; set-rcx-of-myif
+     ;; set-rdx-of-myif
+     ;; set-rsi-of-myif
+     ;; set-rdi-of-myif
+     ;; set-r8-of-myif
+     ;; set-r9-of-myif
+     ;; set-r10-of-myif ; todo: more?
+     ;; set-rsp-of-myif
+     ;; set-rbp-of-myif
+
+     write-of-set-rip
+     write-of-set-rax
+     write-of-set-rbx
+     write-of-set-rcx
+     write-of-set-rdx
+     write-of-set-rsi
+     write-of-set-rdi
+     write-of-set-r8
+     write-of-set-r9
+     write-of-set-r10
+     write-of-set-r11
+     write-of-set-r12
+     write-of-set-r13
+     write-of-set-r14
+     write-of-set-r15
+     write-of-set-rsp
+     write-of-set-rbp
+
+;    write-byte-of-set-rip
+
+     ;; bury set-undef deep in the term:
+     set-undef-of-set-rax
+     set-undef-of-set-rbx
+     set-undef-of-set-rcx
+     set-undef-of-set-rdx
+     set-undef-of-set-rdi
+     set-undef-of-set-rsi
+     set-undef-of-set-r8
+     set-undef-of-set-r9
+     set-undef-of-set-r10
+     set-undef-of-set-r11
+     set-undef-of-set-r12
+     set-undef-of-set-r13
+     set-undef-of-set-r14
+     set-undef-of-set-r15
+     set-undef-of-set-rsp
+     set-undef-of-set-rbp
+
+;    set-undef-of-write-byte
+
+     set-rbx-of-set-rax
+     set-rcx-of-set-rax
+     set-rdx-of-set-rax
+     set-rsi-of-set-rax
+     set-rdi-of-set-rax
+     set-r8-of-set-rax
+     set-r9-of-set-rax
+     set-r10-of-set-rax
+     set-r11-of-set-rax
+     set-r12-of-set-rax
+     set-r13-of-set-rax
+     set-r14-of-set-rax
+     set-r15-of-set-rax
+     set-rsp-of-set-rax
+     set-rbp-of-set-rax
+
+     set-rcx-of-set-rbx
+     set-rdx-of-set-rbx
+     set-rsi-of-set-rbx
+     set-rdi-of-set-rbx
+     set-r8-of-set-rbx
+     set-r9-of-set-rbx
+     set-r10-of-set-rbx
+     set-r11-of-set-rbx
+     set-r12-of-set-rbx
+     set-r13-of-set-rbx
+     set-r14-of-set-rbx
+     set-r15-of-set-rbx
+     set-rsp-of-set-rbx
+     set-rbp-of-set-rbx
+
+     set-rdx-of-set-rcx
+     set-rsi-of-set-rcx
+     set-rdi-of-set-rcx
+     set-r8-of-set-rcx
+     set-r9-of-set-rcx
+     set-r10-of-set-rcx
+     set-r11-of-set-rcx
+     set-r12-of-set-rcx
+     set-r13-of-set-rcx
+     set-r14-of-set-rcx
+     set-r15-of-set-rcx
+     set-rsp-of-set-rcx
+     set-rbp-of-set-rcx
+
+     set-rsi-of-set-rdx
+     set-rdi-of-set-rdx
+     set-r8-of-set-rdx
+     set-r9-of-set-rdx
+     set-r10-of-set-rdx
+     set-r11-of-set-rdx
+     set-r12-of-set-rdx
+     set-r13-of-set-rdx
+     set-r14-of-set-rdx
+     set-r15-of-set-rdx
+     set-rsp-of-set-rdx
+     set-rbp-of-set-rdx
+
+     set-rdi-of-set-rsi
+     set-r8-of-set-rsi
+     set-r9-of-set-rsi
+     set-r10-of-set-rsi
+     set-r11-of-set-rsi
+     set-r12-of-set-rsi
+     set-r13-of-set-rsi
+     set-r14-of-set-rsi
+     set-r15-of-set-rsi
+     set-rsp-of-set-rsi
+     set-rbp-of-set-rsi
+
+     set-r8-of-set-rdi
+     set-r9-of-set-rdi
+     set-r10-of-set-rdi
+     set-r11-of-set-rdi
+     set-r12-of-set-rdi
+     set-r13-of-set-rdi
+     set-r14-of-set-rdi
+     set-r15-of-set-rdi
+     set-rsp-of-set-rdi
+     set-rbp-of-set-rdi
+
+     set-r9-of-set-r8
+     set-r10-of-set-r8
+     set-r11-of-set-r8
+     set-r12-of-set-r8
+     set-r13-of-set-r8
+     set-r14-of-set-r8
+     set-r15-of-set-r8
+     set-rsp-of-set-r8
+     set-rbp-of-set-r8
+
+     set-r10-of-set-r9
+     set-r11-of-set-r9
+     set-r12-of-set-r9
+     set-r13-of-set-r9
+     set-r14-of-set-r9
+     set-r15-of-set-r9
+     set-rsp-of-set-r9
+     set-rbp-of-set-r9
+
+     set-r11-of-set-r10
+     set-r12-of-set-r10
+     set-r13-of-set-r10
+     set-r14-of-set-r10
+     set-r15-of-set-r10
+     set-rsp-of-set-r10
+     set-rbp-of-set-r10
+
+     set-r12-of-set-r11
+     set-r13-of-set-r11
+     set-r14-of-set-r11
+     set-r15-of-set-r11
+     set-rsp-of-set-r11
+     set-rbp-of-set-r11
+
+     set-r13-of-set-r12
+     set-r14-of-set-r12
+     set-r15-of-set-r12
+     set-rsp-of-set-r12
+     set-rbp-of-set-r12
+
+     set-r14-of-set-r13
+     set-r15-of-set-r13
+     set-rsp-of-set-r13
+     set-rbp-of-set-r13
+
+     set-r15-of-set-r14
+     set-rsp-of-set-r14
+     set-rbp-of-set-r14
+
+     set-rsp-of-set-r15
+     set-rbp-of-set-r15
+
+     set-rbp-of-set-rsp
+
+     ;; set of set of the same register:
+     set-rip-of-set-rip
+     set-rax-of-set-rax
+     set-rbx-of-set-rbx
+     set-rcx-of-set-rcx
+     set-rdx-of-set-rdx
+     set-rdi-of-set-rdi
+     set-rsi-of-set-rsi
+     set-r8-of-set-r8
+     set-r9-of-set-r9
+     set-r10-of-set-r10
+     set-r11-of-set-r11
+     set-r12-of-set-r12
+     set-r13-of-set-r13
+     set-r14-of-set-r14
+     set-r15-of-set-r15
+     set-rsp-of-set-rsp
+     set-rbp-of-set-rbp
+
+     ;; Write of read of the same register (state terms can differ):
+     set-rax-of-rax-same-gen
+     set-rbx-of-rbx-same-gen
+     set-rcx-of-rcx-same-gen
+     set-rdx-of-rdx-same-gen
+     set-rdi-of-rdi-same-gen
+     set-rsi-of-rsi-same-gen
+     set-r8-of-r8-same-gen
+     set-r9-of-r9-same-gen
+     set-r10-of-r10-same-gen
+     set-r11-of-r11-same-gen
+     set-r12-of-r12-same-gen
+     set-r13-of-r13-same-gen
+     set-r14-of-r14-same-gen
+     set-r15-of-r15-same-gen
+     set-rsp-of-rsp-same-gen
+     set-rbp-of-rbp-same-gen
+
+     !rflags-of-set-rip
+     !rflags-of-set-rax
+     !rflags-of-set-rbx
+     !rflags-of-set-rcx
+     !rflags-of-set-rdx
+     !rflags-of-set-rdi
+     !rflags-of-set-rsi
+     !rflags-of-set-r8
+     !rflags-of-set-r9
+     !rflags-of-set-r10
+     !rflags-of-set-r11
+     !rflags-of-set-r12
+     !rflags-of-set-r13
+     !rflags-of-set-r14
+     !rflags-of-set-r15
+     !rflags-of-set-rsp
+     !rflags-of-set-rbp
+
+     if-of-set-rip-and-set-rip-same
+
+     ;; we bury the set-mxcsr:
+     set-mxcsr-of-set-rax
+     set-mxcsr-of-set-rbx
+     set-mxcsr-of-set-rcx
+     set-mxcsr-of-set-rdx
+     set-mxcsr-of-set-rsi
+     set-mxcsr-of-set-rdi
+     set-mxcsr-of-set-r8
+     set-mxcsr-of-set-r9
+     set-mxcsr-of-set-r10
+     set-mxcsr-of-set-r11
+     set-mxcsr-of-set-r12
+     set-mxcsr-of-set-r13
+     set-mxcsr-of-set-r14
+     set-mxcsr-of-set-r15
+     set-mxcsr-of-set-rsp
+     set-mxcsr-of-set-rbp
+     set-mxcsr-of-write
+     )))
 
 (defund unroller-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (new-normal-form-rules-common)
-          (new-normal-form-rules64)))
+          (new-normal-form-rules64)
+          (read-and-write-rules-bv)
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
+
+;; Used in both versions of the lifter
+;; TODO: Split into 32-bit and 64-bit rules:
+(defund assumption-simplification-rules ()
+  (declare (xargs :guard t))
+  (append
+   '(standard-state-assumption
+     standard-state-assumption-32
+     ;standard-assumptions-core-64 ; only needed by loop lifter?
+     ;standard-state-assumption-64
+     ;standard-assumptions-mach-o-64 ; only needed by loop lifter?
+     ;standard-assumptions-elf-64 ; only needed by loop lifter?
+     ;standard-assumptions-pe-64 ; only needed by loop lifter?
+     ;bytes-loaded-at-address-64  ; only needed by loop lifter?
+     ;; Mach-O stuff:
+     acl2::get-mach-o-code
+     acl2::subroutine-address-mach-o
+     acl2::get-mach-o-symbol-table
+     acl2::get-mach-o-code-address
+     acl2::get-mach-o-section-base-1
+     acl2::get-mach-o-section-base-2
+     acl2::get-mach-o-section-unroll
+     acl2::get-mach-o-segment-base-1
+     acl2::get-mach-o-segment-base-2
+     acl2::get-mach-o-segment-unroll-1
+     acl2::get-mach-o-segment-unroll-2
+     acl2::get-symbol-table-entry-mach-o-base-1
+     acl2::get-symbol-table-entry-mach-o-base-2
+     acl2::get-symbol-table-entry-mach-o-unroll
+     acl2::get-text-section-number-mach-o
+     acl2::get-all-sections-from-mach-o
+     acl2::get-all-sections-from-mach-o-load-commands-base
+     acl2::get-all-sections-from-mach-o-load-commands-unroll
+     acl2::get-all-sections-from-mach-o-load-command
+     acl2::get-section-number-mach-o
+     acl2::get-section-number-mach-o-aux-base-1
+     acl2::get-section-number-mach-o-aux-base-2
+     acl2::get-section-number-mach-o-aux-unroll
+     acl2::get-mach-o-load-command-base-1
+     acl2::get-mach-o-load-command-base-2
+     acl2::get-mach-o-load-command-unroll
+     ;; PE stuff:
+     acl2::get-pe-sections
+     acl2::get-pe-section-info
+     acl2::get-pe-text-section-info
+     acl2::get-pe-section-info-bytes
+     acl2::get-pe-text-section-bytes
+     acl2::get-pe-section-info-aux-base-1
+     acl2::get-pe-section-info-aux-base-2
+     acl2::get-pe-section-info-aux-unroll
+     acl2::lookup-pe-symbol-base-1
+     acl2::lookup-pe-symbol-base-2
+     acl2::lookup-pe-symbol-unroll
+     acl2::subroutine-address-within-text-section-pe-64
+     ;; ELF stuff:
+     lookup-equal-safe
+     acl2::subroutine-address-elf
+     acl2::parsed-elf-symbol-table
+     acl2::get-elf-section-address
+     acl2::get-elf-section-bytes
+     acl2::get-elf-code
+     acl2::get-elf-text-section-address ; todo: use segments!
+     acl2::get-elf-section-header-base-1
+     acl2::get-elf-section-header-base-2
+     acl2::get-elf-section-header-unroll
+     acl2::get-elf-symbol-address
+     acl2::get-elf-symbol-address-aux-base-1
+     acl2::get-elf-symbol-address-aux-base-2
+     acl2::get-elf-symbol-address-aux-unroll
+
+     acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
+     acl2::mv-nth-of-if
+     acl2::mv-nth-of-cons-safe
+     x86isa::canonical-address-p-of-if
+     the-check
+     lookup-eq-safe
+     eql ; just include base-rules?
+     acl2::+-commutative-axe
+     unicity-of-0
+     ;; all-addreses-of-stack-slots
+
+     rgfi rgfi$a ;expose xr -- why?  shouldn't we then turn these into get-rax, set-rax, etc?  we could use the (get-register-intro-rules64) but only for the non-loop-lifter
+     x86isa::integerp-of-xr-rgf ; drop if we are not using this normal form?
+     x86isa::fix-of-xr-rgf-4 ; drop if we are not using this normal form?
+
+     x86isa::canonical-address-p$inline-constant-opener
+     addresses-of-subsequent-stack-slots
+     ;; addresses-of-subsequent-stack-slots-aux-base
+     ;; addresses-of-subsequent-stack-slots-aux-unroll
+     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux ; seems needed, for assumption simplification
+     x86isa::canonical-address-listp-of-cons
+     x86isa::canonical-address-p-between-special1
+     x86isa::canonical-address-p-between-special2
+     x86isa::canonical-address-p-between-special3
+     acl2::fold-consts-in-+
+     x86isa::canonical-address-listp-of-nil
+     acl2::integerp-of-+-when-integerp-1-cheap
+     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+     acl2::fix-when-integerp
+     acl2::equal-same
+     acl2::if-of-nil
+     acl2::if-of-t
+
+     acl2::bvplus-of-logext-arg2 ; drop?
+     acl2::bvplus-of-logext-arg3 ; drop?
+     acl2::signed-byte-p-logext
+     read-bytes-of-bvplus-tighten ; since target-term may be 64 bits but then we call read-bytes on it
+     )
+   (region-rules)
+   (acl2::lookup-rules)
+   (constant-opener-rules)
+   ;; needed for BV-mode:
+   '(acl2::bvchop-of-+-becomes-bvplus
+     acl2::bvplus-trim-leading-constant)))
+
+;;todo: improve
+; todo: why not use (new-normal-form-rules32)?
+(defund assumption-simplification-rules32 ()
+  (declare (xargs :guard t))
+  (append (new-normal-form-rules-common)
+          (assumption-simplification-rules)))
+
+;;todo: improve
+(defund assumption-simplification-rules64 ()
+  (declare (xargs :guard t))
+  (append (new-normal-form-rules-common)
+          (assumption-simplification-rules)
+          ;; needed to match the normal forms used during lifting:
+          (new-normal-form-rules64)
+          (read-and-write-rules-bv) ; (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4522,7 +5628,7 @@
 (set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
-(set-axe-rule-priority read-when-program-at 1)
+;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
 ;; (set-axe-rule-priority read-when-program-at-1-byte-simple 1)
 ;; (set-axe-rule-priority read-when-program-at-1-byte 1)
@@ -4531,85 +5637,86 @@
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
 
 
-;; These rules expand operations on effective addresses, exposing the
-;; underlying operations on linear addresses.
-(defun low-level-rules-32 ()
-    (declare (xargs :guard t))
-  (append (linear-memory-rules)
-          (read-rules)
-          (write-rules)
-          (read-and-write-rules)
-          '(rime08$inline
-            rime16$inline
-            rime32$inline
-            rime64$inline
-            rime-size$inline
+;; ;; These rules expand operations on effective addresses, exposing the
+;; ;; underlying operations on linear addresses.
+;; (defund low-level-rules-32 ()
+;;     (declare (xargs :guard t))
+;;   (append (linear-memory-rules)
+;;           (read-rules)
+;;           (write-rules)
+;;           (read-and-write-rules)
+;;           (read-and-write-rules-non-bv) ; todo: allow the bv version?
+;;           '(rime08$inline
+;;             rime16$inline
+;;             rime32$inline
+;;             rime64$inline
+;;             rime-size$inline
 
-            wime08$inline
-            wime16$inline
-            wime32$inline
-            wime64$inline
-            wime-size$inline
+;;             wime08$inline
+;;             wime16$inline
+;;             wime32$inline
+;;             wime64$inline
+;;             wime-size$inline
 
-            rme08$inline
-            rme16$inline
-            rme32$inline
-            rme48$inline
-            rme64$inline
-            rme80$inline
-            rme128$inline
-            rme256$inline
-            rme-size$inline
+;;             rme08$inline
+;;             rme16$inline
+;;             rme32$inline
+;;             rme48$inline
+;;             rme64$inline
+;;             rme80$inline
+;;             rme128$inline
+;;             rme256$inline
+;;             rme-size$inline
 
-            wme08$inline
-            wme16$inline
-            wme32$inline
-            wme48$inline
-            wme64$inline
-            wme80$inline
-            wme128$inline
-            wme256$inline
-            wme-size$inline
+;;             wme08$inline
+;;             wme16$inline
+;;             wme32$inline
+;;             wme48$inline
+;;             wme64$inline
+;;             wme80$inline
+;;             wme128$inline
+;;             wme256$inline
+;;             wme-size$inline
 
-            ea-to-la$inline
+;;             ea-to-la$inline
 
-            read-*ip$inline
-            write-*ip$inline
-            add-to-*ip$inline
-            read-*sp$inline
-            write-*sp$inline
-            add-to-*sp$inline
+;;             read-*ip$inline
+;;             write-*ip$inline
+;;             add-to-*ip$inline
+;;             read-*sp$inline
+;;             write-*sp$inline
+;;             add-to-*sp$inline
 
-            ;; x86isa::data-segment-descriptor-attributesbits->e$inline
-            ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
-            ;; x86isa::data-segment-descriptor-attributesbits->w$inline
-            ;; x86isa::code-segment-descriptor-attributesbits->d$inline
-            ;; x86isa::code-segment-descriptor-attributesbits->r$inline
-            ;; x86isa::data-segment-descriptor-attributesbits-fix
-            ;; x86isa::code-segment-descriptor-attributesbits-fix
+;;             ;; x86isa::data-segment-descriptor-attributesbits->e$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits->w$inline
+;;             ;; x86isa::code-segment-descriptor-attributesbits->d$inline
+;;             ;; x86isa::code-segment-descriptor-attributesbits->r$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits-fix
+;;             ;; x86isa::code-segment-descriptor-attributesbits-fix
 
-            ;x86isa::rflagsbits->res1$inline
-            ;x86isa::rflagsbits->res2$inline
+;;             ;x86isa::rflagsbits->res1$inline
+;;             ;x86isa::rflagsbits->res2$inline
 
-            ;; todo: there are multiple copies of this chunk:
-            ;; Reading/writing registers (or parts of registers).  we leave
-            ;; these enabled to expose rgfi and !rgfi, which then get rewritten
-            ;; to xr and xw.  shilpi seems to do the same.
-            rgfi-size$inline ;dispatches to rr08, etc.
-            rr08$inline ; exposes rgfi
-            rr16$inline ; exposes rgfi
-            rr32$inline ; exposes rgfi
-            rr64$inline ; exposes rgfi
-            rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+;;             ;; todo: there are multiple copies of this chunk:
+;;             ;; Reading/writing registers (or parts of registers).  we leave
+;;             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
+;;             ;; to xr and xw.  shilpi seems to do the same.
+;;             rgfi-size$inline ;dispatches to rr08, etc.
+;;             rr08$inline ; exposes rgfi
+;;             rr16$inline ; exposes rgfi
+;;             rr32$inline ; exposes rgfi
+;;             rr64$inline ; exposes rgfi
+;;             rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
 
-            !rgfi-size$inline ; dispatches to wr08, etc.
-            wr08$inline ; exposes !rgfi
-            wr16$inline ; exposes !rgfi
-            wr32$inline ; exposes !rgfi
-            wr64$inline ; exposes !rgfi
-            !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
+;;             !rgfi-size$inline ; dispatches to wr08, etc.
+;;             wr08$inline ; exposes !rgfi
+;;             wr16$inline ; exposes !rgfi
+;;             wr32$inline ; exposes !rgfi
+;;             wr64$inline ; exposes !rgfi
+;;             !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
 
-            )))
+;;             )))
 
 ;; some commonly monitored stuff:
 ;;   :monitor (acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
@@ -4662,7 +5769,7 @@
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
-;; ;;             ;read-of-write-irrel2
+;; ;;             ;read-of-write-when-separate
 ;; ;;             ;read-of-write-irrel
 ;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
@@ -4673,7 +5780,7 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
-(defun debug-rules-common ()
+(defund debug-rules-common ()
   (declare (xargs :guard t))
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
@@ -4683,15 +5790,17 @@
     wb-becomes-write-when-app-view
     ))
 
-(defun debug-rules32 ()
+(defund debug-rules32 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           (step-opener-rules32)
           '(not-mv-nth-0-of-add-to-*sp-gen
             mv-nth-1-of-add-to-*sp-gen
+            run-until-esp-is-above-base-axe
+            run-until-esp-is-above-opener-axe
             )))
 
-(defun debug-rules64 ()
+(defund debug-rules64 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           (step-opener-rules64)
@@ -4700,7 +5809,7 @@
           '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
-            ;; READ-OF-WRITE-IRREL2
+            ;; READ-OF-WRITE-WHEN-SEPARATE
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4708,132 +5817,121 @@
 ;; TODO: Push many of these tester rules back into more fundamental rule sets
 
 ;; these are used both for lifting and proving
-(defun extra-tester-rules ()
+(defund extra-tester-rules ()
   (declare (xargs :guard t))
-  (append '(acl2::integerp-of-expt
-            acl2::integerp-of-*                 ; for array index calcs
-            acl2::my-integerp-<-non-integerp    ; for array index calcs
-            acl2::bvsx-when-bvlt
-            ;; x86isa::canonical-address-p-between-special5 ; todo: move these
-            ;; x86isa::canonical-address-p-between-special5-alt
-            ;; x86isa::canonical-address-p-between-special6
-            ;; x86isa::canonical-address-p-between-special7
-            bitops::ash-is-expt-*-x
-            acl2::natp-of-*
-            acl2::<-of-constant-and-+-of-constant ; for address calcs
-            acl2::<-of-15-and-*-of-4
-            acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-            acl2::not-bvlt-of-max-arg2
-            acl2::<-of-*-when-constant-integers
-            ;separate-when-separate-2 ; todo: drop? but that caused problems
-            acl2::collect-constants-over-<-2
-            acl2::commutativity-of-*-when-constant
-            acl2::<-of-*-of-constant-and-constant
-            acl2::rationalp-when-integerp
-            acl2::+-of-+-of---same
-            acl2::<-of-minus-and-constant ; ensure needed
-            acl2::fix-when-acl2-numberp
-            acl2::acl2-numberp-of--
-            acl2::acl2-numberp-of-*
-            bitops::ash-of-0-c ; at least for now
-            ;;rflagsbits->af-of-myif
-            ;;rflagsbits->af-of-if
+  '(acl2::integerp-of-expt
+    acl2::integerp-of-*                 ; for array index calcs
+    acl2::my-integerp-<-non-integerp    ; for array index calcs
+    acl2::bvsx-when-bvlt
+    ;; x86isa::canonical-address-p-between-special5 ; todo: move these
+    ;; x86isa::canonical-address-p-between-special5-alt
+    ;; x86isa::canonical-address-p-between-special6
+    ;; x86isa::canonical-address-p-between-special7
+    acl2::ash-when-non-negative-becomes-*-of-expt ; todo
+    acl2::natp-of-*
+    acl2::<-of-constant-and-+-of-constant ; for address calcs
+    ;acl2::<-of-15-and-*-of-4
+    acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
+    acl2::not-bvlt-of-max-arg2 ; size is symbolic
+    ;acl2::<-of-*-when-constant-integers
+    ;;separate-when-separate-2 ; todo: drop? but that caused problems
+    acl2::collect-constants-over-<-2
+    acl2::commutativity-of-*-when-constant
+    ;acl2::<-of-*-of-constant-and-constant
+    acl2::rationalp-when-integerp
+    acl2::+-of-+-of---same
+    ; acl2::<-of-minus-and-constant ; ensure needed
+    acl2::acl2-numberp-of--
+    acl2::acl2-numberp-of-*
+    ;;rflagsbits->af-of-myif
+    ;;rflagsbits->af-of-if
 
-            ;; acl2::equal-of-constant-and-bvuminus
-            ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ;; acl2::bvif-of-myif-arg3 ; introduces bvif
-            ;; acl2::bvif-of-myif-arg4 ; introduces bvif
-            ;; help to show that divisions don't overflow or underflow:
-            acl2::not-sbvlt-of-constant-and-sbvdiv-32-64
-            acl2::not-sbvlt-of-sbvdiv-and-minus-constant-32-64
-            acl2::not-bvlt-of-constant-and-bvdiv-64-128
-            acl2::not-bvlt-of-constant-and-bvdiv-32-64
-            acl2::slice-of-bvsx-high ; move back, but this introduces repeatbit
-            acl2::bvcat-of-repeatbit-of-getbit-of-bvsx-same
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-8
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-16
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-32
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-128-64
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-8
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-16
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-32
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-128-64
-            acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
-            unicity-of-1 ; simplified something that showed up in an error case
-            acl2::bvcat-of-repeatbit-of-getbit-becomes-bvsx
-            acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
-            acl2::bvlt-of-bvsx-arg2
-            acl2::sbvlt-of-bvsx-32-16-constant
-            acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
-            acl2::if-of-sbvlt-and-not-sbvlt-helper
-            if-of-set-flag-and-set-flag
-            xr-of-!rflags-irrel ; todo: better normal form?
+    ;; acl2::equal-of-constant-and-bvuminus
+    ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
+    ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
+    ;; acl2::bvif-of-myif-arg3 ; introduces bvif
+    ;; acl2::bvif-of-myif-arg4 ; introduces bvif
+    ;; help to show that divisions don't overflow or underflow:
+    acl2::not-sbvlt-of-constant-and-sbvdiv-32-64
+    acl2::not-sbvlt-of-sbvdiv-and-minus-constant-32-64
+    acl2::not-bvlt-of-constant-and-bvdiv-64-128
+    acl2::not-bvlt-of-constant-and-bvdiv-32-64
+    acl2::slice-of-bvsx-high ; move back, but this introduces repeatbit
+    acl2::bvcat-of-repeatbit-of-getbit-of-bvsx-same
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-8
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-16
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-32
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-128-64
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-8
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-16
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-32
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-128-64
+    acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
+    unicity-of-1 ; simplified something that showed up in an error case
+    acl2::bvcat-of-repeatbit-of-getbit-becomes-bvsx
+    acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
+    acl2::bvlt-of-bvsx-arg2
+    acl2::sbvlt-of-bvsx-32-16-constant
+    acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
+    acl2::if-of-sbvlt-and-not-sbvlt-helper
+    if-of-set-flag-and-set-flag
+    xr-of-!rflags-irrel ; todo: better normal form?
 
-            acl2::logext-of-+-of-bvplus-same-size
-            acl2::logext-of-+-of-+-of-mult-same-size
-            ;acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
-            acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
-            acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
-            acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
-            acl2::nth-becomes-bv-array-read-strong2
-            acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
-            not-equal-of-+-and-+-when-separate
-            not-equal-of-+-of-+-and-+-when-separate
-            not-equal-of-+-of-+-and-+-when-separate-gen
-            acl2::<-of-negative-constant-and-bv
-            ;;read-1-of-write-1-both
-            acl2::bvlt-of-constant-when-usb-dag ; rename
-            ;; separate-of-1-and-1 ; do we ever need this?
-            acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            ;; acl2::equal-of-myif-arg1-safe
-            ;; acl2::equal-of-myif-arg2-safe
-            acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-            acl2::bvplus-of-unary-minus
-            acl2::bvplus-of-unary-minus-arg2
-            acl2::if-becomes-bvif-1-axe
-            ;; acl2::boolif-of-t-and-nil-when-booleanp
-            acl2::slice-of-bvand-of-constant
-            ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
-            acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-            acl2::equal-of-bvplus-constant-and-constant
-            acl2::equal-of-bvplus-constant-and-constant-alt
-            acl2::bvchop-of-bvshr-same
-            acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
-            acl2::bvif-of-if-constants-nil-nonnil
-            acl2::bvif-of-if-constants-nonnil-nil
-            acl2::equal-of-constant-and-bitand
-            acl2::equal-of-bitand-and-constant
-            ;acl2::boolif-of-nil-and-t
-            ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
-            acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
-            acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
-            ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
-            booleanp-of-jp-condition
-            booleanp-of-jnp-condition
-            booleanp-of-jz-condition
-            booleanp-of-jnz-condition
-            acl2::getbit-0-of-bool-to-bit
-            acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
-            acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
-            acl2::equal-of-1-and-bitnot ; todo: add 0 version
-            ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
-            ;; todo: just include boolean-rules?:
-            ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
-            acl2::bvchop-of-bool-to-bit ;todo: drop
-            acl2::logext-of-bool-to-bit
-            acl2::<-of-if-arg1-safe
-            ;; acl2::<-of-if-arg2-safe
-            acl2::equal-of-bvif-safe2
-            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
-            )
-          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
-          (acl2::booleanp-rules)
-          (acl2::boolean-rules-safe)
-          (acl2::type-rules)))
+    acl2::logext-of-+-of-bvplus-same-size
+    acl2::logext-of-+-of-+-of-mult-same-size
+    ;; acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
+
+    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op ; todo: why is nth showing up?
+    acl2::nth-becomes-bv-array-read-strong2 ; todo: why is nth showing up?
+    acl2::bvplus-of-*-arg1 ; introduces bvmult
+    acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
+    ;; not-equal-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate
+    ;; not-equal-of-+-of-+-and-+-when-separate-gen
+    acl2::<-of-negative-constant-and-bv
+    ;;read-1-of-write-1-both
+    acl2::not-bvlt-of-constant-when-usb-dag ; rename
+    ;; separate-of-1-and-1 ; do we ever need this?
+    acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
+    ;; acl2::equal-of-myif-arg1-safe
+    ;; acl2::equal-of-myif-arg2-safe
+    ;; acl2::boolif-of-t-and-nil-when-booleanp
+    acl2::slice-of-bvand-of-constant
+    ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
+    acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
+    acl2::equal-of-bvplus-constant-and-constant
+    acl2::equal-of-bvplus-constant-and-constant-alt
+    ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
+    acl2::bvif-of-if-constants-nil-nonnil
+    acl2::bvif-of-if-constants-nonnil-nil
+    acl2::equal-of-constant-and-bitand
+    acl2::equal-of-bitand-and-constant
+    ;;acl2::boolif-of-nil-and-t
+    ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
+    acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+    acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+    ;; ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these): -- now we open these functions in the proof stage
+    ;; booleanp-of-jp-condition
+    ;; booleanp-of-jnp-condition
+    ;; booleanp-of-jz-condition
+    ;; booleanp-of-jnz-condition
+    ;;acl2::getbit-0-of-bool-to-bit ; just use getbit-identity-axe
+
+    ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
+    ;; todo: just include boolean-rules?:
+    ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
+    ;; acl2::bvchop-of-bool-to-bit ;todo: drop
+    acl2::logext-of-bool-to-bit
+    acl2::bool-to-bit-of-not
+    acl2::bool-to-bit-of-equal-of-0-when-unsigned-byte-p ; todo: alt versions
+    acl2::bool-to-bit-of-equal-of-1-when-unsigned-byte-p
+    acl2::<-of-if-arg1-safe
+    ;; acl2::<-of-if-arg2-safe
+    acl2::equal-of-bvif-safe2
+    ))
 
 ;; beyond what def-unrolled uses
-(defun extra-tester-lifting-rules ()
+(defund extra-tester-lifting-rules ()
   (declare (xargs :guard t))
   (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
@@ -4847,7 +5945,7 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            acl2::bvchop-of-if
+            ;acl2::bvchop-of-if ; pushes the if through ; todo: go to bvif?
             acl2::ifix-of-if
 
             ;; move all of these:
@@ -4861,7 +5959,6 @@
             ;;stuff related to flags changes:
 
             ;acl2::logand-of-1-becomes-getbit-arg2 ;move
-            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
@@ -4905,8 +6002,10 @@
             ;x86isa::idiv-spec-32 ; trying
             acl2::bvchop-when-size-is-not-posp ; move?
 
-            acl2::bvcat-of-if-arg2 ; these just lift the if
-            acl2::bvcat-of-if-arg4
+            ;; do we want these?:
+            ;; acl2::bvcat-of-bvif-arg2
+            ;; acl2::bvcat-of-bvif-arg4
+
             ;;acl2::bvif-of-0-arg1
             ;acl2::bvplus-when-size-is-not-positive ; todo: more like this, make a rule-list
 
@@ -4930,27 +6029,25 @@
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
-            acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
-            acl2::<-becomes-bvlt-dag-gen-better2
+            ;; acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
+            ;; acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant ; move
-            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             ;read-1-of-write-within-new
-            not-equal-of-+-when-separate
-            not-equal-of-+-when-separate-alt
+            ;; not-equal-of-+-when-separate
+            ;; not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             )))
 
-(defun tester-proof-rules ()
+(defund tester-proof-rules ()
   (declare (xargs :guard t))
   (append '(;;myif-of-sub-zf-spec32-arg2
             ;;myif-of-sub-zf-spec32-arg3
@@ -4964,14 +6061,12 @@
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
             acl2::bvplus-commutative-increasing-axe
-            ;acl2::bvchop-of-bvmod ; just use bvchop-identity-axe
             acl2::bvuminus-of-bvif-constants
             acl2::equal-of-bvif ;restrict to constant x?
             acl2::equal-of-bvif-alt ;restrict to constant x?
             ;; just include boolean-rules?
-            acl2::boolif-when-quotep-arg2
-            acl2::boolif-when-quotep-arg3
-            acl2::bvchop-of-bvuminus-same
+            ;; acl2::boolif-when-quotep-arg2
+            ;; acl2::boolif-when-quotep-arg3
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
@@ -4982,6 +6077,8 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
+            acl2::bool-to-bit-becomes-bvif ; in case bool-to-bit remains
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
@@ -4998,47 +6095,194 @@
             jp-condition
             jnp-condition
             jz-condition
-            jnz-condition)
-          (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
+            jnz-condition
+            ;; todo: it would be good to turn these into BVs earlier, during symbolic execution when not passed to rflags
+            ;; todo: need rules like these for all the sub-xxx functions too
+            add-af-spec8-becomes-bvlt
+            add-af-spec16-becomes-bvlt
+            add-af-spec32-becomes-bvlt
+            add-af-spec64-becomes-bvlt
+            adc-af-spec8-becomes-bvlt
+            adc-af-spec16-becomes-bvlt
+            adc-af-spec32-becomes-bvlt
+            adc-af-spec64-becomes-bvlt
+            sub-af-spec8-becomes-bvlt
+            sub-af-spec16-becomes-bvlt
+            sub-af-spec32-becomes-bvlt
+            sub-af-spec64-becomes-bvlt
+            sbb-af-spec8-becomes-bvlt
+            sbb-af-spec16-becomes-bvlt
+            sbb-af-spec32-becomes-bvlt
+            sbb-af-spec64-becomes-bvlt
+            cf-spec8-becomes-getbit  ; cf-spec8$inline
+            cf-spec16-becomes-getbit ; cf-spec16$inline
+            cf-spec32-becomes-getbit ; cf-spec32$inline
+            cf-spec64-becomes-getbit ; cf-spec64$inline
+            pf-spec8$inline ; these expose logcount, which logcount-opener-8 then opens
+            pf-spec16$inline
+            pf-spec32$inline
+            pf-spec64$inline
+            logcount-opener-8 ; improve?
+            sf-spec8-becomes-getbit
+            sf-spec16-becomes-getbit
+            sf-spec32-becomes-getbit
+            sf-spec64-becomes-getbit
+            zf-spec$inline
+            ;;sub-af-spec8$inline
+            x86isa::sub-cf-spec8-opener
+            sub-of-spec8
+            sub-pf-spec8
+            sub-sf-spec8
+            sub-zf-spec8
+            ;;sub-af-spec16$inline
+            x86isa::sub-cf-spec16-opener
+            sub-of-spec16
+            sub-pf-spec16
+            sub-sf-spec16
+            sub-zf-spec16
+            ;;sub-af-spec32$inline
+            x86isa::sub-cf-spec32-opener
+            sub-of-spec32
+            sub-pf-spec32
+            sub-sf-spec32
+            sub-zf-spec32
+            ;;sub-af-spec64$inline
+            x86isa::sub-cf-spec64-opener
+            sub-of-spec64
+            sub-pf-spec64
+            sub-sf-spec64
+            sub-zf-spec64
+            ;; todo: how to open the other flags, like pf, to bv notions?
+            acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            acl2::signed-byte-p-of-+-of---becomes-bv-claim ; todo: alt version?
+            acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
+            acl2::bvplus-convert-arg3-to-bv-axe
+            acl2::slice-convert-arg3-to-bv-axe
+            !rflagsbits->af-opener ; todo: open before proof stage?
+            !rflagsbits->cf-opener
+            !rflagsbits->of-opener
+            !rflagsbits->pf-opener
+            !rflagsbits->sf-opener
+            !rflagsbits->zf-opener
+            !rflagsbits->res1-opener
+            !rflagsbits->res2-opener
+            !rflagsbits->res3-opener
+
+            rflagsbits->af$inline ; todo: open before proof stage?
+            rflagsbits->cf$inline
+            rflagsbits->of$inline
+            rflagsbits->pf$inline
+            rflagsbits->sf$inline
+            rflagsbits->zf$inline
+            rflagsbits->res1$inline
+            rflagsbits->res2$inline
+            rflagsbits->res3$inline
+
+            ;; these are sometimes needed for the openers just above:
+            unsigned-byte-p-of-rflagsbits->af
+            unsigned-byte-p-of-rflagsbits->cf
+            unsigned-byte-p-of-rflagsbits->of
+            unsigned-byte-p-of-rflagsbits->pf
+            unsigned-byte-p-of-rflagsbits->sf
+            unsigned-byte-p-of-rflagsbits->zf
+
+            rflagsbits-fix$inline
+            )
+          (bitops-to-bv-rules) ; should this be needed?
+          ;; todo: this stuff is duplicated in the lifter-rules:
+          *unsigned-choppers* ;; these are just logead, aka bvchop
+          *signed-choppers* ;; these are just logext
+          *unsigned-recognizers* ;; these are just unsigned-byte-p
+          *signed-recognizers* ;; these are just signed-byte-p
+          ;; These are just logext: ; todo: more!
+          '(x86isa::n08-to-i08$inline
+            x86isa::n16-to-i16$inline
+            x86isa::n32-to-i32$inline
+            x86isa::n64-to-i64$inline
+            x86isa::n128-to-i128$inline
+            x86isa::n256-to-i256$inline
+            x86isa::n512-to-i512$inline)
+          (logops-to-bv-rules)
+
+          (x86-type-rules) ; since some of these functions may survive to the proof stage
+          ;; (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
+          (acl2::booleanp-rules)
+          (acl2::boolean-rules-safe)
+          (acl2::type-rules)
           (new-normal-form-rules64) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)))
+          (acl2::unsigned-byte-p-rules)
+          (acl2::array-reduction-rules)
+          (acl2::trim-rules) ; these seem needed for a few examples, like getting tea-wiki-elf64 by rewriting
+          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun extra-loop-lifter-rules ()
+;; ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+;; (defund program-at-rules ()
+;;   (declare (xargs :guard t))
+;;   '(;program-at-of-write
+;;     x86isa::program-at-of-if
+;;     program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+;;     program-at-of-set-undef ; do we not need something like this?
+;;     program-at-of-set-mxcsr
+;;     ))
+
+(defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
-   '(stack-height-increased-wrt
-     stack-height-decreased-wrt
-     get-pc
-     acl2::memberp-of-cons-irrel-strong
+   '(acl2::memberp-of-cons-irrel-strong
      acl2::memberp-of-cons-same
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
-     x86isa::logext-64-does-nothing-when-canonical-address-p
+     ;x86isa::logext-64-does-nothing-when-canonical-address-p
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
      acl2::if-of-t-and-nil-becomes-bool-fix
      acl2::mv-nth-of-if
-     x86isa::canonical-address-p-of-if
+     ;x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1
      x86isa::+-of-if-arg2
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
      acl2::if-x-x-y-when-booleanp
-     read-of-xw-irrel ; drop
+     read-of-xw-irrel ; drop -- but is it elsewhere?
+     read-bytes-of-xw-irrel
+     read-bytes-of-set-flag ; todo: more like this, for other state changers
+     read-bytes-of-!rflags
+     read-bytes-of-set-rip
+     read-bytes-of-set-rax
+     read-bytes-of-set-rbx
+     read-bytes-of-set-rcx
+     read-bytes-of-set-rdx
+     read-bytes-of-set-r8
+     read-bytes-of-set-r9
+     read-bytes-of-set-r10
+     read-bytes-of-set-r11
+     read-bytes-of-set-r12
+     read-bytes-of-set-r13
+     read-bytes-of-set-r14
+     read-bytes-of-set-r15
+     read-bytes-of-set-rsi
+     read-bytes-of-set-rdi
+     read-bytes-of-set-rsp
+     read-bytes-of-set-rbp
+     read-bytes-of-set-undef
+     read-bytes-of-set-mxcsr
+     read-bytes-of-write-when-disjoint-regions48p
+     read-bytes-of-write-when-disjoint-regions48p-alt
      mod-of-plus-reduce-constants
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
      read-of-set-flag ; drop
-     read-of-write-irrel2 ; drop
+     ;read-of-write-when-separate ; drop
      write-of-write-same ; drop
      ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
      ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
@@ -5053,36 +6297,34 @@
 
      xw-of-xr-same-gen
 
-     set-undef ; can be introduced by write-user-rflags-rewrite-better
+     ;; set-undef ; can be introduced by write-user-rflags-rewrite-better
+
+     ;x86isa::canonical-address-p-of-xr-of-rip
+     ;x86isa::rip ; at least for now
+     ;rsp ; at least for now
+
+     acl2::bvminus-of-bvplus-same-arg2 ; todo: more like this (factor out of symbolic-execution-rules64)
      )
-   (program-at-rules) ; to show that program-at assumptions still hold after the loop body
+   ;; (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
 ;(x86isa::lifter-rules)
    ))
 
-;; For the loop lifter
-(defun symbolic-execution-rules-loop-lifter ()
-  (declare (xargs :guard t))
-  '(;;run-until-exit-segment-or-hit-loop-header-opener-1
-    run-until-exit-segment-or-hit-loop-header-opener-2
-    run-until-exit-segment-or-hit-loop-header-base-case-1
-    run-until-exit-segment-or-hit-loop-header-base-case-2
-    run-until-exit-segment-or-hit-loop-header-base-case-3
-    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
-    run-until-exit-segment-or-hit-loop-header-of-if-split
-    run-until-exit-segment-or-hit-loop-header-of-if))
-
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
-(defun loop-lifter-invariant-preservation-rules ()
+(defund loop-lifter-invariant-preservation-rules ()
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(;; mv-nth-1-of-rb-becomes-read
-            read-of-write-irrel
+            ;; read-of-write-irrel
+            read-of-write-when-disjoint-regions48p-gen
+            read-of-write-when-disjoint-regions48p-gen-alt
+            read-bytes-of-write-when-disjoint-regions48p-gen
+            read-bytes-of-write-when-disjoint-regions48p-gen-alt
             read-of-write-same
             )))
 
 ;todo: add more?
-(defun loop-lifter-state-component-extraction-rules ()
+(defund loop-lifter-state-component-extraction-rules ()
   (declare (xargs :guard t))
   '(acl2::integerp-of-+
     x86isa::x86-elem-fix
@@ -5098,6 +6340,8 @@
     xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
     ))
 
+;; These are for both 32 and 64 bit modes.
+;; For the old normal form, we expose XR and XW.
 (defund old-normal-form-rules ()
   (declare (xargs :guard t))
   '(fault fault$a ; exposes xr
@@ -5132,20 +6376,25 @@
     x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
     ))
 
-;; Can't really use the new, nicer normal forms for readers and writers, since
-;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
-(defun loop-lifter-rules32 ()
+;; now same as unroller-rules32!
+;; not really used yet
+(defund loop-lifter-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules32)
-          (old-normal-form-rules)))
+          ;;(old-normal-form-rules)
+          (new-normal-form-rules-common)
+          (new-normal-form-rules32)))
 
-;; Can't really use the new, nicer normal forms for readers and writers, since
-;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
-(defun loop-lifter-rules64 ()
+;; now same as unroller-rules64!
+(defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
-          (old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
-          ))
+          (new-normal-form-rules-common)
+          (new-normal-form-rules64)
+          ;;(old-normal-form-rules)
+          (read-and-write-rules-bv)
+          (unsigned-canonical-rules)
+          (canonical-rules-bv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5209,8 +6458,16 @@
 (set-axe-rule-priority read-of-set-rsi -2)
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
-(set-axe-rule-priority read-of-write-same -1)
+(set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
+(set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
+(set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)
+
+;; Try these as a last resort:
+;; (set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe-smt 1) ;  now we always go to unsigned-canonical-address-p
+(set-axe-rule-priority unsigned-canonical-address-p-when-canonical-regionp-and-bvlt-of-bvminus-axe-smt 1)
+(set-axe-rule-priority unsigned-canonical-address-p-smt 1)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)
@@ -5236,9 +6493,9 @@
 (set-axe-rule-priority rgfi-becomes-rax -1)
 (set-axe-rule-priority rgfi-becomes-rbx -1)
 
-;; Based on how commonly these rules were used in an example:
-(set-axe-rule-priority program-at-of-write -4)
-(set-axe-rule-priority program-at-of-set-flag -3)
+;; ;; Based on how commonly these rules were used in an example:
+;; (set-axe-rule-priority program-at-of-write -4)
+;; (set-axe-rule-priority program-at-of-set-flag -3)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority xw-becomes-set-rip -4)
@@ -5272,3 +6529,15 @@
 
 ;; This may be the rule that is used the most
 (set-axe-rule-priority acl2::mv-nth-of-cons-safe -1)
+
+;; Delay under we've tried to resolve the read of write:
+(set-axe-rule-priority read-of-write-becomes-read-of-write-of-clear-flags-extend-axe 1)
+;; Remove the clear-flags-retract before we try to resolve the read-of-write
+(set-axe-rule-priority read-of-write-of-clear-flags-retract -1)
+
+;; Only unroll if nothing else works
+(set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
+
+;; so these are tried after the rules that discard entire halves of the array:
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-max-smt 1)
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-zero-smt 1)

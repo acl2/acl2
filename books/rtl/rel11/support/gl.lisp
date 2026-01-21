@@ -92,3 +92,6 @@
 (gl::def-gl-rewrite ag-of-as
   (equal (ag a (as wa v r))
          (if (equal a wa) v (ag a r))))
+
+(gl::def-gl-rewrite ag-of-nil
+  (equal (ag a nil) (default-get-valu)))

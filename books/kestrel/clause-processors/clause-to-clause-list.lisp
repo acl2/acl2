@@ -1,6 +1,6 @@
 ; Turning a clause into a clause list
 
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,4 +21,14 @@
 (defthm if-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
   (iff (if-eval (conjoin (disjoin-lst (clause-to-clause-list clause))) a)
        (if-eval (disjoin clause) a))
+  :hints (("Goal" :in-theory (enable clause-to-clause-list))))
+
+(defthm term-list-listp-of-clause-to-clause-list
+  (implies (term-listp clause w)
+           (term-list-listp (clause-to-clause-list clause) w))
+  :hints (("Goal" :in-theory (enable clause-to-clause-list))))
+
+(defthm logic-fns-list-listp-of-clause-to-clause-list
+  (implies (logic-fns-listp clause w)
+           (logic-fns-list-listp (clause-to-clause-list clause) w))
   :hints (("Goal" :in-theory (enable clause-to-clause-list))))

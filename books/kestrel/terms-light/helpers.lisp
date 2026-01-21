@@ -1,6 +1,6 @@
 ; Helper rules for the proofs in this directory
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; TODO: Separate out this stuff better
 
 (include-book "no-nils-in-termp")
+(include-book "lambdas-closed-in-termp")
 (include-book "filter-formals-and-actuals")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "non-trivial-formals-and-args")

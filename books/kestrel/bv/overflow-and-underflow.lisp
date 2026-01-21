@@ -15,12 +15,13 @@
 (include-book "sbvlt")
 (include-book "bvlt")
 (include-book "bvplus")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "rules") ;reduce? for getbit-of-+
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "bvuminus"))
 
 ;;;
 ;;; signed-addition-overflowsp
@@ -54,7 +55,7 @@
                                           logext-cases
                                           bvminus bvuminus
                                           bvchop-when-top-bit-1
-                                          getbit-when-val-is-not-an-integer
+
                                           )
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    ;; for speed:
@@ -80,7 +81,7 @@
                                           logext-cases
                                           bvminus  bvuminus
                                           BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    bvchop-when-top-bit-1 ; for speed
@@ -127,9 +128,7 @@
                                    bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases
                                    bvminus bvuminus
-                                   bvchop-when-top-bit-1
-                                   getbit-when-val-is-not-an-integer
-                                   )
+                                   bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    bvchop-of-sum-cases +-of-expt-and---of-expt-of-one-less-extra ; for speed
                                    )))))
@@ -152,8 +151,7 @@
                                           logext-cases
                                           logext-of-plus
                                           bvminus bvuminus
-                                          bvchop-when-top-bit-1
-                                          getbit-when-val-is-not-an-integer)
+                                          bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm not-signed-addition-underflowsp-when-signed-addition-overflowsp-cheap

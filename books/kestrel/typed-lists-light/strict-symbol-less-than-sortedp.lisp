@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function strict-symbol<-sortedp
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
-;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+;(local (include-book "symbol-listp"))
 
 (in-theory (disable strict-symbol<-sortedp))
 

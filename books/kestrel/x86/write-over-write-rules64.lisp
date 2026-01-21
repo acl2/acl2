@@ -140,6 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These pull set-rip outward:
+(local (in-theory (disable xw-becomes-set-rip)))
 (defthm set-rax-of-set-rip (equal (set-rax rax (set-rip rip x86)) (set-rip rip (set-rax rax x86))) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm set-rbx-of-set-rip (equal (set-rbx rbx (set-rip rip x86)) (set-rip rip (set-rbx rbx x86))) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm set-rcx-of-set-rip (equal (set-rcx rcx (set-rip rip x86)) (set-rip rip (set-rcx rcx x86))) :hints (("Goal" :in-theory (enable set-rip))))

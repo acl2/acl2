@@ -1,6 +1,6 @@
 ; Rules about close-output-channel
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,3 +29,8 @@
            (equal (state-p (close-output-channel channel state))
                   (open-output-channel-any-p channel state)))
   :hints (("Goal" :in-theory (enable state-p open-output-channel-any-p))))
+
+(defthm w-of-close-output-channel
+  (equal (w (close-output-channel channel state))
+         (w state))
+  :hints (("Goal" :in-theory (enable close-output-channel w))))

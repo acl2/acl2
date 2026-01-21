@@ -1,7 +1,7 @@
 ; The Axe Rewriter (somewhat old)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,11 +24,12 @@
 
 (include-book "rewriter-common")
 (include-book "refined-assumption-alists")
+(include-book "refined-assumption-alists3")
 (include-book "equality-assumption-alists")
 (include-book "dag-array-builders3")
 (include-book "node-replacement-alist")
 (include-book "node-replacement-alist-for-context")
-(include-book "instantiate-hyp")
+(include-book "instantiate-hyp") ; brings in skip-proofs, via evaluator.lisp
 (include-book "prover")
 (include-book "dag-to-term")
 (include-book "normalize-xors")
@@ -674,7 +675,7 @@
                         (b* ((embedded-dag-len (len embedded-dag))
                              (alist-nodenum (second args))
                              ;; (interpreted-function-alist (third args)) ;fffixme pay attention to this!
-                             (embedded-dag-vars (dag-vars embedded-dag))
+                             (embedded-dag-vars (dag-vars-unsorted embedded-dag))
                              (var-lookup-terms (make-var-lookup-terms embedded-dag-vars alist-nodenum))
                              ;;add the lookup of each var to the dag:
                              ((mv erp var-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries & limits state)
@@ -1201,7 +1202,7 @@
                   ;;bozo might get speed up by taking advantage of the fact that the expr came from a dag node and so can't be some big tree
                   ;;it's probably a function call tree? check whether it's of an if or lambda and if not, don't waste time simplifying the args? pass in a flag saying the args are simplified?
                   ;;fffixme do different things depending on whether expr is a var or a fn call:
-                  (simplify-tree-and-add-to-dag ;fffixme call simplify-fun-call-and-add-to-dag?? ;or (because we may still want to handle ifs and other stuff) pass a flag saying args are simplified - what about lambdas?
+                  (simplify-tree-and-add-to-dag ;fffixme call simplify-fun-call-and-add-to-dag (but may need to replace dargs using the context)?? ;or (because we may still want to handle ifs and other stuff) pass a flag saying args are simplified - what about lambdas?
                    (rename-var-or-fn-call-expr expr renaming-array (+ -1 nodenum))
                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    rewriter-rule-alist

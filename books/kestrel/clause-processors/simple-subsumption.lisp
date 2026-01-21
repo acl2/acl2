@@ -1,6 +1,6 @@
 ; A clause processor that performs a simple form of subsumption
 
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,6 @@
 
 ;; TODO: Rename this to resolve-ifs??  it's more than just subsumption
 ;; we use earlier facts to resolve later facts
-
-;; TODO: Use a simple evaluator (one with IF and NOT)?
 
 ;; Handles goal like (implies (and a_1 a_2 ...) (and b_1 b_2 ...)) where the as
 ;; and bs are, in general, disjunctions and the a_i obviously imply some of the
@@ -290,6 +288,18 @@
            (pseudo-termp (resolve-ifs-in-term term true-terms false-terms)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-term))))
 
+(local
+  (defthm termp-of-resolve-ifs-in-term
+    (implies (termp term w)
+             (termp (resolve-ifs-in-term term true-terms false-terms) w))
+    :hints (("Goal" :in-theory (enable resolve-ifs-in-term)))))
+
+(local
+  (defthm logic-fnsp-of-resolve-ifs-in-term
+    (implies (logic-fnsp term w)
+             (logic-fnsp (resolve-ifs-in-term term true-terms false-terms) w))
+    :hints (("Goal" :in-theory (enable resolve-ifs-in-term)))))
+
 (verify-guards resolve-ifs-in-term :hints (("Goal" :in-theory (enable len-when-pseudo-termp-and-quotep))))
 
 (defthm resolve-ifs-in-term-correct
@@ -299,8 +309,9 @@
                 (if-and-not-eval term a)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-term))))
 
+;; Uses information from earlier literals to resolve IFs in later literals.
 ;; In general, the TRUE-TERMS are disjunctions.
-;; Returns a new clause
+;; Returns a new clause.
 ;; TODO: Stop if any literal becomes *t*
 (defund resolve-ifs-in-clause (clause true-terms false-terms)
   (declare (xargs :guard (and (pseudo-term-listp clause)
@@ -318,10 +329,10 @@
                                    (if (and (call-of 'not lit)
                                             (= 1 (len (fargs lit))))
                                        ;; if the clause is (or (not A) ...rest...)
-                                       ;; we can assume A when processing rest
+                                       ;; we can assume A when processing REST
                                        ;; More generally, if we have (or LIT ...rest...)
                                        ;; we can assume anything implied by LIT's negation, when
-                                       ;; processing rest (TODO: Consider when LIT is an IMPLIES).
+                                       ;; processing REST (TODO: Consider when LIT is an IMPLIES).
                                        (append (get-conjuncts-of-term (farg1 lit))
                                                true-terms)
                                      true-terms)
@@ -329,6 +340,11 @@
                                    (if (and (call-of 'not lit)
                                             (= 1 (len (fargs lit))))
                                        false-terms
+                                     ;; We can assume all the disjuncts of LIT
+                                     ;; to be false, since if any of them is
+                                     ;; true, then so is LIT and then the whole
+                                     ;; clause is true, regardless of what we
+                                     ;; do to the REST.
                                      (append (get-disjuncts-of-term lit)
                                              false-terms)))))))
 
@@ -350,17 +366,39 @@
            (pseudo-term-listp (resolve-ifs-in-clause clause true-terms false-terms)))
   :hints (("Goal" :in-theory (enable resolve-ifs-in-clause))))
 
+(local
+  (defthm term-listp-of-resolve-ifs-in-clause
+    (implies (term-listp clause w)
+             (term-listp (resolve-ifs-in-clause clause true-terms false-terms) w))
+    :hints (("Goal" :in-theory (enable resolve-ifs-in-clause)))))
+
+(local
+  (defthm logic-fns-listp-of-resolve-ifs-in-clause
+    (implies (logic-fns-listp clause w)
+             (logic-fns-listp (resolve-ifs-in-clause clause true-terms false-terms) w))
+    :hints (("Goal" :in-theory (enable resolve-ifs-in-clause)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The main clause processor defined in this book:
 ;; TODO: Start by calling simplify-assumptions-in-clause?
 (defund simple-subsumption-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (let* ((clause (resolve-ifs-in-clause clause nil nil))
          (clause (handle-constant-literals clause)))
+    ;;  a clause-processor must return a list of clauses:
     (clause-to-clause-list clause)))
+
+;; Supports the :well-formedness-guarantee.
+(defthm logic-term-list-listp-of-simple-subsumption-clause-processor
+  (implies (logic-term-listp clause w)
+           (logic-term-list-listp (simple-subsumption-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable simple-subsumption-clause-processor))))
 
 ;todo: add :well-formedness proof
 (defthm simple-subsumption-clause-processor-correct
   (implies (if-and-not-eval (conjoin-clauses (simple-subsumption-clause-processor clause)) a)
            (if-and-not-eval (disjoin clause) a))
-  :rule-classes :clause-processor
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-simple-subsumption-clause-processor))
   :hints (("Goal" :in-theory (enable simple-subsumption-clause-processor))))

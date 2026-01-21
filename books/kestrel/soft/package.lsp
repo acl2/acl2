@@ -1,10 +1,10 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,6 +56,9 @@
                          formals
                          function-symbol-listp
                          fundef-enabledp
+                         get-measure
+                         get-well-founded-relation
+                         get-well-founded-relation+
                          guard-verified-p
                          guard-verified-p+
                          impossible
@@ -68,7 +71,6 @@
                          make-lambda
                          maybe-msgp
                          maybe-pseudo-event-formp
-                         measure
                          o<
                          packn-pos
                          pseudo-event-form-listp
@@ -84,6 +86,4 @@
                          table-alist+
                          ubody
                          uguard
-                         variablep
-                         well-founded-relation
-                         well-founded-relation+)))
+                         variablep)))

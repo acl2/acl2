@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; TODO: Consider using a property list world for this
+;; We could use a property list world for this, or a hash table, or a
+;; fast-alist, but note that the limits alist is usually very small.
 
 (include-book "stored-rules")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
@@ -68,6 +69,14 @@
                  (integerp val))
             (rule-limitsp (acons-unique key val alist)))
    :hints (("Goal" :in-theory (enable acons-unique rule-limitsp)))))
+
+(defthm rule-limitsp-of-cons
+  (equal (rule-limitsp (cons pair limits))
+         (and (consp pair)
+              (symbolp (car pair))
+              (integerp (cdr pair))
+              (rule-limitsp limits)))
+   :hints (("Goal" :in-theory (enable rule-limitsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,3 +146,10 @@
   :hints (("Goal" :in-theory (enable add-limit-for-rules rule-limitsp))))
 
 (verify-guards add-limit-for-rules)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund limit-for-rule (rule-name limits)
+  (declare (xargs :guard (and (symbolp rule-name)
+                              (rule-limitsp limits))))
+  (cdr (assoc-eq rule-name limits)))

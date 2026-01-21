@@ -11,7 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ;deprecate?
+(include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
 (defund bv-arrayp (element-width length val)
   (declare (xargs :guard t))
@@ -43,9 +45,15 @@
               (bv-arrayp bytesize (+ -1 len) items)))
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
+;deprecate?
 (defthm all-unsigned-byte-p-when-bv-arrayp
  (implies (bv-arrayp bytesize len input)
           (all-unsigned-byte-p bytesize input))
+ :hints (("Goal" :in-theory (enable bv-arrayp))))
+
+(defthm unsigned-byte-listp-when-bv-arrayp
+ (implies (bv-arrayp bytesize len input)
+          (unsigned-byte-listp bytesize input))
  :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthm bv-arrayp-when-length-is-0

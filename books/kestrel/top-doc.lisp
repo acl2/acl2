@@ -19,6 +19,7 @@
 
 (local
  (progn
+   (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
    (include-book "axe/doc")
@@ -27,6 +28,7 @@
    (include-book "bv/doc")
    (include-book "bv-lists/doc")
    (include-book "auto-termination/top") ; omits some books (see file for why)
+   (include-book "bibtex/xdoc-generation")
    (include-book "bitcoin/top")
    (include-book "c/top")
    (merge-io-pairs

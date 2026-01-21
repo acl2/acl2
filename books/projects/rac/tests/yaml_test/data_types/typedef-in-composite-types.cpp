@@ -1,6 +1,3 @@
-#include <tuple>
-using namespace std;
-
 // rac begin
 
 typedef int i32;
@@ -10,7 +7,7 @@ struct Foo {
 };
 
 int main() {
-  Foo f = { 0 };
-  i32 a[4] = { 0 };
+  Foo f = { 2 };
+  i32 a[4] = { 2 };
   return 0;
 }

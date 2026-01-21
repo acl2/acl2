@@ -27,11 +27,11 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
 (include-book "kestrel/utilities/mv-nth" :dir :system)
-;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/slice" :dir :system) ; todo: because of the disables below
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;to normalize more
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
@@ -60,15 +60,44 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
+;; todo: localize
 (in-theory (disable ACL2::ZP-WHEN-GT-0   ;slow
                     ACL2::ZP-WHEN-INTEGERP ;slow
                     ACL2::SLICE-TOO-HIGH-IS-0 ;slow
-                    mv-nth))
+                    mv-nth
+                    acl2::posp-redefinition ; todo yuck, from books/std/basic/arith-equivs
+                    ))
 
-(local (in-theory (disable ACL2::SMALL-INT-HACK ;slow
+(in-theory (disable x86isa::rme08))
+
+(local (in-theory (disable ;ACL2::SMALL-INT-HACK ;slow
                            )))
 
+ ;try to get my rule to fire:
+(in-theory (disable ;rb-in-terms-of-nth-and-pos
+                    ;rb-in-terms-of-rb-subset-p
+                    ;combine-bytes-rb-in-terms-of-rb-subset-p
+            ))
+
+(in-theory (disable wb))
+(in-theory (disable x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE))
+
+;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
+
+;slow:
+(in-theory (disable DEFAULT-CDR
+                    ;ACL2::CONSP-OF-ASSOC-EQUAL
+                    alistp
+                    ;assoc-list
+                    ))
+
+(local (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2)))
+
+;seems bad:
+;(in-theory (disable WB-AND-WB-COMBINE-WBS))
+
 ;; could expand the bvminus
+;deprecate
 (defthmd canonical-address-p-becomes-bvlt-of-bvminus
   (implies (signed-byte-p 64 x)
            (equal (canonical-address-p x)
@@ -77,10 +106,29 @@
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
+;use more
+(defthmd canonical-address-p-becomes-bvlt-of-bvplus
+  (implies (signed-byte-p 64 x)
+           (equal (canonical-address-p x)
+                  (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+;deprecate
 (defthmd canonical-address-p-becomes-bvlt-of-bvminus-strong
   (equal (canonical-address-p x)
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+;use more
+(defthmd canonical-address-p-becomes-bvlt-of-bvplus-strong
+  (equal (canonical-address-p x)
+         (and (signed-byte-p 64 x)
+              (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
@@ -111,14 +159,6 @@
                 (acl2-numberp paddr))
            (< paddr addr))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil nil))))
-
- ;try to get my rule to fire:
-(in-theory (disable ;rb-in-terms-of-nth-and-pos
-                    ;rb-in-terms-of-rb-subset-p
-                    ;combine-bytes-rb-in-terms-of-rb-subset-p
-            ))
-
-;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
 
 ;; (thm
 ;;  (implies (and (CANONICAL-ADDRESS-p rip)
@@ -159,15 +199,6 @@
 ;;             (CREATE-CANONICAL-ADDRESS-LIST '8
 ;;                                            (BINARY-+ '-8 rsp)))))
 
-;slow:
-(in-theory (disable DEFAULT-CDR
-                    ;ACL2::CONSP-OF-ASSOC-EQUAL
-                    alistp
-                    ;assoc-list
-                    ))
-
-;seems bad:
-;(in-theory (disable WB-AND-WB-COMBINE-WBS))
 
 (defthm equal-of-if-constants
   (implies (syntaxp (and (quotep k1)
@@ -228,7 +259,6 @@
                                8
                                (mv-nth 1 (rb 1 addr r-w-x x86))
                                )))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (rb rb-1 ash ;rvm08
                                       acl2::bvcat-becomes-bvor-of-bvshl acl2::bvor bvshl-becomes-*-of-expt ;acl2::bvshl ; ACL2::BVCAT
                                       acl2::logapp
@@ -239,8 +269,6 @@
                                          ;X::MV-NTH-1-OF-RB-1-BECOMES-READ
                                          ACL2::BVSHL-REWRITE-WITH-BVCHOP ;looped
                                          )))))
-
-(local (in-theory (enable APP-VIEW)))
 
 ;to handle a multi-byte RB by peeling off one known byte at a time
 (defthm rb-in-terms-of-nth-and-pos-eric-gen
@@ -291,8 +319,6 @@
                             distributivity ;blocks slice-of-combine-bytes
                             ACL2::BVCAT-EQUAL-REWRITE-ALT
                             ACL2::BVCAT-EQUAL-REWRITE)))))
-
-
 
 ;; ;(in-theory (disable read64))
 ;; ;use this?
@@ -351,9 +377,9 @@
 ;;          nil))
 ;; (in-theory (disable rb-nil-lemma))
 
-(in-theory (disable DEFAULT-<-1))
+;(in-theory (disable DEFAULT-<-1))
 
-(local (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2)))
+
 
 ;; (defthm rb-of-nil
 ;;   (equal (rb nil r-w-x x86)
@@ -630,11 +656,6 @@
 ;; ----
 ;; ((low addresses))
 
-
-
-
-
-
 ;this version is actually more likely to fire (if the equal is reordered to
 ;have the constant k3 first)
 (defthm equal-of-if-constants-alt
@@ -761,7 +782,7 @@
 ;; Add aliases in the X86ISA package of some common utilities:
 
 ;; (defmacro defconst-computed2 (&rest args) `(acl2::defconst-computed2 ,@args))
-;; (defmacro prove-equivalence (&rest args) `(acl2::prove-equivalence ,@args))
+;; (defmacro prove-equal-with-axe (&rest args) `(acl2::prove-equal-with-axe ,@args))
 ;; (defmacro dag-info (&rest args) `(acl2::dag-info ,@args))
 ;; (defmacro simp-dag (&rest args) `(acl2::simp-dag ,@args))
 ;; (defmacro make-axe-rules (&rest args) `(acl2::make-axe-rules ,@args))
@@ -785,9 +806,6 @@
 ;;          (64-bit-modep x86))
 ;;   :hints (("Goal" :in-theory (enable 64-bit-modep))))
 
-(in-theory (disable wb))
-(in-theory (disable x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE))
-
 ;; ;tell shilpi
 ;; (DEFTHM RB-WB-SUBSET-gen
 ;;   (IMPLIES (AND (APP-VIEW X86)
@@ -808,9 +826,6 @@
 ;;                                :LOW (ASH (- ADDR-1 ADDR-2) 3)
 ;;                                :WIDTH (ASH N-1 3))))
 ;;   :hints (("Goal" :cases ((<= (+ ADDR-1 N-1) (+ ADDR-2 N-2))))))
-
-
-
 
 ;; (defthm n08p-of-g-when-memp-aux
 ;;   (implies (and (x86isa::memp-aux x)
@@ -850,8 +865,6 @@
 ;;            (integerp (gz addr (nth 31 x86))))
 ;;   :hints (("Goal" :in-theory (enable x86p x86isa::memp))))
 
-
-
 ;move
 (defthm xw-of-rip-and-if
   (equal (xw ':rip '0 (if test pc1 pc2) x86)
@@ -865,8 +878,6 @@
                      (xr fld index then)
                      (xr fld index else)))
   :hints (("Goal" :in-theory (enable acl2::myif))))
-
-(in-theory (disable x86isa::rme08))
 
 ;; ;; simplified hyps should work better with axe
 ;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-simple-32
@@ -986,7 +997,9 @@
            (equal (if (if test nil x) tp ep)
                   (if test ep tp))))
 
-(in-theory (enable app-view)) ;for acl2-based lifting
+;;for non-axe lifting: ; todo: move these?
+(in-theory (enable app-view
+                   x86isa::x86-operation-mode))
 
 (defthmd acl2::logand-with-mask-alt
   (implies (and (acl2::logmaskp acl2::mask)
@@ -998,9 +1011,6 @@
   :hints (("Goal" :use (:instance acl2::logand-with-mask)
            :in-theory (disable acl2::logand-with-mask))))
 
-
-
-(in-theory (disable acl2::posp-redefinition)) ;yuck
 (in-theory (enable posp))
 
 ;; (defthm +-of-bvplus-of-x-and-minus-x
@@ -1012,8 +1022,7 @@
 ;;                     1)))
 ;;   :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
 
-(in-theory (enable x86isa::x86-operation-mode)) ;for non-axe symbolic execution
-
+;; Rephrases RFLAGSBITS (which uses LOGAPP) to use BVCAT instead.
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite
   (implies (and (unsigned-byte-p 1 x86isa::cf)
@@ -1037,7 +1046,7 @@
                 (unsigned-byte-p 1 X86ISA::RES3)
                 (unsigned-byte-p 1 X86ISA::AF)
                 (unsigned-byte-p 1 X86ISA::RES2))
-           (equal (X86ISA::RFLAGSBITS X86ISA::CF X86ISA::RES1
+           (equal (RFLAGSBITS X86ISA::CF X86ISA::RES1
                                       PF X86ISA::RES2 X86ISA::AF X86ISA::RES3
                                       X86ISA::ZF X86ISA::SF X86ISA::TF
                                       X86ISA::INTF X86ISA::DF X86ISA::OF
@@ -1072,14 +1081,14 @@
                                    X86ISA::10BITS-FIX
                                    X86ISA::2BITS-FIX
                                    )
-                                  ( ;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
+                                  (;;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
                                    ACL2::LOGAPP-EQUAL-REWRITE
                                    ACL2::LOGAPP-EQUAL-REWRITE-16
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ACL2::BVCHOP-IDENTITY
                                    FTY::LOGAPP-NATP
                                    ACL2::BFIX-WHEN-NOT-1
-;ACL2::BVCAT-EQUAL-REWRITE-ALT
+                                   ;;ACL2::BVCAT-EQUAL-REWRITE-ALT
                                    ACL2::BVCAT-EQUAL-REWRITE
                                    ACL2::BFIX-WHEN-NOT-BITP)))))
 
@@ -1173,7 +1182,7 @@
            x86))
   :hints (("Goal" :in-theory (enable x::set-flag acl2::getbit write-user-rflags))))
 
-(include-book "readers-and-writers")
+(include-book "readers-and-writers")  ;for set-flag and set-undef
 
 ;todo: move to a book in the X package
 (defthm write-user-rflags-rewrite-better
@@ -1194,8 +1203,6 @@
               (x86 (x::set-undef (if (equal (rflagsbits->of undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86)))
            x86))
   :hints (("Goal" :in-theory (enable x::set-undef undef))))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

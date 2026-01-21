@@ -1290,13 +1290,7 @@
   (if (equal body
              '((LAMBDA (HYP)
                        (CONS 'NIL (CONS 'NIL (CONS HYP 'NIL))))
-               ((LAMBDA (HYP) HYP)
-                (RETURN-LAST 'ACL2::MBE1-RAW
-                             HYP
-                             (RETURN-LAST 'PROGN
-                                          (ACL2::THROW-NONEXEC-ERROR ':NON-EXEC
-                                                                     '(BFR-HYP-FIX HYP))
-                                          (BFR-HYP-FIX HYP)))))
+               (HYP-NORM HYP))
              ;; (cons 'nil (cons 'nil 'nil))
              )
       ;; done.

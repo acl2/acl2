@@ -28,8 +28,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
  
-; cert_param: (non-acl2r)
-
 (in-package "FGL")
 
 (include-book "pathcond-aig")
@@ -207,6 +205,9 @@
   :guard-hints (("goal" :in-theory (enable pathcond-rewind-stack-len
                                            pathcond-rewind-ok)))
   :returns new-pathcond
+  :prepwork (#+:non-standard-analysis
+             (local (defthm realp-when-natp
+                      (implies (natp x) (realp x)))))
   (b* ((pathcond (pathcond-fix pathcond))
        ((unless (pathcond-enabledp pathcond))
         pathcond))

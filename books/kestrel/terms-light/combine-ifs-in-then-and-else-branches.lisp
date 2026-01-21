@@ -1,6 +1,6 @@
 ; A utility to combine IFs
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -150,14 +150,11 @@
 (make-flag combine-ifs-in-then-and-else-branches)
 
 (defthm-flag-combine-ifs-in-then-and-else-branches
-  (defthm fake
-    t
-    :skip t
-    :flag combine-ifs-in-then-and-else-branches)
   (defthm len-of-combine-ifs-in-then-and-else-branches-list
     (equal (len (combine-ifs-in-then-and-else-branches-list terms count))
            (len terms))
     :flag combine-ifs-in-then-and-else-branches-list)
+  :skip-others t
   :hints (("Goal" ;:induct (len terms)
            :expand (combine-ifs-in-then-and-else-branches-list terms count)
            :in-theory (enable (:i len)

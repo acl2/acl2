@@ -1,0 +1,10 @@
+// RAC begin
+
+template <int a, int b>
+int foo(int c, int d) {
+  return a + b + c + d;
+}
+
+int bar() {
+  return foo<1, 2>(3, 4);
+}

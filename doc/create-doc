@@ -36,16 +36,6 @@ if [ ! -d HTML ] ; then
 # Copy down the files we are allowed to change without rebuilding.
 
     cp ../new.html HTML/new.html
-    mkdir HTML/installation
-    cp ../installation/ccl.html HTML/installation/
-    cp ../installation/installation.html HTML/installation/
-    cp ../installation/misc.html HTML/installation/
-    cp ../installation/obtaining-and-installing.html HTML/installation/
-    cp ../installation/requirements.html HTML/installation/
-    cp ../installation/using.html HTML/installation/
-    cp ../installation/windows7.html HTML/installation/
-    cp ../installation/windows-gcl-jared.html HTML/installation/
-    cp ../installation/installing-make.html HTML/installation/
     cp ../other-releases.html HTML/other-releases.html
     cp ../workshops.html HTML/workshops.html
     cp ../LICENSE HTML/LICENSE

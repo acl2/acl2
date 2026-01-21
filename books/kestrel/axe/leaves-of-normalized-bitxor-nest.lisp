@@ -19,6 +19,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 
 (local (in-theory (enable consp-of-cdr)))
 

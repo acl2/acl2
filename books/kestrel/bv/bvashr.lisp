@@ -1,7 +1,7 @@
 ; Arithmetic (sign-preserving) right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (local (include-book "bvsx"))
 (local (include-book "bvshr"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
@@ -110,10 +111,8 @@
   :hints (("Goal" :in-theory (enable bvashr bvshr))))
 
 (defthm bvashr-of-bvchop
-  (implies (and (natp width)
-                (natp shift-amount))
-           (equal (bvashr width (bvchop width x) shift-amount)
-                  (bvashr width x shift-amount)))
+  (equal (bvashr width (bvchop width x) shift-amount)
+         (bvashr width x shift-amount))
   :hints (("Goal" :cases ((equal 0 width))
            :in-theory (enable bvashr))))
 

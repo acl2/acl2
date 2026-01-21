@@ -35,7 +35,6 @@
 (include-book "interp-st-bfrs-ok")
 (include-book "sat-stub")
 (include-book "centaur/aignet/cube-sat" :dir :system)
-(include-book "satlink-sat-config")
 (local (std::add-default-post-define-hook :fix))
 (local (include-book "std/lists/resize-list" :dir :system))
 

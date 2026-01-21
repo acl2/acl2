@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nonnegative-integer-quotient.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -193,6 +193,12 @@
                   i))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
 
+(defthm nonnegative-integer-quotient-when-not-natp-arg1
+  (implies (not (natp i))
+           (equal (nonnegative-integer-quotient i j)
+                  0))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
 (defthm nonnegative-integer-quotient-when-<
   (implies (and (< i j)
                 (natp i)
@@ -213,3 +219,31 @@
   :hints (("Goal" :use (:instance <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same
                                   (x (- x)))
            :in-theory (disable <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same))))
+
+(defthmd nonnegative-integer-quotient-when-equal-of-quotients
+  (implies (and (equal (/ i1 j1) (/ i2 j2))
+                (integerp i1)
+                (integerp i2)
+                (integerp j1)
+                (integerp j2)
+                (< 0 j1)
+                (< 0 j2))
+           (equal (nonnegative-integer-quotient i1 j1)
+                  (nonnegative-integer-quotient i2 j2)))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
+;; / is often easier to deal with than nonnegative-integer-quotient
+(defthm nonnegative-integer-quotient-when-multiple
+  (implies (and (integerp (/ i j))
+                (natp i)
+                (posp j))
+           (equal (nonnegative-integer-quotient i j)
+                  (/ i j)))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
+(defthmd nonnegative-integer-quotient-of-2
+  (implies (natp i)
+           (equal (nonnegative-integer-quotient i 2)
+                  (if (evenp i) (/ i 2) (+ -1/2 (/ i 2)))))
+  :hints (("Subgoal *1/1" :cases ((equal 1 i)))
+          ("Goal" :in-theory (enable nonnegative-integer-quotient))))

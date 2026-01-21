@@ -55,7 +55,7 @@
    (cons a b)
    (if test x y)))
 
-; verify gaurds?
+; verify guards?
 ;returns a list of equalities equivalent to the claim (equal CONS-NEST1 CONS-NEST2)
 ;perhaps don't include equalities that are trivially true?
 (defun cons-equal-meta-function-helper (cons-nest1 cons-nest2)

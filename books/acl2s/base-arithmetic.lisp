@@ -397,7 +397,6 @@ I commented out some disabled theorems that seem fine to me.
           (< (+ x lhs)
              (+ x rhs))))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
-|#
 
 #!acl2
 (defthm acl2s::acl2s-prefer-positive-addends-<1
@@ -415,6 +414,7 @@ I commented out some disabled theorems that seem fine to me.
    (equal (< lhs (+ yyy rhs))
           (< (+ (- yyy) lhs) rhs)))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
+|#
 
 #!acl2
 (defthm acl2s::acl2s-prefer-positive-addends-<2

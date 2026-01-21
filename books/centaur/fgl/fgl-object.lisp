@@ -449,7 +449,18 @@ case you misspell @(':g-concrete').</p>
                (fgl-object-variable-free-p (cdar x)))
            (fgl-object-alist-variable-free-p (cdr x)))))
   ///
-  (memoize 'fgl-object-variable-free-p))
+  (memoize 'fgl-object-variable-free-p)
+
+  (fty::deffixequiv-mutual fgl-object-variable-free-p
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((:free (a b) (fgl-object-alist-variable-free-p (cons a b)))
+                            (fgl-object-alist-variable-free-p x)
+                            (fgl-object-alist-fix x)
+                            (fgl-objectlist-variable-free-p x)
+                            (fgl-objectlist-fix x)
+                            (:free (a b) (fgl-objectlist-variable-free-p (cons a b)))
+                            (fgl-object-variable-free-p x))
+                   :in-theory (enable fgl-object-variable-free-p))))))
 
 
 

@@ -20,6 +20,10 @@
 (include-book "rules-in-rule-lists") ;for equal-same, etc
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-left
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests of prove-equal-with-tactics:
+
 ;A simple test
 (deftest
   (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same)))
@@ -28,7 +32,6 @@
 (deftest
   (must-fail (prove-equal-with-tactics '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
 
-
 ;; Test redundancy checking:
 (deftest
   (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same))
@@ -36,6 +39,10 @@
   (prove-equal-with-tactics '(car (cons x 7)) 'x :rules '(car-cons equal-same))
   ;; something non-redundant still fails:
   (must-fail (prove-equal-with-tactics '(car (cons 7 x)) 'x :rules '(car-cons equal-same))))
+
+;; todo:
+(deftest (prove-equal-with-tactics '3 '3 :rule-classes nil))
+
 
 ;;TODO: Uncomment these after adding rules:
 
@@ -73,6 +80,44 @@
 (deftest
   (must-fail (prove-equal-with-tactics '(bvplus 32 x y) '(bvmult 32 x y) :rules '(equal-same))))
 
+;; tests involving contexts
+
+(deftest
+  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) 5) 5 :rules '(if-same-branches) :different-vars-ok t))
+
+(deftest
+  (defstub f (x) t)
+  ;; fails because we don't have precise context info for the term (+ x 2) since it appears in both branches of the if.
+  (must-fail (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                                       '(if (equal x 3) 5 (f (+ x 2)))
+                                       :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                                       :different-vars-ok t)))
+
+(deftest
+  (defstub f (x) t)
+  ;; same goal as above but works because we call :rewrite-with-precise-contexts
+  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
+                            '(if (equal x 3) 5 (f (+ x 2)))
+                            :tactics '(:rewrite-with-precise-contexts)
+                            :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
+                            :different-vars-ok t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests of prove-with-tactics:
+
+;; Tests with constants:
+(deftest (prove-with-tactics t :rule-classes nil))
+(deftest (prove-with-tactics 7 :rule-classes nil)) ; 7 is non-nil
+(deftest (prove-with-tactics 't :rule-classes nil))
+(deftest (prove-with-tactics '7 :rule-classes nil)) ; 7 is non-nil
+(deftest (prove-with-tactics ''t :rule-classes nil))
+(deftest (prove-with-tactics ''7 :rule-classes nil)) ; 7 is non-nil
+(deftest (prove-with-tactics ''(1) :rule-classes nil)) ; '(1) is non-nil (note that the first arg gets evaluated)
+(must-fail (prove-with-tactics nil :rule-classes nil))
+(must-fail (prove-with-tactics 'nil :rule-classes nil))
+(must-fail (prove-with-tactics ''nil :rule-classes nil))
+(deftest (prove-with-tactics '''nil :rule-classes nil)) ; arg evalutes to ''nil, which is a non-nil constant !
 
 (deftest
   (must-fail (prove-with-tactics '(< (getbit 1 x) 2) :tactics '((:cases (equal 0 (getbit 1 x)) (equal 1 (getbit 0 x))) :acl2))))
@@ -175,25 +220,3 @@
 
 (deftest
   (must-fail (prove-with-tactics nil :rule-classes nil :tactics '(:stp))))
-
-;; tests involving contexts
-
-(deftest
-  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) 5) 5 :rules '(if-same-branches) :different-vars-ok t))
-
-(deftest
-  (defstub f (x) t)
-  ;; fails because we don't have precise context info for the term (+ x 2) since it appears in both branches of the if.
-  (must-fail (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
-                                       '(if (equal x 3) 5 (f (+ x 2)))
-                                       :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
-                                       :different-vars-ok t)))
-
-(deftest
-  (defstub f (x) t)
-  ;; same goal as above but works because we call :rewrite-with-precise-contexts
-  (prove-equal-with-tactics '(if (equal x 3) (+ x 2) (f (+ x 2)))
-                            '(if (equal x 3) 5 (f (+ x 2)))
-                            :tactics '(:rewrite-with-precise-contexts)
-                            :rules '(if-same-branches +-commutative-2-axe minus-cancellation-on-left equal-same)
-                            :different-vars-ok t))

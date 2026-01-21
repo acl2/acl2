@@ -35,6 +35,9 @@
 
 (local (in-theory (disable bst<-rules)))
 
+(std::make-define-config
+  :no-function t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-join
@@ -87,7 +90,6 @@
       convenient to have so various rewriting rules can bind the variable
       appropriately without requiring @(':use') hints."))
   (tree-join left right)
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

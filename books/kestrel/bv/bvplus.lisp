@@ -12,9 +12,10 @@
 (in-package "ACL2")
 
 (include-book "bvplus-def")
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "unsigned-byte-p"))
 
@@ -76,16 +77,30 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;gen?
+; almost subsumed by bvplus-of-bvchop-arg2-gen
 (defthm bvplus-of-bvchop-arg2
   (equal (bvplus size (bvchop size x) y)
          (bvplus size x y))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
 
-;gen?
+(defthm bvplus-of-bvchop-arg2-gen
+  (implies (and (<= size size2)
+                (integerp size2))
+           (equal (bvplus size (bvchop size2 x) y)
+                  (bvplus size x y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
+
+; almost subsumed by bvplus-of-bvchop-arg3-gen
 (defthm bvplus-of-bvchop-arg3
   (equal (bvplus size x (bvchop size y))
          (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
+
+(defthm bvplus-of-bvchop-arg3-gen
+  (implies (and (<= size size2)
+                (integerp size2))
+           (equal (bvplus size x (bvchop size2 y))
+                  (bvplus size x y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
 
 (defthm unsigned-byte-p-of-bvplus
@@ -490,3 +505,58 @@
                   (equal (bvchop size y) 0)))
   :hints (("Goal"
            :in-theory (enable bvplus bvchop-of-sum-cases))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-bvplus-tighten-arg2
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvplus size (bvplus size2 x y) z)
+                  (bvplus size (bvplus size x y) z)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-bvplus-tighten-arg3
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvplus size x (bvplus size2 y z))
+                  (bvplus size x (bvplus size y z))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-ifix-arg2
+  (equal (bvplus size (ifix x) y)
+         (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-ifix-arg3
+  (equal (bvplus size x (ifix y))
+         (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: or go to bvplus of bvplus
+(defthm bvplus-of-+-combine-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (integerp x)
+                (integerp k1)
+                (integerp k2))
+           (equal (bvplus size k1 (+ k2 x))
+                  (bvplus size (+ k1 k2) x)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-equal-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (integerp k1)
+                (integerp k2)
+                (natp size))
+           (equal (equal (bvplus size k2 x) k1)
+                  (and (unsigned-byte-p size k1)
+                       (equal (bvchop size x) (bvchop size (- k1 k2))))))
+  :hints (("Goal" :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))

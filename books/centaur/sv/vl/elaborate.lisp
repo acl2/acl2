@@ -287,31 +287,6 @@ information is stored in the elabindex before translating the expression.</p>
 
 
 (local (include-book "centaur/meta/resolve-flag-cp" :dir :system))
-(local (defun big-mutrec-default-hint
-           #!acl2 (fnname id wait-til-stablep world)
-           (declare (xargs :mode :program))
-           ;; copied mostly from just-expand.lisp, just-expand-mrec-default-hint,
-           ;; added resolve-flags-cp and do-not-induct before expanding
-           #!acl2
-           (and (eql 0 (acl2::access acl2::clause-id id :forcing-round))
-                (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
-                (let* ((fns (acl2::recursivep fnname t world))
-                       (flags (strip-cdrs (acl2::flag-alist fnname world)))
-                       (expand-hints (just-expand-cp-parse-hints
-                                      (just-expand-mrec-expanders fns world)
-                                      world)))
-                  `(:computed-hint-replacement
-                    ('(:clause-processor (mark-expands-cp clause '(t t ,expand-hints)))
-                     ;; (cmr::call-urewrite-clause-proc)
-                     ;; '(:clause-processor cmr::dumb-flatten-clause-proc)
-                     ;; '(:clause-processor (cmr::let-abstract-lits-clause-proc clause 'xxx))
-                     (and (or (not ',wait-til-stablep) stable-under-simplificationp)
-                          (expand-marked)))
-                    :in-theory (disable . ,fns)
-                    :do-not-induct t
-                    :clause-processor (cmr::resolve-flags-cp
-                                       clause
-                                       ',(cons 'vl::flag flags)))))))
 
 
 (local (table std::default-hints-table

@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,11 +22,13 @@
 (include-book "equality-pairs")
 ;(include-book "equality-assumptions")
 (include-book "refined-assumption-alists")
+(include-book "refined-assumption-alists3")
 (include-book "result-array-stobj")
 (include-book "equivalent-dags")
 (include-book "prover")
+(include-book "dagify") ; for merge-term-into-dag-array
 (include-book "add-bvxor-nest-to-dag-array")
-(include-book "merge-and-remove-dups")
+(include-book "merge-and-remove-pairs-of-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -48,7 +50,6 @@
                            ;iff-of-member-equal ;rename
                            ;list::member-eq-is-memberp-propositionally ;same as iff-of-member-equal?
                            ;memberp-nth-when-perm ;yuck!
-                           all-consp-when-not-consp ;yuck!
                            ;list::nth-when-l-is-not-a-consp
                            ;list::len-when-consp-linear
                            )))
@@ -194,8 +195,7 @@
 (set-case-split-limitations 'nil)
 (set-case-split-limitations '(10 10))
 
-(local (in-theory (disable  use-all-consp-for-car default-+-2 default-cdr
-                           quote-lemma-for-bounded-darg-listp-gen-alt)))
+(local (in-theory (disable default-+-2 default-cdr quote-lemma-for-bounded-darg-listp-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct on this
 
@@ -814,7 +814,7 @@
                                                                   ((mv arg3-constant arg3-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width dag-array dag-len))
                                                                   ;; Make the leaves of the new nest:
-                                                                  (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
+                                                                  (nodenum-leaves-decreasing (merge-and-remove-pairs-of-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
                                                                   ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1068,7 +1068,7 @@
                         (implies ,(make-conjunction-from-list assumptions)
                                  (equal ,term ;fixme error if this is a variable and we're making a rewrite rule
                                         (dag-val-with-axe-evaluator ',dag
-                                                                    ,(make-acons-nest (dag-vars dag))
+                                                                    ,(make-acons-nest (dag-vars-unsorted dag))
                                                                     ;;fixme think about this:
                                                                     ;;check that all the fns are already in interpreted-function-alist?
                                                                     ;;',interpreted-function-alist

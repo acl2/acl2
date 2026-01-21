@@ -1,0 +1,6 @@
+var-mismatch-case.cpp:5 (9-10): Unknown symbol `A`
+ 5 |   return A;
+   |          ^
+note: maybe you meant `a` ?
+ 4 |   int a = 3;
+   |       ^

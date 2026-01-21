@@ -1,3 +1,0 @@
-references.cpp:3 (11-12): syntax error, unexpected '&', expecting ID
- 3 | int foo(int& ptr)
-   |            ^

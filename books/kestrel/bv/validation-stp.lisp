@@ -16,9 +16,12 @@
 ;; TODO: Formalize and prove properties described in:
 ;; https://cs.nyu.edu/acsys/cvc3/doc/user_doc.html#user_doc_pres_lang
 
-(include-book "bvuminus")
-(include-book "bvminus")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bvnot")
+(local (include-book "bvplus"))
+(local (include-book "bvchop"))
+(local (include-book "bvminus"))
 
 ;; From https://stp.readthedocs.io/en/stable/cvc-input-language.html:
 ;; BVUMINUS(t) is a short-hand for BVPLUS(n,~t,0bin1), where n is the length of t.

@@ -1,6 +1,6 @@
 ; Applying lookup-equal to a list of keys
 ;
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,3 +69,9 @@
                                      map-lookup-equal
                                      lookup-equal ;todo
                                      ))))
+
+(defthm map-lookup-equal-of-pairlis$-same
+  (implies (no-duplicatesp-equal keys)
+           (equal (map-lookup-equal keys (pairlis$ keys vals))
+                  (take (len keys) vals)))
+  :hints (("Goal" :in-theory (enable map-lookup-equal pairlis$ no-duplicatesp-equal take))))

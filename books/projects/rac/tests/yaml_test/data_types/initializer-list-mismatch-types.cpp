@@ -8,7 +8,7 @@ struct S {
 };
 
 int foo() {
-  array<int, 3> a = {};
+  array<int, 3> a = {{}};
   S s = { a };
   return 0;
 }

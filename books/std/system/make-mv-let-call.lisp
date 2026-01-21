@@ -55,7 +55,7 @@
      from another one whose @('mv') variable is another symbol.
      The parameter @('mv-var') of this utility is the symbol to use.")
    (xdoc::p
-    "Also for greater flexibilty,
+    "Also for greater flexibility,
      we allow some @(tsee mv-nth) calls to be missing.
      As explained in @(tsee check-mv-let-call),
      while translated terms obtained directly from @(tsee mv-let) calls

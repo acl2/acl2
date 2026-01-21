@@ -2,34 +2,6 @@
 
 ===============================================================================
 
-Installation
-
-The makefile and other files all assume that this library is installed in the
-local directory environment that exists in the ACL2 source distribution,
-i.e., that `..' is the main directory of ACL2 books, and ../data-structures
-and ../arithmetic are the data-structures and math library directories.  If
-for some reason you move IHS away from here, things will start to break. You
-will have to edit (at least) makefile, ihs-init.lisp, ihs-init.acl2, and
-math-lemmas.lisp.
-
-Type
-
-% make all
-
-to certify all books with the ACL2 image "acl2", assuming that the underlying
-Lisp creates object files with .o extensions.  You can also do
-
-% make all ACL2=<acl2-image> EXT=<object extension>
-
-to change ACL2 image or object file extensions, e.g., set EXT as below:
-
-*  AKCL, GCL:     EXT=o
-*  Lucid (sparc): EXT=sbin
-*  Allegro:       EXT=fasl
-*  lispworks:     EXT=fasl
-
-===============================================================================
-
 Notes
 
 This directory contains an integrated ACL2 library supporting Integer
@@ -60,7 +32,7 @@ books are documented, try it out.
 
 Starting at the bottom is an extension to the standard mathematics libraries.
 Next up , some special theories for IHS.  Following, a generally useful book
-name "quotient-remainder-lemmas.lisp".  This book characterizes FLOOR, MOD,
+named "quotient-remainder-lemmas.lisp".  This book characterizes FLOOR, MOD,
 TRUNCATE, and REM, which are the basic mathematical functions used to reason
 about fixed-length integer models of hardware.
 
@@ -79,8 +51,6 @@ book "ihs-definitions".  Include "ihs-lemmas" for lemma support.
 Files:
 ======
 
-makefile                 --  UNIX makefile for this library
-
 ihs-init.lisp            --  root of the IHS library
 ihs-init.acl2            --  certification script for above
 
@@ -93,9 +63,13 @@ quotient-remainder-lemmas.lisp  --  theory of FLOOR, MOD, TRUNCATE, and REM
 logops-definitions.lisp  --  extensions to Common Lisp logical operations
 logops-lemmas.lisp       --  lemma support for logical operations
 
+basic-definitions.lisp   --  a carved-out subset of logops-lemmas.lisp
+
 ihs-definitions.lisp     --  a top-level book INCLUDEing the IHS definitions
 
 ihs-lemmas.lisp          --  a top-level book INCLUDEing the IHS lemmas
+
+ihs-doc-topic.lisp       --  top-level XDOC topic for the IHS library
 
 
 ==============================================================================

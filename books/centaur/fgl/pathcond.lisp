@@ -39,25 +39,22 @@
 (local (include-book "std/util/termhints" :dir :system))
 
 
+(local (in-theory (enable aignet::aignet-pathcond-boundedp)))
 
 (define bfr-pathcond-p (pathcond &optional ((bfrstate bfrstate-p) 'bfrstate))
-  (declare (xargs :non-executable t))
-  :no-function t
-  :verify-guards nil
-  (prog2$ (acl2::throw-nonexec-error 'bfr-pathcond-p-fn (list pathcond bfrstate))
-          (bfrstate-case
-            :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                               (ans)
-                               (aignet::bounded-pathcond-p
-                                (aignet::nbalist-fix aignet-pathcond)
-                                (1+ (bfrstate->bound bfrstate)))
-                               ans)
-            :bdd (and (bfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
-                      (bfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
-            :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                            (ans)
-                            (bfr-listp (alist-keys (calist-stobj-access calist-stobj)))
-                            ans)))
+  ;; :verify-guards t
+  (bfrstate-case
+    :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                         (ans)
+                         (aignet::aignet-pathcond-boundedp
+                          aignet-pathcond (1+ (bfrstate->bound bfrstate)))
+                         ans)
+    :bdd (and (bfr-p (acl2::ubdd-fix (pathcond-bdd pathcond)))
+              (bfr-listp (ubdd-list-fix (pathcond-checkpoint-ubdds pathcond))))
+    :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
+                    (ans)
+                    (bfr-listp (alist-keys (calist-stobj-access calist-stobj)))
+                    ans))
   ///
   (defmacro logicman-pathcond-p (pathcond &optional (logicman 'logicman))
     `(bfr-pathcond-p ,pathcond (logicman->bfrstate ,logicman)))

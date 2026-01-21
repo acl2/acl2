@@ -1,7 +1,7 @@
 ; A function to recognize lists of lists of unsigned-bytes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "all-unsigned-byte-p")
-(include-book "kestrel/sequences/defforall" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 
 ;this is really a double forall - gen lemmas like all-unsigned-byte-p-of-car
 (defforall all-all-unsigned-byte-p (n x) (all-unsigned-byte-p n x) :fixed (n))

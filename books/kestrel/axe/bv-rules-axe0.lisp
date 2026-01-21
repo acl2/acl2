@@ -1,7 +1,7 @@
 ; Basic Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,15 +16,17 @@
 ;; :type-prescription rules but Axe does not).  Unlike bv-rules-axe.lisp, this
 ;; file does not use the Axe syntax functions.
 
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
-(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/bv/leftrotate32" :dir :system)
+(include-book "kestrel/bv/rightrotate32" :dir :system)
+(include-book "kestrel/bv/bool-to-bit" :dir :system)
 
 (defthmd integerp-of-floor
   (integerp (floor i j)))
@@ -39,6 +41,14 @@
 
 (defthmd acl2-numberp-of-mod
   (acl2-numberp (mod x y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd integerp-of-slice
+  (integerp (slice high low x)))
+
+(defthmd natp-of-slice
+  (natp (slice high low x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,3 +165,13 @@
 ;or just open bvle
 (defthmd booleanp-of-bvle
   (booleanp (bvle size x y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd integerp-of-bool-to-bit
+   (integerp (bool-to-bit x)))
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd natp-of-bool-to-bit
+   (natp (bool-to-bit x)))

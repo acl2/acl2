@@ -264,7 +264,7 @@
     (mv nil interp-st))
   ///
   (std::defret constraint-of-init-interp-st
-    (bfr-hyp-eval (nth *is-constraint* new-interp-st) env))
+    (bfr-hyp-mode-eval (nth *is-constraint* new-interp-st) env))
 
   (std::defret obligs-of-init-interp-st
     (equal (nth *is-obligs* new-interp-st) nil))
@@ -297,7 +297,7 @@
   (b* (((mv contra constraint &)
         (bfr-constr-assume
          (bfr-to-param-space pathcond-bfr
-                             (bfr-constr->bfr (is-constraint interp-st)))
+                             (bfr-constr-mode->bfr (is-constraint interp-st)))
          (bfr-constr-init)))
 
        (interp-st (update-is-constraint constraint interp-st))

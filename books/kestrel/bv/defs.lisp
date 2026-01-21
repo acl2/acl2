@@ -35,15 +35,15 @@
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logext
 ;(include-book "to-signed")
 (include-book "bvcat2")
-(include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
 
 (local (include-book "sbvdiv")) ;; the verifies the guard of sbvdiv
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
-(defun bvdiv (n x y)
+(defund bvdiv (n x y)
   (declare (type (integer 1 *) n)
            (type integer x)
            (type integer y)
@@ -100,35 +100,6 @@
            (xargs :guard (not (EQUAL (LOGEXT N Y) 0))) ;rephrase in terms of bvchop?
            )
   (bvchop n (mod (logext n x) (logext n y))))
-
-;;signed less-than
-(defund sbvlt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (< (logext n x)
-     (logext n y)))
-
-;;signed greater-than
-(defun sbvgt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (sbvlt n y x))
-
-;;signed less-than-or-equal
-(defun sbvle (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n y x)))
-
-;;signed greater-than-or-equal
-(defun sbvge (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n x y)))
 
 ;x and y should be single bits
 ;guards?

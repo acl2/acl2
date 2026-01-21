@@ -1,7 +1,7 @@
 ; A variant of group that drops any incomplete final group.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,10 +28,6 @@
 (local (include-book "append"))
 (local (include-book "take"))
 (local (include-book "true-list-fix"))
-
-;(local (in-theory (disable LIST::EQUAL-APPEND-REDUCTION!-alt LIST::EQUAL-APPEND-REDUCTION! LIST::FIRSTN-1-REWRITE-STRONG)))
-
-;(in-theory (disable LIST::EQUAL-APPEND-REDUCTION!-ALT LIST::EQUAL-APPEND-REDUCTION!))
 
 ;;
 ;; group2
@@ -88,7 +84,7 @@
                 (natp m))
            (equal (nthcdr m (group2 n x))
                   (group2 n (nthcdr (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group2 nthcdr)
                            (NTHCDR-OF-CDR-COMBINE NTHCDR-OF-CDR-COMBINE-STRONG)))))
@@ -103,7 +99,7 @@
   (implies (posp n)
            (equal (cdr (group2 n x))
                   (group2 n (nthcdr n x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (firstn-of-group-induct x n m)
            :expand (group2 n x)
            :in-theory (e/d (group2 nthcdr)
@@ -116,11 +112,10 @@
                 (posp n))
            (equal (nth m (group2 n x))
                   (firstn n (nthcdr (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((GROUP2 N X))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group2 ;nthcdr
-                            ;LIST::NTH-OF-CONS
                             )
                            (;NTHCDR-OF-CDR-COMBINE-strong NTHCDR-OF-CDR-COMBINE
                             )))))
@@ -144,9 +139,7 @@
                   (if (< m (floor (len x) n))
                       (firstn n (nthcdr (* m n) x))
                     nil)))
-  :hints (("Goal" :in-theory (enable ;LIST::NTH-WITH-LARGE-INDEX
-                              NTH-WHEN-<=-LEN
-                              ))))
+  :hints (("Goal" :in-theory (enable nth-when-<=-len))))
 
 (defthm true-listp-of-group2
   (true-listp (group2 n x)))

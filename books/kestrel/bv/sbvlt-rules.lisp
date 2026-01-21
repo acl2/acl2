@@ -17,6 +17,7 @@
 (include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "logext"))
 (local (include-book "logapp"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;;Splits into cases based on the signs of x and y
@@ -37,12 +38,9 @@
   :hints (("Goal" :in-theory (enable sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
                                          logext-when-negative logext-when-negative-2))))
 
-;gen?
-; but myif-of-nil-special seems to not fire
-(defthm myif-of-sbvlt-of-0-and-equal-of-0
-  (equal (myif (sbvlt size 0 x) nil (equal 0 x))
-         (equal x 0))
-  :hints (("Goal" :in-theory (enable myif))))
+;; To convert an sbvlt into a bvlt, we could use unsigned-byte-p claims, claims
+;; equating the top bits of values with constants (with non-zero upper bit), or
+;; sbvlt claims.  Of course, one val may just be a small constant...
 
 (defthm sbvlt-becomes-bvlt-better
   (implies (and (unsigned-byte-p (+ -1 size) x)
@@ -68,6 +66,15 @@
                                   unsigned-byte-p-of-bvchop-one-more
                                   logext)
                            (sbvlt-becomes-bvlt-better)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen?
+; but myif-of-nil-special seems to not fire
+(defthm myif-of-sbvlt-of-0-and-equal-of-0
+  (equal (myif (sbvlt size 0 x) nil (equal 0 x))
+         (equal x 0))
+  :hints (("Goal" :in-theory (enable myif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

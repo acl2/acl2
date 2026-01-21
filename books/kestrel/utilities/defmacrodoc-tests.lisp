@@ -108,3 +108,11 @@
      (y "second number to add"))
     :description
     "Returns the sum of X and Y."))
+
+;; Fails due to duplicate entry for x:
+(must-fail
+  (defmacrodoc plus (x y)
+    `(+ ,x ,y)
+    :args ((x "first arg")
+           (y "second arg")
+           (x "first arg"))))

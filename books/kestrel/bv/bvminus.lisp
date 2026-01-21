@@ -11,18 +11,15 @@
 
 (in-package "ACL2")
 
-;; TODO: Consider defining bvminus in terms of bvplus and bvuminus.
-
-(include-book "bvchop")
-(include-book "bvuminus")
+(include-book "bvminus-def")
+(include-book "bvchop-def")
+(include-book "bvuminus-def")
+(include-book "bvplus-def")
+(include-book "getbit-def")
+(local (include-book "bvplus"))
+(local (include-book "bvuminus"))
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-
-;; Compute the (modular) difference of X and Y.
-;; TODO: Consider defining this in terms of bvplus and bvuminus.
-(defund bvminus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (- (ifix x) (ifix y))))
 
 (defthm integerp-of-bvminus
   (integerp (bvminus size x y)))
@@ -118,8 +115,8 @@
            :in-theory (enable bvminus))))
 
 (defthm bvminus-of-bvchop-arg3-same
-  (equal (bvminus size y (bvchop size x))
-         (bvminus size y x))
+  (equal (bvminus size x (bvchop size y))
+         (bvminus size x y))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvminus))))
 
@@ -264,3 +261,68 @@
          (bvminus size y1 y2))
   :hints (("Goal" :in-theory (enable bvplus bvminus)))  ;todo: better proof?
   )
+
+(defthm bvminus-of-constant-and-bvplus-of-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size))
+           (equal (bvminus size k1 (bvplus size k2 x))
+                  (bvminus size
+                           (bvminus size k1 k2) ;gets computed
+                           x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases))))
+
+(defthm bvminus-of-bvplus-of-constant-and-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size))
+           (equal (bvminus size (bvplus size k1 x) k2)
+                  (bvminus size
+                           x
+                           (bvminus size k2 k1) ;gets computed
+                           )))
+  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases))))
+
+(defthm bvminus-cancel-3-2
+  (implies (natp size)
+           (equal (bvminus size (bvplus size y (bvplus size z x)) (bvplus size w x))
+                  (bvminus size (bvplus size y z) w)))
+  :hints (("Goal" :in-theory (e/d (bvminus-becomes-bvplus-of-bvuminus
+                                   bvplus-commutative-2-smart
+                                   bvplus-commutative-smart)
+                                  (bvplus-commutative-2
+                                   bvplus-commutative)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-of-bvplus-tighten-arg2
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvminus size (bvplus size2 x y) z)
+                  (bvminus size (bvplus size x y) z)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvplus-tighten-arg3
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvminus size x (bvplus size2 y z))
+                  (bvminus size x (bvplus size y z))))
+  :hints (("Goal" :use ((:instance bvminus-of-bvchop-arg3-same (y (bvplus size2 y z)))
+                        (:instance bvminus-of-bvchop-arg3-same (y (bvplus size y z))))
+           :in-theory (disable bvminus-of-bvchop-arg3-same
+                               bvminus-of-bvchop-arg3
+                               bvminus-becomes-bvplus-of-bvuminus))))
+
+(defthm bvminus-of-ifix-arg2
+  (equal (bvminus size (ifix x) y)
+         (bvminus size x y))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-ifix-arg3
+  (equal (bvminus size x (ifix y))
+         (bvminus size x y))
+  :hints (("Goal" :in-theory (enable bvminus))))

@@ -1,3 +1,5 @@
+See also mem-test/README.txt and the files in that subdirectory.
+
 This directory provides an example of the use of attachable stobjs.
 Stobjs are introduced in books as follows.  It assumes familiarity
 with stobjs: concrete, abstract, and nested.  Also see the paper

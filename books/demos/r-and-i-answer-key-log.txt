@@ -4846,8 +4846,8 @@ Name the formula above *1.
 We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (PERM X Z), but modified
-to accommodate (PERM X Y).
+We will induct according to a scheme suggested by (PERM X Z), while
+accommodating (PERM X Y).
 
 These suggestions were produced using the :induction rule PERM.  If
 we let (:P X Y Z) denote *1 above then the induction scheme we'll use
@@ -8369,11 +8369,12 @@ Name the formula above *1.
 We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (LESSEQP I J).
+We will induct according to a scheme suggested by (LESSEQP I J), while
+accommodating (FIX-NAT I).
 
-This suggestion was produced using the :induction rules FIX-NAT and
-LESSEQP.  If we let (:P I J) denote *1 above then the induction scheme
-we'll use is
+These suggestions were produced using the :induction rules FIX-NAT
+and LESSEQP.  If we let (:P I J) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (NOT (CONSP I)) (:P I J))
      (IMPLIES (AND (CONSP I) (NOT (CONSP J)))
               (:P I J))
@@ -10353,8 +10354,8 @@ Name the formula above *1.
 We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (LESSEQP I K), but
-modified to accommodate (LESSEQP I J).
+We will induct according to a scheme suggested by (LESSEQP I K), while
+accommodating (LESSEQP I J).
 
 These suggestions were produced using the :induction rule LESSEQP.
 If we let (:P I J K) denote *1 above then the induction scheme we'll
@@ -11155,8 +11156,8 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to two.
 These merge into one derived induction scheme.  
 
-We will induct according to a scheme suggested by (CC X), but modified
-to accommodate (RM E X).
+We will induct according to a scheme suggested by (CC X), while ac-
+commodating (RM E X) and (MEM E X).
 
 These suggestions were produced using the :induction rules CC, MEM
 and RM.  If we let (:P E X) denote *1 above then the induction scheme
@@ -15021,8 +15022,8 @@ suggested by this conjecture.  These merge into two derived induction
 schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
-We will induct according to a scheme suggested by (CC X2), but modified
-to accommodate (FILTER '<< X2 X1).
+We will induct according to a scheme suggested by (CC X2), while ac-
+commodating (FILTER '<< X2 X1).
 
 These suggestions were produced using the :induction rules CC and FILTER.
 If we let (:P X1 X2) denote *2 above then the induction scheme we'll
@@ -15368,8 +15369,8 @@ suggested by this conjecture.  These merge into two derived induction
 schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
-We will induct according to a scheme suggested by (CC X2), but modified
-to accommodate (FILTER '>>= X2 X1).
+We will induct according to a scheme suggested by (CC X2), while ac-
+commodating (FILTER '>>= X2 X1).
 
 These suggestions were produced using the :induction rules CC and FILTER.
 If we let (:P X1 X2) denote *1 above then the induction scheme we'll
@@ -22027,10 +22028,11 @@ Name the formula above *1.
 We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (MEM (MAXIMAL LST) LST).
+We will induct according to a scheme suggested by (MEM (MAXIMAL LST) LST),
+while accommodating (MAXIMAL LST).
 
-This suggestion was produced using the :induction rules MAXIMAL and
-MEM.  If we let (:P LST) denote *1 above then the induction scheme
+These suggestions were produced using the :induction rules MAXIMAL
+and MEM.  If we let (:P LST) denote *1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (NOT (CONSP LST)) (:P LST))
      (IMPLIES (AND (CONSP LST)
@@ -22613,11 +22615,12 @@ Name the formula above *1.
 We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (RM (MAXIMAL LST) LST).
+We will induct according to a scheme suggested by (RM (MAXIMAL LST) LST),
+while accommodating (MAXIMAL LST).
 
-This suggestion was produced using the :induction rules MAXIMAL and
-RM.  If we let (:P LST) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules MAXIMAL
+and RM.  If we let (:P LST) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP LST)) (:P LST))
      (IMPLIES (AND (CONSP LST)
                    (NOT (EQUAL (MAXIMAL LST) (CAR LST)))
@@ -25290,7 +25293,7 @@ We have been told to use induction.  Two induction schemes are suggested
 by the induction hint.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (SUB A (APP A B)),
-but modified to accommodate (APP A B).
+while accommodating (APP A B).
 
 These suggestions were produced using the :induction rules APP and
 SUB.  If we let (:P A B) denote *1 above then the induction scheme

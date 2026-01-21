@@ -600,8 +600,6 @@
 
 ;;   :returns (x86 x86p :hyp (x86p x86))
 
-;;   :guard-debug t
-
 ;;   :modr/m t
 
 ;;   :body

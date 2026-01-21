@@ -106,7 +106,7 @@ endmodule
 ;; between  the  modified  and  original  design first  using  FGL.   For  fast
 ;; equivalance checking, we set up AIG transforms which will use an incremental
 ;; SAT     solver.      Make    sure     you     have     IPASIR    set     up:
-;; https://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index-seo.php/IPASIR____IPASIR
+;; https://acl2.org/doc/?topic=IPASIR____IPASIR
 ;; After equivalance checking, vescmul will  use the modified version to verify
 ;; the multiplier and  once proved, state a theorem for  the correctness of the
 ;; unmodified, original design.

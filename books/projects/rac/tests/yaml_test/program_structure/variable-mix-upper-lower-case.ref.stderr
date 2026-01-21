@@ -1,6 +1,6 @@
-variable-mix-upper-lower-case.cpp:6 (6-11): A is already used but with a different case (in ACL2, they will refer to the same thing)
+variable-mix-upper-lower-case.cpp:6 (6-7): A is already used but with a different case (in ACL2, they will refer to the same thing)
  6 |   int A = 2;
-   |       ^^^^^
+   |       ^
 note: first defined here
  4 | int foo (int a)
    |              ^

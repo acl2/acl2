@@ -110,7 +110,7 @@ the values returned by the last subform.</p>
   :decls
   ((declare (xargs :guard (and (symbol-listp args)
                                (consp forms)
-                               (doublet-listp (car forms))
+                               (alistp (car forms))
                                (consp (cdr forms))))))
   :body
   (b* (((cons bindings implicit-progn$) forms)

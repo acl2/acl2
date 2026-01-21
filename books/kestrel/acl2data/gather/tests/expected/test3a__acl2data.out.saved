@@ -7,7 +7,8 @@
 2 ;total_count_book_runes
 8 ;failure_count_single_rune
 11 ;total_count_single_rune
-("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test3a.lisp"
+((:SYSTEM .
+          "kestrel/acl2data/gather/tests/runs/test3a.lisp")
  (FOO
   (:GOAL (IMPLIES (IF (RATIONALP X)
                       (IF (INTEGERP Y)
@@ -359,15 +360,14 @@
        :RULE-CLASSES NIL))))
   (:BOOK-RUNES-ALIST NIL)
   (:RUNE-ALIST NIL)
-  (:SYMBOL-TABLE
-   ((RATIONALP . :BUILTIN)
-    (NOT . :BUILTIN)
-    (MOD . :BUILTIN)
-    (INTEGERP . :BUILTIN)
-    (IMPLIES . :BUILTIN)
-    (IF . :BUILTIN)
-    (FOO
-        .
-        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test3a.lisp")
-    (EQUAL . :BUILTIN)
-    (BINARY-* . :BUILTIN)))))
+  (:SYMBOL-TABLE ((RATIONALP . :BUILTIN)
+                  (NOT . :BUILTIN)
+                  (MOD . :BUILTIN)
+                  (INTEGERP . :BUILTIN)
+                  (IMPLIES . :BUILTIN)
+                  (IF . :BUILTIN)
+                  (FOO :SYSTEM
+                       .
+                       "kestrel/acl2data/gather/tests/runs/test3a.lisp")
+                  (EQUAL . :BUILTIN)
+                  (BINARY-* . :BUILTIN)))))

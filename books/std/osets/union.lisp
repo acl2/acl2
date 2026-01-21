@@ -142,7 +142,7 @@ correctness property is given by @('union-in').</p>
 <p>The execution uses a better, O(n) algorithm to merge the sets by exploiting
 the set order.</p>"
 
-  (defun union (X Y)
+  (defun-inline union (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
     (mbe :logic (if (emptyp X)
@@ -175,7 +175,7 @@ the set order.</p>"
     (equal (in a (union X Y))
            (or (in a X) (in a Y))))
 
-  (verify-guards union
+  (verify-guards union$inline
     :hints(("Goal" :in-theory (enable fast-union-set
                                       fast-union-membership))))
 

@@ -1,0 +1,13 @@
+int f(int x, int y) {
+  if (x == y + 0)
+    return 1;
+  else
+    return 2 + 0;
+}
+
+void g(int z, int w) {
+  if (z = w + 0)
+    return 1;
+  else
+    return 2;
+}

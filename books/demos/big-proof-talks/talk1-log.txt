@@ -322,11 +322,12 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (CLK I J K).
+We will induct according to a scheme suggested by (CLK I J K), while
+accommodating (^ I J).
 
-This suggestion was produced using the :induction rules CLK and ^.
-If we let (:P I J K) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules CLK and
+^.  If we let (:P I J K) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ZP J))
                    (:P I (+ -1 J) (* I K)))
               (:P I J K))

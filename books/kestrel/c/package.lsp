@@ -105,10 +105,13 @@
                fsublis-var-lst
                genvar
                genvar$
+               get-measure+
                get-ruleset
+               get-well-founded-relation+
                implode
                impossible
                install-not-normalized-event
+               integers-from-to
                irecursivep+
                keyword-listp
                keyword-symbol-alistp
@@ -121,7 +124,6 @@
                maybe-pseudo-event-formp
                maybe-stringp
                mbt$
-               measure+
                msg-listp
                mv-nth-of-cons
                nat
@@ -200,7 +202,6 @@
                untranslate$
                untranslate-lst
                variablep
-               well-founded-relation+
                fty::okf
                fty::reserrf
                fty::reserrp

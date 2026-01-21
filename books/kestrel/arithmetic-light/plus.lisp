@@ -189,6 +189,10 @@
   (equal (< (+ y x) (+ x z))
          (< y z)))
 
+(defthm <-of-+-cancel-1-3
+  (equal (< x (+ y (+ z x)))
+         (< 0 (+ y z))))
+
 (defthm <-of-+-cancel-3-1
   (equal (< (+ y (+ z x)) x)
          (< (+ y z) 0)))
@@ -204,6 +208,11 @@
 (defthm <-of-+-cancel-2+-1
   (equal (< (+ y x z) x)
          (< (+ y z) 0)))
+
+(defthm <-of-+-cancel-1-3+
+  (equal (< x (+ y1 y2 x y3))
+         (< 0 (+ y1 y2 y3))))
+
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
@@ -315,3 +324,21 @@
                   (if (< k1 k2)
                       (equal (fix x) (+ (- k2 k1) y))
                     (equal (+ (- k1 k2) x) (fix y))))))
+
+(defthmd natp-of-+-of-constant
+  (implies (and (syntaxp (quotep x))
+                (natp x) ; gets evaluated
+                (<= (- x) y)
+                (integerp y))
+           (natp (+ x y)))
+  :hints (("Goal" :in-theory (enable natp))))
+
+(defthmd natp-of-+-of-constant-strong
+  (implies (and (syntaxp (quotep x))
+                (natp x) ; gets evaluated
+                (integerp y)
+                )
+           (equal (natp (+ x y))
+                  ;; the (- x) should get evaluated:
+                  (<= (- x) y)))
+  :hints (("Goal" :in-theory (enable natp))))

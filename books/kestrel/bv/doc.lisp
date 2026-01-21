@@ -35,8 +35,10 @@ contributes 2^N to the value of the number.
 We usually visualize a bit vector with bit position 0 at the far
 right.  For example, here is how we visualize the bit vector
 represented by the number 17 (= 2^4 + 2^0):
+
 @({value    1   0   0   0   1
 index: | 4 | 3 | 2 | 1 | 0 |})
+
 We say that a bit vector has size M if its most significant (highest
 indexed) 1 bit has index at most M-1. Note that the size of a bit
 vector is not unique; any bit vector of size M is also a bit vector of
@@ -73,13 +75,13 @@ the behavior of the ACL2 predicate signed-byte-p.)"))
 
 ;; (depends-on "bvminus.lisp")
 (gen-xdoc-for-file
- "bvminus.lisp"
+ "bvminus-def.lisp"
  ((bvminus "Bit-vector difference."))
  (bv))
 
-;; (depends-on "bvuminus.lisp")
+;; (depends-on "bvuminus-def.lisp")
 (gen-xdoc-for-file
- "bvuminus.lisp"
+ "bvuminus-def.lisp"
  ((bvuminus "Bit-vector additive inverse"))
  (bv))
 

@@ -1,0 +1,8 @@
+duplicate-template-fun.cpp:5-6 (0-9): Duplicate identifier declaration (could be an enum, a variable template parameter or function) `foo`
+ 5 | template <int x>
+   | ^^^^^^^^^^^^^^^^^
+ 6 | int foo() { return 0; }
+   | ^^^^^^^^^
+note: first defined here
+ 3 | int foo() { return 0; }
+   | ^^^^^^^^^

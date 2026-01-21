@@ -60,7 +60,7 @@
                 (natp m))
            (equal (take m (group n x))
                   (group n (take (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((GROUP N (FIRSTN (* M N) X)))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group firstn TAKE-OF-CDR-BECOMES-SUBRANGE)
@@ -76,7 +76,7 @@
                 (natp m))
            (equal (take m (group2 n x))
                   (group2 n (take (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((GROUP2 N (FIRSTN (* M N) X)))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group2 firstn TAKE-OF-CDR-BECOMES-SUBRANGE)
@@ -100,16 +100,10 @@
            :in-theory (e/d (subrange ;take-of-nthcdr
                             ;equal-of-append
                             )
-                           (;list::equal-append-reduction!
-                            ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
-
-                            nthcdr-of-take-becomes-subrange
-
-                            nthcdr-of-take
-                            ))
-           :use ((:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (take (+ 1 free) x)) (n n))
-                 (:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (take (+ 1 free) y)) (n n)))
-           )))
+                           (nthcdr-of-take-becomes-subrange
+                            nthcdr-of-take))
+           :use ((:instance append-of-take-and-nthcdr-2 (l (take (+ 1 free) x)) (n n))
+                 (:instance append-of-take-and-nthcdr-2 (l (take (+ 1 free) y)) (n n))))))
 
 (defun group2-induct (x y n)
   (if (or (not (posp n))
@@ -129,7 +123,6 @@
                               (take (* n (floor (len y) n)) y)))))
   :hints (("Subgoal *1/2" :cases ((NOT (< (BINARY-* N (FLOOR (LEN Y) N)) (BINARY-+ '1 N)))))
           ("Goal"
-           :do-not '(generalize eliminate-destructors)
            :induct (group2-induct x y n)
            :in-theory (e/d (group2
                             take-of-nthcdr-becomes-subrange)
@@ -151,13 +144,8 @@
   :hints (("Goal"
            :in-theory (e/d (subrange ;take-of-nthcdr
                             )
-                           (;list::equal-append-reduction!
-                            ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
-
-                            nthcdr-of-take-becomes-subrange
-
-                            nthcdr-of-take
-                            ))
+                           (nthcdr-of-take-becomes-subrange
+                            nthcdr-of-take))
            :use ((:instance list-split (x x) (n n))
                  (:instance list-split (x (take (+ 1 free) y)) (n n))))))
 
@@ -184,7 +172,7 @@
                        (equal (take (len x) x)
                               (take (len x) y)))))
   :hints (("Subgoal *1/2" :cases ((not (< (binary-* n (floor (len y) n)) (binary-+ '1 n)))))
-          ("Goal" :do-not '(generalize eliminate-destructors)
+          ("Goal"
            :induct (group2-induct x y n)
            :in-theory (enable group group2
                               take-of-nthcdr-becomes-subrange))))
@@ -249,7 +237,7 @@
            (equal (equal (group n x) (group n y))
                   (equal x y)))
   :hints (("Subgoal *1/2" :cases ((NOT (< (BINARY-* N (FLOOR (LEN Y) N)) (BINARY-+ '1 N)))))
-          ("Goal" :do-not '(generalize eliminate-destructors)
+          ("Goal"
            :induct (group2-induct x y n)
            :in-theory (enable group group2))))
 
@@ -270,7 +258,7 @@
                 (natp m))
            (equal (firstn m (ungroup n x))
                   (ungroup n (firstn (floor m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (ungroup-induct x m n)
            :expand ((NTH 1 X)
                     (NTH 0 (CDR X))
@@ -281,11 +269,7 @@
                             len-of-cdr
                             consp-of-cdr
                             EQUAL-OF-0-AND-MOD)
-                           (NTH-OF-CDR
-                            ;; list::NTH-OF-CDR
-                            ;; LIST::EQUAL-APPEND-REDUCTION!
-                            ;; LIST::LEN-POS-REWRITE
-                            )))))
+                           (NTH-OF-CDR)))))
 
 (defthmd group-unroll
   (implies (not (or (not (posp n))
@@ -328,7 +312,7 @@
   )
 
 ;; (defthm group-of-finalcdr
-;;   (equal (group n (list::finalcdr x))
+;;   (equal (group n (finalcdr x))
 ;;          nil))
 
 (defthm group2-of-ungroup-same

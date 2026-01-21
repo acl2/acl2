@@ -1,6 +1,34 @@
 Lisp translation of C++ common expressions
 ==========================================
 
+* Arrays can be represented in two ways: simple list or using association list.
+  Global constant arrays are translated using simple lists and "nth" as accessor.
+  This is the most efficient way of storing large read-only values. Local arrays
+  are translated using an alist (with "ag" and "as" used to translate the
+  reading/writing).
+
+  ```
+  // RAC
+  const int global_array[2] = {1, 2};
+  int foo() { return global_array[1]; }
+
+  // Translation
+  (DEFUND GLOBAL_ARRAY NIL '(1 2))
+  (DEFUND FOO NIL (NTH 1 (GLOBAL_ARRAY)))
+
+  // RAC
+  int bar() {
+    const int local_array[2] = {3, 5};
+    return local_array[1];
+  }
+
+  // Translation
+  (DEFUND BAR NIL
+  (LET ((LOCAL_ARRAY '((0 . 3) (1 . 5))))
+    (AG 1 LOCAL_ARRAY)))
+  ```
+
+
 General
 =======
   The tanslation of a RAC is done in three steps:
@@ -60,22 +88,20 @@ Expression                        Statement
   |   +--Boolean                    |    |    |
   |                                 |    |    +--EnumConstDec
   +--Parenthesis                    |    |    +--VarDec
-  +--SymRef                         |    |    +--ConstDec
-  +--FunCall                        |    |    +--TempParamDec
+  +--SymRef                         |    |    +--TempParamDec
+  +--FunCall                        |    |
   |    |                            |    |
   |    +--TempCall                  |    +--MulVarDec
-  |                                 |    +--MulConstDec
-  +--Initializer                    |    +--BreakStmt
-  +--ArrayRef                       |    +--ReturnStmt
-  +--StructRef                      |    +--NullStmt
-  +--Subrange                       |    +--Assertion
-  +--PrefixExpr                     |    +--Assignment
-  +--CastExpr                       |    +--MultipleAssignment
-  +--BinaryExpr                     |
-  +--CondExpr                       +--Block
-  +--MultipleValue                  +--IfStmt
-                                    +--ForStmt
-                                    +--CaseSwitchStmt
+  |                                 |    +--BreakStmt
+  +--Initializer                    |    +--ReturnStmt
+  +--ArrayRef                       |    +--NullStmt
+  +--StructRef                      |    +--Assertion
+  +--Subrange                       |    +--Assignment
+  +--PrefixExpr                     |    +--MultipleAssignment
+  +--CastExpr                       +--Block
+  +--BinaryExpr                     +--IfStmt
+  +--CondExpr                       +--ForStmt
+  +--MultipleValue                  +--CaseSwitchStmt
                                     +--FunDef
                                          |
                                          +--Builtin
@@ -94,7 +120,7 @@ Appart from basic parsing (done by bison) and some very specific work, most of
 the translation and checks should be implemented in separate passes using the
 vistor provided (program/process/process/visitor.h).
 
-To create to new pass, the documentation in visitor.h, and the assertions.h and 
+To create to new pass, the documentation in visitor.h, and the assertions.h and
 astdumper.h/cpp examples can be useful references. This visitor is greatly
 inspired by Clang's RecursiveASTVisitor, and as such Clang's documentation
 [3][4] can be useful as well. After all this reading, the next step to
@@ -202,6 +228,14 @@ more details, see bison documentation. [5]
 
 Also, the diagnostics (program/parser/utils/diagnostics.h) can be really
 usefull to know which parts of the input code cause a bug.
+
+Coding style
+------------
+
+This project mostly follows GNU's coding style. Under src, a clang-format file
+define those rules. To automatically format the C++ code (not the bison files),
+run:
+`cd src/ && clang-format -i (find -name '*.cpp' -or -name '*.h')`
 
 Version
 -------

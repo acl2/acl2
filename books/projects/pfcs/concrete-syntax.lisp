@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
@@ -30,4 +30,8 @@
      which we plan to complete with a declarative specification
      of parsing of PFCSes according to the grammar.
      We define an executable lexer, tokenizer, and parser to CSTs
-     (concrete syntax trees).")))
+     (concrete syntax trees)."))
+  :order-subtopics (grammar
+                    lexer
+                    tokenizer
+                    parser))

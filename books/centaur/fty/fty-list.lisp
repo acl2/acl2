@@ -395,7 +395,7 @@
                  :hints (("goal"
                           :induct (nth n x)
                           :expand ((,x.fix x))
-                          :in-theory (enable nth len))))
+                          :in-theory (enable nth len nfix))))
                (defthm ,foo-equiv-implies-foo-equiv-append-1
                  (implies (,x.equiv x x-equiv)
                           (,x.equiv (append x y)

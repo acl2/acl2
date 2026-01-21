@@ -17,7 +17,9 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
+(include-book "../syntax/code-ensembles")
+(include-book "../syntax/validation-information")
+(include-book "utilities/rename-fn")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -68,182 +70,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines rename-fn-funcall-fun
-  (define rename-fn-funcall-fun
-    ((expr exprp)
-     (old-fn identp)
-     (new-fn identp))
-    :short "Rename a function within a @('funcall') function expression."
-    :returns (new-expr exprp)
-    (expr-case
-     expr
-     :ident (if (equal expr.ident old-fn)
-                (make-expr-ident :ident new-fn :info nil)
-              (expr-fix expr))
-     :paren (expr-paren (rename-fn-funcall-fun expr.inner old-fn new-fn))
-     :gensel
-     (make-expr-gensel
-       :control expr.control
-       :assocs (rename-fn-funcall-fun-genassoc-list expr.assocs old-fn new-fn))
-     :cast (make-expr-cast :type expr.type
-                           :arg (rename-fn-funcall-fun expr.arg old-fn new-fn))
-     :otherwise (expr-fix expr))
-    :measure (expr-count expr))
-
-  (define rename-fn-funcall-fun-genassoc
-    ((genassoc genassocp)
-     (old-fn identp)
-     (new-fn identp))
-    :returns (new-genassoc genassocp)
-    (genassoc-case
-     genassoc
-     :type (make-genassoc-type :type genassoc.type
-                               :expr (rename-fn-funcall-fun genassoc.expr old-fn new-fn))
-     :default (genassoc-default (rename-fn-funcall-fun genassoc.expr old-fn new-fn)))
-    :measure (genassoc-count genassoc))
-
-  (define rename-fn-funcall-fun-genassoc-list
-    ((genassocs genassoc-listp)
-     (old-fn identp)
-     (new-fn identp))
-    :returns (new-genassocs genassoc-listp)
-    (if (endp genassocs)
-        nil
-      (cons (rename-fn-funcall-fun-genassoc (first genassocs) old-fn new-fn)
-            (rename-fn-funcall-fun-genassoc-list (rest genassocs) old-fn new-fn)))
-    :measure (genassoc-list-count genassocs))
-
-  :hints (("Goal" :in-theory '(deftrans-measure-theory)))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(deftrans rename-fn
-  :extra-args ((old-fn identp) (new-fn identp))
-  :expr
-  (lambda (expr old-fn new-fn)
-    (expr-case
-      expr
-      :paren (expr-paren (rename-fn-expr expr.inner old-fn new-fn))
-      :gensel
-      (make-expr-gensel :control (rename-fn-expr expr.control old-fn new-fn)
-                        :assocs (rename-fn-genassoc-list expr.assocs old-fn new-fn))
-      :arrsub (make-expr-arrsub :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
-                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
-      ;; This is the interesting case
-      :funcall (make-expr-funcall :fun (rename-fn-funcall-fun expr.fun old-fn new-fn)
-                                  :args (rename-fn-expr-list expr.args old-fn new-fn))
-      :member (make-expr-member :arg (rename-fn-expr expr.arg old-fn new-fn)
-                                :name expr.name)
-      :memberp (make-expr-memberp :arg (rename-fn-expr expr.arg old-fn new-fn)
-                                  :name expr.name)
-      :complit
-      (make-expr-complit :type expr.type
-                         :elems (rename-fn-desiniter-list expr.elems old-fn new-fn)
-                         :final-comma expr.final-comma)
-      :unary (make-expr-unary :op expr.op
-                              :arg (rename-fn-expr expr.arg old-fn new-fn))
-      :sizeof (expr-sizeof (rename-fn-tyname expr.type old-fn new-fn))
-      :alignof (make-expr-alignof :type (rename-fn-tyname expr.type old-fn new-fn)
-                                  :uscores expr.uscores)
-      :cast (make-expr-cast :type (rename-fn-tyname expr.type old-fn new-fn)
-                            :arg (rename-fn-expr expr.arg old-fn new-fn))
-      :binary (make-expr-binary :op expr.op
-                                :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
-                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
-      :cond (make-expr-cond :test (rename-fn-expr expr.test old-fn new-fn)
-                            :then (rename-fn-expr-option expr.then old-fn new-fn)
-                            :else (rename-fn-expr expr.else old-fn new-fn))
-      :comma (make-expr-comma :first (rename-fn-expr expr.first old-fn new-fn)
-                              :next (rename-fn-expr expr.next old-fn new-fn))
-      :stmt (expr-stmt (rename-fn-block-item-list expr.items old-fn new-fn))
-      :tycompat (make-expr-tycompat :type1 (rename-fn-tyname expr.type1 old-fn new-fn)
-                                    :type2 (rename-fn-tyname expr.type2 old-fn new-fn))
-      :offsetof
-      (make-expr-offsetof :type (rename-fn-tyname expr.type old-fn new-fn)
-                          :member (rename-fn-member-designor expr.member old-fn
-                                                             new-fn))
-      :sizeof-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                            (expr-fix expr))
-      :cast/call-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                               (expr-fix expr))
-      :cast/mul-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/add-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/sub-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/and-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :otherwise (expr-fix expr))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define copy-fn-fundef
   ((fundef fundefp)
    (target-fn identp)
    (new-fn identp))
+  :guard (fundef-annop fundef)
   :short "Transform a function definition."
   :returns (fundef? fundef-optionp)
   (b* (((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
+       ((declor fundef.declor) fundef.declor)
+       ((fundef-info info) fundef.info))
     (dirdeclor-case
       fundef.declor.direct
       :function-params
       (if (equal target-fn
-                 (c$::dirdeclor->ident fundef.declor.direct.decl))
+                 (c$::dirdeclor->ident fundef.declor.direct.declor))
           ;; Return
           (make-fundef
             :extension fundef.extension
-            :spec fundef.spec
+            :specs fundef.specs
             :declor (make-declor
                       :pointers fundef.declor.pointers
                       :direct (make-dirdeclor-function-params
-                               :decl (dirdeclor-ident new-fn)
+                               :declor (dirdeclor-ident new-fn)
                                :params fundef.declor.direct.params
                                :ellipsis fundef.declor.direct.ellipsis))
-            :decls fundef.decls
-            :body (rename-fn-stmt fundef.body target-fn new-fn))
+            :declons fundef.declons
+            :body (make-comp-stmt
+                   :labels (comp-stmt->labels fundef.body)
+                   :items (block-item-list-rename-fn
+                            (comp-stmt->items fundef.body)
+                            info.uid
+                            new-fn))
+            :info fundef.info)
         nil)
       :otherwise nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define copy-fn-extdecl
-  ((extdecl extdeclp)
+(define copy-fn-ext-declon
+  ((extdecl ext-declonp)
    (target-fn identp)
    (new-fn identp))
+  :guard (ext-declon-annop extdecl)
   :short "Transform an external declaration."
   :returns (mv (found booleanp)
-               (extdecls extdecl-listp))
-  (extdecl-case
+               (extdecls ext-declon-listp))
+  (ext-declon-case
    extdecl
    :fundef (b* ((fundef?
                  (copy-fn-fundef
-                   extdecl.unwrap
+                   extdecl.fundef
                    target-fn
                    new-fn)))
              (if fundef?
-                 (mv t (list (extdecl-fix extdecl) (extdecl-fundef fundef?)))
-               (mv nil (list (extdecl-fix extdecl)))))
-   :decl (mv nil (list (extdecl-fix extdecl)))
-   :empty (mv nil (list (extdecl-fix extdecl)))
-   :asm (mv nil (list (extdecl-fix extdecl)))))
+                 (mv t (list (ext-declon-fix extdecl) (ext-declon-fundef fundef?)))
+               (mv nil (list (ext-declon-fix extdecl)))))
+   :declon (mv nil (list (ext-declon-fix extdecl)))
+   :empty (mv nil (list (ext-declon-fix extdecl)))
+   :asm (mv nil (list (ext-declon-fix extdecl)))))
 
-(define copy-fn-extdecl-list
-  ((extdecls extdecl-listp)
+(define copy-fn-ext-declon-list
+  ((extdecls ext-declon-listp)
    (target-fn identp)
    (new-fn identp))
+  :guard (ext-declon-list-annop extdecls)
   :short "Transform a list of external declarations."
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (b* (((when (endp extdecls))
         nil)
        ((mv found new-extdecls)
-        (copy-fn-extdecl (first extdecls) target-fn new-fn)))
+        (copy-fn-ext-declon (first extdecls) target-fn new-fn)))
     (append new-extdecls
             (if found
-                (extdecl-list-fix (rest extdecls))
-              (copy-fn-extdecl-list (rest extdecls) target-fn new-fn)))))
+                (ext-declon-list-fix (rest extdecls))
+              (copy-fn-ext-declon-list (rest extdecls) target-fn new-fn))))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,10 +153,12 @@
   ((tunit transunitp)
    (target-fn identp)
    (new-fn identp))
+  :guard (transunit-annop tunit)
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (make-transunit :decls (copy-fn-extdecl-list tunit.decls target-fn new-fn)
+    (make-transunit :comment nil
+                    :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
                     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -263,13 +167,14 @@
   ((map filepath-transunit-mapp)
    (target-fn identp)
    (new-fn identp))
+  :guard (filepath-transunit-map-annop map)
   :short "Transform a filepath."
   :returns (new-map filepath-transunit-mapp
                     :hyp (filepath-transunit-mapp map))
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
-    (omap::update (deftrans-filepath path "COPY-FN")
+    (omap::update (c$::filepath-fix path)
                   (copy-fn-transunit tunit target-fn new-fn)
                   (copy-fn-filepath-transunit-map (omap::tail map)
                                                   target-fn
@@ -280,10 +185,26 @@
   ((tunits transunit-ensemblep)
    (target-fn identp)
    (new-fn identp))
+  :guard (transunit-ensemble-annop tunits)
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
     (transunit-ensemble
-      (copy-fn-filepath-transunit-map tunits.unwrap
+      (copy-fn-filepath-transunit-map tunits.units
                                       target-fn
                                       new-fn))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define copy-fn-code-ensemble
+  ((code code-ensemblep)
+   (target-fn identp)
+   (new-fn identp))
+  :guard (code-ensemble-annop code)
+  :returns (new-code code-ensemblep)
+  :short "Transform a code ensemble."
+  (b* (((code-ensemble code) code))
+    (change-code-ensemble
+     code
+     :transunits
+     (copy-fn-transunit-ensemble code.transunits target-fn new-fn))))

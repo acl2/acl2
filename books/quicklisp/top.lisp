@@ -270,15 +270,11 @@ full timestamp. On macOS, you can use @('ls -lT <file>').</p>
 
 <p>If the timestamp seconds are different between the two files, this is the
 issue. The fix is to update the timestamp of @('wrappers__wrapper.o') to fall
-within the same second as @('libosicat.so').</p>
-
-<p>On Linux, you can update the timestamp with @('sudo touch -t <new-time>
-<file>'). See @('man touch') for the formatting of @('<new-time>'). As an
-example, to set the time to @('2023-05-16 23:01:17'), @('<new-time>') would be
-@('202305162301.17').</p>
-
-<p>On macOS, you can perform a relative update of the timestamp, adding one
-second with the command: @('sudo touch -A 01 <file>').</p>
+within the same second as @('libosicat.so'). This can be done with the command
+@('touch -r wrappers__wrapper.o libosicat.so') (the @('-r') flag stands for
+``reference''; the command changes the timestamp of @('wrappers_wrapper.o') to
+match that of @('libosicat.so')).
+</p>
 
 <h4>Explanation</h4>
 

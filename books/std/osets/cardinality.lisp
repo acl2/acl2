@@ -41,7 +41,7 @@
   :long "<p>This is like @(see length), but respects the non-set convention and
 always returns 0 for ill-formed sets.</p>"
 
-  (defun cardinality (X)
+  (defun-inline cardinality (X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
     (mbe :logic (if (emptyp X)
@@ -49,7 +49,7 @@ always returns 0 for ill-formed sets.</p>"
                   (1+ (cardinality (tail X))))
          :exec  (length (the list X))))
 
-  (verify-guards cardinality
+  (verify-guards cardinality$inline
     ;; Normally we would never want to enable the primitives theory.  However,
     ;; here we need to show that cardinality is equal to length, and for this
     ;; we need to be able to reason about tail and emptyp.  Think of this as a
@@ -73,7 +73,8 @@ always returns 0 for ill-formed sets.</p>"
     (local (defthm cardinality-insert-empty
              (implies (emptyp X)
                       (equal (cardinality (insert a X)) 1))
-             :hints(("Goal" :use (:instance cardinality (x (insert a nil)))))))
+             :hints(("Goal" :use (:instance cardinality$inline
+                                            (x (insert a nil)))))))
 
     (defthm insert-cardinality
       (equal (cardinality (insert a X))

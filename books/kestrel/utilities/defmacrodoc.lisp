@@ -420,7 +420,9 @@
                               (macro-arg-descriptionsp arg-descriptions))
                   :mode :program ; why?
                   :stobjs state))
-  (b* (;; If the macro does exist, make sure the supplied macro-args are correct (todo: support just getting them?)
+  (b* (((when (not (consp parents)))
+        (er hard? 'defxdoc-for-macro-fn "No :parents supplied for ~x0." name))
+       ;; If the macro does exist, make sure the supplied macro-args are correct (todo: support just getting them?)
        (expected-macro-args (getprop name 'macro-args :unavailable 'current-acl2-world (w state)))
        ((when (and (eq :unavailable expected-macro-args)
                    (eq :auto macro-args)))
@@ -457,20 +459,20 @@
                                 ;; must be a list of string-valued forms:
                                 description)))))
     `(defxdoc ,name
-       ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))
+       ,@(and short `(:short ,short))
        :long (n-string-append ; todo: can we evaluate this statically?
+              ;; Include the description section, if supplied:
+              ,@(and description-forms  ; todo: what if we don't want to put all the forms in paragraphs?
+                     (cons *xdoc-description-header-with-spacing*
+                           (xdoc-make-paragraphs description-forms)))
               ;; Shows the general form of a call (all args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
               ,*xdoc-inputs-header-with-spacing*
               ;; Gives details on each argument:
               ,@(xdoc-for-macro-required-args required-args arg-descriptions)
               ,@(xdoc-for-macro-optional-args optional-args arg-descriptions package)
-              ,@(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)
-              ;; Include the description section, if supplied:
-              ,@(and description-forms
-                     (cons *xdoc-description-header-with-spacing*
-                           (xdoc-make-paragraphs description-forms))))))) ; todo: what if we don't want to put all the forms in paragraphs?
+              ,@(xdoc-for-macro-keyword-args keyword-args arg-descriptions package)))))
 
 ;; Generates a defxdoc form for the given macro.  Checks that all arguments are documented (if the macro exists).
 ;; This one makes most args be keyword args.
@@ -505,6 +507,10 @@
        (short (lookup-keyword :short xdoc-stuff))
        (description (lookup-keyword :description xdoc-stuff))
        (arg-descriptions (lookup-keyword :args xdoc-stuff)) ;; repetitions of the pattern: symbol followed by 1 or more strings describing it
+       ((when (not (symbol-alistp arg-descriptions)))
+        (er hard? 'defmacrodoc "Ill-formed :args: ~x0." arg-descriptions))
+       ((when (not (no-duplicatesp-equal (strip-cars arg-descriptions))))
+        (er hard? 'defmacrodoc "Duplicate keys among the :args: ~x0." arg-descriptions))
        ((when (not short))
         (er hard 'defmacrodoc "No :short supplied for ~x0" name))
        ((when (and macro-args

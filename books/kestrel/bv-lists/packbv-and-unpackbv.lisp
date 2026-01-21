@@ -1,7 +1,7 @@
 ; BV Lists Library: theorems about packbv and unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "bvchop-list")
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../bv/bvcat"))
+(local (include-book "../bv/slice"))
 
 (defthm packbv-of-unpackbv
   (implies (and (posp size)

@@ -25,8 +25,8 @@
 (program)
 
 (defun topic-to-url-list (url chars names)
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
   (cond ((endp names) nil)
         (t (cons (cons (car chars)
                        (concatenate 'string
@@ -37,25 +37,22 @@
                                     (symbol-name (car names))))
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
-(defconst *acl2-user-manual*
-  "manual/")
-
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
 
 (defconst *bleeding-edge-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
+  "https://acl2.org/doc/")
 
 (defconst *home-page-references*
-  '(|The_02Tours|                       ;;; a
+  '(tours                               ;;; a
     ACL2-Tutorial                       ;;; b
-    events                              ;;; c
-    programming                         ;;; d
-    rule-classes                        ;;; e
+    releases                            ;;; c
+    workshops                           ;;; d
+    course-materials                    ;;; e
     books                               ;;; f
     note-8-6                            ;;; g   ; current release notes
     the-method                          ;;; h
-    introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
+    git-quick-start                     ;;; i
     interesting-applications            ;;; j
     acknowledgments                     ;;; k
     real                                ;;; l
@@ -70,13 +67,16 @@
     git-quick-start                     ;;; u
     talks                               ;;; v
     start-here                          ;;; w
+    publications                        ;;; x
+    mailing-lists                       ;;; y
+    installation                        ;;; z
   ))
 
 (defconst *home-page*
 
 ; The numeric fmt variables used in the home page are resolved as follows:
 ; 0 (@ acl2-version)
-; 1 *acl2-user-manual*
+; 1 [unused; formerly pointed to ACL2-only manual]
 ; 2 *combined-manual*
 ; 3 *bleeding-edge-manual*
 ; 4 build date month, e.g., "January"
@@ -181,20 +181,17 @@ Software System Award</a>.<p>
 <table CELLPADDING=3 align=\"center\">
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"~sa\"><img src=\"HTML/door02.gif\" alt=\"door icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-Start Here: <a href=\"~sj\">Applications</a>, <a href=\"~sv\">Talks</a>, <a href=\"~sa\">Tours</a>, and <a href=\"~sb\">Tutorials/Demos</a>
+<a href=\"~sw\">Start Here</a> (including <a href=\"~sj\">applications</a>, <a href=\"~sv\">talks</a>, <a href=\"~sa\">tours</a>, and <a href=\"~sb\">tutorials/demos</a>)
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\"><img
-src=\"HTML/teacher2.gif\" alt=\"teacher icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshops.html\">ACL2
-Workshops, UT Seminar, and Course Materials</a>
+<a href=\"~sd\">ACL2
+Workshops</a>, <a
+href=\"http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html\">UT Seminar</a>,
+and <a href=\"~se\">Course Materials</a>
 </td>
 <!--
 
@@ -219,74 +216,53 @@ entry is left blank.
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
-<img src=\"HTML/doc03.gif\" alt=\"papers icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
+<a href=\"~sx\">
 Publications about ACL2 and Its Applications</a>
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"#User's-Manual\"><img src=\"HTML/info04.gif\" alt=\"info bubble icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"#User's-Manual\">The User's Manuals</a>
+<a href=\"#User's-Manual\">The User's Manual</a>
 and <a href=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\">Hyper-Card</a>
 </td>
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"#Tools\"><img src=\"HTML/tools3.gif\" alt=\"hammer and pliers icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"#Tools\">Community Books: Lemma Libraries and Utilities</a>
 </td>
 
-<td align=center valign=MIDDLE>
-<a href=\"HTML/installation/misc.html#Addresses\"><img
-src=\"HTML/mailbox1.gif\" alt=\"mailbox icon\"  border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/installation/misc.html#Addresses\">Mailing Lists</a>
+<a href=\"~sy\">Mailing Lists</a>
 </td>
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/new.html\">
-<img src=\"HTML/new04.gif\" alt=\"NEW! icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"HTML/new.html\">
 Recent changes to this page</a>
 </td>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/installation/installation.html\"><img src=\"HTML/ftp2.gif\"
-alt=\"FTP icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/installation/installation.html\">Obtaining, Installing, and License</a>
+<a href=\"~sz\">Obtaining, Installing, and License</a>
 </td>
 
 </tr>
 
 <tr>
-<td align=center valign=MIDDLE>
-<a href=\"~sg\"><img src=\"HTML/note02.gif\" alt=\"paper note icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
 <a href=\"~sg\">Differences from Version 8.5</a><a href=\"~sq\"> <img
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
-<td align=center valign=MIDDLE>
-<a href=\"HTML/other-releases.html\">
-<img src=\"HTML/file04.gif\" alt=\"filing cabinet icon\" border=0></a>
-</td>
+<td>&bull;</td>
 <td>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~sc\">
 Other Releases</a>
 </td>
 </tr>
@@ -316,8 +292,7 @@ the distribution tarball includes the <i>community books</i>, which are
 contributed and maintained by the members of the ACL2 community.</li>
 
 <li><b><a NAME=\"documentation\">Documentation</a>.</b><br>There is an
-extensive user's manual for the ACL2 system, and an even more comprehensive
-manual that documents not only the ACL2 system but also many community books.
+extensive user's manual that documents the ACL2 system and many community books.
 See <a href=\"#User's-Manual\">below</a> to learn more.</li>
 
 <li><b>License and Copyright.</b><br>ACL2 is freely available under the terms
@@ -327,12 +302,7 @@ authorship</a> information is available from the ACL2 <a
 href=\"#documentation\">documentation</a>.</li>
 
 <li><b>Extensions.</b><br>The ACL2 distribution includes the following
-extensions, which were developed by the individuals shown.  <b>NOTE:</b>Not
-included in this list is what was formerly known as \"ACL2(h)\", because it is
-now the default build of ACL2: that is, ACL2 builds are now <a
-href=\"~sm\">hons-enabled</a>.  Thanks to Bob Boyer, Warren A. Hunt, Jr., Jared
-Davis, and Sol Swords for their contributions; see the <a
-href=\"~sk\">acknowledgments</a>.
+extensions, which were developed by the individuals shown.
 
   <ul>
   <li><a href=\"~sl\">ACL2(r)</a><br>
@@ -361,9 +331,9 @@ the <a href=\"~sk\">ACL2 acknowledgments page</a>.
 
 <hr>
 
-<H2><a NAME=\"User's-Manual\">The User's Manuals</a></H2>
+<H2><a NAME=\"User's-Manual\">The User's Manual</a></H2>
 
-The <i>ACL2 User's Manual</i> is a vast hypertext document.  If you are a
+The <i>ACL2+Books User's Manual</i> is a vast hypertext document.  If you are a
 newcomer to ACL2, we do <EM>not</EM> recommend that you wander off into the
 full documentation.  Instead start with the <a href=\"~sw\">START-HERE</a>
 documentation topic.  Experienced users tend mostly to use the manual as a
@@ -372,7 +342,7 @@ remembered from their past experiences with ACL2.
 
 <p>
 
-The <i>ACL2+Books Manual</i> includes not only the ACL2 User's Manual, but also
+That manual not only includes documentation for the ACL2 system, but also
 documents many of the <a href=\"#Tools\">community books</a> (libraries).  This
 manual, which is written by many authors, is thus more extensive than the ACL2
 system, and is thus potentially more useful.  With the exception of the first
@@ -381,10 +351,10 @@ ACL2+Books Manual.
 
 <p>
 
-The following links take you to these two manuals.  The manuals can however be
-read not only in a Web browser, but in the <a href=\"~so\">ACL2-Doc Emacs
+The following links take you to versions of the manual, which can be
+read not only in a Web browser, but also in the <a href=\"~so\">ACL2-Doc Emacs
 browser</a> or by using the ACL2 <CODE><a href=\"~sr\">:DOC</a></CODE> command
-at the terminal; see the documentation topic, <CODE><a
+at the terminal.  See the documentation topic, <CODE><a
 href=\"~ss\">DOCUMENTATION</a></CODE>.
 
 <ul>
@@ -392,28 +362,14 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 <li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.6)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
-<a href=\"HTML/installation/obtaining-and-installing.html#GitHub\">GitHub</a> distributions)</li>
-
-<li><a href=\"~s1index.html?topic=ACL2____ACL2\">ACL2 User's Manual</a> (Version 8.6)</li>
+<a href=\"~si\">GitHub</a> distributions)</li>
 
 </ul>
 
 <p>
 
-Once you have installed ACL2, you can browse the ACL2 User's Manual locally by
-viewing a copy of this home page under your ACL2 sources directory at
-<CODE>doc/home-page.html</CODE> and following the last link shown above; but
-first you will need to run the following command in your ACL2 sources
-directory.
-
-<pre>
-    make DOC ACL2=&lt;path_to_your_ACL2&gt;
-</pre>
-
-<p>
-
-Better yet, you can build the ACL2+Books Manual locally, as follows, though
-this will likely take longer (perhaps a half hour or more, depending on which
+You can build the ACL2+Books Manual locally, as follows, though this will
+likely take several minutes or even considerably longer, depending on which
 books you have already certified).
 
 <pre>
@@ -437,12 +393,10 @@ some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
 href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
-the pages on <a
-href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>
-Books and Papers about ACL2 and Its Applications</a> and the <a
-href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
-Series</a>.  The <a href=\"HTML/installation/installation.html\">installation
-instructions</a> explain how to download and install the community books.
+the pages on <a href='~sx'> Books and Papers about ACL2 and Its
+Applications</a> and the <a href='~sd'>ACL2 Workshops Series</a>.  The <a
+href=\"~sz\">installation instructions</a> explain how to download and install
+the community books.
 
 <p>
 
@@ -465,12 +419,12 @@ mechanism</a>.)
 <br><hr><br>
 <H2><a NAME=\"search\">Searching documentation</a></H2>
 
-The web views of <a href=\"#User's-Manual\">The ACL2 User's Manual</a> and <a
+The web views of the <a
 href=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">ACL2+Books
 Manual</a> allow you to search the short strings of the documentation (which
 are typically summaries of a line or so).  To search the full content for a
 string or regular expression, you may use the Emacs-based <a
-href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
+href=\"~so\">ACL2-Doc browser</a>.
 
 <br><br>
 <hr>
@@ -482,8 +436,8 @@ href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
 
 (defun write-home-page (channel state url)
 
-; Url is a url ending in "/", e.g.,
-; http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/ .
+; Url is a url ending in "/", e.g.:
+; https://acl2.org/doc/
 
   (mv-let
    (n state)
@@ -500,7 +454,7 @@ href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
        *home-page*
        (append
         (list (cons #\0 (f-get-global 'acl2-version state))
-              (cons #\1 *acl2-user-manual*)
+              ;; (cons #\1 *acl2-user-manual*)
               (cons #\2 *combined-manual*)
               (cons #\3 *bleeding-edge-manual*)
               (cons #\4 month)
@@ -526,13 +480,6 @@ href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
                    (observation 'top-level "Writing home-page.html.")
                    (write-home-page channel
                                     state
-
-; We formerly supplied *acl2-user-manual* as the following URL.  However, David
-; Hardin reported concern over reaching a broken-link page after following the
-; link from the release notes (in the *acl2-user-manual*) to note-7-0-books
-; (only in the *combined-manual*).  We have thus decided to use the
-; *combined-manual* for all topics, in order to avoid such issues.
-
                                     *combined-manual*)
                    (close-output-channel channel state))))
 

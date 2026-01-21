@@ -1,0 +1,6 @@
+non_const_ref_param.cpp:3 (8-11): Reference must be constant
+ 3 | int foo(int& a) {
+   |         ^^^
+note: Consider adding `const` here
+ 3 | int foo(int& a) {
+   |        ^

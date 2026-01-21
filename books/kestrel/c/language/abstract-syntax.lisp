@@ -11,15 +11,13 @@
 
 (in-package "C")
 
-(include-book "kestrel/fty/defresult" :dir :system)
-(include-book "kestrel/fty/defset" :dir :system)
+(include-book "identifiers")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 ; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,49 +63,6 @@
      the translation phases [C17:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod ident
-  :short "Fixtype of identifiers [C17:6.4.2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we represent C identifiers as ACL2 strings,
-     which suffice to represent all the ASCII C identifiers.
-     We wrap ACL2 strings into a one-field product fixtype
-     to make it easier to modify or extend this fixtype in the future.")
-   (xdoc::p
-    "Unconstrained ACL2 strings may not be valid C ASCII identifiers.
-     In the future we may extend this fixtype
-     with suitable restrictions on the ACL2 string.")
-   (xdoc::p
-    "A C implementation may limit
-     the number of significant characters in identifiers
-     [C17:6.4.2.1/5] [C17:6.4.2.1/6] [C17:5.2.4.1],
-     to 31 for external identifiers and 63 for internal identifiers.
-     In the future, we may add this constraint to this fixtype."))
-  ((name string))
-  :tag :ident
-  :pred identp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist ident-list
-  :short "Fixtype of lists of identifiers."
-  :elt-type ident
-  :true-listp t
-  :elementp-of-nil nil
-  :pred ident-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defset ident-set
-  :short "Fixtype of sets of identifiers."
-  :elt-type ident
-  :elementp-of-nil nil
-  :pred ident-setp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,8 +145,7 @@
    (unsignedp bool)
    (length iconst-length))
   :tag :iconst
-  :pred iconstp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,8 +299,7 @@
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspecseq-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyspecseq-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,7 +359,8 @@
   (:pointer ((decl obj-declor)))
   (:array ((decl obj-declor)
            (size iconst-option)))
-  :pred obj-declorp)
+  :pred obj-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,7 +393,8 @@
   (:pointer ((decl obj-adeclor)))
   (:array ((decl obj-adeclor)
            (size iconst-option)))
-  :pred obj-adeclorp)
+  :pred obj-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -463,8 +418,7 @@
   :elt-type tyname
   :true-listp t
   :elementp-of-nil nil
-  :pred tyname-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyname-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -504,8 +458,7 @@
   :elt-type unop
   :true-listp t
   :elementp-of-nil nil
-  :pred unop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred unop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,8 +525,7 @@
   :elt-type binop
   :true-listp t
   :elementp-of-nil nil
-  :pred binop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred binop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -674,11 +626,7 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :pred expr-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -716,8 +664,7 @@
   :elt-type struct-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred struct-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred struct-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -776,7 +723,7 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-declon-listp
-  :prepwork ((local (in-theory (enable nfix))))
+
   ///
 
   (defruled cdr-of-param-declon-list-fix
@@ -806,7 +753,8 @@
   (:base ((name ident)
           (params param-declon-list)))
   (:pointer ((decl fun-declor)))
-  :pred fun-declorp)
+  :pred fun-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -821,7 +769,8 @@
      a function declarator without the name."))
   (:base ((params param-declon-list)))
   (:pointer ((decl fun-adeclor)))
-  :pred fun-adeclorp)
+  :pred fun-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -845,8 +794,7 @@
   :elt-type fun-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred fun-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fun-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1003,7 +951,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable acl2-count nfix)))))
+  :prepwork ((local (in-theory (enable acl2-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1055,8 +1003,7 @@
   :elt-type fundef
   :true-listp t
   :elementp-of-nil nil
-  :pred fundef-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fundef-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1083,8 +1030,7 @@
   :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

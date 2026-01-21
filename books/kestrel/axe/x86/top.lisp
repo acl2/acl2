@@ -21,7 +21,7 @@
 (include-book "rewriter-x86")
 
 ;;Lifters:
-(include-book "unroll-x86-code")
+(include-book "unroller")
 (include-book "loop-lifter")
 
 ;; Formal Unit Tester:

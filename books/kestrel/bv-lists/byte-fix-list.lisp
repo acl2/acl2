@@ -1,7 +1,7 @@
 ; Fix every element of a list to be a signed byte
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -100,7 +100,7 @@
   (implies (< n (len lst))
            (equal (byte-fix-list (update-nth n val lst))
                   (update-nth n (logext 8 val) (byte-fix-list lst))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :in-theory (e/d (update-nth byte-fix-list
                                        len-of-cdr
                             bvchop-when-i-is-not-an-integer

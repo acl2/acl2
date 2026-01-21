@@ -34,10 +34,9 @@
                           (expt 2 size))
                       (+ 1 (logtail size x) (logtail size y))
                     (+ (logtail size x) (logtail size y)))))
-  :hints (("Goal" :in-theory (e/d (logtail floor-of-sum bvchop ;bvplus
+  :hints (("Goal" :in-theory (enable logtail floor-of-sum bvchop ;bvplus
                                            ;;mod-cancel
-                                           )
-                                  ()))))
+                                           ))))
 
 (defthmd logtail-of-plus
   (implies (and (integerp x)
@@ -86,9 +85,8 @@
                   (if (equal 0 (bvchop size x))
                       (- (logtail size x))
                     (+ -1 (- (logtail size x))))))
-  :hints (("Goal" :in-theory (e/d (logtail bvchop FLOOR-of---ARG1
-                                           EQUAL-OF-0-AND-MOD)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable logtail bvchop FLOOR-of---ARG1
+                                     EQUAL-OF-0-AND-MOD))))
 
 (defthm slice-of-minus
   (implies (and (integerp x)
@@ -101,5 +99,5 @@
                       (bvchop (+ 1 high (- low)) (- (slice high low x)))
                     (bvchop (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low))) (- (slice high low x)))))))
   :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases)
-                                  (;anti-slice ;
+                                  (;anti-slice
                                    )))))

@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -392,7 +392,6 @@
                   (and (equal (bvchop 32 (mod big *bn-254-group-prime*)) bv32)
                        ;; everything but the carry and the low bits is 0:
                        (unsigned-byte-p 33 (mod big *bn-254-group-prime*)))))
-  :otf-flg t
   :hints (("Goal" :expand ((UNSIGNED-BYTE-P 32
                                             (ADD -4294967296
                                                  BV33 *BN-254-GROUP-PRIME*))
@@ -942,7 +941,6 @@
                   (if (equal 1 bita)
                       (bvchop 33 (+ (- (expt 2 32)) bv35))
                     (bvchop 33 bv35))))
-  :otf-flg t
   :hints (("Goal"
            :cases ((equal 0 (SLICE 34 33 BV35))
                    (equal 1 (SLICE 34 33 BV35))
@@ -957,7 +955,6 @@
                            (;; for speed:
                             acl2::MOD-BOUND-LINEAR-ARG2-STRONG
                             )))))
-
 
 (defthm bound-helper
   (implies (and (unsigned-byte-p 32 inv0)
@@ -1153,13 +1150,13 @@
 
 ;;slow
 (defthm mod-of-sum-of-mod-4
-  (implies (and (Integerp x)
-                (Integerp y)
-                (Integerp z)
-                (Integerp w)
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
+                (integerp w)
                 (posp p))
-           (equal (MOD (+ x y z (MOD w P)) P)
-                  (MOD (+ x y z w) P)))
+           (equal (mod (+ x y z (mod w p)) p)
+                  (mod (+ x y z w) p)))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
 
 (defthm add-of-neg-of-bvplus-lemma2

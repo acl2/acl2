@@ -1,6 +1,6 @@
 ; A variant of write-strings-to-file that can be used in make-event, etc.
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "write-strings-to-channel")
 (local (include-book "open-output-channel-bang"))
+(local (include-book "close-output-channel"))
 (local (include-book "kestrel/utilities/w" :dir :system))
 
 (defttag file-io!)
@@ -19,7 +20,10 @@
 (local (in-theory (disable w state-p
                            update-written-files
                            update-open-output-channels
-                           update-file-clock)))
+                           update-file-clock
+                           open-output-channels
+                           close-output-channel
+                           written-files)))
 
 ;; Writes the STRINGS to file FILENAME, overwriting its previous contents.
 ;; Effectively, all the STRINGS get concatenated and the result becomes the new
@@ -43,4 +47,9 @@
 (defthm w-of-mv-nth-1-of-write-strings-to-file!
   (equal (w (mv-nth 1 (write-strings-to-file! strings filename ctx state)))
          (w state))
+  :hints (("Goal" :in-theory (enable write-strings-to-file!))))
+
+(defthm state-p-of-mv-nth-1-of-write-strings-to-file!
+  (implies (state-p state)
+           (state-p (mv-nth 1 (write-strings-to-file! strings filename ctx state))))
   :hints (("Goal" :in-theory (enable write-strings-to-file!))))

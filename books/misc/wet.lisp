@@ -42,7 +42,10 @@
     acc)
    (t
     (mv-let (name x)
-            (constraint-info fn wrld)
+            ; Old Code:
+            ; (constraint-info fn wrld)
+            ; New Code:
+            (pre-v8-7-constraint-info fn wrld)
             (declare (ignore x))
             (cond
              (name acc)
@@ -66,7 +69,10 @@
           wrld
           (cond ((and (eq (cadar wrld-tail) 'formals)
                       (mv-let (name x)
-                              (constraint-info (caar wrld-tail) wrld)
+                              ; Old Code:
+                              ; (constraint-info (caar wrld-tail) wrld)
+                              ; New Code:
+                              (pre-v8-7-constraint-info (caar wrld-tail) wrld)
                               (declare (ignore x))
                               (not name)))
                  (cons (caar wrld-tail) acc))

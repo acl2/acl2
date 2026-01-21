@@ -1,7 +1,7 @@
 ; Lists of known-boolean-returning functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,7 +20,7 @@
 
  ;since the functions are mentioned below (todo: make sure all functions mentioned below are included):
 (include-book "kestrel/bv/bvlt-def" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/bv-lists/all-all-unsigned-byte-p" :dir :system)
@@ -30,7 +30,7 @@
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/boolxor" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)

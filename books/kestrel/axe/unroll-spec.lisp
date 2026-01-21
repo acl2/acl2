@@ -20,7 +20,7 @@
 (include-book "dag-size-fast")
 (include-book "jvm/rule-lists-jvm") ;for amazing-rules-spec-and-dag
 (include-book "rules-in-rule-lists")
-(include-book "util2") ;; not strictly needed
+(include-book "utilities") ;; not strictly needed
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -110,7 +110,7 @@
                        ;;todo: why is the re-interning needed here?
                        (symbol-name (fresh-name-in-world-with-$s (strip-stars-from-name defconst-name) nil (w state)))
                        defconst-name))
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
+       (dag-vars (dag-vars-unsorted dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
        (function-params (if (eq :auto function-params)
                             dag-vars
@@ -174,7 +174,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
 ;; TODO: update
 (defxdoc unroll-spec
   :parents (axe)
-  :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+  :short "A tool to open functions and unroll recursions."
   :long "<h3>General Form:</h3>
 
 @({
@@ -192,6 +192,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
         )
 })
+
+<p>Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations.</p>
 
 <p> By default, the set of rules used is @('(unroll-spec-rules)'), with any of the @(':extra-rules') added and then the @(':remove-rules') removed.  Or the user can specify @(':rules') to completely replace the set of rules.</p>
 

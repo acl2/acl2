@@ -25,23 +25,17 @@ System.  As the name suggests, they are updated by the ACL2 community.
 
 ### Documentation
 
-- The [Combined ACL2 + Books Manual][full-manual] has extensive
-  documentation for the latest stable version of ACL2 and many of the
-  community books that come with it.
+- The [Combined ACL2 + Books Manual][dev-manual] is updated frequently
+  to track the latest changes to this repository.
 
-- There is also a [development version][dev-manual] of the manual which
-  is updated reasonably frequently and corresponds to the development
-  version of ACL2 and its books.
-
-- Finally there is the more compact [ACL2-only manual][base-manual]
-  which only documents the ACL2 system itself and not any books.
+- If you are instead using official, released Version 8.6 of ACL2, see
+  the [Version 8.6 Manual][release-manual] instead.
 
 Each of these manuals can be downloaded for offline use by clicking the
 download button on the right hand side of the upper toolbar while
 browsing the manual.
 
-[base-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/manual/index.html
-[full-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
+[release-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
 [dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
 
 ### Obtaining the Source Code
@@ -87,27 +81,17 @@ git clone https://github.com/acl2/acl2 .
 
 ### Contributing
 
-See the documentation for [how to contribute][git tips].
+See the documentation for [how to contribute][how-to-contribute].
 
-Even though we have merged the Community Books (formerly acl2-books) and
-ACL2 System (formerly acl2-devel) repositories into one, changes should
-be made only to the `books/` subdirectory unless you are Matt Kaufmann
-or J Moore, since everything outside `books/` is part of the ACL2
-system.  (If you have suggestions for system changes, they should be
-emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
-in the past.)  An [automated testing mechanism][jenkins] vets user
-contributions.
-
-[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GIT-QUICK-START
-[jenkins]: ./books/build/jenkins/README.md
+[how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
 
 ### Staying Informed
 
-We invite anyone who is using this repository to join the [acl2-books
-mailing list][acl2-books], which receives commit messages and other
-discussion related to ACL2 system- and book-related development.
+We encourage users of ACL2 to join our [mailing lists][mailing-lists]
+and take advantage of other [ACL2 Community resources][community].
 
-[acl2-books]: http://groups.google.com/group/acl2-books
+[mailing-lists]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____MAILING-LISTS
+[community]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY
 
 ### Contributors Wanted!
 

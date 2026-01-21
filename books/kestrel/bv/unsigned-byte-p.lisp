@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -130,7 +130,8 @@
                       (unsigned-byte-p (+ -1 n) x)))))
   :hints (("Goal":in-theory (enable expt-of-+ unsigned-byte-p unsigned-byte-p-when-n-is-not-natp))))
 
-(defthm size-non-negative-when-unsigned-byte-p-free
+; caused problems?
+(defthmd size-non-negative-when-unsigned-byte-p-free
   (implies (unsigned-byte-p size free)
            (not (< size 0)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
@@ -266,13 +267,22 @@
                 (natp free))
            (not (unsigned-byte-p size x))))
 
-
-
 (defthm unsigned-byte-p-of-if
   (equal (unsigned-byte-p size (if test x y))
          (if test
              (unsigned-byte-p size x)
            (unsigned-byte-p size y))))
+
+;really want this for every unary function (unsigned-byte-p with a constant n is effectively unary).
+;we also do this if just one branch is a constant
+(defthm unsigned-byte-p-of-if-two-constants
+  (implies (and (syntaxp (and (quotep size)
+                              (quotep x1)
+                              (quotep x2))))
+           (equal (unsigned-byte-p size (if test x1 x2))
+                  (if test
+                      (unsigned-byte-p size x1)
+                    (unsigned-byte-p size x2)))))
 
 ;rename
 (defthm bound-when-usb
@@ -314,4 +324,12 @@
                   (and (< 0 x)
                        (<= x (expt 2 size))
                        (natp size))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;; todo: 2 more commuted forms
+(defthm unsigned-byte-p-of-+-with-carry
+  (implies (and (unsigned-byte-p (+ -1 size) x)
+                (unsigned-byte-p (+ -1 size) y)
+                (unsigned-byte-p 1 bit))
+           (unsigned-byte-p size (+ x y bit)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))

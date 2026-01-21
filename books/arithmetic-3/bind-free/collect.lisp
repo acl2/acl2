@@ -173,7 +173,7 @@
                         0
                       (expt x (- n 1))))))
 
-; (Matt K., Nov. 2006) The following new rule (after ACL 3.0.1) has slowed down
+; (Matt K., Nov. 2006) The following new rule (after ACL2 3.0.1) has slowed down
 ; books/workshops/2004/legato/support/proof-by-generalization-mult.lisp from
 ; 103.33s to 150.21s (with proof inhibited).  Although that seemed to be the
 ; only noticeable slowdown it caused in the regression suite, we were tempted

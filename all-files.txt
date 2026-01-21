@@ -43,7 +43,6 @@ hons.lisp
 hons-raw.lisp
 induct.lisp
 init.lisp
-installation
 interface-raw.lisp
 ld.lisp
 LICENSE
@@ -59,7 +58,6 @@ non-linear.lisp
 openmcl-acl2-trace.lisp
 other-events.lisp
 other-processes.lisp
-other-releases.html
 parallel.lisp
 parallel-raw.lisp
 proof-builder-a.lisp
@@ -114,69 +112,13 @@ home-page.html
 home-page.lisp
 # The following is distributed but is not under source control
 HTML
-# The following is distributed but is not under source control
-manual
 README
 write-acl2-code-size.lisp
 
 # The following is distributed but is not under source control
 doc/HTML:
 LICENSE
-installation
 *.html
-*.gif
-
-# The following is distributed but is not under source control
-doc/HTML/installation:
-ccl.html
-installation.html
-installing-make.html
-misc.html
-obtaining-and-installing.html
-requirements.html
-using.html
-windows7.html
-windows-gcl-jared.html
-
-# The following is distributed but is not under source control.
-# All subdirectories here are similarly not under source control.
-# Note that since we don't distribute books, we also don't distribute
-# image files that support the books.
-doc/manual:
-download
-LICENSE
-# Makefile -- not distributed
-res
-*.*
-
-doc/manual/download:
-
-doc/manual/lib:
-*.*
-katex
-typeahead-bundle
-
-doc/manual/lib/katex:
-fonts
-katex.min.css
-katex.min.js
-README.md
-
-doc/manual/lib/katex/fonts:
-*.*
-
-doc/manual/lib/typeahead-bundle:
-*.*
-
-doc/manual/res:
-centaur
-tours
-
-doc/manual/res/centaur:
-centaur-logo.png
-cert_pl_exclude
-
-doc/manual/res/tours:
 *.gif
 
 emacs:
@@ -189,17 +131,6 @@ README
 
 graphics:
 *.gif
-
-installation:
-ccl.html
-installation.html
-installing-make.html
-misc.html
-obtaining-and-installing.html
-requirements.html
-using.html
-windows7.html
-windows-gcl-jared.html
 
 # The following is distributed but is not under source control
 saved:

@@ -1,6 +1,6 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,10 +12,10 @@
 (in-package "ACL2")
 
 (include-book "bvnot")
-(include-book "bvplus")
-(include-book "bvminus")
-(include-book "bvuminus") ;make local?
+(include-book "bvplus-def")
+(include-book "bvuminus-def")
 (local (include-book "unsigned-byte-p"))
+(local (include-book "bvchop"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -74,7 +74,7 @@
 (defthmd bvnot-becomes-bvplus-of--1-and-bvuminus
   (equal (bvnot size x)
          (bvplus size -1 (bvuminus size x)))
-  :hints (("Goal" :in-theory (enable bvuminus bvnot bvminus lognot bvplus))))
+  :hints (("Goal" :in-theory (enable bvuminus bvnot lognot bvplus))))
 
 (local (in-theory (disable bvuminus)))
 
@@ -268,7 +268,6 @@
                                    bvnot-becomes-bvplus-of--1-and-bvuminus
                                    bvplus-of-+-of-1-split
                                    bvuminus
-                                   bvminus
                                    bvplus
                                    bvchop-of-sum-cases
                                    unsigned-byte-p)
@@ -315,7 +314,6 @@
                                    bvnot-becomes-bvplus-of--1-and-bvuminus
                                    bvplus-of-+-of-1-split
                                    bvuminus
-                                   bvminus
                                    bvplus
                                    bvchop-of-sum-cases
                                    unsigned-byte-p

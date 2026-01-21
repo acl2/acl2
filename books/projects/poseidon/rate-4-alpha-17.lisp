@@ -2,7 +2,7 @@
 
 ; Poseidon Library
 ;
-;    Copyright 2024 Provable Inc.
+;    Copyright 2025 Provable Inc.
 ;
 ;    Licensed under the Apache License, Version 2.0 (the "License");
 ;    you may not use this file except in compliance with the License.
@@ -41,7 +41,8 @@
    (xdoc::p
     "This is the instantiation of Poseidon used internally by the
      Aleo Instructions opcode "
-    (xdoc::ahref "https://developer.aleo.org/aleo/opcodes#hashpsd4" "hash.psd4")
+    (xdoc::ahref "https://developer.aleo.org/guides/aleo/opcodes/#hashpsd4"
+                 "hash.psd4")
     ".")
    (xdoc::p
     "Note, there are also some test cases for this instantiation
@@ -141,7 +142,7 @@
 (define hash4-many ((inputs (fe-listp inputs primes::*bls12-377-scalar-field-prime*))
                     (count natp))
   :guard (fep (len inputs) primes::*bls12-377-scalar-field-prime*)
-  :returns (outputs (fe-listp outputs 
+  :returns (outputs (fe-listp outputs
                               primes::*bls12-377-scalar-field-prime*)
                     :name fe-listp-of-hash4-many
                     :hints (("Goal" :use (:instance fe-listp-of-hash

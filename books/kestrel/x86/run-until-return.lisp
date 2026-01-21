@@ -11,20 +11,20 @@
 
 (in-package "X")
 
+;; TODO: Deprecate (use newer versions in run-until-return3.lisp and run-until-return4.lisp).
+
 ;TODO: Use x86isa package?
 
-(include-book "projects/x86isa/machine/x86" :dir :system)
+(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
-
-;; An alias that's in the x86isa package
-(defmacro defpun (&rest args)
-  `(acl2::defpun ,@args))
+(include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
+(include-book "kestrel/lists-light/memberp" :dir :system)
 
 ;; Tests whether the stack is shorter than it was when the RSP was OLD-RSP.  Recall
 ;; that the stack grows downward, so a larger RSP means a shorter stack.
 (defun stack-shorter-thanp (old-rsp x86)
   (declare (xargs :stobjs x86
-                  :guard (natp old-rsp))) ;tighten?
+                  :guard (natp old-rsp))) ;tighten? ; todo: this is actually a signed-byte 64?!  we can use > because the canonical block is contiguous using a signed-byte 64 representation
   (> (rgfi *rsp* x86)
      old-rsp))
 
@@ -65,28 +65,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For debugging
+;; For debugging, or lifting just a segment of code
 
 ;; What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
 (defpun run-until-stack-shorter-than-or-reach-pc (old-rsp stop-pcs x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
   (if (or (stack-shorter-thanp old-rsp x86)
-          (member-equal (rip x86) stop-pcs))
+          (memberp (rip x86) stop-pcs))
       x86
     (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-or-reach-pc-base
   (implies (or (stack-shorter-thanp old-rsp x86)
-               (member-equal (rip x86) stop-pcs))
+               (memberp (rip x86) stop-pcs))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-or-reach-pc-opener
   (implies (not (or (stack-shorter-thanp old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86)))))
 
@@ -100,5 +100,3 @@
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-stack-shorter-than-or-reach-pc)
   (declare (xargs :stobjs x86))
   (run-until-stack-shorter-than-or-reach-pc (xr :rgf *rsp* x86) stop-pcs x86))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

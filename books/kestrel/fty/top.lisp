@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "any-nat-map")
 (include-book "bag")
 (include-book "bin-digit-char-list")
 (include-book "bit-list")
@@ -18,9 +19,12 @@
 (include-book "byte-list20")
 (include-book "byte-list32")
 (include-book "byte-list64")
+(include-book "byte-list-list")
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")
+(include-book "character-set")
+(include-book "character-any-map")
 (include-book "database")
 (include-book "dec-digit-char-list")
 (include-book "defbyte")
@@ -34,9 +38,13 @@
 (include-book "deffixtype-alias")
 (include-book "defflatsum")
 (include-book "defflatsum-doc")
+(include-book "deffold-map")
+(include-book "deffold-map-doc")
 (include-book "deffold-reduce")
 (include-book "deffold-reduce-doc")
 (include-book "deflist-of-len")
+(include-book "defmake-self")
+(include-book "defmake-self-doc")
 (include-book "fty-omap")
 ;(include-book "defomap")
 (include-book "fty-set")
@@ -45,6 +53,7 @@
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "dependencies")
 (include-book "fold")
 (include-book "hex-digit-char-list")
 (include-book "integer-result")
@@ -82,9 +91,11 @@
 (include-book "oct-digit-char")
 (include-book "bin-digit-char")
 (include-book "string-stringlist-alist")
+(include-book "string-stringlist-map")
 (include-book "symbol-pseudoeventform-alist")
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
+(include-book "ubyte32-option")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

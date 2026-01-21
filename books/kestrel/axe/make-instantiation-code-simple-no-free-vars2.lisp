@@ -1,7 +1,7 @@
 ; A tool to generate hyp instantiation code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,7 @@
 ;; hyp has no free vars (vars not bound in the alist).
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
@@ -134,7 +135,8 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-no-free-vars-name
                                            ,instantiate-hyp-no-free-vars-lst-name
-                                           assoc-equal-iff-member-equal-of-strip-cars))))
+                                           assoc-equal-iff-member-equal-of-strip-cars
+                                           myquotep-when-axe-treep))))
 
        (,(pack$ 'defthm-flag- instantiate-hyp-no-free-vars-name)
         (defthm ,(pack$ 'bounded-axe-treep-of- instantiate-hyp-no-free-vars-name)
@@ -162,7 +164,8 @@
           :flag ,instantiate-hyp-no-free-vars-lst-name)
         :skip-others t
         :hints (("Goal" :expand (,instantiate-hyp-no-free-vars-lst-name terms alist interpreted-function-alist)
-                 :in-theory (e/d (,instantiate-hyp-no-free-vars-name ,instantiate-hyp-no-free-vars-lst-name) (myquotep)))))
+                 :in-theory (e/d (,instantiate-hyp-no-free-vars-name ,instantiate-hyp-no-free-vars-lst-name myquotep-when-axe-treep)
+                                 (myquotep)))))
 
        (verify-guards ,instantiate-hyp-no-free-vars-name :hints (("Goal" :expand (free-vars-in-term term)
                                                      :in-theory (enable pseudo-termp)

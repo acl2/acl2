@@ -38,7 +38,7 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
-(include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
+(include-book "utilities") ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
@@ -64,6 +64,38 @@
     :hints (("Goal" :in-theory (enable filter-function-names)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *unroll-spec-basic-functions-to-not-open*
+  (append '(leftrotate ; what about the sized versions of this?
+            rightrotate ; what about the sized versions of this?
+            nth update-nth len true-listp
+            nthcdr ; opener could loop with nth-of-cdr, etc.
+            firstn
+            take
+            append
+            list-to-bv-array
+            ifix nfix
+            floor mod
+            mv-nth
+            binary-logand
+            binary-logior
+            lognot
+            logorc1
+            binary-logeqv ; maybe
+            binary-logxor
+            integer-length
+            ;; group ; might as well unroll this
+            ;; ungroup ; might as well unroll this
+            fix
+            expt
+            repeat
+            make-list-ac
+            ;; these are not among the *bv-and-array-fns-we-can-translate*
+            ;; but we don't want to open then unconditionally:
+            bvshr
+            bvshl
+            bvashr)
+          *bv-and-array-fns-we-can-translate*))
 
 ;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
@@ -143,40 +175,22 @@
             ;; Use the :standard rule set, which is (unroll-spec-basic-rules):
             (mv nil (unroll-spec-basic-rules))
           (if (eq :auto rules)
-              (b* (((mv defined-supporting-fns
+              (b* (;; Decide which functions should be opened:
+                   ((mv defined-supporting-fns-to-open
                         & ;undefined-fns
                         & ;stopper-fns-encountered
                         )
                     (fns-supporting-term term
                                          ;; Don't open these functions:
-                                         (append '(leftrotate
-                                                   nth update-nth len true-listp
-                                                   nthcdr ; opener could loop with nth-of-cdr, etc.
-                                                   firstn
-                                                   take
-                                                   append
-                                                   list-to-bv-array
-                                                   ifix nfix
-                                                   floor mod
-                                                   mv-nth
-                                                   binary-logand
-                                                   binary-logior
-                                                   lognot
-                                                   logorc1
-                                                   binary-logeqv ; maybe
-                                                   binary-logxor
-                                                   integer-length
-                                                   ;; group ; might as well unroll this
-                                                   ;; ungroup ; might as well unroll this
-                                                   fix
-                                                   expt
-                                                   repeat
-                                                   make-list-ac
-                                                   )
-                                                 *bv-and-array-fns-we-can-translate*)
+                                         *unroll-spec-basic-functions-to-not-open* ; todo: also stop at anything for which we have opener rules already (e.g., =)?
                                          (w state)))
+                   ;; Don't make openers for anything we've been told not to open (so including a recursive function in the :remove-rules
+                   ;; suppresses all of its automatic openers here):
+                   ;; (defined-supporting-fns-to-open (set-difference-eq defined-supporting-fns-to-open remove-rules)) ; todo: consider uncommenting
+                   ;; Don't make openers for functions like = that we will open anyway (todo: what about recursive openers):
+                   ;; (defined-supporting-fns-to-open (set-difference-eq defined-supporting-fns-to-open (unroll-spec-basic-rules))) ; todo: consider uncommenting
                    ((mv opener-events opener-rule-names)
-                    (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
+                    (opener-rules-for-fns defined-supporting-fns-to-open t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
                    ;; todo: could loop with the openers (e.g., )?
                    (rule-names (append (unroll-spec-basic-rules)
@@ -185,8 +199,12 @@
             ;; rules is an explicit list of rules:
             (mv nil rules))))
        ;; Add the :extra-rules and remove the :remove-rules:
-       (rules (union-equal extra-rules base-rules))
-       (rules (set-difference-equal rules remove-rules))
+       (unneeded-extra-rules (intersection-eq extra-rules base-rules))
+       (- (and unneeded-extra-rules (cw "Note: The following from the :extra-rules were already present: ~X01.~%" unneeded-extra-rules nil)))
+       (rules (union-eq extra-rules base-rules))
+       (unneeded-remove-rules (set-difference-eq remove-rules base-rules))
+       (- (and unneeded-remove-rules (cw "Note: The following from the :remove-rules were not present and so need not be removed: ~X01.~%" unneeded-remove-rules nil)))
+       (rules (set-difference-eq rules remove-rules))
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))
        ;; Make the rule-alist:
@@ -218,6 +236,7 @@
                              count-hits
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv erp nil state))
@@ -228,7 +247,7 @@
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
        ;; support adding the theorem even if the DAG is large if we use
        ;; dag-val-with-axe-evaluator to express the theorem.
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
+       (dag-vars (dag-vars-unsorted dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
        ;; build the function:
        (function-name (intern-in-package-of-symbol
@@ -289,9 +308,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
-       (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
-              (cw "~x0 is a pure dag.~%" defconst-name)
-            (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
+       ;; (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+       ;;        (cw "~x0 is a pure dag.~%" defconst-name)
+       ;;      (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
        (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
                   (print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
@@ -362,7 +381,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(local ,form)
       form))
   :parents (axe) ; or can we consider this a lifter?
-  :short "Open functions and unroll recursion in a spec."
+  :short "A tool to open functions and unroll recursions."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (term "The term to simplify.")

@@ -78,6 +78,11 @@ public:
   // Dereference the type.
   bool VisitSymDec(SymDec *s);
 
+  // Check if all "fast arrray" are const.
+  bool VisitArrayType(const ArrayType *t);
+
+  bool VisitStructType(const StructType *t);
+
 private:
   using base_t = RecursiveASTVisitor<TypingAction>;
 
@@ -85,11 +90,10 @@ private:
 
   // The return type of the current function. We assume there are no nested
   // functions.
-  Type *type_of_scope_ = nullptr;
+  const Type *type_of_scope_ = nullptr;
 
   bool template_function_ = false;
 
-  static inline Type *deref(Type *t);
   static inline const Type *deref(const Type *t);
 
   bool check_assignement(const Location &where, const Type *left,

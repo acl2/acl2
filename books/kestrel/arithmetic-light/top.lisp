@@ -1,6 +1,6 @@
 ; Top-level book for the arithmetic-light library.
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "expt2")
 (include-book "integer-length")
 (include-book "integer-length2")
+(include-book "ceiling-of-lg-def")
 (include-book "ceiling-of-lg")
 (include-book "minus")
 (include-book "denominator")
@@ -49,8 +50,10 @@
 (include-book "imagpart")
 (include-book "evenp")
 (include-book "even-and-odd")
+(include-book "lg-def")
 (include-book "lg")
 (include-book "log2")
+(include-book "power-of-2p-def")
 (include-book "power-of-2p")
 (include-book "rem")
 (include-book "ash")

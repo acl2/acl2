@@ -48,7 +48,7 @@
       (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
                                      (cons
                                       ;; Assume all vars are field elements:
-                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
+                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars-unsorted ,lifted-r1cs)
                                                                        ;; bake in baby-jubjub-prime:
                                                                        '',prime)
                                       ;; Assume that the inputs are bits:
@@ -89,9 +89,9 @@
   (verify-r1cs-fn lifted-r1cs spec-term prime
                   bit-inputs tactic rule-lists global-rules use var-ordering interpreted-function-alist
                   no-splitp print-as-clausesp no-print-fns monitor print)
-  :parents (r1cs-verification-with-axe)
+  :parents (acl2::axe-r1cs)
   :short "A tool to verify an R1CS"
-  :description "See @(tsee r1cs-verification-with-axe)."
+  :description "See @(tsee acl2::axe-r1cs)."
   :args ((lifted-r1cs "A DAG representing the lifted R1CS")
          (spec-term "A term over the input and output vars (this input is not evaluated)")
          (prime "The prime for the R1CS")

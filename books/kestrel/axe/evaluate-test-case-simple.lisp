@@ -19,7 +19,7 @@
 (include-book "dag-arrays")
 (include-book "evaluator-basic")
 ;(include-book "evaluate-test-case-common")
-(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
 (local (include-book "rational-lists"))
@@ -39,7 +39,8 @@
 ;; We could even copy the DAG into an array in this stobj, for faster lookups into it.
 (defstobj+ test-case-stobj
   (node-val-array :type (array t (100)) :initially nil :resizable t)
-  (done-node-array :type (array t (100)) :initially nil :resizable t))
+  (done-node-array :type (array t (100)) :initially nil :resizable t)
+  :inline t)
 
 (defun set-done-vals-to-nil (i test-case-stobj)
   (declare (xargs :guard (and (integerp i)

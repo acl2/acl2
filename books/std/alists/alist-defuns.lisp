@@ -262,4 +262,13 @@
 
   (verify-guards fal-all-boundp))
 
-
+(define hons-put-assoc (key val x)
+  (cond ((atom x)
+         (cons (cons key val) x))
+        ((atom (car x))
+         (cons (car x)
+               (hons-put-assoc key val (cdr x))))
+        ((equal key (caar x))
+         (cons (cons key val) (cdr x)))
+        (t
+         (cons (car x) (hons-put-assoc key val (cdr x))))))

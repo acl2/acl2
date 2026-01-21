@@ -60,10 +60,13 @@
                     (SET::halve-list x)
                     (ACL2::pargs ; was pcall in the paper
                      (declare (granularity (< depth 2)))
-                     (SET::union (SET::mergesort-exec-par part1
-                                                        (1+ depth))
-                                  (SET::mergesort-exec-par part2
-                                                        (1+ depth)))))))))
+                     ;; Grant J.: The SET::union function was replaced with
+                     ;; SET::union$inline after the definition of union was
+                     ;; made inline.
+                     (SET::union$inline (SET::mergesort-exec-par part1
+                                                               (1+ depth))
+                                        (SET::mergesort-exec-par part2
+                                                                 (1+ depth)))))))))
 
 ;; (princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
 ;; (time$ (prog2$ (SET::mergesort-exec-par *my-ints* 0) t))

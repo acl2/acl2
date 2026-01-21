@@ -128,7 +128,7 @@
        and that depends on one function variable.
        Let this function variable be @('?f').")
      (xdoc::p
-      "If the @(':verify-guards')input is @('t'),
+      "If the @(':verify-guards') input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
       "Additional requirements on the body of @('old') are stated

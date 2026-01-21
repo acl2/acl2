@@ -37,21 +37,21 @@
     ;; Returns (mv erp result) where erp is nil (no error), an :unknown-function form, or :count-exceeded.
     (defund apply-axe-evaluator-for-len (fn args interpreted-function-alist count)
       (declare (type (unsigned-byte 60) count)
-               (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
-                      :verify-guards nil
-                      :guard (and (or (symbolp fn) (pseudo-lambdap fn))
+               (xargs :guard (and (or (symbolp fn) (pseudo-lambdap fn))
                                   (true-listp args)
                                   (interpreted-function-alistp interpreted-function-alist)
-                                  (natp count))))
-      (if (consp fn)
-          ;; lambda case:
-          (let* ((formals (second fn))
-                 (body (third fn))
+                                  (natp count))
+                      :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
+                      :verify-guards nil
+                      ))
+      (if (flambdap fn)
+          (let* ((formals (lambda-formals fn))
+                 (body (lambda-body fn))
                  (alist (pairlis$-fast formals args)))
             (eval-axe-evaluator-for-len alist body interpreted-function-alist count))
         (let ((args-to-walk-down args))
           (mv-let
-            (hit val)
+            (known-functionp val)
             (if (endp args-to-walk-down)
                 (mv nil nil)
               (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -70,7 +70,7 @@
                             (binary-+ (mv t (binary-+ arg1 arg2)))
                             (t (mv nil nil))))
                       (mv nil nil))))))
-            (if hit
+            (if known-functionp
                 (mv (erp-nil) val)
               (let ((match (assoc-eq fn interpreted-function-alist)))
                 (if (not match)
@@ -149,14 +149,14 @@
                                  (all-myquotep args)
                                  (interpreted-function-alistp interpreted-function-alist))
                      :verify-guards nil))
-     (if (consp fn)
-         (let* ((formals (second fn))
-                (body (third fn))
+     (if (flambdap fn)
+         (let* ((formals (lambda-formals fn))
+                (body (lambda-body fn))
                 (alist (pairlis$-fast formals (unquote-list args))))
            (eval-axe-evaluator-for-len alist body interpreted-function-alist *max-fixnum*))
        (let ((args-to-walk-down args))
          (mv-let
-           (hit val)
+           (known-functionp val)
            (if (endp args-to-walk-down)
                (mv nil nil)
              (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -175,7 +175,7 @@
                            (binary-+ (mv t (binary-+ arg1 arg2)))
                            (t (mv nil nil))))
                      (mv nil nil))))))
-           (if hit
+           (if known-functionp
                (mv (erp-nil) val)
              (let ((match (assoc-eq fn interpreted-function-alist)))
                (if (not match)

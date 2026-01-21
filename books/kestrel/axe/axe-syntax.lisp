@@ -69,10 +69,15 @@
 ;; TODO: Document.
 ;; TODO: rename axe-work-hard?
 ;just the identity, but tells Axe (which parts?) to work hard to relieve the hyp that it encloses
-(defun work-hard (x) x)
+(defun work-hard (x) (declare (xargs :guard t)) x)
 
 ;; Indicates that the wrapped hyp is to be treated as a binding hyp.  It must
 ;; have the form (equal <free-var> <term-with-no-free-vars>) where the notion
 ;; of "free" is with respect to bindings done by relieving previous hypotheses
 ;; in the rule.
 (defun axe-binding-hyp (x) x)
+
+;; A wrapper indicating that an SMT solver should be used to try to resolve the hyp if rewriting can't.
+;; We leavie this enabled, so that it vanishes during proofs.
+;; TODO: Allow passing arguments, such as the timeout:
+(defun axe-smt (x) x)

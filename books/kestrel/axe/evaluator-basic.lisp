@@ -15,6 +15,7 @@
 ;; A simple version of the Axe evaluator with verified guards and without skip-proofs.
 ;; This evaluator knows about a "basic" set of functions, hence the name.
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
 (include-book "unguarded-defuns")
@@ -26,6 +27,7 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrayp" :dir :system) ; todo: split out def
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*
@@ -78,7 +80,6 @@
     (member-equal member-equal-unguarded)
     (unary-- unary---unguarded) ; primitive
     (expt expt-unguarded)
-    (= =-unguarded)
     (unary-/ unary-/-unguarded) ; primitive
     (binary-+ binary-+-unguarded) ; primitive
     (binary-* binary-*-unguarded) ; primitive
@@ -87,6 +88,7 @@
     (ceiling ceiling-unguarded)
     (lg lg-unguarded)
     power-of-2p ; unguarded
+    (= =-unguarded) ; not strictly needed if we turn = into EQUAL
     (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive
@@ -134,6 +136,8 @@
 
     (bvmod bvmod-unguarded)
     (bvdiv bvdiv-unguarded)
+    (sbvdiv sbvdiv-unguarded)
+    (sbvrem sbvrem-unguarded)
 
     (bvequal bvequal-unguarded)
     (bvand bvand-unguarded)
@@ -158,6 +162,11 @@
     ;; bv-array functions:
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)
+    bv-arrayp ; unguarded
+
+    ;; array patterns:
+    (negated-elems-listp negated-elems-listp-unguarded)
+    all-integerp
 
     ;; bv-list functions:
     (packbv packbv-unguarded)
@@ -165,8 +174,9 @@
     (bvchop-list bvchop-list-unguarded)
     (getbit-list getbit-list-unguarded)
 
-    (every-nth every-nth-unguarded)
+    (every-nth every-nth-unguarded) ; for array-patterns
     (all-equal$ all-equal$-unguarded)
+    (all-same all-same-unguarded)
 
     ; Axe doesn't really support force and case-split, but including them here
     ; means they will at least be evaluated on constants:

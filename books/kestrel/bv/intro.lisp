@@ -1,6 +1,6 @@
 ; Rules to introduce BV ops
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,20 +10,22 @@
 
 (in-package "ACL2")
 
-(include-book "bvand")
+(include-book "bvand-def")
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
+(include-book "bvsx-def")
 (include-book "bvif")
 (include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
-(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
+(include-book "ihs/basic-definitions" :dir :system) ;for logmask
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "bvand"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
@@ -74,6 +76,13 @@
                       1
                     0))))
 
+;; There are several ways to convert logops (like logxor) to bv ops (like bvxor):
+;; 1. If there is a surrounding operator that chops its argument (see convert-to-bv-rules.lisp).
+;; 2. If we can tell syntactically what the BV size of an operand is.
+;; 3. If we have an unsigned-byte-p hyp about an operand.
+;; 4. If we just guess that the operand(s) have size 32 or 64 or whatever and can prove that.
+;; Functions with multiple operands may require both to have the given size.
+
 (defthmd bvchop-of-logand-becomes-bvand
   (equal (bvchop size (logand x y))
          (bvand size x y))
@@ -97,7 +106,7 @@
   :hints (("Goal" :in-theory (enable bvminus))))
 
 ;; We only need to get the size of one argument for logand
-(defthm logand-becomes-bvand
+(defthmd logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size x)
                 (integerp y))
@@ -105,44 +114,129 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
-(defthm logand-becomes-bvand-alt
+(defthmd logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size y)
                 (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x))
-           :in-theory (disable logand-becomes-bvand))))
+  :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x)))))
 
-(defthmd logand-of-bvchop-becomes-bvand
-  (equal (logand y (bvchop width x))
-         (bvand width y x))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-           :in-theory (disable logand-becomes-bvand))))
+;; ;; subsumed?
+;; (defthmd logand-of-bvchop-becomes-bvand
+;;   (equal (logand y (bvchop width x))
+;;          (bvand width y x))
+;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
+;;            :in-theory (disable))))
 
-(defthmd logand-of-bvchop-becomes-bvand-alt
-  (equal (logand (bvchop width x) y)
-         (bvand width y x))
-  :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-           :in-theory (disable logand-becomes-bvand))))
+;; ;; subsumed?
+;; (defthmd logand-of-bvchop-becomes-bvand-alt
+;;   (equal (logand (bvchop width x) y)
+;;          (bvand width y x))
+;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
+;;            :in-theory (disable))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
-  (implies (and (unsigned-byte-p size x) ;free var
-                (unsigned-byte-p size y)
+  (implies (and (unsigned-byte-p size x) ;size is a free var
+                ;(unsigned-byte-p size y)
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+  :hints (("Goal" :use logand-becomes-bvand
+                  :in-theory (enable unsigned-byte-p-forced))))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
-  (implies (and (unsigned-byte-p size y) ;free var
-                (unsigned-byte-p size x)
+  (implies (and (unsigned-byte-p size y) ;size is a free var
+                ;(unsigned-byte-p size x)
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+  :hints (("Goal" :use logand-becomes-bvand-alt
+                  :in-theory (enable unsigned-byte-p-forced))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd logior-becomes-bvor
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
+                (unsigned-byte-p-forced size y)
+                (unsigned-byte-p-forced size x) ; should never fail
+                (integerp y))
+           (equal (logior x y)
+                  (bvor size x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthmd logior-becomes-bvor-alt
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
+                (unsigned-byte-p-forced size x)
+                (unsigned-byte-p-forced size y) ; should never fail
+                (integerp x))
+           (equal (logior x y)
+                  (bvor size x y)))
+  :hints (("Goal" :use (:instance logior-becomes-bvor (x y) (y x))
+           :in-theory (disable logior-becomes-bvor))))
+
+(defthmd logior-becomes-bvor-when-unsigned-byte-p-arg1
+  (implies (and (unsigned-byte-p size x) ;size is a free var
+                (unsigned-byte-p size y)
+                (integerp y))
+           (equal (logior x y)
+                  (bvor size x y)))
+  :hints (("Goal" :use logior-becomes-bvor
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logior-becomes-bvor)))))
+
+(defthmd logior-becomes-bvor-when-unsigned-byte-p-arg2
+  (implies (and (unsigned-byte-p size y) ;size is a free var
+                (unsigned-byte-p size x)
+                (integerp y))
+           (equal (logior x y)
+                  (bvor size x y)))
+  :hints (("Goal" :use logior-becomes-bvor-alt
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logior-becomes-bvor-alt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd logxor-becomes-bvxor
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
+                (unsigned-byte-p-forced size y)
+                (unsigned-byte-p-forced size x) ; should never fail
+                (integerp y))
+           (equal (logxor x y)
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthmd logxor-becomes-bvxor-alt
+  (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
+                (unsigned-byte-p-forced size x)
+                (unsigned-byte-p-forced size y) ; should never fail
+                (integerp x))
+           (equal (logxor x y)
+                  (bvxor size x y)))
+  :hints (("Goal" :use (:instance logxor-becomes-bvxor (x y) (y x))
+           :in-theory (disable logxor-becomes-bvxor))))
+
+(defthmd logxor-becomes-bvxor-when-unsigned-byte-p-arg1
+  (implies (and (unsigned-byte-p size x) ;size is a free var
+                (unsigned-byte-p size y)
+                (integerp y))
+           (equal (logxor x y)
+                  (bvxor size x y)))
+  :hints (("Goal" :use logxor-becomes-bvxor
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logxor-becomes-bvxor)))))
+
+(defthmd logxor-becomes-bvxor-when-unsigned-byte-p-arg2
+  (implies (and (unsigned-byte-p size y) ;size is a free var
+                (unsigned-byte-p size x)
+                (integerp y))
+           (equal (logxor x y)
+                  (bvxor size x y)))
+  :hints (("Goal" :use logxor-becomes-bvxor-alt
+                  :in-theory (e/d (unsigned-byte-p-forced)
+                                  (logxor-becomes-bvxor-alt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,3 +280,43 @@
            (equal (bvif size test z (- x))
                   (bvif size test z (bvuminus size x))))
   :hints (("Goal" :in-theory (enable bvif bvuminus bvminus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replace with a general rule?
+(defthm bvplus-of-logext-arg2-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvplus size (logext size2 x) y)
+                  (bvplus size (bvsx size size2 x) y)))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+;; replace with a general rule?
+(defthm bvplus-of-logext-arg3-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvplus size x (logext size2 y))
+                  (bvplus size x (bvsx size size2 y))))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replace with a general rule?
+(defthm bvminus-of-logext-arg2-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvminus size (logext size2 x) y)
+                  (bvminus size (bvsx size size2 x) y)))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+;; replace with a general rule?
+(defthm bvminus-of-logext-arg3-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvminus size x (logext size2 y))
+                  (bvminus size x (bvsx size size2 y))))
+  :hints (("Goal" :cases ((equal size size2)))))

@@ -12,11 +12,13 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
-(include-book "slice")
-(include-book "getbit")
+(include-book "slice-def")
+(include-book "getbit-def")
 (include-book "bvchop")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logapp"))
+(local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "../arithmetic-light/denominator"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
@@ -121,8 +123,8 @@
                 ;; (natp highsize)
                 (natp size2)
                 (natp lowsize))
-           (equal(bvcat highsize (bvchop size2 highval) lowsize lowval)
-                 (bvcat highsize highval lowsize lowval)))
+           (equal (bvcat highsize (bvchop size2 highval) lowsize lowval)
+                  (bvcat highsize highval lowsize lowval)))
   :hints (("Goal"
            :cases ((integerp lowval))
            :in-theory (enable bvcat ;bvchop-logapp
@@ -684,7 +686,8 @@
 
 ;use trim?
 ;associated wrong
-(defthm bvcat-of-bvcat-trim-high-arg
+;rename
+(defthm bvcat-of-bvcat-tighten-arg2
   (implies (and (< size1 (+ highsize lowsize))
                 (natp size1)
                 (< 0 size1)
@@ -700,6 +703,24 @@
                                     lowsize lowval)
                              size2
                              x))))
+  :hints (("Goal" :in-theory (disable bvcat-associative))))
+
+; caused a loop (why?).  could restrict to constants
+(defthmd bvcat-of-bvcat-tighten-arg4
+  (implies (and (< size2 (+ highsize lowsize))
+                (posp size2)
+                (natp size1)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvcat size1 x size2 (bvcat highsize highval lowsize lowval))
+                  (if (<= size2 lowsize)
+                      (bvcat size1 x size2 (bvchop size2 lowval))
+                    (bvcat size1
+                           x
+                           size2
+                           (bvcat (+ size2 (- lowsize))
+                                  (bvchop (min size2 highsize) highval)
+                                  lowsize lowval)))))
   :hints (("Goal" :in-theory (disable bvcat-associative))))
 
 (defthm slice-of-bvcat-hack
@@ -778,7 +799,7 @@
 
 (defthm slice-of-bvcat-hack-gen-better
   (implies (and (natp lowsize)
-                ;(integerp highsize) ;
+                ;(integerp highsize)
                 (natp highsize)
                 (natp lowbit)
                 (natp highbit))
@@ -1515,20 +1536,21 @@
 
 ;rename
 ;kill some others?
-(DEFTHMd BVCAT-EQual-rewrite-constant
-  (IMPLIES (AND (syntaxp (and (quotep x)
+;make a less-aggressive variant where each one of the vals is a constant?
+(defthmd bvcat-equal-rewrite-constant
+  (implies (and (syntaxp (and (quotep x)
                               (quotep highsize)
                               (quotep lowsize)))
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE))
-           (EQUAL (EQUAL X
-                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
-                  (AND (UNSIGNED-BYTE-P (+ LOWSIZE HIGHSIZE) X)
-                       (EQUAL (BVCHOP LOWSIZE X)
-                              (BVCHOP LOWSIZE LOWVAL))
-                       (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
-                                     LOWSIZE X)
-                              (BVCHOP HIGHSIZE HIGHVAL))))))
+                (natp lowsize)
+                (natp highsize))
+           (equal (equal x
+                         (bvcat highsize highval lowsize lowval))
+                  (and (unsigned-byte-p (+ lowsize highsize) x)
+                       (equal (bvchop lowsize x)
+                              (bvchop lowsize lowval))
+                       (equal (slice (+ -1 lowsize highsize)
+                                     lowsize x)
+                              (bvchop highsize highval))))))
 
 (defthm bvcat-of-expt-same-high
   (implies (natp highsize)
@@ -1545,3 +1567,16 @@
            (equal (+ x (bvcat m y n 0))
                   (bvcat m y n x)))
   :hints (("Goal" :in-theory (enable bvcat logapp))))
+
+(defthmd bvcat-blast-high
+  (implies (and (syntaxp (not (quotep highval))) ;Fri Mar  4 20:24:01 2011
+                (< 1 highsize)
+                (integerp highsize)
+                (natp lowsize)
+                )
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvcat 1
+                         (getbit (+ -1 highsize) highval)
+                         (+ -1 highsize lowsize)
+                         (bvcat (+ -1 highsize) highval lowsize lowval))))
+  :hints (("Goal" :in-theory (enable natp))))

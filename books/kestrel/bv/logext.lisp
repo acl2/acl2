@@ -12,11 +12,12 @@
 (in-package "ACL2")
 
 (include-book "logext-def")
-(include-book "getbit")
+(include-book "getbit-def")
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "getbit-rules"))
+(local (include-book "slice"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -45,11 +46,18 @@
                   0))
   :hints (("Goal" :in-theory (enable logext logbitp))))
 
+(defthm logext-when-size-not-posp
+  (implies (not (posp size))
+           (equal (logext size x)
+                  (logext 1 x)))
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
+
 (defthm logext-of-bvchop-same
-  (implies (posp size)
-           (equal (logext size (bvchop size x))
-                  (logext size x)))
-  :hints (("Goal" :cases ((integerp size))
+  (equal (logext size (bvchop size x))
+         (if (posp size)
+             (logext size x)
+           0))
+  :hints (("Goal" :cases ((posp size))
            :in-theory (enable logext))))
 
 ;; (thm
@@ -292,11 +300,7 @@
                     (bvchop (+ -1 size) x))))
   :hints (("Goal" :in-theory (enable logext))))
 
-(defthm logext-when-size-not-posp
-  (implies (not (posp n))
-           (equal (logext n x)
-                  (logext 1 x)))
-  :hints (("Goal" :in-theory (enable logext getbit slice))))
+
 
 ;todo: prove without opening up so much stuff
 (defthm equal-of-0-and-bvchop
@@ -502,33 +506,52 @@
                   (+ -1 (expt 2 (+ -1 size))))))
 
 (defthmd equal-of-logext-and-logext
-  (implies (posp size)
-           (equal (equal (logext size x) (logext size y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :use ((:instance bvchop-of-logext-same (x x))
-                        (:instance bvchop-of-logext-same (x y))
-                        (:instance logext-of-bvchop-same (x x))
-                        (:instance logext-of-bvchop-same (x y)))
+  (equal (equal (logext size x) (logext size y))
+         (if (posp size)
+             (equal (bvchop size x) (bvchop size y))
+           (equal (bvchop 1 x) (bvchop 1 y))))
+  :hints (("Goal" :use ((:instance bvchop-of-logext-same (size (if (posp size) size 1)) (x x))
+                        (:instance bvchop-of-logext-same (size (if (posp size) size 1)) (x y))
+                        (:instance logext-of-bvchop-same (size (if (posp size) size 1)) (x x))
+                        (:instance logext-of-bvchop-same (size (if (posp size) size 1)) (x y)))
            :in-theory (disable bvchop-of-logext-same
                                logext-of-bvchop-same
                                logext-of-bvchop-smaller
                                bvchop-of-logext))))
 
-(defthm logext-of-+-of-logext-arg1
+(defthm logext-of-+-of-logext-arg1-same
   (implies (and (integerp x)
-                (integerp y)
-                (posp size))
+                (integerp y))
            (equal (logext size (+ (logext size x) y))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg2
+(defthm logext-of-+-of-logext-arg2-same
   (implies (and (integerp x)
-                (integerp y)
-                (posp size))
+                (integerp y))
            (equal (logext size (+ x (logext size y)))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
+
+(defthm logext-of-+-of-logext-arg1
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (logext smallsize (+ x (logext bigsize y)))
+                  (logext smallsize (+ x y)))))
+
+(defthm logext-of-+-of-logext-arg2
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (logext smallsize (+ (logext bigsize y) x))
+                  (logext smallsize (+ x y)))))
 
 ;; Normalizes the constant
 (defthm logext-of-+-of-constant
@@ -611,26 +634,6 @@
                   (and (unsigned-byte-p 32 k)
                        (equal (logext 32 k) x))))
   :hints (("Goal" :in-theory (enable apply-logext-32-to-both-sides-alt apply-logext-32-to-both-sides))))
-
-(defthm logext-of-plus-of-logext
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ x (LOGEXT bigsize y)))
-                  (LOGEXT smallsize (+ x y)))))
-
-(defthm logext-of-plus-of-logext-alt
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
-                  (LOGEXT smallsize (+ x y)))))
 
 ;gen
 (defthm bvchop-times-logext-32
@@ -729,12 +732,12 @@
 
 ;todo gen
 (defthm signed-byte-p-of-one-less-of-logext
-  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
-         (not (equal (expt 2 31) (bvchop 32 x))))
+  (implies (posp size)
+           (equal (signed-byte-p size (+ -1 (logext size x)))
+                  (not (equal (expt 2 (+ -1 size)) (bvchop size x)))))
   :hints (("Goal"
-           :use (:instance split-bv-top-add (size 32) (x (bvchop 32 x)))
-           :in-theory (enable logext-cases signed-byte-p
-                                     ))))
+           :use (:instance split-bv-top-add (size size) (x (bvchop size x)))
+           :in-theory (enable logext-cases signed-byte-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -758,8 +761,7 @@
                 (natp size)
                 (natp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (bvchop size (+ x (logext size2 y)))
                   (bvchop size (+ x y)))))
 
@@ -768,8 +770,7 @@
                 (natp size)
                 (natp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (bvchop size (+ (logext size2 y) x))
                   (bvchop size (+ x y)))))
 
@@ -806,3 +807,23 @@
   (equal (equal 0 (logext 32 x))
          (equal 0 (bvchop 32 x)))
   :hints (("Goal" :in-theory (enable))))
+
+;gen
+(defthm logext-when-equal-of-getbit
+  (implies (and (equal 0 (getbit 31 x))
+                (integerp x))
+           (equal (logext 32 x)
+                  (bvchop 31 x))))
+
+;gen
+(defthm <-of-0-and-logext-2
+  (equal (< 0 (logext 32 x))
+         (and (equal (getbit 31 x) 0)
+              (not (equal 0 (bvchop 32 x)))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+;gen?
+;use polarities?
+(defthm logext-min-value
+  (equal (< -2147483648 (logext 32 x))
+         (not (equal -2147483648 (logext 32 x)))))

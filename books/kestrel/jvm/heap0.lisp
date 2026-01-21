@@ -1,7 +1,7 @@
 ; A model of the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,7 @@
 (include-book "adstop")
 (include-book "types")
 (include-book "fields")
-(include-book "kestrel/sequences/defforall" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (include-book "utilities")
 (include-book "utilities2") ; for rules like 2LIST-OF-DELETE
 
@@ -530,7 +530,7 @@
                    (equal (get-field ad pair (set-fields ad bindings heap))
                           (lookup-equal pair bindings)))
           :hints (("goal" :do-not '(generalize eliminate-destructors)
-;                   :expand(STRIP-CARS BINDINGS)
+;                   :expand (STRIP-CARS BINDINGS)
                    :in-theory (e/d (lookup-equal assoc-equal
                                     strip-cars
                                     set-fields

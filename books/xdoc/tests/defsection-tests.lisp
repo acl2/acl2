@@ -251,6 +251,10 @@
 (defsection oops :short 17)
 (defsection oops :long 17)
 
+(defsection oops :parents foo)
+(defsection oops :short foo)
+(defsection oops :long foo)
+
 ;; [Ugly] big pile of "encapsulate" messages after the error.
 (defsection oops :parents 17 (defun blah))
 (defsection oops :short 17 (defun blah))

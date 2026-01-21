@@ -12,8 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "bitnot")
+(local (include-book "unsigned-byte-p"))
+(local (include-book "getbit"))
 
 ;; Computes the XNOR (complement of XOR) of the bits X and Y.
 ;x and y should be single bits

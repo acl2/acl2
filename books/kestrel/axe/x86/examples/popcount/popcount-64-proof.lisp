@@ -18,7 +18,7 @@
 ;; Axe-based x86 lifter, and proves it equivalent to the spec.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
+(include-book "kestrel/axe/x86/unroller" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system) ;has skip-proofs
 (include-book "kestrel/bv/bvcount" :dir :system) ; the spec
@@ -26,7 +26,8 @@
 ;; (depends-on "popcount-macho-64.executable")
 
 ;; Lift the code into logic (1 second):
-(def-unrolled popcount_64 "popcount-macho-64.executable"
+(def-unrolled popcount_64
+  :executable "popcount-macho-64.executable"
   :target "_popcount_64"
   :stack-slots 8
   :output :rax
@@ -41,9 +42,9 @@
                                                 acl2::bvcount-of-0-arg1)))
 
 ;; Prove equivalence of the lifted code and the spec:
-(prove-equivalence *popcount_64* ; lifted code
-                   *popcount-64-spec*
-                   :max-conflicts 4000000
-                   :types '((v . 64))
-                   ;; avoid bit-blasting:
-                   :initial-rule-sets nil)
+(prove-equal-with-axe *popcount_64* ; lifted code
+                      *popcount-64-spec*
+                      :max-conflicts 4000000
+                      :types '((v . 64))
+                      ;; avoid bit-blasting:
+                      :initial-rule-sets nil)

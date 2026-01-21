@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,8 @@
 
 ;; TODO: Consider making a version that doesn't use bignums and only approximates the size.
 
+;; TODO: Consider using dag-size-fast instead
+
 (include-book "dag-arrays")
 (include-book "dag-size-array")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
@@ -24,16 +26,13 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/if-rules" :dir :system))
 
-(local (in-theory (enable not-<-of-car-when-all-<
-                          <=-of-0-when-natp
-                          acl2-numberp-when-natp
-                          integerp-when-natp)))
+(local (in-theory (e/d (not-<-of-car-when-all-<
+                        <=-of-0-when-natp
+                        acl2-numberp-when-natp
+                        integerp-when-natp)
+                       (natp))))
 
-(local (in-theory (disable natp)))
-
-;;;
-;;; make-size-array-for-dag-array-with-name-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version of the array filler stores a size for every node in the array.
 ;; Returns the populated size-array.
@@ -144,6 +143,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a natp.
+;; Smashes the array named 'size-array
 (defund dag-array-size (dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len))))
@@ -165,7 +165,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the size of the tree represented by the DAG (may be a very large number).
-;; Smashes the array named 'size-array.
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-size (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*) ;weaken?
@@ -185,7 +185,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns the size of the tree represented by the DAG (may be a very large number).
 ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-size-unguarded (dag)
   (declare (xargs :guard t))
   (if (and (pseudo-dagp dag)
@@ -201,6 +203,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns the size of the tree represented by X (may be a very large number).
+;; A constant is reported as having size 1 (would use a single DAG node).
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-or-quotep-size (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)
                                   (<= (len x) *max-1d-array-length*))
@@ -218,7 +223,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This one consider huge dags to not have size < n, without even looking at n!
+;; This one considers huge dags to not have size < n, without even looking at n!
 ;; This one does not require the DAG to be not too large.
 (defund dag-or-quotep-size-less-than (d n)
   (declare (xargs :guard (and (or (pseudo-dagp d)

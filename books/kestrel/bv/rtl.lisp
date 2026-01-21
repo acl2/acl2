@@ -1,6 +1,6 @@
 ; Connections between this BV library and the RTL library
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "getbit")
 (include-book "bvcat")
 (local (include-book "logapp"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 

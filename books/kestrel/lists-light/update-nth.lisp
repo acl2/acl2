@@ -215,4 +215,4 @@
   (implies (equal key (len lst))
            (equal (update-nth key val lst)
                   (append lst (list val))))
-  :hints (("Goal" :in-theory (e/d (true-listp) ()))))
+  :hints (("Goal" :in-theory (enable true-listp))))

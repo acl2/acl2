@@ -459,7 +459,7 @@
            (let ((marker `(table acl2::intro-table :mark ',name)))
              `(with-output
                 :stack :push
-                :off :all
+                :off (:other-than error)
                 (progn
                   ;; We originally just put down a single marker here, but that
                   ;; led to problems when there were multiple extensions of the

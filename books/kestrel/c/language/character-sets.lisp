@@ -17,10 +17,8 @@
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +132,7 @@
                                  (code-char 11)
                                  #\Page))
            t))
-  :no-function t
+
   ///
 
   (defrule characterp-when-ascii-basic-source-charp
@@ -318,6 +316,7 @@
   (exists (ascii)
           (and (ascii-basic-source-charp ascii)
                (equal x (ascii-to-source-char ascii))))
+
   ///
 
   (defrule source-charp-when-basic-source-charp
@@ -335,6 +334,7 @@
     "These are the non-basic source-characters."))
   (and (source-charp x)
        (not (basic-source-charp x)))
+
   ///
 
   (defruled source-charp-alt-def
@@ -348,8 +348,7 @@
   :returns (number natp :rule-classes :type-prescription)
   :short "Number of the basic source character
           corresponding to an ASCII character."
-  (source-char-to-number (ascii-to-source-char x))
-  :hooks (:fix))
+  (source-char-to-number (ascii-to-source-char x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -405,7 +404,7 @@
                                  #\Return
                                  #\Newline))
            t))
-  :no-function t
+
   ///
 
   (defrule characterp-when-ascii-basic-exec-charp
@@ -570,6 +569,7 @@
   (exists (ascii)
           (and (ascii-basic-exec-charp ascii)
                (equal x (ascii-to-exec-char ascii))))
+
   ///
 
   (defrule exec-charp-when-basic-exec-charp
@@ -587,6 +587,7 @@
     "These are the non-basic exec-characters."))
   (and (exec-charp x)
        (not (basic-exec-charp x)))
+
   ///
 
   (defruled exec-charp-alt-def
@@ -600,5 +601,4 @@
   :returns (number natp :rule-classes :type-prescription)
   :short "Number of the basic execution character
           corresponding to an ASCII character."
-  (exec-char-to-number (ascii-to-exec-char x))
-  :hooks (:fix))
+  (exec-char-to-number (ascii-to-exec-char x)))

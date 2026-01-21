@@ -1,6 +1,6 @@
 ; A clause processor that handles constant literals in a clause
 
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,16 @@
 (defthm pseudo-term-listp-of-handle-constant-literals
   (implies (pseudo-term-listp clause)
            (pseudo-term-listp (handle-constant-literals clause)))
+  :hints (("Goal" :in-theory (enable handle-constant-literals))))
+
+(defthm term-listp-of-handle-constant-literals
+  (implies (term-listp clause w)
+           (term-listp (handle-constant-literals clause) w))
+  :hints (("Goal" :in-theory (enable handle-constant-literals))))
+
+(defthm logic-fns-listp-of-handle-constant-literals
+  (implies (logic-fns-listp clause w)
+           (logic-fns-listp (handle-constant-literals clause) w))
   :hints (("Goal" :in-theory (enable handle-constant-literals))))
 
 (defund handle-constant-literals-clause-processor (clause)

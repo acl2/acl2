@@ -10,54 +10,58 @@
 
 (in-package "C$")
 
-; cert_param: (uses-cpp)
-
+; cert_param: (uses-gcc-c17)
 
 (include-book "std/testing/must-eval-to-t" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 
-(include-book "../preprocess-file")
-
+(include-book "../external-preprocessing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.c"))))
+        (preprocess-file "stdbool.c" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (acl2::must-eval-to-t
     (b* (((mv erp out - state)
-          (preprocess-file (filepath "stdbool.c") :out "stdbool.i")))
+          (preprocess-file "stdbool.c"
+                           :out "stdbool.i"
+                           :extra-args (list "-std=c17"))))
       (value (and (not erp)
                   (stringp out))))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.i"))))
+        (preprocess-file "stdbool.i" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.c") :out "stdbool.i" :save nil)))
+        (preprocess-file "stdbool.c"
+                         :out "stdbool.i"
+                         :save nil
+                         :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "nonexistent-file.c"))))
+        (preprocess-file "nonexistent-file.c")))
     (value (and erp t))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "../tests/stdint.c"))))
+        (preprocess-file "../tests/stdint.c" :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - state)
         (preprocess-files
-          (mergesort (list (filepath "stdbool.c")
-                           (filepath "stdint.c"))))))
+          (list "stdbool.c"
+                "stdint.c")
+          :extra-args (list "-std=c17"))))
     (value (not erp))))
 
 (acl2::must-succeed
@@ -65,3 +69,12 @@
         (preprocess-files nil)))
     (value (and (not erp)
                 (equal fileset (fileset nil))))))
+
+(acl2::must-succeed
+  (b* (((mv erp - state)
+        (preprocess-files
+          (list "stdbool.c"
+                "stdint.c")
+          :path "../tests"
+          :extra-args (list "-std=c17"))))
+    (value (not erp))))

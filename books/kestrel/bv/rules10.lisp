@@ -32,14 +32,10 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-(defthm equal-of-ifix-self
-  (equal (equal (ifix x) x)
-         (integerp x)))
-
-;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization/
+;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization
 
 ;todo: think about this
-(defthm signed-byte-p-of-bvchop
+(defthmd signed-byte-p-of-bvchop
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
@@ -50,162 +46,29 @@
            (equal (+ (- y) x)
                   k)))
 
-;; (defthm getbit-of-ash
-;;   (implies (and (natp c)
-;;                 (natp i)
-;;                 (natp n))
-;;            (equal (getbit n (ash i c))
-;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
-;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
-;;                                        BVCHOP-OF-LOGTAIL)
-;;                                   (
-;;
-;;                                    )))))
-
 ;(in-theory (enable logext-of-sum-trim-constant))
 
-(defthm getbit-of-slice-both
-  (implies (and (natp n)
-                (natp low)
-;                (integerp x)
-                (integerp high))
-           (equal (getbit n (slice high low x))
-                  (if (<= n (+ high (- low)))
-                      (getbit (+ low n) x)
-                    0)))
-  :hints (("Goal" :use ((:instance GETBIT-OF-SLICE-TOO-HIGH
-                                   (X X)
-                                   (LOW LOW)
-                                   (HIGH HIGH)
-                                   (N N))
-                        (:instance getbit-of-slice
-                                   (x x)
-                                   (low low)
-                                   (high high)
-                                   (n n)))
-           :in-theory (disable getbit-of-slice))))
+;; ;just use a convert-to-bv rule?
+;; (defthmd bvand-of-+-arg2
+;;   (implies (and (natp width)
+;;                 (integerp x)
+;;                 (integerp y))
+;;            (equal (bvand width (+ x y) z)
+;;                   (bvand width (bvplus width x y) z)))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
-;gen the -1
-(defthm ash-of-bvchop-32-and-minus1
-  (equal (ash (bvchop 32 x) -1)
-         (slice 31 1 x))
-  :hints (("Goal" :in-theory (enable ash LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
+;; (theory-invariant (incompatible (:rewrite bvand-of-+-arg2) (:definition bvplus)))
 
-(defthm integerp-of-*-of-1/2
-  (implies (integerp x)
-           (equal (integerp (* 1/2 x))
-                  (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (getbit
-                                   bvchop
-                                   ifix)
-                                  (
+;; ;just use a convert-to-bv rule?
+;; (defthmd bvand-of-+-arg3
+;;   (implies (and (natp width)
+;;                 (integerp x)
+;;                 (integerp y))
+;;            (equal (bvand width z (+ x y))
+;;                   (bvand width z (bvplus width x y))))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
-                                   )))))
-
-
-(defthm UNSIGNED-BYTE-P-shift-lemma
-  (IMPLIES (AND (natp n)
-                (UNSIGNED-BYTE-P XSIZE X)
-                (<= N XSIZE))
-           (UNSIGNED-BYTE-P (- XSIZE n)
-                            (FLOOR (* X (EXPT 2 (- N))) 1)))
-  :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
-
-(defthm ash-negative-becomes-slice
-  (implies (and (< n 0)
-                (bind-free (bind-var-to-bv-term-size 'xsize x))
-                (unsigned-byte-p xsize x)
-                (<= (- n) xsize)
-                (integerp n)
-                )
-           (equal (ash x n)
-                  (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal"
-           :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
-           :in-theory (e/d (ash SLICE LOGTAIL ;floor
-                                )
-                           ()))))
-
-(defthmd bvand-of-+-arg2
-  (implies (and (natp width)
-                (integerp x)
-                (integerp y))
-           (equal (bvand width (+ x y) z)
-                  (bvand width (bvplus width x y) z)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(theory-invariant (incompatible (:rewrite bvand-of-+-arg2) (:definition bvplus)))
-
-(defthmd bvand-of-+-arg3
-  (implies (and (natp width)
-                (integerp x)
-                (integerp y))
-           (equal (bvand width z (+ x y))
-                  (bvand width z (bvplus width x y))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
-
-(defthm bvand-of-expt-constant-version
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 (+ -1 (integer-length k))))
-                (<= (integer-length k) size)
-                (integerp size)
-                (integerp k))
-           (equal (bvand size k x)
-                  (bvcat 1
-                         (getbit (+ -1 (integer-length k))
-                                 x)
-                         (+ -1 (integer-length k))
-                         0))))
-
-(in-theory (disable bvand-of-expt)) ;bvand-of-expt-constant-version should usually be enough
-
-;move
-;todo: gen to reduce the constant even if not down to 0
-(defthm mod-of-+-of-constant
-  (implies (and (syntaxp (quotep k))
-                (syntaxp (quotep j))
-                (equal 0 (mod k j))
-                (rationalp j)
-                (rationalp k)
-                (not (equal 0 j))
-                (integerp x))
-           (equal (mod (+ k x) j)
-                  (mod x j))))
-
-(defthm slice-of-all-ones-too-high
-  (implies (and (natp low)
-                (natp high)
-                ;(<= low high)
-                )
-           (equal (slice high low (+ -1 (expt 2 low)))
-                  0))
-  :hints (("Goal" :in-theory (e/d (slice)
-                                  (repeatbit
-
-                                   logtail-of-plus)))))
-
-(defthm ash-becomes-bvcat
-  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
-                (force (unsigned-byte-p xsize x))
-                (natp amt))
-           (equal (ash x amt)
-                  (bvcat (+ xsize amt)
-                               x
-                               amt
-                               0)))
-  :hints (("Goal" :in-theory (enable bvcat ash))))
-
-(defthm ash-of-ones
-  (implies (and (natp n)
-                (natp low))
-           (equal (ASH (+ -1 (EXPT 2 n)) LOW)
-                  (bvcat n (+ -1 (EXPT 2 n))
-                               low 0)))
-  :hints (("Goal" :in-theory (e/d (bvcat ash BVUMINUS BVMINUS)
-                                  (;BVPLUS-OF-UNARY-MINUS-ARG2
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+;; (theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -214,35 +77,6 @@
            (equal (logext 64 (bvplus 64 x y))
                   (logext 64 (+ x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
-
-;really want this for every unary function
-(defthm unsigned-byte-p-of-if-two-constants
-  (implies (and (syntaxp (and (quotep n)
-                              (quotep x1)
-                              (quotep x2))))
-           (equal (unsigned-byte-p n (if test x1 x2))
-                  (if test
-                      (unsigned-byte-p n x1)
-                      (unsigned-byte-p n x2)))))
-
-
-(defthm bvchop-of-ash
-  (implies (and (natp size)
-                (natp n))
-           (equal (bvchop size (ash x n))
-                  (bvcat (- size n) x n 0)))
-  :hints (("Goal" :in-theory (e/d (ash slice logtail)
-                                  ()))))
-
-;used by axe
-(defthmd natp-of-+
-  (implies (and (natp x)
-                (natp y))
-           (natp (+ x y))))
-
-;used by axe
-(defthmd natp-of-nfix
-  (natp (nfix x)))
 
 ;the bvcat of 0 is essentially multiplication by a power of 2
 (defthm bvmult-of-bvcat-of-0
@@ -258,8 +92,8 @@
                 (natp size))
            (equal (bvmult size k (bvcat highsize x lowsize 0))
                   (bvmult size
-                                (* k (expt 2 lowsize)) ;gets computed
-                                x)))
+                          (* k (expt 2 lowsize)) ;gets computed
+                          x)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat)
                                   (bvchop-of-*-of-bvchop-arg2))
            :use (:instance bvchop-of-*-of-bvchop-arg2
@@ -273,9 +107,6 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus repeatbit)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
-;goes to 2^n-1, but I think I like repeatbit better
-(in-theory (disable repeatbit-of-1-arg2))
-
 ;todo: move
 (defthm equal-of-bvchop-and-constant-when-signed-byte-p
   (implies (and (syntaxp (want-to-strengthen (equal k (bvchop 64 x))))
@@ -286,20 +117,6 @@
                   (equal (logext 64 k) ;gets computed
                          x)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
-
-(defthm ash-of-bvcat
-  (implies (and (natp lowsize)
-                (natp highsize)
-                (natp amt))
-           (equal (ash (bvcat highsize highval lowsize lowval) amt)
-                  (bvcat (+ lowsize highsize)
-                               (bvcat highsize highval lowsize lowval)
-                               amt
-                               0)))
-  :hints (("Goal" :cases ((and (equal 0 lowsize) (equal 0 highsize))
-                          (and (not (equal 0 lowsize)) (equal 0 highsize))
-                          (and (equal 0 lowsize) (not (equal 0 highsize))))
-           :in-theory (enable ash))))
 
 ;gen
 (defthm signed-byte-p-of-one-more
@@ -317,15 +134,6 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 ;(in-theory (disable getbit-of-logior)) ; consider what to do here
-
-;move
-(defthm getbit-of-bvchop-both
-  (implies (and (natp m) ;drop?
-                (natp n))
-           (equal (getbit m (bvchop n x))
-                  (if (< m n)
-                      (getbit m x)
-                    0))))
 
 ;todo: think about this
 (defthm signed-byte-p-of-bvchop
@@ -350,14 +158,6 @@
                     (not (equal 0 (getbit 31 x))))
                   (not (sbvlt 32 0 x))))
   :hints (("Goal" :in-theory (enable sbvlt logext))))
-
-(defthmd equal-of-bitxor-and-1
-  (equal (equal (bitxor x y) 1)
-         (or (and (equal (getbit 0 x) 1)
-                  (equal (getbit 0 y) 0))
-             (and (equal (getbit 0 x) 0)
-                  (equal (getbit 0 y) 1)))))
-
 
 (defthm +-of-bvplus-of-x-and-minus-x
   (implies (and (unsigned-byte-p 32 x)
@@ -395,11 +195,13 @@
                   0))
   :hints (("Goal" :in-theory (enable logext))))
 
-(defthm mod-of-bvchop-and-2
-  (equal (mod (bvchop 63 x) 2)
-         (getbit 0 x))
-  :hints (("Goal" :in-theory (e/d (bvchop getbit)
-                                  ()))))
+;generalize!
+;just use mod-of-2-becomes-getbit-0
+;; (defthm mod-of-bvchop-and-2
+;;   (equal (mod (bvchop 63 x) 2)
+;;          (getbit 0 x))
+;;   :hints (("Goal" :in-theory (e/d (bvchop getbit)
+;;                                   ()))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer
@@ -422,38 +224,6 @@
                 (<= k free) ;gets computed
                 (integerp x))
            (not (< x k))))
-
-(defthm slice-of-if-arg3
-  (equal (slice high low (if test v1 v2))
-         (if test
-             (slice high low v1)
-             (slice high low v2))))
-
-(defthm ash-of-if
-  (equal (ash (if test i1 i2) c)
-         (if test
-             (ash i1 c)
-           (ash i2 c))))
-
-(defthm bvchop-of-if-when-constants
-  (implies (syntaxp (and (quotep n)
-                         (quotep k1)
-                         (quotep k2)))
-           (equal (bvchop n (if test k1 k2))
-                  (if test
-                      (bvchop n k1)
-                    (bvchop n k2)))))
-
-;todo: or go to bvplus of bvplus
-(defthm bvplus-of-+-combine-constants
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)))
-                (integerp x)
-                (integerp k1)
-                (integerp k2))
-           (equal (bvplus size k1 (+ k2 x))
-                  (bvplus size (+ k1 k2) x)))
-  :hints (("Goal" :in-theory (enable bvplus))))
 
 ; Helps resolve updates to ESP
 ; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.

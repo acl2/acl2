@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -3260,9 +3260,9 @@
          (not (and (consp fns)
                    (or (not ntep) ; don't puff non-trivial encapsulates
                        (mv-let
-                         (name x)
+                         (name x origins)
                          (constraint-info (car fns) installed-wrld)
-                         (declare (ignore name))
+                         (declare (ignore name origins)) ; Ignoring origins.
                          (unknown-constraints-p x))))))))
 
 (defun puffable-command-blockp (wrld cmd-form ntep installed-wrld)
@@ -5093,10 +5093,16 @@
                              :form)
                      ctx state t)
                   (value nil))
-                (pprogn (fms "There is no saved output to print.  ~
-                              See :DOC set-saved-output.~|"
-                             nil
-                             channel state nil)
+                (pprogn (let ((inh (member-eq 'prove
+                                              (f-get-global 'inhibit-output-lst
+                                                            state))))
+                          (fms "There is no saved output to print.  See :DOC ~
+                                pso.~#0~[~/  Note that PROVE output is ~
+                                inhibited, and output is not saved when that ~
+                                is the case; see :DOC set-inhibit-output-lst ~
+                                for how to turn on PROVE output.~]~|"
+                               (list (cons #\0 (if inh 1 0)))
+                               channel state nil))
                         (value :invisible))))
      (t (state-global-let*
          ((saved-output-reversed nil) ; preserve this (value doesn't matter)

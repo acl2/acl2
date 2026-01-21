@@ -13,16 +13,20 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "kestrel/utilities/messages" :dir :system)
+
 (include-book "../syntax/disambiguator")
 (include-book "../syntax/validator")
-(include-book "splitgso")
+(include-book "split-gso")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,82 +35,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define structdecl-get-ident
-  ((structdecl structdeclp))
+(define struct-declon-get-ident
+  ((struct-declon struct-declonp))
   :returns (ident? ident-optionp)
-  (structdecl-case
-   structdecl
+  (struct-declon-case
+   struct-declon
    ;; TODO: properly handle struct declarations with multiple declarators
    ;;   instead of returning error.
    :member (b* (((mv erp ident)
-                 (structdeclor-list-get-ident structdecl.declor)))
+                 (struct-declor-list-get-ident struct-declon.declors)))
              (if erp
                  nil
                ident))
    :statassert nil
    :empty nil))
 
-;; TODO: needs to ensure that structdecls doesn't contain static asserts or empty
-(define structdecls-find-first-field-name
-  ((structdecls structdecl-listp))
+;; TODO: needs to ensure that struct-declons doesn't contain static asserts or empty
+(define struct-declons-find-first-field-name
+  ((struct-declons struct-declon-listp))
   :returns (ident? ident-optionp)
-  (b* (((when (or (endp structdecls)
-                  (endp (rest structdecls))))
+  (b* (((when (or (endp struct-declons)
+                  (endp (rest struct-declons))))
         nil)
-       (structdecl (structdecl-fix (first structdecls)))
-       (ident? (structdecl-get-ident structdecl)))
+       (struct-declon (struct-declon-fix (first struct-declons)))
+       (ident? (struct-declon-get-ident struct-declon)))
     (or ident?
-        (structdecls-find-first-field-name (rest structdecls)))))
+        (struct-declons-find-first-field-name (rest struct-declons)))))
 
-(define decl-find-first-field-name
-  ((decl declp)
-   (struct-type identp))
+(define declon-find-first-field-name
+  ((declon declonp)
+   (struct-tag identp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
-        ((unless (and type-spec? (endp decl.init)))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
+        ((unless (and type-spec? (all-no-init declon.declors)))
          nil))
      (type-spec-case
        type-spec?
-       :struct (b* (((strunispec strunispec) type-spec?.spec))
-                 (if (equal strunispec.name struct-type)
-                     (structdecls-find-first-field-name strunispec.members)
+       :struct (b* (((struni-spec struni-spec) type-spec?.spec))
+                 (if (equal struni-spec.name? struct-tag)
+                     (struct-declons-find-first-field-name struni-spec.members)
                    nil))
        :otherwise nil))
    :statassert nil))
 
-(define extdecl-find-first-field-name
-  ((extdecl extdeclp)
-   (struct-type identp))
+(define ext-declon-find-first-field-name
+  ((extdecl ext-declonp)
+   (struct-tag identp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
-   :decl (decl-find-first-field-name extdecl.unwrap struct-type)
+   :declon (declon-find-first-field-name extdecl.declon struct-tag)
    :otherwise nil))
 
-(define extdecl-list-find-first-field-name
-  ((extdecls extdecl-listp)
-   (struct-type identp))
+(define ext-declon-list-find-first-field-name
+  ((extdecls ext-declon-listp)
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
        (field-name?
-        (extdecl-find-first-field-name (first extdecls) struct-type)))
+        (ext-declon-find-first-field-name (first extdecls) struct-tag)))
     (or field-name?
-        (extdecl-list-find-first-field-name (rest extdecls) struct-type))))
+        (ext-declon-list-find-first-field-name (rest extdecls) struct-tag))))
 
 (define transunit-find-first-field-name
   ((tunit transunitp)
-   (struct-type identp))
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((transunit tunit) tunit))
-    (extdecl-list-find-first-field-name tunit.decls struct-type)))
+    (ext-declon-list-find-first-field-name tunit.declons struct-tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO match-simple-ident should use this
 (defines declor/dirdeclor-get-simple-ident
   :parents (split-all-gso-implementation)
   :short "Get the identifier of a simple (direct) declarator."
@@ -128,8 +131,8 @@
     :returns (ident? ident-optionp)
     (dirdeclor-case
      dirdeclor
-     :ident dirdeclor.unwrap
-     :paren (declor-get-simple-ident dirdeclor.unwrap)
+     :ident dirdeclor.ident
+     :paren (declor-get-simple-ident dirdeclor.inner)
      :array nil
      :array-static1 nil
      :array-static2 nil
@@ -140,36 +143,37 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
-(define initdeclor-find-gso-candidate
-  ((initdeclor initdeclorp))
+(define init-declor-find-gso-candidate
+  ((initdeclor init-declorp))
   :returns (ident? ident-optionp)
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     (declor-get-simple-ident initdeclor.declor)))
 
-(define initdeclor-list-find-gso-candidate
-  ((initdeclors initdeclor-listp))
+(define init-declor-list-find-gso-candidate
+  ((initdeclors init-declor-listp))
   :returns (ident? ident-optionp)
   ;; Only accepts singletons for now
   ;; TODO: broaden this
   (if (or (endp initdeclors)
           (not (endp (rest initdeclors))))
       nil
-    (initdeclor-find-gso-candidate (first initdeclors))))
+    (init-declor-find-gso-candidate (first initdeclors))))
 
-(define decl-find-gso-candidate
-  ((decl declp)
+(define declon-find-gso-candidate
+  ((declon declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+  (declon-case
+   declon
+   :declon
+   (b* ((type-spec? (type-spec-from-decl-specs declon.specs))
         ((unless type-spec?)
          nil)
         (ident?
           (type-spec-case
             type-spec?
-            :struct (initdeclor-list-find-gso-candidate decl.init)
+            :struct (init-declor-list-find-gso-candidate declon.declors)
+            :typedef (init-declor-list-find-gso-candidate declon.declors)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))
@@ -177,57 +181,81 @@
        ident?))
    :statassert nil))
 
-(define extdecl-find-gso-candidate
-  ((extdecl extdeclp)
+(define ext-declon-find-gso-candidate
+  ((extdecl ext-declonp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
    :fundef nil
-   :decl (decl-find-gso-candidate extdecl.unwrap blacklist)
+   :declon (declon-find-gso-candidate extdecl.declon blacklist)
    :empty nil
    :asm nil))
 
-(define extdecl-list-find-gso-candidate
-  ((extdecls extdecl-listp)
+(define ext-declon-list-find-gso-candidate
+  ((extdecls ext-declon-listp)
    (blacklist ident-setp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
-       (ident? (extdecl-find-gso-candidate (first extdecls) blacklist)))
+       (ident? (ext-declon-find-gso-candidate (first extdecls) blacklist)))
     (or ident?
-        (extdecl-list-find-gso-candidate (rest extdecls) blacklist))))
+        (ext-declon-list-find-gso-candidate (rest extdecls) blacklist))))
 
 (define transunit-find-gso-candidate
   ((tunit transunitp)
    (blacklist ident-setp))
   :guard (c$::transunit-annop tunit)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (gso identp)
                (field-name identp)
                (internal booleanp :rule-classes :type-prescription))
-  (b* (((reterr) (c$::irr-ident) (c$::irr-ident) nil)
-       ((transunit tunit) tunit)
-       (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
-       ((unless gso)
-        (reterr t))
-       ((erp linkage)
-        (get-gso-linkage-from-valid-table
-          gso
-          (c$::transunit-info->table (c$::transunit->info tunit))))
-       ((erp struct-type)
-        (get-gso-type-name gso tunit))
-       (field-name (transunit-find-first-field-name tunit struct-type))
-       ((unless field-name)
-        (reterr t)))
-    (retok gso field-name (equal linkage (c$::linkage-internal))))
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
+  (transunit-find-gso-candidate0
+   tunit
+   blacklist
+   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+
+  :prepwork
+  ((define transunit-find-gso-candidate0
+     ((tunit transunitp)
+      (blacklist ident-setp)
+      (steps :type #.acl2::*fixnat-type*))
+     :guard (c$::transunit-annop tunit)
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
+                  (gso identp)
+                  (field-name identp)
+                  (internal booleanp :rule-classes :type-prescription))
+     (b* (((reterr) (c$::irr-ident) (c$::irr-ident) nil)
+          ((transunit tunit) tunit)
+          ((when (= 0 (mbe :logic (nfix steps)
+                           :exec (acl2::the-fixnat steps))))
+           (reterr t))
+          (gso (ext-declon-list-find-gso-candidate tunit.declons blacklist))
+          ((unless gso)
+           (reterr t))
+          ((mv erp linkage tag?)
+           (get-gso-linkage-from-valid-table
+             gso
+             (c$::transunit-info->table-end (c$::transunit->info tunit))))
+          ((when erp)
+           (transunit-find-gso-candidate0 tunit
+                                          (insert gso blacklist)
+                                          (- steps 1)))
+          ((unless tag?)
+           (reterr t))
+          (field-name (transunit-find-first-field-name tunit tag?))
+          ((unless field-name)
+           (reterr t)))
+       (retok gso field-name (equal linkage (c$::linkage-internal))))
+     :measure (nfix steps)
+     :hints (("Goal" :in-theory (enable o< o-finp nfix)))
+     :guard-hints (("Goal" :in-theory (enable nfix c$::transunit-annop))))))
 
 (define filepath-transunit-map-find-gso-candidate
   ((map filepath-transunit-mapp)
    (blacklist ident-setp))
   :guard (c$::filepath-transunit-map-annop map)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
@@ -241,18 +269,20 @@
           blacklist))
        ((unless erp)
         (retok (and internal (omap::head-key map)) gso field-name)))
-    (filepath-transunit-map-find-gso-candidate (omap::tail map) blacklist)))
+    (filepath-transunit-map-find-gso-candidate (omap::tail map) blacklist))
+  :guard-hints
+  (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
 
 (define transunit-ensemble-find-gso-candidate
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
   (b* (((transunit-ensemble tunits) tunits))
-    (filepath-transunit-map-find-gso-candidate tunits.unwrap blacklist))
+    (filepath-transunit-map-find-gso-candidate tunits.units blacklist))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,7 +291,7 @@
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-any-gso0
@@ -275,25 +305,25 @@
       (blacklist ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
                   (blacklist$ ident-setp)
                   (tunits$ transunit-ensemblep))
      (b* (((reterr) nil (c$::transunit-ensemble-fix tunits))
           (blacklist (ident-set-fix blacklist))
-          ((when (int= 0 (mbe :logic (nfix steps)
-                              :exec (acl2::the-fixnat steps))))
+          ((when (= 0 (mbe :logic (nfix steps)
+                           :exec (acl2::the-fixnat steps))))
            (reterr t))
           ((erp filepath? gso field-name)
            (transunit-ensemble-find-gso-candidate tunits blacklist))
           ((mv erp tunits$)
-           (splitgso-transunit-ensemble filepath?
-                                        gso
-                                        nil
-                                        nil
-                                        nil
-                                        nil
-                                        (list field-name)
-                                        tunits))
+           (split-gso-transunit-ensemble filepath?
+                                         gso
+                                         nil
+                                         nil
+                                         nil
+                                         nil
+                                         (list field-name)
+                                         tunits))
           ((when erp)
            (transunit-ensemble-split-any-gso0 tunits
                                               (insert gso blacklist)
@@ -308,27 +338,25 @@
 (define transunit-ensemble-split-all-gso
   ((tunits transunit-ensemblep)
    (blacklist ident-setp)
-   (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
-  (transunit-ensemble-split-all-gso0 tunits
-                                     blacklist
-                                     gcc
-                                     ienv
-                                     (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+  (transunit-ensemble-split-all-gso0
+   tunits
+   blacklist
+   ienv
+   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
 
   :prepwork
   ((define transunit-ensemble-split-all-gso0
      ((tunits transunit-ensemblep)
       (blacklist ident-setp)
-      (gcc booleanp)
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (er? maybe-msgp)
                   (blacklist$ ident-setp)
                   ;; add annop
                   (tunits$ transunit-ensemblep))
@@ -337,31 +365,44 @@
           ((reterr) nil tunits)
           ((when (int= 0 (mbe :logic (nfix steps)
                               :exec (acl2::the-fixnat steps))))
-           (reterr t))
+           (retmsg$ "Out of steps."))
           ((mv erp blacklist tunits$)
            (transunit-ensemble-split-any-gso
              tunits
              blacklist))
           ((when erp)
            (retok blacklist tunits))
-          ;; TODO: prove that splitgso preserves unambiguity and validity
+          ;; TODO: prove that split-gso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-transunit-ensemble tunits$ gcc))
+           (c$::dimb-transunit-ensemble tunits$ (c$::ienv->gcc ienv) nil))
           ((erp tunits$)
-           (c$::valid-transunit-ensemble tunits$ gcc ienv))
+           (c$::valid-transunit-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
-           (reterr t)))
+           (retmsg$ "Invalid translation unit ensemble.")))
        (transunit-ensemble-split-all-gso0 tunits$
                                           blacklist
-                                          gcc
                                           ienv
                                           (- steps 1)))
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable o< o-finp nfix)))
-     :guard-debug t
      :guard-hints (("Goal" :in-theory (enable nfix))))))
+
+(define code-ensemble-split-all-gso
+  ((code code-ensemblep)
+   (blacklist ident-setp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (blacklist$ ident-setp)
+               (code$ code-ensemblep))
+  (b* (((reterr) nil (irr-code-ensemble))
+       ((code-ensemble code) code)
+       ((erp blacklist tunits)
+        (transunit-ensemble-split-all-gso code.transunits
+                                          blacklist
+                                          code.ienv)))
+    (retok blacklist (change-code-ensemble code :transunits tunits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,34 +413,26 @@
 (define split-all-gso-process-inputs
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
-  :returns (mv erp
-               (tunits (and (transunit-ensemblep tunits)
-                            (c$::transunit-ensemble-annop tunits))
-                       :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
-               (const-new$ symbolp :rule-classes :type-prescription)
-               (gcc booleanp :rule-classes :type-prescription)
-               (ienv c$::ienvp))
+  :returns (mv (er? maybe-msgp)
+               (code (and (code-ensemblep code)
+                          (c$::transunit-ensemble-annop
+                           (code-ensemble->transunits code)))
+                     :hints (("Goal" :in-theory (enable irr-code-ensemble
+                                                        irr-transunit-ensemble))))
+               (const-new$ symbolp :rule-classes :type-prescription))
   :short "Process the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil (c$::ienv-default))
+  (b* (((reterr) (irr-code-ensemble) nil)
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol" const-old)))
-       (tunits (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
-       ((unless (c$::transunit-ensemble-annop tunits))
-        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
+        (retmsg$ "~x0 must be a symbol" const-old))
+       (code (acl2::constant-value const-old wrld))
+       ((unless (code-ensemblep code))
+        (retmsg$ "~x0 must be a code ensemble." const-old))
+       ((unless (c$::transunit-ensemble-annop (code-ensemble->transunits code)))
+        (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol" const-new)))
-       ((unless (booleanp gcc))
-        (reterr (msg "~x0 must be a boolean" gcc)))
-       ((unless (or (c$::ienvp ienv)
-                    (not ienv)))
-        (reterr (msg "~x0 must be an @(see c$::ienv) or @('nil')." ienv)))
-       (ienv (or ienv (c$::ienv-default))))
-    (retok tunits const-new gcc ienv)))
+        (retmsg$ "~x0 must be a symbol" const-new)))
+    (retok code const-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,19 +441,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-gen-everything
-  ((tunits transunit-ensemblep)
-   (const-new symbolp)
-   (gcc booleanp)
-   (ienv c$::ienvp))
-  :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp (event pseudo-event-formp))
+  ((code code-ensemblep)
+   (const-new symbolp))
+  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp - tunits)
-        (transunit-ensemble-split-all-gso tunits nil gcc ienv))
+       ((erp - code)
+        (code-ensemble-split-all-gso code nil))
        (defconst-event
          `(defconst ,const-new
-            ',tunits)))
+            ',code)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,46 +460,33 @@
 (define split-all-gso-process-inputs-and-gen-everything
   (const-old
    const-new
-   gcc
-   ienv
    (wrld plist-worldp))
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits
-             const-new
-             gcc
-             ienv)
-        (split-all-gso-process-inputs const-old
-                                      const-new
-                                      gcc
-                                      ienv
-                                      wrld))
+       ((erp code const-new)
+        (split-all-gso-process-inputs const-old const-new wrld))
        ((erp event)
-        (split-all-gso-gen-everything tunits
-                                      const-new
-                                      gcc
-                                      ienv)))
+        (split-all-gso-gen-everything code const-new)))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define split-all-gso-fn (const-old
                           const-new
-                          gcc
-                          ienv
                           (ctx ctxp)
                           state)
-  :returns (mv erp (event pseudo-event-formp) state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
   :parents (split-all-gso-implementation)
   :short "Event expansion of @(tsee split-all-gso)."
   (b* (((mv erp event)
         (split-all-gso-process-inputs-and-gen-everything
           const-old
           const-new
-          gcc
-          ienv
           (w state)))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -479,13 +498,8 @@
   :short "Definition of @(tsee split-all-gso)."
   (defmacro split-all-gso
     (const-old
-     const-new
-     &key
-     gcc
-     ienv)
+     const-new)
     `(make-event (split-all-gso-fn ',const-old
                                    ',const-new
-                                   ',gcc
-                                   ',ienv
                                    'split-all-gso
                                    state))))

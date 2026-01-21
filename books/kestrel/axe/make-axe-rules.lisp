@@ -28,7 +28,7 @@
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/sequences/defforall" :dir :system) ; todo: reduce
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ; todo: reduce
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -50,7 +50,7 @@
 ;(local (include-book "kestrel/terms-light/pre-simplify-term-proofs" :dir :system))
 
 (local
- (in-theory (disable ilks-plist-worldp
+ (in-theory (disable ;ilks-plist-worldp
                      plist-worldp
                      set-difference-equal intersection-equal symbol-listp true-listp ;prevent inductions
                      )))
@@ -114,12 +114,12 @@
            (pseudo-termp (caddr x)))
   :hints (("Goal" :expand ((pseudo-termp x)))))
 
-;move
-(defthm ilks-plist-worldp-forward-to-plist-worldp
-  (implies (ilks-plist-worldp wrld)
-           (plist-worldp wrld))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ilks-plist-worldp))))
+;; ;move
+;; (defthm ilks-plist-worldp-forward-to-plist-worldp
+;;   (implies (ilks-plist-worldp wrld)
+;;            (plist-worldp wrld))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable ilks-plist-worldp))))
 
 ;move
 ;because they are symbols
@@ -528,6 +528,7 @@
                  ((when (member-eq :axe-binding-hyp all-fns)) ;todo: prove that this never happens?
                   (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-binding-hyp which is not a legal function name." hyp rule-symbol)
                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                 ;; todo: should we call pre-simplify here instead of below?
                  ;; Check for free vars in the hyp:
                  (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
               (if hyp-free-vars
@@ -557,7 +558,7 @@
                         (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is a quoted constant after expanding lambdas and possibly stripping a work-hard." hyp rule-symbol)
                         (mv :bad-hyp *unrelievable-hyps* bound-vars))
                        (fn (ffn-symb hyp)))
-                    (prog2$ (and ;todo: drop this check, or use it:
+                    (prog2$ (and ;todo: drop this check, or use it (note that we now have support for axe-binding-hyp):
                              (eq 'equal fn) ;; test for (equal <free-var> <term-with-no-free-vars>)
                              (eql 2 (len (fargs hyp))) ;for guard proofs
                              (atom (farg1 hyp))
@@ -568,7 +569,7 @@
                              )
                             (mv (erp-nil)
                                 (list (cons :free-vars hyp)) ;tag the hyp to indicate it has free vars
-                                ;; if the hyp is successfully relieved (by searching for matches in the context), all of the free-vars in the hyp wil become bound:
+                                ;; if the hyp is successfully relieved (by searching for matches in the context), all of the free-vars in the hyp will become bound:
                                 (append expanded-hyp-free-vars bound-vars))))
                 ;; Normal hyp with no free vars:
                 ;; Here we use hyp, not expanded-hyp, to make it cheaper to rewrite a hyp that contains lambdas:
@@ -576,7 +577,7 @@
                 (b* ((hyp (pre-simplify-term hyp t nil)) ; cleans up lambdas, improves translated ORs, etc. only preserves IFF (not EQUAL)
                      ((when (atom hyp)) ;; can only be a variable
                       ;;turn a hyp of <var> into (not (equal 'nil <var>)) which is equivalent.  Axe relies on the fact that a hyp cannot be a variable.
-                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen (but strengthen the guard)
+                      (if (not (member-equal hyp bound-vars)) ; todo: prove this can't happen: pre-simplify can't introduce new vars (but strengthen the guard?)
                           (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp, ~x0, is a free var in ~x1 after pre-simplification!" hyp rule-symbol)
                                   (mv :bad-hyp *unrelievable-hyps* bound-vars))
                         (mv (erp-nil) `((not (equal 'nil ,hyp))) bound-vars)))
@@ -1184,7 +1185,7 @@
               (if (member-eq fn known-boolean-fns)
                   ;; pred -> (equal pred 't)
                   (mv nil (expand-lambdas-in-term conc) *t*)
-                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
+                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion, ~x0, in rule ~x1.  Consider calling ~x2." conc rule-symbol `(add-known-boolean ,fn))
                         (mv :bad-conclusion nil nil))))))))))
 
 (local
@@ -1477,7 +1478,7 @@
   (declare (xargs :guard (and (symbolp rule-name)
                               (symbol-listp known-boolean-fns)
                               (axe-rule-listp acc)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((when (eq 'quote rule-name))
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
@@ -1555,7 +1556,7 @@
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (symbol-listp known-boolean-fns)
                               (axe-rule-listp acc)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-names)
       (mv (erp-nil) (reverse acc)) ;skip this reverse! or call a better version of it that doesn't handle strings?
     (b* (((mv erp res)
@@ -1585,7 +1586,7 @@
 ;; Does not remove duplicates (that should be done when making the rule-alist).
 (defund make-axe-rules (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (make-axe-rules-aux rule-names (known-booleans wrld) nil nil wrld))
 
 (defthm true-listp-of-mv-nth-1-of-make-axe-rules
@@ -1602,7 +1603,7 @@
 ;; This variant doesn't pass back an error
 (defund make-axe-rules! (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp axe-rules)
     (make-axe-rules rule-names wrld)
     (if erp
@@ -1617,15 +1618,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
-; rename extend-rule-list
+; rename extend-rule-set
 (defun add-rules-to-rule-set (rule-names rule-set wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
-        ;; todo: append here would be fasters: think about duplicates and ordering
+        ;; todo: append here would be faster: think about duplicates and ordering
         (union-equal rules rule-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1646,11 +1647,11 @@
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
 ;todo: optimze?
-; rename extend-rule-lists
+; rename extend-rule-sets
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-sets)
       (mv (erp-nil) nil)
     (b* (((mv erp first-rule-set)
@@ -1669,7 +1670,7 @@
 (defun add-rules-to-rule-sets! (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-sets)
     (add-rules-to-rule-sets rule-names rule-sets wrld)
     (if erp
@@ -1690,25 +1691,29 @@
 ;;       (cons (first rule-set)
 ;;             (remove-rule-from-rule-set rule (rest rule-set))))))
 
-;; (defun remove-rules-from-rule-set (rules rule-set)
-;;   (declare (xargs :guard (and (symbol-listp rules)
-;;                               (true-listp rules)
-;;                               (axe-rule-listp rule-set))))
-;;   (if (endp rules)
-;;       rule-set
-;;     (remove-rules-from-rule-set (rest rules)
-;;                                 (remove-rule-from-rule-set (first rules) rule-set))))
+(defund remove-rules-from-rule-set (rule-names rule-set acc)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (axe-rule-listp rule-set)
+                              (true-listp acc))))
+  (if (endp rule-set)
+      (reverse acc)
+    (let* ((this-axe-rule (first rule-set))
+           (this-rule-name (rule-symbol this-axe-rule)))
+      (remove-rules-from-rule-set rule-names
+                                  (rest rule-set)
+                                  (if (member-eq this-rule-name rule-names)
+                                      acc
+                                    (cons this-axe-rule acc))))))
 
-;; ;; Remove the RULES from each rule set in RULE-SETS.
-;; ;todo: optimze?
-;; (defun remove-rules-from-rule-sets (rules rule-sets)
-;;   (declare (xargs :guard (and (symbol-listp rules)
-;;                               (true-listp rules)
-;;                               (axe-rule-setsp rule-sets))))
-;;   (if (endp rule-sets)
-;;       nil
-;;     (cons (remove-rules-from-rule-set rules (first rule-sets))
-;;           (remove-rules-from-rule-sets rules (rest rule-sets)))))
+;; Remove the RULE-NAMES from each rule set in RULE-SETS.
+;todo: optimze?
+(defund remove-rules-from-rule-sets (rule-names rule-sets)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (axe-rule-setsp rule-sets))))
+  (if (endp rule-sets)
+      nil
+    (cons (remove-rules-from-rule-set rule-names (first rule-sets) nil)
+          (remove-rules-from-rule-sets rule-names (rest rule-sets)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1733,6 +1738,6 @@
 (defund axe-rules-that-introduce (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (let ((axe-rules (make-axe-rules! rule-names wrld)))
     (filter-axe-rules-for-rhses-mentioning fn axe-rules)))

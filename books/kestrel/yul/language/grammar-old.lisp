@@ -71,7 +71,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; We use the prefix OCST, where 'O' stands for 'old',
-; to distinguish it from the prefix CST used in grammar-new.lisp,
+; to distinguish it from the prefix CST used in grammar.lisp,
 ; which is the primary grammar (the one that our parser matches).
 ; This old grammar is here mainly for historical and testing purposes.
 (abnf::deftreeops *grammar-old* :prefix ocst)

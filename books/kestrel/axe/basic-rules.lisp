@@ -1,7 +1,7 @@
 ; Basic Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,13 +12,16 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/if" :dir :system)
+;(include-book "kestrel/utilities/if" :dir :system) ; drop?
 (include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;; TODO: Rephrase some of these
 
 ;;theorems about built-in ACL2 functions.  Many of these are things that ACL2
 ;;knows by type reasoning (but Axe does not have type reasoning).
+
+;; See also arithmetic-rules-axe.lisp
 
 (defthmd rationalp-of-len
   (rationalp (len x)))
@@ -30,6 +33,12 @@
 
 (defthmd acl2-numberp-of-*
   (acl2-numberp (* x y)))
+
+;dup
+(defthm integerp-of-*
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (* x y))))
 
 (defthmd acl2-numberp-of-unary--
   (acl2-numberp (unary-- x)))
@@ -102,6 +111,7 @@
 (defthm <-of-max-same2
   (not (< (max y x) x)))
 
+;; todo: also in books/kestrel/utilities/w.lisp
 (defthm plist-worldp-of-w
   (implies (state-p state)
            (plist-worldp (w state)))
@@ -109,6 +119,9 @@
 
 (defthmd acl2-numberp-of-fix
   (acl2-numberp (fix x)))
+
+(defthmd integerp-of-ifix
+  (integerp (ifix x)))
 
 ;; Can't phrase this as just (equal x x), as that is not a legal rewrite rule.
 (defthmd equal-same
@@ -178,3 +191,19 @@
 (defthmd not-of-cons
   (equal (not (cons x y))
          nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Probably only needed for Axe
+(defthmd acl2-numberp-when-signed-byte-p
+  (implies (signed-byte-p size x) ; size is a free var
+           (acl2-numberp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;dup
+(defthm integerp-of-mod
+  (implies (integerp y)
+           (equal (integerp (mod x y))
+                  (integerp (fix x))))
+  :hints (("Goal" :in-theory (enable mod))))

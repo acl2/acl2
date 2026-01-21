@@ -28,6 +28,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-in
   (x
    (tree binary-tree-p))
@@ -286,6 +291,7 @@
                       (if (bst< x (head set))
                           (in x (left set))
                         (in x (right set))))))
+  :inline t
 
   ;; Verified below
   :verify-guards nil
@@ -306,7 +312,7 @@
              left
              right))
 
-  (verify-guards in
+  (verify-guards in$inline
     :hints (("Goal" :in-theory (enable emptyp)
                     :use tree-in-of-sfix-becomes-in-exec))))
 

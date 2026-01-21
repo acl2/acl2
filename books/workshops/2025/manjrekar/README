@@ -1,0 +1,8 @@
+To certify the clause processor, use:
+    cert.pl ctv-cp.lisp
+
+The files imul8.lisp and imul64.lisp in the "examples" folder have been
+generated from the corresponding .cpp files using the RAC parser (see
+documentation in "books/projects/rac/README.md"). The proofs in the examples can
+be certified using:
+    cert.pl examples/imul*/*.lisp

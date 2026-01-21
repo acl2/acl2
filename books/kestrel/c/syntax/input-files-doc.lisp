@@ -53,17 +53,14 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; no default"
-     "             :preprocess        ...  ; default nil"
-     "             :preprocess-args   ...  ; no default"
-     "             :process           ...  ; default :validate"
-     "             :const             ...  ; no default"
-     "             :gcc               ...  ; default nil"
-     "             :short-bytes       ...  ; default 2"
-     "             :int-bytes         ...  ; default 4"
-     "             :long-bytes        ...  ; default 8"
-     "             :long-long-bytes   ...  ; default 8"
-     "             :plain-char-signed ...  ; default nil"
+     "(input-files :files           ...  ; required, no default"
+     "             :path            ...  ; default \".\""
+     "             :preprocess      ...  ; default nil"
+     "             :preprocess-args ...  ; default nil"
+     "             :process         ...  ; default :validate"
+     "             :const           ...  ; required, no default"
+     "             :keep-going      ...  ; default nil"
+     "             :ienv            ...  ; default (ienv-default)"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,71 +68,106 @@
    (xdoc::evmac-section-inputs
 
     (xdoc::desc
-     "@(':files')"
+     "@(':files') &mdash; required, no default"
      (xdoc::p
-      "List of zero or more file paths that specify the files to be read.")
+      "Term evaluating to a list of one or more file paths
+       that specify the files to be read.")
      (xdoc::p
-      "This must be a list of strings that are valid path names in the system.
-       Non-absolute paths are relative to
-       the connected book directory (see @(tsee cbd)).")
+      "Each file path must be a string.")
      (xdoc::p
-      "This input to this macro is not evaluated."))
+      "These paths are relative to
+       the path specified by the @(':path') input."))
+
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+      "Path that the file paths in @(':files') are relative to.")
+     (xdoc::p
+      "This must be a non-empty string that is a valid path name in the system.
+       It may or may not end with a slash.
+       A non-absolute path is relative to
+       the connected book directory (see @(tsee cbd)).
+       In particular, the @('\".\"') path (which is the default)
+       specifies the connected book directory."))
 
     (xdoc::desc
      "@(':preprocess') &mdash; default @('nil')"
      (xdoc::p
       "Specifies the preprocessor to use, if any,
-       on the files specified by the @(':files') input.")
+       on the files specified by the @(':files') and @(':path') inputs.")
      (xdoc::p
       "This input must be one of the following:")
      (xdoc::ul
       (xdoc::li
        "@('nil') (the default),
         in which case no preprocessing is done.
-        In this case, the files must be already in preprocessed form,
-        unless the @(':process') input (see below) is @('nil').")
+        In this case, the files must be already in preprocessed form.")
       (xdoc::li
        "A string,
         which names the preprocessor to use,
-        which must be in the current path.")
+        which must be in the current system path for executables.")
       (xdoc::li
        "@(':auto'),
-        which implicitly names the preprocessor @('\"cpp\"')
-        (a common default),
-        which must be in the current path."))
+        which implicitly names the preprocessor @('\"gcc\"'),
+        which must be in the current system path for executables."))
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':preprocess-args') &mdash; no default"
+     "@(':preprocess-args') &mdash; default @('nil')"
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "This must either absent or a list of zero or more strings,
-       each of which is an argument to pass, e.g. @('-I').")
+      "This must evaluate to a list of strings
+       or to an omap from strings to lists of strings.")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
-       the @(':preprocess-args') input must be absent.")
+       the @(':preprocess-args') input must evaluate to @('nil').")
      (xdoc::p
-      "If @(':preprocess') is not @('nil'),
-       and the @(':preprocess-args') input is absent,
-       the arguments @('-E') and @('-P') are passed to the preprocessor,
-       in that order.")
+      "If @(':preprocess') is not @('nil'), the input files are preprocessed.
+       For each file, we provide the @('-E') flag to the preprocessor,
+       as well as some instantiation of the @('-std=') flag.
+       This latter flag is based on the @('version') field of the "
+      (xdoc::seetopic "implementation-environments"
+                      "implementation environment")
+       ", as indicated by the following table.")
+     (xdoc::table_
+      (xdoc::tr (xdoc::th "@(see c::Version)")
+                (xdoc::th "Standard Flag"))
+      (xdoc::tr (xdoc::td "@('(c::version-c17)')")
+                (xdoc::td "@('-std=c17')"))
+      (xdoc::tr (xdoc::td "@('(c::version-c23)')")
+                (xdoc::td "@('-std=c23')"))
+      (xdoc::tr (xdoc::td "@('(c::version-c17+gcc)')")
+                (xdoc::td "@('-std=gnu17')"))
+      (xdoc::tr (xdoc::td "@('(c::version-c23+gcc)')")
+                (xdoc::td "@('-std=gnu23')")))
      (xdoc::p
-      "If @(':preprocess') is not @('nil'),
-       and @(':preprocess-args') input is present,
-       the argument @('-E') is passed to the preprocessor,
-       followed by the arguments in the list, in that order.")
-     (xdoc::p
-      "See the preprocessor documentation for information about
-       the arguments mentioned above."))
+      "The @(':preprocess-args') input specifies additional arguments
+       to pass to the preprocessor beyond the two outlined above.
+       If @(':preprocess-args') is a string list,
+       this list of arguments is passed to the preprocessor for each file,
+       following the @('-E') and ('-std=') arguments.
+       If @(':preprocess-args') is an omap,
+       then we provide the list of arguments associated with the file name
+       (again, after the @('-E') and @('-std=') arguments).
+       A file in the @(':files') list corresponds to a list of arguments
+       in the map only when the file name matches the map key exactly
+       (i.e., without prepending the @(':path')).
+       If the file name is not in the key set,
+       only the @('-E') and @('std=') arguments are provided.
+       If @(':preprocess-args') is @('nil'),
+       it is technically both a string list and
+       an omap from strings to string lists;
+       the behavior is the same under either interpretation:
+       only the @('-E') and @('-std=') arguments are provided for each file."))
 
     (xdoc::desc
      "@(':process') &mdash; default @(':validate')"
      (xdoc::p
       "Specifies the processing to perform
-       on the files specified by the @(':files') input
+       on the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or on the result of preprocessing those files
        (if @(':preprocess') is not @('nil')).")
@@ -164,15 +196,6 @@
         obtained from the disambiguator,
         which annotated the abstract syntax with "
        (xdoc::seetopic "validation-information" "validation information")
-       ". Validation depends on the
-        @(':short-bytes'),
-        @(':int-bytes'),
-        @(':long-bytes'),
-        @(':long-long-bytes'), and
-        @(':plain-char-signed')
-        inputs, which determine an "
-       (xdoc::seetopic "implementation-environments"
-                       "implementation environment")
        "."))
      (xdoc::p
       "These levels of processing are ordered as")
@@ -187,86 +210,73 @@
        either the original or the preprocessed files."))
 
     (xdoc::desc
-     "@(':const')"
+     "@(':const') &mdash; required, no default"
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
-       the final result of processing (and preprocessing)
-       the files specified in the @(':files') input.")
+       the result of processing (and possibly preprocessing)
+       the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
-       the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       resulting from the parser.
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the parser,
+       paired with the implementation environment
+       determined by the inputs described below.
        Since the parser captures ambiguous constructs without resolving them,
        this representation may include ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':disambiguate'),
-       the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       obtained by disambiguating the one resulting from the parser.")
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the disambiguator,
+       paired with the implementation environment
+       determined by the inputs described below.
+       This representation has no ambiguous constructs.")
      (xdoc::p
       "If @(':process') is @(':validate'),
-       the value of the constant named by @(':const') is
-       a translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble)),
-       containing the abstract syntax representation of the code
-       obtained by disambiguating the one resulting from the parser,
-       and such that the abstract syntax representation passed validation;
-       this abstract syntax is annotated with validation information.")
+       the value of the constant named by @(':const') is a "
+      (xdoc::seetopic "code-ensembles" "code ensemble")
+      " consisting of the translation unit ensemble
+       resulting from the validator,
+       paired with the implementation environment
+       determined by the inputs described below.
+       This representation has no ambiguous constructs
+       and is annotated with validation information.")
+     (xdoc::p
+      "In all cases, the keys of the translation unit ensemble map
+       are the file paths specified in the @(':files') input,
+       without the @(':path') prefix.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
 
     (xdoc::desc
-     "@(':gcc') &mdash; default @('nil')"
+     "@(':keep-going') &mdash; default @('nil')"
      (xdoc::p
-      "Boolean flag saying whether certain GCC extensions
-       should be accepted or not."))
+      "Boolean flag saying whether to keep going after failing to input a file.
+       When @('t'), files which fail parsing, disambiguation, or validation
+       are dropped and the relevant error is printed.
+       Furthermore, at the end of each stage, if any file has failed,
+       then the fraction of successful files is also printed.")
+     (xdoc::p
+      "This flag is provided primarily for debugging purposes.
+       Successful validation of later files following the first failure
+       may be erroneous due to the inability to perform certain cross-checks
+       against the dropped files."))
 
     (xdoc::desc
-     "@(':short-bytes') &mdash; default 2"
+     "@(':ienv') &mdash; default @('(ienv-default)')"
      (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed short int') and @('unsigned short int').")
+      "Specifies the "
+      (xdoc::seetopic "implementation-environments"
+                      "implementation environment")
+      ". This affects which standard and dialect of C used,
+       and implementation details such as the size and signedness of types.")
      (xdoc::p
-      "This must be at least 2."))
-
-    (xdoc::desc
-     "@(':int-bytes') &mdash; default 4"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed int') and @('unsigned int').")
-     (xdoc::p
-      "This must be at least 4,
-       and not less than @(':short-bytes')."))
-
-    (xdoc::desc
-     "@(':long-bytes') &mdash; default 8"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed long int') and @('unsigned long int').")
-     (xdoc::p
-      "This must be at least 8,
-       and not less than @(':int-bytes')."))
-
-    (xdoc::desc
-     "@(':long-long-bytes') &mdash; default 8"
-     (xdoc::p
-      "Positive integer saying how many bytes are used to represent
-       @('signed long long int') and @('unsigned long long int').")
-     (xdoc::p
-      "This must be at least 8,
-       and not less than @(':long-bytes')."))
-
-    (xdoc::desc
-     "@(':plain-char-signed') &mdash; default nil"
-     (xdoc::p
-      "Boolean saying whether the plain @('char') type consists of
-       the same value as the @('signed char') or @('unsigned char') type.")))
+      "The implementation environment becomes part of the code ensemble
+       that is the value of the constant @('*const*').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,7 +287,12 @@
      (xdoc::p
       "The named constant containing the result of processing,
        as specified by @(':process'),
-       the files specified by @(':files')
+       the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")))))
+       (if @(':preprocess') is not @('nil')).")
+     (xdoc::p
+      "This constant can be passed to @(tsee output-files)
+       or to some "
+      (xdoc::seetopic "c2c::transformation-tools" "transformation")
+      ".")))))

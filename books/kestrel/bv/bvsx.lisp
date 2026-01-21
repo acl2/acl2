@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,9 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
+(local (include-book "bvuminus"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
 (local (include-book "logext"))
@@ -31,6 +33,18 @@
 
 (defthm natp-of-bvsx
   (natp (bvsx a b c))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-when-not-natp-arg1
+  (implies (not (natp new-size))
+           (equal (bvsx new-size old-size x)
+                  0))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-when-not-natp-arg2
+  (implies (not (natp old-size))
+           (equal (bvsx new-size old-size x)
+                  0))
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvchop-of-bvsx-low
@@ -62,10 +76,23 @@
   (not (< (bvsx new-size old-size val) 0))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;drop?
 (defthm bvsx-of-bvchop
-  (implies (and (posp old-size)
-                (natp new-size))
-           (equal (bvsx new-size old-size (bvchop old-size x))
+  (equal (bvsx new-size old-size (bvchop old-size x))
+         (bvsx new-size old-size x))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-of-bvchop-gen
+  (implies (and (<= old-size size)
+                (integerp size))
+           (equal (bvsx new-size old-size (bvchop size x))
+                  (bvsx new-size old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-of-logext
+  (implies (and (<= old-size size)
+                (integerp size))
+           (equal (bvsx new-size old-size (logext size x))
                   (bvsx new-size old-size x)))
   :hints (("Goal" :in-theory (enable bvsx))))
 
@@ -104,12 +131,9 @@
                                          slice-alt-def         ;slice
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+                                         repeatbit
                                          )
-                                   ( ; BVPLUS-OF-*-ARG2 ;
-                                    ;;BVCAT-OF-+-HIGH ;looped
-
-
-
+                                   (; BVPLUS-OF-*-ARG2
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
@@ -182,7 +206,8 @@
                            (+ -1 (expt 2 (- new-size old-size)))
                            old-size
                            val))))
-  :hints (("Goal" :in-theory (e/d (bvsx) (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
+  :hints (("Goal" :in-theory (e/d (bvsx repeatbit)
+                                  (EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)))))
 
 (defthmd equal-of-bvsx-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -225,7 +250,8 @@
 
 (defthm bvsx-too-high
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
-                (<= old-size new-size))
+                (<= old-size new-size)
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))
@@ -285,6 +311,16 @@
            (equal (bvchop size (logext size2 x))
                   (bvsx size size2 x)))
   :hints (("Goal" :in-theory (e/d (bvsx logtail-of-bvchop-becomes-slice) (logext)))))
+
+(defthmd bvchop-of-logext-becomes-bvsx-gen
+  (implies (and (natp size)
+                (posp size2))
+           (equal (bvchop size (logext size2 x))
+                  (if (< size2 size)
+                      (bvsx size size2 x)
+                    ;; no sign extension needed in this case:
+                    (bvchop size x)))))
+(theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx-gen) (:rewrite bvsx-rewrite)))
 
 ;add -becomes-bvsx to name
 (defthm slice-of-logext-middle

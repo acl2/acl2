@@ -190,6 +190,28 @@
   :rule-classes ((:linear :trigger-terms ((* j (floor i j)))))
   :hints (("Goal" :by my-floor-lower-bound-alt)))
 
+;; In this version, we have multiplied through by j (and j is negative)
+(defthm my-floor-lower-bound-alt-neg
+  (implies (and (< j 0) ; note this
+                (rationalp i)
+                (rationalp j))
+           (< (+ j (* j (floor i j))) i))
+  :hints (("Goal"
+           :use ((:instance my-floor-lower-bound)
+                 (:instance <-of-*-and-*-cancel
+                            (x1 (+ -1 (* i (/ j))))
+                            (x2 (floor i j))
+                            (y j)))
+           :in-theory (disable my-floor-lower-bound
+                               <-of-*-and-*-cancel))))
+
+(defthm my-floor-lower-bound-alt-neg-linear
+  (implies (and (< j 0) ; note this
+                (rationalp i)
+                (rationalp j))
+           (< (+ j (* j (floor i j))) i))
+  :rule-classes :linear)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd my-floor-upper-bound ;floor-upper-bound is a theorem in rtl
@@ -1045,7 +1067,7 @@
 
 ;; The floor brings i closer to 0 (or leaves it unchanged).
 (defthm <=-of-floor-same-when-negative-integer-2
-  (implies (and (<= i 0)     ; this case
+  (implies (and (<= i 0)     ; this case (unusual)
                   (integerp i) ; this case
                   (integerp j) ; this case
                   )
@@ -1466,12 +1488,12 @@
   :hints (("Goal" :use floor-of-*-same
            :in-theory (disable floor-of-*-same))))
 
-;gen and rename
-(defthmd nonnegative-integer-quotient-by-2
-  (implies (natp x)
-           (equal (nonnegative-integer-quotient x 2)
-                  (floor x 2)))
-  :hints (("Goal" :in-theory (enable floor))))
+;; ;gen and rename
+;; (defthmd nonnegative-integer-quotient-by-2
+;;   (implies (natp x)
+;;            (equal (nonnegative-integer-quotient x 2)
+;;                   (floor x 2)))
+;;   :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-of-2-arg1
   (implies (natp j)
@@ -1529,3 +1551,28 @@
                         (if (equal -1 i)
                             nil ; the floor rounds back down to -1
                           t)))))))
+
+(defthmd nonnegative-integer-quotient-becomes-floor
+  (implies (and (natp i)
+                (natp j))
+           (equal (nonnegative-integer-quotient i j)
+                  (floor i j)))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient-of-2))))
+
+(defthmd floor-becomes-nonnegative-integer-quotient
+  (implies (and (natp i)
+                (natp j))
+           (equal (floor i j)
+                  (nonnegative-integer-quotient i j)))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient-of-2))))
+
+(theory-invariant (incompatible (:rewrite floor-becomes-nonnegative-integer-quotient)
+                                (:rewrite nonnegative-integer-quotient-becomes-floor)))
+
+;; in case we can't decide on a normal form
+(defthmd equal-of-nonnegative-integer-quotient-and-floor
+  (implies (and (natp i)
+                (natp j))
+           (equal (equal (nonnegative-integer-quotient i j) (floor i j))
+                  t))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient-of-2))))

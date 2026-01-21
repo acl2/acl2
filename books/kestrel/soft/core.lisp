@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,7 +14,7 @@
 (include-book "std/system/definedp" :dir :system)
 (include-book "std/system/defun-sk-queries" :dir :system)
 (include-book "std/system/function-symbol-listp" :dir :system)
-(include-book "std/system/measure" :dir :system)
+(include-book "std/system/get-measure" :dir :system)
 (include-book "std/system/uguard" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
@@ -263,7 +263,7 @@
     "The returned list may contain duplicates."))
   (let* ((body (ubody fun wrld))
          (measure (if (recursivep fun nil wrld)
-                      (measure fun wrld)
+                      (get-measure fun wrld)
                     nil))
          (guard (uguard fun wrld))
          (body-funvars (funvars-of-term body wrld))

@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,14 +21,21 @@
                                              pi
                                              step))
                         '(bool
+                          bool->bit
+                          define-sk
                           defxdoc+
                           impossible
                           lifix
                           lnfix
+                          logapp
+                          logappn
+                          logbit
                           logext
                           loghead
+                          logtail
                           nat
                           nat-list
+                          pos-fix
                           sbyte32
                           sbyte32p
                           sbyte64
@@ -73,6 +81,7 @@
                           ubyte8-listp
                           ubyte32-list
                           ubyte32-listp
+                          ubyte32-optionp
                           ubyte64-list
                           ubyte64-listp
                           unsigned-byte-fix

@@ -12,7 +12,9 @@
 (in-package "ACL2")
 
 (include-book "bvchop-def")
-(include-book "../arithmetic-light/power-of-2p")
+(include-book "../arithmetic-light/power-of-2p") ; todo: only include the def?
+(include-book "../arithmetic-light/lg-def")
+(include-book "../arithmetic-light/ceiling-of-lg-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/times"))
@@ -22,6 +24,7 @@
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/mod-and-expt"))
+(local (include-book "../arithmetic-light/ceiling-of-lg"))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 ;drop?
@@ -75,7 +78,7 @@
                   0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm bvchop-size-0-better
+(defthm bvchop-of-0-arg2
   (equal (bvchop size 0)
          0)
   :hints (("Goal" :in-theory (enable bvchop))))
@@ -157,12 +160,10 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable bvchop))))
 
-;rename
-(defthm bvchop-+-bvchop-better
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (bvchop size (+ i (bvchop size j)))
-                  (bvchop size (+ i j))))
+(defthm bvchop-of-+-of--bvchop-arg2
+  (implies (integerp y)
+           (equal (bvchop size (+ x (bvchop size y)))
+                  (bvchop size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm <=-of-bvchop-same-linear
@@ -575,6 +576,19 @@
                     (expt 2 size2))))
   :hints (("Goal" :in-theory (e/d (bvchop) ()))))
 
+;rename
+(defthm bvchop-of-expt-alt
+  (implies (and (syntaxp (quotep k)) ;new
+                (power-of-2p k)
+                (natp size1))
+           (equal (bvchop size1 k)
+                  (if (<= size1 (lg k))
+                      0
+                    k)))
+  ;; The :use hint included just for speed:
+  :hints (("Goal" :use (:instance bvchop-of-expt (size2 (lg k)))
+           :in-theory (e/d (power-of-2p lg) (bvchop-of-expt)))))
+
 ;can this be expensive?
 ;rename?
 (defthm bvchop-bound-rw
@@ -625,12 +639,24 @@
            :in-theory (enable bvchop))))
 
 (defthm bvchop-of-+-of-*-of-expt
-  (implies (and (integerp x)
-                (natp size))
-           (equal (bvchop size (+ (* x (expt 2 size)) y))
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ (* x (expt 2 size2)) y))
                   (bvchop size y)))
   :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
                                      mod-sum-cases))))
+
+(defthm bvchop-of-+-of-*-of-expt-alt
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ y (* x (expt 2 size2))))
+                  (bvchop size y)))
+  :hints (("Goal" :use (:instance bvchop-of-+-of-*-of-expt)
+           :in-theory (disable bvchop-of-+-of-*-of-expt))))
 
 (defthm bvchop-of-+-of-minus-of-expt
   (implies (and (integerp x)
@@ -778,12 +804,13 @@
                   (bvchop (+ -1 size) x))))
 
 (defthm bvchop-of-+-of-bvchop-arg3
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
+  (implies (integerp z)
            (equal (bvchop size (+ x y (bvchop size z)))
                   (bvchop size (+ x y z))))
-  :hints (("Goal" :in-theory (enable bvchop))))
+  :hints (("Goal" :use (:instance bvchop-of-+-of--bvchop-arg2
+                                  (x (+ x y))
+                                  (y z))
+           :in-theory (disable bvchop-of-+-of--bvchop-arg2))))
 
 (defthm bvchop-of-+-of-*-of-bvchop
   (implies (and (integerp x)
@@ -924,3 +951,34 @@
                 (integerp y))
            (equal (bvchop size (+ x y (expt 2 size)))
                   (bvchop size (+ x y)))))
+
+(defthmd bvchop-identity-when-<=
+  (implies (and (unsigned-byte-p size x)
+                (unsigned-byte-p size y)
+                (<= y x))
+           (equal (bvchop size (+ x (- y)))
+                  (+ x (- y))))
+;  :hints (("Goal" :use (:instance bvchop-identity (i (+ x (- y))))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm bvchop-of-if-when-constants
+  (implies (syntaxp (and (quotep n)
+                         (quotep k1)
+                         (quotep k2)))
+           (equal (bvchop n (if test k1 k2))
+                  (if test
+                      (bvchop n k1)
+                    (bvchop n k2)))))
+
+(defthm bvchop-of-+-of-1-and-ceiling-of-lg-same
+  (implies (natp x)
+           (equal (bvchop (+ 1 (ceiling-of-lg x)) x)
+                  x)))
+
+(defthm bvchop-of-ceiling-of-lg-same
+  (implies (natp x)
+           (equal (bvchop (ceiling-of-lg x) x)
+                  (if (power-of-2p x)
+                      0
+                    x)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))

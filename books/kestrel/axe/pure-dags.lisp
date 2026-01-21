@@ -69,19 +69,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This checks the args if they are constants but does not look up nodenums.
-;; This no longer allows ':irrelevant values in bvifs.
-;; Note that we no longer translate IF or MYIF.
+;; This checks the args if they are constants but does not look up nodenums, so it does
+;; not check for all possible type errors.
+;; Historical notes: This no longer allows ':irrelevant values in BVIFs. We no longer translate IF or MYIF, only BVIF and BV-ARRAY-IF.
 ;; todo: consider adding unsigned-byte-p
-;; todo: compare to can-always-translate-expr-to-stp and get-induced-type and translate-dag-expr
-(defun pure-fn-call-exprp (expr)
+;; todo: compare to can-always-translate-expr-to-stp and get-induced-type and translate-dag-expr and *bv-and-array-fns-we-can-translate*
+(defund pure-fn-call-exprp (expr)
   (declare (xargs :guard (dag-function-call-exprp expr)
                   :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
   (let ((fn (ffn-symb expr))
         (dargs (dargs expr)))
-    ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
     ;;maybe we should check that operands are of the right type, but that would require passing in the dag-array
     (case fn
+      ;; boolean functions:
       (not (and (= 1 (len dargs))
                 (boolean-arg-okp (first dargs))))
       ((booland boolor) (and (= 2 (len dargs))
@@ -91,6 +91,7 @@
                    (boolean-arg-okp (first dargs))
                    (boolean-arg-okp (second dargs))
                    (boolean-arg-okp (third dargs))))
+      ;; BV functions:
       (bitnot (and (= 1 (len dargs))
                    (bv-arg-okp (first dargs))))
       ((bitand bitor bitxor) (and (= 2 (len dargs))
@@ -139,6 +140,7 @@
                          (darg-quoted-natp (first dargs))
                          ;;(< (unquote (first dargs)) 32)
                          (bv-arg-okp (second dargs))))
+      ;; bv-array functions:
       (bv-array-read (and (= 4 (len dargs))
                           (darg-quoted-posp (first dargs))
                           (darg-quoted-natp (second dargs))
@@ -160,7 +162,7 @@
                         (bv-array-arg-okp (unquote (second dargs)) (fourth dargs))
                         (bv-array-arg-okp (unquote (second dargs)) (fifth dargs))))
       ;; todo: consider how to handle equal:
-      ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
+      ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere ; todo: check constants!
       (otherwise nil))))
 
 (defund expr-is-purep (expr)
@@ -202,3 +204,62 @@
 ;;   (if (quotep dag)
 ;;       t ;todo: check more?
 ;;     (dag-is-purep-aux dag :first t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replaces nodenums with underscores
+(defund darg-patterns (dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (if (endp dargs)
+      nil
+    (let ((darg (first dargs)))
+      (if (consp darg) ; checks for quotep
+          (cons darg (darg-patterns (rest dargs)))
+        (cons '_ (darg-patterns (rest dargs)))))))
+
+(defund dag-expr-pattern (expr)
+  (declare (xargs :guard (dag-exprp expr)))
+  (if (or (variablep expr)
+          (fquotep expr))
+      expr ; rare
+    ;; function call:
+    (cons (ffn-symb expr)
+          (darg-patterns (dargs expr)))))
+
+;; Abstracts out the patterns, so we don't print lots of similar nodes (with
+;; different nodenums).
+(defund expression-patterns-in-dag-aux (dag acc)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (true-listp acc))))
+  (if (endp dag)
+      (reverse acc) ; or we could skip this
+    (let* ((entry (first dag))
+           (expr (cdr entry)))
+      (expression-patterns-in-dag-aux (rest dag)
+                           (add-to-set-equal (dag-expr-pattern expr) acc)))))
+
+;; todo: abstract out constants that are not sizes/bv indices (even abstract constant array indices)
+;; todo: abstract vars and constants
+(defund expression-patterns-in-dag (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (expression-patterns-in-dag-aux dag nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Abstracts out the patterns, so we don't print lots of similar non-pure nodes
+;; (with different nodenums).
+(defund non-pure-expression-patterns-in-dag-aux (dag acc)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (true-listp acc))))
+  (if (endp dag)
+      (reverse acc) ; or we could skip this
+    (let* ((entry (first dag))
+           (expr (cdr entry)))
+      (if (expr-is-purep expr)
+          (non-pure-expression-patterns-in-dag-aux (rest dag) acc)
+        (non-pure-expression-patterns-in-dag-aux (rest dag)
+                                      (add-to-set-equal (dag-expr-pattern expr) acc))))))
+
+(defund non-pure-expression-patterns-in-dag (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (non-pure-expression-patterns-in-dag-aux dag nil))

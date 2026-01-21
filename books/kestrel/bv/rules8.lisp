@@ -15,7 +15,7 @@
 (include-book "bvchop")
 (include-book "slice")
 (include-book "bvplus")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "unsigned-byte-p-forced")
 (include-book "bv-syntax") ; for bind-var-to-bv-term-size
 (local (include-book "rules")) ;for logtail-of-minus
@@ -30,17 +30,6 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
-
-;drop or move hyps?
-;expensive?
-(defthmd mod-equal-impossible-value
-  (implies (and (<= j k) ; unusual
-                (natp i)
-                (natp j))
-           (equal (equal k (mod i j))
-                  (if (equal 0 j)
-                      (equal k i)
-                    nil))))
 
 (defthm floor-of-sum-of-minus-expt-and-bvchop
   (implies (rationalp y)

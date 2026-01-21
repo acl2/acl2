@@ -1,7 +1,7 @@
 ; Merging an axe-tree into a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -149,7 +149,8 @@
     :flag merge-trees-into-dag-array-basic)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-tree-into-dag-array-basic
-                            merge-trees-into-dag-array-basic)
+                            merge-trees-into-dag-array-basic
+                            axe-treep)
                            (mv-nth
                             myquotep)))))
 

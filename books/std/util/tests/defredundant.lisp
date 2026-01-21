@@ -121,6 +121,16 @@
      (cons (g0-term (car x))
            (g0-list (cdr x))))))
 
+(defun test-irrelevant (x y)
+  (declare (irrelevant y))
+  (if (atom x)
+      nil
+    (test-irrelevant (cdr x) y)))
+
+(defun test-optimize (x)
+  (declare (optimize (safety 3)))
+  x)
+
 
 ))
 
@@ -134,7 +144,9 @@
           f4-term
           f5
           f9
-          g0-list))
+          g0-list
+          test-irrelevant
+          test-optimize))
 
 ) ;; end of encapsulate
 
@@ -182,3 +194,6 @@
 (assert-enabled (:executable-counterpart f2) t)
 (assert-enabled (:executable-counterpart f3) nil)
 (assert-enabled (:executable-counterpart f9) t)
+
+(assert-enabled (:definition test-irrelevant) t)
+(assert-enabled (:definition test-optimize) t)

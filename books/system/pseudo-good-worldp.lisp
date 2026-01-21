@@ -1620,13 +1620,15 @@
       (weak-transparent-rec-p val)))
 
 ;-----------------------------------------------------------------
-; CONSTRAINT-LST
+; CONSTRAINT-LST-ETC
 
-(defun constraint-lstp (sym val)
-  (declare (ignore sym))
-  (or (unknown-constraints-p val)
-      (pseudo-function-symbolp val nil) ; the fn where constraints are stored
-      (pseudo-term-listp val)))
+; Constraint-lst-etc-p is a build-in function.  It doesn't actually check that
+; the car of the pair is a function symbol when it is a symbol, it doesn't
+; check that when not a symbol the car is a list of formal terms or a list
+; denoting the unknown constraints -- it just checks that the car is a list of
+; pseudo-termps.  And finally, it doesn't enforce the convention that the cdr
+; of the pair is a list of origin tokens as long as the list of formal terms in
+; the car.  It just checks true-listp.
 
 ;-----------------------------------------------------------------
 ; DEF-BODIES
@@ -2891,7 +2893,8 @@
           (CONGRUENT-STOBJ-REP (congruent-stobj-repp sym val))
           (CONST (const-propertyp sym val))
           (CONSTRAINEDP (pseudo-constrainedpp sym val))
-          (CONSTRAINT-LST (constraint-lstp sym val))
+; Until v8-7 we looked for the CONSTRAINT-LST property here.
+          (CONSTRAINT-LST-ETC (constraint-lst-etc-p val))
           (DEF-BODIES
             (or (eq val *acl2-property-unbound*)
                 (pseudo-def-bodiesp sym val)))

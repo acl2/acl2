@@ -1,7 +1,7 @@
 ; A clause-processor that calls STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,15 +12,17 @@
 
 (in-package "ACL2")
 
+;; This book requires a :ttag (translate-dag-to-stp) because of the call to define-trusted-clause-processor.
+
 (include-book "prove-with-stp")
 
 ;Attempts to prove CLAUSE using STP.
 ;Returns (mv erp clauses state) where clauses is nil if STP proved the goal and
 ;otherwise is a singleton set containing the original clause (indicating that
-;no change was made).  TODO: What is the format of the hint?
-(defun stp-clause-processor (clause hint state)
+;no change was made).
+(defund stp-clause-processor (clause hint state)
   (declare (xargs :guard (and (pseudo-term-listp clause)
-                              (alistp hint))
+                              (symbol-alistp hint))
                   :stobjs state))
   (b* (;; Get and check options:
        (hint-keys (strip-cars hint))
@@ -35,7 +37,7 @@
         (mv :bad-hint (list clause) state))
        ;; Handle :max-conflicts :
        (max-conflicts-pair (assoc-eq :max-conflicts hint)) ; we use nil if not present in the hint
-       ((when (and max-conflicts-pair
+       ((when (and max-conflicts-pair ; todo: allow an explicit nil? allow :auto?
                    (not (natp (cdr max-conflicts-pair)))))
         (er hard? 'stp-clause-processor "Bad :max-conflicts option, ~x0, in hint ~x1." (cdr max-conflicts-pair) hint)
         (mv :bad-hint (list clause) state))
@@ -67,7 +69,7 @@
         (if must-prove
             (prog2$ (er hard? 'stp-clause-processor "Failed to prove but :must-prove was given.")
                     (mv (erp-t) (list clause) state))
-          ;; no error but change to clause set:
+          ;; no error but no change to clause set:
           (mv (erp-nil) (list clause) state))))))
 
 (define-trusted-clause-processor
@@ -77,8 +79,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Check whether STP alone can prove a theorem
-;; TODO: Pass in the rest of the options (and the rest of the things that defthm takes)
-(defmacro defthm-with-stp-clause-processor (name term)
+;; Returns a DEFTHM event.
+(defund defthm-with-stp-clause-processor-fn (name term must-prove max-conflicts counterexample print rule-classes)
+  (declare (xargs :guard (and (symbolp name)
+                              ;; term is untranslated in general
+                              (booleanp must-prove)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp counterexample)
+                              (print-levelp print)
+                              ;; rule-classes may be :auto
+                              )))
   `(defthm ,name ,term
-     :hints (("Goal" :clause-processor (stp-clause-processor clause '((:must-prove . t)) state)))))
+     :hints (("Goal" :clause-processor (stp-clause-processor clause
+                                                             '((:must-prove . ,must-prove)
+                                                               (:max-conflicts . ,max-conflicts)
+                                                               (:counterexample . ,counterexample)
+                                                               (:print . ,print))
+                                                             state)))
+     ,@(if (eq :auto rule-classes) nil `(:rule-classes ,rule-classes))))
+
+;; A tool to prove a theorem using STP alone.
+;; TODO: At least handle IMPLIES specially.  Perhaps apply the pre-stp-rules.
+;; TODO: Consider allowing other :hints (need to merge with the :clause-processor hint), and maybe :otf-flg.
+(defmacro defthm-with-stp-clause-processor (name
+                                            term
+                                            &key
+                                            (rule-classes ':auto)
+                                            (max-conflicts '1000000)
+                                            (counterexample 't)
+                                            (must-prove 't)
+                                            (print ':brief))
+  (defthm-with-stp-clause-processor-fn name term must-prove max-conflicts counterexample print rule-classes))

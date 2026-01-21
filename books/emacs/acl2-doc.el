@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
@@ -123,14 +124,14 @@
          "books/system/doc/rendered-doc-combined.lsp")
  'TOP
  "ACL2+Books Manual"
- "https://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz"
+ "https://acl2.org/doc/rendered-doc-combined.lsp.gz"
  (concat *acl2-sources-dir* "TAGS-acl2-doc")
  (concat *acl2-sources-dir* "TAGS"))
 
 (extend-acl2-doc-manual-alist
  'acl2-only
  (concat *acl2-sources-dir* "doc.lisp")
- 'ACL2
+ 'TOP
  "ACL2 User's Manual"
  nil
  nil
@@ -163,16 +164,16 @@
 ; introduction using defvar, above).
      (defv *acl2-doc-last-tags-file-name* nil)
      ,@(and first-time
-	    '((defv-local *acl2-doc-index-name* nil)
-	      (defv-local *acl2-doc-index-name-found-p* nil)
-	      (defv-local *acl2-doc-index-position* 1)
-	      (defv-local *acl2-doc-search-string* nil)
-	      (defv-local *acl2-doc-search-regexp-p* nil)
-	      (defv-local *acl2-doc-search-position* 1)
-	      (defv-local *acl2-doc-history* nil)
-	      (defv-local *acl2-doc-return* nil)
-	      (defv-local *acl2-doc-limit-topic* nil)
-	      (defv-local *acl2-doc-topics-ht* nil)))))
+            '((defv-local *acl2-doc-index-name* nil)
+              (defv-local *acl2-doc-index-name-found-p* nil)
+              (defv-local *acl2-doc-index-position* 1)
+              (defv-local *acl2-doc-search-string* nil)
+              (defv-local *acl2-doc-search-regexp-p* nil)
+              (defv-local *acl2-doc-search-position* 1)
+              (defv-local *acl2-doc-history* nil)
+              (defv-local *acl2-doc-return* nil)
+              (defv-local *acl2-doc-limit-topic* nil)
+              (defv-local *acl2-doc-topics-ht* nil)))))
 
 (acl2-doc-init-vars t)
 
@@ -397,16 +398,16 @@
     (error
      (progn
        (setq acl2-doc-download-error
-	     (format "You can copy URL %s
+             (format "You can copy URL %s
 directly to file %s
 and then apply gunzip to that file."
-		     url
-		     (acl2-doc-gzipped-file pathname)))
+                     url
+                     (acl2-doc-gzipped-file pathname)))
        (error "Download failed (message: %s).
 The following message is saved in Emacs variable acl2-doc-download-error:
 %s"
-	      (error-message-string err)
-	      acl2-doc-download-error)))))
+              (error-message-string err)
+              acl2-doc-download-error)))))
 
 (defun acl2-doc-download ()
   "Download the ``bleeding edge'' ACL2+Books Manual from the web;
@@ -426,57 +427,57 @@ then restart the ACL2-Doc browser to view that manual."
 
 (defun manual-index-pathname ()
   (let* ((rendered (acl2-doc-pathname))
-	 (rendered-length (length rendered))
-	 (suffix "system/doc/rendered-doc-combined.lsp")
-	 (suffix-length (length suffix)))
+         (rendered-length (length rendered))
+         (suffix "system/doc/rendered-doc-combined.lsp")
+         (suffix-length (length suffix)))
 ;;; Sanity check (use (setq debug-on-error t) to see backtrace):
     (or (and (<= suffix-length rendered-length)
-	     (equal (substring rendered (- rendered-length suffix-length))
-		    "system/doc/rendered-doc-combined.lsp"))
-	(error "Implementation error in acl2-doc: unexpected suffix"))
+             (equal (substring rendered (- rendered-length suffix-length))
+                    "system/doc/rendered-doc-combined.lsp"))
+        (error "Implementation error in acl2-doc: unexpected suffix"))
     (concat
      (substring rendered 0 (- rendered-length suffix-length))
      "doc/manual/index.html")))
 
 (defun acl2-doc-fetch ()
   (let* ((pathname (acl2-doc-pathname))
-	 (pathname-exists (file-exists-p pathname))
-	 (url (acl2-doc-url))
-	 (pathname-gz (and url (acl2-doc-gzipped-file pathname)))
-	 (manual-index-pathname (and url (manual-index-pathname))))
+         (pathname-exists (file-exists-p pathname))
+         (url (acl2-doc-url))
+         (pathname-gz (and url (acl2-doc-gzipped-file pathname)))
+         (manual-index-pathname (and url (manual-index-pathname))))
     (cond
      ((and pathname-exists
-	   (or (null url) ;; no download option
-	       (null manual-index-pathname) ; no writes dates to compare
-	       (file-newer-than-file-p pathname manual-index-pathname)
-	       (yes-or-no-p ; minibuffer display is better than y-or-n-p
-		"Use outdated manual?  (Reply no for download option.) "))))
+           (or (null url) ;; no download option
+               (null manual-index-pathname) ; no writes dates to compare
+               (file-newer-than-file-p pathname manual-index-pathname)
+               (yes-or-no-p ; minibuffer display is better than y-or-n-p
+                "Use outdated manual?  (Reply no for download option.) "))))
      ((and (and pathname-gz
-		(file-exists-p pathname-gz))
-	   (y-or-n-p
-	    (format
-	     "Run gunzip on %s%s? "
-	     pathname-gz
-	     (if (and manual-index-pathname
-		      (file-newer-than-file-p pathname
-					      manual-index-pathname))
-		 ""
-	       ", even though you can download a newer version"))))
+                (file-exists-p pathname-gz))
+           (y-or-n-p
+            (format
+             "Run gunzip on %s%s? "
+             pathname-gz
+             (if (and manual-index-pathname
+                      (file-newer-than-file-p pathname
+                                              manual-index-pathname))
+                 ""
+               ", even though you can download a newer version"))))
       (shell-command-to-string
        (format "gunzip %s"
-	       pathname-gz))
+               pathname-gz))
       (or (file-exists-p pathname)
-	  (error "Execution of gunzip seems to have failed!")))
+          (error "Execution of gunzip seems to have failed!")))
      ((and url
-	   (y-or-n-p
-	    (format "Download %s and install as %s? "
-		    url pathname)))
+           (y-or-n-p
+            (format "Download %s and install as %s? "
+                    url pathname)))
       (acl2-doc-download))
      ((or pathname-exists url)
       (error "Update of manual aborted"))
      (t (error
-	 "File %s not found, and\nno URL specified for the manual named %s"
-	 pathname *acl2-doc-manual-name*)))))
+         "File %s not found, and\nno URL specified for the manual named %s"
+         pathname *acl2-doc-manual-name*)))))
 
 (defun acl2-doc-reset (manual-name)
   (let ((old-name (acl2-doc-manual-name)))
@@ -555,40 +556,40 @@ then restart the ACL2-Doc browser to view that manual."
 
 (defun acl2-doc-buffer-p (buffer)
   (and (string-match-p *acl2-doc-buffer-name-pattern*
-		       (buffer-name buffer))
+                       (buffer-name buffer))
        (with-current-buffer buffer
-	 (equal major-mode 'acl2-doc-mode))))
+         (equal major-mode 'acl2-doc-mode))))
 
 (defun current-acl2-buffer ()
   (let ((buf nil)
-	(lst (buffer-list)))
+        (lst (buffer-list)))
 
 ;;; It is tempting to use (seq-find 'acl2-doc-buffer-p (buffer-list)), but
 ;;; seq-find is not defined in some older Emacs versions (e.g., 24.5.1).
 
     (while (and lst
-		(null buf))
+                (null buf))
       (if (acl2-doc-buffer-p (car lst))
-	  (setq buf (car lst))
-	(pop lst)))
+          (setq buf (car lst))
+        (pop lst)))
     buf))
 
 (defun switch-to-acl2-doc-buffer (&optional new-buffer-name)
   (if new-buffer-name
       (let ((buf (generate-new-buffer-name
-		  (if *acl2-doc-short-new-buffer-names*
-		      *acl2-doc-buffer-name*
-		    (concat *acl2-doc-buffer-name*
-			    "<"
-			    (symbol-name new-buffer-name)
-			    ">")))))
+                  (if *acl2-doc-short-new-buffer-names*
+                      *acl2-doc-buffer-name*
+                    (concat *acl2-doc-buffer-name*
+                            "<"
+                            (symbol-name new-buffer-name)
+                            ">")))))
         (if pop-up-windows ; t by default; with nil, want single window
             (switch-to-buffer-other-window buf)
           (switch-to-buffer buf)))
     (let ((current-acl2-buffer (current-acl2-buffer)))
       (switch-to-buffer (if current-acl2-buffer
-			    current-acl2-buffer
-			  (generate-new-buffer-name *acl2-doc-buffer-name*)))))
+                            current-acl2-buffer
+                          (generate-new-buffer-name *acl2-doc-buffer-name*)))))
 
 ;;; The next two forms need only be evaluated when the buffer is first
 ;;; created, but it is likely harmless to go ahead and evaluate them
@@ -632,7 +633,7 @@ for confirmation."
                       (if (eq (nth 0 tuple) 'TOP)
                           ""
                         (format ":DOC source: %s\n" (nth 3 tuple)))
-                    (if (eq (acl2-doc-state-top-name) 'ACL2)
+                    (if (eq (acl2-doc-state-top-name) 'TOP)
                         ""
                       ":DOC source: ACL2 Sources\n"))
                   (nth 2 tuple)))
@@ -672,7 +673,7 @@ for confirmation."
 
 (defvar *acl2-manual-dir*
   (concat *acl2-sources-dir*
-	  "books/doc/manual/"))
+          "books/doc/manual/"))
 
 (defvar *img-prefix*
   (byte-to-string 25))
@@ -685,19 +686,19 @@ for confirmation."
     (goto-char (point-min))
     (let ((go t))
       (while go
-	(let ((start (search-forward *img-prefix* nil t)))
-	  (cond
-	   (start
-	    (let* ((end (search-forward *img-suffix*))
-		   (src (buffer-substring start (1- end))))
-	      (delete-region (1- start) end)
-	      (cond
-	       (display-graphic-p
-		(insert-image
-		 (create-image (concat *acl2-manual-dir* src)))
-		(insert "\n"))
-	       (t (insert "{IMAGE}")))))
-	   (t (setq go nil))))))))
+        (let ((start (search-forward *img-prefix* nil t)))
+          (cond
+           (start
+            (let* ((end (search-forward *img-suffix*))
+                   (src (buffer-substring start (1- end))))
+              (delete-region (1- start) end)
+              (cond
+               (display-graphic-p
+                (insert-image
+                 (create-image (concat *acl2-manual-dir* src)))
+                (insert "\n"))
+               (t (insert "{IMAGE}")))))
+           (t (setq go nil))))))))
 
 (defun acl2-doc-handle-color ()
 
@@ -939,13 +940,13 @@ typing `:doc acl2-doc' in the ACL2 read-eval-print loop.
   (cond (clear
          (acl2-doc-reset nil)
          (acl2-doc-top))
-	(t
-	 (switch-to-acl2-doc-buffer)
-	 (cond (*acl2-doc-history*
-		(acl2-doc-display-basic (car *acl2-doc-history*)))
-	       (t
-		(acl2-doc-maybe-reset)
-		(acl2-doc-top))))))
+        (t
+         (switch-to-acl2-doc-buffer)
+         (cond (*acl2-doc-history*
+                (acl2-doc-display-basic (car *acl2-doc-history*)))
+               (t
+                (acl2-doc-maybe-reset)
+                (acl2-doc-top))))))
 
 (defun acl2-doc-last ()
   "Go to the last topic visited in the current buffer.  This
@@ -1091,6 +1092,7 @@ a Manual\" in :doc acl2-doc for more information."
       (when topic-children-ht
         (maphash (lambda (child val)
                    (when (null (gethash child ht))
+                     (ignore val) ; for Emacs 30 byte compiler
                      (acl2-doc-topics-ht-1 child ht children-ht)))
                  topic-children-ht)))))
 
@@ -1361,7 +1363,7 @@ command is buffer-local like the \",\" command."
 ; Since we are writing the acl2-doc-search buffer, we need to remove
 ; Select Graphic Rendition (SGR) markings.  We leave the images, however.
 
-	  (acl2-doc-handle-color)
+          (acl2-doc-handle-color)
           (setq buffer-read-only t))
         buf)))
 
@@ -1369,11 +1371,11 @@ command is buffer-local like the \",\" command."
   (let ((saved-point (point)))
     (save-excursion
       (let ((start (cond ((search-backward "\n" nil t)
-			  (forward-char 1)
-			  (point))
-			 (t (point-min)))))
-	(goto-char saved-point)
-	(cond ((search-backward *img-prefix* start t)
+                          (forward-char 1)
+                          (point))
+                         (t (point-min)))))
+        (goto-char saved-point)
+        (cond ((search-backward *img-prefix* start t)
 
 ;;; We are on a line "... ^Y ... p ..." where p indicates the original
 ;;; point (the beginning of a found string) and ^Y indicates the
@@ -1381,8 +1383,8 @@ command is buffer-local like the \",\" command."
 ;;; inbetween the two, and when one isn't found, that's when we are
 ;;; within a control-y/control-z pair.
 
-	       (not (search-forward *img-suffix* saved-point t)))
-	      (t nil))))))
+               (not (search-forward *img-suffix* saved-point t)))
+              (t nil))))))
 
 (defun acl2-doc-search-aux-1 (continue-p str regexp-p)
 
@@ -1457,8 +1459,8 @@ command is buffer-local like the \",\" command."
             (cond ((null tmp)
                    (setq done t))
                   ((acl2-doc-under-limit-topic-p (cdr tmp) ht)
-		   (if (not (within-graphics))
-		       (setq pair tmp done t))))))
+                   (if (not (within-graphics))
+                       (setq pair tmp done t))))))
         (setq position (point))))
     (cond (pair
            ;; The first two assignments are redundant if continue-p is true.
@@ -1471,10 +1473,10 @@ command is buffer-local like the \",\" command."
 ;;; appropriate character, (car pair), before we eliminate the
 ;;; Ctl-Y/Ctl-Z pairs.
 
-	   (acl2-doc-display (cdr pair) nil nil t)
+           (acl2-doc-display (cdr pair) nil nil t)
            (goto-char (car pair))
-	   (acl2-doc-handle-images (display-graphic-p))
-	   (setq buffer-read-only t)
+           (acl2-doc-handle-images (display-graphic-p))
+           (setq buffer-read-only t)
            (acl2-doc-update-top-history-entry (current-buffer)))
           (continue-p (setq *acl2-doc-search-position*
                             (with-current-buffer
@@ -1603,20 +1605,20 @@ be used.  In particular, you can visit a displayed topic name by
 putting your cursor on it and typing <RETURN>."
 
   (interactive)
-  (let* ((buf0 (get-buffer *acl2-doc-history-buffer-name*))
-         (buf (or buf0
-                  (get-buffer-create *acl2-doc-history-buffer-name*)))
-         (all (reverse *acl2-doc-all-topics-rev*)))
-    (switch-to-buffer *acl2-doc-history-buffer-name*)
-    (acl2-doc-mode)
-    (cond (buf0
-           (setq buffer-read-only nil)
-           (delete-region (point-min) (point-max))))
-    (insert "List of all visited topics in order, newest at the bottom:\n")
-    (insert "=========================================================\n")
-    (while all
-      (insert (format "%s" (pop all)))
-      (insert "\n"))
+  (let ((buf0 (get-buffer *acl2-doc-history-buffer-name*)))
+    (when (not buf0)
+      (get-buffer-create *acl2-doc-history-buffer-name*))
+    (let ((all (reverse *acl2-doc-all-topics-rev*)))
+      (switch-to-buffer *acl2-doc-history-buffer-name*)
+      (acl2-doc-mode)
+      (cond (buf0
+             (setq buffer-read-only nil)
+             (delete-region (point-min) (point-max))))
+      (insert "List of all visited topics in order, newest at the bottom:\n")
+      (insert "=========================================================\n")
+      (while all
+        (insert (format "%s" (pop all)))
+        (insert "\n"))
 
 ;;; We could bind x to *acl2-doc-history* and execute the commented-out form
 ;;; just below, after printing a separator such as the one above.  If someone
@@ -1629,11 +1631,11 @@ putting your cursor on it and typing <RETURN>."
 ;;;   (insert (format "%s" (cadr (pop x))))
 ;;;    (insert "\n"))
 
-    (setq buffer-read-only t)
-    (set-buffer-modified-p nil)
-    (goto-char (point-max))
-    (recenter -1)
-    (message "List of all visited topics in order, newest at the bottom")))
+      (setq buffer-read-only t)
+      (set-buffer-modified-p nil)
+      (goto-char (point-max))
+      (recenter -1)
+      (message "List of all visited topics in order, newest at the bottom"))))
 
 (defun acl2-doc-help ()
 

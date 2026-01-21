@@ -32,7 +32,7 @@ bool RACConstraint::VisitSwitchStmt(SwitchStmt *s) {
 
         return error();
       } else {
-        first_default_loc = { c.loc() };
+        first_default_loc = {c.loc()};
       }
     }
 
@@ -40,7 +40,8 @@ bool RACConstraint::VisitSwitchStmt(SwitchStmt *s) {
   }
 
   unsigned size = s->cases().size();
-  last_case_ = size ? s->cases()[size - 1] : nullptr;
+  assert(size); // s->cases() can never be empty (forbidden by the syntax)
+  last_case_ = s->cases()[size - 1];
 
   return true;
 }
@@ -85,7 +86,7 @@ bool RACConstraint::VisitBreakStmt(BreakStmt *s) {
     return error();
   }
 
-  previous_break_loc_ = { s->loc() };
+  previous_break_loc_ = {s->loc()};
   return true;
 }
 
@@ -187,46 +188,25 @@ bool RACConstraint::VisitMulVarDec(MulVarDec *s) {
     return true;
 }
 
-bool RACConstraint::VisitMulConstDec(MulConstDec *s) {
-
-  if (disable_assignement_check_) {
-    return true;
-  }
-
-  bool sucess = true;
-  for (const auto vd : s->decs) {
-    if (!vd->init) {
-      diag_.new_error(vd->loc(), "variable must be assigned directly")
-          .note("non initialized variable can introduce undefined behavior")
-          .context(vd->loc())
-          .report();
-      sucess = false;
-    }
-  }
-
-  if (!sucess)
-    return error();
-  else
-    return true;
-}
-
 bool RACConstraint::VisitFunDef(FunDef *fd) {
 
   bool b = true;
   for (auto vd : fd->params()) {
 
-    if (auto at = dynamic_cast<ArrayType *>(vd->get_type())) {
+    if (auto at = dynamic_cast<const ArrayType *>(vd->get_type())) {
       if (!at->isSTDArray()) {
 
         auto orig = vd->get_original_type();
 
+        std::stringstream ss;
+        at->dim->display(ss);
         diag_
             .new_error(
                 vd->loc(),
                 format("Cannot pass a C array (`%s`) as function parameter",
                        orig->to_string().c_str()))
-            .note(format("use array<%s> instead",
-                         at->baseType->to_string().c_str()))
+            .note(format("use array<%s, %s> instead",
+                         at->baseType->to_string().c_str(), ss.str().c_str()))
             .context(vd->loc())
             .report();
         b = false;
@@ -244,7 +224,7 @@ bool RACConstraint::VisitTemplate(Template *f) {
 
   bool b = true;
   for (auto p : f->tempParams()) {
-    if (!isa<PrimType *>(p->get_type())) {
+    if (!isa<const PrimType *>(p->get_type())) {
       b = false;
       diag_
           .new_error(

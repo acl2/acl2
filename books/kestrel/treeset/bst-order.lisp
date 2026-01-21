@@ -24,6 +24,9 @@
 
 (local (in-theory (disable <<-rules)))
 
+(std::make-define-config
+  :no-function t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bst< (x y)
@@ -36,7 +39,6 @@
      "This is just a wrapper around @(tsee <<). It is provided so that we may
       easily switch the total order to experiment with performance."))
   (<< x y)
-  :no-function t
   :inline t)
 
 (defruled bst<-irreflexive
@@ -88,5 +90,4 @@
       heap<) currently does."))
   (bst< x y)
   :enabled t
-  :no-function t
   :inline t)

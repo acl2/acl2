@@ -9,8 +9,7 @@ public:
 
   // We check if the first variable defined in init (the variable that will be
   // used in the recurive calls) in updated and tested in the update and test
-  // block. Also, checks if the variable is an int or uint (TODO lift this
-  // limitations, see ForStmt constructor).
+  // block.
   bool TraverseForStmt(ForStmt *);
 
   // To recover the variable, we are using VisitVarDec and VisitSymRef since

@@ -252,8 +252,8 @@ suggested by this conjecture.  These merge into two derived induction
 schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
-We will induct according to a scheme suggested by (RUN A S), but modified
-to accommodate (APPEND A B).
+We will induct according to a scheme suggested by (RUN A S), while
+accommodating (APPEND A B).
 
 These suggestions were produced using the :induction rules BINARY-APPEND
 and RUN.  If we let (:P A B S) denote *1 above then the induction scheme
@@ -332,9 +332,10 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (G N A).
+We will induct according to a scheme suggested by (G N A), while ac-
+commodating (G N A) and (G-SCHED-LOOP N).
 
-This suggestion was produced using the :induction rules G and G-SCHED-LOOP.
+These suggestions were produced using the :induction rules G and G-SCHED-LOOP.
 If we let (:P A N STK) denote *1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ZP N))
@@ -817,11 +818,12 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (G N A).
+We will induct according to a scheme suggested by (G N A), while ac-
+commodating (F N).
 
-This suggestion was produced using the :induction rules F and G.  If
-we let (:P A N) denote *1 above then the induction scheme we'll use
-is
+These suggestions were produced using the :induction rules F and G.
+If we let (:P A N) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ZP N)) (:P (* N A) (+ -1 N)))
               (:P A N))
      (IMPLIES (ZP N) (:P A N))).

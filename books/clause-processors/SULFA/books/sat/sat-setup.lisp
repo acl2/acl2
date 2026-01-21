@@ -816,11 +816,11 @@
    (t
     (and (getprop fn 'acl2::constrainedp nil 'acl2::current-acl2-world (w state))
          (eq nil
-             (getprop fn
-                      'acl2::constraint-lst
-                      t
-                      'acl2::current-acl2-world
-                      (w state)))))))
+             (car (getprop fn
+                           'acl2::constraint-lst-etc
+                           '(t . nil)
+                           'acl2::current-acl2-world
+                           (w state))))))))
 
 (defun set-un-fn-mark (fn val $sat)
   (declare (xargs :stobjs $sat))

@@ -1,10 +1,10 @@
 ; Fixing Function for Signed Bytes
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,6 +52,9 @@
        :exec x)
   :enabled t
   ///
+
+  (more-returns
+   (fixed-x integerp :rule-classes :type-prescription))
 
   (defthm signed-byte-fix-when-signed-byte-p
     (implies (signed-byte-p (pos-fix bits) x)

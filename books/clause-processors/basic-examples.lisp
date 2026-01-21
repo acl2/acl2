@@ -1394,7 +1394,10 @@
  (defthm booleanp-f-partial (booleanp (f-partial x))))
 
 (assert-event
- (equal (getpropc 'f-partial 'constraint-lst)
+ (equal ; Old Code:
+        ; (getpropc 'f-partial 'constraint-lst)
+        ; New Code:
+        (pre-v8-7-getpropc-constraint-lst-nil 'f-partial (w state))
         '(:UNKNOWN-CONSTRAINTS BOOLEANP F-PARTIAL NTH)))
 
 (defthm booleanp-f-partial-again

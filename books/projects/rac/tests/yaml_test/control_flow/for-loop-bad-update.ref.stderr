@@ -1,0 +1,4 @@
+for-loop-bad-update.cpp:6 (26-32): The variable `i` used in the loop is never updated
+ 6 |   for (int i = 0; i != 0; a += 1) {
+   |                           ^^^^^^
+ 7 |   }

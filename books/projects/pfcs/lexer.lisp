@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -17,9 +17,10 @@
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 (include-book "unicode/read-utf8" :dir :system)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(local (in-theory (disable nfix)))
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,12 +43,12 @@
      characters that UTF-8 encodes in a single byte.
      However, some of this lexer code is written to support the
      possibility of future concrete syntax that is UTF-8 encoded
-     as multiple bytes.  Hence the references to \"Unicode characters\".")
+     as multiple bytes. Hence the references to ``Unicode characters''.")
    (xdoc::p
     "The lexer consists of a collection of lexing functions,
      each of which takes a list of natural numbers as input,
-     which represents the Unicode codepoints of characters that remain 
-     to lex in the PFCS definition being lexed.
+     which represents the Unicode codepoints of characters that remain
+     to lex in the PFCS phrase being lexed.
      Each function returns two results:
      the first result is either an error
      or an ABNF tree (or list of trees) for the recognized lexeme(s);
@@ -119,12 +120,6 @@
       ;; line-terminator = [ carriage-return ] line-feed
 
       "[ carriage-return ]" optional-cr
-
-      ;; --------------------------------
-      ;; components for rule "integer"
-      ;; integer = [ "-" ] numeral
-
-      "[ \"-\" ]" optional-hyphen
 
       ;; --------------------------------
       ;; components for rule "relation-constraint"
@@ -256,18 +251,9 @@
     (implies (not (reserrp trees))
              (< (len rest-input)
                 (len input)))
-    :rule-classes :linear)
-  )
+    :rule-classes :linear))
 
 (defparse-pfcs-rulename "numeral")
-
-
-;; --------------------------------
-;; rule integer
-;;   integer = [ "-" ] numeral
-
-(defparse-pfcs-option "[ \"-\" ]")
-(defparse-pfcs-rulename "integer")
 
 
 ;; --------------------------------
@@ -313,9 +299,10 @@
 
 (defparse-pfcs-*-rulename "lexeme")
 
-(defthm unicode-scalar-values-are-natp
+(defrule unicode-scalar-values-are-natp
   (implies (acl2::ustring? nats)
-           (nat-listp nats)))
+           (nat-listp nats))
+  :induct t)
 
 (define lexemize-pfcs ((pfcs-codepoints nat-listp))
   :returns (pfcs-lexemes abnf::tree-list-resultp)

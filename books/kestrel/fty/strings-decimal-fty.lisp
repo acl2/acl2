@@ -1,4 +1,4 @@
-; Standard Strings Library
+; FTY Library
 ;
 ; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;

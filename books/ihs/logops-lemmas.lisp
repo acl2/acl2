@@ -592,6 +592,10 @@
   :parents (loghead logops-lemmas)
   :short "Lemmas about @(see loghead) from the @(see logops-lemmas) book."
 
+  (defthm loghead-of-ifix
+    (equal (loghead size (ifix i))
+           (loghead size i)))
+
   (defthm loghead-identity
     (implies (unsigned-byte-p size i)
              (equal (loghead size i)
@@ -1869,6 +1873,14 @@ definitions of logical operations."
 (defsection ihs/logext-lemmas
   :parents (logext logops-lemmas)
   :short "Lemmas about @(see logext) from the @(see logops-lemmas) book."
+
+  (defthm logext-of-ifix
+    (equal (logext size (ifix i))
+           (logext size i))
+    :hints (("Goal" :in-theory (enable logext
+                                       logbitp
+                                       logapp
+                                       loghead))))
 
   (defthm logext-identity
     (implies (signed-byte-p size i)

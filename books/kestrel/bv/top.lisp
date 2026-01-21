@@ -43,6 +43,9 @@
 (include-book "logext")
 (include-book "logops")
 
+;; Books about underlying functions and BV functions:
+(include-book "ash")
+
 ;; Functions to break down and create BVs:
 (include-book "bvchop-def")
 (include-book "bvchop")
@@ -59,10 +62,9 @@
 (include-book "bvcat2")
 (include-book "putbits")
 
-(include-book "bvequal")
-
 ;; Bit-wise operations:
 (include-book "bvnot")
+(include-book "bvand-def")
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
@@ -79,6 +81,7 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvminus-rules")
+(include-book "bvuminus-def")
 (include-book "bvuminus")
 (include-book "bvmult-def")
 (include-book "bvmult")
@@ -105,7 +108,9 @@
 
 ;; Comparison operations:
 (include-book "bvequal")
+(include-book "bvequal-rules")
 (include-book "bvlt")
+(include-book "sbvlt-def")
 (include-book "sbvlt")
 
 ;; If-then-else:
@@ -135,7 +140,8 @@
 ;; Trim (only for rewriting)
 (include-book "trim")
 (include-book "trim-intro-rules")
-(include-book "trim-rules")
+(include-book "trim-elim-rules-bv")
+(include-book "trim-elim-rules-non-bv")
 (include-book "convert-to-bv-rules")
 
 ; Operations specialized to particular sizes:
@@ -187,10 +193,12 @@
 (include-book "rules10")
 (include-book "rules11")
 (include-book "rules12")
+(include-book "padding")
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
 ;; (include-book "bitops") ; excluding this since it brings in bitops
+;; (include-book "std") ; excluding this since it brings in std
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")

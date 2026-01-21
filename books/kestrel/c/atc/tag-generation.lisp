@@ -451,20 +451,20 @@
   (xdoc::topstring
    (xdoc::p
     "This class of theorems are the structure counterpart of
-     the ones that rewrite @(tsee exec-expr-asg)
-     that have @(':arrsub') left expressions
+     the ones that rewrite @(tsee exec-expr)
+     on assignments that have @(':arrsub') left expressions
      to array writers,
-     in @(see atc-exec-expr-asg-arrsub-rules-generation).")
+     in @(see atc-exec-expr-when-asg-arrsub-rules-generation).")
    (xdoc::p
     "For a scalar member (which must have integer type),
      we generate two theorems that
-     rewrite calls of @(tsee exec-expr-asg),
+     rewrite calls of @(tsee exec-expr),
      where the assignee is a @(':member') or @(':memberp') expression,
      to calls of the writer.")
    (xdoc::p
     "For an array member (which must have integer element type),
      we generate 10 theorems, one for each integer index type.
-     The theorem rewrites certain calls of @(tsee exec-expr-asg)
+     The theorem rewrites certain calls of @(tsee exec-expr)
      to calls of the writers.
      The generation of these theorems relies on the fact that
      the order of the writers and the checkers matches the order of
@@ -514,40 +514,49 @@
               (raise "Internal error: unsupported member type ~x0." type)
               (mv nil nil nil))
              (formula-member
-              `(implies (and (syntaxp (quotep e))
-                             (equal (expr-kind e) :binary)
-                             (equal (binop-kind (expr-binary->op e)) :asg)
-                             (equal left (expr-binary->arg1 e))
-                             (equal right (expr-binary->arg2 e))
+              `(implies (and (syntaxp (quotep expr))
+                             (equal (expr-kind expr) :binary)
+                             (equal (binop-kind (expr-binary->op expr)) :asg)
+                             (equal left (expr-binary->arg1 expr))
+                             (equal right (expr-binary->arg2 expr))
+                             (compustatep compst)
                              (equal (expr-kind left) :member)
                              (equal target (expr-member->target left))
                              (equal member (expr-member->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
-                             (not (zp limit))
+                             (expr-purep right)
+                             (integerp limit)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal var (expr-ident->get target))
                              (equal struct (read-var var compst))
                              (,recognizer struct)
                              (equal eval (exec-expr-pure right compst))
                              (expr-valuep eval)
                              (equal val (expr-value->value eval))
-                             (,typep val))
-                        (equal (exec-expr-asg e compst fenv limit)
-                               (write-var var
-                                          (,writer val struct)
-                                          compst))))
+                             (,typep val)
+                             (equal compst1
+                                    (write-var var
+                                               (,writer val struct)
+                                               compst))
+                             (compustatep compst1))
+                        (equal (exec-expr expr compst fenv limit)
+                               (mv (expr-value val nil) compst1))))
              (formula-memberp
-              `(implies (and (syntaxp (quotep e))
-                             (equal (expr-kind e) :binary)
-                             (equal (binop-kind (expr-binary->op e)) :asg)
-                             (equal left (expr-binary->arg1 e))
-                             (equal right (expr-binary->arg2 e))
+              `(implies (and (syntaxp (quotep expr))
+                             (equal (expr-kind expr) :binary)
+                             (equal (binop-kind (expr-binary->op expr)) :asg)
+                             (equal left (expr-binary->arg1 expr))
+                             (equal right (expr-binary->arg2 expr))
+                             (compustatep compst)
                              (equal (expr-kind left) :memberp)
                              (equal target (expr-memberp->target left))
                              (equal member (expr-memberp->name left))
                              (equal (expr-kind target) :ident)
                              (equal member (ident ,(ident->name memname)))
-                             (not (zp limit))
+                             (expr-purep right)
+                             (integerp limit)
+                             (>= limit (1+ (max 2 (expr-pure-limit right))))
                              (equal ptr (read-var (expr-ident->get target)
                                                   compst))
                              (valuep ptr)
@@ -562,11 +571,15 @@
                              (equal eval (exec-expr-pure right compst))
                              (expr-valuep eval)
                              (equal val (expr-value->value eval))
-                             (,typep val))
-                        (equal (exec-expr-asg e compst fenv limit)
-                               (write-object (value-pointer->designator ptr)
-                                             (,writer val struct)
-                                             compst))))
+                             (,typep val)
+                             (equal compst1
+                                    (write-object (value-pointer->designator
+                                                   ptr)
+                                                  (,writer val struct)
+                                                  compst))
+                             (compustatep compst1))
+                        (equal (exec-expr expr compst fenv limit)
+                               (mv (expr-value val nil) compst1))))
              (valuep-when-typep (pack 'valuep-when- typep))
              (value-kind-when-typep (pack 'value-kind-when- typep))
              (consp-when-typep (pack 'consp-when- typep))
@@ -574,7 +587,10 @@
              (hints-member
               `(("Goal"
                  :in-theory
-                 '(exec-expr-asg
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-member-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -589,6 +605,7 @@
                    value-fix-when-valuep
                    mv-nth-of-cons
                    (:e zp)
+                   not-zp-of-limit-minus-const
                    objdesign-of-var-when-valuep-of-read-var
                    read-object-of-objdesign-of-var-to-read-var
                    write-object-of-objdesign-of-var-to-write-var
@@ -610,25 +627,39 @@
                    ,valuep-thm
                    ,value-kind-thm
                    ,reader
-                   ,writer)
+                   ,writer
+                   compustate-fix-when-compustatep
+                   not-errorp-when-compustatep
+                   expr-purep
+                   binop-purep
+                   (:e member-equal)
+                   (:t exec-expr-pure)
+                   zp
+                   (:t expr-value))
+                 :expand ((exec-expr expr compst fenv limit)
+                          (exec-expr (expr-binary->arg1 expr)
+                                     compst fenv (+ -1 limit)))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-var (expr-ident->get
                                            (expr-member->target
-                                            (expr-binary->arg1 e)))
+                                            (expr-binary->arg1 expr)))
                                           compst)))
                        (:instance
                         ,writer-return-thm
                         (val (expr-value->value
-                              (exec-expr-pure (expr-binary->arg2 e) compst)))
+                              (exec-expr-pure right compst)))
                         (struct (read-var (expr-ident->get
                                            (expr-member->target
-                                            (expr-binary->arg1 e)))
+                                            (expr-binary->arg1 expr)))
                                           compst)))))))
              (hints-memberp
               `(("Goal"
                  :in-theory
-                 '(exec-expr-asg
+                 '(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+                   max
+                   nfix
+                   exec-expr
                    exec-expr-pure-when-memberp-no-syntaxp
                    exec-expr-pure-when-ident-no-syntaxp
                    exec-ident-open-via-object
@@ -643,6 +674,7 @@
                    value-fix-when-valuep
                    mv-nth-of-cons
                    (:e zp)
+                   not-zp-of-limit-minus-const
                    objdesign-of-var-when-valuep-of-read-var
                    read-object-of-objdesign-of-var-to-read-var
                    write-object
@@ -662,7 +694,18 @@
                    ,fixer-recognizer-thm
                    ,reader
                    ,writer
-                   ,recognizer)
+                   ,recognizer
+                   compustate-fix-when-compustatep
+                   not-errorp-when-compustatep
+                   expr-purep
+                   binop-purep
+                   (:e member-equal)
+                   (:t exec-expr-pure)
+                   zp
+                   (:t expr-value))
+                 :expand ((exec-expr expr compst fenv limit)
+                          (exec-expr (expr-binary->arg1 expr)
+                                     compst fenv (+ -1 limit)))
                  :use ((:instance
                         ,reader-return-thm
                         (struct (read-object
@@ -670,20 +713,19 @@
                                   (read-var
                                    (expr-ident->get
                                     (expr-memberp->target
-                                     (expr-binary->arg1 e)))
+                                     (expr-binary->arg1 expr)))
                                    compst))
                                  compst)))
                        (:instance
                         ,writer-return-thm
                         (val (expr-value->value
-                              (exec-expr-pure (expr-binary->arg2 e)
-                                              compst)))
+                              (exec-expr-pure right compst)))
                         (struct (read-object
                                  (value-pointer->designator
                                   (read-var
                                    (expr-ident->get
                                     (expr-memberp->target
-                                     (expr-binary->arg1 e)))
+                                     (expr-binary->arg1 expr)))
                                    compst))
                                  compst)))))))
              ((mv event-member &)
@@ -744,17 +786,12 @@
         (pack elemfixtype '-array-fix-when- elemfixtype '-arrayp))
        (elemfixtype-array-length-of-elemfixtype-array-write
         (pack elemfixtype '-array-length-of- elemfixtype '-array-write))
-       ;; (type-of-value-when-elemfixtype-arrayp
-       ;;  (pack 'type-of-value-when- elemfixtype '-arrayp))
-       ;; (value-array->length-when-elemfixtype-arrayp
-       ;;  (pack 'value-array->length-when- elemfixtype '-arrayp))
        (valuep-when-elemfixtypep (pack 'valuep-when- elemfixtype 'p))
        (consp-when-elemfixtypep (pack 'consp-when- elemfixtype 'p))
        (apconvert-expr-value-when-elemfixtype-arrayp
         (pack 'apconvert-expr-value-when- elemfixtype '-arrayp))
        (value-array->elemtype-when-elemtype-arrayp
         (pack 'value-array->elemtype-when- elemfixtype '-arrayp))
-       ;; (type-elemfixtype (pack 'type- elemfixtype))
        (elemfixtypep-of-elemfixtype-array-read
         (pack elemfixtype 'p-of- elemfixtype '-array-read))
        (value-array-read-when-elemfixtype-arrayp
@@ -763,10 +800,11 @@
         (pack 'return-type-of-type- elemfixtype))
        (formula-member
         `(implies
-          (and (equal (expr-kind e) :binary)
-               (equal (binop-kind (expr-binary->op e)) :asg)
-               (equal left (expr-binary->arg1 e))
-               (equal right (expr-binary->arg2 e))
+          (and (equal (expr-kind expr) :binary)
+               (equal (binop-kind (expr-binary->op expr)) :asg)
+               (equal left (expr-binary->arg1 expr))
+               (equal right (expr-binary->arg2 expr))
+               (compustatep compst)
                (equal (expr-kind left) :arrsub)
                (equal array (expr-arrsub->arr left))
                (equal index (expr-arrsub->sub left))
@@ -775,7 +813,11 @@
                (equal member (expr-member->name array))
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
-               (not (zp limit))
+               (expr-purep index)
+               (expr-purep right)
+               (integerp limit)
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal var (expr-ident->get target))
                (equal struct (read-var var compst))
                (,recognizer struct)
@@ -789,17 +831,21 @@
                (equal eval (exec-expr-pure right compst))
                (expr-valuep eval)
                (equal val (expr-value->value eval))
-               (,elemfixtypep val))
-          (equal (exec-expr-asg e compst fenv limit)
-                 (write-var var
-                            (,writer-element idx val struct)
-                            compst))))
+               (,elemfixtypep val)
+               (equal compst1
+                      (write-var var
+                                 (,writer-element idx val struct)
+                                 compst))
+               (compustatep compst1))
+          (equal (exec-expr expr compst fenv limit)
+                 (mv (expr-value val nil) compst1))))
        (formula-memberp
         `(implies
-          (and (equal (expr-kind e) :binary)
-               (equal (binop-kind (expr-binary->op e)) :asg)
-               (equal left (expr-binary->arg1 e))
-               (equal right (expr-binary->arg2 e))
+          (and (equal (expr-kind expr) :binary)
+               (equal (binop-kind (expr-binary->op expr)) :asg)
+               (equal left (expr-binary->arg1 expr))
+               (equal right (expr-binary->arg2 expr))
+               (compustatep compst)
                (equal (expr-kind left) :arrsub)
                (equal array (expr-arrsub->arr left))
                (equal index (expr-arrsub->sub left))
@@ -808,7 +854,11 @@
                (equal member (expr-memberp->name array))
                (equal (expr-kind target) :ident)
                (equal member (ident ,(ident->name memname)))
-               (not (zp limit))
+               (expr-purep index)
+               (expr-purep right)
+               (integerp limit)
+               (>= limit (1+ (max (expr-pure-limit left)
+                                  (expr-pure-limit right))))
                (equal ptr (read-var (expr-ident->get target)
                                     compst))
                (valuep ptr)
@@ -832,13 +882,20 @@
                (equal eval1 (apconvert-expr-value eval))
                (expr-valuep eval1)
                (equal val (expr-value->value eval1))
-               (,elemfixtypep val))
-          (equal (exec-expr-asg e compst fenv limit)
-                 (write-object (value-pointer->designator ptr)
-                               (,writer-element idx val struct)
-                               compst))))
+               (,elemfixtypep val)
+               (equal compst1
+                      (write-object (value-pointer->designator ptr)
+                                    (,writer-element idx val struct)
+                                    compst))
+               (compustatep compst1))
+          (equal (exec-expr expr compst fenv limit)
+                 (mv (expr-value val nil) compst1))))
        (theory-member
-        `(exec-expr-asg
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+          expr-pure-limit
+          zp
+          max
+          (:t expr-value)
           exec-expr-pure-when-arrsub-of-member-no-syntaxp
           exec-expr-pure-when-ident-no-syntaxp
           exec-ident-open-via-object
@@ -863,6 +920,7 @@
           integer-range-p
           mv-nth-of-cons
           (:e zp)
+          not-zp-of-limit-minus-const
           not-errorp-when-valuep
           objdesign-of-var-when-valuep-of-read-var
           read-object-of-objdesign-of-var-to-read-var
@@ -879,7 +937,6 @@
           return-type-of-objdesign-member
           return-type-of-objdesign-element
           value-struct-read
-          value-struct-write
           (:e ident)
           (:e ident-fix)
           (:t objdesign-element)
@@ -910,16 +967,22 @@
           ,writer-element
           ,recognizer
           ,checker
-          ,@(and length (list length))))
+          ,@(and length (list length))
+          compustate-fix-when-compustatep
+          not-errorp-when-compustatep
+          expr-purep
+          binop-purep
+          (:e member-equal)
+          (:t exec-expr-pure)))
        (hints-member
         `(("Goal"
+           :expand (exec-expr expr compst fenv limit)
            :use
            ((:instance
              ,reader-return-thm
              (struct (read-var
                       (expr-ident->get
-                       (expr-member->target
-                        (expr-arrsub->arr (expr-binary->arg1 e))))
+                       (expr-member->target (expr-arrsub->arr left)))
                       compst)))
             (:instance
              ,writer-return-thm
@@ -927,33 +990,34 @@
                    (integer-from-cinteger
                     (expr-value->value
                      (exec-expr-pure
-                      (expr-arrsub->sub
-                       (expr-binary->arg1 e))
+                      (expr-arrsub->sub left)
                       compst)))
                    (expr-value->value
-                    (exec-expr-pure
-                     (expr-binary->arg2 e) compst))
+                    (exec-expr-pure right compst))
                    (value-struct-read
                     (ident ,(ident->name memname))
                     (read-var
                      (expr-ident->get
                       (expr-member->target
-                       (expr-arrsub->arr
-                        (expr-binary->arg1 e))))
+                       (expr-arrsub->arr left)))
                      compst))))
              (struct (read-var
                       (expr-ident->get
                        (expr-member->target
-                        (expr-arrsub->arr
-                         (expr-binary->arg1 e))))
+                        (expr-arrsub->arr left)))
                       compst))))
            :in-theory ',theory-member)))
        (theory-memberp
-        `(exec-expr-asg
+        `(exec-expr-to-exec-expr-pure-when-expr-pure-limit
+          expr-pure-limit
+          zp
+          max
+          (:t expr-value)
           not-errorp-when-expr-valuep
           expr-valuep-of-expr-value
           mv-nth-of-cons
           (:e zp)
+          not-zp-of-limit-minus-const
           not-errorp-when-valuep
           ,valuep-when-elemfixtypep
           ,consp-when-elemfixtypep
@@ -1012,12 +1076,20 @@
           ,elemfixtype-array-fix-when-elemfixtype-arrayp
           ,writer-element
           value-struct-read
-          value-struct-write
           (:e ident)
           (:e ident-fix)
-          ,@(and length (list length))))
+          ,@(and length (list length))
+          compustate-fix-when-compustatep
+          not-errorp-when-compustatep
+          expr-purep
+          binop-purep
+          (:e member-equal)
+          (:t exec-expr-pure)
+          (:t c::apconvert-expr-value)
+          ,value-kind-when-elemfixtypep))
        (hints-memberp
         `(("Goal"
+           :expand (exec-expr expr compst fenv limit)
            :use
            ((:instance
              ,reader-return-thm
@@ -1027,8 +1099,7 @@
                 (read-var
                  (expr-ident->get
                   (expr-memberp->target
-                   (expr-arrsub->arr
-                    (expr-binary->arg1 e))))
+                   (expr-arrsub->arr left)))
                  compst))
                compst)))
             (:instance
@@ -1038,13 +1109,11 @@
                (integer-from-cinteger
                 (expr-value->value
                  (exec-expr-pure
-                  (expr-arrsub->sub
-                   (expr-binary->arg1 e))
+                  (expr-arrsub->sub left)
                   compst)))
                (expr-value->value
                 (apconvert-expr-value
-                 (exec-expr-pure
-                  (expr-binary->arg2 e) compst)))
+                 (exec-expr-pure right compst)))
                (value-struct-read
                 (ident ,(ident->name memname))
                 (read-object
@@ -1052,8 +1121,7 @@
                   (read-var
                    (expr-ident->get
                     (expr-memberp->target
-                     (expr-arrsub->arr
-                      (expr-binary->arg1 e))))
+                     (expr-arrsub->arr left)))
                    compst))
                  compst))))
              (struct
@@ -1062,8 +1130,7 @@
                 (read-var
                  (expr-ident->get
                   (expr-memberp->target
-                   (expr-arrsub->arr
-                    (expr-binary->arg1 e))))
+                   (expr-arrsub->arr left)))
                  compst))
                compst))))
            :in-theory ',theory-memberp)))
@@ -1096,7 +1163,7 @@
                (member-write-thms symbol-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
-  :short "Generate the theorems to rewrite @(tsee exec-expr-asg)
+  :short "Generate the theorems to rewrite @(tsee exec-expr)
           with a @(':memberp') left expression
           to a structure writer,
           for all the members of a structure type."

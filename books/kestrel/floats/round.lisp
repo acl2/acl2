@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point rounding
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -416,7 +416,7 @@
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm *-of-expt-helper
-  (Implies (and (integerp i)
+  (implies (and (integerp i)
                 (integerp j)
                 (rationalp x)
                 )

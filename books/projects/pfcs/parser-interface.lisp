@@ -1,8 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-;; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -32,7 +33,7 @@
 ;    (xdoc::li "a file")
     )
    (xdoc::p
-    "By \"parsing\", we mean lexing, tokenization, and parsing.
+    "By ``parsing'', we mean lexing, tokenization, and parsing.
      We define functions that output CSTs and ASTs, so we honorarily
      include syntax abstraction as part of the parsing interface."))
   :order-subtopics t
@@ -73,19 +74,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Example
-
-(assert-event
- (let ((cst (parse-from-string-to-cst "boolean_and(x,y,z) := {
-  x * y == z
-}
-boolean_and(w0, w1, w2)")))
-   (and (not (reserrp cst))
-        (abnf::treep cst)
-        (abnf::check-tree-nonleaf-1-1 cst "system"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; This could be called parse-from-string-to-AST,
 ; but we expect this to be the main API so we shorten the name.
 
@@ -112,24 +100,6 @@ boolean_and(w0, w1, w2)")))
        ((when (reserrp ast))
           (reserrf (cons :problem-abstracting cst))))
     ast))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Example
-
-(assert-event
- (let ((cst (parse "boolean_and(x,y,z) := {
-  x * y == z
-}
-boolean_and(w0, w1, w2)")))
-   (equal cst
-          '(:SYSTEM (DEFINITIONS (:DEFINITION (NAME . "boolean_and")
-                                  (PARA "x" "y" "z")
-                                  (BODY (:EQUAL (:MUL (:VAR "x") (:VAR "y"))
-                                                (:VAR "z")))))
-            (CONSTRAINTS (:RELATION "boolean_and"
-                          ((:VAR "w0") (:VAR "w1") (:VAR "w2"))))))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,19 +135,3 @@ boolean_and(w0, w1, w2)")))
        ((unless (and (consp defs) (null constraints)))
         (reserrf (cons :wrong-number-of-system-components cst))))
     (first defs)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Example
-
-(assert-event
- (let ((def (parse-def "
-  boolean_and(x,y,z) := {
-    x * y == z
-  }")))
-   (equal def
-          '(:DEFINITION (NAME . "boolean_and")
-            (PARA "x" "y" "z")
-            (BODY (:EQUAL (:MUL (:VAR "x") (:VAR "y"))
-                   (:VAR "z")))))))

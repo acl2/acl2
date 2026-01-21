@@ -1,7 +1,7 @@
 ; Supporting rules about bit-vectors
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,7 +45,7 @@
 ;;               (natp m))
 ;;              (equal (slice m n (* (expt 2 j) x))
 ;;                     (slice (- m j) (- n j) x)))
-;;     :hints (("Goal" :in-theory (e/d (slice logtail nfix) ())))))
+;;     :hints (("Goal" :in-theory (slice logtail nfix)))))
 
 ;move
 ;; ;avoids having to give a highsize
@@ -64,18 +64,18 @@
 ;;                                   (highsize (+ 1 high (- lowsize)))))))
 
 
-;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
+;;   :hints (("Goal" :in-theory (;bvcat logapp
 ;;                                          ;slice-of-sum-cases
 ;;                                          )
-;;                                   ()))))
+;;                                   )))
 
 ;move
 (defthm slice-of-logapp-case-1
-  (implies (and (natp high)
+  (implies (and (<= lowsize low) ; this case
+                (unsigned-byte-p lowsize lowval)
+                (natp high)
                 (natp low)
                 ;; (natp lowsize)
-                (<= lowsize low) ; this case
-                (unsigned-byte-p lowsize lowval)
                 (integerp highval))
            (equal (slice high low (logapp lowsize lowval highval))
                   (slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
@@ -88,11 +88,10 @@
                            (i lowval)
                            (j (BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
 
-
 (defthm plus-of-minus1-and-bvcat-of-0
   (implies (and (posp lowsize)
                 (integerp highval)
-                (natp HIGHSIZE))
+                (natp highsize))
            (equal (+ -1 (bvcat highsize highval lowsize 0))
                   (if (equal (bvchop highsize highval) 0)
                       -1
@@ -108,54 +107,41 @@
 ;;                   (+ -1 (expt 2 size))))
 ;;   :hints (("Goal" :in-theory (enable bvcat))))
 
-(defthm bvshr-of-logand-becomes-bvshr-of-bvand
-  (implies (and (natp amt)
-                (< amt 32))
-           (equal (bvshr 32 (logand x y) amt)
-                  (bvshr 32 (bvand (+ 32 amt) x y) amt)))
-  :hints (("Goal" :in-theory (e/d (bvshr bvand slice logtail-of-bvchop)
-                                  (slice-of-logand
-                                   ;logand-of-bvchop-becomes-bvand-alt
-                                   ;logand-of-bvchop-becomes-bvand
-                                   bvchop-of-logtail-becomes-slice
-                                   anti-slice
-                                   BVAND-LOGTAIL-ARG2 ;looped
-                                   BVAND-LOGTAIL-ARG1 ;looped
-                                   )))))
+;; ;gen
+;; (defthmd bvchop-of-+-of-*-of-256
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (bvchop 8 (+ x (* 256 y)))
+;;                   (bvchop 8 x))))
 
-(defthm bvchop-of-+-of-*-of-256
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvchop 8 (+ x (* 256 y)))
-                  (bvchop 8 x))))
+;; ;go to bvmult first?
+;; (defthmd bvplus-of-*-of-256
+;;   (implies (and (natp size)
+;;                 (<= 8 size)
+;;                 (unsigned-byte-p 8 byte)
+;;                 (integerp val))
+;;            (equal (bvplus size byte (* 256 val))
+;;                   (bvcat (- size 8) val 8 byte)))
+;;   :hints (("Goal"
+;;            :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
+;;                            (x val))
+;;            :in-theory (e/d (bvcat bvplus
+;;                                         bvchop-of-sum-cases
+;;                                         logtail
+;;                                         EXPT-OF-+)
+;;                            (bvchop-upper-bound
+;;                             bvchop-upper-bound-strong
+;;                             BVCHOP-BOUND-2)))))
 
-(defthm bvplus-of-*-of-256
-  (implies (and (natp size)
-                (<= 8 size)
-                (unsigned-byte-p 8 byte)
-                (integerp val))
-           (equal (bvplus size byte (* 256 val))
-                  (bvcat (- size 8) val 8 byte)))
-  :hints (("Goal"
-           :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
-                           (x val))
-           :in-theory (e/d (bvcat bvplus
-                                        bvchop-of-sum-cases
-                                        logtail
-                                        EXPT-OF-+)
-                           (bvchop-upper-bound
-                            bvchop-upper-bound-strong
-                            BVCHOP-BOUND-2)))))
-
-;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
-(defthmd open-ash-positive-constants
-  (implies (and (syntaxp (and (quotep i)
-                              (quotep c)))
-                (natp c)
-                (integerp i))
-           (equal (ash i c)
-                  (* i (expt 2 c))))
-  :hints (("Goal" :in-theory (enable ash))))
+;; ;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
+;; (defthmd open-ash-positive-constants
+;;   (implies (and (syntaxp (and (quotep i)
+;;                               (quotep c)))
+;;                 (natp c)
+;;                 (integerp i))
+;;            (equal (ash i c)
+;;                   (* i (expt 2 c))))
+;;   :hints (("Goal" :in-theory (enable ash))))
 
 ;; ;gen
 ;; (defthmd strengthen-upper-bound-when-top-bit-0

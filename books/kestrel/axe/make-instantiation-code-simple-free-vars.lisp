@@ -1,7 +1,7 @@
 ; A tool to generate hyp instantiation code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (include-book "axe-tree-vars")
 (include-book "alist-suitable-for-hypsp")
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -159,7 +160,8 @@
                    (all-myquotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :skip-others t
-        :hints (("Goal" :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name) (myquotep)))))
+        :hints (("Goal" :in-theory (e/d (,instantiate-hyp-name ,instantiate-hyp-lst-name myquotep-when-axe-treep)
+                                        (myquotep)))))
 
        (verify-guards ,instantiate-hyp-name :hints (("Goal" :in-theory (enable pseudo-termp))))
 

@@ -1082,17 +1082,17 @@
 
  <p>As of this writing, six Common Lisp implementations support ACL2: Allegro
  Common Lisp (ACL), Clozure CL (CCL), CMU Common Lisp (CMUCL), GNU Common
- Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  (Note: As of
- Sept. 2018 there remains a problem with CMUCL that was reported several months
- ago, which the implementor has indicated that he intends to try to fix.)  Some
- ACL2 raw-Lisp code is implementation-specific, that is, depends on which of
- these six Common Lisp implementations is the host lisp.  See for example the
- definitions of @('exit-lisp') and @('getenv$-raw').  Here is an elided version
- of the definition of @('exit-lisp').  Notice the readtime conditional used for
- each of the six supported Lisp implementations and also some that are no
- longer supported, like CLISP.  (Note: Normally we see ``@('gcl')'' for GCL but
- sometimes, as below, we see the somewhat archaic (but still acceptable)
- ``@('akcl')''.)</p>
+ Lisp (GCL), LispWorks, and Steel Bank Common Lisp (SBCL).  However, see @(see
+ allegro-cl) for concerns about using Allegro CL (though, as noted in topic
+ @(see developers-guide-maintenance), that Lisp has a particularly nice
+ statistical profiler.)  Some ACL2 raw-Lisp code is implementation-specific,
+ that is, depends on which of these six Common Lisp implementations is the host
+ lisp.  See for example the definitions of @('exit-lisp') and @('getenv$-raw').
+ Here is an elided version of the definition of @('exit-lisp').  Notice the
+ readtime conditional used for each of the six supported Lisp implementations
+ and also some that are no longer supported, like CLISP.  (Note: Normally we
+ see ``@('gcl')'' for GCL but sometimes, as below, we see the somewhat
+ archaic (but still acceptable) ``@('akcl')''.)</p>
 
  @({
  (defun exit-lisp (&optional (status '0 status-p))
@@ -1825,17 +1825,18 @@
 
  <p>Now do a regression test.  The most complete regression is done using the
  @('regression-everything') target in the top-level ACL2 sources directory, or
- equivalently, the @('everything') target in the @('books/') directory.  Please
- install a SAT solver first; see @(see satlink::sat-solver-options).</p>
+ equivalently, the @('regression-everything') target in the @('books/')
+ directory.  Please install a SAT solver first; see @(see
+ satlink::sat-solver-options).</p>
 
- <p>Note that the ``@('everything')'' level of testing may only work for CCL
- and SBCL; for other Lisps, or for ACL2(p) or ACL2(r), just use the
+ <p>Note that the ``@('regression-everything')'' level of testing may only work
+ for CCL and SBCL; for other Lisps, or for ACL2(p) or ACL2(r), just use the
  @('regression') target in the top-level ACL2 sources directory or,
  equivalently, the @('all') target in the @('books/') directory.  This could
  take a few hours &mdash; perhaps more than 5 hours or even more than 8 hours,
- depending on the Lisp and the machine.  But feel free to do only an
- @('everything') regression for ACL2 using CCL or SBCL, ignoring ACL2(p) and
- ACL2(r).</p>
+ depending on the Lisp and the machine.  But feel free to do only a
+ @('regression-everything') regression for ACL2 using CCL or SBCL, ignoring
+ ACL2(p) and ACL2(r).</p>
 
  @({
  make clean-books ; \\
@@ -2146,13 +2147,14 @@
  Note that after the @('checkout') command just above, @('my-branch') will
  contain only your changes.  Matt will then install your source code
  changes (from the tarball) into the branch, @('my-branch'), possibly make some
- edits, and run an @('`everything'') regression.  When this passes, Matt will
- run the following two commands, where @('tmp.msg') says something about the
- changes, with credit to you.  Note that the @('commit') command will cause
- @('my-branch') to contain all changes, both under @('books/') and from the
- sources tarball, possibly after edits from Matt.  NOTE: Matt might instead
- decide not to make any edits or run a regression before doing this, in which
- case he will do those things after the merge below, as noted below.
+ edits, and run &lsquo;@('make regression-everything')&rsquo;.  When this
+ passes, Matt will run the following two commands, where @('tmp.msg') says
+ something about the changes, with credit to you.  Note that the @('commit')
+ command will cause @('my-branch') to contain all changes, both under
+ @('books/') and from the sources tarball, possibly after edits from Matt.
+ NOTE: Matt might instead decide not to make any edits or run a regression
+ before doing this, in which case he will do those things after the merge
+ below, as noted below.
 
  @({
  git commit -a -F tmp.msg
@@ -3331,8 +3333,8 @@
  using all of the supported Common Lisp implementations, and also tested on
  Mac.  Even GitHub releases should generally be tested using the
  ``@('regression-everything')'' target for `@('make')' in the top-level
- directory, or equivalently, the ``@('everything')'' target in the @('books/')
- directory.</p>
+ directory, or equivalently, the ``@('regression-everything')'' target in the
+ @('books/') directory.</p>
 
  <p>There are extensive instructions for doing numbered releases, which as of
  this writing have not been made public.  Anyone who cares to volunteer to make

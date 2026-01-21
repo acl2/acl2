@@ -13,10 +13,16 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Finish adding instructions.
-;; TODO: Check existing instructions wrt the latest version of the Yellow Paper.
+;; TODO: Check existing instructions wrt the latest version of the Yellow Paper (however, it is out-of-date).
 ;; TODO: Add documentation.
 ;; TODO: Add tests.
 ;; TODO: Some notions defined here, like wordp and transactionp, are also defined in the ETHEREUM package.
+
+;; References:
+;; - The Yellow Paper (currently out-of-date):
+;;   - https://ethereum.github.io/yellowpaper/paper.pdf
+;; - A reference implementation in Python:
+;;   - https://github.com/ethereum/execution-specs/
 
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
@@ -32,7 +38,7 @@
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ; for sbvlt
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 ;(include-book "../bv/conversions-es")
 (include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)
@@ -44,12 +50,13 @@
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "support")
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (local (in-theory (disable mv-nth)))
@@ -93,19 +100,19 @@
 
 ;; ;;maybe define a wordplus, etc.
 ;; (defthm n256p-of-bvplus
-;;   (N256P (ACL2::BVPLUS 256 x y))
+;;   (N256P (BVPLUS 256 x y))
 ;;   :hints (("Goal" :in-theory (enable N256P))))
 
 ;; (defthm n256p-of-bvmult
-;;   (n256p (acl2::bvmult 256 x y))
+;;   (n256p (bvmult 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvdiv
-;;   (n256p (acl2::bvdiv 256 x y))
+;;   (n256p (bvdiv 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvmod
-;;   (n256p (acl2::bvmod 256 x y))
+;;   (n256p (bvmod 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-sbvdiv
@@ -113,16 +120,16 @@
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 (defthm n256p-of-bvminus
-  (n256p (acl2::bvminus 256 x y))
+  (n256p (bvminus 256 x y))
   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvchop
-;;   (n256p (acl2::bvchop 256 x))
+;;   (n256p (bvchop 256 x))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 (defthm bvchop-identity-when-256p
   (implies (n256p x)
-           (equal (acl2::bvchop 256 x)
+           (equal (bvchop 256 x)
                   x))
   :hints (("Goal" :in-theory (enable n256p))))
 
@@ -611,7 +618,8 @@
 ;; alpha is the number of items added to the stack.
 ;todo: check all of these!
 (defconst *instructions*
-  '((#x00 :STOP 0 0)
+  '(;; Stop and Arithmetic Operations:
+    (#x00 :STOP 0 0)
     (#x01 :ADD 2 1)
     (#x02 :MUL 2 1)
     (#x03 :SUB 2 1)
@@ -623,6 +631,7 @@
     (#x09 :MULMOD 3 1)
     (#x0a :EXP 2 1)
     (#x0b :SIGNEXTEND 2 1)
+    ;; Comparison and Bitwise Logic Operations:
     (#x10 :LT 2 1)
     (#x11 :GT 2 1)
     (#x12 :SLT 2 1)
@@ -634,7 +643,12 @@
     (#x18 :XOR 2 1)
     (#x19 :NOT 1 1)
     (#x1a :BYTE 2 1)
-    (#x20 :SHA3 2 1)
+    (#x1b :SHL 2 1)
+    (#x1c :SHR 2 1)
+    (#x1d :SAR 2 1)
+    ;; KECCAK256:
+    (#x20 :KECCAK256 2 1) ; was called :SHA3 until https://github.com/ethereum/yellowpaper/pull/825
+    ;; Environmental Information:
     (#x30 :ADDRESS 0 1)
     (#x31 :BALANCE 1 1)
     (#x32 :ORIGIN 0 1)
@@ -650,12 +664,21 @@
     (#x3c :EXTCODECOPY 4 0)
     (#x3d :RETURNDATASIZE 0 1)
     (#x3e :RETURNDATACOPY 3 0)
+    (#x3f :EXTCODEHASH 1 1)
+    ;; Block Information:
     (#x40 :BLOCKHASH 1 1)
     (#x41 :COINBASE 0 1)
     (#x42 :TIMESTAMP 0 1)
     (#x43 :NUMBER 0 1)
-    (#x44 :DIFFICULTY 0 1)
+    (#x44 :DIFFICULTY 0 1) ; todo: This has been changed to PREVRANDAO in later EVM versions
     (#x45 :GASLIMIT 0 1)
+    (#x46 :CHAINID 0 1)
+    (#x47 :SELFBALANCE 0 1)
+    (#x48 :BASEFEE 0 1)
+    ;; todo #x49 :BLOBHASH
+    ;; todo #x4a :BLOBBASEFEE
+
+    ;; Stack, Memory, Storage, and Flow Operations:
     (#x50 :POP 1 0)
     (#x51 :MLOAD 1 1)
     (#x52 :MSTORE 2 0)
@@ -668,6 +691,12 @@
     (#x59 :MSIZE 0 1)
     (#x5a :GAS 0 1)
     (#x5b :JUMPDEST 0 0)
+    ;; todo #x5c :TLOAD
+    ;; todo #x5d :TSTORE
+    ;; todo #x5e :MCOPY
+
+    ;; Push Operations
+    (#x5f :PUSH0 0 1)
     (#x60 :PUSH1 0 1)
     (#x61 :PUSH2 0 1)
     (#x62 :PUSH3 0 1)
@@ -700,6 +729,7 @@
     (#x7d :PUSH30 0 1)
     (#x7e :PUSH31 0 1)
     (#x7f :PUSH32 0 1)
+    ;; Duplication Operations:
     (#x80 :DUP1 1 2)
     (#x81 :DUP2 2 3)
     (#x82 :DUP3 3 4)
@@ -716,6 +746,7 @@
     (#x8d :DUP14 14 15)
     (#x8e :DUP15 15 16)
     (#x8f :DUP16 16 17)
+    ;; Exchange Operations:
     (#x90 :SWAP1 2 2)
     (#x91 :SWAP2 3 3)
     (#x92 :SWAP3 4 4)
@@ -732,21 +763,31 @@
     (#x9d :SWAP14 15 15)
     (#x9e :SWAP15 16 16)
     (#x9f :SWAP16 17 17)
+    ;; Logging Operations:
     (#xa0 :LOG0 2 0)
     (#xa1 :LOG1 3 0)
     (#xa2 :LOG2 4 0)
     (#xa3 :LOG3 5 0)
     (#xa4 :LOG4 6 0)
+    ;; System Operations:
     (#xf0 :CREATE 3 1)
     (#xf1 :CALL 7 1)
     (#xf2 :CALLCODE 7 1)
     (#xf3 :RETURN 2 0)
     (#xf4 :DELEGATECALL 6 1)
+    (#xf5 :CREATE2 4 1)
+    ;; gap in the numbering
     (#xfa :STATICCALL 6 1)
     (#xfd :REVERT 2 0)
     (#xfe :INVALID :empty-set :empty-set)
     (#xff :SELFDESTRUCT 1 0)
     ))
+
+;; some sanity checks:
+(thm (nat-listp (strip-cars *instructions*)))
+(thm (no-duplicatesp-equal (strip-cars *instructions*)))
+(thm (acl2::keyword-listp (strip-cadrs *instructions*)))
+(thm (no-duplicatesp-equal (strip-cadrs *instructions*)))
 
 (defconst *mnemonics*
   (strip-cadrs *instructions*))
@@ -929,7 +970,7 @@
 
 (defthm nat-listp-of-valid-jump-dests-aux
   (implies (natp i)
-           (acl2::nat-listp (valid-jump-dests-aux c i)))
+           (nat-listp (valid-jump-dests-aux c i)))
   :hints (("Goal" :in-theory (enable valid-jump-dests-aux))))
 
 ;; "D"
@@ -939,7 +980,7 @@
   (valid-jump-dests-aux c 0))
 
 (defthm nat-listp-of-valid-jump-dests
-  (acl2::nat-listp (valid-jump-dests c))
+  (nat-listp (valid-jump-dests c))
   :hints (("Goal" :in-theory (enable valid-jump-dests))))
 
 
@@ -1079,19 +1120,19 @@
 
 ;; The semantic function for :add.
 (def-simple-op :add
-  (acl2::bvplus 256
+  (bvplus 256
                 (stack-item 0 mu)
                 (stack-item 1 mu)))
 
 ;; The semantic function for :mul.
 (def-simple-op :mul
-  (acl2::bvmult 256
+  (bvmult 256
                 (stack-item 0 mu)
                 (stack-item 1 mu)))
 
 ;; The semantic function for :sub.
 (def-simple-op :sub
-  (acl2::bvminus 256
+  (bvminus 256
                  (stack-item 0 mu)
                  (stack-item 1 mu)))
 
@@ -1099,7 +1140,7 @@
 (def-simple-op :div
   (if (equal 0 (stack-item 1 mu)) ;todo: consider chopping before comparing to 0
       0
-    (acl2::bvdiv 256
+    (bvdiv 256
                  (stack-item 0 mu)
                  (stack-item 1 mu))))
 
@@ -1116,7 +1157,7 @@
 (def-simple-op :mod
   (if (equal 0 (stack-item 1 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (stack-item 0 mu)
                  (stack-item 1 mu))))
 
@@ -1125,17 +1166,17 @@
 (defun bvsgn (size x)
   (declare (xargs :guard (and (integerp x)
                               (natp size))))
-  (if (acl2::bvlt size x 0)
+  (if (bvlt size x 0)
       -1
-    (if (acl2::bvlt size 0 x)
+    (if (bvlt size 0 x)
         1
       0)))
 
 (local (in-theory (enable acl2::bvp)))
 
 (defthm equal-of-bv-to-sint-and-0
-  (equal (equal (acl2::bv-to-sint 256 x) 0)
-         (equal (acl2::bvchop 256 x) 0))
+  (equal (equal (bv-to-sint 256 x) 0)
+         (equal (bvchop 256 x) 0))
   :hints (("Goal" :in-theory (enable acl2::bv-to-sint))))
 
 (defthm unsigned-byte-p-of-sint-to-bv
@@ -1149,14 +1190,14 @@
 (defthm logext-256-when-non-negative
   (implies (<= 0 (acl2::logext 256 x))
            (equal (acl2::logext 256 x)
-                  (acl2::bvchop 255 x)))
+                  (bvchop 255 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
 (defthm logext-256-when-non-negative-2
   (implies (equal 0 (acl2::getbit 255 x))
            (equal (acl2::logext 256 x)
-                  (acl2::bvchop 255 x)))
+                  (bvchop 255 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
@@ -1166,25 +1207,11 @@
          (not (equal 0 (acl2::getbit 255 x))))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
-(defthm equal-of-unary--and-constant
-  (implies (syntaxp (quotep k))
-           (equal (equal k (- x))
-                  (and (acl2-numberp k)
-                       (equal (fix x) (- k))))))
-
-(defthm equal-of-constant-and-unary-
-  (implies (syntaxp (quotep k))
-           (equal (< k (- x))
-                  (< x (- k))))
-  :rule-classes ((:rewrite :loop-stopper nil)))
-
-
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 256 x)
 ;;                (not (equal 0 x)))
-;;           (equal (< 0 (ACL2::BVCHOP '255 x))
+;;           (equal (< 0 (BVCHOP '255 x))
 ;;                  (not (equal
-
 
 (defthm logext-negative-type
   (implies (EQUAL (ACL2::GETBIT 255 x) 1)
@@ -1195,13 +1222,13 @@
 ;todo: check
 ;todo: compare to sbvrem.
 (def-simple-op :smod
-  (if (equal 0 (acl2::bvchop 256 (stack-item 1 mu))) ;the chop should do nothing
+  (if (equal 0 (bvchop 256 (stack-item 1 mu))) ;the chop should do nothing
       0
     (acl2::sint-to-bv
      256
      (* (bvsgn 256 (stack-item 0 mu))
-        (mod (abs (acl2::bv-to-sint 256 (stack-item 0 mu)))
-             (abs (acl2::bv-to-sint 256 (stack-item 1 mu)))))))
+        (mod (abs (bv-to-sint 256 (stack-item 0 mu)))
+             (abs (bv-to-sint 256 (stack-item 1 mu)))))))
   :guard-hints (("Goal" :in-theory (e/d (n256p
                                          acl2::sintp
                                          acl2::bv-to-sint
@@ -1209,7 +1236,9 @@
                                          acl2::<-of-mod
                                          ACL2::BVCAT
                                          acl2::logapp
-                                         acl2::getbit)
+                                         acl2::getbit
+                                         acl2::logext-cases
+                                         abs)
                                         (acl2::mod-of-minus-arg1
                                          acl2::mod-of-minus-arg2
                                          acl2::bvcat-of-getbit-and-x-adjacent
@@ -1225,7 +1254,7 @@
 (def-simple-op :addmod
   (if (equal 0 (stack-item 2 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (+ (stack-item 0 mu)
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
@@ -1234,14 +1263,14 @@
 (def-simple-op :mulmod
   (if (equal 0 (stack-item 2 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (* (stack-item 0 mu)
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
 
 ;; The semantic function for :mulmod.
 (def-simple-op :exp
-  (acl2::bvchop 256
+  (bvchop 256
                  (expt (stack-item 0 mu)
                        (stack-item 1 mu))))
 
@@ -1250,7 +1279,7 @@
          (< 31 x)))
 
 (defthm <-when-bvlt
-  (implies (and (acl2::bvlt 256 x k2)
+  (implies (and (bvlt 256 x k2)
                 (<= k2 (+ -1 k))
                 (unsigned-byte-p 256 x)
                 (unsigned-byte-p 256 k2)
@@ -1297,10 +1326,10 @@
 ;             (t-var (- 256 (* 8 old-num-bytes))) ;; "t" ;; this can be at most 248 (the sign bit of the least significant byte), if it is 0 there is no effect
  ;            (sign-bit (- 256 t-var)) ;using our standard numbering system
              )
-        (acl2::bvsx 256 (* 8 old-num-bytes) (stack-item 1 mu)))))
-  ;; (if (acl2::bvle 256 31 (stack-item 0 mu))
+        (bvsx 256 (* 8 old-num-bytes) (stack-item 1 mu)))))
+  ;; (if (bvle 256 31 (stack-item 0 mu))
   ;;     (stack-item 1 mu)
-  ;;   (acl2::bvsx 256
+  ;;   (bvsx 256
   ;;               (* 8 (+ 1 (stack-item 0 mu)))
   ;;               (stack-item 1 mu)))
   :guard-hints (("Goal" :in-theory (enable n256p acl2::bvlt))))
@@ -1321,11 +1350,11 @@
 
 ;; The semantic function for :lt.
 (def-simple-op :lt
-  (acl2::bool-to-bit (acl2::bvlt 256 (stack-item 0 mu) (stack-item 1 mu))))
+  (acl2::bool-to-bit (bvlt 256 (stack-item 0 mu) (stack-item 1 mu))))
 
 ;; The semantic function for :gt.
 (def-simple-op :gt
-  (acl2::bool-to-bit (acl2::bvgt 256 (stack-item 0 mu) (stack-item 1 mu))))
+  (acl2::bool-to-bit (bvgt 256 (stack-item 0 mu) (stack-item 1 mu))))
 
 ;; The semantic function for :slt.
 (def-simple-op :slt
@@ -1345,15 +1374,15 @@
 
 ;; The semantic function for :and.
 (def-simple-op :and
-  (acl2::bvand 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvand 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; The semantic function for :or.
 (def-simple-op :or
-  (acl2::bvor 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvor 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; The semantic function for :xor.
 (def-simple-op :xor
-  (acl2::bvxor 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvxor 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; Correctness of the :xor operation
 ;; todo: add more validation theorems like this
@@ -1368,7 +1397,7 @@
 
 ;; The semantic function for :not.
 (def-simple-op :not
-  (acl2::bvnot 256 (stack-item 0 mu)))
+  (bvnot 256 (stack-item 0 mu)))
 
 ;; Correctness of the :not operation
 (defthm execute-not-correct
@@ -1386,7 +1415,7 @@
   (let ((byte-num (stack-item 0 mu)))
     (if (< byte-num 32)
         ;; The result goes into the most-significant byte (why?):
-        (acl2::bvcat 8 (nth byte-num (word-to-bytes (stack-item 1 mu)))
+        (bvcat 8 (nth byte-num (word-to-bytes (stack-item 1 mu)))
                      248 0)
       0)))
 
@@ -1448,7 +1477,7 @@
 ;;   (let* ((stack (machine-state->stack mu)) ;boilerplate
 ;;          (stack (popn 2 ;delta
 ;;                       stack)) ;boilerplate
-;;          (stack (stack-push (acl2::bvplus 256
+;;          (stack (stack-push (bvplus 256
 ;;                                           (stack-item 0 mu)
 ;;                                           (stack-item 1 mu))
 ;;                             stack))
@@ -1482,7 +1511,7 @@
       (#x08 (execute-ADDMOD sigma mu a i))
       (#x09 (execute-MULMOD sigma mu a i))
       (#x0a (execute-EXP sigma mu a i))
-      ;; (#x0b (execute-SIGNEXTEND sigma mu a i))
+      ;; (#x0b (execute-SIGNEXTEND sigma mu a i)) ; todo: uncomment
       (#x10 (execute-LT sigma mu a i))
       (#x11 (execute-GT sigma mu a i))
       (#x12 (execute-SLT sigma mu a i))

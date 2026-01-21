@@ -18,7 +18,7 @@
 (include-book "kestrel/booleans/boolxor" :dir :system)
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "axe-syntax-functions-boolean") ;for syntactic-booleanp
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "axe-syntax")
 (include-book "kestrel/utilities/myif" :dir :system)
 

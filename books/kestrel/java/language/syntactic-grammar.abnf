@@ -1,21 +1,29 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:4.1]
+; See grammar.lisp for documentation.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:4.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 type = primitive-type
      / reference-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:4.2]
+; [JLS25:4.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 primitive-type = *annotation numeric-type
                / *annotation %s"boolean"
@@ -34,7 +42,9 @@ floating-point-type = %s"float"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:4.3]
+; [JLS25:4.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reference-type = class-or-interface-type
                / type-variable
@@ -60,7 +70,9 @@ dims = 1*(*annotation "[" "]")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:4.4]
+; [JLS25:4.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 type-parameter = *type-parameter-modifier type-identifier [type-bound]
 
@@ -73,7 +85,9 @@ additional-bound = "&" interface-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:4.5.1]
+; [JLS25:4.5.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 type-arguments = "<" type-argument-list ">"
 
@@ -89,7 +103,9 @@ wildcard-bounds = %s"extends" reference-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:6.5]
+; [JLS25:6.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 module-name = identifier
             / module-name "." identifier
@@ -113,19 +129,35 @@ ambiguous-name = identifier
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.3]
+; [JLS25:7.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 compilation-unit = ordinary-compilation-unit
+                 / compact-compilation-unit
                  / modular-compilation-unit
 
-ordinary-compilation-unit =
-    [package-declaration] *import-declaration *type-declaration
+ordinary-compilation-unit = [package-declaration]
+                            *import-declaration
+                            *top-level-class-or-interface-declaration
+
+compact-compilation-unit = *import-declaration
+                           *class-member-declaration-no-method
+                           *method-declaration
+                           *class-member-declaration
+
+class-member-declaration-no-method = field-declaration
+                                   / class-declaration
+                                   / interface-declaration
+                                   / ";"
 
 modular-compilation-unit = *import-declaration module-declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.4.1]
+; [JLS25:7.4.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 package-declaration =
     *package-modifier %s"package" identifier *("." identifier) ";"
@@ -134,50 +166,73 @@ package-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.5]
+; [JLS25:7.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 import-declaration = single-type-import-declaration
                    / type-import-on-demand-declaration
                    / single-static-import-declaration
                    / static-import-on-demand-declaration
+                   / single-module-import-declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.5.1]
+; [JLS25:7.5.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 single-type-import-declaration = %s"import" type-name ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.5.2]
+; [JLS25:7.5.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 type-import-on-demand-declaration = %s"import" package-or-type-name "." "*" ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.5.3]
+; [JLS25:7.5.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 single-static-import-declaration =
     %s"import" %s"static" type-name "." identifier ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.5.4]
+; [JLS25:7.5.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 static-import-on-demand-declaration =
     %s"import" %s"static" type-name "." "*" ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.6]
+; [JLS25:7.5.5]
 
-type-declaration = class-declaration
-                 / interface-declaration
-                 / ";"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+single-module-import-declaration = %s"import" %s"module" module-name ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:7.7]
+; [JLS25:7.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+top-level-class-or-interface-declaration = class-declaration
+                                         / interface-declaration
+                                         / ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:7.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 module-declaration =
     *annotation [%s"open"] %s"module" identifier *("." identifier)
@@ -197,18 +252,23 @@ requires-modifier = %s"transitive"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1]
+; [JLS25:8.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 class-declaration = normal-class-declaration
                   / enum-declaration
+                  / record-declaration
 
 normal-class-declaration =
   *class-modifier %s"class" type-identifier [type-parameters]
-  [superclass] [superinterfaces] class-body
+  [class-extends] [class-implements] [class-permits] class-body
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1.1]
+; [JLS25:8.1.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 class-modifier = annotation
                / %s"public"
@@ -217,11 +277,15 @@ class-modifier = annotation
                / %s"abstract"
                / %s"static"
                / %s"final"
+               / %s"sealed"
+               / %s"non-sealed"
                / %s"strictfp"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1.2]
+; [JLS25:8.1.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 type-parameters = "<" type-parameter-list ">"
 
@@ -229,21 +293,35 @@ type-parameter-list = type-parameter *("," type-parameter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1.4]
+; [JLS25:8.1.4]
 
-superclass = %s"extends" class-type
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+class-extends = %s"extends" class-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1.5]
+; [JLS25:8.1.5]
 
-superinterfaces = %s"implements" interface-type-list
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+class-implements = %s"implements" interface-type-list
 
 interface-type-list = interface-type *("," interface-type)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.1.6]
+; [JLS25:8.1.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+class-permits = %s"permits" type-name *("," type-name)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:8.1.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 class-body = "{" *class-body-declaration "}"
 
@@ -260,7 +338,9 @@ class-member-declaration = field-declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.3]
+; [JLS25:8.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 field-declaration = *field-modifier unann-type variable-declarator-list ";"
 
@@ -269,6 +349,7 @@ variable-declarator-list = variable-declarator *("," variable-declarator)
 variable-declarator = variable-declarator-id ["=" variable-initializer]
 
 variable-declarator-id = identifier [dims]
+                       / "_"
 
 variable-initializer = expression
                      / array-initializer
@@ -304,7 +385,9 @@ unann-array-type = unann-primitive-type dims
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.3.1]
+; [JLS25:8.3.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 field-modifier = annotation
                / %s"public"
@@ -317,7 +400,9 @@ field-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4]
+; [JLS25:8.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 method-declaration = *method-modifier method-header method-body
 
@@ -331,7 +416,9 @@ receiver-parameter = *annotation unann-type [identifier "."] %s"this"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4.1]
+; [JLS25:8.4.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 formal-parameter-list = formal-parameter *("," formal-parameter)
 
@@ -346,7 +433,9 @@ variable-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4.3]
+; [JLS25:8.4.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 method-modifier = annotation
                 / %s"public"
@@ -361,14 +450,18 @@ method-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4.5]
+; [JLS25:8.4.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 result = unann-type
        / %s"void"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4.6]
+; [JLS25:8.4.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 throws = %s"throws" exception-type-list
 
@@ -379,26 +472,34 @@ exception-type = class-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.4.7]
+; [JLS25:8.4.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 method-body = block
             / ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.6]
+; [JLS25:8.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 instance-initializer = block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.7]
+; [JLS25:8.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 static-initializer = %s"static" block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.8]
+; [JLS25:8.8]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 constructor-declaration =
   *constructor-modifier constructor-declarator [throws] constructor-body
@@ -411,7 +512,9 @@ simple-type-name = type-identifier
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.8.3]
+; [JLS25:8.8.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 constructor-modifier = annotation
                      / %s"public"
@@ -420,15 +523,21 @@ constructor-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.8.7]
+; [JLS25:8.8.7]
 
-constructor-body = "{" [explicit-constructor-invocation] [block-statements] "}"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+constructor-body =
+    "{" [block-statements] constructor-invocation [block-statements] "}"
+  / "{" [block-statements] "}"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.8.7.1]
+; [JLS25:8.8.7.1]
 
-explicit-constructor-invocation =
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+constructor-invocation =
     [type-arguments] %s"this" "(" [argument-list] ")" ";"
   / [type-arguments] %s"super" "(" [argument-list] ")" ";"
   / expression-name "." [type-arguments] %s"super" "(" [argument-list] ")" ";"
@@ -436,14 +545,18 @@ explicit-constructor-invocation =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.9]
+; [JLS25:8.9]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 enum-declaration =
-  *class-modifier %s"enum" type-identifier [superinterfaces] enum-body
+  *class-modifier %s"enum" type-identifier [class-implements] enum-body
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.9.1]
+; [JLS25:8.9.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 enum-body = "{" [enum-constant-list] [","] [enum-body-declarations] "}"
 
@@ -456,24 +569,78 @@ enum-constant-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:8.9.2]
+; [JLS25:8.9.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 enum-body-declarations = ";" *class-body-declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.1]
+; [JLS25:8.10]
 
-interface-declaration = normal-interface-declaration
-                      / annotation-type-declaration
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-normal-interface-declaration =
-  *interface-modifier %s"interface" type-identifier [type-parameters]
-  [extends-interfaces] interface-body
+record-declaration =
+  *class-modifier %s"record" type-identifier [type-parameters]
+  record-header [class-implements] record-body
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.1.1]
+; [JLS25:8.10.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+record-header = "(" record-component-list ")"
+
+record-component-list = record-component *("," record-component)
+
+record-component = *record-component-modifier unann-type identifier
+                 / variable-arity-record-component
+
+variable-arity-record-component =
+  *record-component-modifier unann-type *annotation "..." identifier
+
+record-component-modifier = annotation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:8.10.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+record-body = "{" *record-body-declaration "}"
+
+record-body-declaration = class-body-declaration
+                        / compact-constructor-declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:8.10.4.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+compact-constructor-declaration =
+  *constructor-modifier simple-type-name constructor-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:9.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+interface-declaration = normal-interface-declaration
+                      / annotation-interface-declaration
+
+normal-interface-declaration =
+  *interface-modifier %s"interface" type-identifier [type-parameters]
+  [interface-extends] [interface-permits] interface-body
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:9.1.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 interface-modifier = annotation
                    / %s"public"
@@ -481,17 +648,31 @@ interface-modifier = annotation
                    / %s"private"
                    / %s"abstract"
                    / %s"static"
+                   / %s"sealed"
+                   / %s"non-sealed"
                    / %s"strictfp"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.1.3]
+; [JLS25:9.1.3]
 
-extends-interfaces = %s"extends" interface-type-list
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+interface-extends = %s"extends" interface-type-list
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.1.4]
+; [JLS25:9.1.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+interface-permits = %s"permits" type-name *("," type-name)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:9.1.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 interface-body = "{" *interface-member-declaration "}"
 
@@ -503,7 +684,9 @@ interface-member-declaration = constant-declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.3]
+; [JLS25:9.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 constant-declaration =
   *constant-modifier unann-type variable-declarator-list ";"
@@ -515,7 +698,9 @@ constant-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.4]
+; [JLS25:9.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 interface-method-declaration =
   *interface-method-modifier method-header method-body
@@ -530,40 +715,50 @@ interface-method-modifier = annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.6]
+; [JLS25:9.6]
 
-annotation-type-declaration =
-  *interface-modifier "@" %s"interface" type-identifier annotation-type-body
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+annotation-interface-declaration =
+  *interface-modifier "@" %s"interface"
+  type-identifier annotation-interface-body
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.6.1]
+; [JLS25:9.6.1]
 
-annotation-type-body = "{" *annotation-type-member-declaration "}"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-annotation-type-member-declaration = annotation-type-element-declaration
-                                   / constant-declaration
-                                   / class-declaration
-                                   / interface-declaration
-                                   / ";"
+annotation-interface-body = "{" *annotation-interface-member-declaration "}"
 
-annotation-type-element-declaration =
-  *annotation-type-element-modifier unann-type identifier "(" ")" [dims]
+annotation-interface-member-declaration =
+    annotation-interface-element-declaration
+  / constant-declaration
+  / class-declaration
+  / interface-declaration
+  / ";"
+
+annotation-interface-element-declaration =
+  *annotation-interface-element-modifier unann-type identifier "(" ")" [dims]
   [default-value] ";"
 
-annotation-type-element-modifier = annotation
-                                 / %s"public"
-                                 / %s"abstract"
+annotation-interface-element-modifier = annotation
+                                      / %s"public"
+                                      / %s"abstract"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.6.2]
+; [JLS25:9.6.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 default-value = %s"default" element-value
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.7]
+; [JLS25:9.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 annotation = normal-annotation
            / marker-annotation
@@ -571,7 +766,9 @@ annotation = normal-annotation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.7.1]
+; [JLS25:9.7.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 normal-annotation = "@" type-name "(" [element-value-pair-list] ")"
 
@@ -589,19 +786,25 @@ element-value-list = element-value *("," element-value)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.7.2]
+; [JLS25:9.7.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 marker-annotation = "@" type-name
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:9.7.3]
+; [JLS25:9.7.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 single-element-annotation = "@" type-name "(" element-value ")"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:10.6]
+; [JLS25:10.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 array-initializer = "{" [variable-initializer-list] [","] "}"
 
@@ -609,21 +812,32 @@ variable-initializer-list = variable-initializer *("," variable-initializer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.2]
+; [JLS25:14.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 block = "{" [block-statements] "}"
 
 block-statements = 1*block-statement
 
-block-statement = local-variable-declaration-statement
-                / class-declaration
+block-statement = local-class-or-interface-declaration
+                / local-variable-declaration-statement
                 / statement
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.4]
+; [JLS25:14.3]
 
-local-variable-declaration-statement = local-variable-declaration ";"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+local-class-or-interface-declaration = class-declaration
+                                     / normal-interface-declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:14.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 local-variable-declaration =
   *variable-modifier local-variable-type variable-declarator-list
@@ -633,7 +847,17 @@ local-variable-type = unann-type
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.5]
+; [JLS25:14.4.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+local-variable-declaration-statement = local-variable-declaration ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:14.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 statement = statement-without-trailing-substatement
           / labeled-statement
@@ -664,13 +888,17 @@ statement-without-trailing-substatement = block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.6]
+; [JLS25:14.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 empty-statement = ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.7]
+; [JLS25:14.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 labeled-statement = identifier ":" statement
 
@@ -678,7 +906,9 @@ labeled-statement-no-short-if = identifier ":" statement-no-short-if
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.8]
+; [JLS25:14.8]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 expression-statement = statement-expression ";"
 
@@ -692,7 +922,9 @@ statement-expression = assignment
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.9]
+; [JLS25:14.9]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 if-then-statement = %s"if" "(" expression ")" statement
 
@@ -704,16 +936,24 @@ if-then-else-statement-no-short-if =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.10]
+; [JLS25:14.10]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 assert-statement = %s"assert" expression ";"
                  / %s"assert" expression ":" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.11]
+; [JLS25:14.11]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 switch-statement = %s"switch" "(" expression ")" switch-block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:14.11.1]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,13 +968,21 @@ switch-block-statement-group =
   switch-label ":" *(switch-label ":") block-statements
 
 switch-label = %s"case" case-constant *("," case-constant)
+             / %s"case" %s"null" ["," %s"default"]
+             / %s"case" case-pattern *("," case-pattern) [guard]
              / %s"default"
 
 case-constant = conditional-expression
 
+case-pattern = pattern
+
+guard = %s"when" expression
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.12]
+; [JLS25:14.12]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 while-statement = %s"while" "(" expression ")" statement
 
@@ -742,13 +990,17 @@ while-statement-no-short-if = %s"while" "(" expression ")" statement-no-short-if
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.13]
+; [JLS25:14.13]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 do-statement = %s"do" statement %s"while" "(" expression ")" ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.14]
+; [JLS25:14.14]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 for-statement = basic-for-statement
               / enhanced-for-statement
@@ -758,7 +1010,9 @@ for-statement-no-short-if = basic-for-statement-no-short-if
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.14.1]
+; [JLS25:14.14.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 basic-for-statement =
   %s"for" "(" [for-init] ";" [expression] ";" [for-update] ")" statement
@@ -776,49 +1030,62 @@ statement-expression-list = statement-expression *("," statement-expression)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.14.2]
+; [JLS25:14.14.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 enhanced-for-statement =
-  %s"for" "(" *variable-modifier local-variable-type variable-declarator-id ":"
-  expression ")" statement
+  %s"for" "(" local-variable-declaration ":" expression ")" statement
 
 enhanced-for-statement-no-short-if =
-  %s"for" "(" *variable-modifier local-variable-type variable-declarator-id ":"
-  expression ")" statement-no-short-if
+  %s"for" "(" local-variable-declaration ":" expression ")"
+  statement-no-short-if
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.15]
+; [JLS25:14.15]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 break-statement = %s"break" [identifier] ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.16]
+; [JLS25:14.16]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 continue-statement = %s"continue" [identifier] ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.17]
+; [JLS25:14.17]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 return-statement = %s"return" [expression] ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.18]
+; [JLS25:14.18]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 throw-statement = %s"throw" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.19]
+; [JLS25:14.19]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 synchronized-statement = %s"synchronized" "(" expression ")" block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.20]
+; [JLS25:14.20]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 try-statement = %s"try" block catches
               / %s"try" block [catches] finally
@@ -830,13 +1097,15 @@ catch-clause = %s"catch" "(" catch-formal-parameter ")" block
 
 catch-formal-parameter = *variable-modifier catch-type variable-declarator-id
 
-catch-type = unann-class-type *("|" Class-Type)
+catch-type = unann-class-type *("|" class-type)
 
 finally = %s"finally" block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.20.3]
+; [JLS25:14.20.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 try-with-resources-statement =
   %s"try" resource-specification block [catches] [finally]
@@ -845,7 +1114,7 @@ resource-specification = "(" resource-list [";"] ")"
 
 resource-list = resource *(";" resource)
 
-resource = *variable-modifier local-variable-type identifier "=" expression
+resource = local-variable-declaration
          / variable-access
 
 variable-access = expression-name
@@ -853,20 +1122,46 @@ variable-access = expression-name
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:14.21]
+; [JLS25:14.21]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 yield-statement = %s"yield" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.2]
+; [JLS25:14.30.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+pattern = type-pattern
+        / record-pattern
+
+type-pattern = local-variable-declaration
+
+record-pattern = reference-type "(" [component-pattern-list] ")"
+
+component-pattern-list = component-pattern *("," component-pattern)
+
+component-pattern = pattern
+                  / match-all-pattern
+
+match-all-pattern = "_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:15.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 expression = lambda-expression
            / assignment-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.8]
+; [JLS25:15.8]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 primary = primary-no-new-array
         / array-creation-expression
@@ -884,7 +1179,9 @@ primary-no-new-array = literal
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.8.2]
+; [JLS25:15.8.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 class-literal = type-name *("[" "]") "." %s"class"
               / numeric-type *("[" "]") "." %s"class"
@@ -893,7 +1190,9 @@ class-literal = type-name *("[" "]") "." %s"class"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.9]
+; [JLS25:15.9]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 class-instance-creation-expression =
     unqualified-class-instance-creation-expression
@@ -913,12 +1212,19 @@ type-arguments-or-diamond = type-arguments
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.10.1]
+; [JLS25:15.10.1]
 
-array-creation-expression =
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+array-creation-expression = array-creation-expression-without-initializer
+                          / array-creation-expression-with-initializer
+
+array-creation-expression-without-initializer =
     %s"new" primitive-type dim-exprs [dims]
   / %s"new" class-or-interface-type dim-exprs [dims]
-  / %s"new" primitive-type dims array-initializer
+
+array-creation-expression-with-initializer =
+    %s"new" primitive-type dims array-initializer
   / %s"new" class-or-interface-type dims array-initializer
 
 dim-exprs = 1*dim-expr
@@ -927,14 +1233,19 @@ dim-expr = *annotation "[" expression "]"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.10.3]
+; [JLS25:15.10.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 array-access = expression-name "[" expression "]"
              / primary-no-new-array "[" expression "]"
+             / array-creation-expression-with-initializer "[" expression "]"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.11]
+; [JLS25:15.11]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 field-access = primary "." identifier
              / %s"super" "." identifier
@@ -942,7 +1253,9 @@ field-access = primary "." identifier
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.12]
+; [JLS25:15.12]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 method-invocation =
     method-name "(" [argument-list] ")"
@@ -957,7 +1270,9 @@ argument-list = expression *("," expression)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.13]
+; [JLS25:15.13]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 method-reference =
     expression-name "::" [type-arguments] identifier
@@ -970,7 +1285,9 @@ method-reference =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.14]
+; [JLS25:15.14]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 postfix-expression = primary
                    / expression-name
@@ -979,19 +1296,25 @@ postfix-expression = primary
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.14.2]
+; [JLS25:15.14.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 post-increment-expression = postfix-expression "++"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.14.3]
+; [JLS25:15.14.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 post-decrement-expression = postfix-expression "--"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.15]
+; [JLS25:15.15]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 unary-expression = pre-increment-expression
                  / pre-decrement-expression
@@ -1011,7 +1334,9 @@ unary-expression-not-plus-minus = postfix-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.16]
+; [JLS25:15.16]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 cast-expression =
     "(" primitive-type ")" unary-expression
@@ -1020,7 +1345,9 @@ cast-expression =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.17]
+; [JLS25:15.17]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 multiplicative-expression = unary-expression
                           / multiplicative-expression "*" unary-expression
@@ -1029,7 +1356,9 @@ multiplicative-expression = unary-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.18]
+; [JLS25:15.18]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 additive-expression = multiplicative-expression
                     / additive-expression "+" multiplicative-expression
@@ -1037,7 +1366,9 @@ additive-expression = multiplicative-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.19]
+; [JLS25:15.19]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 shift-expression = additive-expression
                  / shift-expression "<<" additive-expression
@@ -1046,18 +1377,31 @@ shift-expression = additive-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.20]
+; [JLS25:15.20]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 relational-expression = shift-expression
                       / relational-expression "<" shift-expression
                       / relational-expression ">" shift-expression
                       / relational-expression "<=" shift-expression
                       / relational-expression ">=" shift-expression
-                      / relational-expression %s"instanceof" reference-type
+                      / instanceof-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.21]
+; [JLS25:15.20.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+instanceof-expression = relational-expression %s"instanceof" reference-type
+                      / relational-expression %s"instanceof" pattern
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:15.21]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 equality-expression = relational-expression
                     / equality-expression "==" relational-expression
@@ -1065,7 +1409,9 @@ equality-expression = relational-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.22]
+; [JLS25:15.22]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 and-expression = equality-expression
                / and-expression "&" equality-expression
@@ -1078,7 +1424,9 @@ inclusive-or-expression = exclusive-or-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.23]
+; [JLS25:15.23]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 conditional-and-expression =
     inclusive-or-expression
@@ -1086,7 +1434,9 @@ conditional-and-expression =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.24]
+; [JLS25:15.24]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 conditional-or-expression =
     conditional-and-expression
@@ -1094,7 +1444,9 @@ conditional-or-expression =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.25]
+; [JLS25:15.25]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 conditional-expression =
     conditional-or-expression
@@ -1103,7 +1455,9 @@ conditional-expression =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.26]
+; [JLS25:15.26]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 assignment-expression = conditional-expression
                       / assignment
@@ -1129,42 +1483,47 @@ assignment-operator = "="
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.27]
+; [JLS25:15.27]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 lambda-expression = lambda-parameters "->" lambda-body
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.27.1]
+; [JLS25:15.27.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 lambda-parameters = "(" [lambda-parameter-list] ")"
-                  / identifier
+                  / concise-lambda-parameter
 
-lambda-parameter-list = lambda-parameter *("," lambda-parameter)
-                      / identifier *("," identifier)
+lambda-parameter-list = normal-lambda-parameter *("," normal-lambda-parameter)
+                      / concise-lambda-parameter *("," concise-lambda-parameter)
 
-lambda-parameter =
+normal-lambda-parameter =
     *variable-modifier lambda-parameter-type variable-declarator-id
   / variable-arity-parameter
 
 lambda-parameter-type = unann-type
                       / %s"var"
 
+concise-lambda-parameter = identifier
+                         / "_"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.27.2]
+; [JLS25:15.27.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 lambda-body = expression
             / block
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:15.28]
+; [JLS25:15.28]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 switch-expression = %s"switch" "(" expression ")" switch-block
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; [JLS:15.29]
-
-constant-expression = expression

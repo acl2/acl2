@@ -1,0 +1,6 @@
+fast-arrays-mixed.cpp:17 (13-25): Expected `const int[3]`, got `const int[3] (fast representation)`
+ 17 |   return bar(a_fast_local);
+    |              ^^^^^^^^^^^^
+note: Defined here: 
+ 11 | int bar(const array<int, 3> a) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

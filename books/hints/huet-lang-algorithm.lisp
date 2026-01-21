@@ -2493,9 +2493,9 @@
 ; We return (mv renamed-alist unrenaming-substitution).
 
   (mv-let
-   (new-constraints new-event-names new-new-entries)
-   (relevant-constraints thm alist nil wrld)
-   (declare (ignore new-event-names new-new-entries))
+   (new-constraints new-event-names new-new-entries new-origins)
+   (relevant-constraints thm alist nil nil wrld)
+   (declare (ignore new-event-names new-new-entries new-origins))
    (let* ((avoid (union-eq
                   (free-or-bound-vars-lst (cons thm new-constraints) nil)
                   (all-bound-vars-alist alist nil)))

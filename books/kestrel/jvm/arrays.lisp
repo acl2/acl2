@@ -1,7 +1,7 @@
 ; Arrays in the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "heap-clearing") ; drop?
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -61,7 +62,7 @@
                   (all-null-or-addresses-bound-to-object-of-type contents element-type heap)))
   :hints (("Goal"
            :induct (all-null-or-addresses-bound-to-object-of-type contents element-type heap)
-           :expand ((all-null-or-addresses-bound-to-object-of-type contents element-type(set-field ad pair val heap)))
+           :expand ((all-null-or-addresses-bound-to-object-of-type contents element-type (set-field ad pair val heap)))
            :in-theory (enable all-null-or-addresses-bound-to-object-of-type
                               memberp-of-cons-when-constant))))
 

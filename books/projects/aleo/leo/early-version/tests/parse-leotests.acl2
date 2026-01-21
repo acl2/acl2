@@ -1,0 +1,16 @@
+; Leo Library
+;
+; Copyright (C) 2025 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+(include-book "../portcullis")
+
+; :oslib is for (date state) and (universal-time state)
+; cert-flags: ? t :ttags (:leo-test-files :oslib)

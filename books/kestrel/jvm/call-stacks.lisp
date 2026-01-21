@@ -1,7 +1,7 @@
 ; Call stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 (in-package "JVM")
 
 (include-book "frames")
-(include-book "kestrel/sequences/defforall" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defforall-simple framep)

@@ -34,10 +34,10 @@
             :endif)
      (include-book "pfcs/top")
      (include-book "poseidon/top")
-     (include-book "aleobft/top")
-     (include-book "leo/top")
+     (include-book "aleo/top")
      (include-book "abnf/top")
      (include-book "bls12-377-curves/top")
+     (include-book "set-theory/doc")
 
      (defxdoc projects
        :parents (top)

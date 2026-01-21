@@ -61,10 +61,14 @@
           (declare (ignore x))
           0))
  (defthm fpp-constrained-fp-sqrt-fn
-   (fpp (constrained-fp-sqrt x)))
- (defthm rationalp-constrained-fp-sqrt-fn
-   (rationalp (constrained-fp-sqrt x))
-   :rule-classes :type-prescription))
+   (fpp (constrained-fp-sqrt x))))
+
+(defthm rationalp-constrained-fp-sqrt-fn
+  (rationalp (constrained-fp-sqrt x))
+  :hints (("Goal"
+           :use fpp-constrained-fp-sqrt-fn
+           :in-theory (disable fpp-constrained-fp-sqrt-fn)))
+  :rule-classes :type-prescription)
 
 (defun fp-sqrt (x)
   (declare (xargs :guard (and (rationalp x)
@@ -95,7 +99,7 @@
 
 (defthm fp-round-idempotent
 
-; This follows from fp-round-is-identity-for-dfp together with dfp-fp-round.
+; This follows from fp-round-is-identity-for-fpp together with fpp-fp-round.
 
   (equal (fp-round (fp-round x))
          (fp-round x)))
@@ -173,12 +177,12 @@
 
 ; This proof of nil illustrates why ACL2 tracks dfs much as it tracks stobjs,
 ; so that for example a double-float isn't given as an argument to EQUAL.
-; (Perhaps this issue could instead by adding a double-float datatype to ACL2
-; and defining EQUAL to return nil if exactly one argument is a double-float,
-; but the prover relies heavily on EQUAL being defined as true equality.  So
-; then we might distinguish between ACL2::EQUAL and COMMON-LISP::EQUAL.  But
-; that would probably present many opportunities for bugs and might well
-; require major changes to the community books.)
+; (Perhaps this issue could instead be handled by adding a double-float
+; datatype to ACL2 and defining EQUAL to return nil if exactly one argument is
+; a double-float, but the prover relies heavily on EQUAL being defined as true
+; equality.  So then we might distinguish between ACL2::EQUAL and
+; COMMON-LISP::EQUAL.  But that would probably present many opportunities for
+; bugs and might well require major changes to the community books.)
 (local
  (encapsulate
    ()

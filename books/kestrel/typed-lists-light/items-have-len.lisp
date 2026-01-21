@@ -1,7 +1,7 @@
 ; A function to check that all elements of a list have a given length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,9 +37,9 @@
 ;should the quantify macro include this?
 (defthm items-have-len-of-update-nth
   (implies (and (equal n (len val))
-                (natp m)
+                ;; (natp m)
                 ;; (natp n)
-                (< m (len lst))
+                (<= m (len lst))
                 (items-have-len n lst))
            (items-have-len n (update-nth m val lst)))
   :hints (("Goal" :in-theory (enable update-nth items-have-len))))

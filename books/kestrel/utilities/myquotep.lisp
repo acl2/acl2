@@ -1,7 +1,7 @@
 ; A stronger version of quotep
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,6 +36,11 @@
   (implies (myquotep item)
            (and (consp item)
                 (true-listp item)))
+  :rule-classes :forward-chaining)
+
+(defthm myquotep-forward-to-quotep
+  (implies (myquotep item)
+           (quotep item))
   :rule-classes :forward-chaining)
 
 (defthm myquotep-forward-to-equal-of-len

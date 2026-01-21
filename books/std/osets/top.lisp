@@ -144,7 +144,7 @@ from the accompanying talk.</p>")
       (equal (setp X) nil))
   :rule-classes :type-prescription)
 
-(defund emptyp (X)
+(defund-inline emptyp (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (or (null X)
                   (not (setp X)))
@@ -155,18 +155,18 @@ from the accompanying talk.</p>")
       (equal (emptyp X) nil))
   :rule-classes :type-prescription)
 
-(defund sfix (X)
+(defund-inline sfix (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (if (emptyp X) nil X)
        :exec  X))
 
-(defund head (X)
+(defund-inline head (X)
   (declare (xargs :guard (and (setp X)
                               (not (emptyp X)))))
   (mbe :logic (car (sfix X))
        :exec  (car X)))
 
-(defund tail (X)
+(defund-inline tail (X)
   (declare (xargs :guard (and (setp X)
                               (not (emptyp X)))))
   (mbe :logic (cdr (sfix X))
@@ -222,12 +222,12 @@ from the accompanying talk.</p>")
              (t
               (fast-subset X (cdr Y))))))
 
-(defun subset (X Y)
+(defun-inline subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (if (emptyp X)
-		  t
-		(and (in (head X) Y)
-		     (subset (tail X) Y)))
+                  t
+                (and (in (head X) Y)
+                     (subset (tail X) Y)))
        :exec (fast-subset X Y)))
 
 (defthm subset-type
@@ -308,14 +308,14 @@ from the accompanying talk.</p>")
              ((equal a (car X)) (cdr X))
              (t (insert (car X) (delete a (cdr X)))))))
 
-(defun union (X Y)
+(defun-inline union (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (if (emptyp X)
                   (sfix Y)
                 (insert (head X) (union (tail X) Y)))
        :exec  (fast-union X Y nil)))
 
-(defun intersect (X Y)
+(defun-inline intersect (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (cond ((emptyp X) (sfix X))
                     ((in (head X) Y)
@@ -323,19 +323,19 @@ from the accompanying talk.</p>")
                     (t (intersect (tail X) Y)))
        :exec (fast-intersect X Y nil)))
 
-(defun intersectp (X Y)
+(defun-inline intersectp (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (not (emptyp (intersect X Y)))
        :exec (fast-intersectp X Y)))
 
-(defun difference (X Y)
+(defun-inline difference (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (cond ((emptyp X) (sfix X))
                     ((in (head X) Y) (difference (tail X) Y))
                     (t (insert (head X) (difference (tail X) Y))))
        :exec (fast-difference X Y nil)))
 
-(defun cardinality (X)
+(defun-inline cardinality (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (if (emptyp X)
                   0
@@ -351,7 +351,7 @@ from the accompanying talk.</p>")
                     (cdr (cdr x))
                     (cons (car mid) acc))))
 
-(defund halve-list (x)
+(defund-inline halve-list (x)
   (declare (xargs :guard t))
   (halve-list-aux x x nil))
 
@@ -368,12 +368,12 @@ from the accompanying talk.</p>")
                                (mergesort-exec part2)
                                nil)))))
 
-(defun mergesort (x)
+(defun-inline mergesort (x)
   (declare (xargs :guard t))
   (mbe :logic (if (endp x)
-		  nil
-		(insert (car x)
-			(mergesort (cdr x))))
+                  nil
+                (insert (car x)
+                        (mergesort (cdr x))))
        :exec (mergesort-exec x)))
 
 
@@ -392,7 +392,7 @@ from the accompanying talk.</p>")
   (if (emptyp set-for-all-reduction)
       t
     (and (predicate (head set-for-all-reduction))
-	 (all (tail set-for-all-reduction)))))
+         (all (tail set-for-all-reduction)))))
 
 (encapsulate
  (((all-hyps) => *)
@@ -403,12 +403,12 @@ from the accompanying talk.</p>")
 
  (defthmd membership-constraint
    (implies (all-hyps)
-	    (implies (in arbitrary-element (all-set))
-		     (predicate arbitrary-element)))))
+            (implies (in arbitrary-element (all-set))
+                     (predicate arbitrary-element)))))
 
 (defthmd all-by-membership
   (implies (all-hyps)
-	   (all (all-set))))
+           (all (all-set))))
 
 (defund subset-trigger (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
@@ -416,9 +416,9 @@ from the accompanying talk.</p>")
 
 (defthm pick-a-point-subset-strategy
   (implies (and (syntaxp (rewriting-goal-lit mfc state))
-		(syntaxp (rewriting-conc-lit `(subset ,X ,Y) mfc state)))
-	   (equal (subset X Y)
-		  (subset-trigger X Y))))
+                (syntaxp (rewriting-conc-lit `(subset$inline ,X ,Y) mfc state)))
+           (equal (subset X Y)
+                  (subset-trigger X Y))))
 
 (COMPUTED-HINTS::automate-instantiation
   :new-hint-name pick-a-point-subset-hint
@@ -471,7 +471,7 @@ from the accompanying talk.</p>")
 
 (defthmd sets-are-true-lists
   (implies (setp X)
-	   (true-listp X)))
+           (true-listp X)))
 
 (defthm sets-are-true-lists-compound-recognizer
        (implies (setp X)
@@ -691,7 +691,7 @@ from the accompanying talk.</p>")
 
 (defthm emptyp-subset-2
   (implies (emptyp Y)
-	   (equal (subset X Y)
+           (equal (subset X Y)
                   (emptyp X))))
 
 (defthm subset-reflexive
@@ -703,7 +703,7 @@ from the accompanying talk.</p>")
 (defthm subset-tail
   (subset (tail X) X)
   :rule-classes ((:rewrite)
-		 (:forward-chaining :trigger-terms ((tail x)))))
+                 (:forward-chaining :trigger-terms ((tail x)))))
 
 
 
@@ -953,7 +953,6 @@ from the accompanying talk.</p>")
   (equal (intersect X (intersect X Z))
          (intersect X Z)))
 
-; i am here
 
 (defthm difference-set
   (setp (difference X Y)))
@@ -1014,8 +1013,8 @@ from the accompanying talk.</p>")
 
 (defthm difference-preserves-subset
   (implies (subset X Y)
-	   (subset (difference X Z)
-		   (difference Y Z))))
+           (subset (difference X Z)
+                   (difference Y Z))))
 
 
 (defthm cardinality-type
@@ -1025,7 +1024,7 @@ from the accompanying talk.</p>")
 
 (defthm cardinality-zero-emptyp
   (equal (equal (cardinality x) 0)
-	 (emptyp x)))
+         (emptyp x)))
 
 (defthm cardinality-sfix-cancel
   (equal (cardinality (sfix X))
@@ -1094,11 +1093,11 @@ from the accompanying talk.</p>")
 
 (defthm intersect-cardinality-subset-2
   (equal (equal (cardinality (intersect X Y)) (cardinality X))
-	 (subset X Y)))
+         (subset X Y)))
 
 (defthm intersect-cardinality-non-subset-2
   (equal (< (cardinality (intersect x y)) (cardinality x))
-	 (not (subset x y))))
+         (not (subset x y))))
 
 
 
@@ -1120,7 +1119,7 @@ from the accompanying talk.</p>")
 
 (defthm mergesort-set-identity
   (implies (setp X)
-	   (equal (mergesort X) X)))
+           (equal (mergesort X) X)))
 
 
 
@@ -1136,14 +1135,14 @@ from the accompanying talk.</p>")
 
 (defthmd head-insert
   (equal (head (insert a X))
-	 (cond ((emptyp X) a)
-	       ((<< a (head X)) a)
-	       (t (head X)))))
+         (cond ((emptyp X) a)
+               ((<< a (head X)) a)
+               (t (head X)))))
 
 (defthmd tail-insert
   (equal (tail (insert a X))
-	 (cond ((emptyp X) nil)
-	       ((<< a (head X)) X)
+         (cond ((emptyp X) nil)
+               ((<< a (head X)) X)
                ((equal a (head X)) (tail X))
                (t (insert a (tail X))))))
 

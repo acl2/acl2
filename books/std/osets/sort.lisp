@@ -124,7 +124,7 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
                       (cdr (cdr x))
                       (cons (car mid) acc))))
 
-  (defund halve-list (x)
+  (defund-inline halve-list (x)
     (declare (xargs :guard t))
     (halve-list-aux x x nil)))
 
@@ -289,7 +289,7 @@ sets library.  We begin by showing that both produce sets, and then show that
 membership in either is true exactly when an element is @(see member-equal) in
 the original list.</p>"
 
-  (defun mergesort (x)
+  (defun-inline mergesort (x)
     (declare (xargs :guard t
                     :verify-guards nil))
     (mbe :logic (if (endp x)
@@ -309,7 +309,7 @@ the original list.</p>"
 
   (local (in-theory (enable subset)))
 
-  (verify-guards mergesort)
+  (verify-guards mergesort$inline)
 
   (defthm mergesort-set-identity
     (implies (setp X)

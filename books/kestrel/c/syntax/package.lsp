@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,10 +20,16 @@
 
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
-                                 '(position
+                                 '(block
+                                   newline
+                                   position
+                                   pprint-newline
+                                   read-byte
                                    read-char
                                    read-files
+                                   replace
                                    schar
+                                   standardp
                                    type
                                    typep
                                    unread-char))
@@ -35,6 +41,8 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                byte-list-listp
+                character-list
                 defirrelevant
                 defmacro+
                 defxdoc+
@@ -46,16 +54,22 @@
                 keyword-value-list-to-alist
                 lnfix
                 make-event-terse
+                maybe-msgp
+                msg$
                 nat
                 nat-list
                 nat-list-fix
                 nat-optionp
+                nat-option-fix
+                nat-list-measure
                 nats=>string
                 packn-pos
                 pos
+                pos-fix
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
+                retmsg$
                 retok
                 string-optionp
                 table-alist+
@@ -73,4 +87,5 @@
                 str::oct-digit-char-p
                 str::oct-digit-char-list
                 str::oct-digit-char-listp
-                c::*keywords*)))
+                str::str-fix
+                str::string-list-fix)))

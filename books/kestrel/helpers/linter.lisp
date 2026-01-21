@@ -349,7 +349,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occured, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be idential forms
            (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)
@@ -407,7 +407,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occured, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be idential forms
            (cw "~%   EQL test ~x0 compares identical values." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)
@@ -455,7 +455,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occured, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be idential forms
            (cw "~%   EQ test ~x0 compares identical values." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)
@@ -485,7 +485,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occured, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be idential forms
            (cw "~%   = test ~x0 compares identical values." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)

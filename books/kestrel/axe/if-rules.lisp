@@ -29,3 +29,10 @@
            (equal (if test then else)
                   else))
   :rule-classes nil)
+
+
+;move
+(defthm <-of-if-arg1-safe
+  (implies (syntaxp (quotep k))
+           (equal (< (if test x y) k)
+                  (if test (< x k) (< y k)))))

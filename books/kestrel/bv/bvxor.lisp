@@ -1,7 +1,7 @@
 ; BV Library: bvxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,10 @@
 (in-package "ACL2")
 
 ;(include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "logxor-b"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
@@ -239,9 +240,7 @@
            (equal (getbit n (bvxor size x y))
                   (bvxor 1 (getbit n x) (getbit n y))))
   :hints (("Goal"
-           :in-theory (e/d (getbit slice bvxor
-                                   bvchop-of-logtail)
-                           ()))))
+           :in-theory (enable getbit slice bvxor bvchop-of-logtail))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
 (defthm getbit-0-of-bvxor
@@ -267,6 +266,16 @@
                   (if (equal 0 n)
                       (bvxor 1 x y) ;better to not push the getbits inside in this case (could just go to bitxor)
                     (bvxor 1 (getbit n x) (getbit n y)))))
+  :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
+
+;; Seems safe because the (getbit n x) in the conclusion gets computed (could further simplify the RHS).
+(defthmd getbit-of-bvxor-when-quotep
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep n)))
+                (< n size)
+                (posp size))
+           (equal (getbit n (bvxor size x y))
+                  (bvxor 1 (getbit n x) (getbit n y))))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
 (defthm bvxor-numeric-bound
@@ -461,8 +470,8 @@
                 (natp size2)
                 (integerp y)
                 (integerp x))
-           (equal (Bvxor size1 (BVCHOP size2 y) x)
-                  (Bvxor size1 (BVCHOP size1 y) x)))
+           (equal (bvxor size1 (bvchop size2 y) x)
+                  (bvxor size1 (bvchop size1 y) x)))
   :hints (("Goal" :in-theory (enable bvxor ;bvchop-bvchop
                                      ))))
 
@@ -473,19 +482,19 @@
            :in-theory (disable unsigned-byte-p-of-bvxor
                                unsigned-byte-p-of-bvxor-gen))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm slice-of-bvxor
-  (implies (and (< highbit size)
-;                (<= lowbit highbit)
-                (natp size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvxor size x y))
-                  (bvxor (+ 1 highbit (- lowbit))
-                         (slice highbit lowbit x)
-                         (slice highbit lowbit y))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  ()))))
+  (implies (and (< high size)
+                ;; (<= low high)
+                (integerp size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvxor size x y))
+                  (bvxor (+ 1 high (- low))
+                         (slice high low x)
+                         (slice high low y))))
+  :hints (("Goal" :in-theory (enable slice bvxor natp bvchop-of-logtail))))
 
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
 ;or just pass slice through?
@@ -511,8 +520,34 @@
                       (bvxor (+ size (- low))
                              (slice (+ -1 size) low x)
                              (slice (+ -1 size) low y))))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable slice bvxor natp bvchop-of-logtail))))
+
+;here we tighten the slice
+(defthm slice-of-bvxor-tighten2
+  (implies (and (<= size high)
+                (<= low size)
+                (natp high)
+                (natp low)
+                (natp size))
+           (equal (slice high low (bvxor size x y))
+                  (slice (+ -1 size) low (bvxor size x y))))
+  :hints (("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop
+                                           logtail-of-bvchop-becomes-slice)))))
+
+;drop in favor of trim rules?
+(defthm slice-of-bvxor-tighten
+  (implies (and (< (+ 1 high) size)
+;                (<= low high)
+                (integerp size)
+                (< 0 size)
+                (natp low)
+                (natp high))
+           (equal (slice high low (bvxor size x y))
+                  (slice high low (bvxor (+ 1 high) x y))))
+  :hints (("Goal" :cases ((<= low high))
+          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (slice-becomes-bvchop)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvxor-cancel-2-of-more-and-1-of-more
   (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
@@ -620,3 +655,13 @@
 
 (in-theory (disable bvxor-commutative-2))
 (theory-invariant (incompatible (:rewrite bvxor-commutative-2) (:rewrite bvxor-commutative-2-alt)))
+
+(defthm bvxor-of-ifix-arg2
+  (equal (bvxor size (ifix x) y)
+         (bvxor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm bvxor-of-ifix-arg3
+  (equal (bvxor size x (ifix y))
+         (bvxor size x y))
+  :hints (("Goal" :in-theory (enable ifix))))

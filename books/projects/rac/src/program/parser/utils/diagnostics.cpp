@@ -2,9 +2,12 @@
 #include "utils.h"
 
 #include <cassert>
-#include <limits>
 
 std::ostream &operator<<(std::ostream &os, const Location &loc) {
+
+  if (loc.is_builtin) {
+    return os << "<builtin>:";
+  }
 
   os << loc.file_name << ':';
 
@@ -20,9 +23,15 @@ std::ostream &operator<<(std::ostream &os, const Location &loc) {
 void DiagnosticHandler::show_code_at(const Location &context,
                                      const Location &error) {
 
-  assert(file_
-         && "DiagnosticHandler::setup should be called before with a valid "
-            "pointer");
+  assert(file_ &&
+         "DiagnosticHandler::setup should be called before with a valid "
+         "pointer");
+
+  // No code to show if it is built in.
+  if (context.is_builtin) {
+    std::cerr << "<builtin>\n";
+    return;
+  }
 
   long saved_pos = std::ftell(file_);
 
@@ -52,11 +61,11 @@ void DiagnosticHandler::show_code_at(const Location &context,
   // ... unless if it is also too big, in that case we only show the first 5
   // lines.
   if (last_line_to_display - first_line_to_display > 5) {
+    std::cerr << "(Too much context, show only the 5 first lines)\n";
     last_line_to_display = first_line_to_display + 5;
   }
 
-  for (int line = first_line_to_display; line <= last_line_to_display;
-       ++line) {
+  for (int line = first_line_to_display; line <= last_line_to_display; ++line) {
     // Display the code.
     size = getline(&buffer, &size, file_);
     cur_pos += size;

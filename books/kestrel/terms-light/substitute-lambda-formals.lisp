@@ -551,9 +551,10 @@
 
 ;;can we do them one by one?  maybe not, given the condition on clashes (removing more might help avoid clashes for others)
 
+;; formals and args must have the same length
 (defund subst-formals-in-lambda-application (formals body args formals-to-subst)
   (declare (xargs :guard (and (symbol-listp formals)
-                              ;(no-duplicatesp-equal formals)
+                              ;(no-duplicatesp-equal formals) ; put back?
                               (pseudo-termp body)
                               (pseudo-term-listp args)
                               (true-listp formals-to-subst)
@@ -582,7 +583,7 @@
        (new-args (append remaining-args extra-vars)))
     (if nil ; (equal new-formals new-args) ; avoid trivial lambda ;; todo: put back!
         new-body
-    `((lambda ,new-formals ,new-body) ,@new-args))))
+      `((lambda ,new-formals ,new-body) ,@new-args))))
 
 (defthm pseudo-termp-of-subst-formals-in-lambda-application
   (implies (and (symbol-listp formals)
@@ -631,6 +632,17 @@
            (no-duplicate-lambda-formals-in-termp (subst-formals-in-lambda-application formals body args formals-to-subst)))
   :hints (("Goal" :expand (no-duplicate-lambda-formals-in-termp body)
            :in-theory (enable subst-formals-in-lambda-application no-duplicate-lambda-formals-in-termp))))
+
+;; Justifies skipping the call to subst-formals-in-lambda-application if formals-to-subst is nil
+(defthm subst-formals-in-lambda-application-of-nil-arg4
+  (implies (and (true-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-termp body)
+                (true-listp args)
+                (equal (len args) (len formals)))
+           (equal (subst-formals-in-lambda-application formals body args nil)
+                  `((lambda ,formals ,body) ,@args)))
+  :hints (("Goal" :in-theory (enable subst-formals-in-lambda-application))))
 
 ;; (thm
 ;;   (implies (and (not (intersection-eq (free-vars-in-terms (map-lookup-equal formals-to-subst (pairlis$ formals args)))

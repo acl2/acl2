@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,8 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
 (include-book "bool-fix")
-
-(defund boolif (test x y)
-  (declare (xargs :guard t))
-  (if (if test x y)
-      t
-    nil))
+(include-book "boolif-def") ; brings in the definition of boolif
 
 ;; Only needed for Axe?
 (defthmd booleanp-of-boolif
@@ -178,6 +171,13 @@
            (equal (boolif (equal v1 x) nil (equal v2 x))
                   (equal v2 x))))
 
+(defthm boolif-of-equal-and-t-and-not-equal-diff-constants
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal k1 k2)))
+           (equal (boolif (equal k1 x) t (not (equal k2 x)))
+                  (not (equal k2 x)))))
+
 ;; "x or y" and "x" is just x
 ;todo: rename to have 'same' in the name
 (defthm boolif-of-boolif-of-t-and-nil
@@ -192,3 +192,35 @@
                  (boolif z1 z3 nil)
                  (boolif z2 z4 nil)))
   :hints (("Goal" :in-theory (enable boolif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These can help when we have a genealized boolean as an arg:
+
+(defthmd boolif-when-not-booleanp-arg1
+  (implies (not (booleanp test))
+           (equal (boolif test x y)
+                  (bool-fix x))))
+
+(defthmd boolif-when-not-booleanp-arg2
+  (implies (not (booleanp x))
+           (equal (boolif test x y)
+                  (boolif test t y))))
+
+(defthmd boolif-when-not-booleanp-arg3
+  (implies (not (booleanp y))
+           (equal (boolif test x y)
+                  (boolif test x t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; integers are a common kind of generalized boolean
+(defthmd boolif-when-integerp-arg2
+  (implies (integerp x)
+           (equal (boolif test x y)
+                  (boolif test t y))))
+
+(defthmd boolif-when-integerp-arg3
+  (implies (integerp y)
+           (equal (boolif test x y)
+                  (boolif test x t))))

@@ -55,25 +55,15 @@
          (len terms))
   :hints (("Goal" :induct (len terms))))
 
-(local
- (defthm-flag-copy-term
-   (defthm pseudo-termp-of-copy-term
-     (implies (pseudo-termp term)
-              (pseudo-termp (copy-term term)))
-     :flag copy-term)
-   (defthm pseudo-termp-of-copy-terms
-     (implies (pseudo-term-listp terms)
-              (pseudo-term-listp (copy-terms terms)))
-     :flag copy-terms)))
-
-;; redundant and non-local
-(defthm pseudo-termp-of-copy-term
-  (implies (pseudo-termp term)
-           (pseudo-termp (copy-term term))))
-
-;; redundant and non-local
-(defthm pseudo-term-listp-of-copy-terms
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (copy-terms terms))))
+;; This can be non-local, because the make-event expansion gets stored in the certificate
+(defthm-flag-copy-term
+  (defthm pseudo-termp-of-copy-term
+    (implies (pseudo-termp term)
+             (pseudo-termp (copy-term term)))
+    :flag copy-term)
+  (defthm pseudo-termp-of-copy-terms
+    (implies (pseudo-term-listp terms)
+             (pseudo-term-listp (copy-terms terms)))
+    :flag copy-terms))
 
 (verify-guards copy-term :hints (("Goal" :expand ((pseudo-termp term)))))

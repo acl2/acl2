@@ -1,7 +1,7 @@
 ; Versions of built-in functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -69,6 +69,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun truncate-unguarded (i j)
+  (declare (xargs :guard t))
+  (let* ((q (binary-*-unguarded i (unary-/-unguarded j)))
+         (n (numerator-unguarded q))
+         (d (denominator-unguarded q)))
+    (cond ((= d 1) n)
+          ((>= n 0)
+           (nonnegative-integer-quotient-unguarded n d))
+          (t (- (nonnegative-integer-quotient-unguarded (- n)
+                                              d))))))
+
+;; Doesn't work in ACL2(r)?
+(defthm truncate-unguarded-correct
+  (equal (truncate-unguarded x y)
+         (truncate x y))
+  :hints (("Goal" :in-theory (enable truncate
+                                     truncate-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund ceiling-unguarded (i j)
   (declare (xargs :guard t))
   (if (and (rationalp i)
@@ -103,6 +123,18 @@
          (mod x y))
   :hints (("Goal" :in-theory (enable mod
                                      mod-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rem-unguarded (x y)
+  (declare (xargs :guard t))
+  (- (fix x) (binary-*-unguarded (truncate-unguarded x y) y)))
+
+(defthm rem-unguarded-correct
+  (equal (rem-unguarded x y)
+         (rem x y))
+  :hints (("Goal" :in-theory (enable rem
+                                     rem-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

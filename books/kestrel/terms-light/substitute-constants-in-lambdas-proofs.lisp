@@ -1,6 +1,6 @@
 ; Proofs about substitute-constants-in-lambdas.lisp
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,8 @@
 (local (in-theory (e/d (;handle-constant-lambda-formals
                         )
                        (quote-listp
-                        myquotep))))
+                        myquotep
+                        mv-nth))))
 
 ;clash
 (local

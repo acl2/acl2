@@ -17,6 +17,7 @@
 
 ;; TODO: Some of these are not needed any more; we could remove them from the base-evaluator...
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "misc/total-order" :dir :system) ;to get <<
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -26,7 +27,8 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;; quotep gets converted this this
+;; quotep gets converted to this when inside an axe-syntaxp
+;; todo: rename darg-quotep?
 (defund-inline axe-quotep (darg)
   (declare (xargs :guard (dargp darg)))
   (consp darg) ;; means that it is a quotep, not a nodenum
@@ -444,3 +446,14 @@
               (or (eq 'myif (car expr))
                   ;(eq 'bvif (car expr))
                   )))))
+
+;;todo: should we check for nodenums of constants?
+(defund dargs-equalp (darg1 darg2 dag-array)
+  (declare (xargs :guard (and (or (myquotep darg1)
+                                  (and (natp darg1)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg1))))
+                              (or (myquotep darg2)
+                                  (and (natp darg2)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2))))))
+           (ignore dag-array))
+  (equal darg1 darg2))

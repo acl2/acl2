@@ -1,6 +1,6 @@
 ; Representation of floats as bit-vectors (BVs)
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/bv/getbit" :dir :system)
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (local (in-theory (disable formatp)))
 

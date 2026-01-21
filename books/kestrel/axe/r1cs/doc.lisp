@@ -1,6 +1,6 @@
 ; Documentation for R1CS verification with Axe
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "R1CS")
+(in-package "ACL2") ; had R1CS here and acl2::axe-r1cs below, but that led to xdoc showing the ACL2:: prefix on the axe-r1cs topic!
 
 (include-book "xdoc/top" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
@@ -16,9 +16,9 @@
 (include-book "verify-r1cs")
 
 (xdoc::defxdoc
- r1cs-verification-with-axe
- :short "Verifying an R1CS using the Axe toolkit."
- :parents (r1cs acl2::axe)
+ axe-r1cs
+ :parents (r1cs::r1cs acl2::axe)
+ :short "The R1CS variant of Axe."
  :long
  (xdoc::topstring
   (xdoc::topparas
@@ -136,7 +136,7 @@ core function."))
    (xdoc::p "3. Lift the R1CS into logic.  This is done by calling @('lift-r1cs') (or a specialized variant of it, like @('lift-semaphore-r1cs') or  @('lift-zcash-r1cs').  It is often largely automatic.")
 
    (xdoc::&&
-    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs)).  You pass it:")
+    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(tsee r1cs::verify-r1cs) (or a variant of it, like @(tsee zksemaphore::verify-semaphore-r1cs) or @(tsee zcash::verify-zcash-r1cs)).  You pass it:")
 
     (xdoc::ul-from-string
      "The R1CS
@@ -172,3 +172,6 @@ for general R1CS verification.  The actual input to the prover is a
 sequence of rule sets, to be applied one after the other.  We are
 currently working to formulate robust sequences of rule sets for R1CS
 proofs.")))))
+
+;; The old name of this topic was r1cs-verification-with-axe:
+(xdoc::defpointer r1cs::r1cs-verification-with-axe acl2::axe-r1cs)

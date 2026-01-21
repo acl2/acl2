@@ -1,6 +1,6 @@
 ; An R1CS gadget for comparing a packed value to a constant
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,7 +99,7 @@
 (defthm <=-of-index-of-lowest-0-aux
   (implies (and (equal 0 (getbit i x))
                 (<= j i)
-                (Natp j)
+                (natp j)
                 (natp i))
            (<= (index-of-lowest-0-aux j x) i))
   :hints (("Goal" :in-theory (enable INDEX-OF-LOWEST-0-AUX))))
@@ -1879,6 +1879,7 @@
 
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (local (include-book "kestrel/bv/rules4" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system))
 
 (local (in-theory (disable take-opener-alt remove-equal)))
 

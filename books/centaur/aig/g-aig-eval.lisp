@@ -95,7 +95,7 @@
 
 (define gobj-alist-to-bfr-alist ((x atom-key-gobj-val-alistp)
                                  gl::hyp)
-  (b* ((gl::hyp (gl::lbfr-hyp-fix gl::hyp)))
+  (b* ((gl::hyp (gl::hyp-norm gl::hyp)))
     (if (atom x)
         (mv nil nil gl::hyp)
       (b* (((mv nonnil unknown & gl::hyp) (gl::gtests (cdar x) gl::hyp))

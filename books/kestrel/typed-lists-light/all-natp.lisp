@@ -1,7 +1,7 @@
 ; A function to recognize lists of naturals
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,12 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "../sequences/defforall") ;todo: drop
+(include-book "kestrel/sequences/defforall" :dir :system) ;todo: drop
 
 (defforall all-natp (lst) (natp lst) :declares ((type t lst)))
 
-;; Disable?
-(defthm natp-of-nth-from-all-natp
+(defthmd natp-of-nth-when-all-natp
   (implies (and (all-natp lst)
                 (< i (len lst))
                 (natp i))
@@ -32,6 +31,13 @@
 (defthm all-natp-when-nat-listp
   (implies (nat-listp lst)
            (all-natp lst))
+  :hints (("Goal" :in-theory (enable all-natp nat-listp))))
+
+(defthm nat-listp-when-all-natp-cheap
+  (implies (all-natp lst)
+           (equal (nat-listp lst)
+                  (true-listp lst)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-natp nat-listp))))
 
 (defthm all-natp-of-set-difference-equal
@@ -50,3 +56,8 @@
                 (natp n))
            (natp (nth n x)))
   :rule-classes :type-prescription)
+
+(defthmd not-<-of-nth-and-0-when-all-natp
+  (implies (all-natp l)
+           (not (< (nth n l) 0)))
+  :hints (("Goal" :in-theory (enable all-natp nth))))

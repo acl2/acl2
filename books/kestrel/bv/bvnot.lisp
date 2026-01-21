@@ -1,7 +1,7 @@
 ; Logical negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "lognot")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -89,8 +90,7 @@
 (defthm bvchop-lognot-bvchop
   (equal (bvchop n (lognot (bvchop n x)))
          (bvchop n (lognot x)))
-  :hints (("Goal" :in-theory (e/d (lognot)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable lognot))))
 
 (defthm bvnot-of-bvnot
   (equal (bvnot size (bvnot size x))
@@ -215,3 +215,14 @@
            (equal (bvchop n (lognot (+ -1 (expt 2 n))))
                   0))
   :hints (("Goal" :in-theory (enable lognot))))
+
+(defthm bvnot-when-not-integerp
+  (implies (not (integerp x))
+           (equal (bvnot size x)
+                  (bvnot size 0)))
+  :hints (("Goal" :in-theory (enable bvnot))))
+
+(defthm bvnot-of-ifix
+  (equal (bvnot size (ifix x))
+         (bvnot size x))
+  :hints (("Goal" :in-theory (enable ifix))))

@@ -1,6 +1,6 @@
 ; A utility for making an IF-term in a propositional context
 
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,6 +30,24 @@
                 (pseudo-termp else))
            (pseudo-termp (make-if-term test then else)))
   :hints (("Goal" :in-theory (enable make-if-term))))
+
+(defthm termp-of-make-if-term
+  (implies (and (equal 3 (arity 'if w))
+                (termp test w)
+                (termp then w)
+                (termp else w))
+           (termp (make-if-term test then else) w))
+  :hints (("Goal" :in-theory (enable make-if-term))))
+
+(defthm logic-fnsp-of-make-if-term
+  (implies (and (logicp 'if w)
+                (logic-fnsp test w)
+                (logic-fnsp then w)
+                (logic-fnsp else w))
+           (logic-fnsp (make-if-term test then else) w))
+  :hints (("Goal" :in-theory (enable make-if-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The result is equivalent to (if test then else) under iff.
 (defund make-if-term-gen (test then else)

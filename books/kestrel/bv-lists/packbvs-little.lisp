@@ -1,6 +1,6 @@
 ; Packing a list of BVs to create a shorter list of larger BVs (little endian)
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
 ;; "Pack bit-vectors little"
 ;; Packs the ITEMS into larger bit-vectors.  Take ITEMS-PER-CHUNK elements of

@@ -1,6 +1,6 @@
 ; An assert utility that supports stobjs
 ;
-; Copyright (C) 2017-2024 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,7 +78,7 @@
          ,form
          (if erp
              (mv t
-                 (er hard 'assert-equal-with-stobjs2-fn"Calling ~x0 returned an error." ',whole-form)
+                 (er hard 'assert-equal-with-stobjs2-fn "Calling ~x0 returned an error." ',whole-form)
                  ,@stobjs)
            (if (equal result ,expected-result)
                (mv nil ;; no error

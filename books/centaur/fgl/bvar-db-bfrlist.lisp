@@ -46,22 +46,22 @@
   (defthm bfrlist-aux-of-get-bvar->term
     (implies (and (not (member v (bvar-db-bfrlist-aux n bvar-db)))
                   (< (nfix m) (nfix n))
-                  (<= (base-bvar$a bvar-db) (nfix m)))
-             (not (member v (fgl-object-bfrlist (get-bvar->term$a m bvar-db))))))
+                  (<= (base-bvar$c bvar-db) (nfix m)))
+             (not (member v (fgl-object-bfrlist (get-bvar->term$c m bvar-db))))))
 
   (defthm bfrlist-aux-of-add-term-bvar
-    (implies (<= (nfix n) (next-bvar$a bvar-db))
-             (equal (bvar-db-bfrlist-aux n (add-term-bvar$a obj bvar-db))
+    (implies (<= (nfix n) (next-bvar$c bvar-db))
+             (equal (bvar-db-bfrlist-aux n (add-term-bvar$c obj bvar-db))
                     (bvar-db-bfrlist-aux n bvar-db))))
 
   (defthm bfrlist-aux-of-update-term-equivs
-    (equal (bvar-db-bfrlist-aux n (update-term-equivs$a obj bvar-db))
+    (equal (bvar-db-bfrlist-aux n (update-term-equivs$c obj bvar-db))
            (bvar-db-bfrlist-aux n bvar-db)))
 
   (defthm subsetp-bfrlist-of-bvar-db-bfrlist-aux
     (implies (and (< (nfix m) (nfix n))
-                  (<= (base-bvar$a bvar-db) (nfix m)))
-             (subsetp (fgl-object-bfrlist (get-bvar->term$a m bvar-db))
+                  (<= (base-bvar$c bvar-db) (nfix m)))
+             (subsetp (fgl-object-bfrlist (get-bvar->term$c m bvar-db))
                       (bvar-db-bfrlist-aux n bvar-db)))
     :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
 
@@ -70,20 +70,20 @@
   ///
   (defthm bfrlist-of-get-bvar->term
     (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                  (< (nfix m) (next-bvar$a bvar-db))
-                  (<= (base-bvar$a bvar-db) (nfix m)))
-             (not (member v (fgl-object-bfrlist (get-bvar->term$a m bvar-db))))))
+                  (< (nfix m) (next-bvar$c bvar-db))
+                  (<= (base-bvar$c bvar-db) (nfix m)))
+             (not (member v (fgl-object-bfrlist (get-bvar->term$c m bvar-db))))))
 
   (defthm bvar-db-bfrlist-of-add-term-bvar
-    (equal (bvar-db-bfrlist (add-term-bvar$a obj bvar-db))
+    (equal (bvar-db-bfrlist (add-term-bvar$c obj bvar-db))
            (append (fgl-object-bfrlist obj)
                    (bvar-db-bfrlist bvar-db)))
     :hints (("goal" :in-theory (enable bvar-db-bfrlist-aux))))
 
   (defthm subsetp-bfrlist-of-bvar-db-bfrlist
-    (implies (and (< (nfix m) (next-bvar$a bvar-db))
-                  (<= (base-bvar$a bvar-db) (nfix m)))
-             (subsetp (fgl-object-bfrlist (get-bvar->term$a m bvar-db))
+    (implies (and (< (nfix m) (next-bvar$c bvar-db))
+                  (<= (base-bvar$c bvar-db) (nfix m)))
+             (subsetp (fgl-object-bfrlist (get-bvar->term$c m bvar-db))
                       (bvar-db-bfrlist bvar-db))))
 
   (defthm bvar-db-bfrlist-of-add-term-bvar-unique
@@ -94,4 +94,32 @@
                                     (bvar-db-bfrlist
                                      subsetp-bfrlist-of-bvar-db-bfrlist))
              :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
-                    (m (get-term->bvar$a obj bvar-db))))))))
+                    (m (get-term->bvar$c obj bvar-db))))))))
+
+
+
+(define bvar-db-bfrs-ok-aux ((n natp) bvar-db
+                             &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  :measure (nfix (- (nfix n) (base-bvar bvar-db)))
+  :guard (and (<= (base-bvar bvar-db) n)
+              (<= n (next-bvar bvar-db)))
+  (if (zp (- (lnfix n) (base-bvar bvar-db)))
+      t
+    (and (fgl-object-bfrs-ok (get-bvar->term (1- (lnfix n)) bvar-db))
+         (bvar-db-bfrs-ok-aux (1- (lnfix n)) bvar-db)))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (bvar-db-bfrlist-aux n bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
+
+(define bvar-db-bfrs-ok (bvar-db
+                         &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns (ok)
+  (bvar-db-bfrs-ok-aux (next-bvar bvar-db) bvar-db)
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (bvar-db-bfrlist bvar-db)))
+    :hints(("Goal" :in-theory (enable bvar-db-bfrlist)))))

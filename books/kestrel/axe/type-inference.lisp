@@ -1,7 +1,7 @@
 ; Getting type information to support the STP translation
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "known-predicates")
+(include-book "var-type-alists")
 (include-book "nodenum-type-alists")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
@@ -77,6 +78,13 @@
   :hints (("Goal" :in-theory (enable get-type-of-val-safe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund unquote-if-possible (x)
+  (declare (xargs :guard t))
+  (if (and (quotep x)
+           (consp (cdr x)))
+      (unquote x)
+    nil))
 
 ;; Returns an axe-type, or nil (if we could not determine the type).
 ;should some of the nil cases here be errors or warnings?
@@ -271,29 +279,29 @@
 ;returns a type (bv type, array type, etc.)
 ; only used once, just below
 (defun get-type-of-nodenum-during-cutting (n dag-array-name dag-array var-type-alist)
-  (declare (xargs :guard (and (symbol-alistp var-type-alist)
+  (declare (xargs :guard (and (var-type-alistp var-type-alist)
                               (natp n)
                               ;;(< n (alen1 dag-array-name dag-array))
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n)))))
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n)))
+                  :guard-hints (("Goal" :in-theory (enable var-type-alistp)))))
   ;;otherwise, look up the expression at that nodenum:
   (let ((expr (aref1 dag-array-name dag-array n)))
     (if (variablep expr)
         (if (assoc-eq expr var-type-alist) ;clear this up if nil is not a type...
             (lookup-eq expr var-type-alist)
-          (hard-error 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" (acons #\0 expr nil)))
+          (er hard? 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" expr))
       (let ((fn (ffn-symb expr)))
         (if (eq 'quote fn)
             (get-type-of-val-checked (unquote expr))
           ;;it's a regular function call:
           (or (maybe-get-type-of-function-call fn (dargs expr))
-              (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
-                          (acons #\0 expr (acons #\1 n nil)))))))))
+              (er hard? 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1" expr n)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; note that this takes a var-type-alist
 (defund get-type-of-arg-during-cutting (arg dag-array-name dag-array var-type-alist)
-  (declare (xargs :guard (and (symbol-alistp var-type-alist)
+  (declare (xargs :guard (and (var-type-alistp var-type-alist)
                               (or (myquotep arg)
                                   (and (natp arg)
                                        (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))

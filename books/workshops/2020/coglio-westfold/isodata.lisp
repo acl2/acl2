@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -31,7 +31,7 @@
 (include-book "std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "std/system/recursive-calls" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 ; (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "workshops/2017/coglio-kaufmann-smith/support/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -2421,7 +2421,7 @@
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the measure of the function, if recursive."
-  (b* ((old-measure (measure old$ wrld)))
+  (b* ((old-measure (get-measure old$ wrld)))
     (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-measure
                                                     old$
                                                     arg-isomaps
@@ -2519,7 +2519,7 @@
        (guard (untranslate guard nil wrld))
        (recursive (recursivep old$ nil wrld))
        (wfrel? (if recursive
-                   (well-founded-relation old$ wrld)
+                   (get-well-founded-relation old$ wrld)
                  nil))
        (measure? (if recursive
                      (isodata-gen-new-fn-measure old$ arg-isomaps wrld)

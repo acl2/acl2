@@ -21,24 +21,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   ;; TODO: transformation should define the const
   ;; TODO: transformation should take strings, not idents
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "foo")
-                                (c$::ident "bar")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.COPY-FN.c"
+    :file "new/test1.c"
     :content "int foo(int y, int z) {
   int x = 5;
   return x + y - z;
 }
+
 int bar(int y, int z) {
   int x = 5;
   return x + y - z;
@@ -47,27 +49,69 @@ int bar(int y, int z) {
 
   :with-output-off nil)
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This transformation shows
+
 (acl2::must-succeed*
-  (c$::input-files :files ("fib.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "fibonacci")
-                                (c$::ident "fib")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "fib.COPY-FN.c"
+    :file "new/test2.c"
+    :content "int foo(int x) {
+  if (x) {
+    return foo(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
+}
+
+int bar(int x) {
+  if (x) {
+    return bar(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("fib.c")
+                   :const *old*)
+
+  (defconst *new*
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "fibonacci")
+                           (c$::ident "fib")))
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/fib.c"
     :content "int fibonacci(int x) {
   if (x <= 1) {
     return x;
   }
   return fibonacci(x - 1) + fibonacci(x - 2);
 }
+
 int fib(int x) {
   if (x <= 1) {
     return x;
@@ -87,19 +131,20 @@ int fib(int x) {
 ;; should not be renamed.
 
 (acl2::must-succeed*
-  (c$::input-files :files ("generic-selection.c")
-                   :gcc t
+  (c$::input-files :files '("generic-selection.c")
+                   :ienv (c$::ienv-default :gcc t)
                    :const *old*)
 
   (defconst *new*
-    (copy-fn-transunit-ensemble *old*
-                                (c$::ident "foo")
-                                (c$::ident "bar")))
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "generic-selection.COPY-FN.c"
+    :file "new/generic-selection.c"
     :content "int foo(int x) {
   if (x == 0) {
     return x;
@@ -109,6 +154,7 @@ int fib(int x) {
     foo;
   }));
 }
+
 int bar(int x) {
   if (x == 0) {
     return x;

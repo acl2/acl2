@@ -5,6 +5,8 @@
 #||
 (depends-on "demo-input.lsp")
 (depends-on "demo-log.txt")
+(include-book "nested")
+(include-book "mem") ; not actually necessary, since "mem" is included in "mem-as-ht"
 (include-book "mem-as-ht")
 ||#
 

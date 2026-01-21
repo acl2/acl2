@@ -11,10 +11,18 @@
 
 (in-package "ACL2")
 
-(include-book "rules") ;drop? for signed-byte-p-when-top-bit-0
+(local (include-book "rules")) ;drop? for signed-byte-p-when-top-bit-0
 (local (include-book "unsigned-byte-p"))
+(include-book "logapp-def")
+(include-book "bvcat-def")
 (include-book "getbit")
 (include-book "repeatbit")
+(include-book "bvlt")
+(include-book "trim")
+(include-book "sbvlt-def")
+(include-book "bvsx-def")
+(include-book "kestrel/booleans/boolor" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -52,9 +60,9 @@
                 (integerp high))
            (equal (slice high low x)
                   (repeatbit (+ 1 high (- low)) 1)))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail
-                                          floor-when-negative-and-small)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail
+                                     floor-when-negative-and-small
+                                     repeatbit))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
 ;; any bit above the sign bit is the same as the sign bit
@@ -229,6 +237,19 @@
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
 
+(defthm bvlt-of-bvcat-arg2-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size (bvcat highsize x lowsize y) k)
+                  ;;redid conc
+                  (boolor (bvlt highsize x (slice (+ -1 size) lowsize k))
+                          (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
+                                   (bvlt lowsize y k))))))
+
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
                 (NATP HIGHSIZE)
@@ -335,6 +356,19 @@
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   ()))))
 
+(defthm bvlt-of-bvcat-arg3-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep lowsize)
+                              (quotep highsize)))
+                (equal size (+ lowsize highsize))
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvlt size k (bvcat highsize x lowsize y))
+                  ;redid conc
+                  (boolor (bvlt highsize (slice (+ -1 size) lowsize k) x)
+                          (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
+                                   (bvlt lowsize k y))))))
+
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen
   (implies (< size (+ lowsize highsize))
@@ -386,7 +420,6 @@
                                  ;BVCHOP-TOP-BIT-CASES
                                  )
                                   (EXPONENTS-ADD
-                                   ;BVCAT-OF-+-HIGH ;looped
                                    BVLT-OF-BVCHOP-ARG3-SAME
                                    BVLT-OF-BVCHOP-ARG2
                                    EXPONENTS-ADD-FOR-NONNEG-EXPONENTS

@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -199,9 +199,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; since we can get better context info from boolif than from boolor?
-(defthmd acl2::boolor-becomes-boolif
+(defthmd boolor-becomes-boolif
   (equal (boolor x y)
          (boolif x t y))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(theory-invariant (incompatible (:rewrite acl2::boolif-when-quotep-arg2) (:rewrite acl2::boolor-becomes-boolif)))
+(theory-invariant (incompatible (:rewrite boolif-when-quotep-arg2) (:rewrite boolor-becomes-boolif)))
+(theory-invariant (incompatible (:rewrite boolif-when-quotep-arg3) (:rewrite boolor-becomes-boolif)))
+(theory-invariant (incompatible (:rewrite boolif-x-x-y-becomes-boolor) (:rewrite boolor-becomes-boolif)))
+
+;; since we can get better context info from boolif than from booland?
+(defthmd booland-becomes-boolif
+  (equal (booland x y)
+         (boolif x y nil))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(theory-invariant (incompatible (:rewrite boolif-when-quotep-arg2) (:rewrite booland-becomes-boolif)))
+(theory-invariant (incompatible (:rewrite boolif-when-quotep-arg3) (:rewrite booland-becomes-boolif)))
+(theory-invariant (incompatible (:rewrite boolif-x-y-x-becomes-booland) (:rewrite booland-becomes-boolif)))

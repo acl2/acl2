@@ -17,7 +17,7 @@
 ;(include-book "evaluator") ; for apply-axe-evaluator ; todo: use basic eval but need to evaluate dag-val-with-axe-evaluator in examples like rc4-loop, make this file a generator that takes an evaluator?
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
+(include-book "kestrel/booleans/boolif-def" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/typed-lists-light/minelem" :dir :system) ; todo: include just the def?
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)

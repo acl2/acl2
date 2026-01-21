@@ -1,0 +1,268 @@
+# ACL2 Cryptographic Primes Project Rules
+
+## Project Overview
+This project contains ACL2 theorem prover code for cryptographic prime numbers, specifically focusing on Pratt certificates for primality proofs. The main work involves creating defprime definitions with complete factorization trees.
+
+## Language & Framework
+- **Primary Language**: Common Lisp (ACL2 dialect)
+- **Theorem Prover**: ACL2
+- **Mathematical Verification**: SageMath for computational verification
+- **Target**: Formal verification of cryptographic primes
+
+## Code Style & Conventions
+
+### Naming Conventions
+- Use lowercase with hyphens for function and constant names (e.g., `ed25519-group-prime`)
+- Use descriptive names that clearly indicate the cryptographic primitive
+- Follow ACL2 community conventions
+
+### File Structure
+- Prime definitions go in `books/kestrel/crypto/primes/`
+- Each prime gets its own `.lisp` file
+- Include proper package declarations: `(in-package "PRIMES")`
+- Include book dependencies: `(include-book "kestrel/number-theory/defprime" :dir :system)`
+
+### Documentation & Comments
+- Include comprehensive header comments with:
+  - Purpose and cryptographic context
+  - Accurate references (RFC specifications, academic papers, etc.)
+  - Copyright information
+- Use proper comment formatting with `;;` for major sections
+- Include inline comments for complex Pratt certificate sections
+
+## Pratt Certificate Specific Rules
+
+### Structure Requirements
+- Use `defprime` macro for all prime definitions
+- First element in each factorization tuple must be the primitive root
+- **CRITICAL RULE: Prime factors less than 1,000,000 must be given empty certificates `()` rather than detailed sub-certificates**
+- Only factors ≥ 1,000,000 should have detailed sub-certificates with (root factors exponents sub-certs) structure
+- Include complete factorization trees down to small primes, but stop detailed certificates at the 1,000,000 threshold
+
+### Mathematical Verification
+- Always verify constants with SageMath before including in code
+- Include `assert-event` statements for:
+  - Bit length verification
+  - Decimal value verification  
+  - Formula verification (e.g., `2^255 - 19`)
+- Verify all primitive roots are mathematically correct
+
+### Systematic Pratt Certificate Generation
+**CRITICAL: Follow this exact process to avoid structural errors**
+
+**Step 1: Generate Complete Factorization Tree with SageMath**
+```python
+# Use this SageMath template for systematic certificate generation
+def generate_pratt_certificate(p):
+    print(f"=== Certificate for prime {p} ===")
+    if p < 1000000:
+        return "()"  # CRITICAL: Small primes (< 1,000,000) get empty certificates
+    
+    # Factor p-1
+    pm1 = p - 1
+    factors = factor(pm1)
+    print(f"p-1 = {factors}")
+    
+    # Find primitive root
+    Fp = GF(p)
+    root = Fp.primitive_element()
+    print(f"Primitive root: {root}")
+    
+    # Extract factor and exponent lists
+    factor_list = [f for f, e in factors]
+    exp_list = [e for f, e in factors]
+    
+    # Recursively generate sub-certificates
+    sub_certs = []
+    for f in factor_list:
+        sub_cert = generate_pratt_certificate(f)
+        sub_certs.append(sub_cert)
+    
+    return f"({root} {factor_list} {exp_list} {sub_certs})"
+```
+
+**Step 2: Validate Structure Before Manual Transcription**
+- Verify factor count matches exponent count matches sub-certificate count
+- Check that all large factors (>1M) have non-empty sub-certificates
+- Confirm all small factors (<1M) have empty "()" sub-certificates
+
+**Step 3: Transcribe Level-by-Level with Verification**
+- Start with the outermost level and work inward
+- After each level, count: factors = exponents = sub-certificates
+- Test ACL2 compilation at each major level addition
+
+**Step 4: Never Manual-Construct Deep Certificates**
+- For certificates >3 levels deep, use programmatic generation
+- Always cross-reference with SageMath output
+- Validate the mathematical structure before worrying about syntax
+
+### Pratt Certificate Format
+```lisp
+(defprime prime-name
+  #xHEXVALUE
+  (primitive-root (factor1 factor2 ...)
+                  (power1 power2 ...)
+                  (subfactorization1 subfactorization2 ...)))
+```
+
+## Critical Code Quality Checks
+
+### Parentheses Balancing
+**CRITICAL: Parentheses balancing is the #1 source of certification failures**
+
+**Basic Rules:**
+- Each opening `(` must have a corresponding closing `)`
+- `defprime` is a regular Lisp macro - no special parentheses rules apply
+- Use proper indentation to visually verify nesting levels
+
+**Pratt Certificate Structure Requirements:**
+- The sub-certificates list must have EXACTLY the same number of elements as factors
+- Each element is either `()` (for small primes) or `(root (factors...) (exponents...) (sub-certificates...))`
+- Deep nesting (4-6 levels) makes manual counting error-prone
+
+**Common Errors in Deep Certificates:**
+- Missing closing parentheses in the deepest certificate levels
+- Mismatched number of sub-certificates vs. number of factors
+- Lost track of nesting depth during manual transcription
+
+**Prevention Strategies:**
+- Build certificates level by level, verifying balance at each step
+- Use an editor with parentheses matching/highlighting
+- Count factors and sub-certificates at each level: they MUST match
+- For complex certificates (>3 levels deep), consider programmatic generation
+- Test compile frequently during certificate construction
+
+**Debugging Unbalanced Parentheses:**
+1. Start from the innermost level and work outward
+2. Verify each `(factors...)` list has matching `(exponents...)` and `(sub-certificates...)` lists
+3. Ensure each sub-certificate list has exactly as many elements as the factor list
+4. Use indentation to visually trace the nesting structure
+
+### SageMath Integration
+- Auto-run SageMath commands for mathematical verification
+- Verify all factorizations match SageMath output exactly
+- Check primitive roots using `GF(p, modulus='primitive').gen()`
+- Confirm all factors are under specified thresholds
+
+## ACL2 Certification Workflow
+
+### Post-Creation Verification
+After creating any new `.lisp` file:
+1. **Syntax Check**: Verify parentheses are balanced and ACL2 syntax is correct
+2. **Mathematical Verification**: Confirm all constants with SageMath
+3. **ACL2 Certification**: Run `cert.pl <filename>` from the primes directory
+4. **Certification Success**: Ensure `.cert` file is generated without errors
+
+### Certification Command
+```bash
+cd books/kestrel/crypto/primes
+cert.pl <newfile.lisp>
+```
+
+### Certification Requirements
+- File must compile without syntax errors
+- All mathematical assertions must pass
+- Pratt certificate must be mathematically valid
+- All included books must be accessible
+- No undefined functions or constants
+
+### Troubleshooting Certification Failures
+
+**Parentheses/Syntax Errors (Most Common):**
+- Check for unbalanced parentheses (use the debugging steps above)
+- Verify all primitive roots are correct
+- Confirm all factors are properly decomposed
+
+**Mathematical/Structural Errors:**
+- Ensure all subfactorizations are complete
+- Verify all mathematical assertions are correct
+- Check that primitive roots have correct multiplicative order
+- Confirm factorizations match SageMath output exactly
+
+**Pratt Certificate Structure Errors:**
+- Verify certificate was generated systematically (not manually constructed)
+- Check that factor count = exponent count = sub-certificate count at each level
+- **ENFORCE THRESHOLD RULE: Ensure large factors (≥1,000,000) have proper detailed sub-certificates**
+- **ENFORCE THRESHOLD RULE: Confirm small factors (<1,000,000) have empty "()" certificates**
+- Common error: Providing detailed certificates for primes like 337, 263, 131, etc. (these should be "()")
+- Validate that the certificate tree is mathematically sound
+
+**When Certificate Generation Goes Wrong:**
+1. **Stop and restart with SageMath** - Don't try to fix a broken manual construction
+2. **Use the systematic generation process** - Follow the step-by-step template
+3. **Validate each level** - Don't proceed until the current level is correct
+4. **Test incremental compilation** - Add levels gradually and test ACL2 compilation
+
+## File Templates
+
+### Working Example Template
+**Use `ed25519-base-prime.lisp` as the primary template** - it demonstrates:
+- Complete Pratt certificate with all factors under 1,000,000
+- Proper primitive root usage throughout the certificate tree
+- Correct mathematical verification with assert-events
+- Accurate references (RFC 8032) and documentation
+- Proper ACL2 structure and formatting
+- Deep factorization tree with balanced parentheses
+
+### Standard Prime File Structure
+```lisp
+; Library: [Description] for [Cryptographic Primitive]
+;
+; Copyright (C) 2025 [Author]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; [Description of the prime and its cryptographic use]
+;; [Accurate references to specifications]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "PRIMES")
+
+(include-book "kestrel/number-theory/defprime" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defprime prime-name
+  #xHEXVALUE
+  ;; Certificate generated using SageMath
+  (pratt-certificate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Verification assertions
+(assert-event (equal (integer-length (prime-name)) EXPECTED-BITS))
+(assert-event (equal (prime-name) DECIMAL-VALUE))
+(assert-event (equal (prime-name) FORMULA-EXPRESSION))
+```
+
+## Mathematical Standards
+- All large numbers must be verified against known specifications
+- Include both hexadecimal and decimal representations
+- Verify bit lengths match cryptographic standards
+- Ensure all mathematical formulas are accurate (e.g., `2^252 + constant`)
+
+## Error Prevention
+- Double-check parentheses balancing in complex nested structures
+- Verify all primitive roots using mathematical software
+- Confirm all factorizations are mathematically correct
+- Test ACL2 compilation before considering work complete
+
+## References & Accuracy
+- Always include accurate RFC numbers and URLs
+- Reference academic papers with correct titles and authors
+- Include relevant cryptographic standard specifications
+- Verify all mathematical constants against authoritative sources
+
+## SageMath Verification Protocol
+1. Verify prime is actually prime
+2. Confirm formula matches (e.g., `2^255 - 19`)
+3. Check all factorizations of `p-1` for certificate primes
+4. Verify all primitive roots have correct multiplicative order
+5. Ensure all factors meet size requirements (< 1,000,000)
+
+## ACL2 Integration
+- Ensure all code compiles and certifies in ACL2
+- Use proper ACL2 syntax and conventions
+- Include appropriate `:parents` documentation links
+- Follow ACL2 community coding standards

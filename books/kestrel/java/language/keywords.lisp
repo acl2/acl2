@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,31 +12,28 @@
 
 (include-book "unicode-characters")
 
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ keywords
   :parents (syntax)
-  :short "The Java keywords [JLS14:3.9]."
+  :short "The Java keywords [JLS25:3.9]."
   :long
   (xdoc::topstring
    (xdoc::p
     "Some character sequences are Java keywords in all contexts,
-     namely the ones listed in the grammar production in [JLS14:3.9].
+     namely the reserved keywords.
      Other character sequences are Java keywords
      only in certain module-related contexts,
-     as described in [JLS14:3.9] in prose (i.e. without grammar productions);
-     these are called `restricted keywords'.")
-   (xdoc::p
-    "To avoid conflict or confusion with ACL2 keywords,
-     we prefix @('keyword') with @('j') in ACL2 function and constant names
-     that pertain to Java keywords."))
+     namely the contextual keywords."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *jkeywords*
-  :short "The (non-restricted) Java keywords, as ACL2 strings."
+(defval *reserved-keywords*
+  :short "The reserved Java keywords, as ACL2 strings."
   (list "abstract"
         "assert"
         "boolean"
@@ -88,73 +85,79 @@
         "volatile"
         "while"
         "_")
+
   ///
 
-  (assert-event (string-listp *jkeywords*))
+  (assert-event (string-listp *reserved-keywords*))
 
-  (assert-event (= (len *jkeywords*) 51))
+  (assert-event (= (len *reserved-keywords*) 51))
 
-  (assert-event (no-duplicatesp-equal *jkeywords*))
+  (assert-event (no-duplicatesp-equal *reserved-keywords*))
 
-  (defruled ascii-listp-of-*jkeywords*
-    (implies (member-equal keyword *jkeywords*)
+  (defruled ascii-listp-of-*keywords*
+    (implies (member-equal keyword *reserved-keywords*)
              (ascii-listp (string=>unicode keyword)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *restricted-jkeywords*
-  :short "The restricted Java keywords, as ACL2 strings."
-  (list "open"
+(defval *contextual-keywords*
+  :short "The contextual Java keywords, as ACL2 strings."
+  (list "exports"
         "module"
-        "requires"
-        "transitive"
-        "exports"
+        "non-sealed"
+        "open"
         "opens"
-        "to"
-        "uses"
+        "permits"
         "provides"
-        "with")
+        "record"
+        "requires"
+        "sealed"
+        "to"
+        "transitive"
+        "uses"
+        "var"
+        "when"
+        "with"
+        "yield")
+
   ///
 
-  (assert-event (string-listp *restricted-jkeywords*))
+  (assert-event (string-listp *contextual-keywords*))
 
-  (assert-event (= (len *restricted-jkeywords*) 10))
+  (assert-event (= (len *contextual-keywords*) 17))
 
-  (assert-event (no-duplicatesp-equal *restricted-jkeywords*))
+  (assert-event (no-duplicatesp-equal *contextual-keywords*))
 
-  (defruled ascii-listp-of-*restricted-jkeywords*
-    (implies (member-equal keyword *restricted-jkeywords*)
+  (defruled ascii-listp-of-*contextual-keywords*
+    (implies (member-equal keyword *contextual-keywords*)
              (ascii-listp (string=>unicode keyword)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define jkeywordp (x)
+(define reserved-keywordp (x)
   :returns (yes/no booleanp)
-  :short "Recognize (non-restricted) Java keywords."
+  :short "Recognize reserved Java keywords."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A Java keyword is a list of Java Unicode characters
+    "A reserved Java keyword is a list of Java Unicode characters
      that consist of the (ASCII) codes of
-     some element in @(tsee *jkeywords*).")
-   (xdoc::p
-    "The @('j') in front of @('jkeywordp') avoids
-     a conflict with the built-in @(tsee keywordp)."))
+     some element in @(tsee *reserved-keywords*)."))
   (and (ascii-listp x)
-       (member-equal (ascii=>string x) *jkeywords*)
+       (member-equal (ascii=>string x) *reserved-keywords*)
        t)) ; turn result of MEMBER-EQUAL into boolean
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restricted-jkeywordp (x)
+(define contextual-keywordp (x)
   :returns (yes/no booleanp)
-  :short "Recognize restricted Java keywords."
+  :short "Recognize contextual Java keywords."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A restricted Java keyword is a list of Java Unicode characters
+    "A contextual Java keyword is a list of Java Unicode characters
      that consist of the (ASCII) codes of
-     some element in @(tsee *restricted-jkeywords*)."))
+     some element in @(tsee *contextual-keywords*)."))
   (and (ascii-listp x)
-       (member-equal (ascii=>string x) *restricted-jkeywords*)
+       (member-equal (ascii=>string x) *contextual-keywords*)
        t)) ; turn result of MEMBER-EQUAL into boolean

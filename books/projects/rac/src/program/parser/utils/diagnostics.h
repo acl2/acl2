@@ -11,21 +11,26 @@ class Statement;
 struct Location {
 
   inline static Location from_file(const std::string &f) {
-    return Location{ 0, 0, 0, 0, 0, 0, f };
+    return Location{0, 0, 0, 0, 0, 0, f};
   }
 
   // Used for AST nodes which don't have a clear location (and where it should
   // not matter !!).
   inline static Location dummy() {
-    return Location{ -1, -1, -1, -1, -1, -1, "" };
+    return Location{-1, -1, -1, -1, -1, -1, ""};
+  }
+
+  inline static Location builtin() {
+    return Location{-1, -1, -1, -1, -1, -1, "", true};
   }
 
   int first_line, last_line, first_column, last_column;
   // Position relative to the begining of the file.
   long f_pos, f_pos_end;
 
-  // TODO replace this by the string view ?
   std::string file_name;
+
+  bool is_builtin = false;
 
   friend std::ostream &operator<<(std::ostream &os, const Location &loc);
 };
@@ -52,12 +57,12 @@ public:
     }
 
     [[nodiscard]] Diagnostic &note(const std::string &msg) {
-      note_msg_ = { msg };
+      note_msg_ = {msg};
       return *this;
     }
 
     [[nodiscard]] Diagnostic &note_location(const Location &loc) {
-      note_loc_ = { loc };
+      note_loc_ = {loc};
       return *this;
     }
 
@@ -75,9 +80,9 @@ public:
     const Location &error_loc_;
     const std::string &error_msg_;
 
-    std::optional<std::reference_wrapper<const Location> > context_;
-    std::optional<std::reference_wrapper<const Location> > note_loc_;
-    std::optional<std::reference_wrapper<const std::string> > note_msg_;
+    std::optional<std::reference_wrapper<const Location>> context_;
+    std::optional<std::reference_wrapper<const Location>> note_loc_;
+    std::optional<std::reference_wrapper<const std::string>> note_msg_;
   };
 
   void setup(FILE *f) { file_ = f; }

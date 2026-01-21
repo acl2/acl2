@@ -3522,107 +3522,115 @@
    (X86ISA::IS-POWER-OF-2P 1 :SYSTEM
                            .
                            "projects/x86isa/machine/rflags-spec")))
- ((JUSTIFICATION (X86ISA::PTR)
-                 (NIL O-P . O<)
-                 ((NFIX (BINARY-+ '140737488355328
-                                  (UNARY-- X86ISA::PTR)))
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (X86ISA::PTR)
-                  (NIL O-P . O<)
-                  ((NFIX (BINARY-+ '140737488355328
-                                   (UNARY-- X86ISA::PTR)))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ '140737488355328
-                          (UNARY-- X86ISA::PTR)))))
-    ((NOT (SIGNED-BYTE-P '48 X86ISA::PTR))
-     (MV-NTH '0
-             (X86ISA::RML08 X86ISA::PTR ':R
-                            X86ISA::X86))
-     (EQUAL '0
-            (MV-NTH '1
-                    (X86ISA::RML08 X86ISA::PTR ':R
-                                   X86ISA::X86)))
-     (O< (NFIX (BINARY-+ '140737488355328
-                         (UNARY-- (BINARY-+ '1 X86ISA::PTR))))
-         (NFIX (BINARY-+ '140737488355328
-                         (UNARY-- X86ISA::PTR))))))
-   (X86ISA::READ-MEMORY-ZERO-TERMINATED 3 :SYSTEM
-                                        .
-                                        "projects/x86isa/machine/environment")))
- ((JUSTIFICATION (I X86ISA::BITS)
-                 (NIL O-P . O<)
-                 ((ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (I X86ISA::BITS)
-                  (NIL O-P . O<)
-                  ((ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))))
-    ((NOT (INTEGERP I))
-     (< I '0)
-     (NOT (INTEGERP X86ISA::BITS))
-     (< X86ISA::BITS '0)
-     (< X86ISA::BITS I)
-     (EQUAL X86ISA::BITS I)
-     (LOGBITP I N)
-     (O< (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- (BINARY-+ '1 I))))
-         (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I))))))
-   (X86ISA::TZCNT 3 :SYSTEM
-                  .
-                  "projects/x86isa/machine/instructions/bit")))
  ((JUSTIFICATION (X86ISA::START-REG)
                  (NIL O-P . O<)
-                 ((NFIX (BINARY-+ '16
+                 ((NFIX (BINARY-+ '8
                                   (UNARY-- X86ISA::START-REG)))
                   IF MV-LIST RETURN-LAST))
   ((JUSTIFICATION (X86ISA::START-REG)
                   (NIL O-P . O<)
-                  ((NFIX (BINARY-+ '16
+                  ((NFIX (BINARY-+ '8
                                    (UNARY-- X86ISA::START-REG)))
                    IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ '16
+   (((O-P (NFIX (BINARY-+ '8
                           (UNARY-- X86ISA::START-REG)))))
-    ((NOT (UNSIGNED-BYTE-P '4 X86ISA::START-REG))
+    ((NOT (UNSIGNED-BYTE-P '3 X86ISA::START-REG))
      (EQUAL X86ISA::CNT '0)
      (MV-NTH '0
-             (X86ISA::RME128$INLINE X86ISA::PROC-MODE
-                                    X86ISA::START-ADDR X86ISA::SEG-REG ':R
-                                    X86ISA::INST-AC? X86ISA::X86))
+             (X86ISA::RME80$INLINE X86ISA::PROC-MODE
+                                   X86ISA::START-ADDR X86ISA::SEG-REG ':R
+                                   X86ISA::INST-AC? X86ISA::X86))
      (EQUAL (BINARY-+ '-1 X86ISA::CNT) '0)
-     (O< (NFIX (BINARY-+ '16
+     (O< (NFIX (BINARY-+ '8
                          (UNARY-- (BINARY-+ '1 X86ISA::START-REG))))
-         (NFIX (BINARY-+ '16
+         (NFIX (BINARY-+ '8
                          (UNARY-- X86ISA::START-REG))))))
-   (X86ISA::READ-XMM-REGS 7 :SYSTEM
+   (X86ISA::READ-MM-REGS 7 :SYSTEM
+                         .
+                         "projects/x86isa/machine/instructions/x87"))
+  ((JUSTIFICATION (X86ISA::START-REG)
+                  (NIL O-P . O<)
+                  ((NFIX (BINARY-+ '8
+                                   (UNARY-- X86ISA::START-REG)))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX (BINARY-+ '8
+                          (UNARY-- X86ISA::START-REG)))))
+    ((< (BINARY-+ '8
+                  (UNARY-- X86ISA::START-REG))
+        '0)
+     (NOT (INTEGERP X86ISA::START-REG))
+     (< X86ISA::START-REG '0)
+     (EQUAL X86ISA::START-REG '8)
+     (O< (NFIX (BINARY-+ '8
+                         (UNARY-- (BINARY-+ '1 X86ISA::START-REG))))
+         (NFIX (BINARY-+ '8
+                         (UNARY-- X86ISA::START-REG))))))
+   (X86ISA::SET-FP-TAG-FN 4 :SYSTEM
                           .
                           "projects/x86isa/machine/instructions/x87")))
- ((JUSTIFICATION (X86ISA::ADDR)
+ ((JUSTIFICATION (X)
                  (NIL O-P . O<)
-                 ((NFIX (BINARY-+ '281474976710656
-                                  (UNARY-- X86ISA::ADDR)))
+                 ((X86ISA::SDM-INSTRUCTION-TABLE-COUNT X)
                   IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (X86ISA::ADDR)
+  ((JUSTIFICATION (X)
                   (NIL O-P . O<)
-                  ((NFIX (BINARY-+ '281474976710656
-                                   (UNARY-- X86ISA::ADDR)))
+                  ((X86ISA::SDM-INSTRUCTION-TABLE-COUNT X)
                    IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ '281474976710656
-                          (UNARY-- X86ISA::ADDR)))))
-    ((MV-NTH '0
-             (X86ISA::RML08 X86ISA::ADDR ':R
-                            X86ISA::X86))
-     (EQUAL (MV-NTH '1
-                    (X86ISA::RML08 X86ISA::ADDR ':R
-                                   X86ISA::X86))
-            '0)
-     (NOT (X86ISA::CANONICAL-ADDRESS-P$INLINE (BINARY-+ '1 X86ISA::ADDR)))
-     (O< (NFIX (BINARY-+ '281474976710656
-                         (UNARY-- (BINARY-+ '1 X86ISA::ADDR))))
-         (NFIX (BINARY-+ '281474976710656
-                         (UNARY-- X86ISA::ADDR))))))
-   (X86ISA::READ-CSTR-FROM-MEMORY1 3 :SYSTEM
-                                   .
-                                   "projects/x86isa/machine/instructions/pio")))
+   (((O-P (X86ISA::SDM-INSTRUCTION-TABLE-COUNT X)))
+    ((NOT (CONSP (X86ISA::SDM-INSTRUCTION-TABLE-FIX$INLINE X)))
+     (O< (X86ISA::SDM-INSTRUCTION-TABLE-COUNT (CDR (X86ISA::SDM-INSTRUCTION-TABLE-FIX$INLINE X)))
+         (X86ISA::SDM-INSTRUCTION-TABLE-COUNT X)))
+    ((NOT (CONSP (X86ISA::SDM-INSTRUCTION-TABLE-FIX$INLINE X)))
+     (O< (X86ISA::SDM-INSTRUCTION-TABLE-COUNT (X86ISA::SDM-INSTRUCTION-TABLE-ENTRY->SUBSECS$INLINE (CDR (CAR (X86ISA::SDM-INSTRUCTION-TABLE-FIX$INLINE X)))))
+         (X86ISA::SDM-INSTRUCTION-TABLE-COUNT X))))
+   (X86ISA::SDM-INSTRUCTION-TABLE-IMPLEMENTED-INSTRUCTIONS 1 :SYSTEM
+                                                           .
+                                                           "projects/x86isa/machine/catalogue-base")
+   (X86ISA::SDM-INSTRUCTION-TABLE-INSTRUCTION-COUNTS :SYSTEM
+                                                     .
+                                                     "projects/x86isa/machine/catalogue-doc")))
+ ((JUSTIFICATION (STATE X86ISA::CHANNEL)
+                 (NIL O-P . O<)
+                 ((FILE-MEASURE X86ISA::CHANNEL STATE)
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (STATE CHANNEL)
+                  (NIL O-P . O<)
+                  ((FILE-MEASURE CHANNEL STATE)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (FILE-MEASURE CHANNEL STATE)))
+    ((NOT (STATE-P STATE))
+     (NOT (MV-NTH '0 (READ-CHAR$ CHANNEL STATE)))
+     (O< (FILE-MEASURE CHANNEL
+                       (MV-NTH '1 (READ-CHAR$ CHANNEL STATE)))
+         (FILE-MEASURE CHANNEL STATE))))
+   (TR-READ-CHAR$-ALL 3 :SYSTEM
+                      . "std/io/read-file-characters"))
+  ((JUSTIFICATION (STATE CHANNEL)
+                  (NIL O-P . O<)
+                  ((FILE-MEASURE CHANNEL STATE)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (FILE-MEASURE CHANNEL STATE)))
+    ((NOT (STATE-P STATE))
+     (MV-NTH '0 (READ-OBJECT CHANNEL STATE))
+     (O< (FILE-MEASURE CHANNEL
+                       (MV-NTH '2 (READ-OBJECT CHANNEL STATE)))
+         (FILE-MEASURE CHANNEL STATE))))
+   (TR-READ-OBJECT-ALL 3 :SYSTEM . "std/io/read-file-objects")
+   (VL::VL-READ-ZIP-AUX :SYSTEM . "centaur/vl/kit/zipfile"))
+  ((JUSTIFICATION (STATE X86ISA::CHANNEL)
+                  (NIL O-P . O<)
+                  ((FILE-MEASURE X86ISA::CHANNEL STATE)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (FILE-MEASURE X86ISA::CHANNEL STATE)))
+    ((NOT (MV-NTH '0
+                  (READ-BYTE$ X86ISA::CHANNEL STATE)))
+     (O< (FILE-MEASURE X86ISA::CHANNEL
+                       (MV-NTH '1
+                               (READ-BYTE$ X86ISA::CHANNEL STATE)))
+         (FILE-MEASURE X86ISA::CHANNEL STATE))))
+   (X86ISA::READ-CHANNEL-INTO-BYTE-LIST 3 :SYSTEM
+                                        .
+                                        "projects/x86isa/tools/execution/execloaders")))
  ((JUSTIFICATION (PROOF-CHECKER-ARRAY::I MAX)
                  (NIL O-P . O<)
                  ((NFIX (BINARY-+ MAX (UNARY-- PROOF-CHECKER-ARRAY::I)))
@@ -3647,22 +3655,6 @@
      (O< (NFIX (BINARY-+ J (UNARY-- (BINARY-+ '1 X))))
          (NFIX (BINARY-+ J (UNARY-- X))))))
    (COMPRESS211 6))
-  ((JUSTIFICATION (FARRAY::I MAX)
-                  (NIL O-P . O<)
-                  ((NFIX (BINARY-+ MAX (UNARY-- FARRAY::I)))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ MAX (UNARY-- FARRAY::I)))))
-    ((NOT (INTEGERP FARRAY::I))
-     (< FARRAY::I '0)
-     (NOT (< FARRAY::I (FARRAY::MEM-LEN FARRAY::ST)))
-     (NOT (INTEGERP MAX))
-     (< MAX '0)
-     (NOT (< MAX (FARRAY::MEM-LEN FARRAY::ST)))
-     (< MAX FARRAY::I)
-     (EQUAL FARRAY::I MAX)
-     (O< (NFIX (BINARY-+ MAX (UNARY-- (BINARY-+ '1 FARRAY::I))))
-         (NFIX (BINARY-+ MAX (UNARY-- FARRAY::I))))))
-   (FARRAY::PRINT-ST1 3 :SYSTEM . "projects/farray/farray"))
   ((JUSTIFICATION (LRAT::POS LEN)
                   (NIL O-P . O<)
                   ((NFIX (BINARY-+ LEN (UNARY-- LRAT::POS)))
@@ -3711,6 +3703,22 @@
    (X86ISA::MAKE-FIB32-ADDR-ALST 2 :SYSTEM
                                  .
                                  "projects/x86isa/tools/execution/examples/fibonacci32"))
+  ((JUSTIFICATION (FARRAY::I MAX)
+                  (NIL O-P . O<)
+                  ((NFIX (BINARY-+ MAX (UNARY-- FARRAY::I)))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX (BINARY-+ MAX (UNARY-- FARRAY::I)))))
+    ((NOT (INTEGERP FARRAY::I))
+     (< FARRAY::I '0)
+     (NOT (< FARRAY::I (FARRAY::MEM-LEN FARRAY::ST)))
+     (NOT (INTEGERP MAX))
+     (< MAX '0)
+     (NOT (< MAX (FARRAY::MEM-LEN FARRAY::ST)))
+     (< MAX FARRAY::I)
+     (EQUAL FARRAY::I MAX)
+     (O< (NFIX (BINARY-+ MAX (UNARY-- (BINARY-+ '1 FARRAY::I))))
+         (NFIX (BINARY-+ MAX (UNARY-- FARRAY::I))))))
+   (FARRAY::PRINT-ST1 3 :SYSTEM . "projects/farray/farray"))
   ((JUSTIFICATION (PROOF-CHECKER-ARRAY::I MAX)
                   (NIL O-P . O<)
                   ((NFIX (BINARY-+ MAX (UNARY-- PROOF-CHECKER-ARRAY::I)))
@@ -3797,815 +3805,6 @@
    (PROOF-CHECKER-ARRAY::PROJECT1 4 :SYSTEM
                                   .
                                   "projects/sat/proof-checker-array/assignment-equiv")))
- ((JUSTIFICATION (ABNF::INPUT)
-                 (NIL O-P . O<)
-                 ((LEN ABNF::INPUT)
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (L)
-                  (NIL O-P . O<)
-                  ((LEN L) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN L)))
-    ((NOT (CONSP (CDR L)))
-     (O< (LEN (ODDS L)) (LEN L)))
-    ((NOT (CONSP (CDR L)))
-     (O< (LEN (EVENS L)) (LEN L))))
-   (MERGE-SORT-LEXORDER 1))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (CDR X)))
-     (O< (LEN (MV-NTH '1 (SET::HALVE-LIST X)))
-         (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (CDR X)))
-     (O< (LEN (MV-NTH '0 (SET::HALVE-LIST X)))
-         (LEN X))))
-   (SET::MERGESORT-EXEC 1 :SYSTEM . "std/osets/top"))
-  ((JUSTIFICATION (AVOID)
-                  (NIL O-P . O<)
-                  ((LEN AVOID) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN AVOID)))
-    ((NOT (MEMBER-EQUAL (SYMBOL-N BASE (NFIX N))
-                        AVOID))
-     (O< (LEN (REMOVE-EQUAL (SYMBOL-N BASE (NFIX N))
-                            AVOID))
-         (LEN AVOID))))
-   (NEW-SYMBOL1-MEASURE 3 :SYSTEM
-                        . "clause-processors/generalize"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (CDR X)))
-     (O< (LEN (NTHCDR (FLOOR (LEN X) '2) X))
-         (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (CDR X)))
-     (O< (LEN (TAKE (FLOOR (LEN X) '2) X))
-         (LEN X))))
-   (COMPARABLE-MERGESORT 1 :SYSTEM . "defsort/generic")
-   (<-SORT :SYSTEM . "projects/irv/irv")
-   (VL2014::VL-PORTDECL-SORT :SYSTEM
-                             . "centaur/vl2014/server/porttable")
-   (VL2014::VL-COMMENTMAP-ENTRY-SORT :SYSTEM
-                                     . "centaur/vl2014/mlib/comment-writer")
-   (VL2014::VL-EMODWIRE-SORT :SYSTEM
-                             . "centaur/esim/vltoe/verilogify")
-   (VL2014::SD-PROBLEM-SORT :SYSTEM
-                            . "centaur/vl2014/lint/skip-detect")
-   (VL::VL-COMMENTMAP-ENTRY-SORT :SYSTEM
-                                 . "centaur/vl/mlib/comment-writer")
-   (VL::VL-PORTDECL-SORT :SYSTEM . "centaur/vl/server/porttable")
-   (SV::RANGELIST-SORT :SYSTEM . "centaur/sv/vl/use-set")
-   (VL::PARTSUMLIST-SORT :SYSTEM
-                         . "centaur/vl/util/summarize-parts")
-   (VL::SD-PROBLEM-SORT :SYSTEM . "centaur/vl/lint/skip-detect")
-   (FGL::PROF-ENTRY-TRIES-SORT :SYSTEM . "centaur/fgl/prof")
-   (VL::VL-WARNING-SORT :SYSTEM . "centaur/vl/util/warnings")
-   (SV::SEGMENT-DRIVERS-SORT :SYSTEM
-                             . "centaur/sv/mods/norm-netlist")
-   (SV::DRIVESTRENGTH-SORT :SYSTEM . "centaur/sv/mods/lhs")
-   (ALPHANUM-SORT :SYSTEM . "centaur/misc/alphanum-sort")
-   (GL::PROF-ENTRY-TRIES-SORT :SYSTEM . "centaur/gl/prof")
-   (VL2014::VL-WARNING-SORT :SYSTEM
-                            . "centaur/vl2014/util/warnings")
-   (AIGNET::LEVELS-SORT :SYSTEM . "centaur/aignet/balance")
-   (AIGNET::LITERAL-SORT :SYSTEM . "centaur/aignet/literal-sort")
-   (AIGNET::SORT-NATS :SYSTEM . "centaur/aignet/rwlib")
-   (ALPHORDER-SORT :SYSTEM . "centaur/aig/aig-vars-ext")
-   (LEN-SORT :SYSTEM
-             . "centaur/4v-sexpr/sexpr-loop-debug")
-   (STR::ISTR-SORT :SYSTEM . "std/strings/isort")
-   (<<-SORT :SYSTEM . "defsort/uniquep"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((MV-NTH '2 (GL::FIRST/REST/END X))
-     (O< (LEN (MV-NTH '1 (GL::FIRST/REST/END X)))
-         (LEN X))))
-   (GL::BFR-INTEGER-LENGTH-S1 2 :SYSTEM
-                              . "centaur/gl/symbolic-arithmetic")
-   (SV::AIG-INTEGER-LENGTH-S1 :SYSTEM . "centaur/sv/svex/aig-arith"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (CONSP X))
-     (CONSP (CAR X))
-     (O< (LEN (CDR X)) (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (CAR X)))
-     (O< (LEN (GL::CALIST-REMASSOCS (CDR X)
-                                    (CONS (CAR (CAR X)) 'NIL)))
-         (LEN X))))
-   (GL::EVAL-CONSTRAINT-ALIST 2 :SYSTEM . "centaur/gl/hyp-fix"))
-  ((JUSTIFICATION (E)
-                  (NIL O-P . O<)
-                  ((LEN E) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN E)))
-    ((GL::ALL-NIL E)
-     (GL::ALL-NIL (CDR E))
-     (O< (LEN (CDR E)) (LEN E))))
-   (GL::BFR-EXPT-SU 2 :SYSTEM
-                    . "centaur/gl/symbolic-arithmetic")
-   (SV::AIG-EXPT-SU :SYSTEM . "centaur/sv/svex/aig-arith"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (CONSP X))
-     (O< (LEN (CDR X)) (LEN X))))
-   (GL::SHRINK-CONSTRAINT-ALIST 1 :SYSTEM . "centaur/gl/hyp-fix")
-   (ABNF::LOOKUP-RULENAME :SYSTEM
-                          . "projects/abnf/notation/semantics")
-   (<-INSERTSORT :SYSTEM . "projects/irv/irv")
-   (VL2014::VL-PARAMVALUELIST-ELIM-USELESS-PARAMS :SYSTEM
-                                                  .
-                                                  "centaur/vl2014/transforms/clean-params")
-   (SV::RANGELIST-SORT-INSERTSORT :SYSTEM . "centaur/sv/vl/use-set")
-   (VL::PARTSUMLIST-SORT-INSERTSORT :SYSTEM
-                                    . "centaur/vl/util/summarize-parts")
-   (VL::VL-MODINSTLIST-LINT-STUB :SYSTEM
-                                 . "centaur/vl/transforms/lintstub")
-   (VL::VL-PARAMDECLLIST-CHECK-GLOBALPARAMS :SYSTEM
-                                            . "centaur/vl/lint/check-globalparams")
-   (VL::VL-DISTLIST-CONDCHECK :SYSTEM . "centaur/vl/lint/condcheck")
-   (VL::VL-VARDECLLIST-SCAN-FOR-IGNORE :SYSTEM
-                                       . "centaur/vl/lint/suppress-warnings")
-   (AIGNET::AIGNET-PATHCOND-EVAL-AT-CHECKPOINTS :SYSTEM
-                                                . "centaur/fgl/pathcond-transform")
-   (AIGNET::AIGNET-MAP-OUTPUTS-BY-LIT-LIST :SYSTEM
-                                           . "centaur/aignet/simplify-marked")
-   (FGL::ALIST-CONST-PAIRS-MAP :SYSTEM
-                               . "centaur/fgl/check-primitives")
-   (FGL::CGRAPH-DERIVE-ASSIGNS-MEASURE :SYSTEM . "centaur/fgl/ctrex-utils")
-   (FGL::PROF-ENTRY-TRIES-INSERTSORT :SYSTEM . "centaur/fgl/prof")
-   (SV::SVTV-DEBUG-FSM-WRITEPHASES :SYSTEM . "centaur/sv/svtv/debug")
-   (VL::VL-MODINSTLIST-LVALUECHECK :SYSTEM . "centaur/vl/lint/lvaluecheck")
-   (VL::VL-DISTLIST-IMMDEPS-FN :SYSTEM . "centaur/vl/mlib/immdeps")
-   (VL::VL-ELABTASKLIST-COLLECT-ODD-NAMES :SYSTEM
-                                          . "centaur/vl/transforms/addnames")
-   (VL::VL-MAYBE-EXPRLIST-INCREWRITE-AUX :SYSTEM
-                                         .
-                                         "centaur/vl/transforms/annotate/increment-elim")
-   (VL::VL-DISTLIST-TYPE-DISAMBIGUATE :SYSTEM
-                                      .
-                                      "centaur/vl/transforms/annotate/type-disambiguation")
-   (VL::VL-FUNDECLLIST-DELTEMPS :SYSTEM
-                                .
-                                "centaur/vl/transforms/annotate/shadowcheck")
-   (VL::VL-PORTDECLLIST-ALLEXPRS-NREV :SYSTEM . "centaur/vl/mlib/allexprs")
-   (VL::VL-PLAINARGLIST-UPDATE-IFPORTS :SYSTEM
-                                       . "centaur/vl/transforms/unparam/top")
-   (VL::VL-PORTLIST-COLLECT-CLASSES :SYSTEM
-                                    .
-                                    "centaur/vl/transforms/unparam/expr-classes")
-   (VL::VL-NAMEDARGLIST-ELABORATE-FN :SYSTEM . "centaur/sv/vl/elaborate")
-   (SV::SVSTACK-FILTER-GLOBAL-LHS-VARS :SYSTEM
-                                       . "centaur/sv/vl/svstmt-compile")
-   (VL::VL-VARDECLLIST-STRIP :SYSTEM . "centaur/vl/mlib/strip")
-   (SV::SEGMENT-DRIVER-MAP-VARS :SYSTEM
-                                . "centaur/sv/mods/norm-netlist")
-   (SV::LHS-VARS :SYSTEM . "centaur/sv/mods/lhs")
-   (ALPHA-INSERTSORT :SYSTEM . "centaur/misc/alphanum-sort")
-   (GL::PROF-ENTRY-TRIES-INSERTSORT :SYSTEM . "centaur/gl/prof")
-   (AIGNET::SPATH-ENDPOINT :SYSTEM
-                           .
-                           "centaur/aignet/internal-observability-super")
-   (AIGNET::LEVELS-SORT-INSERTSORT :SYSTEM . "centaur/aignet/balance")
-   (AIGNET::LITERAL-SORT-INSERTSORT :SYSTEM . "centaur/aignet/literal-sort")
-   (AIGNET::NATSORT-INSERTSORT :SYSTEM . "centaur/aignet/rwlib"))
-  ((JUSTIFICATION (AIGNET::NODEDATA)
-                  (NIL O-P . O<)
-                  ((LEN AIGNET::NODEDATA)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN AIGNET::NODEDATA)))
-    ((NOT (CONSP AIGNET::NODEDATA))
-     (NOT (CONSP (CDR AIGNET::NODEDATA)))
-     (NOT (< (SATLINK::LIT->VAR$INLINE (CAR AIGNET::NODEDATA))
-             (LNFIX$INLINE AIGNET::NUM-FANINS)))
-     (NOT (< (SATLINK::LIT->VAR$INLINE (CAR (CDR AIGNET::NODEDATA)))
-             (LNFIX$INLINE AIGNET::NUM-FANINS)))
-     (O< (LEN (CDR (CDR AIGNET::NODEDATA)))
-         (LEN AIGNET::NODEDATA))))
-   (AIGNET::ABC-NODES-WELLFORMED 2 :SYSTEM . "centaur/aignet/rwlib"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((NOT (CONSP (VL2014::VL-LUCIDOCCLIST-FIX$INLINE VL2014::X)))
-     (O< (LEN (CDR (VL2014::VL-LUCIDOCCLIST-FIX$INLINE VL2014::X)))
-         (LEN VL2014::X))))
-   (VL2014::VL-LUCID-FILTER-MERGES 3
-                                   :SYSTEM . "centaur/vl2014/lint/lucid"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((NOT (CONSP (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::X)))
-     (O< (LEN (CDR (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::X)))
-         (LEN VL2014::X))))
-   (VL2014::VL-ELIDE-WARNINGS-MAIN 5 :SYSTEM
-                                   . "centaur/vl2014/mlib/print-warnings")
-   (VL2014::VL-FILTER-WARNINGS-BY-LOC :SYSTEM
-                                      .
-                                      "centaur/vl2014/loader/inject-warnings"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((NOT (CONSP (CDR VL2014::X)))
-     (O< (LEN (CONS (VL2014::VL-NONATOM (CAR (CDR VL2014::X))
-                                        (CAR (CDR (CDR VL2014::X)))
-                                        (CONS (CAR VL2014::X)
-                                              (CONS (CAR (CDR (CDR (CDR VL2014::X))))
-                                                    'NIL))
-                                        'NIL
-                                        'NIL)
-                    (CDR (CDR (CDR (CDR VL2014::X))))))
-         (LEN VL2014::X))))
-   (VL2014::VL-LEFT-ASSOCIATE-MIXED-BINOP-LIST 1 :SYSTEM
-                                               .
-                                               "centaur/vl2014/loader/parser/expressions"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (CONSP X))
-     (NOT (CONSP (SV::DRIVERLIST-REST-AFTER-STRENGTH X
-                                                     (SV::DRIVER->STRENGTH$INLINE (CAR X)))))
-     (O< (LEN (SV::DRIVERLIST-REST-AFTER-STRENGTH X
-                                                  (SV::DRIVER->STRENGTH$INLINE (CAR X))))
-         (LEN X))))
-   (SV::DRIVERLIST->SVEX 1 :SYSTEM . "centaur/sv/mods/lhs"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((NOT (MV-NTH '0 (SV::LHS-DECOMP X)))
-     (O< (LEN (MV-NTH '1 (SV::LHS-DECOMP X)))
-         (LEN X))))
-   (SV::LHS-CHECK-MASKS 3 :SYSTEM . "centaur/sv/mods/lhs")
-   (SV::SVTV-DEBUG-LHS-EVAL :SYSTEM . "centaur/sv/svtv/debug")
-   (SV::SVSTMT-ASSIGN->SUBST :SYSTEM
-                             . "centaur/sv/vl/svstmt-compile")
-   (SV::LHS-INDEXED->NAMED :SYSTEM . "centaur/sv/mods/compile")
-   (SV::ASSIGN->SEGMENT-DRIVERS :SYSTEM
-                                . "centaur/sv/mods/norm-netlist")
-   (SV::LHS-ALIAS-CANONICALIZE-TOP :SYSTEM . "centaur/sv/mods/alias-norm"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (VL::VL-LUCIDOCCLIST-FIX$INLINE VL::X)))
-     (O< (LEN (CDR (VL::VL-LUCIDOCCLIST-FIX$INLINE VL::X)))
-         (LEN VL::X))))
-   (VL::VL-LUCID-FILTER-MERGES 3 :SYSTEM . "centaur/vl/lint/lucid"))
-  ((JUSTIFICATION (VL::LOOPVARS)
-                  (NIL O-P . O<)
-                  ((LEN VL::LOOPVARS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::LOOPVARS)))
-    ((NOT (CONSP (VL::VL-MAYBE-STRING-LIST-FIX$INLINE VL::LOOPVARS)))
-     (O< (LEN (CDR (VL::VL-MAYBE-STRING-LIST-FIX$INLINE VL::LOOPVARS)))
-         (LEN VL::LOOPVARS))))
-   (VL::VL-PP-FOREACHSTMT-LOOPVARS-FN 2 :SYSTEM . "centaur/vl/mlib/writer"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (VL::VL-MODINSTLIST-FIX$INLINE VL::X)))
-     (O< (LEN (CDR (VL::VL-MODINSTLIST-FIX$INLINE VL::X)))
-         (LEN VL::X))))
-   (VL::VL-BINDELIM-EXTEND-INSTTABLE 5 :SYSTEM
-                                     .
-                                     "centaur/vl/transforms/annotate/bind"))
-  ((JUSTIFICATION (VL::SCOPES)
-                  (NIL O-P . O<)
-                  ((LEN VL::SCOPES)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::SCOPES)))
-    ((NOT (CONSP (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
-     (VL::VL-LEXSCOPE-FIND (VL::STRING-FIX$INLINE VL::NAME)
-                           (CAR (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
-     (O< (LEN (CDR (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
-         (LEN VL::SCOPES))))
-   (VL::VL-LEXSCOPES-FIND 2 :SYSTEM
-                          .
-                          "centaur/vl/transforms/annotate/shadowcheck"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (VL::VL-WARNINGLIST-FIX$INLINE VL::X)))
-     (O< (LEN (CDR (VL::VL-WARNINGLIST-FIX$INLINE VL::X)))
-         (LEN VL::X))))
-   (VL::VL-ELIDE-WARNINGS-MAIN 5 :SYSTEM
-                               . "centaur/vl/mlib/print-warnings")
-   (VL::VL-FILTER-WARNINGS-BY-LOC :SYSTEM
-                                  . "centaur/vl/loader/inject-warnings"))
-  ((JUSTIFICATION (VL::DEPS)
-                  (NIL O-P . O<)
-                  ((LEN VL::DEPS) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::DEPS)))
-    ((NOT (CONSP (STR::STRING-LIST-FIX VL::DEPS)))
-     (O< (LEN (CDR (STR::STRING-LIST-FIX VL::DEPS)))
-         (LEN VL::DEPS))))
-   (VL::VL-BLAME-ALIST-AUX1 3
-                            :SYSTEM . "centaur/vl/mlib/remove-bad")
-   (SMT::TRANSLATE-SYMBOL-DECLARE :SYSTEM
-                                  .
-                                  "projects/smtlink/trusted/z3-py/translator")
-   (VL2014::VL-BLAME-ALIST-AUX1 :SYSTEM
-                                . "centaur/vl2014/mlib/remove-bad"))
-  ((JUSTIFICATION (SV::PHASES)
-                  (NIL O-P . O<)
-                  ((LEN SV::PHASES)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SV::PHASES)))
-    ((NOT (MV-NTH '1
-                  (SV::SVTV*-INPUT-SIGNAL-FIND-NEXT-PHASE SV::NAME SV::PHASES SV::OVERRIDEP)))
-     (O< (LEN (MV-NTH '2
-                      (SV::SVTV*-INPUT-SIGNAL-FIND-NEXT-PHASE SV::NAME SV::PHASES SV::OVERRIDEP)))
-         (LEN SV::PHASES))))
-   (SV::SVTV*-INPUT-TO-SVTV-LINE-ENTRIES 4
-                                         :SYSTEM . "centaur/sv/svtv/preprocess"))
-  ((JUSTIFICATION (SV::PHASE-OUTS)
-                  (NIL O-P . O<)
-                  ((LEN SV::PHASE-OUTS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SV::PHASE-OUTS)))
-    ((NOT (< (SV::SVTV-CYCLE-OUTPUT-PHASE SV::PHASES)
-             (LEN SV::PHASE-OUTS)))
-     (O< (LEN (NTHCDR (IF (CONSP SV::PHASES)
-                          (LEN SV::PHASES)
-                        '1)
-                      SV::PHASE-OUTS))
-         (LEN SV::PHASE-OUTS))))
-   (SV::SVEX-ENVLIST-PHASE-OUTPUTS-EXTRACT-CYCLE-OUTPUTS 2
-                                                         :SYSTEM . "centaur/sv/svtv/svtv-spec"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((MV-NTH '2 (FGL::AABF-FIRST/REST/END X))
-     (O< (LEN (MV-NTH '1
-                      (FGL::AABF-FIRST/REST/END X)))
-         (LEN X))))
-   (FGL::AABF-INTEGER-LENGTH-S1 3 :SYSTEM
-                                . "centaur/fgl/symbolic-arithmetic"))
-  ((JUSTIFICATION (E)
-                  (NIL O-P . O<)
-                  ((LEN E) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN E)))
-    ((FGL::AABF-SYNTACTICALLY-ZERO-P E)
-     (FGL::AABF-SYNTACTICALLY-ZERO-P (CDR E))
-     (O< (LEN (CDR E)) (LEN E))))
-   (FGL::AABF-EXPT-SU 3 :SYSTEM
-                      . "centaur/fgl/symbolic-arithmetic"))
-  ((JUSTIFICATION (X)
-                  (NIL O-P . O<)
-                  ((LEN X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN X)))
-    ((MV-NTH '2 (FGL::BFR-FIRST/REST/END X))
-     (O< (LEN (MV-NTH '1 (FGL::BFR-FIRST/REST/END X)))
-         (LEN X))))
-   (FGL::BFR-INTEGER-LENGTH-S1 3
-                               :SYSTEM . "centaur/fgl/bfr-arithmetic"))
-  ((JUSTIFICATION (E)
-                  (NIL O-P . O<)
-                  ((LEN E) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN E)))
-    ((FGL::BFR-SYNTACTICALLY-ZERO-P E)
-     (FGL::BFR-SYNTACTICALLY-ZERO-P (CDR E))
-     (O< (LEN (CDR E)) (LEN E))))
-   (FGL::BFR-EXPT-SU 3
-                     :SYSTEM . "centaur/fgl/bfr-arithmetic"))
-  ((JUSTIFICATION (FGL::VARS)
-                  (NIL O-P . O<)
-                  ((LEN FGL::VARS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN FGL::VARS)))
-    ((NOT (CONSP FGL::VARS))
-     (NOT (CONSP (CDR (CMR::PSEUDO-VAR-LIST-FIX$INLINE FGL::VARS))))
-     (O< (LEN (CDR (CMR::PSEUDO-VAR-LIST-FIX$INLINE FGL::VARS)))
-         (LEN FGL::VARS))))
-   (FGL::BIND-VARS-TO-LIST-ELEMS 2 :SYSTEM . "centaur/fgl/casesplit"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (CDR VL::X)))
-     (O< (LEN (CONS (VL::VL-BINARY (CAR (CDR VL::X))
-                                   (CAR VL::X)
-                                   (CAR (CDR (CDR (CDR VL::X))))
-                                   (CAR (CDR (CDR VL::X))))
-                    (CDR (CDR (CDR (CDR VL::X))))))
-         (LEN VL::X))))
-   (VL::VL-LEFT-ASSOCIATE-MIXED-BINOP-LIST 1 :SYSTEM
-                                           .
-                                           "centaur/vl/loader/parser/expressions"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (CDR VL::X)))
-     (O< (LEN (CONS (VL::VL-PROPBINARY (CAR (CDR VL::X))
-                                       (CAR VL::X)
-                                       (CAR (CDR (CDR VL::X))))
-                    (CDR (CDR (CDR VL::X)))))
-         (LEN VL::X))))
-   (VL::VL-LEFT-ASSOCIATE-ALTERNATING-PROPEXPR/OP-LIST 1 :SYSTEM
-                                                       .
-                                                       "centaur/vl/loader/parser/properties"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP (VL::VL-DESCRIPTIONLIST-FIX$INLINE VL::X)))
-     (NOT (CONSP (VL::VL-WARNINGLIST-FIX$INLINE VL::WARNINGS)))
-     (O< (LEN (CDR (VL::VL-DESCRIPTIONLIST-FIX$INLINE VL::X)))
-         (LEN VL::X))))
-   (VL::VL-DESCRIPTIONLIST-INJECT-WARNINGS 2 :SYSTEM
-                                           . "centaur/vl/loader/inject-warnings"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP VL::X))
-     (EQUAL (CAR VL::X)
-            (MV-NTH '0
-                    (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
-                                                     (CDR VL::X))))
-     (O< (LEN (MV-NTH '1
-                      (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
-                                                       (CDR VL::X))))
-         (LEN VL::X)))
-    ((NOT (CONSP VL::X))
-     (NOT (EQUAL (CAR VL::X)
-                 (MV-NTH '0
-                         (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
-                                                          (CDR VL::X)))))
-     (O< (LEN (CDR VL::X)) (LEN VL::X))))
-   (VL::VL-MERGE-CONTIGUOUS-INDICES 1 :SYSTEM
-                                    . "centaur/vl/util/merge-indices"))
-  ((JUSTIFICATION (VL::X)
-                  (NIL O-P . O<)
-                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL::X)))
-    ((NOT (CONSP VL::X))
-     (EQUAL (LEN VL::X)
-            (LEN (VL::SUMMARIZE-PARTSUMLIST1 (CAR VL::X)
-                                             (CDR VL::X))))
-     (O< (LEN (VL::SUMMARIZE-PARTSUMLIST1 (CAR VL::X)
-                                          (CDR VL::X)))
-         (LEN VL::X))))
-   (VL::SUMMARIZE-PARTSUMLIST 1 :SYSTEM
-                              . "centaur/vl/util/summarize-parts"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((NOT (CONSP (VL2014::VL-DESCRIPTIONLIST-FIX$INLINE VL2014::X)))
-     (NOT (CONSP (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::WARNINGS)))
-     (O< (LEN (CDR (VL2014::VL-DESCRIPTIONLIST-FIX$INLINE VL2014::X)))
-         (LEN VL2014::X))))
-   (VL2014::VL-DESCRIPTIONLIST-INJECT-WARNINGS 2 :SYSTEM
-                                               .
-                                               "centaur/vl2014/loader/inject-warnings"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((NOT (CONSP VL2014::X))
-     (EQUAL (CAR VL2014::X)
-            (MV-NTH '0
-                    (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
-                                                         (CDR VL2014::X))))
-     (O< (LEN (MV-NTH '1
-                      (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
-                                                           (CDR VL2014::X))))
-         (LEN VL2014::X)))
-    ((NOT (CONSP VL2014::X))
-     (NOT (EQUAL (CAR VL2014::X)
-                 (MV-NTH '0
-                         (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
-                                                              (CDR VL2014::X)))))
-     (O< (LEN (CDR VL2014::X))
-         (LEN VL2014::X))))
-   (VL2014::VL-MERGE-CONTIGUOUS-INDICES 1 :SYSTEM
-                                        . "centaur/vl2014/util/merge-indices"))
-  ((JUSTIFICATION (VL2014::SCOPES)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::SCOPES)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::SCOPES)))
-    ((NOT (CONSP (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
-     (VL2014::VL-LEXSCOPE-FIND$INLINE (VL2014::STRING-FIX$INLINE VL2014::NAME)
-                                      (CAR (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
-     (O< (LEN (CDR (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
-         (LEN VL2014::SCOPES))))
-   (VL2014::VL-LEXSCOPES-FIND 2 :SYSTEM
-                              .
-                              "centaur/vl2014/transforms/annotate/shadowcheck"))
-  ((JUSTIFICATION (VL2014::X)
-                  (NIL O-P . O<)
-                  ((LEN VL2014::X)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN VL2014::X)))
-    ((EQUAL (VL2014::LPOSFIX$INLINE VL2014::N)
-            '0)
-     (< (LEN VL2014::X)
-        (VL2014::LPOSFIX$INLINE VL2014::N))
-     (O< (LEN (REST-N (VL2014::LPOSFIX$INLINE VL2014::N)
-                      VL2014::X))
-         (LEN VL2014::X))))
-   (VL2014::VL-PARTITION-MSB-BITSLICES 2 :SYSTEM
-                                       .
-                                       "centaur/vl2014/transforms/replicate-insts"))
-  ((JUSTIFICATION (SMT::CONFIG-ALIST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::CONFIG-ALIST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::CONFIG-ALIST)))
-    ((NOT (CONSP (SMT::STRING-STRING-ALIST-FIX$INLINE SMT::CONFIG-ALIST)))
-     (O< (LEN (CDR (SMT::STRING-STRING-ALIST-FIX$INLINE SMT::CONFIG-ALIST)))
-         (LEN SMT::CONFIG-ALIST))))
-   (SMT::CHANGE-SMT-CNF 2 :SYSTEM . "projects/smtlink/config"))
-  ((JUSTIFICATION (SMT::FORMAL/RETURN-LST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FORMAL/RETURN-LST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FORMAL/RETURN-LST)))
-    ((NOT (CONSP (SMT::DECL-LIST-FIX$INLINE SMT::FORMAL/RETURN-LST)))
-     (O< (LEN (CDR (SMT::DECL-LIST-FIX$INLINE SMT::FORMAL/RETURN-LST)))
-         (LEN SMT::FORMAL/RETURN-LST))))
-   (SMT::FLATTEN-FORMALS/RETURNS 1 :SYSTEM
-                                 .
-                                 "projects/smtlink/verified/hint-interface")
-   (SMT::TRANSLATE-TYPE-DECL-LIST :SYSTEM
-                                  .
-                                  "projects/smtlink/trusted/z3-py/translator")
-   (SMT::GENERATE-FN-RETURNS-HINT :SYSTEM
-                                  .
-                                  "projects/smtlink/verified/uninterpreted-fn-cp")
-   (SMT::REMOVE-DUPLICATE-FROM-DECL-LIST :SYSTEM
-                                         . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::FN-LST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FN-LST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FN-LST)))
-    ((NOT (CONSP (SMT::FUNC-LIST-FIX$INLINE SMT::FN-LST)))
-     (O< (LEN (CDR (SMT::FUNC-LIST-FIX$INLINE SMT::FN-LST)))
-         (LEN SMT::FN-LST))))
-   (SMT::MAKE-ALIST-FN-LST 1 :SYSTEM
-                           .
-                           "projects/smtlink/verified/hint-interface"))
-  ((JUSTIFICATION (SMT::KWD-ALIST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::KWD-ALIST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::KWD-ALIST)))
-    ((NOT (CONSP (SMT::TRUE-LIST-FIX SMT::KWD-ALIST)))
-     (EQUAL SMT::KEY
-            (CAR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST)))
-     (NOT (CONSP (CDR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST))))
-     (O< (LEN (CDR (CDR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST))))
-         (LEN SMT::KWD-ALIST))))
-   (SMT::MY-SPLIT-KWD-ALIST 2 :SYSTEM
-                            .
-                            "projects/smtlink/verified/computed-hints"))
-  ((JUSTIFICATION (SMT::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN SMT::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::CONTENT)))
-    ((NOT (CONSP (SMT::ARGUMENT-LST-SYNTAX-FIX SMT::CONTENT)))
-     (O< (LEN (CDR (SMT::ARGUMENT-LST-SYNTAX-FIX SMT::CONTENT)))
-         (LEN SMT::CONTENT))))
-   (SMT::MAKE-MERGE-FORMALS-HELPER 1 :SYSTEM
-                                   . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN SMT::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::CONTENT)))
-    ((NOT (CONSP (SMT::HYPOTHESIS-LST-SYNTAX-FIX SMT::CONTENT)))
-     (O< (LEN (CDR (SMT::HYPOTHESIS-LST-SYNTAX-FIX SMT::CONTENT)))
-         (LEN SMT::CONTENT))))
-   (SMT::MAKE-MERGE-MORE-RETURNS 2 :SYSTEM
-                                 . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::FUN-OPT-LST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FUN-OPT-LST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FUN-OPT-LST)))
-    ((NOT (CONSP (SMT::FUNCTION-OPTION-LST-SYNTAX-FIX SMT::FUN-OPT-LST)))
-     (O< (LEN (CDR (CDR (SMT::FUNCTION-OPTION-LST-SYNTAX-FIX SMT::FUN-OPT-LST))))
-         (LEN SMT::FUN-OPT-LST))))
-   (SMT::MAKE-MERGE-FUNCTION-OPTION-LST 2 :SYSTEM
-                                        . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN SMT::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::CONTENT)))
-    ((NOT (CONSP (SMT::FUNCTION-LST-SYNTAX-FIX SMT::CONTENT)))
-     (O< (LEN (CDR (SMT::FUNCTION-LST-SYNTAX-FIX SMT::CONTENT)))
-         (LEN SMT::CONTENT))))
-   (SMT::MERGE-FUNCTIONS 2 :SYSTEM
-                         . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::USER-HINT)
-                  (NIL O-P . O<)
-                  ((LEN SMT::USER-HINT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::USER-HINT)))
-    ((NOT (CONSP (SMT::SMTLINK-HINT-SYNTAX-FIX SMT::USER-HINT)))
-     (O< (LEN (CDR (CDR (SMT::SMTLINK-HINT-SYNTAX-FIX SMT::USER-HINT))))
-         (LEN SMT::USER-HINT))))
-   (SMT::COMBINE-HINTS 2 :SYSTEM
-                       . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::HINTED-HYPOS)
-                  (NIL O-P . O<)
-                  ((LEN SMT::HINTED-HYPOS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::HINTED-HYPOS)))
-    ((NOT (CONSP (SMT::HINT-PAIR-LIST-FIX$INLINE SMT::HINTED-HYPOS)))
-     (O< (LEN (CDR (SMT::HINT-PAIR-LIST-FIX$INLINE SMT::HINTED-HYPOS)))
-         (LEN SMT::HINTED-HYPOS))))
-   (SMT::ADD-HYPO-SUBGOALS 2 :SYSTEM
-                           .
-                           "projects/smtlink/verified/add-hypo-cp")
-   (SMT::GENERATE-FN-MORE-RETURNS-HINT :SYSTEM
-                                       .
-                                       "projects/smtlink/verified/uninterpreted-fn-cp"))
-  ((JUSTIFICATION (SMT::FN-LST)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FN-LST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FN-LST)))
-    ((NOT (CONSP (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
-     (O< (LEN (CDR (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
-         (LEN SMT::FN-LST))))
-   (SMT::INITIALIZE-FN-LVLS 1 :SYSTEM
-                            .
-                            "projects/smtlink/verified/expand-cp"))
-  ((JUSTIFICATION (SMT::FN-LVLS)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FN-LVLS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FN-LVLS)))
-    ((NOT (CONSP (SMT::SYM-NAT-ALIST-FIX$INLINE SMT::FN-LVLS)))
-     (O< (LEN (CDR (SMT::SYM-NAT-ALIST-FIX$INLINE SMT::FN-LVLS)))
-         (LEN SMT::FN-LVLS))))
-   (SMT::SUM-LVLS 1 :SYSTEM
-                  .
-                  "projects/smtlink/verified/expand-cp"))
-  ((JUSTIFICATION (FORMALS)
-                  (NIL O-P . O<)
-                  ((LEN FORMALS) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN FORMALS)))
-    ((NOT (CONSP (SYMBOL-LIST-FIX$INLINE FORMALS)))
-     (NOT (CONSP (CDR (SYMBOL-LIST-FIX$INLINE FORMALS))))
-     (O< (LEN (CDR (SYMBOL-LIST-FIX$INLINE FORMALS)))
-         (LEN FORMALS))))
-   (SMT::TRANSLATE-SYMBOL-LST 1 :SYSTEM
-                              .
-                              "projects/smtlink/trusted/z3-py/translate-type"))
-  ((JUSTIFICATION (SMT::FIELDS)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FIELDS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FIELDS)))
-    ((NOT (CONSP (SMT::FTY-FIELD-ALIST-FIX$INLINE SMT::FIELDS)))
-     (O< (LEN (CDR (SMT::FTY-FIELD-ALIST-FIX$INLINE SMT::FIELDS)))
-         (LEN SMT::FIELDS))))
-   (SMT::TRANSLATE-FTY-FIELD-LST 2 :SYSTEM
-                                 .
-                                 "projects/smtlink/trusted/z3-py/translate-type"))
-  ((JUSTIFICATION (SMT::FTY-TYPES)
-                  (NIL O-P . O<)
-                  ((LEN SMT::FTY-TYPES)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN SMT::FTY-TYPES)))
-    ((NOT (CONSP (SMT::FTY-TYPES-FIX$INLINE SMT::FTY-TYPES)))
-     (O< (LEN (CDR (SMT::FTY-TYPES-FIX$INLINE SMT::FTY-TYPES)))
-         (LEN SMT::FTY-TYPES))))
-   (SMT::TRANSLATE-FTY-TYPES-RECUR 2 :SYSTEM
-                                   .
-                                   "projects/smtlink/trusted/z3-py/translate-type"))
-  ((JUSTIFICATION (THM)
-                  (NIL O-P . O<)
-                  ((LEN THM) IF MV-LIST RETURN-LAST))
-   (((O-P (LEN THM)))
-    ((NOT (CONSP (SMT::WORD-LIST-FIX$INLINE THM)))
-     (O< (LEN (CDR (SMT::WORD-LIST-FIX$INLINE THM)))
-         (LEN THM))))
-   (SMT::PRETTY-PRINT-RECUR 3 :SYSTEM
-                            .
-                            "projects/smtlink/trusted/z3-py/pretty-printer"))
-  ((JUSTIFICATION (DIMACS-READER::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN DIMACS-READER::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN DIMACS-READER::CONTENT)))
-    ((NOT (CONSP DIMACS-READER::CONTENT))
-     (NOT (MV-NTH '0
-                  (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c ")))
-     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
-                                                (DIMACS-READER::SKIP-LINE (MV-NTH '1
-                                                                                  (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c "))))))
-     (O< (LEN (MV-NTH '1
-                      (DIMACS-READER::SKIP-LINE (MV-NTH '1
-                                                        (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c ")))))
-         (LEN DIMACS-READER::CONTENT))))
-   (DIMACS-READER::PARSE-COMMENTS 1 :SYSTEM
-                                  . "projects/sat/dimacs-reader/reader"))
-  ((JUSTIFICATION (DIMACS-READER::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN DIMACS-READER::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN DIMACS-READER::CONTENT)))
-    ((NOT (CONSP DIMACS-READER::CONTENT))
-     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
-                                                (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT))))
-     (EQUAL (MV-NTH '1
-                    (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT))
-            '0)
-     (NOT (MV-NTH '0
-                  (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
-                                                           (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT)))))
-     (O< (LEN (MV-NTH '1
-                      (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
-                                                               (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT)))))
-         (LEN DIMACS-READER::CONTENT))))
-   (DIMACS-READER::PARSE-CLAUSE 1 :SYSTEM
-                                . "projects/sat/dimacs-reader/reader"))
-  ((JUSTIFICATION (DIMACS-READER::CONTENT)
-                  (NIL O-P . O<)
-                  ((LEN DIMACS-READER::CONTENT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN DIMACS-READER::CONTENT)))
-    ((NOT (CONSP DIMACS-READER::CONTENT))
-     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
-                                                (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))
-     (NOT (CONSP (MV-NTH '2
-                         (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))
-     (NOT (MV-NTH '0
-                  (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
-                                                           (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT))))))
-     (NOT (CONSP (MV-NTH '1
-                         (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
-                                                                  (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))))
-     (O< (LEN (MV-NTH '1
-                      (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
-                                                               (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT))))))
-         (LEN DIMACS-READER::CONTENT))))
-   (DIMACS-READER::PARSE-FORMULA 1 :SYSTEM
-                                 . "projects/sat/dimacs-reader/reader"))
-  ((JUSTIFICATION (ABNF::INPUT)
-                  (NIL O-P . O<)
-                  ((LEN ABNF::INPUT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN ABNF::INPUT)))
-    ((FTY::RESERRP (MV-NTH '0
-                           (PFCS::LEX-DIGIT ABNF::INPUT)))
-     (O< (LEN (MV-NTH '1
-                      (PFCS::LEX-DIGIT ABNF::INPUT)))
-         (LEN ABNF::INPUT))))
-   (PFCS::LEX-*-DIGIT 1 :SYSTEM . "projects/pfcs/lexer"))
-  ((JUSTIFICATION (ABNF::INPUT)
-                  (NIL O-P . O<)
-                  ((LEN ABNF::INPUT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN ABNF::INPUT)))
-    ((FTY::RESERRP (MV-NTH '0
-                           (PFCS::LEX-GROUP-LETTER/DIGIT/_ ABNF::INPUT)))
-     (O< (LEN (MV-NTH '1
-                      (PFCS::LEX-GROUP-LETTER/DIGIT/_ ABNF::INPUT)))
-         (LEN ABNF::INPUT))))
-   (PFCS::LEX-*-REST-OF-IDENTIFIER 1 :SYSTEM . "projects/pfcs/lexer"))
-  ((JUSTIFICATION (ABNF::INPUT)
-                  (NIL O-P . O<)
-                  ((LEN ABNF::INPUT)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN ABNF::INPUT)))
-    ((FTY::RESERRP (MV-NTH '0
-                           (PFCS::LEX-LEXEME ABNF::INPUT)))
-     (O< (LEN (MV-NTH '1
-                      (PFCS::LEX-LEXEME ABNF::INPUT)))
-         (LEN ABNF::INPUT))))
-   (PFCS::LEX-*-LEXEME 1 :SYSTEM . "projects/pfcs/lexer")))
  ((JUSTIFICATION (L2 L1)
                  (NIL O-P . O<)
                  ((BINARY-+ (LEN L1) (LEN L2))
@@ -5519,6 +4718,26 @@
    (((O-P (BINARY-+ (LEN X) (LEN Y))))
     ((NOT (CONSP X))
      (NOT (CONSP Y))
+     (X86ISA::SDM-INSTRUCTION-PAIR-< (CAR Y)
+                                     (CAR X))
+     (O< (BINARY-+ (LEN (CDR X)) (LEN Y))
+         (BINARY-+ (LEN X) (LEN Y))))
+    ((NOT (CONSP X))
+     (NOT (CONSP Y))
+     (NOT (X86ISA::SDM-INSTRUCTION-PAIR-< (CAR Y)
+                                          (CAR X)))
+     (O< (BINARY-+ (LEN X) (LEN (CDR Y)))
+         (BINARY-+ (LEN X) (LEN Y)))))
+   (X86ISA::SDM-INSTRUCTION-TABLE-MERGE 2 :SYSTEM
+                                        .
+                                        "projects/x86isa/machine/catalogue-base"))
+  ((JUSTIFICATION (Y X)
+                  (NIL O-P . O<)
+                  ((BINARY-+ (LEN X) (LEN Y))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (BINARY-+ (LEN X) (LEN Y))))
+    ((NOT (CONSP X))
+     (NOT (CONSP Y))
      (< (CAR Y) (CAR X))
      (O< (BINARY-+ (LEN (CDR X)) (LEN Y))
          (BINARY-+ (LEN X) (LEN Y))))
@@ -5553,9 +4772,9 @@
    (STRICT-MERGE-< 3 :SYSTEM
                    .
                    "kestrel/auto-termination/strict-merge-sort")))
- ((JUSTIFICATION (ALEOBFT-STATIC::PREVIOUS-ROUND)
+ ((JUSTIFICATION (ALEOBFT::PREVIOUS-ROUND)
                  (NIL O-P . O<)
-                 ((NFIX ALEOBFT-STATIC::PREVIOUS-ROUND)
+                 ((NFIX ALEOBFT::PREVIOUS-ROUND)
                   IF MV-LIST RETURN-LAST))
   ((JUSTIFICATION (N)
                   (NIL O-P . O<)
@@ -5604,6 +4823,9 @@
      (O< (NFIX (ASH LEN '-1)) (NFIX LEN))))
    (FAST-COMPARABLE-MERGESORT-FIXNUMS 2 :SYSTEM . "defsort/generic")
    (<-MERGESORT-FIXNUM :SYSTEM . "projects/irv/irv")
+   (X86ISA::SDM-INSTRUCTION-TABLE-MERGESORT-FIXNUM :SYSTEM
+                                                   .
+                                                   "projects/x86isa/machine/catalogue-base")
    (VL2014::VL-PORTDECL-SORT-MERGESORT-FIXNUM :SYSTEM
                                               . "centaur/vl2014/server/porttable")
    (VL2014::VL-COMMENTMAP-ENTRY-MERGESORT-FIXNUM :SYSTEM
@@ -5927,16 +5149,36 @@
    (X86ISA::SIMD-SUB-SPEC :SYSTEM
                           .
                           "projects/x86isa/machine/instructions/psub"))
-  ((JUSTIFICATION (X)
+  ((JUSTIFICATION (X86ISA::RESULT-WIDTH)
                   (NIL O-P . O<)
-                  ((NFIX X) IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX X)))
-    ((NOT (INTEGERP X))
-     (< X '0)
-     (NOT (< '1 X))
-     (O< (NFIX (BINARY-* '1/2 X)) (NFIX X))))
-   (X86ISA::LOG-2 2 :SYSTEM
-                  . "projects/x86isa/portcullis/utils"))
+                  ((NFIX X86ISA::RESULT-WIDTH)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX X86ISA::RESULT-WIDTH)))
+    ((NOT (INTEGERP (NFIX X86ISA::RESULT-WIDTH)))
+     (NOT (< '0 (NFIX X86ISA::RESULT-WIDTH)))
+     (O< (NFIX (BINARY-+ (NFIX X86ISA::RESULT-WIDTH)
+                         (UNARY-- (POS-FIX X86ISA::EL-WIDTH))))
+         (NFIX X86ISA::RESULT-WIDTH))))
+   (X86ISA::PSLL 4 :SYSTEM
+                 .
+                 "projects/x86isa/machine/instructions/fp/simd-integer")
+   (X86ISA::PCMPEQ :SYSTEM
+                   .
+                   "projects/x86isa/machine/instructions/pcmp"))
+  ((JUSTIFICATION (X86ISA::RESULT-WIDTH)
+                  (NIL O-P . O<)
+                  ((NFIX X86ISA::RESULT-WIDTH)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX X86ISA::RESULT-WIDTH)))
+    ((NOT (INTEGERP (NFIX X86ISA::RESULT-WIDTH)))
+     (NOT (< '0 (NFIX X86ISA::RESULT-WIDTH)))
+     (O< (NFIX (BINARY-+ (NFIX X86ISA::RESULT-WIDTH)
+                         (UNARY-- (BINARY-* '2
+                                            (POS-FIX X86ISA::EL-WIDTH)))))
+         (NFIX X86ISA::RESULT-WIDTH))))
+   (X86ISA::PUNPCKL 4 :SYSTEM
+                    .
+                    "projects/x86isa/machine/instructions/punpck"))
   ((JUSTIFICATION (N)
                   (NIL O-P . O<)
                   ((NFIX N) IF MV-LIST RETURN-LAST))
@@ -5947,6 +5189,16 @@
    (X86ISA::FACT 1 :SYSTEM
                  .
                  "projects/x86isa/tools/execution/examples/factorial"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((NFIX X) IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX X)))
+    ((NOT (INTEGERP X))
+     (< X '0)
+     (NOT (< '1 X))
+     (O< (NFIX (BINARY-* '1/2 X)) (NFIX X))))
+   (X86ISA::LOG-2 2 :SYSTEM
+                  . "projects/x86isa/portcullis/utils"))
   ((JUSTIFICATION (PROOF-CHECKER-ARRAY::I)
                   (NIL O-P . O<)
                   ((NFIX PROOF-CHECKER-ARRAY::I)
@@ -5969,24 +5221,30 @@
    (PROOF-CHECKER-ARRAY::UNASSIGN-ALL 2 :SYSTEM
                                       .
                                       "projects/sat/proof-checker-array/assignment-st"))
-  ((JUSTIFICATION (ALEOBFT-STATIC::PREVIOUS-ROUND)
+  ((JUSTIFICATION (ALEOBFT::PREVIOUS-ROUND)
                   (NIL O-P . O<)
-                  ((NFIX ALEOBFT-STATIC::PREVIOUS-ROUND)
+                  ((NFIX ALEOBFT::PREVIOUS-ROUND)
                    IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX ALEOBFT-STATIC::PREVIOUS-ROUND)))
-    ((NOT (INTEGERP ALEOBFT-STATIC::PREVIOUS-ROUND))
-     (< ALEOBFT-STATIC::PREVIOUS-ROUND '0)
-     (NOT (EVENP ALEOBFT-STATIC::PREVIOUS-ROUND))
-     (NOT (INTEGERP ALEOBFT-STATIC::LAST-COMMITTED-ROUND))
-     (< ALEOBFT-STATIC::LAST-COMMITTED-ROUND '0)
-     (NOT (< ALEOBFT-STATIC::LAST-COMMITTED-ROUND
-             ALEOBFT-STATIC::PREVIOUS-ROUND))
-     (O< (NFIX (BINARY-+ '-2
-                         ALEOBFT-STATIC::PREVIOUS-ROUND))
-         (NFIX ALEOBFT-STATIC::PREVIOUS-ROUND))))
-   (ALEOBFT-STATIC::COLLECT-ANCHORS 5 :SYSTEM
-                                    .
-                                    "projects/aleobft/static/operations-blockchain")))
+   (((O-P (NFIX ALEOBFT::PREVIOUS-ROUND)))
+    ((NOT (INTEGERP ALEOBFT::PREVIOUS-ROUND))
+     (< ALEOBFT::PREVIOUS-ROUND '0)
+     (NOT (EVENP ALEOBFT::PREVIOUS-ROUND))
+     (NOT (INTEGERP ALEOBFT::LAST-COMMITTED-ROUND))
+     (< ALEOBFT::LAST-COMMITTED-ROUND '0)
+     (NOT (IF (IF (INTEGERP ALEOBFT::PREVIOUS-ROUND)
+                  (IF (< '0 ALEOBFT::PREVIOUS-ROUND)
+                      'NIL
+                    'T)
+                'T)
+              'T
+            (ALEOBFT::ACTIVE-COMMITTEE-AT-ROUND ALEOBFT::PREVIOUS-ROUND
+                                                ALEOBFT::BLOCKCHAIN)))
+     (NOT (< ALEOBFT::LAST-COMMITTED-ROUND
+             ALEOBFT::PREVIOUS-ROUND))
+     (O< (NFIX (BINARY-+ '-2 ALEOBFT::PREVIOUS-ROUND))
+         (NFIX ALEOBFT::PREVIOUS-ROUND))))
+   (ALEOBFT::COLLECT-ANCHORS 5
+                             :SYSTEM . "projects/aleo/bft/anchors")))
  ((JUSTIFICATION (X LST FLAG)
                  (NIL O-P . O<)
                  ((IF (EQL FLAG 'PPR2-COLUMN)
@@ -6547,49 +5805,17 @@
      (O< (ACL2-COUNT (SET::TAIL X))
          (ACL2-COUNT X))))
    (SET::UNION 2 :SYSTEM . "std/osets/top")
-   (ALEOBFT-DYNAMIC::CREATE-CERTIFICATE-ENDORSERS-NEXT-LOOP :SYSTEM
-                                                            .
-                                                            "projects/aleobft/dynamic/transitions-create-certificate")
-   (ALEOBFT-DYNAMIC::TRANSACTIONS-FROM-CERTIFICATES :SYSTEM
-                                                    .
-                                                    "projects/aleobft/dynamic/blockchains")
-   (ALEOBFT-DYNAMIC::TALLY-LEADER-VOTES :SYSTEM
-                                        . "projects/aleobft/dynamic/elections")
-   (ALEOBFT-DYNAMIC::MAKE-CERTIFICATE-MESSAGES :SYSTEM
-                                               . "projects/aleobft/dynamic/messages")
-   (ALEOBFT-DYNAMIC::GET-ADDRESS+POS-PAIRS-WITH-ADDRESS :SYSTEM
-                                                        .
-                                                        "projects/aleobft/dynamic/validator-states")
-   (ALEOBFT-DYNAMIC::CERTIFICATE-SET->AUTHOR-SET :SYSTEM
-                                                 .
-                                                 "projects/aleobft/dynamic/certificates")
-   (ALEOBFT-STATIC::INCOMING-LOOP :SYSTEM
-                                  .
-                                  "projects/aleobft/static/operations-dags-additional")
-   (ALEOBFT-STATIC::MESSAGE-CERTIFICATES-FOR-VALIDATOR :SYSTEM
-                                                       .
-                                                       "projects/aleobft/static/operations-certificates-for-validators")
-   (ALEOBFT-STATIC::TRANSACTIONS-FROM-CERTIFICATES :SYSTEM
-                                                   .
-                                                   "projects/aleobft/static/operations-blockchain")
-   (ALEOBFT-STATIC::TALLY-LEADER-VOTES :SYSTEM
-                                       .
-                                       "projects/aleobft/static/operations-voting")
-   (ALEOBFT-STATIC::MESSAGES-FOR-CERTIFICATE :SYSTEM
-                                             .
-                                             "projects/aleobft/static/operations-message-creation")
-   (ALEOBFT-STATIC::ADD-ENDORSED :SYSTEM
-                                 .
-                                 "projects/aleobft/static/operations-author-round-pairs")
-   (ALEOBFT-STATIC::GET-CERTIFICATES-WITH-AUTHOR :SYSTEM
-                                                 .
-                                                 "projects/aleobft/static/operations-certificate-retrieval")
-   (ALEOBFT-STATIC::SYSTEM-INIT-LOOP1 :SYSTEM
-                                      .
-                                      "projects/aleobft/static/initialization")
-   (ALEOBFT-STATIC::CERTIFICATE-SET->AUTHOR-SET :SYSTEM
-                                                .
-                                                "projects/aleobft/static/certificates")
+   (ALEOBFT::CREATE-ENDORSERS-NEXT-LOOP :SYSTEM
+                                        .
+                                        "projects/aleo/bft/transitions-create")
+   (ALEOBFT::TRANSACTIONS-FROM-CERTIFICATES :SYSTEM
+                                            . "projects/aleo/bft/blockchains")
+   (ALEOBFT::SUCCESSORS-LOOP :SYSTEM . "projects/aleo/bft/dags")
+   (ALEOBFT::MESSAGE-SET->CERTIFICATE-SET :SYSTEM . "projects/aleo/bft/messages")
+   (ALEOBFT::ADDRESS+POS-PAIRS-WITH-ADDRESS :SYSTEM
+                                            . "projects/aleo/bft/validator-states")
+   (ALEOBFT::CERTS-WITH-AUTHOR :SYSTEM
+                               . "projects/aleo/bft/certificates")
    (POS-SET-MAX :SYSTEM . "kestrel/fty/pos-set")
    (PFCS::LIFT-THM-FREE-INST :SYSTEM . "projects/pfcs/lifting")
    (PFCS::NAME-SET-TO-SYMBOL-LIST :SYSTEM
@@ -6739,7 +5965,8 @@
      (NOT (< '0 N))
      (O< (ACL2-COUNT (ASH N '-3))
          (ACL2-COUNT N))))
-   (STR::BASIC-NAT-TO-OCT-CHARS 1 :SYSTEM . "std/strings/octal"))
+   (STR::BASIC-NAT-TO-OCT-CHARS 1 :SYSTEM . "std/strings/octal")
+   (SUMDIGS7 :SYSTEM . "demos/divp-by-casting"))
   ((JUSTIFICATION (X)
                   (NIL O-P . O<)
                   ((ACL2-COUNT X) IF MV-LIST RETURN-LAST))
@@ -6757,13 +5984,7 @@
     ((OMAP::EMPTYP OMAP::NEW)
      (O< (ACL2-COUNT (OMAP::TAIL OMAP::NEW))
          (ACL2-COUNT OMAP::NEW))))
-   (OMAP::UPDATE* 2 :SYSTEM . "std/omaps/core")
-   (ALEOBFT-DYNAMIC::CORRECT-ADDRESSES-LOOP :SYSTEM
-                                            .
-                                            "projects/aleobft/dynamic/system-states")
-   (ALEOBFT-STATIC::CORRECT-ADDRESSES-LOOP :SYSTEM
-                                           .
-                                           "projects/aleobft/static/system-states"))
+   (OMAP::UPDATE* 2 :SYSTEM . "std/omaps/core"))
   ((JUSTIFICATION (VL2014::X)
                   (NIL O-P . O<)
                   ((ACL2-COUNT VL2014::X)
@@ -8767,58 +7988,6 @@
      (O< (ACL2-COUNT (ACL2S::ACONS-CDR ACL2S::X))
          (ACL2-COUNT ACL2S::X))))
    (DEFDATA::|(DEFDATA::ALISTOF DEFDATA::A DEFDATA::B)P| 1 :SYSTEM . "acl2s/acl2s-sigs"))
-  ((JUSTIFICATION (SMT::TERM)
-                  (NIL O-P . O<)
-                  ((ACL2-COUNT SMT::TERM)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (ACL2-COUNT SMT::TERM)))
-    ((NOT (TRUE-LISTP SMT::TERM))
-     (NOT SMT::TERM)
-     (NOT (CDR SMT::TERM))
-     (NOT (MV-NTH '0
-                  (SMT::FUNCTION-OPTION-SYNTAX-P (CONS (CAR SMT::TERM)
-                                                       (CONS (CAR (CDR SMT::TERM)) 'NIL))
-                                                 SMT::USED)))
-     (O< (ACL2-COUNT (CDR (CDR SMT::TERM)))
-         (ACL2-COUNT SMT::TERM))))
-   (SMT::FUNCTION-OPTION-LST-SYNTAX-P-HELPER 2 :SYSTEM
-                                             . "projects/smtlink/verified/Smtlink"))
-  ((JUSTIFICATION (SMT::BLIST)
-                  (NIL O-P . O<)
-                  ((ACL2-COUNT SMT::BLIST)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (ACL2-COUNT SMT::BLIST)))
-    ((NOT (CONSP (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
-     (NOT (CAR (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
-     (O< (ACL2-COUNT (CDR (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
-         (ACL2-COUNT SMT::BLIST))))
-   (SMT::TYPE-HYP 2 :SYSTEM
-                  . "projects/smtlink/verified/type-hyp"))
-  ((JUSTIFICATION (SMT::ACTUALS)
-                  (NIL O-P . O<)
-                  ((ACL2-COUNT SMT::ACTUALS)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (ACL2-COUNT SMT::ACTUALS)))
-    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::ACTUALS)))
-     (NOT (CONSP (CDR (SMT::PARAGRAPH-FIX SMT::ACTUALS))))
-     (O< (ACL2-COUNT (CDR (SMT::PARAGRAPH-FIX SMT::ACTUALS)))
-         (ACL2-COUNT SMT::ACTUALS))))
-   (SMT::MAP-TRANSLATED-ACTUALS 1 :SYSTEM
-                                .
-                                "projects/smtlink/trusted/z3-py/translator"))
-  ((JUSTIFICATION (SMT::PAR)
-                  (NIL O-P . O<)
-                  ((ACL2-COUNT SMT::PAR)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (ACL2-COUNT SMT::PAR)))
-    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::PAR)))
-     (O< (ACL2-COUNT (CDR (SMT::PARAGRAPH-FIX SMT::PAR)))
-         (ACL2-COUNT SMT::PAR)))
-    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::PAR)))
-     (O< (ACL2-COUNT (CAR (SMT::PARAGRAPH-FIX SMT::PAR)))
-         (ACL2-COUNT SMT::PAR))))
-   (SMT::PRINC$-PARAGRAPH 3 :SYSTEM
-                          . "projects/smtlink/trusted/write"))
   ((JUSTIFICATION (LEFT)
                   (NIL O-P . O<)
                   ((ACL2-COUNT LEFT)
@@ -8890,6 +8059,16 @@
    (X86ISA::BSF 2 :SYSTEM
                 .
                 "projects/x86isa/machine/instructions/fp/bitscan"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT X) IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT X)))
+    ((NOT (INTEGERP X))
+     (NOT (< '0 X))
+     (O< (ACL2-COUNT (LOGTAIL$INLINE '8 X))
+         (ACL2-COUNT X))))
+   (X86ISA::OPCODE-STRING-BYTES 2 :SYSTEM
+                                . "projects/x86isa/machine/inst-doc"))
   ((JUSTIFICATION (X86ISA::CHAR-LST)
                   (NIL O-P . O<)
                   ((ACL2-COUNT X86ISA::CHAR-LST)
@@ -9046,6 +8225,71 @@
    (NAT=>DIGITS-EXEC 3 :SYSTEM
                      .
                      "kestrel/utilities/digits-any-base/core"))
+  ((JUSTIFICATION (ALEOBFT::CERTS)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT ALEOBFT::CERTS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT ALEOBFT::CERTS)))
+    ((SET::EMPTYP (ALEOBFT::CERTIFICATE-SET-FIX ALEOBFT::CERTS))
+     (O< (ACL2-COUNT (SET::TAIL ALEOBFT::CERTS))
+         (ACL2-COUNT ALEOBFT::CERTS))))
+   (ALEOBFT::CERT-SET->AUTHOR-SET 1 :SYSTEM
+                                  . "projects/aleo/bft/certificates"))
+  ((JUSTIFICATION (ALEOBFT::MEMBERS)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT ALEOBFT::MEMBERS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT ALEOBFT::MEMBERS)))
+    ((SET::EMPTYP (ALEOBFT::ADDRESS-SET-FIX ALEOBFT::MEMBERS))
+     (O< (ACL2-COUNT (SET::TAIL ALEOBFT::MEMBERS))
+         (ACL2-COUNT ALEOBFT::MEMBERS))))
+   (ALEOBFT::COMMITTEE-MEMBERS-STAKE 2 :SYSTEM
+                                     . "projects/aleo/bft/committees"))
+  ((JUSTIFICATION (ECURVE::SCALAR)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT ECURVE::SCALAR)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT ECURVE::SCALAR)))
+    ((NOT (INTEGERP ECURVE::SCALAR))
+     (NOT (< '0 ECURVE::SCALAR))
+     (EVENP ECURVE::SCALAR)
+     (O< (ACL2-COUNT (BINARY-+ '-1 ECURVE::SCALAR))
+         (ACL2-COUNT ECURVE::SCALAR)))
+    ((NOT (INTEGERP ECURVE::SCALAR))
+     (NOT (< '0 ECURVE::SCALAR))
+     (NOT (EVENP ECURVE::SCALAR))
+     (O< (ACL2-COUNT (BINARY-* ECURVE::SCALAR '1/2))
+         (ACL2-COUNT ECURVE::SCALAR))))
+   (ECURVE::TWISTED-EDWARDS-MUL-FAST-NONNEG 3 :SYSTEM
+                                            .
+                                            "kestrel/crypto/ecurve/twisted-edwards"))
+  ((JUSTIFICATION (SMT::TERM)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT SMT::TERM)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT SMT::TERM)))
+    ((NOT (TRUE-LISTP SMT::TERM))
+     (NOT SMT::TERM)
+     (NOT (CDR SMT::TERM))
+     (NOT (MV-NTH '0
+                  (SMT::FUNCTION-OPTION-SYNTAX-P (CONS (CAR SMT::TERM)
+                                                       (CONS (CAR (CDR SMT::TERM)) 'NIL))
+                                                 SMT::USED)))
+     (O< (ACL2-COUNT (CDR (CDR SMT::TERM)))
+         (ACL2-COUNT SMT::TERM))))
+   (SMT::FUNCTION-OPTION-LST-SYNTAX-P-HELPER 2 :SYSTEM
+                                             . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::BLIST)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT SMT::BLIST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT SMT::BLIST)))
+    ((NOT (CONSP (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
+     (NOT (CAR (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
+     (O< (ACL2-COUNT (CDR (BOOLEAN-LIST-FIX$INLINE SMT::BLIST)))
+         (ACL2-COUNT SMT::BLIST))))
+   (SMT::TYPE-HYP 2 :SYSTEM
+                  . "projects/smtlink/verified/type-hyp"))
   ((JUSTIFICATION (N)
                   (NIL O-P . O<)
                   ((ACL2-COUNT N) IF MV-LIST RETURN-LAST))
@@ -9056,6 +8300,62 @@
          (ACL2-COUNT N))))
    (MEM::_LOG2-TR 2 :SYSTEM
                   . "data-structures/memories/memory"))
+  ((JUSTIFICATION (SMT::ACTUALS)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT SMT::ACTUALS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT SMT::ACTUALS)))
+    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::ACTUALS)))
+     (NOT (CONSP (CDR (SMT::PARAGRAPH-FIX SMT::ACTUALS))))
+     (O< (ACL2-COUNT (CDR (SMT::PARAGRAPH-FIX SMT::ACTUALS)))
+         (ACL2-COUNT SMT::ACTUALS))))
+   (SMT::MAP-TRANSLATED-ACTUALS 1 :SYSTEM
+                                .
+                                "projects/smtlink/trusted/z3-py/translator"))
+  ((JUSTIFICATION (SMT::PAR)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT SMT::PAR)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT SMT::PAR)))
+    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::PAR)))
+     (O< (ACL2-COUNT (CDR (SMT::PARAGRAPH-FIX SMT::PAR)))
+         (ACL2-COUNT SMT::PAR)))
+    ((NOT (CONSP (SMT::PARAGRAPH-FIX SMT::PAR)))
+     (O< (ACL2-COUNT (CAR (SMT::PARAGRAPH-FIX SMT::PAR)))
+         (ACL2-COUNT SMT::PAR))))
+   (SMT::PRINC$-PARAGRAPH 3 :SYSTEM
+                          . "projects/smtlink/trusted/write"))
+  ((JUSTIFICATION (N)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT N) IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT N)))
+    ((NOT (INTEGERP B))
+     (< B '0)
+     (NOT (< '1 B))
+     (NOT (INTEGERP N))
+     (NOT (< '0 N))
+     (O< (ACL2-COUNT (FLOOR N B))
+         (ACL2-COUNT N))))
+   (SUMDIGS 2 :SYSTEM . "demos/divp-by-casting"))
+  ((JUSTIFICATION (N)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT N) IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT N)))
+    ((NOT (INTEGERP B))
+     (< B '0)
+     (NOT (< '1 B))
+     (< (NFIX N) B)
+     (O< (ACL2-COUNT (SUMDIGS (NFIX N) B))
+         (ACL2-COUNT N))))
+   (SUMDIGS* 2 :SYSTEM . "demos/divp-by-casting"))
+  ((JUSTIFICATION (N)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT N) IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT N)))
+    ((< (NFIX N) '8)
+     (O< (ACL2-COUNT (SUMDIGS7 (NFIX N)))
+         (ACL2-COUNT N))))
+   (SUMDIGS7* 1 :SYSTEM . "demos/divp-by-casting"))
   ((JUSTIFICATION (X)
                   (NIL O-P . O<)
                   ((ACL2-COUNT X) IF MV-LIST RETURN-LAST))
@@ -9102,6 +8402,850 @@
                          (UNARY-- (HL-NAT-COMBINE (NFIX A) (NFIX B))))))))
    (FND 3 :SYSTEM
         . "system/hl-nat-combine-onto")))
+ ((JUSTIFICATION (SMT::FN-LST)
+                 (NIL O-P . O<)
+                 ((LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (SMT::FN-LST)
+                  (NIL O-P . O<)
+                  ((LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))))
+    ((NOT (CONSP (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
+     (O< (LEN (SMT::FUNC-ALIST-FIX$INLINE (CDR (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))))
+         (LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))))
+   (SMT::TRANSLATE-UNINTERPRETED-DECL-LST 4 :SYSTEM
+                                          .
+                                          "projects/smtlink/trusted/z3-py/translator")))
+ ((JUSTIFICATION (THM)
+                 (NIL O-P . O<)
+                 ((LEN THM) IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (L)
+                  (NIL O-P . O<)
+                  ((LEN L) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN L)))
+    ((NOT (CONSP (CDR L)))
+     (O< (LEN (ODDS L)) (LEN L)))
+    ((NOT (CONSP (CDR L)))
+     (O< (LEN (EVENS L)) (LEN L))))
+   (MERGE-SORT-LEXORDER 1))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (CDR X)))
+     (O< (LEN (MV-NTH '1 (SET::HALVE-LIST X)))
+         (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (CDR X)))
+     (O< (LEN (MV-NTH '0 (SET::HALVE-LIST X)))
+         (LEN X))))
+   (SET::MERGESORT-EXEC 1 :SYSTEM . "std/osets/top"))
+  ((JUSTIFICATION (AVOID)
+                  (NIL O-P . O<)
+                  ((LEN AVOID) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN AVOID)))
+    ((NOT (MEMBER-EQUAL (SYMBOL-N BASE (NFIX N))
+                        AVOID))
+     (O< (LEN (REMOVE-EQUAL (SYMBOL-N BASE (NFIX N))
+                            AVOID))
+         (LEN AVOID))))
+   (NEW-SYMBOL1-MEASURE 3 :SYSTEM
+                        . "clause-processors/generalize"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (CDR X)))
+     (O< (LEN (NTHCDR (FLOOR (LEN X) '2) X))
+         (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (CDR X)))
+     (O< (LEN (TAKE (FLOOR (LEN X) '2) X))
+         (LEN X))))
+   (COMPARABLE-MERGESORT 1 :SYSTEM . "defsort/generic")
+   (<-SORT :SYSTEM . "projects/irv/irv")
+   (X86ISA::SDM-INSTRUCTION-TABLE-SORT :SYSTEM
+                                       .
+                                       "projects/x86isa/machine/catalogue-base")
+   (VL2014::VL-PORTDECL-SORT :SYSTEM
+                             . "centaur/vl2014/server/porttable")
+   (VL2014::VL-COMMENTMAP-ENTRY-SORT :SYSTEM
+                                     . "centaur/vl2014/mlib/comment-writer")
+   (VL2014::VL-EMODWIRE-SORT :SYSTEM
+                             . "centaur/esim/vltoe/verilogify")
+   (VL2014::SD-PROBLEM-SORT :SYSTEM
+                            . "centaur/vl2014/lint/skip-detect")
+   (VL::VL-COMMENTMAP-ENTRY-SORT :SYSTEM
+                                 . "centaur/vl/mlib/comment-writer")
+   (VL::VL-PORTDECL-SORT :SYSTEM . "centaur/vl/server/porttable")
+   (SV::RANGELIST-SORT :SYSTEM . "centaur/sv/vl/use-set")
+   (VL::PARTSUMLIST-SORT :SYSTEM
+                         . "centaur/vl/util/summarize-parts")
+   (VL::SD-PROBLEM-SORT :SYSTEM . "centaur/vl/lint/skip-detect")
+   (FGL::PROF-ENTRY-TRIES-SORT :SYSTEM . "centaur/fgl/prof")
+   (VL::VL-WARNING-SORT :SYSTEM . "centaur/vl/util/warnings")
+   (SV::SEGMENT-DRIVERS-SORT :SYSTEM
+                             . "centaur/sv/mods/norm-netlist")
+   (SV::DRIVESTRENGTH-SORT :SYSTEM . "centaur/sv/mods/lhs")
+   (ALPHANUM-SORT :SYSTEM . "centaur/misc/alphanum-sort")
+   (GL::PROF-ENTRY-TRIES-SORT :SYSTEM . "centaur/gl/prof")
+   (VL2014::VL-WARNING-SORT :SYSTEM
+                            . "centaur/vl2014/util/warnings")
+   (AIGNET::LEVELS-SORT :SYSTEM . "centaur/aignet/balance")
+   (AIGNET::LITERAL-SORT :SYSTEM . "centaur/aignet/literal-sort")
+   (AIGNET::SORT-NATS :SYSTEM . "centaur/aignet/rwlib")
+   (ALPHORDER-SORT :SYSTEM . "centaur/aig/aig-vars-ext")
+   (LEN-SORT :SYSTEM
+             . "centaur/4v-sexpr/sexpr-loop-debug")
+   (STR::ISTR-SORT :SYSTEM . "std/strings/isort")
+   (<<-SORT :SYSTEM . "defsort/uniquep"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((MV-NTH '2 (GL::FIRST/REST/END X))
+     (O< (LEN (MV-NTH '1 (GL::FIRST/REST/END X)))
+         (LEN X))))
+   (GL::BFR-INTEGER-LENGTH-S1 2 :SYSTEM
+                              . "centaur/gl/symbolic-arithmetic")
+   (SV::AIG-INTEGER-LENGTH-S1 :SYSTEM . "centaur/sv/svex/aig-arith"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (CONSP X))
+     (CONSP (CAR X))
+     (O< (LEN (CDR X)) (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (CAR X)))
+     (O< (LEN (GL::CALIST-REMASSOCS (CDR X)
+                                    (CONS (CAR (CAR X)) 'NIL)))
+         (LEN X))))
+   (GL::EVAL-CONSTRAINT-ALIST 2 :SYSTEM . "centaur/gl/hyp-fix"))
+  ((JUSTIFICATION (E)
+                  (NIL O-P . O<)
+                  ((LEN E) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN E)))
+    ((GL::ALL-NIL E)
+     (GL::ALL-NIL (CDR E))
+     (O< (LEN (CDR E)) (LEN E))))
+   (GL::BFR-EXPT-SU 2 :SYSTEM
+                    . "centaur/gl/symbolic-arithmetic")
+   (SV::AIG-EXPT-SU :SYSTEM . "centaur/sv/svex/aig-arith"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (CONSP X))
+     (O< (LEN (CDR X)) (LEN X))))
+   (GL::SHRINK-CONSTRAINT-ALIST 1 :SYSTEM . "centaur/gl/hyp-fix")
+   (ABNF::LOOKUP-RULENAME :SYSTEM
+                          . "projects/abnf/notation/semantics")
+   (<-INSERTSORT :SYSTEM . "projects/irv/irv")
+   (X86ISA::SDM-INSTRUCTION-TABLE-INSERTSORT :SYSTEM
+                                             .
+                                             "projects/x86isa/machine/catalogue-base")
+   (VL2014::VL-PARAMVALUELIST-ELIM-USELESS-PARAMS :SYSTEM
+                                                  .
+                                                  "centaur/vl2014/transforms/clean-params")
+   (SV::RANGELIST-SORT-INSERTSORT :SYSTEM . "centaur/sv/vl/use-set")
+   (VL::PARTSUMLIST-SORT-INSERTSORT :SYSTEM
+                                    . "centaur/vl/util/summarize-parts")
+   (VL::VL-MODINSTLIST-LINT-STUB :SYSTEM
+                                 . "centaur/vl/transforms/lintstub")
+   (VL::VL-PARAMDECLLIST-CHECK-GLOBALPARAMS :SYSTEM
+                                            . "centaur/vl/lint/check-globalparams")
+   (VL::VL-DISTLIST-CONDCHECK :SYSTEM . "centaur/vl/lint/condcheck")
+   (VL::VL-VARDECLLIST-SCAN-FOR-IGNORE :SYSTEM
+                                       . "centaur/vl/lint/suppress-warnings")
+   (AIGNET::AIGNET-PATHCOND-EVAL-AT-CHECKPOINTS :SYSTEM
+                                                . "centaur/fgl/pathcond-transform")
+   (AIGNET::AIGNET-MAP-OUTPUTS-BY-LIT-LIST :SYSTEM
+                                           . "centaur/aignet/simplify-marked")
+   (FGL::ALIST-CONST-PAIRS-MAP :SYSTEM
+                               . "centaur/fgl/check-primitives")
+   (FGL::CGRAPH-DERIVE-ASSIGNS-MEASURE :SYSTEM . "centaur/fgl/ctrex-utils")
+   (FGL::PROF-ENTRY-TRIES-INSERTSORT :SYSTEM . "centaur/fgl/prof")
+   (SV::SVTV-DEBUG-FSM-WRITEPHASES :SYSTEM . "centaur/sv/svtv/debug")
+   (VL::VL-MODINSTLIST-LVALUECHECK :SYSTEM . "centaur/vl/lint/lvaluecheck")
+   (VL::VL-DISTLIST-IMMDEPS-FN :SYSTEM . "centaur/vl/mlib/immdeps")
+   (VL::VL-ELABTASKLIST-COLLECT-ODD-NAMES :SYSTEM
+                                          . "centaur/vl/transforms/addnames")
+   (VL::VL-MAYBE-EXPRLIST-INCREWRITE-AUX :SYSTEM
+                                         .
+                                         "centaur/vl/transforms/annotate/increment-elim")
+   (VL::VL-DISTLIST-TYPE-DISAMBIGUATE :SYSTEM
+                                      .
+                                      "centaur/vl/transforms/annotate/type-disambiguation")
+   (VL::VL-FUNDECLLIST-DELTEMPS :SYSTEM
+                                .
+                                "centaur/vl/transforms/annotate/shadowcheck")
+   (VL::VL-PORTDECLLIST-ALLEXPRS-NREV :SYSTEM . "centaur/vl/mlib/allexprs")
+   (VL::VL-PLAINARGLIST-UPDATE-IFPORTS :SYSTEM
+                                       . "centaur/vl/transforms/unparam/top")
+   (VL::VL-PORTLIST-COLLECT-CLASSES :SYSTEM
+                                    .
+                                    "centaur/vl/transforms/unparam/expr-classes")
+   (VL::VL-NAMEDARGLIST-ELABORATE-FN :SYSTEM . "centaur/sv/vl/elaborate")
+   (SV::SVSTACK-FILTER-GLOBAL-LHS-VARS :SYSTEM
+                                       . "centaur/sv/vl/svstmt-compile")
+   (VL::VL-VARDECLLIST-STRIP :SYSTEM . "centaur/vl/mlib/strip")
+   (SV::SEGMENT-DRIVER-MAP-VARS :SYSTEM
+                                . "centaur/sv/mods/norm-netlist")
+   (SV::LHS-VARS :SYSTEM . "centaur/sv/mods/lhs")
+   (ALPHA-INSERTSORT :SYSTEM . "centaur/misc/alphanum-sort")
+   (GL::PROF-ENTRY-TRIES-INSERTSORT :SYSTEM . "centaur/gl/prof")
+   (AIGNET::SPATH-ENDPOINT :SYSTEM
+                           .
+                           "centaur/aignet/internal-observability-super")
+   (AIGNET::LEVELS-SORT-INSERTSORT :SYSTEM . "centaur/aignet/balance")
+   (AIGNET::LITERAL-SORT-INSERTSORT :SYSTEM . "centaur/aignet/literal-sort")
+   (AIGNET::NATSORT-INSERTSORT :SYSTEM . "centaur/aignet/rwlib"))
+  ((JUSTIFICATION (AIGNET::NODEDATA)
+                  (NIL O-P . O<)
+                  ((LEN AIGNET::NODEDATA)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN AIGNET::NODEDATA)))
+    ((NOT (CONSP AIGNET::NODEDATA))
+     (NOT (CONSP (CDR AIGNET::NODEDATA)))
+     (NOT (< (SATLINK::LIT->VAR$INLINE (CAR AIGNET::NODEDATA))
+             (LNFIX$INLINE AIGNET::NUM-FANINS)))
+     (NOT (< (SATLINK::LIT->VAR$INLINE (CAR (CDR AIGNET::NODEDATA)))
+             (LNFIX$INLINE AIGNET::NUM-FANINS)))
+     (O< (LEN (CDR (CDR AIGNET::NODEDATA)))
+         (LEN AIGNET::NODEDATA))))
+   (AIGNET::ABC-NODES-WELLFORMED 2 :SYSTEM . "centaur/aignet/rwlib"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((NOT (CONSP (VL2014::VL-LUCIDOCCLIST-FIX$INLINE VL2014::X)))
+     (O< (LEN (CDR (VL2014::VL-LUCIDOCCLIST-FIX$INLINE VL2014::X)))
+         (LEN VL2014::X))))
+   (VL2014::VL-LUCID-FILTER-MERGES 3
+                                   :SYSTEM . "centaur/vl2014/lint/lucid"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((NOT (CONSP (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::X)))
+     (O< (LEN (CDR (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::X)))
+         (LEN VL2014::X))))
+   (VL2014::VL-ELIDE-WARNINGS-MAIN 5 :SYSTEM
+                                   . "centaur/vl2014/mlib/print-warnings")
+   (VL2014::VL-FILTER-WARNINGS-BY-LOC :SYSTEM
+                                      .
+                                      "centaur/vl2014/loader/inject-warnings"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((NOT (CONSP (CDR VL2014::X)))
+     (O< (LEN (CONS (VL2014::VL-NONATOM (CAR (CDR VL2014::X))
+                                        (CAR (CDR (CDR VL2014::X)))
+                                        (CONS (CAR VL2014::X)
+                                              (CONS (CAR (CDR (CDR (CDR VL2014::X))))
+                                                    'NIL))
+                                        'NIL
+                                        'NIL)
+                    (CDR (CDR (CDR (CDR VL2014::X))))))
+         (LEN VL2014::X))))
+   (VL2014::VL-LEFT-ASSOCIATE-MIXED-BINOP-LIST 1 :SYSTEM
+                                               .
+                                               "centaur/vl2014/loader/parser/expressions"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (CONSP X))
+     (NOT (CONSP (SV::DRIVERLIST-REST-AFTER-STRENGTH X
+                                                     (SV::DRIVER->STRENGTH$INLINE (CAR X)))))
+     (O< (LEN (SV::DRIVERLIST-REST-AFTER-STRENGTH X
+                                                  (SV::DRIVER->STRENGTH$INLINE (CAR X))))
+         (LEN X))))
+   (SV::DRIVERLIST->SVEX 1 :SYSTEM . "centaur/sv/mods/lhs"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((NOT (MV-NTH '0 (SV::LHS-DECOMP X)))
+     (O< (LEN (MV-NTH '1 (SV::LHS-DECOMP X)))
+         (LEN X))))
+   (SV::LHS-CHECK-MASKS 3 :SYSTEM . "centaur/sv/mods/lhs")
+   (SV::SVTV-DEBUG-LHS-EVAL :SYSTEM . "centaur/sv/svtv/debug")
+   (SV::SVSTMT-ASSIGN->SUBST :SYSTEM
+                             . "centaur/sv/vl/svstmt-compile")
+   (SV::LHS-INDEXED->NAMED :SYSTEM . "centaur/sv/mods/compile")
+   (SV::ASSIGN->SEGMENT-DRIVERS :SYSTEM
+                                . "centaur/sv/mods/norm-netlist")
+   (SV::LHS-ALIAS-CANONICALIZE-TOP :SYSTEM . "centaur/sv/mods/alias-norm"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (VL::VL-LUCIDOCCLIST-FIX$INLINE VL::X)))
+     (O< (LEN (CDR (VL::VL-LUCIDOCCLIST-FIX$INLINE VL::X)))
+         (LEN VL::X))))
+   (VL::VL-LUCID-FILTER-MERGES 3 :SYSTEM . "centaur/vl/lint/lucid"))
+  ((JUSTIFICATION (VL::LOOPVARS)
+                  (NIL O-P . O<)
+                  ((LEN VL::LOOPVARS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::LOOPVARS)))
+    ((NOT (CONSP (VL::VL-MAYBE-STRING-LIST-FIX$INLINE VL::LOOPVARS)))
+     (O< (LEN (CDR (VL::VL-MAYBE-STRING-LIST-FIX$INLINE VL::LOOPVARS)))
+         (LEN VL::LOOPVARS))))
+   (VL::VL-PP-FOREACHSTMT-LOOPVARS-FN 2 :SYSTEM . "centaur/vl/mlib/writer"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (VL::VL-MODINSTLIST-FIX$INLINE VL::X)))
+     (O< (LEN (CDR (VL::VL-MODINSTLIST-FIX$INLINE VL::X)))
+         (LEN VL::X))))
+   (VL::VL-BINDELIM-EXTEND-INSTTABLE 5 :SYSTEM
+                                     .
+                                     "centaur/vl/transforms/annotate/bind"))
+  ((JUSTIFICATION (VL::SCOPES)
+                  (NIL O-P . O<)
+                  ((LEN VL::SCOPES)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::SCOPES)))
+    ((NOT (CONSP (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
+     (VL::VL-LEXSCOPE-FIND (VL::STRING-FIX$INLINE VL::NAME)
+                           (CAR (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
+     (O< (LEN (CDR (VL::VL-LEXSCOPES-FIX$INLINE VL::SCOPES)))
+         (LEN VL::SCOPES))))
+   (VL::VL-LEXSCOPES-FIND 2 :SYSTEM
+                          .
+                          "centaur/vl/transforms/annotate/shadowcheck"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (VL::VL-WARNINGLIST-FIX$INLINE VL::X)))
+     (O< (LEN (CDR (VL::VL-WARNINGLIST-FIX$INLINE VL::X)))
+         (LEN VL::X))))
+   (VL::VL-ELIDE-WARNINGS-MAIN 5 :SYSTEM
+                               . "centaur/vl/mlib/print-warnings")
+   (VL::VL-FILTER-WARNINGS-BY-LOC :SYSTEM
+                                  . "centaur/vl/loader/inject-warnings"))
+  ((JUSTIFICATION (VL::DEPS)
+                  (NIL O-P . O<)
+                  ((LEN VL::DEPS) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::DEPS)))
+    ((NOT (CONSP (STR::STRING-LIST-FIX VL::DEPS)))
+     (O< (LEN (CDR (STR::STRING-LIST-FIX VL::DEPS)))
+         (LEN VL::DEPS))))
+   (VL::VL-BLAME-ALIST-AUX1 3
+                            :SYSTEM . "centaur/vl/mlib/remove-bad")
+   (SMT::TRANSLATE-SYMBOL-DECLARE :SYSTEM
+                                  .
+                                  "projects/smtlink/trusted/z3-py/translator")
+   (VL2014::VL-BLAME-ALIST-AUX1 :SYSTEM
+                                . "centaur/vl2014/mlib/remove-bad"))
+  ((JUSTIFICATION (SV::PHASES)
+                  (NIL O-P . O<)
+                  ((LEN SV::PHASES)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SV::PHASES)))
+    ((NOT (MV-NTH '1
+                  (SV::SVTV*-INPUT-SIGNAL-FIND-NEXT-PHASE SV::NAME SV::PHASES SV::OVERRIDEP)))
+     (O< (LEN (MV-NTH '2
+                      (SV::SVTV*-INPUT-SIGNAL-FIND-NEXT-PHASE SV::NAME SV::PHASES SV::OVERRIDEP)))
+         (LEN SV::PHASES))))
+   (SV::SVTV*-INPUT-TO-SVTV-LINE-ENTRIES 4
+                                         :SYSTEM . "centaur/sv/svtv/preprocess"))
+  ((JUSTIFICATION (SV::PHASE-OUTS)
+                  (NIL O-P . O<)
+                  ((LEN SV::PHASE-OUTS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SV::PHASE-OUTS)))
+    ((NOT (< (SV::SVTV-CYCLE-OUTPUT-PHASE SV::PHASES)
+             (LEN SV::PHASE-OUTS)))
+     (O< (LEN (NTHCDR (IF (CONSP SV::PHASES)
+                          (LEN SV::PHASES)
+                        '1)
+                      SV::PHASE-OUTS))
+         (LEN SV::PHASE-OUTS))))
+   (SV::SVEX-ENVLIST-PHASE-OUTPUTS-EXTRACT-CYCLE-OUTPUTS 2
+                                                         :SYSTEM . "centaur/sv/svtv/svtv-spec"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((MV-NTH '2 (FGL::AABF-FIRST/REST/END X))
+     (O< (LEN (MV-NTH '1
+                      (FGL::AABF-FIRST/REST/END X)))
+         (LEN X))))
+   (FGL::AABF-INTEGER-LENGTH-S1 3 :SYSTEM
+                                . "centaur/fgl/symbolic-arithmetic"))
+  ((JUSTIFICATION (E)
+                  (NIL O-P . O<)
+                  ((LEN E) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN E)))
+    ((FGL::AABF-SYNTACTICALLY-ZERO-P E)
+     (FGL::AABF-SYNTACTICALLY-ZERO-P (CDR E))
+     (O< (LEN (CDR E)) (LEN E))))
+   (FGL::AABF-EXPT-SU 3 :SYSTEM
+                      . "centaur/fgl/symbolic-arithmetic"))
+  ((JUSTIFICATION (X)
+                  (NIL O-P . O<)
+                  ((LEN X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN X)))
+    ((MV-NTH '2 (FGL::BFR-FIRST/REST/END X))
+     (O< (LEN (MV-NTH '1 (FGL::BFR-FIRST/REST/END X)))
+         (LEN X))))
+   (FGL::BFR-INTEGER-LENGTH-S1 3
+                               :SYSTEM . "centaur/fgl/bfr-arithmetic"))
+  ((JUSTIFICATION (E)
+                  (NIL O-P . O<)
+                  ((LEN E) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN E)))
+    ((FGL::BFR-SYNTACTICALLY-ZERO-P E)
+     (FGL::BFR-SYNTACTICALLY-ZERO-P (CDR E))
+     (O< (LEN (CDR E)) (LEN E))))
+   (FGL::BFR-EXPT-SU 3
+                     :SYSTEM . "centaur/fgl/bfr-arithmetic"))
+  ((JUSTIFICATION (FGL::VARS)
+                  (NIL O-P . O<)
+                  ((LEN FGL::VARS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN FGL::VARS)))
+    ((NOT (CONSP FGL::VARS))
+     (NOT (CONSP (CDR (CMR::PSEUDO-VAR-LIST-FIX$INLINE FGL::VARS))))
+     (O< (LEN (CDR (CMR::PSEUDO-VAR-LIST-FIX$INLINE FGL::VARS)))
+         (LEN FGL::VARS))))
+   (FGL::BIND-VARS-TO-LIST-ELEMS 2 :SYSTEM . "centaur/fgl/casesplit"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (CDR VL::X)))
+     (O< (LEN (CONS (VL::VL-BINARY (CAR (CDR VL::X))
+                                   (CAR VL::X)
+                                   (CAR (CDR (CDR (CDR VL::X))))
+                                   (CAR (CDR (CDR VL::X))))
+                    (CDR (CDR (CDR (CDR VL::X))))))
+         (LEN VL::X))))
+   (VL::VL-LEFT-ASSOCIATE-MIXED-BINOP-LIST 1 :SYSTEM
+                                           .
+                                           "centaur/vl/loader/parser/expressions"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (CDR VL::X)))
+     (O< (LEN (CONS (VL::VL-PROPBINARY (CAR (CDR VL::X))
+                                       (CAR VL::X)
+                                       (CAR (CDR (CDR VL::X))))
+                    (CDR (CDR (CDR VL::X)))))
+         (LEN VL::X))))
+   (VL::VL-LEFT-ASSOCIATE-ALTERNATING-PROPEXPR/OP-LIST 1 :SYSTEM
+                                                       .
+                                                       "centaur/vl/loader/parser/properties"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP (VL::VL-DESCRIPTIONLIST-FIX$INLINE VL::X)))
+     (NOT (CONSP (VL::VL-WARNINGLIST-FIX$INLINE VL::WARNINGS)))
+     (O< (LEN (CDR (VL::VL-DESCRIPTIONLIST-FIX$INLINE VL::X)))
+         (LEN VL::X))))
+   (VL::VL-DESCRIPTIONLIST-INJECT-WARNINGS 2 :SYSTEM
+                                           . "centaur/vl/loader/inject-warnings"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP VL::X))
+     (EQUAL (CAR VL::X)
+            (MV-NTH '0
+                    (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
+                                                     (CDR VL::X))))
+     (O< (LEN (MV-NTH '1
+                      (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
+                                                       (CDR VL::X))))
+         (LEN VL::X)))
+    ((NOT (CONSP VL::X))
+     (NOT (EQUAL (CAR VL::X)
+                 (MV-NTH '0
+                         (VL::VL-MATCH-CONTIGUOUS-INDICES (CAR VL::X)
+                                                          (CDR VL::X)))))
+     (O< (LEN (CDR VL::X)) (LEN VL::X))))
+   (VL::VL-MERGE-CONTIGUOUS-INDICES 1 :SYSTEM
+                                    . "centaur/vl/util/merge-indices"))
+  ((JUSTIFICATION (VL::X)
+                  (NIL O-P . O<)
+                  ((LEN VL::X) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL::X)))
+    ((NOT (CONSP VL::X))
+     (EQUAL (LEN VL::X)
+            (LEN (VL::SUMMARIZE-PARTSUMLIST1 (CAR VL::X)
+                                             (CDR VL::X))))
+     (O< (LEN (VL::SUMMARIZE-PARTSUMLIST1 (CAR VL::X)
+                                          (CDR VL::X)))
+         (LEN VL::X))))
+   (VL::SUMMARIZE-PARTSUMLIST 1 :SYSTEM
+                              . "centaur/vl/util/summarize-parts"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((NOT (CONSP (VL2014::VL-DESCRIPTIONLIST-FIX$INLINE VL2014::X)))
+     (NOT (CONSP (VL2014::VL-WARNINGLIST-FIX$INLINE VL2014::WARNINGS)))
+     (O< (LEN (CDR (VL2014::VL-DESCRIPTIONLIST-FIX$INLINE VL2014::X)))
+         (LEN VL2014::X))))
+   (VL2014::VL-DESCRIPTIONLIST-INJECT-WARNINGS 2 :SYSTEM
+                                               .
+                                               "centaur/vl2014/loader/inject-warnings"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((NOT (CONSP VL2014::X))
+     (EQUAL (CAR VL2014::X)
+            (MV-NTH '0
+                    (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
+                                                         (CDR VL2014::X))))
+     (O< (LEN (MV-NTH '1
+                      (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
+                                                           (CDR VL2014::X))))
+         (LEN VL2014::X)))
+    ((NOT (CONSP VL2014::X))
+     (NOT (EQUAL (CAR VL2014::X)
+                 (MV-NTH '0
+                         (VL2014::VL-MATCH-CONTIGUOUS-INDICES (CAR VL2014::X)
+                                                              (CDR VL2014::X)))))
+     (O< (LEN (CDR VL2014::X))
+         (LEN VL2014::X))))
+   (VL2014::VL-MERGE-CONTIGUOUS-INDICES 1 :SYSTEM
+                                        . "centaur/vl2014/util/merge-indices"))
+  ((JUSTIFICATION (VL2014::SCOPES)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::SCOPES)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::SCOPES)))
+    ((NOT (CONSP (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
+     (VL2014::VL-LEXSCOPE-FIND$INLINE (VL2014::STRING-FIX$INLINE VL2014::NAME)
+                                      (CAR (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
+     (O< (LEN (CDR (VL2014::VL-LEXSCOPES-FIX$INLINE VL2014::SCOPES)))
+         (LEN VL2014::SCOPES))))
+   (VL2014::VL-LEXSCOPES-FIND 2 :SYSTEM
+                              .
+                              "centaur/vl2014/transforms/annotate/shadowcheck"))
+  ((JUSTIFICATION (VL2014::X)
+                  (NIL O-P . O<)
+                  ((LEN VL2014::X)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN VL2014::X)))
+    ((EQUAL (VL2014::LPOSFIX$INLINE VL2014::N)
+            '0)
+     (< (LEN VL2014::X)
+        (VL2014::LPOSFIX$INLINE VL2014::N))
+     (O< (LEN (REST-N (VL2014::LPOSFIX$INLINE VL2014::N)
+                      VL2014::X))
+         (LEN VL2014::X))))
+   (VL2014::VL-PARTITION-MSB-BITSLICES 2 :SYSTEM
+                                       .
+                                       "centaur/vl2014/transforms/replicate-insts"))
+  ((JUSTIFICATION (DIMACS-READER::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN DIMACS-READER::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN DIMACS-READER::CONTENT)))
+    ((NOT (CONSP DIMACS-READER::CONTENT))
+     (NOT (MV-NTH '0
+                  (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c ")))
+     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
+                                                (DIMACS-READER::SKIP-LINE (MV-NTH '1
+                                                                                  (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c "))))))
+     (O< (LEN (MV-NTH '1
+                      (DIMACS-READER::SKIP-LINE (MV-NTH '1
+                                                        (DIMACS-READER::PARSE-STRING DIMACS-READER::CONTENT '"c ")))))
+         (LEN DIMACS-READER::CONTENT))))
+   (DIMACS-READER::PARSE-COMMENTS 1 :SYSTEM
+                                  . "projects/sat/dimacs-reader/reader"))
+  ((JUSTIFICATION (DIMACS-READER::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN DIMACS-READER::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN DIMACS-READER::CONTENT)))
+    ((NOT (CONSP DIMACS-READER::CONTENT))
+     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
+                                                (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT))))
+     (EQUAL (MV-NTH '1
+                    (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT))
+            '0)
+     (NOT (MV-NTH '0
+                  (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
+                                                           (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT)))))
+     (O< (LEN (MV-NTH '1
+                      (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
+                                                               (DIMACS-READER::PARSE-INTEGER-MY DIMACS-READER::CONTENT)))))
+         (LEN DIMACS-READER::CONTENT))))
+   (DIMACS-READER::PARSE-CLAUSE 1 :SYSTEM
+                                . "projects/sat/dimacs-reader/reader"))
+  ((JUSTIFICATION (DIMACS-READER::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN DIMACS-READER::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN DIMACS-READER::CONTENT)))
+    ((NOT (CONSP DIMACS-READER::CONTENT))
+     (NOT (DIMACS-READER::EMPTY-STRINGP (MV-NTH '0
+                                                (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))
+     (NOT (CONSP (MV-NTH '2
+                         (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))
+     (NOT (MV-NTH '0
+                  (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
+                                                           (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT))))))
+     (NOT (CONSP (MV-NTH '1
+                         (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
+                                                                  (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT)))))))
+     (O< (LEN (MV-NTH '1
+                      (DIMACS-READER::PARSE-WHITESPACE (MV-NTH '2
+                                                               (DIMACS-READER::PARSE-CLAUSE (DIMACS-READER::TRIM-WHITESPACE DIMACS-READER::CONTENT))))))
+         (LEN DIMACS-READER::CONTENT))))
+   (DIMACS-READER::PARSE-FORMULA 1 :SYSTEM
+                                 . "projects/sat/dimacs-reader/reader"))
+  ((JUSTIFICATION (ABNF::INPUT)
+                  (NIL O-P . O<)
+                  ((LEN ABNF::INPUT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN ABNF::INPUT)))
+    ((FTY::RESERRP (MV-NTH '0
+                           (PFCS::LEX-DIGIT ABNF::INPUT)))
+     (O< (LEN (MV-NTH '1
+                      (PFCS::LEX-DIGIT ABNF::INPUT)))
+         (LEN ABNF::INPUT))))
+   (PFCS::LEX-*-DIGIT 1 :SYSTEM . "projects/pfcs/lexer"))
+  ((JUSTIFICATION (ABNF::INPUT)
+                  (NIL O-P . O<)
+                  ((LEN ABNF::INPUT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN ABNF::INPUT)))
+    ((FTY::RESERRP (MV-NTH '0
+                           (PFCS::LEX-GROUP-LETTER/DIGIT/_ ABNF::INPUT)))
+     (O< (LEN (MV-NTH '1
+                      (PFCS::LEX-GROUP-LETTER/DIGIT/_ ABNF::INPUT)))
+         (LEN ABNF::INPUT))))
+   (PFCS::LEX-*-REST-OF-IDENTIFIER 1 :SYSTEM . "projects/pfcs/lexer"))
+  ((JUSTIFICATION (ABNF::INPUT)
+                  (NIL O-P . O<)
+                  ((LEN ABNF::INPUT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN ABNF::INPUT)))
+    ((FTY::RESERRP (MV-NTH '0
+                           (PFCS::LEX-LEXEME ABNF::INPUT)))
+     (O< (LEN (MV-NTH '1
+                      (PFCS::LEX-LEXEME ABNF::INPUT)))
+         (LEN ABNF::INPUT))))
+   (PFCS::LEX-*-LEXEME 1 :SYSTEM . "projects/pfcs/lexer"))
+  ((JUSTIFICATION (SMT::CONFIG-ALIST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::CONFIG-ALIST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::CONFIG-ALIST)))
+    ((NOT (CONSP (SMT::STRING-STRING-ALIST-FIX$INLINE SMT::CONFIG-ALIST)))
+     (O< (LEN (CDR (SMT::STRING-STRING-ALIST-FIX$INLINE SMT::CONFIG-ALIST)))
+         (LEN SMT::CONFIG-ALIST))))
+   (SMT::CHANGE-SMT-CNF 2 :SYSTEM . "projects/smtlink/config"))
+  ((JUSTIFICATION (SMT::FORMAL/RETURN-LST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FORMAL/RETURN-LST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FORMAL/RETURN-LST)))
+    ((NOT (CONSP (SMT::DECL-LIST-FIX$INLINE SMT::FORMAL/RETURN-LST)))
+     (O< (LEN (CDR (SMT::DECL-LIST-FIX$INLINE SMT::FORMAL/RETURN-LST)))
+         (LEN SMT::FORMAL/RETURN-LST))))
+   (SMT::FLATTEN-FORMALS/RETURNS 1 :SYSTEM
+                                 .
+                                 "projects/smtlink/verified/hint-interface")
+   (SMT::TRANSLATE-TYPE-DECL-LIST :SYSTEM
+                                  .
+                                  "projects/smtlink/trusted/z3-py/translator")
+   (SMT::GENERATE-FN-RETURNS-HINT :SYSTEM
+                                  .
+                                  "projects/smtlink/verified/uninterpreted-fn-cp")
+   (SMT::REMOVE-DUPLICATE-FROM-DECL-LIST :SYSTEM
+                                         . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::FN-LST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FN-LST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FN-LST)))
+    ((NOT (CONSP (SMT::FUNC-LIST-FIX$INLINE SMT::FN-LST)))
+     (O< (LEN (CDR (SMT::FUNC-LIST-FIX$INLINE SMT::FN-LST)))
+         (LEN SMT::FN-LST))))
+   (SMT::MAKE-ALIST-FN-LST 1 :SYSTEM
+                           .
+                           "projects/smtlink/verified/hint-interface"))
+  ((JUSTIFICATION (SMT::KWD-ALIST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::KWD-ALIST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::KWD-ALIST)))
+    ((NOT (CONSP (SMT::TRUE-LIST-FIX SMT::KWD-ALIST)))
+     (EQUAL SMT::KEY
+            (CAR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST)))
+     (NOT (CONSP (CDR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST))))
+     (O< (LEN (CDR (CDR (SMT::TRUE-LIST-FIX SMT::KWD-ALIST))))
+         (LEN SMT::KWD-ALIST))))
+   (SMT::MY-SPLIT-KWD-ALIST 2 :SYSTEM
+                            .
+                            "projects/smtlink/verified/computed-hints"))
+  ((JUSTIFICATION (SMT::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN SMT::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::CONTENT)))
+    ((NOT (CONSP (SMT::ARGUMENT-LST-SYNTAX-FIX SMT::CONTENT)))
+     (O< (LEN (CDR (SMT::ARGUMENT-LST-SYNTAX-FIX SMT::CONTENT)))
+         (LEN SMT::CONTENT))))
+   (SMT::MAKE-MERGE-FORMALS-HELPER 1 :SYSTEM
+                                   . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN SMT::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::CONTENT)))
+    ((NOT (CONSP (SMT::HYPOTHESIS-LST-SYNTAX-FIX SMT::CONTENT)))
+     (O< (LEN (CDR (SMT::HYPOTHESIS-LST-SYNTAX-FIX SMT::CONTENT)))
+         (LEN SMT::CONTENT))))
+   (SMT::MAKE-MERGE-MORE-RETURNS 2 :SYSTEM
+                                 . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::FUN-OPT-LST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FUN-OPT-LST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FUN-OPT-LST)))
+    ((NOT (CONSP (SMT::FUNCTION-OPTION-LST-SYNTAX-FIX SMT::FUN-OPT-LST)))
+     (O< (LEN (CDR (CDR (SMT::FUNCTION-OPTION-LST-SYNTAX-FIX SMT::FUN-OPT-LST))))
+         (LEN SMT::FUN-OPT-LST))))
+   (SMT::MAKE-MERGE-FUNCTION-OPTION-LST 2 :SYSTEM
+                                        . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::CONTENT)
+                  (NIL O-P . O<)
+                  ((LEN SMT::CONTENT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::CONTENT)))
+    ((NOT (CONSP (SMT::FUNCTION-LST-SYNTAX-FIX SMT::CONTENT)))
+     (O< (LEN (CDR (SMT::FUNCTION-LST-SYNTAX-FIX SMT::CONTENT)))
+         (LEN SMT::CONTENT))))
+   (SMT::MERGE-FUNCTIONS 2 :SYSTEM
+                         . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::USER-HINT)
+                  (NIL O-P . O<)
+                  ((LEN SMT::USER-HINT)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::USER-HINT)))
+    ((NOT (CONSP (SMT::SMTLINK-HINT-SYNTAX-FIX SMT::USER-HINT)))
+     (O< (LEN (CDR (CDR (SMT::SMTLINK-HINT-SYNTAX-FIX SMT::USER-HINT))))
+         (LEN SMT::USER-HINT))))
+   (SMT::COMBINE-HINTS 2 :SYSTEM
+                       . "projects/smtlink/verified/Smtlink"))
+  ((JUSTIFICATION (SMT::HINTED-HYPOS)
+                  (NIL O-P . O<)
+                  ((LEN SMT::HINTED-HYPOS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::HINTED-HYPOS)))
+    ((NOT (CONSP (SMT::HINT-PAIR-LIST-FIX$INLINE SMT::HINTED-HYPOS)))
+     (O< (LEN (CDR (SMT::HINT-PAIR-LIST-FIX$INLINE SMT::HINTED-HYPOS)))
+         (LEN SMT::HINTED-HYPOS))))
+   (SMT::ADD-HYPO-SUBGOALS 2 :SYSTEM
+                           .
+                           "projects/smtlink/verified/add-hypo-cp")
+   (SMT::GENERATE-FN-MORE-RETURNS-HINT :SYSTEM
+                                       .
+                                       "projects/smtlink/verified/uninterpreted-fn-cp"))
+  ((JUSTIFICATION (SMT::FN-LST)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FN-LST)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FN-LST)))
+    ((NOT (CONSP (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
+     (O< (LEN (CDR (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
+         (LEN SMT::FN-LST))))
+   (SMT::INITIALIZE-FN-LVLS 1 :SYSTEM
+                            .
+                            "projects/smtlink/verified/expand-cp"))
+  ((JUSTIFICATION (SMT::FN-LVLS)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FN-LVLS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FN-LVLS)))
+    ((NOT (CONSP (SMT::SYM-NAT-ALIST-FIX$INLINE SMT::FN-LVLS)))
+     (O< (LEN (CDR (SMT::SYM-NAT-ALIST-FIX$INLINE SMT::FN-LVLS)))
+         (LEN SMT::FN-LVLS))))
+   (SMT::SUM-LVLS 1 :SYSTEM
+                  .
+                  "projects/smtlink/verified/expand-cp"))
+  ((JUSTIFICATION (FORMALS)
+                  (NIL O-P . O<)
+                  ((LEN FORMALS) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN FORMALS)))
+    ((NOT (CONSP (SYMBOL-LIST-FIX$INLINE FORMALS)))
+     (NOT (CONSP (CDR (SYMBOL-LIST-FIX$INLINE FORMALS))))
+     (O< (LEN (CDR (SYMBOL-LIST-FIX$INLINE FORMALS)))
+         (LEN FORMALS))))
+   (SMT::TRANSLATE-SYMBOL-LST 1 :SYSTEM
+                              .
+                              "projects/smtlink/trusted/z3-py/translate-type"))
+  ((JUSTIFICATION (SMT::FIELDS)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FIELDS)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FIELDS)))
+    ((NOT (CONSP (SMT::FTY-FIELD-ALIST-FIX$INLINE SMT::FIELDS)))
+     (O< (LEN (CDR (SMT::FTY-FIELD-ALIST-FIX$INLINE SMT::FIELDS)))
+         (LEN SMT::FIELDS))))
+   (SMT::TRANSLATE-FTY-FIELD-LST 2 :SYSTEM
+                                 .
+                                 "projects/smtlink/trusted/z3-py/translate-type"))
+  ((JUSTIFICATION (SMT::FTY-TYPES)
+                  (NIL O-P . O<)
+                  ((LEN SMT::FTY-TYPES)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN SMT::FTY-TYPES)))
+    ((NOT (CONSP (SMT::FTY-TYPES-FIX$INLINE SMT::FTY-TYPES)))
+     (O< (LEN (CDR (SMT::FTY-TYPES-FIX$INLINE SMT::FTY-TYPES)))
+         (LEN SMT::FTY-TYPES))))
+   (SMT::TRANSLATE-FTY-TYPES-RECUR 2 :SYSTEM
+                                   .
+                                   "projects/smtlink/trusted/z3-py/translate-type"))
+  ((JUSTIFICATION (THM)
+                  (NIL O-P . O<)
+                  ((LEN THM) IF MV-LIST RETURN-LAST))
+   (((O-P (LEN THM)))
+    ((NOT (CONSP (SMT::WORD-LIST-FIX$INLINE THM)))
+     (O< (LEN (CDR (SMT::WORD-LIST-FIX$INLINE THM)))
+         (LEN THM))))
+   (SMT::PRETTY-PRINT-RECUR 3 :SYSTEM
+                            .
+                            "projects/smtlink/trusted/z3-py/pretty-printer")))
+ ((JUSTIFICATION (ABS)
+                 (NIL O-P . O<)
+                 ((LEN (SYMBOL-LIST-FIX$INLINE ABS))
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (ABS)
+                  (NIL O-P . O<)
+                  ((LEN (SYMBOL-LIST-FIX$INLINE ABS))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (LEN (SYMBOL-LIST-FIX$INLINE ABS))))
+    ((NOT (CONSP (SYMBOL-LIST-FIX$INLINE ABS)))
+     (O< (LEN (SYMBOL-LIST-FIX$INLINE (CDR (SYMBOL-LIST-FIX$INLINE ABS))))
+         (LEN (SYMBOL-LIST-FIX$INLINE ABS)))))
+   (SMT::TRANSLATE-ABSTRACT-TYPES 1 :SYSTEM
+                                  .
+                                  "projects/smtlink/trusted/z3-py/translate-type")))
  ((JUSTIFICATION (PFCS::EXPR)
                  (NIL O-P . O<)
                  ((PFCS::EXPRESSION-COUNT PFCS::EXPR)
@@ -9730,52 +9874,107 @@
    (X86ISA::CONSTRUCT-PDP-TABLE 4 :SYSTEM
                                 .
                                 "projects/x86isa/tools/execution/init-page-tables")))
+ ((JUSTIFICATION (X86ISA::ADDR)
+                 (NIL O-P . O<)
+                 ((NFIX (BINARY-+ '281474976710656
+                                  (UNARY-- X86ISA::ADDR)))
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (X86ISA::ADDR)
+                  (NIL O-P . O<)
+                  ((NFIX (BINARY-+ '281474976710656
+                                   (UNARY-- X86ISA::ADDR)))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX (BINARY-+ '281474976710656
+                          (UNARY-- X86ISA::ADDR)))))
+    ((MV-NTH '0
+             (X86ISA::RML08 X86ISA::ADDR ':R
+                            X86ISA::X86))
+     (EQUAL (MV-NTH '1
+                    (X86ISA::RML08 X86ISA::ADDR ':R
+                                   X86ISA::X86))
+            '0)
+     (NOT (X86ISA::CANONICAL-ADDRESS-P$INLINE (BINARY-+ '1 X86ISA::ADDR)))
+     (O< (NFIX (BINARY-+ '281474976710656
+                         (UNARY-- (BINARY-+ '1 X86ISA::ADDR))))
+         (NFIX (BINARY-+ '281474976710656
+                         (UNARY-- X86ISA::ADDR))))))
+   (X86ISA::READ-CSTR-FROM-MEMORY1 3 :SYSTEM
+                                   .
+                                   "projects/x86isa/machine/instructions/pio")))
  ((JUSTIFICATION (X86ISA::START-REG)
                  (NIL O-P . O<)
-                 ((NFIX (BINARY-+ '8
+                 ((NFIX (BINARY-+ '16
                                   (UNARY-- X86ISA::START-REG)))
                   IF MV-LIST RETURN-LAST))
   ((JUSTIFICATION (X86ISA::START-REG)
                   (NIL O-P . O<)
-                  ((NFIX (BINARY-+ '8
+                  ((NFIX (BINARY-+ '16
                                    (UNARY-- X86ISA::START-REG)))
                    IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ '8
+   (((O-P (NFIX (BINARY-+ '16
                           (UNARY-- X86ISA::START-REG)))))
-    ((NOT (UNSIGNED-BYTE-P '3 X86ISA::START-REG))
+    ((NOT (UNSIGNED-BYTE-P '4 X86ISA::START-REG))
      (EQUAL X86ISA::CNT '0)
      (MV-NTH '0
-             (X86ISA::RME80$INLINE X86ISA::PROC-MODE
-                                   X86ISA::START-ADDR X86ISA::SEG-REG ':R
-                                   X86ISA::INST-AC? X86ISA::X86))
+             (X86ISA::RME128$INLINE X86ISA::PROC-MODE
+                                    X86ISA::START-ADDR X86ISA::SEG-REG ':R
+                                    X86ISA::INST-AC? X86ISA::X86))
      (EQUAL (BINARY-+ '-1 X86ISA::CNT) '0)
-     (O< (NFIX (BINARY-+ '8
+     (O< (NFIX (BINARY-+ '16
                          (UNARY-- (BINARY-+ '1 X86ISA::START-REG))))
-         (NFIX (BINARY-+ '8
+         (NFIX (BINARY-+ '16
                          (UNARY-- X86ISA::START-REG))))))
-   (X86ISA::READ-MM-REGS 7 :SYSTEM
-                         .
-                         "projects/x86isa/machine/instructions/x87"))
-  ((JUSTIFICATION (X86ISA::START-REG)
-                  (NIL O-P . O<)
-                  ((NFIX (BINARY-+ '8
-                                   (UNARY-- X86ISA::START-REG)))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (NFIX (BINARY-+ '8
-                          (UNARY-- X86ISA::START-REG)))))
-    ((< (BINARY-+ '8
-                  (UNARY-- X86ISA::START-REG))
-        '0)
-     (NOT (INTEGERP X86ISA::START-REG))
-     (< X86ISA::START-REG '0)
-     (EQUAL X86ISA::START-REG '8)
-     (O< (NFIX (BINARY-+ '8
-                         (UNARY-- (BINARY-+ '1 X86ISA::START-REG))))
-         (NFIX (BINARY-+ '8
-                         (UNARY-- X86ISA::START-REG))))))
-   (X86ISA::SET-FP-TAG-FN 4 :SYSTEM
+   (X86ISA::READ-XMM-REGS 7 :SYSTEM
                           .
                           "projects/x86isa/machine/instructions/x87")))
+ ((JUSTIFICATION (X86ISA::PTR)
+                 (NIL O-P . O<)
+                 ((NFIX (BINARY-+ '140737488355328
+                                  (UNARY-- X86ISA::PTR)))
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (X86ISA::PTR)
+                  (NIL O-P . O<)
+                  ((NFIX (BINARY-+ '140737488355328
+                                   (UNARY-- X86ISA::PTR)))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (NFIX (BINARY-+ '140737488355328
+                          (UNARY-- X86ISA::PTR)))))
+    ((NOT (SIGNED-BYTE-P '48 X86ISA::PTR))
+     (MV-NTH '0
+             (X86ISA::RML08 X86ISA::PTR ':R
+                            X86ISA::X86))
+     (EQUAL '0
+            (MV-NTH '1
+                    (X86ISA::RML08 X86ISA::PTR ':R
+                                   X86ISA::X86)))
+     (O< (NFIX (BINARY-+ '140737488355328
+                         (UNARY-- (BINARY-+ '1 X86ISA::PTR))))
+         (NFIX (BINARY-+ '140737488355328
+                         (UNARY-- X86ISA::PTR))))))
+   (X86ISA::READ-MEMORY-ZERO-TERMINATED 3 :SYSTEM
+                                        .
+                                        "projects/x86isa/machine/environment")))
+ ((JUSTIFICATION (I X86ISA::BITS)
+                 (NIL O-P . O<)
+                 ((ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (I X86ISA::BITS)
+                  (NIL O-P . O<)
+                  ((ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I)))))
+    ((NOT (INTEGERP I))
+     (< I '0)
+     (NOT (INTEGERP X86ISA::BITS))
+     (< X86ISA::BITS '0)
+     (< X86ISA::BITS I)
+     (EQUAL X86ISA::BITS I)
+     (LOGBITP I N)
+     (O< (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- (BINARY-+ '1 I))))
+         (ACL2-COUNT (BINARY-+ X86ISA::BITS (UNARY-- I))))))
+   (X86ISA::TZCNT 3 :SYSTEM
+                  .
+                  "projects/x86isa/machine/instructions/bit")))
  ((JUSTIFICATION (X FLAG)
                  (NIL O-P . O<)
                  ((IF (EQL FLAG 'FIND-MATCHES)
@@ -10217,36 +10416,6 @@
          (STRING-INDEX-MEASURE IDX STR))))
    (FIXED-STRING-PARSE 6 :SYSTEM
                        . "projects/regex/regex-parse")))
- ((JUSTIFICATION (SMT::FN-LST)
-                 (NIL O-P . O<)
-                 ((LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (SMT::FN-LST)
-                  (NIL O-P . O<)
-                  ((LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))))
-    ((NOT (CONSP (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))
-     (O< (LEN (SMT::FUNC-ALIST-FIX$INLINE (CDR (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST))))
-         (LEN (SMT::FUNC-ALIST-FIX$INLINE SMT::FN-LST)))))
-   (SMT::TRANSLATE-UNINTERPRETED-DECL-LST 4 :SYSTEM
-                                          .
-                                          "projects/smtlink/trusted/z3-py/translator")))
- ((JUSTIFICATION (ABS)
-                 (NIL O-P . O<)
-                 ((LEN (SYMBOL-LIST-FIX$INLINE ABS))
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (ABS)
-                  (NIL O-P . O<)
-                  ((LEN (SYMBOL-LIST-FIX$INLINE ABS))
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (LEN (SYMBOL-LIST-FIX$INLINE ABS))))
-    ((NOT (CONSP (SYMBOL-LIST-FIX$INLINE ABS)))
-     (O< (LEN (SYMBOL-LIST-FIX$INLINE (CDR (SYMBOL-LIST-FIX$INLINE ABS))))
-         (LEN (SYMBOL-LIST-FIX$INLINE ABS)))))
-   (SMT::TRANSLATE-ABSTRACT-TYPES 1 :SYSTEM
-                                  .
-                                  "projects/smtlink/trusted/z3-py/translate-type")))
  ((JUSTIFICATION (CLASSES)
                  (NIL O-P . O<)
                  ((IF (NULL CLASSES)
@@ -14739,51 +14908,6 @@
              (ACL2-COUNT TERM)
            (ACL2-COUNT LST)))))
    (FLAG-ALL-VARS1 4 :SYSTEM . "std/system/all-vars")))
- ((JUSTIFICATION (STATE CHANNEL)
-                 (NIL O-P . O<)
-                 ((FILE-MEASURE CHANNEL STATE)
-                  IF MV-LIST RETURN-LAST))
-  ((JUSTIFICATION (STATE CHANNEL)
-                  (NIL O-P . O<)
-                  ((FILE-MEASURE CHANNEL STATE)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (FILE-MEASURE CHANNEL STATE)))
-    ((NOT (STATE-P STATE))
-     (NOT (MV-NTH '0 (READ-BYTE$ CHANNEL STATE)))
-     (O< (FILE-MEASURE CHANNEL
-                       (MV-NTH '1 (READ-BYTE$ CHANNEL STATE)))
-         (FILE-MEASURE CHANNEL STATE))))
-   (TR-READ-BYTE$-ALL 3 :SYSTEM . "std/io/read-file-bytes")
-   (VL2014::VL-READ-FILE-LOOP-AUX-FN :SYSTEM
-                                     . "centaur/vl2014/loader/read-file")
-   (VL::VL-READ-FILE-LOOP-AUX-FN :SYSTEM . "centaur/vl/loader/read-file")
-   (READ-FILE-LINES-NO-NEWLINES-AUX :SYSTEM
-                                    . "std/io/read-file-lines-no-newlines")
-   (READ-FILE-LINES-AUX :SYSTEM . "std/io/read-file-lines"))
-  ((JUSTIFICATION (STATE CHANNEL)
-                  (NIL O-P . O<)
-                  ((FILE-MEASURE CHANNEL STATE)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (FILE-MEASURE CHANNEL STATE)))
-    ((NOT (STATE-P STATE))
-     (NOT (MV-NTH '0 (READ-CHAR$ CHANNEL STATE)))
-     (O< (FILE-MEASURE CHANNEL
-                       (MV-NTH '1 (READ-CHAR$ CHANNEL STATE)))
-         (FILE-MEASURE CHANNEL STATE))))
-   (TR-READ-CHAR$-ALL 3 :SYSTEM
-                      . "std/io/read-file-characters"))
-  ((JUSTIFICATION (STATE CHANNEL)
-                  (NIL O-P . O<)
-                  ((FILE-MEASURE CHANNEL STATE)
-                   IF MV-LIST RETURN-LAST))
-   (((O-P (FILE-MEASURE CHANNEL STATE)))
-    ((NOT (STATE-P STATE))
-     (MV-NTH '0 (READ-OBJECT CHANNEL STATE))
-     (O< (FILE-MEASURE CHANNEL
-                       (MV-NTH '2 (READ-OBJECT CHANNEL STATE)))
-         (FILE-MEASURE CHANNEL STATE))))
-   (TR-READ-OBJECT-ALL 3 :SYSTEM . "std/io/read-file-objects")
-   (VL::VL-READ-ZIP-AUX :SYSTEM . "centaur/vl/kit/zipfile")))
  ((JUSTIFICATION (X)
                  (NIL O-P . O<)
                  ((LEN (SV::MODALIST-FIX$INLINE X))
@@ -16230,6 +16354,29 @@
    (VL2014::VL-TYPE-EXPR-PAIRS-SUM-DATATYPE-SIZES 1 :SYSTEM
                                                   .
                                                   "centaur/vl2014/transforms/expr-size")))
+ ((JUSTIFICATION (STATE X86ISA::INFO)
+                 (NIL O-P . O<)
+                 ((FILE-MEASURE (X86ISA::RUN-SNIPPET-FILE-INFO->OUTPUT-CHANNEL$INLINE X86ISA::INFO)
+                                STATE)
+                  IF MV-LIST RETURN-LAST))
+  ((JUSTIFICATION (STATE X86ISA::INFO)
+                  (NIL O-P . O<)
+                  ((FILE-MEASURE (X86ISA::RUN-SNIPPET-FILE-INFO->OUTPUT-CHANNEL$INLINE X86ISA::INFO)
+                                 STATE)
+                   IF MV-LIST RETURN-LAST))
+   (((O-P (FILE-MEASURE (X86ISA::RUN-SNIPPET-FILE-INFO->OUTPUT-CHANNEL$INLINE X86ISA::INFO)
+                        STATE)))
+    ((MV-NTH '1
+             (X86ISA::RUN-COMPARE-SNIPPET-FROM-FILES X86ISA::INFO X86ISA::X86 STATE))
+     X86ISA::STOP-ON-MISMATCH
+     (O< (FILE-MEASURE (X86ISA::RUN-SNIPPET-FILE-INFO->OUTPUT-CHANNEL$INLINE X86ISA::INFO)
+                       (MV-NTH '3
+                               (X86ISA::RUN-COMPARE-SNIPPET-FROM-FILES X86ISA::INFO X86ISA::X86 STATE)))
+         (FILE-MEASURE (X86ISA::RUN-SNIPPET-FILE-INFO->OUTPUT-CHANNEL$INLINE X86ISA::INFO)
+                       STATE))))
+   (X86ISA::REPEAT-RUN-COMPARE-SNIPPET-FROM-FILES-FN 4 :SYSTEM
+                                                     .
+                                                     "projects/x86isa/tools/execution/asmtest/asmtest")))
  ((JUSTIFICATION (STACK EDGES NODES)
                  (NIL T . NAT-LIST-<)
                  ((DFS-MEASURE NODES EDGES STACK)

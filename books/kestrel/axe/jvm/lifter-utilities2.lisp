@@ -129,13 +129,11 @@
 (make-flag desugar-params-in-assumption-term-to-stack-items)
 
 (defthm-flag-desugar-params-in-assumption-term-to-stack-items
-  (defthm len-of-desugar-params-in-assumption-term-to-stack-items-skip
-    :skip t
-    :flag desugar-params-in-assumption-term-to-stack-items)
   (defthm len-of-desugar-params-in-assumption-terms-to-stack-items
     (equal (len (desugar-params-in-assumption-terms-to-stack-items terms param-name-to-slot-alist param-slot-to-stack-item-alist))
            (len terms))
-    :flag desugar-params-in-assumption-terms-to-stack-items))
+    :flag desugar-params-in-assumption-terms-to-stack-items)
+  :skip-others t)
 
 (DEFTHM-FLAG-DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS
   (DEFTHM pseudo-termp-of-DESUGAR-PARAMS-IN-ASSUMPTION-TERM-TO-STACK-ITEMS

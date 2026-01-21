@@ -1,7 +1,7 @@
 ; Representing DAGs as stobjs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,9 +16,9 @@
 
 ;; TODO: Rename sdag to dag-stobj?
 
-(include-book "kestrel/axe/dag-constant-alist" :dir :system)
-(include-book "kestrel/axe/dag-variable-alist" :dir :system)
-(include-book "kestrel/axe/bounded-darg-listp" :dir :system)
+(include-book "dag-constant-alist")
+(include-book "dag-variable-alist")
+(include-book "bounded-darg-listp")
 
 ;; Throughout this file, we use "sdag" to mean "stobj DAG" (that is, a stobj
 ;; that represents an Axe DAG).

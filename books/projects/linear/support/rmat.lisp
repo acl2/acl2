@@ -761,15 +761,15 @@
 ;; The definition of the nxn identity matrix is based on that of an rlist of length n
 ;; with (r1) at index j and (r0) elsewhere:
 
-(defun runit (j n)
+(defun runit (i n)
   (if (zp n)
       ()
-    (if (zp j)
+    (if (zp i)
         (cons (r1) (rlistn0 (1- n)))
-      (cons (r0) (runit (1- j) (1- n))))))
+      (cons (r0) (runit (1- i) (1- n))))))
 
 (defthm rlistnp-runit
-  (rlistnp (runit j n) n))
+  (rlistnp (runit i n) n))
 
 (defun rdelta (i j)
   (if (= i j) (r1) (r0)))
@@ -801,10 +801,10 @@
 
 ;; nxn identity matrix:
 
-(defun id-rmat-aux (j n)
-  (declare (xargs :measure (nfix (- n j))))
-  (if (and (natp j) (natp n) (< j n))
-      (cons (runit j n) (id-rmat-aux (1+ j) n))
+(defun id-rmat-aux (i n)
+  (declare (xargs :measure (nfix (- n i))))
+  (if (and (natp i) (natp n) (< i n))
+      (cons (runit i n) (id-rmat-aux (1+ i) n))
     ()))
 
 (defund id-rmat (n)

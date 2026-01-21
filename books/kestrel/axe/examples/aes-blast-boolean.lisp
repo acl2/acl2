@@ -9,6 +9,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, due to regression failure 9/4/2025 using Allegro CL 10.1:
+; cert_param: (non-allegro)
+
 (in-package "ACL2")
 
 ;; A variant of aes-blast,lisp that uses boolean operations for NOT and AND.
@@ -59,16 +62,14 @@
                                        (aes::aes-128-encrypt (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'in 128))))
                                                              (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'key 128)))))))
                    :rules :auto
-                   :extra-rules (append (bit-blast-rules3)
+                   :extra-rules (append (bit-blast-rules)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfer with pushing these functions to do conversions
                    )
 
 (def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted-as-boolean*
   *aes-128-encrypt-spec-dag*
-;  :monitored-symbols '(ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2)
-  :rules (append '(bv-array-read-blast-one-step-better
-                   bif-rewrite ;bif
+  :rules (append '(bv-array-read-blast-one-step
                    bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
                    bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
                    bytes-to-bits-base

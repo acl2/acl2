@@ -1,0 +1,63 @@
+Copyright (C) 2025, Matt Kaufmann
+Written by Matt Kaufmann and Konrad Slind
+License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+This is a list of possible action items for the hol-in-acl2 project.
+
+============================================================
+
+Implement something for new_specification.
+(See private copy of new_specification-email.txt.)
+
+============================================================
+
+Support type constructors other than the ones currently supported by
+hol-type-eval (defined in file acl2/hol.lisp).  Nullary polymorphic
+constructors may need additional support; see the handling of hp-none
+and hp-nil in acl2/terms.lisp.
+
+============================================================
+
+Eventually handle disjoint sum types -- carefully, because to inject
+into (sum alpha beta) you need both alpha and beta (probably).
+
+============================================================
+
+Import theorems and induction schemes etc.
+
+============================================================
+
+Take care with regard to case sensitivity of HOL4.
+
+============================================================
+
+Defhol needs to check that the list of variables and type variables is
+without duplicates, so that in particular type variables don't overlap
+with variables.
+
+============================================================
+
+The translator should eventually lift lambdas to produce auxiliary
+defhol forms.
+
+Then, quantifiers will probably be handled by treating quantified
+expressions as hp-forall or hp-exists applied to those lifted lambdas.
+
+============================================================
+
+Consider forcing some hypotheses in generated rules by default, as
+suggested in theorem HOL::HOL{SUC}-alt in
+examples/eval-poly-support.lisp.
+
+============================================================
+
+Consider improving matching by modifying generated rules to improve
+matching, as suggested in theorem HOL{SUM_POLYS}0-alt in
+examples/eval-poly-support.lisp.
+
+============================================================
+
+Move lemmas as appropriate from acl2/lemmas.lisp to books under
+../set-theory/.
+
+============================================================

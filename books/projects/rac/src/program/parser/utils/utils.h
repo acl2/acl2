@@ -13,40 +13,36 @@
 
 #define UNREACHABLE() assert(!"Woopsie, some unreachable code was reach")
 
-#define STRONGTYPEDEF(BASE, TYPE)                                             \
-  struct TYPE {                                                               \
-    TYPE() = default;                                                         \
-    TYPE(BASE v) : value(v) {}                                                \
-    TYPE(const TYPE &v) = default;                                            \
-    TYPE &operator=(const TYPE &rhs) = default;                               \
-    TYPE &operator=(BASE &rhs) {                                              \
-      value = rhs;                                                            \
-      return *this;                                                           \
-    }                                                                         \
-    operator BASE &() { return value; }                                       \
-    BASE value;                                                               \
-    using BaseType = BASE;                                                    \
+#define STRONGTYPEDEF(BASE, TYPE)                                              \
+  struct TYPE {                                                                \
+    TYPE() = default;                                                          \
+    TYPE(BASE v) : value(v) {}                                                 \
+    TYPE(const TYPE &v) = default;                                             \
+    TYPE &operator=(const TYPE &rhs) = default;                                \
+    TYPE &operator=(BASE &rhs) {                                               \
+      value = rhs;                                                             \
+      return *this;                                                            \
+    }                                                                          \
+    operator BASE &() { return value; }                                        \
+    BASE value;                                                                \
+    using BaseType = BASE;                                                     \
   }
 
-template <class... Ts>
-struct overloaded : Ts... {
+template <class... Ts> struct overloaded : Ts... {
   using Ts::operator()...;
 };
 // explicit deduction guide (not needed as of C++20)
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 // Check if the pointer elm is of type T. T and U should be both a pointer
 // type. If both are the type but one if const (or volatile) and not the other
 // this will return false. Maybe this behavior should be modified ?
-template <typename T, typename U>
-inline bool isa(U elm) {
+template <typename T, typename U> inline bool isa(U elm) {
   return dynamic_cast<T>(elm);
 }
 
 // Alaways cast elem from type U to T where U is a base of T.
-template <typename T, typename U>
-inline T always_cast(U elm) {
+template <typename T, typename U> inline T always_cast(U elm) {
   auto t = dynamic_cast<T>(elm);
   assert(t && "Invalid conversion");
   return t;
@@ -104,10 +100,9 @@ public:
     return (sign_ ? -1 : 1) * abs_val_;
   }
 
-  template <typename T>
-  bool can_fit_inside() const {
-    return *this <= std::numeric_limits<T>::max()
-           && *this >= std::numeric_limits<T>::min();
+  template <typename T> bool can_fit_inside() const {
+    return *this <= std::numeric_limits<T>::max() &&
+           *this >= std::numeric_limits<T>::min();
   }
 
   bool can_fit_inside(bool sign, unsigned width) const {
@@ -159,8 +154,7 @@ inline std::string to_string(const BigInt &n) {
   return ss.str();
 }
 
-template <typename T, typename U>
-class Zip {
+template <typename T, typename U> class Zip {
 
 public:
   using T_it = decltype(std::declval<T>().begin());
@@ -168,8 +162,8 @@ public:
 
   class Iterator {
   public:
-    using reference
-        = std::pair<typename T_it::reference, typename U_it::reference>;
+    using reference =
+        std::pair<typename T_it::reference, typename U_it::reference>;
 
     explicit Iterator(T_it itT, U_it itU) : curT_(itT), curU_(itU) {}
 
@@ -184,7 +178,7 @@ public:
     }
     bool operator!=(Iterator other) const { return !(*this == other); }
 
-    reference operator*() const { return { *curT_, *curU_ }; }
+    reference operator*() const { return {*curT_, *curU_}; }
 
   private:
     T_it curT_;

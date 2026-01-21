@@ -1,0 +1,5 @@
+{"command": "simpadd0",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "simpadd0.output",
+  "files": ["file3.c"]}}

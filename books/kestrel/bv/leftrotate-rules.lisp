@@ -20,6 +20,8 @@
 (include-book "trim")
 (include-book "bv-syntax")
 (local (include-book "bvcat-rules"))
+(local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
@@ -126,7 +128,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm leftrotate32-trim-arg1
-  (implies (and (syntaxp (term-should-be-trimmed '5 amt 'non-arithmetic))
+  (implies (and (syntaxp (term-should-be-trimmed '5 amt :non-arithmetic))
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))
@@ -134,7 +136,7 @@
 
 ;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y)) ??
 (defthm leftrotate32-trim-arg1-all
-  (implies (and (syntaxp (term-should-be-trimmed '5 amt 'all))
+  (implies (and (syntaxp (term-should-be-trimmed '5 amt :all))
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))

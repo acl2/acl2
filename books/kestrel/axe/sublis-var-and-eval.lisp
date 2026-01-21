@@ -1,7 +1,7 @@
 ; A tool to apply a substitution to terms and evaluate function calls as it goes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,7 +22,8 @@
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-(local (in-theory (disable member-equal symbol-listp pseudo-termp axe-treep)))
+(local (in-theory (disable member-equal symbol-listp pseudo-termp axe-treep
+                           default-car default-cdr assoc-equal nat-listp)))
 
 ;dup
 ;; (defthmd bounded-axe-treep-when-dargp-less-than

@@ -191,4 +191,3 @@
 (verify-termination comment-string-p1) ; and guards
 (verify-termination comment-string-p) ; and guards
 (verify-termination print-control-p) ; and guards
-

@@ -66,7 +66,6 @@
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-if" :dir :system)
-(include-book "kestrel/bv-lists/logext-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
@@ -142,7 +141,8 @@
                         consp-from-len-cheap
                         subseq
                         take
-                        w))))
+                        w
+                        state-p))))
 
 (defthm myquote-forward-to-equal-of-nth-0-and-quote
   (implies (myquotep expr)
@@ -186,7 +186,7 @@
 
 ;just use repeat?
 ;optimize?
-(defun n-close-parens (n acc)
+(defund n-close-parens (n acc)
   (declare (xargs :guard (natp n)))
   (if (zp n)
       acc
@@ -195,7 +195,8 @@
 (local
   (defthm string-treep-of-n-close-parens
     (implies (string-treep acc)
-             (string-treep (n-close-parens n acc)))))
+             (string-treep (n-close-parens n acc)))
+    :hints (("Goal" :in-theory (enable n-close-parens)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,6 +862,7 @@
 (thm (equal (bvdiv size x 0) 0))
 (thm (equal (bvmod size x 0) (bvchop size x)))
 (thm (implies (natp amt) (equal (leftrotate32 amt x) (leftrotate32 (mod amt 32) x))))
+;; Special case of leftrotate32 with 0 shift amount: We handle it like bvchop
 (thm (equal (leftrotate32 0 x) (bvchop 32 x)))
 
 ;; Returns (mv translated-expr-string constant-array-info).
@@ -898,7 +900,7 @@
 ;; dag-len is only used in guards (including the guard of translate-bv-arg).
 ;todo: see repeated calls below to translate-bv-arg on same value...
 ;; We do not handle MYIF or IF, only BOOLIF, BVIF, and BV-ARRAY-IF.
-;; TODO: Consider supporting BOOL-TO-BIT.
+;; TODO: Consider supporting BOOL-TO-BIT and BIT-TO-BOOL.
 (defund translate-dag-expr (expr ;either a quotep or a function call over nodenums and quoteps (never a variable)
                             dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -1399,12 +1401,13 @@
                          )
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        (leftrotate32 ; (leftrotate32 rotate-amount val) where amt is a constant
+        (leftrotate32 ; (leftrotate32 '<rotate-amount> <val>), note that rotate-amount must be a constant
           (if (and (= 2 (len (dargs expr)))
                    (darg-quoted-natp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
               (let* ((rotate-amount (unquote (darg1 expr)))
-                     (rotate-amount (mod rotate-amount 32)))
+                     (rotate-amount (mod rotate-amount 32)) ; todo: require this reduction to have already been done
+                     )
                 (if (= 0 rotate-amount) ;in this case, it's just like bvchop (handling 0 separately avoids an error in the main case, a slice of [31:32])
                     (mv (erp-nil)
                         (list* "(" ; todo: drop these parens?
@@ -1412,7 +1415,7 @@
                                ")")
                         constant-array-info)
                   ;;main case:
-                  (let ((low-slice-size (- 32 rotate-amount))
+                  (let ((low-slice-size (- 32 rotate-amount)) ; becomes the high bits of the result
                         ;;high-slice-size is rotate-amount
                         (translated-arg (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)))
                     (mv (erp-nil)
@@ -1555,8 +1558,7 @@
                          " ENDIF)")
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        ;; todo: do we need this?
-        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X)
+        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
          (if (and (= 2 (len (dargs expr)))
                   (darg-quoted-natp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
@@ -1974,10 +1976,17 @@
       'write-stp-query-to-file
       state))))
 
-(defthm w-of-mv-nth-1-of-write-stp-query-to-file
-  (equal (w (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state)))
-         (w state))
-  :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) (w)))))
+(local
+  (defthm w-of-mv-nth-1-of-write-stp-query-to-file
+    (equal (w (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable write-stp-query-to-file)))))
+
+(local
+  (defthm state-p-of-mv-nth-1-of-write-stp-query-to-file
+    (implies (state-p state)
+             (state-p (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state))))
+    :hints (("Goal" :in-theory (enable write-stp-query-to-file)))))
 
 ;; We use these constants instead of their corresponding keywords, so that we
 ;; don't accidentally mis-type the keywords:
@@ -2068,38 +2077,54 @@
                 (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
                         (mv *error* state))))))))))
 
-(defthm call-stp-on-file-return-type
-  (let ((res (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
-    (implies (and (not (equal *error* res))
-                  (not (equal *valid* res))
-                  (not (equal *invalid* res))
-                  (not (equal *timedout* res)))
-             (and (true-listp res)
-                  (equal (car res) *counterexample*)
-                  (raw-counterexamplep (second res))
-                  (equal (len res) 2))))
-  :hints (("Goal" :in-theory (enable call-stp-on-file))))
+(local
+  (defthm call-stp-on-file-return-type
+    (let ((res (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
+      (implies (and (not (equal *error* res))
+                    (not (equal *valid* res))
+                    (not (equal *invalid* res))
+                    (not (equal *timedout* res)))
+               (and (true-listp res)
+                    (equal (car res) *counterexample*)
+                    (raw-counterexamplep (second res))
+                    (equal (len res) 2))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
-(defthm raw-counterexamplep-of-cadr-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
-           (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))))
-  :hints (("Goal" :in-theory (enable call-stp-on-file))))
+(local
+  (defthm raw-counterexamplep-of-cadr-of-mv-nth-0-of-call-stp-on-file
+    (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+             (raw-counterexamplep (cadr (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
-(defthm len-of-mv-nth-0-of-call-stp-on-file
-  (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
-           (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
-                  2))
-  :hints (("Goal" :in-theory (e/d (call-stp-on-file) ()))))
+(local
+  (defthm len-of-mv-nth-0-of-call-stp-on-file
+    (implies (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+             (equal (len (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+                    2))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
-(defthm w-of-mv-nth-1-of-call-stp-on-file
-  (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable call-stp-on-file))))
+(local
+  (defthm consp-of-mv-nth-0-of-call-stp-on-file
+    (implies (not (member-equal (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)) (list *error* *valid* *invalid* *timedout*)))
+             (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
+
+(local
+  (defthm w-of-mv-nth-1-of-call-stp-on-file
+    (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
+
+(local
+  (defthm state-p-of-mv-nth-1-of-call-stp-on-file
+    (implies (state-p state)
+             (state-p (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: What if we cut out some structure but it is not involved in the counterexample?
-(defun all-cuts-are-at-vars (cut-nodenum-type-alist dag-array-name dag-array)
+(defund all-cuts-are-at-varsp (cut-nodenum-type-alist dag-array-name dag-array)
   (declare (xargs :guard (and (nodenum-type-alistp cut-nodenum-type-alist)
                               (symbolp dag-array-name)
                               (array1p dag-array-name dag-array)
@@ -2111,7 +2136,7 @@
     (and (let* ((entry (first cut-nodenum-type-alist))
                 (nodenum (car entry)))
            (symbolp (aref1 dag-array-name dag-array nodenum)))
-         (all-cuts-are-at-vars (rest cut-nodenum-type-alist) dag-array-name dag-array))))
+         (all-cuts-are-at-varsp (rest cut-nodenum-type-alist) dag-array-name dag-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2136,7 +2161,6 @@
                               (stringp extra-string)
                               (string-treep extra-asserts)
                               (nodenum-type-alistp cut-nodenum-type-alist)
-                              ;;(consp nodenums-to-translate) ;think
                               (stringp base-filename)
                               (print-levelp print)
                               (or (null max-conflicts)
@@ -2175,7 +2199,7 @@
        ((when erp)
         (er hard? 'prove-query-with-stp "Unable to write the STP input file: ~s0 before calling STP." stp-input-filename)
         (mv *error* state))
-       ;;clear out the output file (test this)
+       ;;clear the output file:
        ;;this is in case something fails (like permissions) and the attempt to run STP leaves an old .out file in place
        ;;(which might have the wrong answer in it!)
        ((mv erp state)
@@ -2195,7 +2219,7 @@
             (fixup-counterexample (sort-nodenum-type-alist cut-nodenum-type-alist) raw-counterexample nil))))
        ((when erp) (mv *error* state))
        (counterexample-certainp (and counterexamplep
-                                     (all-cuts-are-at-vars cut-nodenum-type-alist dag-array-name dag-array)))
+                                     (all-cuts-are-at-varsp cut-nodenum-type-alist dag-array-name dag-array)))
        (- (and counterexamplep
                (if counterexample-certainp
                    (cw "Counterexample is certain.~%") ;TODO actually test it by evaluating the DAG!
@@ -2231,49 +2255,132 @@
     ;;no error:
     (mv result state)))
 
-(defthmd prove-query-with-stp-return-type
+;; use this more?
+(defund stp-resultp (res)
+  (declare (xargs :guard t))
+  (or (eq *error* res)
+      (eq *valid* res)
+      (eq *invalid* res)
+      (eq *timedout* res)
+      (and (true-listp res)
+           (eq (first res) *counterexample*)
+           (counterexamplep (second res))
+           (equal (len res) 2))
+      (and (true-listp res)
+           (eq (first res) *possible-counterexample*)
+           (counterexamplep (second res))
+           (equal (len res) 2))))
+
+(defthmd len-when-stp-resultp
+  (implies (stp-resultp res)
+           (equal (len res)
+                  (if (member-eq res (list *error* *valid* *invalid* *timedout*))
+                      0
+                    2)))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
+(defthmd true-listp-when-stp-resultp
+  (implies (stp-resultp res)
+           (equal (true-listp res)
+                  (not (member-eq res (list *error* *valid* *invalid* *timedout*)))))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
+(defthmd cdr-when-stp-resultp-iff
+  (implies (stp-resultp res)
+           (iff (cdr res)
+                (not (member-eq res (list *error* *valid* *invalid* *timedout*)))))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
+(defthmd consp-when-stp-resultp
+  (implies (stp-resultp res)
+           (equal (consp res)
+                  (not (member-eq res (list *error* *valid* *invalid* *timedout*)))))
+  :hints (("Goal" :in-theory (enable stp-resultp))))
+
+(defthm prove-query-with-stp-return-type
   (implies (nodenum-type-alistp cut-nodenum-type-alist)
-           (let ((res (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename
-                                                      cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
-             (or (eq *error* res)
-                 (eq *valid* res)
-                 (eq *invalid* res)
-                 (eq *timedout* res)
-                 (and (true-listp res)
-                      (eq (first res) *counterexample*)
-                      (counterexamplep (second res))
-                      (equal (len res) 2))
-                 (and (true-listp res)
-                      (eq (first res) *possible-counterexample*)
-                      (counterexamplep (second res))
-                      (equal (len res) 2)))))
-  :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+           (stp-resultp (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp stp-resultp))))
+
+;do we need this?
+(defthm prove-query-with-stp-return-type-corollary-1
+  (implies (nodenum-type-alistp cut-nodenum-type-alist)
+           (let ((res (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+             (implies (eq (first res) *counterexample*)
+                      (counterexamplep (second res)))))
+  :hints (("Goal" :use prove-query-with-stp-return-type
+           :in-theory (e/d (stp-resultp) (prove-query-with-stp-return-type)))))
 
 (defthm w-of-mv-nth-1-of-prove-query-with-stp
   (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
                                             print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state)))
          (w state))
-  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+
+(defthm state-p-of-mv-nth-1-of-prove-query-with-stp
+  (implies (state-p state)
+           (state-p (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
+                                                    print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (state-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bounded-stp-resultp (res bound)
+  (declare (xargs :guard (natp bound)))
+  (or (eq *error* res)
+      (eq *valid* res)
+      (eq *invalid* res)
+      (eq *timedout* res)
+      (and (true-listp res)
+           (eq (first res) *counterexample*)
+           (bounded-counterexamplep (second res) bound)
+           (equal (len res) 2))
+      (and (true-listp res)
+           (eq (first res) *possible-counterexample*)
+           (bounded-counterexamplep (second res) bound)
+           (equal (len res) 2))))
+
+(defthm bounded-stp-resultp-of-mv-nth-0-of-prove-query-with-stp
+  (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
+                (all-< (strip-cars cut-nodenum-type-alist) dag-len))
+           (bounded-stp-resultp
+             (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))
+             dag-len))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp bounded-stp-resultp))))
+
+(defthm bounded-stp-resultp-atoms
+  (and (bounded-stp-resultp *error* bound)
+       (bounded-stp-resultp *valid* bound)
+       (bounded-stp-resultp *invalid* bound)
+       (bounded-stp-resultp *timedout* bound))
+  :hints (("Goal" :in-theory (enable bounded-stp-resultp))))
+
+(defthm bounded-counterexamplep-of-second-when-bounded-stp-resultp
+  (implies (and (bounded-stp-resultp res bound)
+                (or (equal (first res) *counterexample*)
+                    (equal (first res) *possible-counterexample*)))
+           (bounded-counterexamplep (second res) bound))
+  :hints (("Goal" :in-theory (enable bounded-stp-resultp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to prove the equality of LHS and RHS, which are dargs.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp
-(defund prove-equality-query-with-stp (lhs ;a nodenum or quotep
-                                       rhs ;a nodenum or quotep
-                                       ;;todo: add an extra-string arg
-                                       dag-array-name
-                                       dag-array
-                                       dag-len
-                                       nodenums-to-translate ;sorted in decreasing order
-                                       base-filename
-                                       cut-nodenum-type-alist
-                                       extra-asserts
-                                       print
-                                       max-conflicts ;a number of conflicts, or nil for no max
-                                       counterexamplep
-                                       print-cex-as-signedp
-                                       state)
+;; todo: start by checking whether LHS and RHS are equal?
+(defund prove-equality-with-stp (lhs ;a nodenum or quotep
+                                 rhs ;a nodenum or quotep
+                                 ;;todo: add an extra-string arg
+                                 dag-array-name dag-array dag-len
+                                 nodenums-to-translate ;sorted in decreasing order
+                                 base-filename
+                                 cut-nodenum-type-alist
+                                 extra-asserts
+                                 print
+                                 max-conflicts ;a number of conflicts, or nil for no max
+                                 counterexamplep
+                                 print-cex-as-signedp
+                                 state)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (or (myquotep lhs)
                                   (and (natp lhs)
@@ -2285,11 +2392,11 @@
                               (booleanp print-cex-as-signedp)
                               (stringp base-filename)
                               (symbolp dag-array-name)
-                              (consp nodenums-to-translate) ;why?
                               (nat-listp nodenums-to-translate)
                               (all-< nodenums-to-translate dag-len)
                               (no-nodes-are-variablesp nodenums-to-translate dag-array-name dag-array dag-len)
-                              (natp max-conflicts)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (all-< (strip-cars cut-nodenum-type-alist) dag-len)
                               (string-treep extra-asserts)
@@ -2311,24 +2418,25 @@
                           print-cex-as-signedp
                           state)))
 
-(defthmd prove-equality-query-with-stp-return-type
+(defthm stp-resultp-of-mv-nth-0-of-prove-equality-with-stp
   (implies (nodenum-type-alistp cut-nodenum-type-alist)
-           (let ((res (mv-nth 0 (prove-equality-query-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
-                                                               print max-conflicts counterexamplep print-cex-as-signedp state))))
-             (or (eq *error* res)
-                 (eq *valid* res)
-                 (eq *invalid* res)
-                 (eq *timedout* res)
-                 (and (consp res)
-                      (eq (first res) *counterexample*)
-                      (counterexamplep (second res))
-                      (null (cddr res)))
-                 (and (consp res)
-                      (eq (first res) *possible-counterexample*)
-                      (counterexamplep (second res))
-                      (null (cddr res))))))
-  :hints (("Goal" :in-theory (enable prove-equality-query-with-stp)
+           (stp-resultp (mv-nth 0 (prove-equality-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
+                                                           print max-conflicts counterexamplep print-cex-as-signedp state))))
+  :hints (("Goal" :in-theory (enable prove-equality-with-stp)
            :use (:instance prove-query-with-stp-return-type
+                           (translated-query-core (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))
+                           (extra-string "")
+                           (constant-array-info (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))))))
+
+;; do we need both this and the one just above?
+(defthm bounded-stp-resultp-of-mv-nth-0-of-prove-equality-with-stp
+  (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
+                (all-< (strip-cars cut-nodenum-type-alist) dag-len))
+           (bounded-stp-resultp (mv-nth 0 (prove-equality-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
+                                                                   print max-conflicts counterexamplep print-cex-as-signedp state))
+                                dag-len))
+  :hints (("Goal" :in-theory (e/d (prove-equality-with-stp) (bounded-stp-resultp-of-mv-nth-0-of-prove-query-with-stp))
+           :use (:instance bounded-stp-resultp-of-mv-nth-0-of-prove-query-with-stp
                            (translated-query-core (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))
                            (extra-string "")
                            (constant-array-info (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))))))
@@ -2343,7 +2451,7 @@
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
-;;     (prove-equality-query-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
+;;     (prove-equality-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
 ;;                              *t*
 ;;                              'dag-array
 ;;                              dag-array
@@ -2365,7 +2473,7 @@
 ;;                                   var-type-alist max-conflicts state)
 ;;   (declare (xargs
 ;;                   :stobjs state))
-;;   (prove-equality-query-with-stp nodenum
+;;   (prove-equality-with-stp nodenum
 ;;                            *t*
 ;;                            'dag-array
 ;;                            dag-array
@@ -2425,7 +2533,7 @@
 ;;     (make-node-var item)))
 
 ;; Returns a string-tree.
-(defun translate-possibly-negated-nodenum (item)
+(defund translate-possibly-negated-nodenum (item)
   (declare (xargs :guard (possibly-negated-nodenump item)
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
   (if (consp item) ;test for call of NOT
@@ -2433,6 +2541,11 @@
              (make-node-var (farg1 item))
              "))")
     (make-node-var item)))
+
+(local
+  (defthm string-treep-of-translate-possibly-negated-nodenum
+    (string-treep (translate-possibly-negated-nodenum item))
+    :hints (("Goal" :in-theory (enable translate-possibly-negated-nodenum)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -9,10 +9,29 @@
 ; in ACL2(p) with waterfall-parallelism enabled unless we make some
 ; accommodation.
 
-#+acl2-par
-(defttag our-waterfall-parallelism-hacks)
-#+acl2-par
-(set-waterfall-parallelism-hacks-enabled t)
+; However, on 10/14/2025, the theorem (defthm SULFA-thm ...) below failed, with
+; an error described in :DOC live-stobj-in-proof.  This seems to be due to a
+; call of the function, SAT (defined in
+; ../clause-processors/sat-clause-processor.lisp), which apparently modifies
+; state, as it triggers the error described in :DOC live-stobj-in-proof.  That
+; error arises from a check added in July, 2025 (commit
+; 2d85900999ba411187c10b4858ca11b6f06c62fb) to fix a soundness bug.
+
+; So I'll just turn off waterfall parallelism for this book.
+
+; NOTE: It's possible that a better fix would be to extend the functionality of
+; set-waterfall-parallelism-hacks-enabled so that this error doesn't occur,
+; even at the risk of soundness, since that setting already risks soundness
+; anyhow.  I'm just not interested in trying to do that as of this writing
+; (Matt K., 10/14/2025).
+
+; #+acl2-par
+; (defttag our-waterfall-parallelism-hacks)
+; #+acl2-par
+; (set-waterfall-parallelism-hacks-enabled t)
+
+(set-waterfall-parallelism nil)
+
 ;; -----------------------------------------------------------------
 
 ;; -----------------------------------------------------------------

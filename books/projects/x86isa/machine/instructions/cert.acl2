@@ -41,8 +41,7 @@
 (set-waterfall-parallelism t)
 (include-book "../../portcullis/sharp-dot-constants")
 (add-include-book-dir :utils "../../utils")
-; We could remove the :useless-runes nil here:
-;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg) :useless-runes nil
+;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg)
 
 ; Matt K. mod 7/11/2022 for GCL to avoid exhausting storage, which happened in
 ; the following books before deciding simply to cover all books (including some

@@ -1,7 +1,7 @@
 ; Supporting tools for x86 lifters
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,95 +15,153 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
+(include-book "kestrel/utilities/translate" :dir :system)
+(include-book "../read-and-write")
 
-;; why "normal"?  maybe "component" ?
-(mutual-recursion
- (defun normal-output-indicatorp (x)
-   (declare (xargs :guard t))
-   (or (member-equal x '(:rax
-                         :eax
-                         ;; todo: more
-                         :zmm0 :ymm0 :xmm0
-                         ))
-       ;; TODO: Deprecate this case but the tester used :register-bool
-       (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
-            (member-eq (first x) '(:register :register-bool))
-            (eql 2 (len x))
-            (natp (second x)) ;todo: what is the max allowed?
-            )
-       ;; TODO: Add other sizes of :memXXX
-       (and (true-listp x) ;; (:mem32 <ADDR-TERM>)
-            (eq (first x) :mem32)
-            (eql 2 (len x))
-            (pseudo-termp (second x)) ; argument should be a term (should we translate it)
-            )
-       (and (true-listp x) ;; (:byte-array <ADDR-TERM> <LEN>)
-            (eq (first x) :byte-array)
-            (eql 3 (len x))
-            (pseudo-termp (second x)) ; argument should be a term (should we translate it)
-            (posp (third x)) ; number of bytes to read
-            )
-       (and (true-listp x) ;; (:tuple ... output-indicators ...)
-            (eq (first x) :tuple)
-            (normal-output-indicatorsp (rest x)))))
- (defun normal-output-indicatorsp (x)
-   (declare (xargs :guard t))
-   (if (atom x)
-       (null x)
-     (and (normal-output-indicatorp (first x))
-          (normal-output-indicatorsp (rest x))))))
-
-;; Indicates the desired result of lifting, either :all or some component of the state
-(defun output-indicatorp (x)
-  (declare (xargs :guard t))
-  (or (eq x :all)
-      (normal-output-indicatorp x)))
+;; We don't evaluate or open calls to feature-flag, so we don't want to be warned when
+;; ground calls of it appear
+(defconst *no-warn-ground-functions* '(feature-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; An "output-indicator" indicates the desired result of lifting, either :all
+;; or some component of the state.  There is no recognizer for an
+;; output-indicator, such as 'output-indicatorp'.  Instead we call
+;; wrap-in-normal-output-extractor on whatever the user supplies and we check
+;; for an error.
+
 (mutual-recursion
- (defun wrap-in-normal-output-extractor (output-indicator term)
-   (declare (xargs :guard (normal-output-indicatorp output-indicator)))
-   (if (symbolp output-indicator)
-       (case output-indicator
-         (:rax `(bvchop '64 (rax ,term)))
-         (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
-         ;; (:eax (rax ,term))
-         (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
-         (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
-         (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
-         (t (er hard 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
-     (if (and (consp output-indicator)
-              (eq :register (first output-indicator)))
-         `(xr ':rgf ',(second output-indicator) ,term)
-       (if (and (consp output-indicator)
-                (eq :register-bool (first output-indicator)))
-           ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
-           ;; TODO: Should we chop to a single bit?
-           `(bvchop '8 (xr ':rgf ',(second output-indicator) ,term))
-         (if (and (consp output-indicator)
-                  (eq :mem32 (first output-indicator)))
-             `(read '4 ,(second output-indicator) ,term)
-           (if (and (consp output-indicator)
-                    (eq :byte-array (first output-indicator)))
-               `(acl2::list-to-byte-array (read-bytes ,(second output-indicator) ',(third output-indicator) ,term))
-             (if (and (consp output-indicator)
-                      (eq :tuple (first output-indicator)))
-                 (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term))
-               (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator))))))))
+  ;; Create a term representing the extraction of the indicated output from TERM.
+  ;; why "normal"?  maybe "component" ?  or non-trivial?
+  ;; This can translate some parts of the output-indicator.
+  (defun wrap-in-normal-output-extractor (output-indicator term 64-bitp wrld)
+    (declare (xargs :guard (and ;; see above comment on output-indicator
+                             (booleanp 64-bitp)
+                             (plist-worldp wrld))
+                    :mode :program ; because of translate-term
+                    ))
+    (if (symbolp output-indicator)
+        (case output-indicator
+          ;; Extract a 64-bit register:
+          (:rax `(rax ,term)) ; todo: error if any of these is used and 64-bitp is false
+          (:rbx `(rbx ,term))
+          (:rcx `(rcx ,term))
+          (:rdx `(rdx ,term))
+          (:rsi `(rsi ,term))
+          (:rdi `(rdi ,term))
+          (:r8 `(r8 ,term))
+          (:r9 `(r9 ,term))
+          (:r10 `(r10 ,term))
+          (:r11 `(r11 ,term))
+          (:r12 `(r12 ,term))
+          (:r13 `(r13 ,term))
+          (:r14 `(r14 ,term))
+          (:r15 `(r15 ,term))
+          (:rsp `(rsp ,term))
+          (:rbp `(rbp ,term))
+          (:rip `(rip ,term))
+          ;; Extract a 32-bit register:
+          (:eax (if 64-bitp
+                    `(bvchop '32 (rax ,term))
+                  `(eax ,term)))
+          (:ax (if 64-bitp
+                   `(bvchop '16 (rax ,term))
+                 `(bvchop '16 (eax ,term))))
+          (:al (if 64-bitp
+                   `(bvchop '8 (rax ,term))
+                 `(bvchop '8 (eax ,term))))
+          ;; (:eax (rax ,term))
+          (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
+          (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
+          (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
+          ;; Extract a CPU flag: ; todo: more?
+          (:af `(get-flag ':af ,term)) ; todo: more
+          (:cf `(get-flag ':cf ,term))
+          (:of `(get-flag ':of ,term))
+          (:pf `(get-flag ':pf ,term))
+          (:sf `(get-flag ':sf ,term))
+          (:zf `(get-flag ':zf ,term))
+          (t (er hard? 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
+      (if (not (and (consp output-indicator)
+                    (true-listp output-indicator)))
+          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)
+        (case (ffn-symb output-indicator)
+          ;; (:register <N>)
+          (:register (if (and (eql 1 (len (fargs output-indicator)))
+                              (natp (farg1 output-indicator)) ;todo: what is the max allowed?
+                              )
+                         `(xr ':rgf ',(farg1 output-indicator) ,term)
+                       (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;  (:register-bool <N>)
+          ;; TODO: Deprecate this case but the tester uses :register-bool
+          ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
+          ;; TODO: Should we chop to a single bit?
+          (:register-bool (if (and (eql 1 (len (fargs output-indicator)))
+                                   (natp (farg1 output-indicator)) ;todo: what is the max allowed?
+                                   )
+                              `(bvchop '8 (xr ':rgf ',(farg1 output-indicator) ,term))
+                            (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;; (:mem32 <ADDR-TERM>)
+          ;; TODO: Add other sizes of :memXXX
+          (:mem32 (if (eql 1 (len (fargs output-indicator)))
+                      `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld) ,term)
+                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
+          (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
+                                (posp (farg2 output-indicator)) ; number of bytes to read ; todo: reoder!
+                                )
+                           `(acl2::list-to-byte-array (read-bytes ',(farg2 output-indicator)
+                                                                  ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                                  ,term))
+                         (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
+          (:array (if (and (eql 3 (len (fargs output-indicator)))
+                           (posp (farg1 output-indicator))
+                           (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
+                           (natp (farg2 output-indicator)) ; or use posp?
+                           )
+                      `(acl2::list-to-bv-array ',(farg1 output-indicator)
+                                               (read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                            ',(farg2 output-indicator)
+                                                            ',(/ (farg1 output-indicator) 8)
+                                                           ,term))
+                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          (:bv-list ;; (:bv-list <bits-per-element> <element-count> <addr-term>)
+           (if (and (= 3 (len (fargs output-indicator)))
+                    (posp (farg1 output-indicator))
+                    (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
+                    (natp (farg2 output-indicator)) ; or use posp?
+                    )
+               `(read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                             ',(farg2 output-indicator)
+                             ',(/ (farg1 output-indicator) 8)
+                             ,term)
+             (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;; (:tuple ... output-indicators ...)
+          ;; todo: what if no args?
+          (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term 64-bitp wrld)))
+          (otherwise (er hard? 'wrap-in-normal-output-extractor "Bad output indicator: ~x0" output-indicator))))))
 
- (defun wrap-in-normal-output-extractors (output-indicators term)
-   (declare (xargs :guard (normal-output-indicatorsp output-indicators)))
-   (if (endp output-indicators)
-       nil
-     (cons (wrap-in-normal-output-extractor (first output-indicators) term)
-           (wrap-in-normal-output-extractors (rest output-indicators) term)))))
+  (defun wrap-in-normal-output-extractors (output-indicators term 64-bitp wrld)
+    (declare (xargs :guard (and (true-listp output-indicators)
+                                (booleanp 64-bitp)
+                                (plist-worldp wrld))
+                    :mode :program ; because of translate-term
+                    ))
+    (if (endp output-indicators)
+        nil
+      (cons (wrap-in-normal-output-extractor (first output-indicators) term 64-bitp wrld)
+            (wrap-in-normal-output-extractors (rest output-indicators) term 64-bitp wrld)))))
 
-(defun wrap-in-output-extractor (output-indicator term)
-  (declare (xargs :guard (output-indicatorp output-indicator)))
+;; Wraps TERM as indicated by OUTPUT-INDICATOR.
+;; todo: reorder args?
+(defun wrap-in-output-extractor (output-indicator term 64-bitp wrld)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :mode :program ; because of translate-term
+                  ))
   (if (eq :all output-indicator)
       term
-    (wrap-in-normal-output-extractor output-indicator term)))
+    (wrap-in-normal-output-extractor output-indicator term 64-bitp wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,16 +195,3 @@
   (member-eq type *executable-types*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns a symbol-list.
-(defund maybe-add-debug-rules (debug-rules monitor)
-  (declare (xargs :guard (and (or (eq :debug monitor)
-                                  (symbol-listp monitor))
-                              (symbol-listp debug-rules))))
-  (if (eq :debug monitor)
-      debug-rules
-    (if (member-eq :debug monitor)
-        ;; replace :debug in the list with all the debug-rules:
-        (union-eq debug-rules (remove-eq :debug monitor))
-      ;; no special treatment:
-      monitor)))

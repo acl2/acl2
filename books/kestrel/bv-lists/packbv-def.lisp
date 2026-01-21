@@ -1,7 +1,7 @@
 ; BV Lists Library: definition of packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,10 @@
 ;; vectors into larger bit vectors.  The smaller bit vectors can of course be
 ;; single bits.
 
-(include-book "../typed-lists-light/all-integerp")
+;; For theorems about packbv, see packbv.lisp and packbv-and-unpackbv.lisp.
+
+;; See also packbv-little.lisp for a little-endian version.
+
 (include-book "../bv/bvcat-def")
 
 ;; Pack the ITEMS, each of which should be a bit-vector of size ITEMSIZE, into
@@ -29,8 +32,7 @@
 (defund packbv (itemcount itemsize items)
   (declare (xargs :guard (and (natp itemcount)
                               (natp itemsize)
-                              (true-listp items)
-                              (all-integerp items))
+                              (integer-listp items))
                   :split-types t)
            (type (integer 0 *) itemsize)
            (type (integer 0 *) itemcount))

@@ -12,14 +12,18 @@
 (in-package "X")
 
 (include-book "assumptions")
+(include-book "readers-and-writers64")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
+(include-book "kestrel/memory/memory48" :dir :system)
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defund bytes-loaded-at-address-64 (bytes addr x86)
+(defund bytes-loaded-at-address-64 (bytes addr bvp x86)
   (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
-                              (consp bytes))
+                              (consp bytes)
+                              (booleanp bvp))
                   :stobjs x86))
   (and ;; We'll base all addresses on the address of the text section
    ;; (we can calculate the relative offset of other things by
@@ -38,9 +42,11 @@
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
    ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-   (program-at addr
-               bytes
-               x86)))
+   (if bvp
+       ;; essentially the same as the below PROGRAM-AT claim:
+       ;; todo: huge arrays cause STP crashes (exclude these claims from SMT queries)?
+       (equal (read-bytes (len bytes) addr x86) bytes)
+     (program-at addr bytes x86))))
 
 ;; todo: add 64 to the name
 (defund addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
@@ -100,7 +106,7 @@
 
      ;; The return address must be canonical because we will transfer
      ;; control to that address when doing the return:
-     (canonical-address-p (read 8 (rgfi *rsp* ,state-var) ,state-var))
+     (canonical-address-p (logext 64 (read 8 (rgfi *rsp* ,state-var) ,state-var)))
 
      ;; The stack slot contaning the return address must be canonical
      ;; because the stack pointer returns here when we pop the saved
@@ -120,97 +126,9 @@
   (declare (xargs :stobjs x86))
   (make-standard-state-assumptions-64 x86))
 
+;; todo: move (calls x86isa::cpuid-flag, which is non-executable):
+(in-theory (disable (:e feature-flag)))
+
 ;TODO: Show that there is a state that satisfies these assumptions
 ;TODO: Use this more
 ;TODO: Test this on a program which uses more than 1 stack slot
-
-;; Check that the x86 state has TEXT-SECTION-BYTES loaded starting at
-;; TEXT-OFFSET and has the program counter set to TEXT-OFFSET plus
-;; OFFSET-TO-SUBROUTINE.  Also assume things are disjoint.  TODO: Give this a
-;; better name, this is logical, not meta.
-(defun standard-assumptions-core-64 (text-section-bytes
-                                     text-offset
-                                     offset-to-subroutine ;from the start of the text section
-                                     stack-slots-needed
-                                     x86)
-  (declare (xargs :guard (and (consp text-section-bytes)
-                              (true-listp text-section-bytes)
-                              (acl2::all-unsigned-byte-p 8 text-section-bytes)
-                              (integerp offset-to-subroutine) ; natp?
-                              (integerp text-offset)
-                              (natp stack-slots-needed))
-                  :stobjs x86))
-  (and (standard-state-assumption-64 x86)
-       (bytes-loaded-at-address-64 text-section-bytes text-offset x86)
-       ;; The program counter is at the start of the routine to lift:
-       (equal (rip x86) (+ text-offset offset-to-subroutine))
-
-       ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
-       (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots stack-slots-needed (rgfi *rsp* x86)))
-       ;; old: (canonical-address-p (+ -8 (rgfi *rsp* x86))) ;; The stack slot where the RBP will be saved
-
-       ;; The program is disjoint from the part of the stack that is written:
-       (if (posp stack-slots-needed)
-           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-           (separate :r (len text-section-bytes) text-offset
-                 ;; Only a single stack slot is written
-                 ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                     :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))
-         ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
-         t)))
-
-(defun standard-assumptions-mach-o-64 (subroutine-name
-                                       parsed-mach-o
-                                       stack-slots-needed
-                                       text-offset
-                                       x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
-  (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
-        (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
-        (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
-    (standard-assumptions-core-64 text-section-bytes
-                                  text-offset
-                                  (- subroutine-address text-section-address)
-                                  stack-slots-needed
-                                  x86)))
-
-;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
-(defun standard-assumptions-pe-64 (subroutine-name
-                                   parsed-executable
-                                   stack-slots-needed
-                                   text-offset
-                                   x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
-  (standard-assumptions-core-64 (acl2::lookup-eq :raw-data (acl2::get-pe-text-section parsed-executable)) ; text-section-bytes, all the code, not just the given subroutine
-                                text-offset
-                                (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
-                                stack-slots-needed
-                                x86))
-
-;; TODO: What should this go if the parsed-elf is bad (e.g., doesn't have a
-;; text section)?  Transition to just generating a list of terms?
-(defun standard-assumptions-elf-64 (subroutine-name
-                                    parsed-elf
-                                    stack-slots-needed
-                                    text-offset
-                                    x86)
-  (declare (xargs :guard (and (stringp subroutine-name)
-                              (acl2::parsed-elfp parsed-elf) ; todo: import
-                              (natp stack-slots-needed)
-                              ;; text-offset is a term?
-                              )
-                  :stobjs x86
-                  :verify-guards nil ;todo, first do acl2::get-elf-code-address and acl2::subroutine-address-elf
-                  ))
-  (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
-        (text-section-address (acl2::get-elf-code-address parsed-elf))
-        (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
-    (standard-assumptions-core-64 text-section-bytes
-                                  text-offset
-                                  (- subroutine-address text-section-address)
-                                  stack-slots-needed
-                                  x86)))

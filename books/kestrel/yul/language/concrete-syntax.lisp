@@ -10,8 +10,8 @@
 
 (in-package "YUL")
 
+(include-book "grammar")
 (include-book "grammar-old")
-(include-book "grammar-new")
 
 (include-book "lexer")
 (include-book "tokenizer")
@@ -38,7 +38,9 @@
     "We also provide a @(see parser) of Yul, based on our ABNF grammar.
      The parser is currently not verified, but it follows the grammar closely.
      The primary API for parsing Yul is
-     @(see parse-yul) and @(see parse-yul-bytes).")
+     @(see parse-yul) and @(see parse-yul-bytes).
+     This parser can be regarded as providing a low-level version of
+     the predicates over the grammar mentioned in the previous paragraph.")
    (xdoc::p
     "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
@@ -88,5 +90,14 @@
     (xdoc::li
      "The new grammar adds hex strings to the possible literals."))
    (xdoc::p
-    "The aforementioned parser is based on the new grammar."))
-  :order-subtopics t)
+    "Since the new grammar is newer,
+     the rest of our Yul formalization and tools is based on it.
+     We keep the old grammar around just for historical reasons,
+     but we use the unqualified `grammar' to denote the new grammar,
+     except in a few cases when talking about both new and old grammar.
+     We qualify the old grammar with `old'."))
+  :order-subtopics (grammar
+                    grammar-old
+                    lexer
+                    tokenizer
+                    parser))

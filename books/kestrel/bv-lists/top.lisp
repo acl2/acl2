@@ -17,6 +17,7 @@
 
 (include-book "byte-listp-def")
 (include-book "byte-listp")
+(include-book "byte-listp2")
 
 (include-book "bit-listp")
 (include-book "bit-listp-rules")
@@ -26,6 +27,7 @@
 (include-book "all-all-unsigned-byte-p")
 
 (include-book "all-signed-byte-p")
+(include-book "all-signed-byte-p-rules")
 
 (include-book "len-mult-of-8p")
 (include-book "len-mult-of-8p-rules")
@@ -52,7 +54,9 @@
 (include-book "bvnot-list")
 (include-book "bvchop-list")
 (include-book "getbit-list")
-(include-book "map-slice") ; todo: call this slice-list?
+(include-book "map-slice")
+(include-book "map-bvsx")
+(include-book "map-bvplus-val")
 
 (include-book "width-of-widest-int")
 
@@ -82,6 +86,7 @@
 (include-book "bv-array-read-rules")
 (include-book "bv-array-write")
 (include-book "bv-array-clear")
+(include-book "bv-array-clear-range")
 (include-book "bv-array-if")
 (include-book "append-arrays")
 (include-book "array-of-zeros")
@@ -89,7 +94,9 @@
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")
 (include-book "bv-array-conversions-gen")
+(include-book "array-patterns")
 
+(include-book "bv-list-read-chunk-little")
 (include-book "bv-array-read-chunk-little")
 
 (include-book "bvnth")

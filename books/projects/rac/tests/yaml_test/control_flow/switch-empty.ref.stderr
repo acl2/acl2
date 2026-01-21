@@ -1,0 +1,3 @@
+switch-empty.cpp:6 (2-3): syntax error, unexpected '}', expecting CASE or DEFAULT
+ 6 |   }
+   |   ^

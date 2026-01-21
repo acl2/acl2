@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -42,9 +43,11 @@
                               (true-listp data))
                   :guard-hints (("Goal" :in-theory (enable update-nth2)))))
   (let* ((len (nfix len))
-         (numbits (ceiling-of-lg len))
+          ;number of index bits needed ; todo: disallow len=0 (no valid indices):
+         (numbits (mbe :exec (if (equal 0 len) 0 (ceiling-of-lg len)) ; avoid calling ceiling-of-lg on 0 (guard violation)
+                       :logic (ceiling-of-lg len)))
          (index (bvchop numbits (ifix index))))
-        (bvchop-list element-size ;; the bvchop-list is often wasted work
+    (bvchop-list element-size ;; the bvchop-list is often wasted work
                 ;this calls take, but in many cases that is wasted work:
                 (update-nth2 len index val data))))
 
@@ -167,7 +170,7 @@
          (and (true-listp k)
               (equal 1 (len k))
               (equal (car k) (bvchop size val))))
-  :hints (("Goal" :do-not '(preprocess)
+  :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
                            (;update-nth-becomes-update-nth2-extend-gen
                             )))))
@@ -179,7 +182,7 @@
                   (and (true-listp k)
                        (equal 1 (len k))
                        (equal (car k) (bvchop size val)))))
-  :hints (("Goal" :do-not '(preprocess)
+  :hints (("Goal"
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
                            (;update-nth-becomes-update-nth2-extend-gen
                             )))))
@@ -254,33 +257,41 @@
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 ;fixme can loop?
-(defthmd bv-array-write-of-bv-array-write-diff
+(defthmd bv-array-write-of-bv-array-write-diff-helper
   (implies (and ;this is implied by them being unequal nats both of which are in bounds:
-            (not (equal (bvchop (integer-length (+ -1 len)) index1)
-                        (bvchop (integer-length (+ -1 len)) index2)))
-;                (< index1 len)
-;                (< index2 len)
-            (natp index1)
-            (natp index2)
-;                (natp len)
-;                (natp element-size)
-            )
+             (not (equal (bvchop (integer-length (+ -1 len)) index1)
+                         (bvchop (integer-length (+ -1 len)) index2)))
+             (natp index1)
+             (natp index2))
            (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
                   (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
                   ))
   :hints (("Goal"
            :cases ((equal (bvchop (integer-length (+ -1 len))
-                                   index2)
+                                  index2)
                           (bvchop (integer-length (+ -1 len))
-                                   index1)))
+                                  index1)))
            :in-theory (enable update-nth2 ceiling-of-lg bv-array-write))))
+
+;; might loop?
+(defthmd bv-array-write-of-bv-array-write-diff
+  (implies (and (not (equal index1 index2))
+                (< index1 len)
+                (< index2 len)
+                (natp index1)
+                (natp index2))
+           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
+                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))))
+  :hints (("Goal" :use bv-array-write-of-bv-array-write-diff-helper
+           :cases ((not (natp len)))
+           :in-theory (disable bv-array-write-of-bv-array-write-diff-helper))))
 
 ;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
 ;; TODO: Maybe we prefer the other order since lower indices are usually done first.
 (defthmd bv-array-write-of-bv-array-write-diff-constant-indices
   (implies (and (syntaxp (and (quotep index1)
                               (quotep index2)))
-                (< index2 index1)
+                (< index2 index1) ; prevents loops
                 (< index1 len)
                 ;; (< index2 len)
                 (natp index1)
@@ -377,7 +388,7 @@
                   (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX2 0 (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX1 0 LST))
                   ))
   :hints (("Goal" :cases ((< len (len lst)))
-           :in-theory (e/d (bv-array-write update-nth2) ()))))
+           :in-theory (enable bv-array-write update-nth2))))
 
 ; do we need this one?
 (defthm bv-array-write-of-0-and-bvchop-list
@@ -388,8 +399,7 @@
            (equal (bv-array-write element-size1 len index2 0 (bvchop-list element-size2 lst))
                   (bv-array-write element-size2 len index2 0 lst)))
   :hints (("Goal" :cases ((< len (len lst)))
-           :in-theory (e/d (bv-array-write update-nth2 BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN)
-                           ()))))
+           :in-theory (enable bv-array-write update-nth2 BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN))))
 
 (defthm bv-array-write-of-bv-array-write-diff-same-val
   (implies (and (syntaxp (smaller-termp index2 index1))
@@ -422,3 +432,105 @@
            (equal (bv-array-write esize len index val data)
                   (bv-array-write 1 len index val data)))
   :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))
+
+(defthm nthcdr-of-bv-array-write
+  (implies (and (<= n (len lst))
+                (equal (len lst) len) ;bozo
+                (< key len)           ;Mon Jul 19 20:28:02 2010
+                (natp n)
+                (natp key))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  (if (< key n)
+                      (bvchop-list element-size (nthcdr n (true-list-fix lst)))
+                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix))))
+
+(defthm nthcdr-of-bv-array-write-better
+  (implies (and (<= n len)
+                (integerp len)
+                ;;(natp len)
+                (< key len)
+                (natp n)
+                (natp key))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  (if (< key n)
+                      (bvchop-list element-size (nthcdr n (take len (true-list-fix lst))))
+                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
+  :hints (("Goal"
+           :cases ((< key n))
+           :in-theory (enable update-nth2 bv-array-write-opener))))
+
+(defthmd bv-array-write-of-bv-array-write-when-length-is-1
+  (equal (bv-array-write size 1 index1 val1 (bv-array-write size 1 index2 val2 data))
+         (bv-array-write size 1 0 val1 '(0))))
+
+;; breaks the abstraction
+(defthm car-of-bv-array-write
+  (implies (and ;; (<= 1 len)
+                (integerp len)
+                (< key len)
+                ;(natp len)
+                (natp key))
+           (equal (car (bv-array-write element-size len key val lst))
+                  (if (< key 1)
+                      (bvchop element-size val)
+                    (bvchop element-size (car lst)))))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
+
+(defthm car-of-bv-array-write-gen
+  (implies (posp len)
+           (equal (car (bv-array-write element-size len key val lst))
+                  (if (equal 0 (bvchop (ceiling-of-lg len) key))
+                      (bvchop element-size val)
+                    (bvchop element-size (car lst)))))
+  :hints (("Goal" :expand (bv-array-write element-size len key val lst)
+           :in-theory (enable update-nth2))))
+
+(defthm cdr-of-bv-array-write-better
+  (implies (and (integerp len)
+                (< key len)
+                (natp key))
+           (equal (cdr (bv-array-write element-size len key val lst))
+                  (if (zp len)
+                      nil
+                    (if (< key 1)
+                        (bvchop-list element-size (cdr (take len (true-list-fix lst))))
+                      (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
+  :hints (("Goal"
+           :cases ((and (< len 0)
+                        (< key n))
+                   (and (not (< len 0))
+                        (< key n))
+                   (and (< len 0)
+                        (not (< key n)))
+                   (and (not (< len 0))
+                        (not (< key n))))
+           :in-theory (e/d (update-nth2 bv-array-write-opener
+                            ;bv-array-write
+                            ) (ceiling-of-lg
+                               update-nth-becomes-update-nth2-extend-gen)))))
+
+(defthmd bv-array-write-redef-special
+  (implies (and (equal len (len data)) ; this case
+                (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-write element-size len index val data)
+                  (append (bvchop-list element-size (take index data))
+                          (list (bvchop element-size val))
+                          (bvchop-list element-size (nthcdr (+ 1 index) data)))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2
+                                     equal-of-append
+                                     cdr-of-nthcdr))))
+
+(defthmd bv-array-write-redef
+  (implies (and (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-write element-size len index val data)
+                  (append (bvchop-list element-size (take index data))
+                          (list (bvchop element-size val))
+                          (bvchop-list element-size (take (+ -1 (- index) len) (nthcdr (+ 1 index) data))))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2
+                                     equal-of-append
+                                     cdr-of-nthcdr))))

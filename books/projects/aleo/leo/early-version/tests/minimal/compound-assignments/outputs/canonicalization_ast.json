@@ -1,0 +1,351 @@
+{
+  "name": "",
+  "expected_input": [],
+  "imports": [],
+  "circuits": {},
+  "global_consts": {},
+  "functions": {
+    "{\"name\":\"main\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":10,\\\"col_stop\\\":14,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"function main(a: i8) -> i8 {\\\"}\"}": {
+      "annotations": [],
+      "identifier": "{\"name\":\"main\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":10,\\\"col_stop\\\":14,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"function main(a: i8) -> i8 {\\\"}\"}",
+      "input": [
+        {
+          "Variable": {
+            "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":15,\\\"col_stop\\\":16,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"function main(a: i8) -> i8 {\\\"}\"}",
+            "const_": false,
+            "mutable": true,
+            "type_": {
+              "IntegerType": "I8"
+            },
+            "span": {
+              "line_start": 2,
+              "line_stop": 2,
+              "col_start": 15,
+              "col_stop": 16,
+              "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+              "content": "function main(a: i8) -> i8 {"
+            }
+          }
+        }
+      ],
+      "output": {
+        "IntegerType": "I8"
+      },
+      "block": {
+        "statements": [
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a += 1;\\\"}\"}",
+                "accesses": [],
+                "span": {
+                  "line_start": 3,
+                  "line_stop": 3,
+                  "col_start": 5,
+                  "col_stop": 6,
+                  "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                  "content": "    a += 1;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a += 1;\\\"}\"}"
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "1",
+                        {
+                          "line_start": 3,
+                          "line_stop": 3,
+                          "col_start": 10,
+                          "col_stop": 11,
+                          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                          "content": "    a += 1;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Add",
+                  "span": {
+                    "line_start": 3,
+                    "line_stop": 3,
+                    "col_start": 5,
+                    "col_stop": 11,
+                    "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                    "content": "    a += 1;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 3,
+                "line_stop": 3,
+                "col_start": 5,
+                "col_stop": 11,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    a += 1;"
+              }
+            }
+          },
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":4,\\\"line_stop\\\":4,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a -= 2;\\\"}\"}",
+                "accesses": [],
+                "span": {
+                  "line_start": 4,
+                  "line_stop": 4,
+                  "col_start": 5,
+                  "col_stop": 6,
+                  "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                  "content": "    a -= 2;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":4,\\\"line_stop\\\":4,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a -= 2;\\\"}\"}"
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "2",
+                        {
+                          "line_start": 4,
+                          "line_stop": 4,
+                          "col_start": 10,
+                          "col_stop": 11,
+                          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                          "content": "    a -= 2;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Sub",
+                  "span": {
+                    "line_start": 4,
+                    "line_stop": 4,
+                    "col_start": 5,
+                    "col_stop": 11,
+                    "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                    "content": "    a -= 2;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 4,
+                "line_stop": 4,
+                "col_start": 5,
+                "col_stop": 11,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    a -= 2;"
+              }
+            }
+          },
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":5,\\\"line_stop\\\":5,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a *= 3;\\\"}\"}",
+                "accesses": [],
+                "span": {
+                  "line_start": 5,
+                  "line_stop": 5,
+                  "col_start": 5,
+                  "col_stop": 6,
+                  "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                  "content": "    a *= 3;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":5,\\\"line_stop\\\":5,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a *= 3;\\\"}\"}"
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "3",
+                        {
+                          "line_start": 5,
+                          "line_stop": 5,
+                          "col_start": 10,
+                          "col_stop": 11,
+                          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                          "content": "    a *= 3;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Mul",
+                  "span": {
+                    "line_start": 5,
+                    "line_stop": 5,
+                    "col_start": 5,
+                    "col_stop": 11,
+                    "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                    "content": "    a *= 3;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 5,
+                "line_stop": 5,
+                "col_start": 5,
+                "col_stop": 11,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    a *= 3;"
+              }
+            }
+          },
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a /= 4;\\\"}\"}",
+                "accesses": [],
+                "span": {
+                  "line_start": 6,
+                  "line_stop": 6,
+                  "col_start": 5,
+                  "col_stop": 6,
+                  "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                  "content": "    a /= 4;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a /= 4;\\\"}\"}"
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "4",
+                        {
+                          "line_start": 6,
+                          "line_stop": 6,
+                          "col_start": 10,
+                          "col_stop": 11,
+                          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                          "content": "    a /= 4;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Div",
+                  "span": {
+                    "line_start": 6,
+                    "line_stop": 6,
+                    "col_start": 5,
+                    "col_stop": 11,
+                    "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                    "content": "    a /= 4;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 6,
+                "line_stop": 6,
+                "col_start": 5,
+                "col_stop": 11,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    a /= 4;"
+              }
+            }
+          },
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":7,\\\"line_stop\\\":7,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a **= 5;\\\"}\"}",
+                "accesses": [],
+                "span": {
+                  "line_start": 7,
+                  "line_stop": 7,
+                  "col_start": 5,
+                  "col_stop": 6,
+                  "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                  "content": "    a **= 5;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":7,\\\"line_stop\\\":7,\\\"col_start\\\":5,\\\"col_stop\\\":6,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    a **= 5;\\\"}\"}"
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "5",
+                        {
+                          "line_start": 7,
+                          "line_stop": 7,
+                          "col_start": 11,
+                          "col_stop": 12,
+                          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                          "content": "    a **= 5;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Pow",
+                  "span": {
+                    "line_start": 7,
+                    "line_stop": 7,
+                    "col_start": 5,
+                    "col_stop": 12,
+                    "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                    "content": "    a **= 5;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 7,
+                "line_stop": 7,
+                "col_start": 5,
+                "col_stop": 12,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    a **= 5;"
+              }
+            }
+          },
+          {
+            "Return": {
+              "expression": {
+                "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"line_start\\\":8,\\\"line_stop\\\":8,\\\"col_start\\\":12,\\\"col_stop\\\":13,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo\\\",\\\"content\\\":\\\"    return a;\\\"}\"}"
+              },
+              "span": {
+                "line_start": 8,
+                "line_stop": 8,
+                "col_start": 5,
+                "col_stop": 13,
+                "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+                "content": "    return a;"
+              }
+            }
+          }
+        ],
+        "span": {
+          "line_start": 2,
+          "line_stop": 9,
+          "col_start": 28,
+          "col_stop": 2,
+          "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+          "content": "function main(a: i8) -> i8 {\n...\n}"
+        }
+      },
+      "span": {
+        "line_start": 2,
+        "line_stop": 9,
+        "col_start": 1,
+        "col_stop": 2,
+        "path": "/home/batman/leo-acl2/tests/minimal/compound-assignments/src/main.leo",
+        "content": "function main(a: i8) -> i8 {\n...\n}\n\n\n\n\n"
+      }
+    }
+  }
+}

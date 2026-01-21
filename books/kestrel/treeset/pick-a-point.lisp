@@ -29,6 +29,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ pick-a-point
   :parents (set)
   :short "Pick-a-point automation for @(tsee subset)."
@@ -55,7 +60,6 @@
         (and (set-predicate (head set))
              (all-predicate (left set))
              (all-predicate (right set))))
-    :no-function t
     :hints (("Goal" :in-theory (enable o< o-finp))))
 
   (encapsulate
@@ -153,8 +157,7 @@
 (define subset-trigger
   ((x setp)
    (y setp))
-  (subset x y)
-  :no-function t)
+  (subset x y))
 
 (defruled pick-a-point
   (implies (and (syntaxp (computed-hints::rewriting-goal-lit mfc state))

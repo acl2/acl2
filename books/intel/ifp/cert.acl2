@@ -20,5 +20,9 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+; Matt K. addition for ACL2(p), since EQUAL-0-LOGHEAD-OF-LEFT-SHIFT in fast-denorm.lisp uses
+; LOGBITP-REASONING, as does DECOMPOSE-AS-LOGAPP in round-math.lisp and perhaps others.
+(set-waterfall-parallelism nil)
+
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all  :skip-proofs-okp t

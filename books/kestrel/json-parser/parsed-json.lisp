@@ -1,6 +1,6 @@
 ; Recognizers for parsed JSON objects, arrays, and values
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -62,7 +62,7 @@
  (defund parsed-json-valuep (val)
    (declare (xargs :guard t
                    :measure (make-ord 1 (+ 1 (acl2-count val)) 1)))
-   (or (member-eq val '(:true :false :null))
+   (or (if (member-eq val '(:true :false :null)) t nil) ; coerce to boolean
        (rationalp val)
        (stringp val)
        (parsed-json-arrayp val)
@@ -82,6 +82,18 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
 
+(defthm string-listp-of-strip-cars-when-parsed-json-object-pairsp
+  (implies (parsed-json-object-pairsp pairs)
+           (string-listp (strip-cars pairs)))
+  :hints (("Goal" :induct (len pairs)
+           :in-theory (enable parsed-json-valuesp strip-cdrs))))
+
+(defthm parsed-json-valuesp-of-strip-cdrs-when-parsed-json-object-pairsp
+  (implies (parsed-json-object-pairsp pairs)
+           (parsed-json-valuesp (strip-cdrs pairs)))
+  :hints (("Goal" :induct (len pairs)
+           :in-theory (enable parsed-json-valuesp strip-cdrs))))
+
 (defthm parsed-json-valuesp-forward-to-true-listp
   (implies (parsed-json-valuesp values)
            (true-listp values))
@@ -94,6 +106,12 @@
            (parsed-json-object-pairsp (revappend x acc)))
   :hints (("Goal" :in-theory (enable parsed-json-object-pairsp revappend))))
 
+(defthm parsed-json-valuep-of-car-when-parsed-json-valuesp
+  (implies (parsed-json-valuesp vals)
+           (equal (parsed-json-valuep (car vals))
+                  (consp vals)))
+  :hints (("Goal" :in-theory (enable parsed-json-valuesp))))
+
 (defthm parsed-json-valuesp-of-cdr
   (implies (parsed-json-valuesp array-vals)
            (parsed-json-valuesp (cdr array-vals)))
@@ -104,6 +122,11 @@
                 (parsed-json-valuesp acc))
            (parsed-json-valuesp (revappend x acc)))
   :hints (("Goal" :in-theory (enable parsed-json-valuesp revappend))))
+
+(defthmd parsed-json-valuesp-when-string-listp
+  (implies (string-listp strings)
+           (parsed-json-valuesp strings))
+  :hints (("Goal" :in-theory (enable parsed-json-valuesp string-listp parsed-json-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,6 +149,14 @@
   :hints (("Goal" :in-theory (enable parsed-json-array->values
                                      parsed-json-arrayp))))
 
+(defthm <-of-acl2-count-of-parsed-json-array->values-linear
+  (implies (parsed-json-arrayp val)
+           (< (acl2-count (parsed-json-array->values val))
+              (acl2-count val)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable parsed-json-array->values
+                                     parsed-json-arrayp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Access the name/value pairs (an alist) in a parsed-json-object
@@ -135,9 +166,23 @@
   (cadr object) ; strip the :object
   )
 
+(defthm parsed-json-object-pairsp-of-parsed-json-object->pairs
+  (implies (parsed-json-objectp object)
+           (parsed-json-object-pairsp (parsed-json-object->pairs object)))
+  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
+                                     parsed-json-objectp))))
+
 (defthm alistp-of-parsed-json-object->pairs
   (implies (parsed-json-objectp object)
            (alistp (parsed-json-object->pairs object)))
+  :hints (("Goal" :in-theory (enable parsed-json-object->pairs
+                                     parsed-json-objectp))))
+
+(defthm <-of-acl2-count-of-parsed-json-object->pairs-linear
+  (implies (parsed-json-objectp val)
+           (< (acl2-count (parsed-json-object->pairs val))
+              (acl2-count val)))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable parsed-json-object->pairs
                                      parsed-json-objectp))))
 
@@ -150,3 +195,6 @@
       (null x)
     (and (parsed-json-arrayp (first x))
          (parsed-json-array-listp (rest x)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

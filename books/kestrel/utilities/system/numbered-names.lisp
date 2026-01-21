@@ -17,7 +17,6 @@
 (include-book "std/strings/nondigit-chars" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "system/kestrel" :dir :system)
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))

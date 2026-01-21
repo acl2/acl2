@@ -24,7 +24,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (defthm rightrotate32-trim-arg1
-  (implies (and (syntaxp (term-should-be-trimmed '5 amt 'non-arithmetic))
+  (implies (and (syntaxp (term-should-be-trimmed '5 amt :non-arithmetic))
                 (natp amt))
            (equal (rightrotate32 amt val)
                   (rightrotate32 (trim 5 amt) val)))
@@ -32,7 +32,7 @@
 
 ;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y)) ??
 (defthm rightrotate32-trim-arg1-all
-  (implies (and (syntaxp (term-should-be-trimmed '5 amt 'all))
+  (implies (and (syntaxp (term-should-be-trimmed '5 amt :all))
                 (natp amt))
            (equal (rightrotate32 amt val)
                   (rightrotate32 (trim 5 amt) val)))

@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,12 +12,16 @@
 
 (include-book "kestrel/fty/defbytelist" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes-fty" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
+
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unicode-characters
   :parents (syntax)
-  :short "Unicode characters in Java [JLS14:3.1]."
+  :short "Unicode characters in Java [JLS25:3.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -25,7 +29,7 @@
      `characters', `code points', and `code units'.
      In Java, characters are essentially Unicode UTF-16 code units,
      i.e. unsigned 16-bit values.
-     In our formalization, as in [JLS14],
+     In our formalization, as in [JLS25],
      we may use the terms `character', `code point', and `code unit'
      fairly interchangeably, when that causes no confusion."))
   :order-subtopics t
@@ -38,9 +42,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This type models Java characters in the context of modeling Java's syntax.
+    "This type models Java characters in the context of Java's syntax.
      This is isomorphic, but distinct from, the type @(tsee char-value)
-     that models Java characters in the context of modeling Java's semantics.
+     that models Java characters in the context of Java's semantics.
      The reason for having these two different types is that
      we want character values to be tagged when modeling semantics,
      while we want characters to be simple numbers when modeling syntax."))
@@ -80,7 +84,7 @@
   (defrule unicodep-when-asciip
     (implies (asciip x)
              (unicodep x))
-    :enable (asciip unicodep)))
+    :enable (asciip unicodep unsigned-byte-p integer-range-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,18 +106,20 @@
   (defrule unicode-listp-when-ascii-listp
     (implies (ascii-listp x)
              (unicode-listp x))
+    :induct t
     :enable (ascii-listp unicode-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string=>unicode ((string stringp))
+  :guard (str::ascii-charlist-p (str::explode string))
   :returns (unicode unicode-listp
                     :hints (("Goal"
                              :in-theory
                              (enable
                               unsigned-byte-listp-16-when-8
                               unicode-listp-rewrite-unsigned-byte-listp))))
-  :short "Convert an ACL2 string to a Java Unicode character list."
+  :short "Convert an ACL2 ASCII string to a Java Unicode character list."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -125,16 +131,17 @@
      the sequence of ACL2 characters whose codes are
      the bytes that form the UTF-8 encoding of the string.
      This is as expected for ASCII, but not necessarily for non-ASCII.
-     We plan to restrict this ACL2 function to operate
-     only on ACL2 strings consisting of ASCII characters.")
+     Thus, we use a guard to restrict the string to ASCII.")
    (xdoc::p
     "See also @(tsee ascii=>string)."))
   (string=>nats string)
   :prepwork ((defruledl unsigned-byte-listp-16-when-8
                (implies (unsigned-byte-listp 8 x)
                         (unsigned-byte-listp 16 x))
-               :enable unsigned-byte-listp))
-  :hooks (:fix))
+               :induct t
+               :enable (unsigned-byte-listp
+                        unsigned-byte-p
+                        integer-range-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,8 +161,11 @@
   :prepwork ((defruledl unsigned-byte-listp-8-when-7
                (implies (unsigned-byte-listp 7 x)
                         (unsigned-byte-listp 8 x))
-               :enable unsigned-byte-listp))
-  :hooks (:fix)
+               :induct t
+               :enable (unsigned-byte-listp
+                        unsigned-byte-p
+                        integer-range-p)))
+
   ///
 
   (defrule ascii=>string-of-string=>unicode

@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "dags")
 (include-book "make-dag-indices")

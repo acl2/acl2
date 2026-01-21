@@ -1,7 +1,7 @@
 ; Base-2 integer logarithm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,20 +18,12 @@
 ;TODO: Which do we prefer, lg or log2, or integer-length?  Some rules about
 ;integer-length could be adapted to target lg or log2.
 
+(include-book "lg-def")
 (include-book "power-of-2p")
 (local (include-book "integer-length"))
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-
-;; Returns the floor of the base-2 logarithm of x, which must be a positive integer.
-;; TODO: Rename lg to floor-of-lg ?
-;; TODO: what should lg of 0 be?
-(defund lg (x)
-  (declare (xargs :guard (posp x)
-                  :split-types t)
-           (type integer x))
-  (+ -1 (integer-length x)))
 
 (defthm lg-of-expt
   (implies (natp x)

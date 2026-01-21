@@ -107,7 +107,7 @@ results in at most n+1 bits.</p>"
            :hints(("Goal" :in-theory (enable* acl2::logtail**
                                               acl2::integer-length**
                                               acl2::ihsext-inductions)
-                   :induct (logand m i)))))
+                          :induct (logand m i)))))
 
   (defthm logcollapse-equal-when-less
     (implies (and (integerp m)
@@ -175,18 +175,18 @@ results in at most n+1 bits.</p>"
              (equal (loghead width (ash x (logcollapse (integer-length (nfix width)) sh)))
                     (loghead width (ash x sh))))
     :hints (("goal" :cases ((< sh (nfix width)))
-             :use ((:instance loghead-of-ash-greater
-                    (i (nfix width)) (j sh))
-                   (:instance loghead-of-ash-greater
-                    (i (nfix width)) (j (logcollapse (integer-length (nfix width)) sh))))
-             :in-theory (disable loghead-of-ash-greater))))
+                    :use ((:instance loghead-of-ash-greater
+                                     (i (nfix width)) (j sh))
+                          (:instance loghead-of-ash-greater
+                                     (i (nfix width)) (j (logcollapse (integer-length (nfix width)) sh))))
+                    :in-theory (disable loghead-of-ash-greater))))
 
   (local (in-theory (enable logcdr-<-x-when-positive)))
 
   (local (defun mask-equiv-ind (mask x y)
            (if (zp mask)
                (list x y)
-             (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y)))))
+               (mask-equiv-ind (logcdr mask) (logcdr x) (logcdr y)))))
 
   (defthm maskedvals-equiv-when-logheads-equiv
     (implies (and (natp mask)
@@ -197,7 +197,7 @@ results in at most n+1 bits.</p>"
                     t))
     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logand**
                                        acl2::integer-length**)
-            :induct (mask-equiv-ind mask x y))))
+                   :induct (mask-equiv-ind mask x y))))
 
   (defthm maskedvals-equiv-when-logheads-equiv-logior
     (implies (and (natp mask)
@@ -208,7 +208,7 @@ results in at most n+1 bits.</p>"
                     t))
     :hints(("Goal" :in-theory (enable* acl2::loghead** acl2::logior** acl2::lognot**
                                        acl2::integer-length**)
-            :induct (mask-equiv-ind mask x y))))
+                   :induct (mask-equiv-ind mask x y))))
 
 
   (defthm mask-ash-of-logcollapse
@@ -277,9 +277,9 @@ results in at most n+1 bits.</p>"
 
 
 (define limshift-loghead-of-logapp ((full-width natp)
-                           (concat-width natp)
-                           (x integerp)
-                           (y integerp))
+                                    (concat-width natp)
+                                    (x integerp)
+                                    (y integerp))
   :returns (shifted integerp :rule-classes :type-prescription)
   :short "Computes (loghead full-width (logapp concat-width x y))."
   (b* ((concat-width (lnfix concat-width))
@@ -293,10 +293,26 @@ results in at most n+1 bits.</p>"
     (equal (limshift-loghead-of-logapp full-width concat-width x y)
            (loghead full-width (logapp concat-width x y)))))
 
+(define limshift-loghead-of-logsquash ((full-width natp)
+                                       (squash-width natp)
+                                       (x integerp))
+  :returns (shifted integerp :rule-classes :type-prescription)
+  :short "Computes (loghead full-width (logsquash squash-width x))."
+  (b* ((squash-width (lnfix squash-width))
+       (full-width (lnfix full-width))
+       (x (lifix x))
+       (squash-width-limited (logcollapse (integer-length full-width) squash-width)))
+    (loghead full-width (logsquash squash-width-limited x)))
+  ///
+  (defthm limshift-loghead-of-logsquash-correct
+    (equal (limshift-loghead-of-logsquash full-width squash-width x)
+           (loghead full-width (logsquash squash-width x)))
+    :hints(("Goal" :in-theory (enable logsquash)))))
+
 (define limshift-logext-of-logapp ((full-width posp)
-                          (concat-width natp)
-                          (x integerp)
-                          (y integerp))
+                                   (concat-width natp)
+                                   (x integerp)
+                                   (y integerp))
   :returns (shifted integerp :rule-classes :type-prescription)
   :short "Computes (loghead full-width (logapp concat-width x y))."
   (b* ((concat-width (lnfix concat-width))
@@ -311,7 +327,7 @@ results in at most n+1 bits.</p>"
            (equal (logext (pos-fix w) x)
                   (logext w x))
            :hints(("Goal" :expand ((:free (w) (logext w x)))
-                   :in-theory (enable pos-fix)))))
+                          :in-theory (enable pos-fix)))))
 
   (defthm limshift-logext-of-logapp-correct
     (equal (limshift-logext-of-logapp full-width concat-width x y)

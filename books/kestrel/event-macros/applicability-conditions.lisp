@@ -96,7 +96,7 @@
 
 (std::deflist evmac-appcond-listp (x)
   (evmac-appcondp x)
-  :short "Recognize true lists of applicabilty conditions."
+  :short "Recognize true lists of applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
 

@@ -23,7 +23,8 @@
 
 (defund normalize-xors-optionp (n)
   (declare (xargs :guard t))
-  (member-eq n '(t nil :compact)))
+  ;; coerce to boolean (allows us to use MBT):
+  (if (member-eq n '(t nil :compact)) t nil))
 
 ; todo: eventually remove?
 (defthm normalize-xors-optionp-when-booleanp
@@ -37,6 +38,8 @@
   (known-booleans :type (satisfies symbol-listp) :initially nil)
   ;; Names of rules we are monitoring:
   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
+  ;; Functions for which we suppress the warning about an unevaluated ground application:
+  (no-warn-ground-functions :type (satisfies symbol-listp) :initially nil)
   ;; How much to print while rewriting:
   (print :type (satisfies print-levelp) :initially nil)
   ;; Whether to use our special-purpose code to normalize nests of XORs:
@@ -55,7 +58,9 @@
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
              (monitored-symbols get-monitored-symbols)
+             (no-warn-ground-functions get-no-warn-ground-functions)
              (update-monitored-symbols put-monitored-symbols)
+             (update-no-warn-ground-functions put-no-warn-ground-functions)
              (common-lisp::printp printp) ; can we avoid having defstobj define printp, which just calls print-levelp?
              (common-lisp::print get-print)
              (common-lisp::update-print put-print)
@@ -116,6 +121,13 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable rewrite-stobjp get-monitored-symbols))))
 
+;; In case we turn off tau.
+(defthm true-listp-of-get-no-warn-ground-functions
+  (implies (rewrite-stobjp rewrite-stobj)
+           (true-listp (get-no-warn-ground-functions rewrite-stobj)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable rewrite-stobjp get-no-warn-ground-functions))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
@@ -156,7 +168,7 @@
            (get-normalize-xors rewrite-stob))
     :hints (("Goal" :in-theory (enable  load-rule-db-aux)))))
 
-;; Loads the RULE-ALIST into the stobj.
+;; Loads the RULE-ALIST into the rule-db hash table in stobj.
 ;; The clearing may not always be needed.
 (defund load-rule-db (rule-alist rewrite-stobj)
   (declare (xargs :guard (rule-alistp rule-alist)

@@ -1,6 +1,6 @@
 ; Substituting lambda vars that only appear once
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
 (include-book "substitute-lambda-formals") ; for subst-formals-in-lambda-application; make those names more consistent
+(include-book "make-lambda-with-hint")
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -98,8 +99,10 @@
              (mv-let (formals-to-subst formals-to-keep)
                (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
                (declare (ignore formals-to-keep)) ; todo
-               (progn$ (and print (cw "Will subst for ~x0 in lambda.~%" formals-to-subst))
-                       (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))))
+               (if formals-to-subst
+                   (progn$ (and print (cw "Will subst for ~x0 in lambda.~%" formals-to-subst))
+                           (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))
+                 (cons-with-hint (make-lambda-with-hint formals lambda-body fn) args term))))
          ;; not a lambda application, so just rebuild the function call:
          (cons-with-hint fn args term)))))
 
@@ -115,6 +118,13 @@
                      terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm len-of-substitute-unnecessary-lambda-vars-in-terms2
+    (equal (len (substitute-unnecessary-lambda-vars-in-terms2 terms print hands-off-fns))
+           (len terms))
+    :hints (("Goal" :induct (len terms)
+             :in-theory (enable (:i len))))))
 
 (make-flag substitute-unnecessary-lambda-vars-in-term2)
 

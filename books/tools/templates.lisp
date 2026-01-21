@@ -181,7 +181,7 @@ defthm would disappear.</p>
 ;; if you have '(("foo" . "bar) ("afoo" . "abar")) the second substitution
 ;; will never happen.
 
-(defun tmpl-str-sublis-iter (remainder alist x start end len pkg)
+(defun tmpl-str-sublis-iter (remainder x start end len pkg)
   (b* (((when (atom remainder))
         ;; if both start and end are nil, we don't need to make a copy
         (mv (if (or (not (int= start 0))
@@ -192,17 +192,17 @@ defthm would disappear.</p>
        (new-str (if (consp pair) (car pair) pair))
        (loc (search old-str x :start2 start :end2 end))
        ((unless loc)
-        (tmpl-str-sublis-iter (cdr remainder) alist x start end len pkg))
+        (tmpl-str-sublis-iter (cdr remainder) x start end len pkg))
        (pkg (or pkg (and (consp pair) (cdr pair))))
        ;; since we're searching from the beginning of the string, we've already
        ;; ruled out existence of any previous keys in the prefix
        ((mv prefix-rw pkg)
         (tmpl-str-sublis-iter
-         (cdr remainder) alist x start loc len pkg))
+         (cdr remainder) x start loc len pkg))
        ;; but for the suffix, we need to try each of them
        ((mv suffix-rw pkg)
         (tmpl-str-sublis-iter
-         alist alist x
+         remainder x
          (+ loc (length old-str)) end len pkg)))
     (mv (if (and (string-equal prefix-rw "")
                  (string-equal suffix-rw ""))
@@ -214,7 +214,7 @@ defthm would disappear.</p>
 (defun tmpl-str-sublis (alist str)
   (declare (xargs :mode :program))
   (let ((len (length str)))
-    (tmpl-str-sublis-iter alist alist str 0 len len nil)))
+    (tmpl-str-sublis-iter alist str 0 len len nil)))
 
 (make-event
  (if (equal (mv-list 2 (tmpl-str-sublis

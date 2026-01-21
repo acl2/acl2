@@ -174,6 +174,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system)) ;for unpackbv-of-packbv
 

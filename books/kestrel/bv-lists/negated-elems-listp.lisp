@@ -1,7 +1,7 @@
 ; Checking if a bv-list is the negation of another bv-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,6 +28,6 @@
 
 (defthm negated-elems-listp-rewrite
   (implies (true-listp lst1)
-           (iff (negated-elems-listp width lst1 lst2)
-                (and (all-integerp lst1)
-                     (equal (firstn (len lst1) lst2) (bvnot-list width lst1))))))
+           (equal (negated-elems-listp width lst1 lst2)
+                  (and (all-integerp lst1)
+                       (equal (firstn (len lst1) lst2) (bvnot-list width lst1))))))

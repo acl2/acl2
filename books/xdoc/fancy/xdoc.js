@@ -1,33 +1,33 @@
 /*
-; XDOC Documentation System for ACL2
-; Copyright (C) 2009-2013 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
-;
-; License: (An MIT/X11-style license)
-;
-;   Permission is hereby granted, free of charge, to any person obtaining a
-;   copy of this software and associated documentation files (the "Software"),
-;   to deal in the Software without restriction, including without limitation
-;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
-;   and/or sell copies of the Software, and to permit persons to whom the
-;   Software is furnished to do so, subject to the following conditions:
-;
-;   The above copyright notice and this permission notice shall be included in
-;   all copies or substantial portions of the Software.
-;
-;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-;   DEALINGS IN THE SOFTWARE.
-;
-; Original author: Jared Davis <jared@centtech.com>
+  ; XDOC Documentation System for ACL2
+  ; Copyright (C) 2009-2013 Centaur Technology
+  ;
+  ; Contact:
+  ;   Centaur Technology Formal Verification Group
+  ;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+  ;   http://www.centtech.com/
+  ;
+  ; License: (An MIT/X11-style license)
+  ;
+  ;   Permission is hereby granted, free of charge, to any person obtaining a
+  ;   copy of this software and associated documentation files (the "Software"),
+  ;   to deal in the Software without restriction, including without limitation
+  ;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  ;   and/or sell copies of the Software, and to permit persons to whom the
+  ;   Software is furnished to do so, subject to the following conditions:
+  ;
+  ;   The above copyright notice and this permission notice shall be included in
+  ;   all copies or substantial portions of the Software.
+  ;
+  ;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  ;   DEALINGS IN THE SOFTWARE.
+  ;
+  ; Original author: Jared Davis <jared@centtech.com>
 */
 
 "use strict";
@@ -40,18 +40,16 @@ let xindex_loaded = false;
 const xindexObj = new XDocIndex();
 const xdocRenderer = new XdocRenderer();
 
-
 // --------------------------------------------------------------------------
 //
 //                         RANDOM UTILITIES
 //
 // --------------------------------------------------------------------------
 
-
 var short_plaintext_cache = {};
 function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
-	return short_plaintext_cache[key];
+        return short_plaintext_cache[key];
     }
     var ret = xdocRenderer.renderText(xindexObj.topicShort(key));
     short_plaintext_cache[key] = ret;
@@ -59,8 +57,8 @@ function topicShortPlaintext(key) {
 }
 
 function htmlEncode(value){
-  // copied from stackoverflow:1219860
-  return $('<div/>').text(value).html();
+    // copied from stackoverflow:1219860
+    return $('<div/>').text(value).html();
 }
 
 // Alphanumeric comparison (for nice sorting), adapted from
@@ -70,32 +68,32 @@ function chunkify(t) {
     var tz = [], x = 0, y = -1, n = 0, i, j;
 
     while ((i = (j = t.charAt(x++)).charCodeAt(0))) {
-      var m = (i == 46 || (i >=48 && i <= 57));
-      if (m !== n) {
-        tz[++y] = "";
-        n = m;
-      }
-      tz[y] += j;
+        var m = (i == 46 || (i >=48 && i <= 57));
+        if (m !== n) {
+            tz[++y] = "";
+            n = m;
+        }
+        tz[y] += j;
     }
     return tz;
 }
 
 function alphanumChunks(aa,bb) {
-  for (var x = 0; aa[x] && bb[x]; x++) {
-    if (aa[x] !== bb[x]) {
-      var c = Number(aa[x]), d = Number(bb[x]);
-      if (c == aa[x] && d == bb[x]) {
-        return c - d;
-      } else return (aa[x] > bb[x]) ? 1 : -1;
+    for (var x = 0; aa[x] && bb[x]; x++) {
+        if (aa[x] !== bb[x]) {
+            var c = Number(aa[x]), d = Number(bb[x]);
+            if (c == aa[x] && d == bb[x]) {
+                return c - d;
+            } else return (aa[x] > bb[x]) ? 1 : -1;
+        }
     }
-  }
-  return aa.length - bb.length;
+    return aa.length - bb.length;
 }
 
 function alphanum(a, b) {
-  var aa = chunkify(a);
-  var bb = chunkify(b);
-  return alphanumChunks(aa,bb);
+    var aa = chunkify(a);
+    var bb = chunkify(b);
+    return alphanumChunks(aa,bb);
 }
 
 var waitmsg = 0;
@@ -128,39 +126,39 @@ function renderMathFragments ()
     // the page.
 
     if (! KATEX_LOADED) {
-	// just wait, it'll get loaded eventually
-	return;
+        // just wait, it'll get loaded eventually
+        return;
     }
 
     // console.log("Rendering math fragments.");
     $(".mathblock").each(function () {
         var obj = $(this);
-    	var formula_text = obj.text();
+        var formula_text = obj.text();
         var newdiv = jQuery("<span></span>");
-	try {
-	    katex.render(formula_text, newdiv.get(0));
-    	    obj.html(newdiv);
-	    obj.removeAttr("class");
-	    obj.attr("class", "mathblockrendered");
-	}
-	catch(e) {
-	    obj.html(htmlEncode("{{" + e.message + "}}"));
-	}
+        try {
+            katex.render(formula_text, newdiv.get(0));
+            obj.html(newdiv);
+            obj.removeAttr("class");
+            obj.attr("class", "mathblockrendered");
+        }
+        catch(e) {
+            obj.html(htmlEncode("{{" + e.message + "}}"));
+        }
     });
 
     $(".mathfrag").each(function () {
         var obj = $(this);
-    	var formula_text = obj.text();
+        var formula_text = obj.text();
         var newdiv = jQuery("<span></span>");
-	try {
-	    katex.render(formula_text, newdiv.get(0));
-	    obj.html(newdiv);
-	    obj.removeAttr("class");
-	    obj.attr("class", "mathfragrendered");
-    	}
-	catch (e) {
-	    obj.html(htmlEncode("{{" + e.message + "}}"));
-	}
+        try {
+            katex.render(formula_text, newdiv.get(0));
+            obj.html(newdiv);
+            obj.removeAttr("class");
+            obj.attr("class", "mathfragrendered");
+        }
+        catch (e) {
+            obj.html(htmlEncode("{{" + e.message + "}}"));
+        }
     });
 }
 
@@ -190,9 +188,9 @@ function maybePowertip(selector, options)
 
 function closeAllPowertips()
 {
-//    console.log("CloseAllPowertips Enters");
+    //    console.log("CloseAllPowertips Enters");
     $(".horrible-powertip-tracker").powerTip('hide');
-//    console.log("CloseAllPowertips Exits");
+    //    console.log("CloseAllPowertips Exits");
 }
 
 // --------------------------------------------------------------------------
@@ -211,31 +209,37 @@ function closeAllPowertips()
 // load xindex first, then once it's complete we load xdata.  The format of
 // both are described in xdoc_index.js.
 
-
 function keyTitle(key)
 {
-    var prefix = XDOCTITLE;
+    let prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
     return (xindexObj.topicExists(key))
-       ? (prefix + " &mdash; " + xindexObj.topicName(key))
-       : (prefix + " &mdash; " + key);
+        ? (prefix + " &mdash; " + xindexObj.topicName(key))
+        : (prefix + " &mdash; " + key);
 }
 
+function searchTitle(query)
+{
+    let prefix = XDOCTITLE;
+    if (!prefix) { prefix = "XDOC"; }
+
+    return prefix + " Search &mdash; " + query;
+}
 
 
 function applySuborder(subkeys, keys) {
     var ret = [];
-    for(var i in subkeys) {
-	ret.push(subkeys[i]);
+    for (var i in subkeys) {
+        ret.push(subkeys[i]);
     }
-    for(var i in keys) {
+    for (var i in keys) {
         var k = keys[i];
-	var idx = ret.indexOf(k);
-	if (idx == -1) { // new key, add it
-	    ret.push(k);
-	}
-	// else already have it.
+        var idx = ret.indexOf(k);
+        if (idx == -1) { // new key, add it
+            ret.push(k);
+        }
+        // else already have it.
     }
     return ret;
 }
@@ -244,7 +248,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     var children = xindexObj.topicChildKeys(key);
 
     var tmp = [];
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         var rawname = xindexObj.topicRawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
@@ -252,13 +256,13 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
 
     var ret = [];
-    for(var i in tmp) {
+    for (var i in tmp) {
         ret.push(tmp[i].key);
     }
 
     var suborder = xindexObj.topicSuborder(key);
     if (suborder.length > 0) {
-	return applySuborder(suborder, ret);
+        return applySuborder(suborder, ret);
     }
 
     return ret;
@@ -275,7 +279,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
 function xdataLoadKeys(keys) {
     // Optimization, don't load keys we've already loaded
     const missing = [];
-    for(const key of keys) {
+    for (const key of keys) {
         if (!xdataObj.topicExists(key))
             missing.push(key);
     }
@@ -287,7 +291,7 @@ function xdataLoadKeys(keys) {
     if (!XDATAGET) {
         // We're running in local mode, so we can't load any more data from
         // the server.  Any missing keys are errors!
-        for(const missingKey of missing)
+        for (const missingKey of missing)
             xdataObj.addError(missingKey, "Error: no such topic.");
         return Promise.resolve();
     }
@@ -302,21 +306,28 @@ function xdataLoadKeys(keys) {
         if (results && results.length == missing.length) {
             // TODO: we need to assume that the order of the returned
             // data is the same as the order of the requested keys.
-            for(let i = 0; i < results.length; i++) {
-                xdataObj.add(missing[i], results[i]);
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].error !== undefined) {
+                    xdataObj.addError(missing[i], "Error: " + results[i].error);
+                } else {
+                    const xdata = [results[i].parents,
+                                   results[i].src,
+                                   results[i].pkg,
+                                   results[i].long];
+                    xdataObj.add(missing[i], xdata);
+                }
             }
         } else {
-            let val = "Error: malformed reply from " + url;
-            if ("error" in obj)
-                val = obj["error"];
-            for(const missingKey of missing) {
-                xdataObj.addError(missingKey, val);
+            if (obj.error !== undefined) {
+                console.error("Error: " + obj.error);
+            } else {
+                console.error("Error: malformed response " + obj);
             }
         }
     }).catch(err => {
         const val = `Error: AJAX query failed. ${err}`;
         console.error(err);
-        for(const missingKey of missing) {
+        for (const missingKey of missing) {
             xdataObj.addError(missingKey, val);
         }
     });
@@ -388,9 +399,9 @@ function navMakeNode(key) {
         node += "</a>";
     }
     node += "<a id=\"_golink" + id + "\""
-	  + " href=\"index.html?topic=" + key + "\""
-          + " onclick=\"return dolink(event, '" + key + "');\""
-          + " data-powertip=\"" + tooltip + "\">";
+        + " href=\"index.html?topic=" + key + "\""
+        + " onclick=\"return dolink(event, '" + key + "');\""
+        + " data-powertip=\"" + tooltip + "\">";
     node += name;
     node += "</a>";
     node += "</nobr>";
@@ -415,7 +426,7 @@ function navExpand(id) {
     $("#_nav_ilink" + id).attr("href", "javascript:navRetract(" + id + ")");
     var key = nav_id_table[id]["key"];
 
-    if(nav_id_table[id]["ever_expanded"]) {
+    if (nav_id_table[id]["ever_expanded"]) {
         $("#_navTree" + id).show();
         return;
     }
@@ -425,14 +436,14 @@ function navExpand(id) {
 
     var start = nav_id_table.length; // stupid hack for tooltip activation
     var exp = "";
-    for(var i in children) {
+    for (var i in children) {
         exp += navMakeNode(children[i]);
     }
     $("#_navTree" + id).append(exp);
 
     // Activate only the tooltips that we have just added.  (If we try to
     // activate them more than once, they don't seem to work.)
-    for(var i = start; i < nav_id_table.length; ++i) {
+    for (var i = start; i < nav_id_table.length; ++i) {
         navActivateTooltip(i);
     }
 }
@@ -477,20 +488,19 @@ function navFlat() {
     nav_mode = "flat";
 
     if (navFlat_ever_shown) {
-       // Nothing to do, we've already built the flat index.
-       return;
+        // Nothing to do, we've already built the flat index.
+        return;
     }
     $("#flat").html("<p>Loading...</p>");
     navFlat_ever_shown = true;
     setTimeout(navFlatReallyInstall, 10);
 }
 
-
 function navFlatSort(array)
 {
     var len = array.length;
-    if(len < 2) {
-	return array;
+    if (len < 2) {
+        return array;
     }
     var pivot = Math.ceil(len/2);
     return navFlatMerge(navFlatSort(array.slice(0,pivot)), navFlatSort(array.slice(pivot)));
@@ -499,12 +509,12 @@ function navFlatSort(array)
 function navFlatMerge(left, right)
 {
     var result = [];
-    while((left.length > 0) && (right.length > 0))
+    while ((left.length > 0) && (right.length > 0))
     {
-	if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
-	    result.push(left.shift());
-	else
-	    result.push(right.shift());
+        if (alphanumChunks(left[0].chunks, right[0].chunks) == -1)
+            result.push(left.shift());
+        else
+            result.push(right.shift());
     }
 
     result = result.concat(left, right);
@@ -513,35 +523,35 @@ function navFlatMerge(left, right)
 
 function navFlatReallyInstall()
 {
-// On the combined ACL2+Books manual circa May 2016, this had gotten unusably
-// slow (175s).  The main culprits seemed to be:
-//
-//   - Sorting the topic names was unnecessarily and incredibly slow.  The
-//     alphanum function was chunkifying its arguments each time it was called.
-//     We can do a lot better by (linearly) chunkifying everything first before
-//     sorting, and then just sorting the chunks.
-//
-//   - Building tooltips for every single topic was slow.  Just calling
-//     topicShortPlaintext(key) for each key seemed to take around 14 seconds.
-//     It seems difficult to reduce this expense.  For now I think the most
-//     reasonable thing to do is just abandon these tooltips as too slow :(
-//
-//   - Building the <ul>...</ul> with jquery was slow.  Switching to just use
-//     string concatenation seems to help a lot.
-//
-// The above changes got the flat index down to about 6 seconds without
-// sorting, but sorting the array with the nice:
-//
-//     myarr.sort(function(a,b) {
-//         return alphanumChunks(a.chunks, b.chunks);
-//     });
-//
-// was bringing the time up to 20 seconds in Firefox's profile, or about 6
-// seconds of walltime as I actually count along without profiling enabled.
-// Using the above mergesort instead reduced the time down to 14 seconds in the
-// profile, which translates into about 3 seconds of walltime as I actually
-// count it.  So that's pretty great.  Probably the above sort isn't ideal; I
-// haven't tried out others yet.  But this is probably getting fast enough.
+    // On the combined ACL2+Books manual circa May 2016, this had gotten unusably
+    // slow (175s).  The main culprits seemed to be:
+    //
+    //   - Sorting the topic names was unnecessarily and incredibly slow.  The
+    //     alphanum function was chunkifying its arguments each time it was called.
+    //     We can do a lot better by (linearly) chunkifying everything first before
+    //     sorting, and then just sorting the chunks.
+    //
+    //   - Building tooltips for every single topic was slow.  Just calling
+    //     topicShortPlaintext(key) for each key seemed to take around 14 seconds.
+    //     It seems difficult to reduce this expense.  For now I think the most
+    //     reasonable thing to do is just abandon these tooltips as too slow :(
+    //
+    //   - Building the <ul>...</ul> with jquery was slow.  Switching to just use
+    //     string concatenation seems to help a lot.
+    //
+    // The above changes got the flat index down to about 6 seconds without
+    // sorting, but sorting the array with the nice:
+    //
+    //     myarr.sort(function(a,b) {
+    //         return alphanumChunks(a.chunks, b.chunks);
+    //     });
+    //
+    // was bringing the time up to 20 seconds in Firefox's profile, or about 6
+    // seconds of walltime as I actually count along without profiling enabled.
+    // Using the above mergesort instead reduced the time down to 14 seconds in the
+    // profile, which translates into about 3 seconds of walltime as I actually
+    // count it.  So that's pretty great.  Probably the above sort isn't ideal; I
+    // haven't tried out others yet.  But this is probably getting fast enough.
 
     var big_a = "A".charCodeAt(0);
     var big_z = "Z".charCodeAt(0);
@@ -550,15 +560,15 @@ function navFlatReallyInstall()
     var keys = xindexObj.allKeys();
 
     // Preprocessing: upcase and chunkify everything
-    for(const key of keys) {
-	var rawname = xindexObj.topicRawname(key).toUpperCase();
+    for (const key of keys) {
+        var rawname = xindexObj.topicRawname(key).toUpperCase();
         myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
 
     // Sort using faster algorithm
     myarr = navFlatSort(myarr);
     // myarr.sort(function(a,b) {
-    // 	return alphanumChunks(a.chunks, b.chunks);
+    //  return alphanumChunks(a.chunks, b.chunks);
     // });
 
     // Previously used jQuery("<ul></ul>") and extended it with append.  That
@@ -571,31 +581,31 @@ function navFlatReallyInstall()
     // alphabetic characters.  Now we inline this to gain some small
     // efficiency.
 
-    for(var i in myarr) {
+    for (var i in myarr) {
         var key = myarr[i].key;
         var name = xindexObj.topicName(key);
         var rawname = myarr[i].rawname;
 
-	// If you want to resurrect this, also need to add the data-powertip
-	// stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
-	// + "</p>";
+        // If you want to resurrect this, also need to add the data-powertip
+        // stuff into the link.  var tooltip = "<p>" + topicShortPlaintext(key)
+        // + "</p>";
 
-	var code = rawname.charCodeAt(0);
+        var code = rawname.charCodeAt(0);
         if ((rawname.charAt(0) != current_startchar) &&
-	    // Avoid headers unless it's alphabetic.  Only need to check for
-	    // upper-case things since we're upcasing everything to begin with.
-	    ((big_a <= code && code <= big_z)))
-	{
+            // Avoid headers unless it's alphabetic.  Only need to check for
+            // upper-case things since we're upcasing everything to begin with.
+            ((big_a <= code && code <= big_z)))
+        {
             current_startchar = rawname.charAt(0);
-	    dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
-                      + current_startchar + "</b></li>";
+            dl += "<li class=\"flatsec\" id=\"flat_startchar_" + current_startchar + "\"><b>"
+                + current_startchar + "</b></li>";
         }
 
         dl += "<li><a class=\"flatnav\""
-                  + " href=\"index.html?topic=" + key + "\""
-                  + " onclick=\"return dolink(event, '" + key + "');\">"
-                  + name
-                  + "</a></li>";
+            + " href=\"index.html?topic=" + key + "\""
+            + " onclick=\"return dolink(event, '" + key + "');\">"
+            + name
+            + "</a></li>";
     }
     dl += "</ul>";
     $("#flat").html(dl);
@@ -628,8 +638,6 @@ function navToggleVisible()
     closeAllPowertips();
 }
 
-
-
 // --------------------------------------------------------------------------
 //
 //                          MAIN DATA DISPLAY
@@ -656,7 +664,7 @@ function datLoadParents(key) {
         return;
     }
     acc += "<ul>";
-    for(var i in parent_keys) {
+    for (var i in parent_keys) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
@@ -665,7 +673,7 @@ function datLoadParents(key) {
         }
         acc += "<li>";
         acc += "<a href=\"index.html?topic=" + pkey + "\""
-	    + " onclick=\"return dolink(event, '" + pkey + "');\""
+            + " onclick=\"return dolink(event, '" + pkey + "');\""
             + " data-powertip=\"<p>" + tooltip + "</p>\">";
         acc += pname;
         acc += "</a>";
@@ -682,11 +690,11 @@ function datShortSubtopics(key)
     var children = keySortedChildren(key);
 
     var dl = jQuery("<div></div>");
-    for(var i in children) {
+    for (var i in children) {
         var child_key = children[i];
         dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
-		  + ">"
+                  + ">"
                   + xindexObj.topicName(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
@@ -713,7 +721,7 @@ function datExpand(dat_id)
     var children = keySortedChildren(key);
     xdataLoadKeys(children).then(() => {
         var div = $("#_dat_long" + dat_id);
-        for(var i in children) {
+        for (var i in children) {
             var child_key = children[i];
             div.append(datLongTopic(child_key));
             if (i != children.length - 1) {
@@ -746,11 +754,11 @@ function datLongTopic(key)
 
     var curr_state = history.state;
     if (!curr_state && !warned_about_history_state) {
-	div.append(
-	    "<p>Warning: your browser does not implement the history.state "
-	    + "API, so your back button will lose your place.  You may wish "
-	    + "to use a browser like Firefox or Chrome, instead.</p>");
-	warned_about_history_state = true;
+        div.append(
+            "<p>Warning: your browser does not implement the history.state "
+                + "API, so your back button will lose your place.  You may wish "
+                + "to use a browser like Firefox or Chrome, instead.</p>");
+        warned_about_history_state = true;
     }
 
     // Special handling for broken links.  We want to give XDOC manuals to have
@@ -760,13 +768,13 @@ function datLongTopic(key)
     // internal manuals within, say, Centaur, might want to say, "please report
     // this broken link to Jared."
     if (!xindexObj.topicExists(key)) {
-	// I think it's nice to change the title dynamically, to say what topic
-	// they tried to access, instead of just generically saying Broken-Link.
+        // I think it's nice to change the title dynamically, to say what topic
+        // they tried to access, instead of just generically saying Broken-Link.
         div.append("<h1>" + key + " Not Found</h1>");
 
-	if (xindexObj.topicExists(BROKEN_KEY)) {
-        div.append(xdocRenderer.renderHtml(xdataObj.topicLong(BROKEN_KEY)));
-	}
+        if (xindexObj.topicExists(BROKEN_KEY)) {
+            div.append(xdocRenderer.renderHtml(xdataObj.topicLong(BROKEN_KEY)));
+        }
 
         return div;
     }
@@ -792,22 +800,22 @@ function datLongTopic(key)
 
     var basepkg = htmlEncode(xdataObj.topicBasepkg(key));
     var basediv = (basepkg == "ACL2")
-                    ? ""
-                    : "<div class='basepkg' data-powertip='"
-                         + "<p>In links and code snippets here, symbols are "
-                         + "shown relative to the <b>" + basepkg
-	                 + "</b> package.</p><p>You may need <b>" + basepkg
-	                 + "::</b> prefixes to call these functions, etc.</p>'>"
-                         + "<b>" + basepkg + "</b><br/>Package</div>";
+        ? ""
+        : "<div class='basepkg' data-powertip='"
+        + "<p>In links and code snippets here, symbols are "
+        + "shown relative to the <b>" + basepkg
+        + "</b> package.</p><p>You may need <b>" + basepkg
+        + "::</b> prefixes to call these functions, etc.</p>'>"
+        + "<b>" + basepkg + "</b><br/>Package</div>";
 
     var shortp;
     if (key != TOP_KEY) {
-	div.append(basediv);
-	div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
-	shortp = jQuery("<p></p>");
+        div.append(basediv);
+        div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
+        shortp = jQuery("<p></p>");
     } else {
-	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
-	shortp = jQuery("<p align='center'></p>");
+        div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
+        shortp = jQuery("<p align='center'></p>");
     }
 
     shortp.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
@@ -817,9 +825,9 @@ function datLongTopic(key)
         var acc = "<h3>";
         acc += "Subtopics ";
         acc += "<a id=\"_dat_ilink" + dat_id + "\""
-                + " href=\"javascript:datExpand(" + dat_id + ")\">";
+            + " href=\"javascript:datExpand(" + dat_id + ")\">";
         acc += "<img id=\"_dat_img" + dat_id + "\""
-                + " src=\"expand_subtopics.png\" align=\"top\"/>";
+            + " src=\"expand_subtopics.png\" align=\"top\"/>";
         acc += "</a>";
         acc += "</h3>";
         var sub = jQuery("<dl id=\"_dat_short" + dat_id + "\"></dl>");
@@ -846,10 +854,10 @@ function datLoadKey(key, scroll_to)
         dat_id_table = [];
         datLoadParents(key);
         $("#data").append(datLongTopic(key));
-	maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
+        maybePowertip(".basepkg", {placement:'sw',smartPlacement: true});
         $("title").html(keyTitle(key));
-	renderMathFragments();
-	setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
+        renderMathFragments();
+        setTimeout("datReallyScrollTo(" + scroll_to + ")", 10);
     });
 }
 
@@ -858,74 +866,43 @@ function datReallyScrollTo(top) {
     $("#right").scrollTop(top);
 }
 
-
-
-
-
-
 // --------------------------------------------------------------------------
 //
 //                          SEARCHING FEATURE
 //
 // --------------------------------------------------------------------------
 
-var short_tokens_initialized = false;
-var short_tokens = {};
-
 function searchTokenize(plaintext) {
     var tokens = plaintext.toLowerCase().split(/[ \t\n:]+/);
     if (tokens.length == 1 && tokens[0] == "") {
-	// Correct for ridiculous behavior of string.split
-	return [];
+        // Correct for ridiculous behavior of string.split
+        return [];
     }
-    for(var i in tokens) {
-	var orig = tokens[i];
-	var trim = orig.replace(/^[()"'`.,;?!]*/, '')
-	               .replace(/[()"'`.,;?!]*$/, '');
-	tokens[i] = trim;
+    for (var i in tokens) {
+        var orig = tokens[i];
+        var trim = orig.replace(/^[()"'`.,;?!]*/, '')
+            .replace(/[()"'`.,;?!]*$/, '');
+        tokens[i] = trim;
     }
     return tokens;
 }
 
-function makeShortTokens() {
-    if (short_tokens_initialized)
-	return;
-    var keys = xindexObj.allKeys();
-    for(const key of keys) {
-	var name = xindexObj.topicName(key);
-	var rawname = xindexObj.topicRawname(key);
-	var plaintext = topicShortPlaintext(key);
-	var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
-	short_tokens[key] = tokens;
-    }
-    short_tokens_initialized = true;
+// Case-insensitive counting of substring matches
+function countOccurrences(haystack, needle) {
+    if (!needle) return 0;
+    let re = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let matches = haystack.match(re);
+    return matches ? matches.length : 0;
 }
 
-function subarrayAtOffsetp (a, b, n) {
-    // Does array A occur at array B, starting from position N?
-    var al = a.length;
-    var bl = b.length - n;
-    if (al > bl) {
-	return false;
-    }
-    for(var i = 0; i < al; ++i) {
-	if (a[i] != b[(i+n)])
-	    return false;
+// Check if all words in query appear in text (for multi-word queries)
+function allWordsMatch(text, query_words) {
+    for (let i = 0; i < query_words.length; i++) {
+        if (text.indexOf(query_words[i]) === -1) {
+            return false;
+        }
     }
     return true;
-}
-
-function subarrayp (a, b) {
-    var al = a.length;
-    var bl = b.length;
-    if (al == 0) return true;
-    if (al > bl) return false;
-    var stop = (bl-al)+1;
-    for(var i = 0; i < stop; ++i) {
-	if (subarrayAtOffsetp(a,b,i))
-	    return true;
-    }
-    return false;
 }
 
 function searchSubmit() {
@@ -946,98 +923,293 @@ function searchGo(str) {
     $("#data").html("");
     $("#right").scrollTop(0);
 
-    $("#data").append("<p><b style='color: red'>Note:</b> <i>search is extremely beta.</i> "
-		      + "It doesn't even search the <tt>:long</tt> sections yet.</p>");
-
-    $("#data").append("<p id='searching_message'>Searching (takes much longer the first time)...</p>");
-
-    var query = searchTokenize(str);
-
     // if we're in mobile mode, hide the navigation bar whenever the
     // user navigates to a new page.
     $("#left").removeClass("active");
     closeAllPowertips();
 
-    // Now wait a bit to allow that to render, before starting the search.
-    setTimeout(searchGoMain, 10, query);
+    $("title").html(searchTitle(str));
+
+    ta_data_initialize();
+
+    // We have two different searching schemes: one for when running the webpage
+    // locally, and the other for the server-supported case. In the
+    // server-supported version, we do mostly server-side searching with sqlite
+    // FTS5.
+    if (!XDATAGET) {
+        searchGoLocal(str);
+    } else {
+        searchGoServer(str);
+    }
     return false;
 }
 
-function searchAddHit(matches, hits, key) {
-    if (key in matches) {
-	// already showed this result, don't show it again
-	return;
-    }
-    matches[key] = 1;
+function searchAddHit(hits, key, score = null) {
+    const scoreStr = score !== null
+          ? " <span class=\"search-score\">(" + score.toFixed(2) + ")</span>"
+          : ""
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
-		+ " onclick=\"return dolink(event, '" + key + "');\">"
-		+ xindexObj.topicName(key)
-		+ "</a>"
-//		+ " (" + xindexObj.topicUid(key) + ")" // nice for debugging
-		+ "</dt>");
-    var dd = jQuery("<dd></dd>");
+                + " onclick=\"return dolink(event, '" + key + "');\">"
+                + xindexObj.topicName(key)
+                + "</a>"
+                + scoreStr
+                + "</dt>");
+    let dd = jQuery("<dd></dd>");
     dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
 }
 
-function searchGoMain(query) {
-    makeShortTokens();
+async function fetchSearch(url) {
+    let results = new Map();
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+        });
+        const obj = await response.json();
 
-    $("#searching_message").hide();
-    if (query.length == 0) {
-	$("#data").append("<h3>No results (empty search)</h3>");
-	return;
+        const results_obj = "results" in obj && obj["results"];
+        if (results_obj && 0 < results_obj.length) {
+            for (let i = 0; i < results_obj.length; i++) {
+                const score = -results_obj[i].score;
+                results.set(results_obj[i].xkey, score);
+            }
+        } else {
+            console.error("Error: malformed response " + obj);
+        }
+        return results;
+    } catch(err) {
+        const val = "Error: AJAX query failed. " + err;
+        console.error(err);
+        return results;
     }
-
-    var query_str = query.join(" ");
-    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
-
-    // Matches will just bind keys we've already shown, so we don't repeatedly
-    // shown a topic just because it matches multiple criteria.
-    var matches = {};
-
-    // Hits will collect all the results
-    var hits = jQuery("<dl></dl>");
-    const keys = xindexObj.allKeys();
-
-    // We'll start with a stupid topic name search, in case there are any very
-    // exact hits.
-    for(const key of keys) {
-	var name = xindexObj.topicRawname(key);
-	var tokens = searchTokenize(name);
-	if (subarrayp(query,tokens))
-	    searchAddHit(matches, hits, key);
-    }
-
-    // Next, expand to a basic topic name substring search
-    for(const key of keys) {
-	var name = xindexObj.topicRawname(key);
-	if (name.toLowerCase().indexOf(query_str) != -1)
-	    searchAddHit(matches, hits, key);
-    }
-
-    // Next expand to a short-string search
-    for(const key of keys) {
-	var tokens = short_tokens[key];
-	var uid = xindexObj.topicUid(key);
-	if (subarrayp(query, tokens))
-	    searchAddHit(matches, hits, key);
-    }
-
-    var num_hits = Object.keys(matches).length;
-    if (num_hits != 0) {
-	$("#data").append("<h3><b>" + num_hits + "</b> Results</h3>");
-	$("#data").append(hits);
-    }
-    else {
-	$("#data").append("<h3>No results</h3>");
-    }
-
-    return;
 }
 
+async function serverSupportedSearch(query_str) {
+    const max_display = 100;
+    const max_results = 1000;
 
+    const url = XDATAGET + "?search=" + encodeURIComponent(query_str);
+    // In addition to the server-side searching, we also do some client-side
+    // searching on the topic names. We have more control over this client-side
+    // searching and so can check certain details (like whether the query is
+    // exactly a topic name or the prefix of a topic name) that sqlite FTS5
+    // doesn't provide.
+    // We take both results, and merge them together by calculating a composite
+    // score.
+    const [results, [client_results, _, query_tokenized]] = await Promise.all([
+        fetchSearch(url),
+        clientSideSearch(query_str, max_display, max_results, false)
+    ]);
 
+    // This is an ad-hoc calculation of result score which takes the rank
+    // provided by FTS5 (or 0, if the entry is not among the results) and
+    // adjusts it using values from the client-side search.
+    // The main goal is to ensure that topics whose names exactly match or
+    // are prefixed by the search query are ranked highly.
+    for (const [key, val] of client_results) {
+        // rank_weight ranges from 5 to 20.
+        const rank_weight = (2 - val.rank)*10;
+        // freq_weight ranges from 1 to 2.
+        const freq_weight = 1 + (val.freq / (val.freq + 1));
+        const weight = rank_weight * freq_weight;
+        if (results.has(key)) {
+            const old_score = results.get(key);
+            const new_score = (old_score + 1) * weight;
+            results.set(key, new_score);
+        } else {
+            results.set(key, weight);
+        }
+    }
+
+    const results_array = [...results]
+          .map(([key, score]) => ({
+              key: key,
+              score: score
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (let i = 0; i < results_array.length; i++) {
+        searchAddHit(hits, results_array[i].key, results_array[i].score);
+    }
+    $("#data").append(hits);
+}
+
+function searchGoServer(query_str) {
+    $("#searching_message").hide();
+    if (query_str.length === 0) {
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
+    }
+
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
+
+    serverSupportedSearch(query_str);
+}
+
+function clientSideSearch(query_str, soft_max, hard_max, search_shorts) {
+    const query_str_low = query_str.toLowerCase();
+    const query_tokenized = searchTokenize(query_str_low);
+
+    let results = new Map();
+
+    if (query_tokenized.length === 0) {
+        return [results, query_str_low, query_tokenized];
+    }
+
+    // Search Ranking System:
+    // Rank 0: Exact matches of topics
+    // Rank 0.5: Prefix matches of topis
+    // Rank 1: Substring matches in topics
+    // Rank 1.5: Individual word matches in topics (multi-word queries)
+    // Rank 2: Exact phrase matches in short descriptions
+    // Rank 2.5: Individual word matches in short descriptions (multi-word queries)
+    // Within each rank, results are sorted by ACL2 Sources priority, then frequency
+
+    // We borrow the ta_data structure from the "jump to" feature.
+
+    // Assumption: results.length < hard_max
+    // Assumption: !(key in matches)
+    function addResult(key, rank) {
+        const rawname = xindexObj.topicRawname(key).toLowerCase();
+        const title = xindexObj.topicName(key).toLowerCase();
+        let freq = countOccurrences(rawname, query_str_low) +
+            countOccurrences(title, query_str_low);
+        if (search_shorts) {
+            const short_plain = topicShortPlaintext(key).toLowerCase();
+            freq += countOccurrences(short_plain, query_str_low);
+        }
+        results.set(key, {rank: rank, freq: freq});
+        return results.size >= hard_max;
+    }
+
+    for (const key of ta_data) {
+        if (key.rawlow === query_str_low) {
+            if (addResult(key.value, 0)) break;
+        }
+    }
+    if (results.size < soft_max) {
+        // 0.5. Prefix matches of topics
+        for (const key of ta_data) {
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
+            if (key.rawlow.startsWith(query_str_low)) {
+                if (addResult(key.value, 0.5)) break;
+            }
+        }
+    }
+    if (results.size < soft_max) {
+        // 1. Substring matches in topics
+        for (const key of ta_data) {
+            // if (key.value in matches) continue;
+            if (results.has(key.value)) continue;
+            // Check for exact phrase first (higher priority)
+            if (key.rawlow.indexOf(query_str_low) !== -1) {
+                if (addResult(key.value, 1)) break;
+            }
+            // Fall back to individual word matching (lower priority)
+            else if (query_tokenized.length > 1 && allWordsMatch(key.rawlow, query_tokenized)) {
+                if (addResult(key.value, 1.5)) break;
+            }
+        }
+    }
+    if (search_shorts) {
+        if (results.size < soft_max) {
+            // 2. Short description matches
+            for (const key of ta_data) {
+                // if (key.value in matches) continue;
+                if (results.has(key.value)) continue;
+                // Perhaps it would be better to use topicShortPlaintext,
+                // but this is *very* slow.
+                const short_plain_low = xindexObj.topicShort(key.value).toLowerCase();
+                // Check for exact phrase first (higher priority)
+                if (short_plain_low.indexOf(query_str_low) !== -1) {
+                    if (addResult(key.value, 2)) break;
+                }
+                // Fall back to individual word matching (lower priority)
+                else if (query_tokenized.length > 1 && allWordsMatch(short_plain_low, query_tokenized)) {
+                    if (addResult(key.value, 2.5)) break;
+                }
+            }
+        }
+    }
+    return [results, query_str_low, query_tokenized];
+}
+
+function searchGoLocal(query_str) {
+    $("#data").append("<p><b style='color: red'>Note:</b> "
+                      + "Operating without a database; "
+                      + "no searching of <tt>:long</tt> sections.</p>");
+
+    $("#searching_message").hide();
+
+    const max_display = 100;
+    // 10,000 is too much, visible stutter
+    const max_results = 1000;
+
+    const [results, _, query_tokenized] =
+          clientSideSearch(query_str, max_display, max_results, true);
+
+    if (query_tokenized.length === 0) {
+        $("#data").append("<h3>No results (empty search)</h3>");
+        return;
+    }
+    $("#data").append("<h1><u>" + htmlEncode(query_str) + "</u></h1>");
+
+    let results_array = [...results]
+        .map(([key, val]) => ({
+            key: key,
+            rank: val.rank,
+            freq: val.freq
+        }));
+
+    if (results_array.length === 0) {
+        $("#data").append("<h3>No results</h3>");
+        return;
+    }
+
+    // Sort results by rank, then ACL2 Sources priority, then frequency, then alphabetical
+    results_array = results_array.sort(function(a, b) {
+        if (a.rank !== b.rank) return a.rank - b.rank;
+
+        const sysA = xdataObj.topicFrom(a.key) === 'ACL2 Sources';
+        const sysB = xdataObj.topicFrom(b.key) === 'ACL2 Sources';
+        if (sysA && !sysB) return -1;
+        if (!sysA && sysB) return 1;
+
+        // Then by frequency
+        if (a.freq !== b.freq) {
+            return b.freq - a.freq;
+        }
+
+        // Then by alphabetical order
+        const compareNice = xindexObj.topicName(a.key).localeCompare(xindexObj.topicName(b.key));
+        if (compareNice !== 0) {
+            return compareNice;
+        }
+        return a.key.localeCompare(b.key);
+    }).slice(0, max_display);
+
+    if (results_array.length === max_display) {
+        $("#data").append("<h3>Showing First <b>" + max_display + "</b> Results</h3>");
+    } else {
+        $("#data").append("<h3><b>" + results_array.length + "</b> Results</h3>");
+    }
+    let hits = jQuery("<dl></dl>");
+    for (const result of results_array) {
+        // We don't display the frequency, because not all results have a
+        // frequency. Furthermore, some results ranked higher will have
+        // lower frequenccy, which may be confusing to the user.
+        searchAddHit(hits, result.key);
+    }
+    $("#data").append(hits);
+}
 
 
 // --------------------------------------------------------------------------
@@ -1051,142 +1223,145 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 $(document).ready(function()
-{
-    // Load the xindex content.
-    const xindexLoad = loadJS("./xindex.js").then(() => {
-        xindexObj.loadFromXindex(xindex);
-        xindex_loaded = true;
+                  {
+                      // Load the xindex content.
+                      const xindexLoad = loadJS("./xindex.js").then(() => {
+                          xindexObj.loadFromXindex(xindex);
+                          xindex_loaded = true;
+                      });
+                      const xsltLoad = loadJS("./render.js").then(() => {
+                          const xsltDecoded = atob(xslt_base64);
+                          xdocRenderer.init(xsltDecoded);
+                      });
+                      // Ensure that both the index and the XSL template are loaded before
+                      // continuing.
+                      Promise.all([xindexLoad, xsltLoad]).then(_ => {
+                          onIndexLoaded();
+                      });
+                      maybePowertip(".toolbutton", {placement: 'se'});
+                      maybePowertip(".rtoolbutton", {placement: 'sw'});
+                  });
+
+let ta_data = [];
+let ta_data_initialized = false;
+
+function ta_data_initialize() {
+    if (ta_data_initialized) {
+        return;
+    }
+    const keys = xindexObj.allKeys();
+    for (const key of keys) {
+        ta_data.push({
+            value: key,
+            nicename: xindexObj.topicName(key),
+            rawname: xindexObj.topicRawname(key),
+            nicelow: xindexObj.topicName(key).toLowerCase(),
+            rawlow: xindexObj.topicRawname(key).toLowerCase(),
+            uid: xindexObj.topicUid(key)
+        });
+    }
+
+    // Sort topics. Topics from the ACL2 sources come first. After
+    // that, alphabetize (by topic name, then by value).
+    ta_data.sort(function(a, b) {
+        // Prioritize ACL2 sources
+        const sysA = xdataObj.topicFrom(a.value) === 'ACL2 Sources';
+        const sysB = xdataObj.topicFrom(b.value) === 'ACL2 Sources';
+        if (sysA && !sysB) {
+            return -1;
+        }
+        if (!sysA && sysB) {
+            return 1;
+        }
+        const compareNice = a.nicename.localeCompare(b.nicename);
+        if (compareNice !== 0) {
+            return compareNice;
+        }
+        return a.value.localeCompare(b.value);
     });
-    const xsltLoad = loadJS("./render.js").then(() => {
-        const xsltDecoded = atob(xslt_base64);
-        xdocRenderer.init(xsltDecoded);
-    });
-    // Ensure that both the index and the XSL template are loaded before
-    // continuing.
-    Promise.all([xindexLoad, xsltLoad]).then(_ => {
-        onIndexLoaded();
-    });
-    maybePowertip(".toolbutton", {placement: 'se'});
-    maybePowertip(".rtoolbutton", {placement: 'sw'});
-});
+    ta_data_initialized = true;
+}
 
 function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
     ret += "<p>";
-//    ret += xindexObj.topicUid(key) + " &mdash; "; // nice for debugging
+    //    ret += xindexObj.topicUid(key) + " &mdash; "; // nice for debugging
     ret += "<b class=\"sf\">" + xindexObj.topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
-	ret += " &mdash; " + shortmsg;
+        ret += " &mdash; " + shortmsg;
     }
     ret += "<br/><tt>" + key + "</tt></p>";
     return ret;
 }
 
 function jumpInit() {
+    // Take the first "count" number of elements from the "flattened"
+    // (concatenated) arrays (but don't actually concatenate them all,
+    // since they may be much larger than the count).
+    function takeFlatten(count, arrays) {
+        const result = [];
+        let taken = 0;
 
-    var ta_data = [];
-    var keys = xindexObj.allKeys();
-    for(const key of keys) {
-        var tokens = [];
-        tokens.push(xindexObj.topicRawname(key));
-        var entry = {"value": key,
-		     "nicename": xindexObj.topicName(key),
-                     "tokens": tokens,
-		     // We precompute these for faster sorting:
-		     "nicelow": xindexObj.topicName(key).toLowerCase(),
-		     "uid": xindexObj.topicUid(key),
-		     };
-        ta_data.push(entry);
+        for (const array of arrays) {
+            for (const item of array) {
+                if (count <= taken) break;
+                result.push(item);
+                taken++;
+            }
+            if (count <= taken) break;
+        }
+
+        return result;
     }
 
-    var engine1 = new Bloodhound({
-	name: 'topics',
-	local: ta_data,
-	limit: 20,
-	datumTokenizer: function(data) {
-	    return data.tokens;
-	},
-	queryTokenizer: Bloodhound.tokenizers.whitespace
-    });
+    // Custom substring matcher for infix matching
+    // Ranking system:
+    // - Rank 0: Exact matches (topic name matches query)
+    // - Rank 1: Prefix matches (topic name starts with query)
+    // - Rank 2: Substring matches (topic name contains query)
+    // Within each rank, topics are sorted by:
+    // 1. ACL2 system documentation topics first
+    // 2. Alphabetical order (by topic name then by value)
+    function substringMatcher(data) {
+        return function findMatches(q, cb) {
+            var ranks = [[], [], []];
+            const qlc = q.toLowerCase();
+            for (var i = 0; i < data.length; i++) {
+                const name = data[i].nicename.toLowerCase();
+                const index = name.indexOf(qlc);
+                if (index === 0) { // prefix match
+                    if (name === qlc) { // exact match
+                        ranks[0].push(data[i]);
+                    }
+                    else { // proper prefix match
+                        ranks[1].push(data[i]);
+                    }
+                } else if (index !== -1) { // substring match
+                    ranks[2].push(data[i]);
+                }
+            }
+            // Limit to 20 suggestions
+            cb(takeFlatten(20, ranks));
+        };
+    }
 
-    // Bloodhound natively lets you supply a sort function that just
-    // compares two elements.  However, that turned out to be too
-    // slow.  By using our own sorting function we can
-    //
-    //  (1) avoid having to look at the current typeahead value on
-    //      every single comparison, which was very slow when doing lots of
-    //      comparisons.
-    //
-    //  (2) pre-filter the array to make this mostly linear.
-    engine1.sorter = function(matches)
-    {
-	//console.log("My sorter called on " + matches.length + " elements.");
-	var curr = $("#jump").typeahead('val').toLowerCase();
-
-	var compare = function(a,b)
-	{
-	    // Special cases to ensure any literal matches come first, no
-	    // matter how unimportant they are. :)
-	    if (a.nicelow == curr) return -1;
-	    if (b.nicelow == curr) return 1;
-
-	    // Otherwise, put them in importance order.
-	    return a.uid - b.uid;
-	};
-
-	if (matches.length < 100) {
-	    // We can just sort it and that'll be plenty fast.
-	    return matches.sort(compare);
-	}
-
-	// Lots of elements -- do something fancier for more speed.  Since we
-	// are only going to show 20 results, it is definitely safe to throw
-	// away any entries whose UID is larger than some CUTOFF, as long as
-	// CUTOFF is bigger than at least 20 UIDs.  So, gather a reasonable
-	// subset of UIDs, sort them, and pick the 20th one.  Then throw away
-	// everything past it in a linear sweep.
-	var first_uids = [];
-	for(var i = 0; i < 100; ++i) {
-	    first_uids.push(matches[i].uid);
-	}
-	//console.log("Gathered up UIDs: ", first_uids);
-	first_uids = first_uids.sort(function(a,b){ return a-b; });
-	//console.log("Sorted UIDs:", first_uids);
-	var cutoff = first_uids[19];
-
-	var consider = [];
-	for(var i = 0;i < matches.length; ++i) {
-	    var entry = matches[i];
-	    if (entry.nicelow == curr || entry.uid < cutoff) {
-		consider.push(entry);
-	    }
-	}
-	//console.log("Down to " + consider.length + " entries to consider:", consider);
-
-	// Then we just sort whatever survived using our ordinary comparison
-	// function, which now doesn't need to consider the vast majority of
-	// the array.
-	return consider.sort(compare);
-    };
-
-    engine1.initialize();
-
-    $("#jump").typeahead({
-			     highlight: true,
-			     hint: true,
-			     autoselect: true
-			 },
-			 {
-			     name: "topics",
-			     displayKey: 'nicename',
-			     source: engine1.ttAdapter(),
-			     templates:
-			     {
-				 suggestion: jumpRender
-			     }
-			 });
+    $("#jump").typeahead(
+        {
+            highlight: true,
+            hint: true,
+            autoselect: true
+        },
+        {
+            name: "topics",
+            displayKey: 'nicename',
+            source: substringMatcher(ta_data),
+            templates: {
+                suggestion: jumpRender
+            }
+        }
+    );
 
     $("#jump").bind('typeahead:selected', jumpGo);
     $("#jump").bind('typeahead:autocompleted', jumpGo);
@@ -1196,39 +1371,40 @@ function jumpInit() {
 
 
     $("#jumpform").submit(function(event)
-    {
-	// Magic code that took me way too much hacking to get working.
-	//console.log("In form submitter.");
+                          {
+                              // Magic code that took me way too much hacking to get working.
+                              //console.log("In form submitter.");
 
-	// Don't actually try to "submit" the form.
-	event.preventDefault();
+                              // Don't actually try to "submit" the form.
+                              event.preventDefault();
 
-	// Act like the tab key was pressed, to trigger autocomplete.
-	// In the case where the user hasn't entered the entire input,
-	// this will trigger the jumpGo call all by itself.
+                              // Act like the tab key was pressed, to trigger autocomplete.
+                              // In the case where the user hasn't entered the entire input,
+                              // this will trigger the jumpGo call all by itself.
 
-	var e = jQuery.Event("keydown");
-	e.keyCode = e.which = 9; // 9 == tab
-	$("#jump").trigger(e);
+                              var e = jQuery.Event("keydown");
+                              e.keyCode = e.which = 9; // 9 == tab
+                              $("#jump").trigger(e);
 
-	// We seem to never get here EXCEPT in the case where the user
-	// has typed in the entire text for one of the entries.  In
-	// that case, for whatever reason, the autocomplete feature
-	// doesn't actually trigger the submit.  So, if we get here,
-	// figure out what we're looking at and submit it manually.
+                              // We seem to never get here EXCEPT in the case where the user
+                              // has typed in the entire text for one of the entries.  In
+                              // that case, for whatever reason, the autocomplete feature
+                              // doesn't actually trigger the submit.  So, if we get here,
+                              // figure out what we're looking at and submit it manually.
 
-	var value = $("#jump").typeahead('val');
-	// console.log("After tab, value is " + value);
-	jumpGo(null, {value:value});
-    });
+                              var value = $("#jump").typeahead('val');
+                              // console.log("After tab, value is " + value);
+                              jumpGo(null, {value:value});
+                          });
 }
+
 
 function jumpGo(obj,datum) {
     var key = datum["value"];
     if (xindexObj.topicExists(key)) {
         actionGoKey(key);
-	$("#jump").typeahead('val', "");
-	// $("#jump").typeahead('setQuery', '');
+        $("#jump").typeahead('val', "");
+        // $("#jump").typeahead('setQuery', '');
     }
     else {
         alert("Invalid key " + key);
@@ -1302,7 +1478,7 @@ function onIndexLoaded()
 
     var acc = "";
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for(var i in chars) {
+    for (var i in chars) {
         var c = chars.charAt(i);
         acc += "<a href=\"javascript:navFlatToChar('" + c + "')\">" + c + "</a>";
         if (c == "M")
@@ -1327,56 +1503,56 @@ function onDataLoaded()
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
     if (xindexObj.topicExists(BROKEN_KEY)) {
-	xdataLoadKeys([BROKEN_KEY]).then(() => {});
+        xdataLoadKeys([BROKEN_KEY]).then(() => {});
     }
 
     if ("search" in params) {
-	var str = params["search"];
-	var str_url = encodeURIComponent(str);
-	var str_html = htmlEncode(str);
-	//console.log("onDataLoaded: search for " + str + " --> 0");
-	window.history.replaceState({search:str,rtop:0},
-				    str_html, "?search=" + str_url);
-	searchGo(str);
+        var str = params["search"];
+        var str_url = encodeURIComponent(str);
+        var str_html = htmlEncode(str);
+        //console.log("onDataLoaded: search for " + str + " --> 0");
+        window.history.replaceState({search:str,rtop:0},
+                                    str_html, "?search=" + str_url);
+        searchGo(str);
     }
 
     else {
-	var key = params["topic"] || TOP_KEY;
-	if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
-	    $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
-	    return;
-	}
-	//console.log("onDataLoaded: key " + key + " --> 0");
-	window.history.replaceState({key:key,rtop:0},
-				    keyTitle(key), "?topic=" + key);
-	datLoadKey(key, 0);
+        var key = params["topic"] || TOP_KEY;
+        if (!key.match(/^[A-Za-z0-9._\-]*$/)) {
+            $("#right").html("Illegal topic name, rejecting to prevent XSS attacks.");
+            return;
+        }
+        //console.log("onDataLoaded: key " + key + " --> 0");
+        window.history.replaceState({key:key,rtop:0},
+                                    keyTitle(key), "?topic=" + key);
+        datLoadKey(key, 0);
+        setTimeout(ta_data_initialize, 20);
     }
 
     window.addEventListener('popstate',
                             function(event) {
-				event.preventDefault();
+                                event.preventDefault();
                                 actionGoBack(event.state);
                             });
 }
 
 function getPageParameters ()
 {
-   var ret = {};
-   if (!window.location.toString().match(/\?(.+)$/)) {
-       return ret;
-   }
-   var param_strs = RegExp.$1.split("&");
-   var param_arr = {};
-   for(var i in param_strs)
-   {
-      var tmp = param_strs[i].split("=");
-      var key = decodeURI(tmp[0]);
-      var val = decodeURI(tmp[1]);
-      param_arr[key] = val;
-   }
-   return param_arr;
+    var ret = {};
+    if (!window.location.toString().match(/\?(.+)$/)) {
+        return ret;
+    }
+    var param_strs = RegExp.$1.split("&");
+    var param_arr = {};
+    for (var i in param_strs)
+    {
+        var tmp = param_strs[i].split("=");
+        var key = decodeURI(tmp[0]);
+        var val = decodeURI(tmp[1]);
+        param_arr[key] = val;
+    }
+    return param_arr;
 }
-
 
 function srclink(key)
 {
@@ -1404,14 +1580,13 @@ function srclink(key)
         "; manual.\n\n";
 
     window.open('data:application/x-acl2-xdoc-link;charset=utf-8,' +
-    encodeURIComponent(srclink_header + rawname));
+                encodeURIComponent(srclink_header + rawname));
 }
 
 function actionGoKey(key) {
 
     // Warning: if you change this, check for all uses of replaceState,
     // pushState, and popState, and update them to match.
-
     if (!xdata_loaded) {
         pleaseWait();
         return;
@@ -1420,7 +1595,7 @@ function actionGoKey(key) {
     // console.log("actionGoKey, going to new key " + key + " --> 0");
     historySavePlace();
     window.history.pushState({key:key,rtop:0}, keyTitle(key),
-			     "?topic=" + key);
+                             "?topic=" + key);
     datLoadKey(key, 0);
 
     // if we're in mobile mode, hide the navigation bar whenever the
@@ -1433,10 +1608,10 @@ function historySavePlace() {
     var curr_state = history.state;
     var rtop = $("#right").scrollTop();
     if (curr_state) {
-	// Safari doesn't seem to implement history.state
-	//console.log("saving place: " + curr_state.key + " --> " + rtop);
-	curr_state["rtop"] = rtop;
-	window.history.replaceState(curr_state, "");
+        // Safari doesn't seem to implement history.state
+        //console.log("saving place: " + curr_state.key + " --> " + rtop);
+        curr_state["rtop"] = rtop;
+        window.history.replaceState(curr_state, "");
     }
 }
 
@@ -1448,10 +1623,10 @@ function actionGoBack(data) {
     //console.log("Going back with data = " + data);
 
     if (!data) {
-	// Browsers may do this when the page is initially loaded,
-	// so ignore this event.
-	// console.log("Empty data, so returning early.");
-	return;
+        // Browsers may do this when the page is initially loaded,
+        // so ignore this event.
+        // console.log("Empty data, so returning early.");
+        return;
     }
 
     //console.log("actionGoBack data: search = " + data.search
@@ -1464,50 +1639,47 @@ function actionGoBack(data) {
     // no forward-button re-scrolling for you.
 
     if ("search" in data) {
-	var str = data["search"];
-	searchGo(str);
+        var str = data["search"];
+        searchGo(str);
     }
 
     else if ("key" in data) {
-	var key = data.key;
-	var rtop = ("rtop" in data) ? data["rtop"] : 0;
-	if (key) {
-	    datLoadKey(key, rtop);
-	}
+        var key = data.key;
+        var rtop = ("rtop" in data) ? data["rtop"] : 0;
+        if (key) {
+            datLoadKey(key, rtop);
+        }
     }
 }
-
-
 
 function printerFriendly()
 {
     const dataElement = document.getElementById("data");
     const w = window.open("", "Printer",
-    "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
+                          "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
 
     const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <title>Printer Friendly</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" type="text/css" href="print.css"/>
-    <link rel="shortcut icon" href="favicon.png"/>
-    </head>
-    <body>
-    ${dataElement.innerHTML}
-    </body>
-    </html>`;
+  <!DOCTYPE html>
+  <html>
+  <head>
+  <title>Printer Friendly</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="print.css"/>
+  <link rel="shortcut icon" href="favicon.png"/>
+  </head>
+  <body>
+  ${dataElement.innerHTML}
+  </body>
+  </html>`;
 
     w.document.write(html);
 }
 
 function dolink(event, topic) {
     if (event.button == 1) {
-	return true;
+        return true;
     }
     actionGoKey(topic);
     return false;

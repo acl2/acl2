@@ -19,26 +19,24 @@ public:
   // Add anew type/constant/function to the program. Those should only be
   // called in the parser. Return false if the registration failed (they is
   // already something with the same name).
-  bool registerType(DefinedType *t);
-  void registerConstDec(ConstDec *d);
+  bool registerType(const DefinedType *t);
+  void registerGlobal(VarDec *d);
   void registerTemplate(Template *t);
   void registerFunDef(FunDef *t);
 
   // Get an type/dec/function called `name`. Return nullptr if nothing was
   // registered with this name.
-  DefinedType *getType(const std::string &name);
-  ConstDec *getConstDec(const std::string &name);
+  const DefinedType *getType(const std::string &name);
+  VarDec *getGlobal(const std::string &name);
   Template *getTemplate(const std::string &name);
   FunDef *getFunDef(const std::string &name);
-  Builtin *getBuiltin(const std::string &name);
 
   bool isEmpty() const;
 
 protected:
-  std::vector<DefinedType *> typeDefs_;
-  std::vector<ConstDec *> constDecs_;
+  std::vector<const DefinedType *> typeDefs_;
+  std::vector<VarDec *> globals_;
   std::vector<FunDef *> funDefs_;
-  std::vector<Builtin *> builtins_;
 
   DiagnosticHandler diag_;
 };

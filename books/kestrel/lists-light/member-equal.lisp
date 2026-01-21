@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function member-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,6 +69,7 @@
            (member-equal a x)  ))
   :hints (("Goal" :in-theory (enable member-equal))))
 
+;; Defeats ACL2's overly aggressive matching on things like (member-equal a '(1 2 3)).
 (defthm member-equal-of-cons-non-constant
   (implies (syntaxp (not (and (quotep b)
                               (quotep x))))
@@ -76,6 +77,11 @@
                   (if (equal a b)
                       (cons b x)
                     (member-equal a x)  )))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-cons-same
+  (equal (member-equal a (cons a x))
+         (cons a x))
   :hints (("Goal" :in-theory (enable member-equal))))
 
 ;; Enabled since we want this when b and x are constants.

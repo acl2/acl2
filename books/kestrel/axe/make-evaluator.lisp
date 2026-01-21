@@ -1,7 +1,7 @@
 ; A tool for making (non-simple) evaluators
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -39,6 +39,8 @@
 (include-book "kestrel/bv/bvif" :dir :system) ;built in to the evaluator
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "make-evaluator-common")
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
+(include-book "kestrel/typed-lists-light/append-all" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
@@ -165,7 +167,7 @@
 
 ;extends the worklist with any args not done
 ;returns (mv nodenum-worklist worklist-extendedp)
-(defun get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
+(defund get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
   (declare (xargs :guard (and (darg-listp args)
                               (implies (not (all-consp args))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep args))))
@@ -189,7 +191,8 @@
 (defthm all-natp-of-mv-nth-0-of-get-args-not-done-array
   (implies (and (darg-listp args)
                 (all-natp worklist))
-           (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp)))))
+           (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp))))
+  :hints (("Goal" :in-theory (enable get-args-not-done-array))))
 
 ;assumes all dargs are done (and thus wrapped in a cons)
 (defun get-vals-of-args-array (dargs eval-array-name eval-array)
@@ -317,6 +320,40 @@
              (integerp (maxelem vals)))
     :hints (("Goal" :in-theory (enable nat-listp)))))
 
+(defmacro eval-in-logic (x) `(with-guard-checking nil (ec-call ,x)))
+
+(local
+  (defthm alistp-of-append-all
+    (implies (alist-listp x)
+             (alistp (append-all x)))
+    :hints (("Goal" :in-theory (enable append-all alistp)))))
+
+;move
+(local
+  (defthm symbol-alist-listp-forward-to-alist-listp
+    (implies (symbol-alist-listp a)
+             (alist-listp a))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable symbol-alist-listp alist-listp)))))
+
+(local
+  (defthm alist-listp-of-strip-cdrs
+    (implies (arity-fn-call-alist-alistp a)
+             (alist-listp (strip-cdrs a)))
+    :hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))
+    ))
+
+(local
+  (defthm symbol-alist-listp-forward-to-true-list-listp
+    (implies (symbol-alist-listp a)
+             (true-list-listp a))
+    :rule-classes :forward-chaining))
+
+(local
+  (defthm symbol-alistp-of-append-all
+    (implies (symbol-alist-listp a)
+             (symbol-alistp (append-all a)))
+    :hints (("Goal" :in-theory (enable append-all)))))
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
 ;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
@@ -324,9 +361,16 @@
 ;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
 ;ffixme since this no longer takes state we could use a macro instead of make-event
 (defun make-evaluator-fn (base-name arity-fn-call-alist-alist ;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them
-                          )
+                                    wrld)
   (declare (xargs :guard (and (symbolp base-name)
-                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist))))
+                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist)
+                              (plist-worldp wrld)
+                              (function-symbolsp (strip-cars (append-all (strip-cdrs arity-fn-call-alist-alist))) wrld)
+                              )
+                  :guard-hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))
+                  )
+           (ignore wrld) ; only used in guard
+           )
   (let* ((apply-function-name (pack$ 'apply- base-name))
          (apply-function-to-quoted-args-name (pack$ 'apply- base-name '-to-quoted-args))
          (eval-function-name (pack$ 'eval- base-name))
@@ -335,9 +379,9 @@
          (eval-dag-name (pack$ 'eval-dag-with- base-name))
 
          ;;we include the apply function itself as an evaluatable function! what about the eval functions?
-         (arity-fn-call-alist-alist (add-call-to-calls apply-function-name 4 `(,apply-function-name arg1 arg2 arg3 array-depth) arity-fn-call-alist-alist))
-         (arity-fn-call-alist-alist (add-call-to-calls dag-val-name 4 `(,dag-val-name arg1 arg2 arg3 (+ 1 array-depth)) arity-fn-call-alist-alist))
-         (arity-fn-call-alist-alist (add-call-to-calls eval-dag-name 8 `(,eval-dag-name arg1 arg2 arg3 arg4 arg5 arg6 arg7 array-depth) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls apply-function-name 4 `(eval-in-logic (,apply-function-name arg1 arg2 arg3 array-depth)) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls dag-val-name 4 `(eval-in-logic (,dag-val-name arg1 arg2 arg3 (+ 1 array-depth))) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls eval-dag-name 8 `(eval-in-logic (,eval-dag-name arg1 arg2 arg3 arg4 arg5 arg6 arg7 array-depth)) arity-fn-call-alist-alist))
 
          ;;(arity-call-record (pair-arities-with-calls-new calls nil)) ;this digs definitions out of the state
 
@@ -444,7 +488,7 @@
          ;; returns the (unquoted) value of the top-node of the dag
          (defund ,dag-val-name (dag alist interpreted-function-alist array-depth)
            (declare (xargs :measure 0 ;ffixme
-                           :guard (and (or (quotep dag)
+                           :guard (and (or (myquotep dag)
                                            (and (pseudo-dagp dag)
                                                 ;; todo: why not <= ?
                                                 (< (len dag) *max-1d-array-length*)) ;can't guarantee this, so perhaps we should check it (same for all args?)
@@ -476,11 +520,14 @@
          ;;tail recursive - redoes some analysis of nodes with unprocessed children, but maybe worth it since it's tail-recursive?
          ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
          ;; the cdrs of var-value-alist are never quoted?
-         ;; all the variables in dag-lst must have bindings in alist - do we check this?
+         ;; all the variables in the dag must have bindings in alist - do we check this?
          ;; if an entry in eval-array is nil, that spot is not yet computed.  if it's (cons val nil), the value is val
-         (defund ,eval-dag-name (nodenum-worklist dag-array-name dag-array var-value-alist eval-array-name
-                                                 eval-array ;computed values are wrapped in cons
-                                                 interpreted-function-alist array-depth)
+         (defund ,eval-dag-name (nodenum-worklist ; would be nice if this was increasing - merge sort the children?
+                                 dag-array-name dag-array
+                                 var-value-alist
+                                 eval-array-name eval-array ;computed values are wrapped in cons
+                                 interpreted-function-alist
+                                 array-depth)
            (declare (xargs :guard (and (nat-listp nodenum-worklist)
                                        (if (consp nodenum-worklist)
                                            (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenum-worklist)))
@@ -512,9 +559,11 @@
                                          interpreted-function-alist array-depth))
                      ;;function call or if
                      (let ((dargs (dargs expr)))
-                       (if (or (eq 'if fn) ;maybe also bif? ;ffixme boolif!  but add a boolfix..
-                               (eq 'myif fn)
-                               (eq 'bvif fn))
+                       (if (or (and (or (eq 'if fn) ;maybe also bif? ;ttodo: boolif! but add a boolfix..
+                                        (eq 'myif fn))
+                                    (= 3 (len dargs)))
+                               (and (eq 'bvif fn)
+                                    (= 4 (len dargs))))
                            ;;if it's an ITE, only evaluate the branch we need
                            (let* ((test (if (eq 'bvif fn)
                                             (second dargs)
@@ -588,7 +637,6 @@
                                                (aset1 eval-array-name eval-array nodenum (cons value nil))
                                                interpreted-function-alist array-depth)))))))))))))
 
-
         ;; The ARGS passed in to this version must all be quoted.
         ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
         ;; returns the (unquoted) value.
@@ -634,7 +682,8 @@
                           arity-fn-call-alist-alist)
   `(make-event
     (make-evaluator-fn ',base-name
-                       ,arity-fn-call-alist-alist)))
+                       ,arity-fn-call-alist-alist
+                       (w state))))
 
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
@@ -665,7 +714,7 @@
          (declare (xargs :measure 1)) ;;bogus measure
          (let ((match (assoc-eq fn interpreted-function-alist)))
            (if (not match)
-               (mv (hard-error ',apply-with-tracing-function-name "Attempt to trace function ~x0 without passing in its definition. (Pass it as an interpreted function, or add to the list of built-ins -- or add it to the list of functions not to trace)." (acons #\0 fn nil))
+               (mv (er hard? ',apply-with-tracing-function-name "Attempt to trace function ~x0 without passing in its definition. (Pass it as an interpreted function, or add to the list of built-ins -- or add it to the list of functions not to trace)." fn)
                    nil)
              (let* ((fn-info (cdr match))
                     (formals (first fn-info))

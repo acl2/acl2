@@ -15,6 +15,7 @@
 ;; This book is intended to bring in all the rules that are in rule-lists.lisp.
 ;; See also rules-in-rule-lists-jvm.lisp.
 
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/arithmetic-light/mod2" :dir :system)
 (include-book "basic-rules")
 (include-book "if-rules")
@@ -23,8 +24,11 @@
 (include-book "bv-rules-axe0")
 (include-book "bv-array-rules") ; for stuff like bv-array-clear-of-bv-array-write-both
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
+(include-book "convert-to-bv-rules-axe")
+(include-book "trim-intro-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe")
+(include-book "arithmetic-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
 (include-book "kestrel/bv-lists/map-packbv-and-map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
@@ -52,6 +56,9 @@
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
+(include-book "kestrel/bv/std" :dir :system)
+(include-book "kestrel/bv/trim-elim-rules-bv" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)
@@ -68,6 +75,7 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION
 (include-book "kestrel/lists-light/rules2" :dir :system) ;for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
+(include-book "kestrel/lists-light/group" :dir :system)
 (include-book "kestrel/lists-light/ungroup" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1

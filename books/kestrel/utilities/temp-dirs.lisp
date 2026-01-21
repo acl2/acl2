@@ -1,7 +1,7 @@
 ; Utilities for dealing with temporary directories
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -131,6 +131,8 @@
          (w state))
   :hints (("Goal" :in-theory (enable maybe-make-temp-dir))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Disallow anything that could confuse the rm -rf command (whitespace, dots, etc.)
 ;; TODO: Consider calling canonical-pathname first.
 (defun temp-dir-chars-okp (chars)
@@ -181,5 +183,24 @@
            (sys-call* "rm" `("-rf" ,temp-dir-name) state)
            (declare (ignore erp val)) ;todo: check erp?
            (let ((state (makunbound-global 'temp-dir-exists state)))
-             (prog2$ (cw ")~%")
-                     state))))))))
+             (progn$
+               ;; (cw ")~%")
+               state))))))))
+
+;; Remove the temp dir, if present and if instructed to.  If keep-temp-dir is
+;; :auto, remove it unless erp is non-nil (the contents of the temp-dir may
+;; help diagnose the error).
+(defun maybe-remove-temp-dir2 (keep-temp-dir erp interruptp state)
+  (declare (xargs :guard (and (member-eq keep-temp-dir '(t nil :auto))
+                              (booleanp interruptp))
+                  :stobjs state))
+  (let* ((removep (if (booleanp keep-temp-dir)
+                      (not keep-temp-dir)
+                    ;; must be :auto (remove the temp-dir if no error, but always remove it if interrupted):
+                    (if interruptp
+                        t ; don't leave temp dirs around when interrupting (we often interrupt builds)
+                      (if erp nil t))))
+         (state (if removep
+                    (maybe-remove-temp-dir state)
+                  state)))
+    state))

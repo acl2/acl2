@@ -20,6 +20,7 @@
 (include-book "slice-rules")
 (local (include-book "logapp"))
 (local (include-book "logext"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

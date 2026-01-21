@@ -28,8 +28,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-; cert_param: (non-acl2r)
-
 (in-package "GL")
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

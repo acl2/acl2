@@ -14,10 +14,7 @@
 (include-book "values")
 (include-book "flexible-array-member-removal")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,7 +37,6 @@
      given that the members have distinct names (see @(tsee value)),
      the search order is immaterial."))
   (value-struct-read-aux name (value-struct->members struct))
-  :hooks (:fix)
 
   :prepwork
   ((define value-struct-read-aux ((name identp) (members member-value-listp))
@@ -99,7 +95,7 @@
         (value-struct-write-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
     (change-value-struct struct :members new-members))
-  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   :prepwork
   ((define value-struct-write-aux ((name identp)
@@ -144,7 +140,8 @@
                               (type-of-value old)))
                   (member-value-listp memvals1)))
        :induct t
-       :enable value-struct-read-aux)
+       :enable (value-struct-read-aux
+                (:e tau-system)))
 
      (defruled member-value-list->name-list-of-struct-write-aux
        (b* ((old (value-struct-read-aux name memvals))
@@ -155,7 +152,8 @@
                   (equal (member-value-list->name-list memvals1)
                          (member-value-list->name-list memvals))))
        :induct t
-       :enable value-struct-read-aux)
+       :enable (value-struct-read-aux
+                (:e tau-system)))
 
      (defruled value-struct-read-aux-of-value-struct-write-aux
        (b* ((old (value-struct-read-aux name memvals))
@@ -168,7 +166,8 @@
                              (remove-flexible-array-member new)
                            (value-struct-read-aux name1 memvals)))))
        :induct t
-       :enable value-struct-read-aux)
+       :enable (value-struct-read-aux
+                (:e tau-system)))
 
      (defruled value-struct-write-aux-when-member-type-lookup
        (implies (equal memtypes (member-types-of-member-values memvals))
@@ -197,7 +196,16 @@
           :enable (value-struct-write-aux
                    member-type-lookup
                    member-types-of-member-values
-                   member-type-of-member-value))))))
+                   member-type-of-member-value
+                   (:e tau-system)))))
+
+     (defruled not-errorp-of-value-struct-read-aux-when-not-write-error
+       (implies (not (errorp (value-struct-write-aux name val members)))
+                (not (errorp (value-struct-read-aux name members))))
+       :induct t
+       :enable (value-struct-read-aux
+                (:e tau-system)))))
+
 
   ///
 
@@ -214,7 +222,8 @@
                            (type-of-value old)))
                (valuep struct1)))
     :enable (value-struct-read
-             member-value-listp-of-value-struct-write-aux))
+             member-value-listp-of-value-struct-write-aux
+             (:e tau-system)))
 
   (defruled value-struct-read-of-value-struct-write
     (b* ((old (value-struct-read name struct))
@@ -227,4 +236,12 @@
                           (remove-flexible-array-member new)
                         (value-struct-read name1 struct)))))
     :enable (value-struct-read
-             value-struct-read-aux-of-value-struct-write-aux)))
+             value-struct-read-aux-of-value-struct-write-aux
+             (:e tau-system)))
+
+  (defruled not-errorp-of-value-struct-read-when-not-write-error
+    (implies (not (errorp (value-struct-write name val struct)))
+             (not (errorp (value-struct-read name struct))))
+    :enable (value-struct-write
+             value-struct-read
+             not-errorp-of-value-struct-read-aux-when-not-write-error)))

@@ -1,0 +1,4 @@
+# This file includes test strings with intentional carriage return characters
+# that shouldn't be normalized. Therefore, we remove the "text" attribute from
+# the file to prevent Git from modifying these characters.
+parser.lisp -text

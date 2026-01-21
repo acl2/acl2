@@ -56,8 +56,8 @@
 
 (defmacro ifndef (varname &rest forms)
   `(make-event (ifdef-fn ,varname ',forms t state)))
-  
-               
+
+
 (defmacro ifdef-define (x)
   `(value-triple (setenv$ ,x "1")))
 
@@ -94,5 +94,3 @@
 (defmacro process-ifdefs (form)
   `(make-event
     (process-ifdefs-fn ',form state)))
-          
-       

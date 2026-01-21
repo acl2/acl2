@@ -49,6 +49,7 @@
          (equal '(1) (acl2::access acl2::clause-id id :pool-lst))
          (let* ((fns (acl2::recursivep fnname t world))
                 (flags (strip-cdrs (acl2::flag-alist fnname world)))
+                (flag-var (flag::flag-var-name fnname world))
                 (expand-hints (just-expand-cp-parse-hints
                                (just-expand-mrec-expanders fns world)
                                world)))
@@ -63,7 +64,7 @@
              :do-not-induct t
              :clause-processor (cmr::resolve-flags-cp
                                 clause
-                                ',(cons 'vl::flag flags))))))
+                                ',(cons flag-var flags))))))
 
 (std::set-returnspec-default-hints
  ((acl2::just-induct/expand-default-hint 'std::fnname id nil world)))

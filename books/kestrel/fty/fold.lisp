@@ -165,8 +165,8 @@
       with possibly some variations,
       e.g. turning a list of integers into a list of doubled integers."))
    (xdoc::p
-    "The @(tsee deffold-reduce) event macro generates reducing folds.
-     We plan to add an event macro to generate mapping folds as well.")))
+    "The @(tsee deffold-reduce) event macro generates reducing folds and
+     the @(tsee deffold-map) event macro generates mapping folds.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

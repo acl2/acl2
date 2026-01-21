@@ -164,7 +164,9 @@
                    value-unsigned-integerp
                    value-signed-integerp)
                   :disable
-                  ((:e tau-system))))
+                  ((:e tau-system)
+                   (:e integer-type-max)
+                   (:e integer-type-min))))
          (event `(defruled ,name
                    ,formula
                    ,@hints)))

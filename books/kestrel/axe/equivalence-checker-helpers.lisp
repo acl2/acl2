@@ -1,7 +1,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/booleans/bool-fix" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "axe-types")
 

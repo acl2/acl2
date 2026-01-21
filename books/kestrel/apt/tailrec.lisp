@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,7 +31,7 @@
 (include-book "std/system/term-guard-obligation" :dir :system)
 (include-book "std/system/uguard" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
@@ -1270,8 +1270,8 @@
                         ,nonrec-branch
                       ,rec-branch)))
           (untranslate body nil wrld)))
-       (wfrel (well-founded-relation old$ wrld))
-       (measure (untranslate (measure old$ wrld) nil wrld))
+       (wfrel (get-well-founded-relation old$ wrld))
+       (measure (untranslate (get-measure old$ wrld) nil wrld))
        (termination-hints
         `(("Goal" :use (:termination-theorem ,old$) :in-theory nil)))
        (guard (untranslate (conjoin2 (guard old$ nil wrld)
@@ -1625,8 +1625,8 @@
                                            wrld))
        (formals (formals old$ wrld))
        (body `(if ,test (list ,@formals) (,name ,@updates)))
-       (wfrel (well-founded-relation old$ wrld))
-       (measure (measure old$ wrld))
+       (wfrel (get-well-founded-relation old$ wrld))
+       (measure (get-measure old$ wrld))
        (termination-hints
         `(("Goal" :use (:termination-theorem ,old$) :in-theory nil)))
        (event `(local

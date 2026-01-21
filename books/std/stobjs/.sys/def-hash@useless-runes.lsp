@@ -1,0 +1,1 @@
+(STOBJS::DEF-HASH-FN)

@@ -414,7 +414,7 @@ bignums.</p>"
 
 (define trailing-1-count ((x integerp))
   :parents (bitops)
-  :short "Optimized trailing 0 count for integers."
+  :short "Optimized trailing 1 count for integers."
   :long "<p>To make this fast, be sure and include the
 \"std/bitsets/bignum-extract-opt\" book (reqires a ttag), which prevents
 this (at least on CCL64) from needing to create new bignums when run on

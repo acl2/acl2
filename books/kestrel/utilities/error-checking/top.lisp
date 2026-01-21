@@ -1,10 +1,10 @@
 ; Error Checking
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,6 +15,7 @@
 (include-book "std/system/all-program-ffn-symbs" :dir :system)
 (include-book "std/system/check-user-lambda" :dir :system)
 (include-book "std/system/function-name-listp" :dir :system)
+(include-book "std/system/get-measure" :dir :system)
 (include-book "std/system/guard-verified-exec-fnsp" :dir :system)
 (include-book "std/system/guard-verified-fnsp" :dir :system)
 (include-book "std/system/lambda-closedp" :dir :system)
@@ -24,7 +25,6 @@
 (include-book "std/system/logic-function-namep" :dir :system)
 (include-book "std/system/macro-namep" :dir :system)
 (include-book "std/system/macro-required-args" :dir :system)
-(include-book "std/system/measure" :dir :system)
 (include-book "std/system/no-stobjs-p" :dir :system)
 (include-book "std/system/number-of-results" :dir :system)
 (include-book "std/system/pseudo-lambdap" :dir :system)
@@ -460,7 +460,7 @@
   "Cause an error if a recursive function
    has an unknown measure (i.e. one with @(':?'))."
   :body
-  (((not (eq (car (measure fn (w state))) :?))
+  (((not (eq (car (get-measure fn (w state))) :?))
     "~@0 must have a known measure, i.e. not one of the form (:? ...)."
     description))
   :verify-guards nil)

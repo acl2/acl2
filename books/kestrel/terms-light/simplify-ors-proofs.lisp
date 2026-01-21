@@ -182,7 +182,8 @@
                        ;; propagate boolean context:
                        (body (simplify-ors-induct body iffp (pairlis$ (lambda-formals fn) (if-and-not-eval-list args alist)))))
                   ;; todo: use cons-with-hint
-                  `((lambda ,formals ,body) ,@args))
+                  `(,(make-lambda-with-hint formals body fn) ;(lambda ,formals ,body)
+                    ,@args))
               ;; non-lambda:
               (cons-with-hint fn args term))))))))
   (defund simplify-ors-lst-induct (terms alist)

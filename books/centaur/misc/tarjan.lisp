@@ -29,12 +29,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/bstar" :dir :system)
-(include-book "std/basic/two-nats-measure" :dir :system)
-(include-book "std/util/defines" :dir :System)
-(include-book "std/basic/defs" :dir :system)
+(include-book "dfs-seen-property")
 (include-book "centaur/fty/deftypes" :dir :system)
-(include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "std/util/termhints" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -55,20 +51,6 @@
 (std::make-returnspec-config :hints-sub-returnnames t)
 
 
-(encapsulate
-  (((graph-nodes) => *)
-   ((graph-node-succs *) => *))
-
-  (local (defun graph-nodes () nil))
-
-  (local (defun graph-node-succs (x)
-           (declare (ignore x)) nil))
-
-  (defthm graph-node-succs-are-nodes
-    (subsetp (graph-node-succs x) (graph-nodes)))
-
-  (defthm graph-node-succs-true-listp
-    (true-listp (graph-node-succs x))))
 
 
 
@@ -95,11 +77,10 @@
                        (stack true-listp))
     :well-founded-relation nat-list-<
     :measure (list
-              (if (member x (graph-nodes))
-                  (len (set-difference$ (graph-nodes) preorder))
-                (+ 1 (len (set-difference$ (graph-nodes) preorder))))
+              (len (set-difference$ (graph-nodes) preorder))
               0
               1)
+    :hints (("goal" :cases ((member-equal x (graph-nodes)))))
     :verify-guards nil
     :returns (mv (lowlink natp :rule-classes :type-prescription)
                  (new-preorder true-listp :rule-classes :type-prescription)
@@ -137,9 +118,7 @@
                  (new-stack true-listp :rule-classes :type-prescription)
                  (sccs true-list-listp))
     :measure (list
-              (if (subsetp x (graph-nodes))
-                  (len (set-difference$ (graph-nodes) preorder))
-                (+ 1 (len (set-difference$ (graph-nodes) preorder))))
+              (len (set-difference$ (graph-nodes) preorder))
               (len x)
               0)
     (b* ((preorder (mbe :logic (list-fix preorder) :exec preorder))
@@ -404,666 +383,103 @@
                          (member w b))))
          :hints(("Goal" :in-theory (enable intersectp intersectp-witness)))))
 
-(define graph-path-p (x)
-  (or (mbe :logic (atom (cdr x))
-           :exec (or (atom x) (atom (cdr x))))
-      (and (member-equal (cadr x) (graph-node-succs (car x)))
-           (graph-path-p (cdr x))))
-  ///
-  (defthm graph-path-p-of-append-successor
-    (implies (and (graph-path-p x)
-                  (member y (graph-node-succs (car (last x)))))
-             (graph-path-p (append x (list y)))))
-
-  (defthm graph-path-p-of-cons-predecessor
-    (implies (and (graph-path-p x)
-                  (member (car x) (graph-node-succs y)))
-             (graph-path-p (cons y x))))
-
-  (defthm graph-path-p-of-append
-    (implies (and (graph-path-p x)
-                  (graph-path-p y)
-                  (member (car y) (graph-node-succs (car (last x)))))
-             (graph-path-p (append x y))))
-
-  (defthm graph-path-p-of-append-overlapping
-    (implies (and (graph-path-p x)
-                  (graph-path-p y)
-                  (equal (car y) (car (last x))))
-             (graph-path-p (append x (cdr y)))))
-
-  (defthm graph-path-p-of-cdr
-    (implies (graph-path-p x)
-             (graph-path-p (cdr x))))
-
-  (defthm graph-path-p-of-member
-    (implies (graph-path-p x)
-             (graph-path-p (member k x))))
-
-  (defthm cadr-member-of-successors-when-graph-path-p
-    (implies (and (equal (car x) k)
-                  (graph-path-p x)
-                  (consp (cdr x)))
-             (member (cadr x) (graph-node-succs k))))
-
-  (fty::deffixequiv graph-path-p :args ((x true-listp))))
-
-
 (local (defthm car-last-of-append
          (equal (car (last (append x y)))
                 (if (consp y)
                     (car (last y))
                   (car (last x))))))
 
-(define graph-path-reduce (x)
-  :returns (reduced-path)
-  :prepwork ((local (defthm acl2-count-of-member
-                      (<= (acl2-count (member k x))
-                          (acl2-count x))
-                      :rule-classes :linear))
-             (local (defthm acl2-count-of-list-fix
-                      (<= (acl2-count (list-fix x))
-                          (acl2-count x))
-                      :rule-classes :linear)))
-  (if (atom x)
-      nil
-    (let ((find (member-equal (car x) (list-fix (cdr x)))))
-      (if find
-          (graph-path-reduce find)
-        (cons (car x) (graph-path-reduce (cdr x))))))
-  ///
 
-  (defret car-of-graph-path-reduce
-    (equal (car reduced-path)
-           (car x)))
 
-  (defthm graph-path-p-of-member
-    (implies (graph-path-p x)
-             (graph-path-p (member k x)))
-    :hints(("Goal" :in-theory (enable graph-path-p))))
-
-  (defret graph-path-reduce-is-path-p
-    (implies (graph-path-p x)
-             (graph-path-p reduced-path))
-    :hints(("Goal" :in-theory (enable graph-path-p))))
-
-
-  (defret consp-of-graph-path-reduce
-    (equal (consp reduced-path)
-           (consp x)))
-
-  (defret last-of-graph-path-reduce
-    (equal (car (last reduced-path))
-           (car (last x))))
-
-  (defret nonmember-of-graph-path-reduce
-    (implies (not (member k x))
-             (not (member k (graph-path-reduce x)))))
-
-  (defret no-duplicates-of-graph-path-reduce
-    (no-duplicatesp (graph-path-reduce x)))
-
-
-  (defret no-intersection-of-graph-path-reduce
-    (implies (not (intersectp-equal x y))
-             (not (intersectp-equal reduced-path y)))
-    :hints(("Goal" :in-theory (e/d (intersectp-equal) ())
-            :induct <call>)))
-
-  (defret len-of-graph-path-reduce
-    (<= (len reduced-path) (len x))
-    :rule-classes :linear)
-
-  (local (defthm intersectp-of-butlast-of-member
-           (implies (not (intersectp (butlast x n) y))
-                    (not (intersectp (butlast (member k x) n) y)))
-           :hints(("Goal" :in-theory (e/d (intersectp)
-                                          (butlast))))))
-
-  (defret no-intersection-of-graph-path-reduce-but-last
-    (implies (not (intersectp-equal (butlast x 1) y))
-             (not (intersectp-equal (butlast reduced-path 1) y)))
-    :hints(("Goal" :in-theory (e/d (intersectp-equal)
-                                   (butlast))))))
-
-(defsection graph-reachable-through-unvisited
-  (defun-sk graph-reachable-through-unvisited-p (x y visited)
-    (exists path
-            (and (consp path)
-                 (graph-path-p path)
-                 (equal x (car path))
-                 (equal y (car (last path)))
-                 (not (intersectp-equal path visited)))))
-
-  (in-theory (disable graph-reachable-through-unvisited-p))
-
-  (defthm graph-reachable-through-unvisited-of-successors
-    (implies (and (graph-reachable-through-unvisited-p x y visited)
-                  (member z (graph-node-succs y))
-                  (not (member z visited)))
-             (graph-reachable-through-unvisited-p x z visited))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y visited))
-             :use ((:instance graph-reachable-through-unvisited-p-suff
-                    (x x) (y z) (path (append (graph-reachable-through-unvisited-p-witness x y visited)
-                                              (list z)))))
-             :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-p-suff)))))
-
-  (defthm graph-reachable-through-unvisited-of-immediate-successors
-    (implies (and (member z (graph-node-succs y))
-                  (not (member z visited))
-                  (not (member y visited)))
-             (graph-reachable-through-unvisited-p y z visited))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x y) (y z) (path (list y z))))
-             :in-theory (enable graph-path-p intersectp-equal))))
-
-
-  (defthm graph-reachable-through-unvisited-transitive1
-    (implies (and (graph-reachable-through-unvisited-p x y visited)
-                  (graph-reachable-through-unvisited-p y z visited))
-             (graph-reachable-through-unvisited-p x z visited))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y visited)
-                             (graph-reachable-through-unvisited-p y z visited))
-             :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-p-suff))
-             :use ((:instance graph-reachable-through-unvisited-p-suff
-                    (x x) (y z) (path (append (graph-reachable-through-unvisited-p-witness x y visited)
-                                              (cdr (graph-reachable-through-unvisited-p-witness y z visited)))))))))
-
-  (defthm graph-reachable-through-unvisited-transitive2
-    (implies (and (graph-reachable-through-unvisited-p y z visited)
-                  (graph-reachable-through-unvisited-p x y visited))
-             (graph-reachable-through-unvisited-p x z visited)))
-
-  (fty::deffixequiv graph-reachable-through-unvisited-p
-    :args ((visited true-listp))
-    :hints (("goal" :cases ((graph-reachable-through-unvisited-p x y visited)))
-            (and stable-under-simplificationp
-                 (b* ((lit (assoc 'graph-reachable-through-unvisited-p clause))
-                      ((unless lit) nil)
-                      (other (if (equal (nth 3 lit) 'visited)
-                                 '(list-fix visited)
-                               'visited)))
-                   `(:expand (,(update-nth 3 other lit))
-                     :use ((:instance graph-reachable-through-unvisited-p-suff
-                            (visited ,(nth 3 lit))
-                            (path (graph-reachable-through-unvisited-p-witness
-                                   . ,(cdr (update-nth 3 other lit)))))))))))
-
-  (defthm graph-reachable-through-unvisited-p-self
-    (implies (not (member x preorder))
-             (graph-reachable-through-unvisited-p x x preorder))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-p-suff
-                           (y x) (path (list x)) (visited preorder)))
-             :in-theory (e/d (graph-path-p intersectp-equal)
-                             (graph-reachable-through-unvisited-p-suff)))))
-
-  (defthm not-graph-reachable-through-unvisited-p-when-member-first
-    (implies (member x visited)
-             (not (graph-reachable-through-unvisited-p x y visited)))
-    :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-p
-                                      intersectp-equal))))
-
-  (local (defthm intersectp-when-member-last
-           (implies (and (member (car (last x)) y)
-                         (consp x))
-                    (intersectp x y))
-           :hints(("Goal" :in-theory (enable intersectp)))))
-
-  (defthm not-graph-reachable-through-unvisited-p-when-member-last
-    (implies (member y visited)
-             (not (graph-reachable-through-unvisited-p x y visited)))
-    :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-p
-                                      intersectp-equal))))
-
-  (defthm graph-reachable-through-unvisited-p-of-preorder-extension
-    (implies (and (not (graph-reachable-through-unvisited-p x y preorder))
-                  (subsetp preorder new-preorder))
-             (not (graph-reachable-through-unvisited-p x y new-preorder)))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y new-preorder))
-             :use ((:instance graph-reachable-through-unvisited-p-suff
-                    (visited preorder)
-                    (path (graph-reachable-through-unvisited-p-witness x y new-preorder))))
-             :in-theory (e/d (intersectp-by-subsetp)
-                             (graph-reachable-through-unvisited-p-suff))))))
-
-(define graph-reachable-through-unvisited-canonical-witness (x y preorder)
-  (graph-path-reduce (graph-reachable-through-unvisited-p-witness x y preorder))
-  ///
-  (defthm graph-reachable-through-unvisited-implies-canonical-witness
-    (implies (graph-reachable-through-unvisited-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (and (consp path)
-                    (graph-path-p path)
-                    (equal (car path) x)
-                    (equal (car (last path)) y)
-                    (not (intersectp-equal path preorder)))))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y preorder)))))
-
-  (defthm no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness
-    (no-duplicatesp (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-
-  (defthm graph-reachable-through-unvisited-implies-x-not-in-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (not (member x (cdr path)))))
-    :hints (("goal" :use no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness
-             :in-theory (e/d (no-duplicatesp)
-                             (no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness
-                              graph-reachable-through-unvisited-canonical-witness)))))
-
-  (defthm graph-reachable-through-unvisited-implies-graph-path-p-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (graph-path-p (cdr path))))
-    :hints (("goal" :use graph-reachable-through-unvisited-implies-canonical-witness
-             :in-theory (e/d (graph-path-p)
-                             (graph-reachable-through-unvisited-implies-canonical-witness
-                              graph-reachable-through-unvisited-canonical-witness)))))
-
-  (defthm graph-reachable-through-unvisited-implies-cadr-successor-of-x-of-canonical-witness
-    (implies (and (graph-reachable-through-unvisited-p x y preorder)
-                  (not (equal x y)))
-             (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (member (cadr path) (graph-node-succs x))))
-    :hints (("goal" :use (graph-reachable-through-unvisited-implies-canonical-witness)
-             :in-theory (e/d (graph-path-p)
-                             (graph-reachable-through-unvisited-implies-canonical-witness
-                              graph-reachable-through-unvisited-canonical-witness)))))
-
-  (defthm graph-reachable-through-unvisited-implies-no-intersect-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (not (intersectp-equal (cdr path) preorder))))
-    :hints (("goal" :use graph-reachable-through-unvisited-implies-canonical-witness
-             :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-implies-canonical-witness
-                              graph-reachable-through-unvisited-canonical-witness)))))
-
-  (defwitness graph-reachable-through-unvisited-witness
-    :predicate (graph-reachable-through-unvisited-p x y preorder)
-    :expr (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-               (and (consp path)
-                    (graph-path-p path)
-                    (equal (car path) x)
-                    (equal (car (last path)) y)
-                    (not (intersectp path preorder))
-                    (no-duplicatesp path)))
-    :generalize (((graph-reachable-through-unvisited-canonical-witness x y preorder) . reachupath))
-    :hints ('(:use (graph-reachable-through-unvisited-implies-canonical-witness
-                    no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness)
-              :in-theory (disable graph-reachable-through-unvisited-implies-canonical-witness
-                                  no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness))))
-
-  (defthmd graph-reachable-through-unvisited-iff-canonical-witness
-    (implies (rewriting-negative-literal `(graph-reachable-through-unvisited-p ,x ,y ,preorder))
-             (iff (graph-reachable-through-unvisited-p x y preorder)
-                  (let ((path (graph-reachable-through-unvisited-canonical-witness x y preorder)))
-                    (and (consp path)
-                         (graph-path-p path)
-                         (equal (car path) x)
-                         (equal (car (last path)) y)
-                         (not (intersectp-equal path preorder))
-                         (no-duplicatesp path)))))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-p-suff
-                           (visited preorder)
-                           (path (graph-reachable-through-unvisited-canonical-witness x y preorder)))))
-            (and stable-under-simplificationp
-                 '(:expand ((graph-reachable-through-unvisited-p x y preorder)))))))
-
-
-
-
-(define graph-reachable-through-unvisited-for-some-x (x y (preorder true-listp))
-  :returns (reachable)
-  :hooks (:fix)
-  (if (atom x)
-      nil
-    (or (ec-call (graph-reachable-through-unvisited-p (car x) y preorder))
-        (graph-reachable-through-unvisited-for-some-x (cdr x) y preorder)))
-  ///
-  (defret graph-reachable-through-unvisited-for-some-x-when-empty
-    (implies (not (consp x))
-             (not reachable))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)))
-
-  (defret graph-reachable-through-unvisited-for-some-x-when-reachable-by-member
-    (implies (and (graph-reachable-through-unvisited-p k y preorder)
-                  (member k x))
-             (graph-reachable-through-unvisited-for-some-x x y preorder)))
-
-  (defthm graph-reachable-through-unvisited-for-some-x-by-path
-    (implies (and (graph-path-p path)
-                  (consp path)
-                  (member (car path) x)
-                  (equal y (car (last path)))
-                  (not (intersectp path preorder)))
-             (graph-reachable-through-unvisited-for-some-x x y preorder))
-    :hints (("Goal" :induct (graph-reachable-through-unvisited-for-some-x x y preorder))))
-
-  (local (defthmd consp-cdr-when-car-not-equal-last
-           (implies (not (equal (car x) (car (last x))))
-                    (consp (cdr x)))))
-
-  (local (defthm last-is-last-of-cdr
-           (implies (consp (cdr x))
-                    (equal (last (cdr x))
-                           (last x)))))
-
-  ;; (local (in-theory (disable last)))
-  (local (defun graph-reachable-through-unvisited-implies-reachable-for-some-successor-hint (x y preorder)
-           ;; x has a path to y in the preorder.
-           (b* ((x-y (graph-reachable-through-unvisited-canonical-witness x y preorder))
-                (new-preorder (append preorder (list x)))
-                ;; ((unless (consp (cdr x-y)))
-                ;;  ;; Must be because x not equal y.
-                ;;  `'(:use ((:instance consp-cdr-when-car-not-equal-last
-                ;;            (x ,(hq x-y))))))
-                (succ (cadr x-y))
-                (succ-y (cdr x-y))
-                ((unless (and (consp (cdr x-y))
-                              (member succ (graph-node-succs x))
-                              (graph-path-p succ-y)))
-                 `'(:use ((:instance graph-reachable-through-unvisited-implies-canonical-witness))
-                    :expand ((graph-path-p ,(hq x-y)))
-                    :in-theory (disable graph-reachable-through-unvisited-implies-canonical-witness)))
-                ((unless (intersectp succ-y new-preorder))
-                 (b* (((unless (graph-reachable-through-unvisited-p succ y new-preorder))
-                       `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                                 (x ,(hq succ)) (visited ,(hq new-preorder))
-                                 (path ,(hq succ-y)))))))
-                   `'(:use ((:instance graph-reachable-through-unvisited-for-some-x-when-reachable-by-member
-                             (x ,(hq (graph-node-succs x)))
-                             (k ,(hq succ)) (preorder ,(hq new-preorder)))))))
-                ((unless (member x succ-y))
-                 ;; done too?
-                 nil))
-             `'(:use ((:instance no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness))
-                :expand ((no-duplicatesp ,(hq x-y)))
-                :in-theory (disable no-duplicatesp-of-graph-reachable-through-unvisited-canonical-witness)))))
-
-
-  (defthm graph-reachable-through-unvisited-implies-reachable-for-some-successor
-    (implies (and (graph-reachable-through-unvisited-p x y preorder)
-                  (not (equal x y)))
-             (graph-reachable-through-unvisited-for-some-x
-              (graph-node-succs x) y (append preorder (list x))))
-    :hints (("goal" :in-theory (disable graph-reachable-through-unvisited-for-some-x-when-reachable-by-member
-                                        graph-reachable-through-unvisited-p-suff)
-             :do-not-induct t)
-            (use-termhint (graph-reachable-through-unvisited-implies-reachable-for-some-successor-hint x y preorder)))))
-
-(define graph-reachable-through-unvisited-for-some-x-witness (x y preorder)
-  :verify-guards nil
-  (if (atom x)
-      nil
-    (if (graph-reachable-through-unvisited-p (car x) y preorder)
-        (graph-reachable-through-unvisited-canonical-witness (car x) y preorder)
-      (graph-reachable-through-unvisited-for-some-x-witness (cdr x) y preorder)))
-  ///
-  (local (in-theory (enable graph-reachable-through-unvisited-for-some-x)))
-
-  (defthm graph-reachable-through-unvisited-for-some-x-implies-witness
-    (implies (graph-reachable-through-unvisited-for-some-x x y preorder)
-             (b* ((path (graph-reachable-through-unvisited-for-some-x-witness x y preorder)))
-               (and (consp path)
-                    (member (car path) x)
-                    (equal (car (last path)) y)
-                    (graph-path-p path)
-                    (not (intersectp path preorder))
-                    (no-duplicatesp path)))))
-
-  (in-theory (disable graph-reachable-through-unvisited-for-some-x-witness))
-
-  (defthm graph-reachable-through-unvisited-for-some-successor-implies-reachable
-    (implies (and (graph-reachable-through-unvisited-for-some-x
-                   (graph-node-succs x) y (append preorder (list x)))
-                  (not (member x preorder)))
-             (graph-reachable-through-unvisited-p x y preorder))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-for-some-x-implies-witness
-                           (x (graph-node-succs x))
-                           (preorder (append preorder (list x))))
-                          (:instance graph-reachable-through-unvisited-p-suff
-                           (visited preorder)
-                           (path (cons x (graph-reachable-through-unvisited-for-some-x-witness
-                                          (graph-node-succs x) y (append preorder (list x)) )))))
-             :in-theory (e/d (intersectp)
-                             (graph-reachable-through-unvisited-for-some-x-implies-witness
-                              graph-reachable-through-unvisited-p-suff
-                              graph-reachable-through-unvisited-for-some-x))
-             :do-not-induct t)))
-
-  (defwitness graph-reachable-through-unvisited-for-some-x-witness
-    :predicate (graph-reachable-through-unvisited-for-some-x x y preorder)
-    :expr (let ((path (graph-reachable-through-unvisited-for-some-x-witness x y preorder)))
-               (and (consp path)
-                    (graph-path-p path)
-                    (member (car path) x)
-                    (equal (car (last path)) y)
-                    (not (intersectp path preorder))
-                    (no-duplicatesp path)))
-    :generalize (((graph-reachable-through-unvisited-canonical-witness x y preorder) . reachupath))
-    :hints ('(:use graph-reachable-through-unvisited-for-some-x-implies-witness
-              :in-theory (disable graph-reachable-through-unvisited-for-some-x-implies-witness)))))
-
-
-
-
-(defsection tarjan-preorder-member-cond
-  (defun-sk tarjan-preorder-member-cond (x preorder new-preorder)
-    (forall y
-            (iff (member y new-preorder)
-                 (or (member y preorder)
-                     (graph-reachable-through-unvisited-p x y preorder))))
-    :rewrite :direct)
-  (in-theory (disable tarjan-preorder-member-cond))
-
-  (fty::deffixequiv tarjan-preorder-member-cond
-    :args ((preorder true-listp)
-           (new-preorder true-listp))
-    :hints (("goal" :cases ((tarjan-preorder-member-cond x preorder new-preorder)))
-            (and stable-under-simplificationp
-                 (let ((pos-lit (assoc 'tarjan-preorder-member-cond clause))
-                       (neg-lit (cadr (assoc 'not clause))))
-                   `(:expand (,pos-lit)
-                     :use ((:instance tarjan-preorder-member-cond-necc
-                            (x ,(nth 1 neg-lit))
-                            (preorder ,(nth 2 neg-lit))
-                            (new-preorder ,(nth 3 neg-lit))
-                            (y (tarjan-preorder-member-cond-witness . ,(cdr pos-lit))))))))))
-
-  (defthm tarjan-preorder-member-cond-implies-intersect
-    (implies (and (not (intersectp z new-preorder))
-                  (intersectp z preorder))
-             (not (tarjan-preorder-member-cond x preorder new-preorder)))
-    :hints(("Goal" :in-theory (enable intersectp))))
-
-
-
-
-  (local (defthm no-intersectp-of-cdr
-           (implies (not (intersectp x y))
-                    (not (intersectp (cdr x) y)))
-           :hints(("Goal" :in-theory (enable intersectp)))))
-
-
-  (local (defthm consp-cdr-when-car-not-equal-last
-           (implies (not (equal (car x) (car (last x))))
-                    (consp (cdr x)))))
-
-  (local (defthm last-is-last-of-cdr
-           (implies (consp (cdr x))
-                    (equal (last (cdr x))
-                           (last x)))))
-
-  (local (in-theory (disable last)))
-
-  ;; These two theorems (and the similar ones for
-  ;; reachable-through-unvisited-but-last) are the crux for reasoning that the
-  ;; nodes reachable through unvisited from a set of nodes is consistent with
-  ;; the nodes reachable from the first node, or from the rest of the set when
-  ;; considering those visited from the first.  I.e., a priori, a node y
-  ;; reachable through unvisited from z may not still be reachable after
-  ;; visiting nodes reachable from x.  But we prove that either it is still
-  ;; reachable from z or it was reachable from x.
-
-  ;; This is the other direction -- adding nodes to the preorder does not let
-  ;; new nodes become reachable through unvisited.
-  (defthm reachable-through-unvisited-by-member-cond-1
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-p z y preorder)))
-             (not (graph-reachable-through-unvisited-p z y new-preorder)))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p z y new-preorder))
-             :use ((:instance graph-reachable-through-unvisited-p-suff
-                    (x z) (visited preorder)
-                    (path (graph-reachable-through-unvisited-p-witness z y new-preorder))))))
-    :rule-classes ((:rewrite :match-free :all)))
-
-
-
-  (local (defun reachable-through-unvisited-by-member-cond-2-hint (x y z preorder new-preorder)
-           ;; Hyp assumes z reaches y in preorder.
-           (b* ((z-y (graph-reachable-through-unvisited-canonical-witness z y preorder))
-                ;; If that doesn't intersect the new preorder, then z reaches y
-                ;; via that same path in the new preorder.
-                ((unless (intersectp z-y new-preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x z) (visited new-preorder)
-                           (path ,(hq z-y))))
-                    :in-theory (disable graph-reachable-through-unvisited-p-suff)))
-                (int (intersectp-witness z-y new-preorder))
-                ((when (member int preorder))
-                 ;; this can't be true because it's a member of z-y
-                 `'(:use ((:instance intersectp-member
-                           (a ,(hq int))
-                           (x ,(hq z-y))
-                           (y ,(hq preorder))))
-                    :in-theory (disable intersectp-member)))
-                ;; Since this is a member of new-preorder it's reachable from x
-                ((unless (graph-reachable-through-unvisited-p x int preorder))
-                 `'(:use ((:instance tarjan-preorder-member-cond-necc
-                           (y ,(hq int))))
-                    :in-theory (disable tarjan-preorder-member-cond-necc)))
-                (x-int (graph-reachable-through-unvisited-canonical-witness x int preorder))
-                (x-y (append x-int (cdr (member int z-y)))))
-             `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                       (path ,(hq x-y)) (visited preorder)))
-                :in-theory (disable graph-reachable-through-unvisited-p-suff)))))
-
-
-  ;; This is the hard direction: if y is not reachable-through-unvisited from
-  ;; x, then it remains reachable from z (if it was before) after adding the
-  ;; nodes reachable from x to the visited set.
-  (defthm reachable-through-unvisited-by-member-cond-2
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (graph-reachable-through-unvisited-p z y preorder)
-                  (not (graph-reachable-through-unvisited-p x y preorder)))
-             (graph-reachable-through-unvisited-p z y new-preorder))
-    :hints ((use-termhint (reachable-through-unvisited-by-member-cond-2-hint
-                           x y z preorder new-preorder))))
-
-  (defthm reachable-through-unvisited-for-some-x-by-member-cond-1
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-for-some-x z y preorder)))
-             (not (graph-reachable-through-unvisited-for-some-x z y new-preorder)))
-    :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))
-    :rule-classes ((:rewrite :match-free :all)))
-
-  (defthm reachable-through-unvisited-for-some-x-by-member-cond-2
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-p x y preorder))
-                  (graph-reachable-through-unvisited-for-some-x z y preorder))
-             (graph-reachable-through-unvisited-for-some-x z y new-preorder))
-    :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))
-    :rule-classes ((:rewrite :match-free :all))))
-
-(defsection tarjan-preorder-member-cond-list
-  (defun-sk tarjan-preorder-member-cond-list (x preorder new-preorder)
-    (forall y
-            (iff (member y new-preorder)
-                 (or (member y preorder)
-                     (graph-reachable-through-unvisited-for-some-x x y preorder))))
-    :rewrite :direct)
-  (in-theory (disable tarjan-preorder-member-cond-list))
-
-  (fty::deffixequiv tarjan-preorder-member-cond-list
-    :args ((preorder true-listp)
-           (new-preorder true-listp))
-    :hints (("goal" :cases ((tarjan-preorder-member-cond-list x preorder new-preorder)))
-            (and stable-under-simplificationp
-                 (let ((pos-lit (assoc 'tarjan-preorder-member-cond-list clause))
-                       (neg-lit (cadr (assoc 'not clause))))
-                   `(:expand (,pos-lit)
-                     :use ((:instance tarjan-preorder-member-cond-list-necc
-                            (x ,(nth 1 neg-lit))
-                            (preorder ,(nth 2 neg-lit))
-                            (new-preorder ,(nth 3 neg-lit))
-                            (y (tarjan-preorder-member-cond-list-witness . ,(cdr pos-lit))))))))))
-
-  (local (defthm intersectp-preorder-implies-intersectp-new-preorder
-           (implies (and (tarjan-preorder-member-cond-list x preorder new-preorder)
-                         (intersectp y preorder))
-                    (intersectp y new-preorder))
-           :hints ((set-reasoning))))
-
-  (defthm reachable-through-unvisited-list-extension-by-member-cond-1
-    (implies (and (tarjan-preorder-member-cond-list x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-p z y preorder)))
-             (not (graph-reachable-through-unvisited-p z y new-preorder)))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p z y new-preorder))
-             :use ((:instance graph-reachable-through-unvisited-p-suff
-                    (x z) (visited preorder)
-                    (path (graph-reachable-through-unvisited-p-witness z y new-preorder))))))
-    :rule-classes ((:rewrite :match-free :all)))
-
-  (defthm reachable-through-unvisited-list-extension-for-some-x-by-member-cond-1
-    (implies (and (tarjan-preorder-member-cond-list x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-for-some-x z y preorder)))
-             (not (graph-reachable-through-unvisited-for-some-x z y new-preorder)))
-    :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))
-    :rule-classes ((:rewrite :match-free :all))))
-
-
-
-
-;; First major property of the tarjan-sccs algorithm (and basically any
-;; depth-first search): the new preorder after finishing traversal of a node
-;; satisfies the preorder member condition, i.e. it contains those nodes that
-;; were already in the preorder, or were reachable from the node traversed
-;; without intersecting the original preorder.
-(std::defret-mutual tarjan-sccs-preorder-member-cond
-  (defret tarjan-sccs-preorder-member-cond
-    (tarjan-preorder-member-cond x preorder new-preorder)
-    :hints ('(:expand (<call>))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause)))))
-            (and stable-under-simplificationp
-                 (let ((witness (find-call-lst
-                                 'tarjan-preorder-member-cond-witness
-                                 clause)))
-                   (and witness
-                        `(:clause-processor
-                          (simple-generalize-cp
-                           clause '((,witness . witness))))))))
+(defsection tarjan-preorder-member
+  (local
+   (defun-sk dfs-traverse-node-congruence-cond (x seen)
+     (forall seen2
+             (implies (set-equiv seen seen2)
+                      (equal (set-equiv (dfs-traverse-node x seen)
+                                        (dfs-traverse-node x seen2))
+                             t)))
+     :rewrite :direct))
+
+  (local
+   (defun-sk dfs-traverse-list-congruence-cond (x seen)
+     (forall seen2
+             (implies (set-equiv seen seen2)
+                      (equal (set-equiv (dfs-traverse-list x seen)
+                                        (dfs-traverse-list x seen2))
+                             t)))
+     :rewrite :direct))
+  (local (in-theory (disable dfs-traverse-node-congruence-cond
+                             dfs-traverse-list-congruence-cond)))
+
+  (local (defthm set-equiv-of-cons
+           (implies (Set-equiv x y)
+                    (equal (set-equiv (cons a x) (cons a y))
+                           t))))
+  
+  (local
+   (defthm-dfs-traverse-flag <fn>-set-congruence-lemma
+     (defthm dfs-traverse-node-set-congruence-lemma
+       (dfs-traverse-node-congruence-cond x seen)
+       :hints ('(:expand ((dfs-traverse-node-congruence-cond x seen)))
+               (and stable-under-simplificationp
+                    '(:expand ((:free (seen) (dfs-traverse-node x seen))))))
+       :flag dfs-traverse-node)
+     (defthm dfs-traverse-list-set-congruence-lemma
+       (dfs-traverse-list-congruence-cond x seen)
+       :hints ('(:expand ((dfs-traverse-list-congruence-cond x seen)))
+               (and stable-under-simplificationp
+                    '(:expand ((:free (seen) (dfs-traverse-list x seen))))))
+       :flag dfs-traverse-list)))
+  
+  (local
+   (defthm dfs-traverse-node-set-congruence
+     (implies (set-equiv seen seen2)
+              (set-equiv (dfs-traverse-node x seen)
+                         (dfs-traverse-node x seen2)))
+     :rule-classes :congruence))
+  
+  (local
+   (defthm dfs-traverse-list-set-congruence
+     (implies (set-equiv seen seen2)
+              (set-equiv (dfs-traverse-list x seen)
+                         (dfs-traverse-list x seen2)))
+     :rule-classes :congruence))
+  
+  (local
+   (std::defret-mutual <fn>-preorder-is-dfs-seen
+     (defret <fn>-preorder-is-dfs-seen
+       (set-equiv new-preorder
+                  (dfs-traverse-node x preorder))
+       :hints ('(:expand (<call>
+                          (dfs-traverse-node x preorder))))
+       :fn tarjan-sccs)
+     (defret <fn>-preorder-is-dfs-seen
+       (set-equiv new-preorder
+                  (dfs-traverse-list x preorder))
+       :hints ('(:expand (<call>
+                          (dfs-traverse-list x preorder))))
+       :fn tarjan-sccs-list)))
+
+  (defret tarjan-sccs-preorder-member-property
+    (dfs-seen-member-cond x preorder new-preorder)
     :fn tarjan-sccs)
 
-  (defret tarjan-sccs-list-preorder-member-cond
-    (tarjan-preorder-member-cond-list x preorder new-preorder)
-    :hints ('(:expand (<call>))
-            (and stable-under-simplificationp
-                 `(:expand (,(car (last clause))
-                            (:free (y)
-                             (graph-reachable-through-unvisited-for-some-x
-                              x y preorder)))))
-            (and stable-under-simplificationp
-                 (let ((witness (find-call-lst
-                                 'tarjan-preorder-member-cond-list-witness
-                                 clause)))
-                   (and witness
-                        `(:clause-processor
-                          (simple-generalize-cp
-                           clause '((,witness . witness))))))))
+  (defret tarjan-sccs-list-preorder-member-property
+    (dfs-seen-member-cond-list x preorder new-preorder)
+    :fn tarjan-sccs-list)
+
+  ;; Reachable* here means reachable without traversing any nodes from the preorder
+  (defret tarjan-sccs-preorder-member
+    (iff (member-equal y new-preorder)
+         (or (member-equal y preorder)
+             (reachable*-from-node x y preorder)))
+    :fn tarjan-sccs)
+
+  (defret tarjan-sccs-list-preorder-member
+    (iff (member-equal y new-preorder)
+         (or (member-equal y preorder)
+             (reachable*-from-list x y preorder)))
     :fn tarjan-sccs-list))
 
 
@@ -1073,13 +489,10 @@
 
 
 
+;; Reachable$ means reachable without traversing any nodes from the preorder except perhaps the last node.
 
-
-
-
-
-(defsection graph-reachable-through-unvisited-but-last
-  (defun-sk graph-reachable-through-unvisited-but-last-p (x y visited)
+(defsection reachable$-from-node
+  (defun-sk reachable$-from-node (x y visited)
     (exists path
             (and (consp path)
                  (graph-path-p path)
@@ -1087,30 +500,30 @@
                  (equal y (car (last path)))
                  (not (intersectp-equal (butlast path 1) visited)))))
 
-  (in-theory (disable graph-reachable-through-unvisited-but-last-p))
+  (in-theory (disable reachable$-from-node))
 
-  (defthm graph-reachable-through-unvisited-but-last-of-successors
-    (implies (and (graph-reachable-through-unvisited-p x y visited)
+  (defthm reachable$-from-node-of-successors
+    (implies (and (reachable*-from-node x y visited)
                   (member z (graph-node-succs y)))
-             (graph-reachable-through-unvisited-but-last-p x z visited))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y visited))
-             :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
-                    (x x) (y z) (path (append (graph-reachable-through-unvisited-p-witness x y visited)
+             (reachable$-from-node x z visited))
+    :hints (("goal" :expand ((reachable*-from-node x y visited))
+             :use ((:instance reachable$-from-node-suff
+                    (x x) (y z) (path (append (reachable*-from-node-witness x y visited)
                                               (list z)))))
              :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-but-last-p-suff)))))
+                             (reachable$-from-node-suff)))))
 
-  (defthm graph-reachable-through-unvisited-but-last-of-immediate-successors
+  (defthm reachable$-from-node-of-immediate-successors
     (implies (and (member z (graph-node-succs y))
                   (not (member y visited)))
-             (graph-reachable-through-unvisited-but-last-p y z visited))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+             (reachable$-from-node y z visited))
+    :hints (("goal" :use ((:instance reachable$-from-node-suff
                            (x y) (y z) (path (list y z))))
              :in-theory (enable graph-path-p intersectp-equal))))
 
-  (defthm graph-reachable-through-unvisited-but-last-of-self
-    (graph-reachable-through-unvisited-but-last-p x x visited)
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+  (defthm reachable$-from-node-of-self
+    (reachable$-from-node x x visited)
+    :hints (("goal" :use ((:instance reachable$-from-node-suff
                            (x x) (y x) (path (list x))))
              :in-theory (enable graph-path-p intersectp-equal))))
 
@@ -1119,163 +532,181 @@
                     (< 1 (len x)))
            :rule-classes :linear))
 
-  (defthm graph-reachable-through-unvisited-but-last-p-when-start-node-visited
+  (defthm reachable$-from-node-when-start-node-visited
     (implies (member x visited)
-             (iff (graph-reachable-through-unvisited-but-last-p x y visited)
+             (iff (reachable$-from-node x y visited)
                   (equal x y)))
     :hints ((and stable-under-simplificationp
-                 '(:expand ((graph-reachable-through-unvisited-but-last-p x y visited)
-                            ;; (butlast (graph-reachable-through-unvisited-but-last-p-witness x y visited) 1)
+                 '(:expand ((reachable$-from-node x y visited)
+                            ;; (butlast (reachable$-from-node-witness x y visited) 1)
                             )
                    :in-theory (enable intersectp-equal)))))
 
-  (fty::deffixequiv graph-reachable-through-unvisited-but-last-p
+  (fty::deffixequiv reachable$-from-node
     :args ((visited true-listp))
-    :hints (("goal" :cases ((graph-reachable-through-unvisited-but-last-p x y visited)))
+    :hints (("goal" :cases ((reachable$-from-node x y visited)))
             (and stable-under-simplificationp
-                 (b* ((lit (assoc 'graph-reachable-through-unvisited-but-last-p clause))
+                 (b* ((lit (assoc 'reachable$-from-node clause))
                       ((unless lit) nil)
                       (other (if (equal (nth 3 lit) 'visited)
                                  '(list-fix visited)
                                'visited)))
                    `(:expand (,(update-nth 3 other lit))
-                     :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+                     :use ((:instance reachable$-from-node-suff
                             (visited ,(nth 3 lit))
-                            (path (graph-reachable-through-unvisited-but-last-p-witness
+                            (path (reachable$-from-node-witness
                                    . ,(cdr (update-nth 3 other lit)))))))))))
 
-  (defthm graph-reachable-through-unvisited-but-last-when-reachable-through-unvisited
-    (implies (graph-reachable-through-unvisited-p x y visited)
-             (graph-reachable-through-unvisited-but-last-p x y visited))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y visited))
-             :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
-                    (path (graph-reachable-through-unvisited-p-witness x y visited))))
-             :in-theory (disable graph-reachable-through-unvisited-but-last-p-suff))))
+  (defthm reachable$-from-node-when-reachable-through-unvisited
+    (implies (reachable*-from-node x y visited)
+             (reachable$-from-node x y visited))
+    :hints (("goal" :expand ((reachable*-from-node x y visited))
+             :use ((:instance reachable$-from-node-suff
+                    (path (reachable*-from-node-witness x y visited))))
+             :in-theory (disable reachable$-from-node-suff))))
 
-  (defthm graph-reachable-through-unvisited-but-last-p-of-preorder-extension
-    (implies (and (not (graph-reachable-through-unvisited-but-last-p x y preorder))
+  (defthm reachable$-from-node-of-preorder-extension
+    (implies (and (not (reachable$-from-node x y preorder))
                   (subsetp preorder new-preorder))
-             (not (graph-reachable-through-unvisited-but-last-p x y new-preorder)))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-but-last-p x y new-preorder))
-             :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+             (not (reachable$-from-node x y new-preorder)))
+    :hints (("goal" :expand ((reachable$-from-node x y new-preorder))
+             :use ((:instance reachable$-from-node-suff
                     (visited preorder)
-                    (path (graph-reachable-through-unvisited-but-last-p-witness x y new-preorder))))
+                    (path (reachable$-from-node-witness x y new-preorder))))
              :in-theory (e/d (intersectp-by-subsetp)
-                             (graph-reachable-through-unvisited-but-last-p-suff)))))
+                             (reachable$-from-node-suff)))))
 
-  (defthm graph-reachable-through-unvisited-but-last-when-reachable-from-reachable
-    (implies (and (graph-reachable-through-unvisited-p x y preorder)
-                  (graph-reachable-through-unvisited-but-last-p y z preorder))
-             (graph-reachable-through-unvisited-but-last-p x z preorder))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p x y preorder)
-                             (graph-reachable-through-unvisited-but-last-p y z preorder))
-             :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+  (defthm reachable$-from-node-when-reachable-from-reachable
+    (implies (and (reachable*-from-node x y preorder)
+                  (reachable$-from-node y z preorder))
+             (reachable$-from-node x z preorder))
+    :hints (("goal" :expand ((reachable*-from-node x y preorder)
+                             (reachable$-from-node y z preorder))
+             :use ((:instance reachable$-from-node-suff
                     (y z) (visited preorder)
-                    (path (append (graph-reachable-through-unvisited-p-witness x y preorder)
-                                  (cdr (graph-reachable-through-unvisited-but-last-p-witness y z preorder))))))
+                    (path (append (reachable*-from-node-witness x y preorder)
+                                  (cdr (reachable$-from-node-witness y z preorder))))))
              :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-but-last-p-suff))))))
+                             (reachable$-from-node-suff))))))
 
 
 
-(define graph-reachable-through-unvisited-but-last-canonical-witness (x y preorder)
-  (graph-path-reduce (graph-reachable-through-unvisited-but-last-p-witness x y preorder))
+
+
+(encapsulate nil
+  
+  (local (defthm intersectp-of-butlast-of-member
+           (implies (not (intersectp (butlast x n) y))
+                    (not (intersectp (butlast (member k x) n) y)))
+           :hints(("Goal" :in-theory (e/d (intersectp)
+                                          (butlast))))))
+
+  (defret no-intersection-of-graph-path-reduce-but-last
+    (implies (not (intersectp-equal (butlast x 1) y))
+             (not (intersectp-equal (butlast reduced-path 1) y)))
+    :hints(("Goal" :in-theory (e/d (intersectp-equal
+                                    graph-path-reduce)
+                                   (butlast))))
+    :fn graph-path-reduce))
+
+(define reachable$-from-node-canonical-witness (x y preorder)
+  (graph-path-reduce (reachable$-from-node-witness x y preorder))
   ///
-  (defthm graph-reachable-through-unvisited-but-last-implies-canonical-witness
-    (implies (graph-reachable-through-unvisited-but-last-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthm reachable$-from-node-implies-canonical-witness
+    (implies (reachable$-from-node x y preorder)
+             (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (and (consp path)
                     (graph-path-p path)
                     (equal (car path) x)
                     (equal (car (last path)) y)
                     (not (intersectp-equal (butlast path 1) preorder)))))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-but-last-p x y preorder)))))
+    :hints (("goal" :expand ((reachable$-from-node x y preorder)))))
 
-  (defthm no-duplicatesp-of-graph-reachable-through-unvisited-but-last-canonical-witness
-    (no-duplicatesp (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthm no-duplicatesp-of-reachable$-from-node-canonical-witness
+    (no-duplicatesp (reachable$-from-node-canonical-witness x y preorder)))
 
-  (defthm graph-reachable-through-unvisited-but-last-implies-x-not-in-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-but-last-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthm reachable$-from-node-implies-x-not-in-cdr-of-canonical-witness
+    (implies (reachable$-from-node x y preorder)
+             (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (not (member x (cdr path)))))
-    :hints (("goal" :use no-duplicatesp-of-graph-reachable-through-unvisited-but-last-canonical-witness
+    :hints (("goal" :use no-duplicatesp-of-reachable$-from-node-canonical-witness
              :in-theory (e/d (no-duplicatesp)
-                             (no-duplicatesp-of-graph-reachable-through-unvisited-but-last-canonical-witness
-                              graph-reachable-through-unvisited-but-last-canonical-witness)))))
+                             (no-duplicatesp-of-reachable$-from-node-canonical-witness
+                              reachable$-from-node-canonical-witness)))))
 
-  (defthm graph-reachable-through-unvisited-but-last-implies-graph-path-p-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-but-last-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthm reachable$-from-node-implies-graph-path-p-cdr-of-canonical-witness
+    (implies (reachable$-from-node x y preorder)
+             (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (graph-path-p (cdr path))))
-    :hints (("goal" :use graph-reachable-through-unvisited-but-last-implies-canonical-witness
+    :hints (("goal" :use reachable$-from-node-implies-canonical-witness
              :in-theory (e/d (graph-path-p)
-                             (graph-reachable-through-unvisited-but-last-implies-canonical-witness
-                              graph-reachable-through-unvisited-but-last-canonical-witness)))))
+                             (reachable$-from-node-implies-canonical-witness
+                              reachable$-from-node-canonical-witness)))))
 
-  (defthm graph-reachable-through-unvisited-but-last-implies-cadr-successor-of-x-of-canonical-witness
-    (implies (and (graph-reachable-through-unvisited-but-last-p x y preorder)
+  (defthm reachable$-from-node-implies-cadr-successor-of-x-of-canonical-witness
+    (implies (and (reachable$-from-node x y preorder)
                   (not (equal x y)))
-             (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+             (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (member (cadr path) (graph-node-succs x))))
-    :hints (("goal" :use (graph-reachable-through-unvisited-but-last-implies-canonical-witness)
+    :hints (("goal" :use (reachable$-from-node-implies-canonical-witness)
              :in-theory (e/d (graph-path-p)
-                             (graph-reachable-through-unvisited-but-last-implies-canonical-witness
-                              graph-reachable-through-unvisited-but-last-canonical-witness)))))
+                             (reachable$-from-node-implies-canonical-witness
+                              reachable$-from-node-canonical-witness)))))
 
-  (defthm graph-reachable-through-unvisited-but-last-implies-no-intersect-cdr-of-canonical-witness
-    (implies (graph-reachable-through-unvisited-but-last-p x y preorder)
-             (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthm reachable$-from-node-implies-no-intersect-cdr-of-canonical-witness
+    (implies (reachable$-from-node x y preorder)
+             (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (not (intersectp-equal (butlast (cdr path) 1) preorder))))
-    :hints (("goal" :use graph-reachable-through-unvisited-but-last-implies-canonical-witness
+    :hints (("goal" :use reachable$-from-node-implies-canonical-witness
              :in-theory (e/d (intersectp-equal)
-                             (graph-reachable-through-unvisited-but-last-implies-canonical-witness
-                              graph-reachable-through-unvisited-but-last-canonical-witness)))))
+                             (reachable$-from-node-implies-canonical-witness
+                              reachable$-from-node-canonical-witness)))))
 
 
 
 
 
-  (defwitness graph-reachable-through-unvisited-but-last-witness
-    :predicate (graph-reachable-through-unvisited-but-last-p x y preorder)
-    :expr (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defwitness reachable$-from-node-witness
+    :predicate (reachable$-from-node x y preorder)
+    :expr (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                (and (consp path)
                     (graph-path-p path)
                     (equal (car path) x)
                     (equal (car (last path)) y)
                     (not (intersectp (butlast path 1) preorder))
                     (no-duplicatesp path)))
-    :generalize (((graph-reachable-through-unvisited-but-last-canonical-witness x y preorder) . reachupath))
-    :hints ('(:use (graph-reachable-through-unvisited-but-last-implies-canonical-witness
-                    no-duplicatesp-of-graph-reachable-through-unvisited-but-last-canonical-witness)
-              :in-theory (disable graph-reachable-through-unvisited-but-last-implies-canonical-witness
-                                  no-duplicatesp-of-graph-reachable-through-unvisited-but-last-canonical-witness))))
+    :generalize (((reachable$-from-node-canonical-witness x y preorder) . reachupath))
+    :hints ('(:use (reachable$-from-node-implies-canonical-witness
+                    no-duplicatesp-of-reachable$-from-node-canonical-witness)
+              :in-theory (disable reachable$-from-node-implies-canonical-witness
+                                  no-duplicatesp-of-reachable$-from-node-canonical-witness))))
 
-  (defthmd graph-reachable-through-unvisited-but-last-iff-canonical-witness
-    (implies (rewriting-negative-literal `(graph-reachable-through-unvisited-but-last-p ,x ,y ,preorder))
-             (iff (graph-reachable-through-unvisited-but-last-p x y preorder)
-                  (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  (defthmd reachable$-from-node-iff-canonical-witness
+    (implies (rewriting-negative-literal `(reachable$-from-node ,x ,y ,preorder))
+             (iff (reachable$-from-node x y preorder)
+                  (let ((path (reachable$-from-node-canonical-witness x y preorder)))
                     (and (consp path)
                          (graph-path-p path)
                          (equal (car path) x)
                          (equal (car (last path)) y)
                          (not (intersectp-equal (butlast path 1) preorder))
                          (no-duplicatesp path)))))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+    :hints (("goal" :use ((:instance reachable$-from-node-suff
                            (visited preorder)
-                           (path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))))
+                           (path (reachable$-from-node-canonical-witness x y preorder)))))
             (and stable-under-simplificationp
-                 '(:expand ((graph-reachable-through-unvisited-but-last-p x y preorder))))))
+                 '(:expand ((reachable$-from-node x y preorder))))))
 
-  ;; (defthm graph-reachable-through-unvisited-implies-but-last-canonical-witness
-  ;;   (implies (graph-reachable-through-unvisited-p x y preorder)
-  ;;            (let ((path (graph-reachable-through-unvisited-but-last-canonical-witness x y preorder)))
+  ;; (defthm reachable*-from-node-implies-but-last-canonical-witness
+  ;;   (implies (reachable*-from-node x y preorder)
+  ;;            (let ((path (reachable$-from-node-canonical-witness x y preorder)))
   ;;              (and (consp path)
   ;;                   (graph-path-p path)
   ;;                   (equal (car path) x)
   ;;                   (equal (car (last path)) y)
   ;;                   (not (intersectp-equal (butlast path 1) preorder)))))
-  ;;   :hints (("goal" :use graph-reachable-through-unvisited-but-last-implies-canonical-witness
-  ;;            :in-theory (disable graph-reachable-through-unvisited-but-last-implies-canonical-witness))))
+  ;;   :hints (("goal" :use reachable$-from-node-implies-canonical-witness
+  ;;            :in-theory (disable reachable$-from-node-implies-canonical-witness))))
 
 
   (local (defthm no-intersectp-of-cdr
@@ -1296,14 +727,14 @@
   (local (in-theory (disable last)))
 
 
-  (defthm reachable-through-unvisited-but-last-by-member-cond-1
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-but-last-p z y preorder)))
-             (not (graph-reachable-through-unvisited-but-last-p z y new-preorder)))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-but-last-p z y new-preorder))
-             :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+  (defthm reachable$-from-node-by-member-cond-1
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
+                  (not (reachable$-from-node z y preorder)))
+             (not (reachable$-from-node z y new-preorder)))
+    :hints (("goal" :expand ((reachable$-from-node z y new-preorder))
+             :use ((:instance reachable$-from-node-suff
                     (x z) (visited preorder)
-                    (path (graph-reachable-through-unvisited-but-last-p-witness z y new-preorder))))))
+                    (path (reachable$-from-node-witness z y new-preorder))))))
     :rule-classes ((:rewrite :match-free :all)))
 
 
@@ -1317,7 +748,7 @@
                     (not (intersectp (butlast (cdr (member k x)) n) y)))
            :hints(("Goal" :in-theory (enable intersectp)))))
 
-  (local (in-theory (disable graph-reachable-through-unvisited-but-last-canonical-witness)))
+  (local (in-theory (disable reachable$-from-node-canonical-witness)))
 
 
 
@@ -1326,22 +757,22 @@
   ;;          ;; returns: flag, path
   ;;          ;; flag indicates whether the path is for z-y in the new preorder or x-y in the old preorder.
   ;;          ;; Hyp assumes z reaches y in preorder.
-  ;;          (b* ((z-y-path (graph-reachable-through-unvisited-but-last-canonical-witness z y preorder))
+  ;;          (b* ((z-y-path (reachable$-from-node-canonical-witness z y preorder))
   ;;               ;; If that doesn't intersect the new preorder, we're done.
   ;;               ((unless (intersectp (butlast z-y-path 1) new-preorder))
   ;;                (mv t z-y-path))
   ;;               ;; Otherwise, it does intersect the new preorder -- find the node where it intersects.
   ;;               (blocking-node (intersectp-witness (butlast z-y-path 1) new-preorder))
   ;;               ;; Since this is a member of new-preorder, it is reachable from x.
-  ;;               (x-block-path (graph-reachable-through-unvisited-canonical-witness x blocking-node preorder))
+  ;;               (x-block-path (reachable*-from-node-canonical-witness x blocking-node preorder))
   ;;               ;; Appending, get a path that connects x to y.
   ;;               (x-y-path (append x-block-path (cdr (member blocking-node z-y-path)))))
   ;;            (mv nil x-y-path))))
 
 
-  ;; (local (defthm reachable-through-unvisited-but-last-by-member-cond-2-witness-correct
-  ;;          (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-  ;;                        (graph-reachable-through-unvisited-but-last-p z y preorder))
+  ;; (local (defthm reachable$-from-node-by-member-cond-2-witness-correct
+  ;;          (implies (and (dfs-seen-member-cond x preorder new-preorder)
+  ;;                        (reachable$-from-node z y preorder))
   ;;                   (b* (((mv flag path) (reachable-after-visiting-x-witness x y z preorder new-preorder)))
   ;;                     (and (consp path)
   ;;                          (graph-path-p path)
@@ -1361,16 +792,16 @@
                                   (a (butlast x n)) (b y)))
                     :in-theory (disable member-intersectp-witness)))))
 
-  (local (defun reachable-through-unvisited-but-last-by-member-cond-2-hint (x y z preorder new-preorder)
+  (local (defun reachable$-from-node-by-member-cond-2-hint (x y z preorder new-preorder)
            ;; Hyp assumes z reaches y in preorder.
-           (b* ((z-y (graph-reachable-through-unvisited-but-last-canonical-witness z y preorder))
+           (b* ((z-y (reachable$-from-node-canonical-witness z y preorder))
                 ;; If that doesn't intersect the new preorder, then z reaches y
                 ;; via that same path in the new preorder.
                 ((unless (intersectp (butlast z-y 1) new-preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+                 `'(:use ((:instance reachable$-from-node-suff
                            (x z) (visited new-preorder)
                            (path ,(hq z-y))))
-                    :in-theory (disable graph-reachable-through-unvisited-but-last-p-suff)))
+                    :in-theory (disable reachable$-from-node-suff)))
                 (int (intersectp-witness (butlast z-y 1) new-preorder))
                 ((when (member int preorder))
                  ;; this can't be true because then z-y intersects preorder too early.
@@ -1380,29 +811,29 @@
                            (y ,(hq preorder))))
                     :in-theory (disable intersectp-member)))
                 ;; Since int is a member of new-preorder and not preorder, it's reachable from x
-                ((unless (graph-reachable-through-unvisited-p x int preorder))
-                 `'(:use ((:instance tarjan-preorder-member-cond-necc
-                           (y ,(hq int))))
-                    :in-theory (disable tarjan-preorder-member-cond-necc)))
-                (x-int (graph-reachable-through-unvisited-canonical-witness x int preorder))
+                ((unless (reachable*-from-node x int preorder))
+                 `'(:use ((:instance dfs-seen-member-cond-necc
+                           (y ,(hq int)) (seen preorder) (new-seen new-preorder)))
+                    :in-theory (disable dfs-seen-member-cond-necc)))
+                (x-int (reachable*-from-node-canonical-witness x int preorder))
                 (x-y (append x-int (cdr (member int z-y)))))
-             `'(:use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+             `'(:use ((:instance reachable$-from-node-suff
                        (path ,(hq x-y)) (visited preorder)))
-                :in-theory (disable graph-reachable-through-unvisited-but-last-p-suff
-                                    tarjan-preorder-member-cond-necc)))))
+                :in-theory (disable reachable$-from-node-suff
+                                    dfs-seen-member-cond-necc)))))
 
 
-  (defthm reachable-through-unvisited-but-last-by-member-cond-2
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (graph-reachable-through-unvisited-but-last-p z y preorder)
-                  (not (graph-reachable-through-unvisited-but-last-p x y preorder)))
-             (graph-reachable-through-unvisited-but-last-p z y new-preorder))
-    :hints ((use-termhint (reachable-through-unvisited-but-last-by-member-cond-2-hint
+  (defthm reachable$-from-node-by-member-cond-2
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
+                  (reachable$-from-node z y preorder)
+                  (not (reachable$-from-node x y preorder)))
+             (reachable$-from-node z y new-preorder))
+    :hints ((use-termhint (reachable$-from-node-by-member-cond-2-hint
                            x y z preorder new-preorder)))
     :rule-classes ((:rewrite :match-free :all))))
 
 
-(defsection graph-reachable-through-unvisited-but-last-of-append-last
+(defsection reachable$-from-node-of-append-last
   (local
    (encapsulate nil
      (local (defthm last-is-a-member
@@ -1420,16 +851,16 @@
                 (not (member y (butlast x 1))))
        :hints(("Goal" :in-theory (enable last no-duplicatesp))))))
 
-  (local (defthm graph-reachable-through-unvisited-but-last-of-append-last-1
-           (implies (graph-reachable-through-unvisited-p x y preorder)
-                    (graph-reachable-through-unvisited-but-last-p x y (append preorder (list y))))
+  (local (defthm reachable$-from-node-of-append-last-1
+           (implies (reachable*-from-node x y preorder)
+                    (reachable$-from-node x y (append preorder (list y))))
            :hints (("goal"
-                    :use (;;(:instance graph-reachable-through-unvisited-implies-canonical-witness)
-                          (:instance graph-reachable-through-unvisited-but-last-p-suff
+                    :use (;;(:instance reachable*-from-node-implies-canonical-witness)
+                          (:instance reachable$-from-node-suff
                            (visited (append preorder (list y)))
-                           (path (graph-reachable-through-unvisited-canonical-witness
+                           (path (reachable*-from-node-canonical-witness
                                   x y preorder))))
-                    :in-theory (disable graph-reachable-through-unvisited-but-last-p-suff)
+                    :in-theory (disable reachable$-from-node-suff)
                     :do-not-induct t))))
 
   (local (defthmd intersectp-when-not-intersectp-butlast
@@ -1439,26 +870,26 @@
                          (member (car (last x)) y)))
            :hints(("Goal" :in-theory (enable intersectp last)))))
 
-  (local (defthm graph-reachable-through-unvisited-but-last-of-append-last-2
-           (implies (and (graph-reachable-through-unvisited-but-last-p x y (append preorder (list y)))
+  (local (defthm reachable$-from-node-of-append-last-2
+           (implies (and (reachable$-from-node x y (append preorder (list y)))
                          (not (member y preorder)))
-                    (graph-reachable-through-unvisited-p x y preorder))
+                    (reachable*-from-node x y preorder))
            :hints (("goal"
-                    :use ((:instance graph-reachable-through-unvisited-but-last-implies-canonical-witness
+                    :use ((:instance reachable$-from-node-implies-canonical-witness
                            (preorder (append preorder (list y))))
-                          (:instance graph-reachable-through-unvisited-p-suff
-                           (visited preorder)
-                           (path (graph-reachable-through-unvisited-but-last-canonical-witness
+                          (:instance reachable*-from-node-suff
+                           (seen preorder)
+                           (path (reachable$-from-node-canonical-witness
                                   x y (append preorder (list y))))))
                     :in-theory (e/d (intersectp-when-not-intersectp-butlast)
-                                    (graph-reachable-through-unvisited-p-suff
-                                     graph-reachable-through-unvisited-but-last-implies-canonical-witness))
+                                    (reachable*-from-node-suff
+                                     reachable$-from-node-implies-canonical-witness))
                     :do-not-induct t))))
 
-  (defthm graph-reachable-through-unvisited-but-last-of-append-last
+  (defthm reachable$-from-node-of-append-last
     (implies (not (member y preorder))
-             (iff (graph-reachable-through-unvisited-but-last-p x y (append preorder (list y)))
-                  (graph-reachable-through-unvisited-p x y preorder)))))
+             (iff (reachable$-from-node x y (append preorder (list y)))
+                  (reachable*-from-node x y preorder)))))
 
 
 
@@ -1476,12 +907,12 @@
   :hooks (:fix)
   (if (atom stack)
       nil
-    (or (ec-call (graph-reachable-through-unvisited-but-last-p node (car stack) preorder))
+    (or (ec-call (reachable$-from-node node (car stack) preorder))
         (tarjan-node-reaches-stack node (cdr stack) preorder)))
   ///
   (defthm tarjan-node-reaches-stack-sufficient
     (implies (and (member some-node stack)
-                  (graph-reachable-through-unvisited-but-last-p node some-node preorder))
+                  (reachable$-from-node node some-node preorder))
              (tarjan-node-reaches-stack node stack preorder)))
 
   (defthm tarjan-node-reaches-stack-of-preorder-extension
@@ -1495,22 +926,22 @@
                   (member node stack))))
 
   (defthm tarjan-node-reaches-stack-when-cut-off-by-extension
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-node-reaches-stack node stack preorder)
                   (not (tarjan-node-reaches-stack x stack preorder)))
              (tarjan-node-reaches-stack node stack new-preorder)))
 
   (defthm tarjan-node-reaches-stack-of-extension-when-not-blocked
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (graph-reachable-through-unvisited-but-last-p node some-node preorder)
-                  (not (graph-reachable-through-unvisited-but-last-p
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
+                  (reachable$-from-node node some-node preorder)
+                  (not (reachable$-from-node
                         x some-node preorder))
                   (subsetp stack new-stack)
                   (member some-node stack))
              (tarjan-node-reaches-stack node new-stack new-preorder)))
 
   (defthm tarjan-node-reaches-stack-when-reaches-other-node
-    (implies (and (graph-reachable-through-unvisited-p x y preorder)
+    (implies (and (reachable*-from-node x y preorder)
                   (tarjan-node-reaches-stack y stack preorder))
              (tarjan-node-reaches-stack x stack preorder))
     :rule-classes ((:rewrite :match-free :all))))
@@ -1529,9 +960,9 @@
   (if (atom stack)
       nil
     (let ((other (tarjan-lowlink-node node (cdr stack) preorder)))
-      (if (ec-call (graph-reachable-through-unvisited-but-last-p node (car stack) preorder))
+      (if (ec-call (reachable$-from-node node (car stack) preorder))
           (if (and (member-equal other stack)
-                   (ec-call (graph-reachable-through-unvisited-but-last-p node other preorder))
+                   (ec-call (reachable$-from-node node other preorder))
                    (< (index-of other preorder)
                       (index-of (car stack) preorder)))
               other
@@ -1541,11 +972,11 @@
   (defret tarjan-lowlink-node-exists-when-node-reaches-stack
     (implies (tarjan-node-reaches-stack node stack preorder)
              (and (member lowlink-node stack)
-                  (graph-reachable-through-unvisited-but-last-p node lowlink-node preorder)))
+                  (reachable$-from-node node lowlink-node preorder)))
     :hints(("Goal" :in-theory (enable tarjan-node-reaches-stack))))
 
   (defret tarjan-lowlink-node-lowest-index
-    (implies (and (graph-reachable-through-unvisited-but-last-p node other-node preorder)
+    (implies (and (reachable$-from-node node other-node preorder)
                   (member other-node stack))
              (<= (index-of lowlink-node preorder)
                  (index-of other-node preorder)))
@@ -1570,7 +1001,7 @@
                     (< a b))))
 
   (defret tarjan-lowlink-node-lowest-index-strong
-    (implies (and (graph-reachable-through-unvisited-but-last-p node other-node preorder)
+    (implies (and (reachable$-from-node node other-node preorder)
                   (member other-node stack)
                   (subsetp stack preorder)
                   (not (equal other-node lowlink-node)))
@@ -1616,9 +1047,9 @@
                  ;; must be in the original stack:
                  (b* (((unless (member new-lowlink stack))
                        '(witness :ruleset set-reasoning-no-consp))
-                      ((unless (graph-reachable-through-unvisited-but-last-p node new-lowlink preorder))
+                      ((unless (reachable$-from-node node new-lowlink preorder))
                        ;; must be reachable in new preorder, therefore in old
-                       `'(:use ((:instance graph-reachable-through-unvisited-but-last-p-of-preorder-extension
+                       `'(:use ((:instance reachable$-from-node-of-preorder-extension
                                  (x ,(hq node)) (y ,(hq new-lowlink)))))))
                    ;; new-lowlink node is reachable, so old-lowlink index is less
                    `'(:use ((:instance tarjan-lowlink-node-lowest-index
@@ -1675,10 +1106,10 @@
 
   (defthm tarjan-node-reaches-stack-of-extension-when-not-blocked-special
     (let ((some-node (tarjan-lowlink-node node stack preorder)))
-      (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                    (not (graph-reachable-through-unvisited-but-last-p
+      (implies (and (dfs-seen-member-cond x preorder new-preorder)
+                    (not (reachable$-from-node
                           x some-node preorder))
-                    (graph-reachable-through-unvisited-but-last-p node some-node preorder)
+                    (reachable$-from-node node some-node preorder)
                     (subsetp stack new-stack)
                     (member some-node stack))
                (tarjan-node-reaches-stack node new-stack new-preorder)))
@@ -1688,13 +1119,13 @@
 
   (defthm tarjan-lowlink-node-of-extension-when-not-blocked
     (implies (and (tarjan-node-reaches-stack node stack preorder)
-                  (tarjan-preorder-member-cond x preorder new-preorder)
+                  (dfs-seen-member-cond x preorder new-preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
                   (subsetp stack new-stack)
                   (subsetp (set-difference$ new-stack stack)
                            (set-difference$ new-preorder preorder))
-                  (not (graph-reachable-through-unvisited-but-last-p
+                  (not (reachable$-from-node
                         x (tarjan-lowlink-node node stack preorder) preorder)))
              (equal (tarjan-lowlink-node node new-stack new-preorder)
                     (tarjan-lowlink-node node stack preorder)))
@@ -1702,16 +1133,16 @@
              :use ((:instance tarjan-lowlink-node-lowest-index-strong
                     (stack new-stack) (preorder new-preorder)
                     (other-node (tarjan-lowlink-node node stack preorder)))
-                   (:instance reachable-through-unvisited-but-last-by-member-cond-2
+                   (:instance reachable$-from-node-by-member-cond-2
                     (z node) (y (tarjan-lowlink-node node stack preorder))))
              :in-theory (disable tarjan-lowlink-node-lowest-index-strong
-                                 reachable-through-unvisited-but-last-by-member-cond-2
+                                 reachable$-from-node-by-member-cond-2
                                  tarjan-lowlink-node))
             (witness :ruleset set-reasoning-no-consp))
     :otf-flg t)
 
   (defthm tarjan-lowlink-node-of-extension-when-lowlink-is-less
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-node-reaches-stack node stack preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
@@ -1731,10 +1162,10 @@
 
   (defthm tarjan-node-reaches-stack-of-extension-when-lowlink-is-less
     (let ((some-node (tarjan-lowlink-node node stack preorder)))
-      (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+      (implies (and (dfs-seen-member-cond x preorder new-preorder)
                     (< (index-of some-node preorder)
                        (index-of (tarjan-lowlink-node x stack preorder) preorder))
-                    (graph-reachable-through-unvisited-but-last-p node some-node preorder)
+                    (reachable$-from-node node some-node preorder)
                     (subsetp stack new-stack)
                     (member some-node stack))
                (tarjan-node-reaches-stack node new-stack new-preorder)))
@@ -1746,7 +1177,7 @@
     :rule-classes ((:rewrite :match-free :all)))
 
   (defthm tarjan-lowlink-node-of-extension-when-stack-not-reachable
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-node-reaches-stack node stack preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
@@ -1770,9 +1201,9 @@
 
   (defthm tarjan-node-reaches-stack-of-extension-when-stack-not-reachable
     (let ((some-node (tarjan-lowlink-node node stack preorder)))
-      (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+      (implies (and (dfs-seen-member-cond x preorder new-preorder)
                     (not (tarjan-node-reaches-stack x stack preorder))
-                    (graph-reachable-through-unvisited-but-last-p node some-node preorder)
+                    (reachable$-from-node node some-node preorder)
                     (subsetp stack new-stack)
                     (member some-node stack))
                (tarjan-node-reaches-stack node new-stack new-preorder)))
@@ -1784,7 +1215,7 @@
     :rule-classes ((:rewrite :match-free :all)))
 
   (defthm tarjan-lowlink-node-of-extension-when-stack-not-reachable-special
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-node-reaches-stack node stack preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
@@ -1807,10 +1238,10 @@
 
   (defthm tarjan-node-reaches-stack-of-extension-when-stack-not-reachable-special
     (let ((some-node (tarjan-lowlink-node node stack preorder)))
-      (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+      (implies (and (dfs-seen-member-cond x preorder new-preorder)
                     (member x preorder)
                     (not (member x stack))
-                    (graph-reachable-through-unvisited-but-last-p node some-node preorder)
+                    (reachable$-from-node node some-node preorder)
                     (subsetp stack new-stack)
                     (member some-node stack))
                (tarjan-node-reaches-stack node new-stack new-preorder)))
@@ -1824,7 +1255,7 @@
                                 (preorder true-listp))
   :guard (subsetp-equal stack preorder)
   :returns (path)
-  (ec-call (graph-reachable-through-unvisited-but-last-canonical-witness
+  (ec-call (reachable$-from-node-canonical-witness
             node (tarjan-lowlink-node node stack preorder) preorder))
   ///
   (defret tarjan-node-stack-path-when-reachable
@@ -1844,7 +1275,7 @@
     :hints(("Goal" :do-not-induct t
             :use ((:instance tarjan-node-reaches-stack-sufficient
                    (some-node (car (last path))))
-                  (:instance graph-reachable-through-unvisited-but-last-p-suff
+                  (:instance reachable$-from-node-suff
                    (x node) (y (car (last path))) (visited preorder)
                    (path path))))))
 
@@ -2121,7 +1552,7 @@
            (witness :ruleset set-reasoning-no-consp)))
 
   ;; (defthm tarjan-lowlink-spec-of-extend-lesser
-  ;;   (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+  ;;   (implies (and (dfs-seen-member-cond x preorder new-preorder)
   ;;                 (prefixp preorder new-preorder)
   ;;                 (subsetp-equal stack preorder)
   ;;                 (subsetp-equal stack new-stack)
@@ -2145,7 +1576,7 @@
 
 
   (defthm tarjan-lowlink-spec-of-extension-when-lowlink-is-less
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
                   (subsetp stack new-stack)
@@ -2159,7 +1590,7 @@
     :hints (("goal" :do-not-induct t)))
 
   (defthmd tarjan-lowlink-spec-min-of-extension-lemma
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder)
                   (subsetp stack new-stack)
@@ -2238,16 +1669,16 @@
   (defret tarjan-lowlink-successor-reaches-lowlink-node
     (implies (and (tarjan-node-reaches-stack node stack preorder)
                   (not (member node stack)))
-             (graph-reachable-through-unvisited-but-last-p
+             (reachable$-from-node
               successor (tarjan-lowlink-node node stack preorder) preorder))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+    :hints (("goal" :use ((:instance reachable$-from-node-suff
                            (x successor)
                            (y (tarjan-lowlink-node node stack preorder))
                            (visited preorder)
                            (path (cdr (tarjan-node-stack-path node stack preorder)))))
              :in-theory (e/d (last-of-cdr
                               tarjan-node-stack-endpoint-is-lowlink-node)
-                             (graph-reachable-through-unvisited-but-last-p-suff
+                             (reachable$-from-node-suff
                               butlast-redefinition)))))
 
 
@@ -2268,9 +1699,9 @@
                          (not (member node stack))
                          (member succ (graph-node-succs node))
                          (tarjan-node-reaches-stack succ stack preorder))
-                    (graph-reachable-through-unvisited-but-last-p
+                    (reachable$-from-node
                      node (tarjan-lowlink-node succ stack preorder) preorder))
-           :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+           :hints (("goal" :use ((:instance reachable$-from-node-suff
                                   (x node)
                                   (y (tarjan-lowlink-node succ stack preorder))
                                   (path (cons node (tarjan-node-stack-path succ stack preorder)))
@@ -2293,7 +1724,7 @@
              :in-theory (e/d (last-of-cdr graph-path-p
                                           intersectp)
                              (tarjan-lowlink-node-lowest-index
-                              graph-reachable-through-unvisited-but-last-p-suff
+                              reachable$-from-node-suff
                               tarjan-lowlink-successor
                               butlast-redefinition)))))
 
@@ -2325,16 +1756,16 @@
   (defret tarjan-lowlink-successor-reaches-lowlink-node-without-x
     (implies (and (tarjan-node-reaches-stack node stack preorder)
                   (not (member node stack)))
-             (graph-reachable-through-unvisited-but-last-p
+             (reachable$-from-node
               successor (tarjan-lowlink-node node stack preorder) (append preorder (list node))))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+    :hints (("goal" :use ((:instance reachable$-from-node-suff
                            (x successor)
                            (y (tarjan-lowlink-node node stack preorder))
                            (visited (append preorder (list node)))
                            (path (cdr (tarjan-node-stack-path node stack preorder)))))
              :in-theory (e/d (last-of-cdr
                               tarjan-node-stack-endpoint-is-lowlink-node)
-                             (graph-reachable-through-unvisited-but-last-p-suff
+                             (reachable$-from-node-suff
                               butlast-redefinition)))))
 
 
@@ -2342,9 +1773,9 @@
            (b* ((lowlink (tarjan-lowlink-node successor (cons node stack) (append preorder (list node)))))
              (implies (and (tarjan-node-reaches-stack node stack preorder)
                            (not (member node stack)))
-                      (graph-reachable-through-unvisited-but-last-p
+                      (reachable$-from-node
                        node lowlink preorder)))
-           :hints (("goal" :use ((:instance graph-reachable-through-unvisited-but-last-p-suff
+           :hints (("goal" :use ((:instance reachable$-from-node-suff
                                   (x node)
                                   (y (tarjan-lowlink-node successor (cons node stack) (append preorder (list node))))
                                   (visited preorder)
@@ -2353,7 +1784,7 @@
                                      intersectp
                                      graph-path-p
                                      tarjan-node-stack-endpoint-is-lowlink-node)
-                                    (graph-reachable-through-unvisited-but-last-p-suff
+                                    (reachable$-from-node-suff
                                      tarjan-lowlink-successor))))))
 
 
@@ -2403,7 +1834,7 @@
              :in-theory (e/d (last-of-cdr graph-path-p
                                           intersectp)
                              (tarjan-lowlink-node-lowest-index
-                              graph-reachable-through-unvisited-but-last-p-suff
+                              reachable$-from-node-suff
                               tarjan-lowlink-successor
                               butlast-redefinition
                               (force))))
@@ -2451,7 +1882,7 @@
                    (stack (cons node stack))
                    (preorder (append preorder (list node)))
                    (other-node (tarjan-lowlink-node node stack preorder)))
-                  (:instance graph-reachable-through-unvisited-but-last-p-suff
+                  (:instance reachable$-from-node-suff
                    (x node)
                    (y (tarjan-lowlink-node other-node (cons node stack) (append preorder (list node))))
                    (visited preorder)
@@ -2506,7 +1937,7 @@
              :in-theory (e/d (intersectp
                               tarjan-node-stack-endpoint-is-lowlink-node)
                              (tarjan-node-reaches-stack-sufficient
-                              graph-reachable-through-unvisited-but-last-p-suff
+                              reachable$-from-node-suff
                               tarjan-lowlink-node-exists-when-node-reaches-stack
                               tarjan-lowlink-node-exists-when-node-reaches-stack-superset))
              :do-not-induct t)))
@@ -2671,7 +2102,7 @@
     (forall y
             (iff (member y new-stack)
                  (or (member y stack)
-                     (and (graph-reachable-through-unvisited-for-some-x x y preorder)
+                     (and (reachable*-from-list x y preorder)
                           (tarjan-node-reaches-stack y stack preorder)))))
     :rewrite :direct)
   (in-theory (disable tarjan-stack-member-cond-list))
@@ -2698,7 +2129,7 @@
     (forall y
             (iff (member y new-stack)
                  (or (member y stack)
-                     (and (graph-reachable-through-unvisited-p x y preorder)
+                     (and (reachable*-from-node x y preorder)
                           (tarjan-node-reaches-stack y stack preorder)))))
     :rewrite :direct)
   (in-theory (disable tarjan-stack-member-cond))
@@ -2780,14 +2211,14 @@
            :hints ((set-reasoning))))
 
   (local (defthm tarjan-stack-member-cond-implies-stack-new-elements-cond
-           (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+           (implies (and (dfs-seen-member-cond x preorder new-preorder)
                          (tarjan-stack-member-cond x stack preorder new-stack))
                     (subsetp (set-difference$ new-stack stack)
                              (set-difference$ new-preorder preorder)))
            :hints ((set-reasoning))))
 
   (defthm tarjan-lowlink-spec-min-of-extension
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-stack-member-cond x stack preorder new-stack)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder))
@@ -2847,7 +2278,7 @@
            :rule-classes :linear))
 
   (defthm tarjan-lowlink-spec-list-min-of-extension
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (tarjan-stack-member-cond x stack preorder new-stack)
                   (prefixp preorder new-preorder)
                   (subsetp stack preorder))
@@ -2955,7 +2386,7 @@
 
 
   (local (defthm tarjan-node-reaches-stack-of-member-cond-extension-yes
-           (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+           (implies (and (dfs-seen-member-cond x preorder new-preorder)
                          (tarjan-stack-member-cond x stack preorder new-stack)
                          (subsetp stack preorder)
                          (tarjan-node-reaches-stack y stack preorder))
@@ -2982,14 +2413,14 @@
            :otf-flg t))
 
   (local (defthm subsetp-by-preorder-member-cond
-           (implies (tarjan-preorder-member-cond x preorder new-preorder)
+           (implies (dfs-seen-member-cond x preorder new-preorder)
                     (subsetp preorder new-preorder))
            :hints ((set-reasoning))
            :rule-classes :forward-chaining))
 
   (defthm tarjan-node-reaches-stack-of-member-cond-extension
     (implies (and (tarjan-stack-member-cond x stack preorder new-stack)
-                  (tarjan-preorder-member-cond x preorder new-preorder)
+                  (dfs-seen-member-cond x preorder new-preorder)
                   (subsetp stack preorder))
              (iff (tarjan-node-reaches-stack y new-stack new-preorder)
                   (tarjan-node-reaches-stack y stack preorder))))
@@ -3036,7 +2467,7 @@
 
 
   (local (defthm tarjan-node-reaches-stack-of-member-cond-list-extension-yes
-           (implies (and (tarjan-preorder-member-cond-list x preorder new-preorder)
+           (implies (and (dfs-seen-member-cond-list x preorder new-preorder)
                          (tarjan-stack-member-cond-list x stack preorder new-stack)
                          (subsetp stack preorder)
                          (tarjan-node-reaches-stack y stack preorder))
@@ -3056,21 +2487,56 @@
 
 
   (local (defthm subsetp-by-preorder-member-cond-list
-           (implies (tarjan-preorder-member-cond-list x preorder new-preorder)
+           (implies (dfs-seen-member-cond-list x preorder new-preorder)
                     (subsetp preorder new-preorder))
            :hints ((set-reasoning))
            :rule-classes :forward-chaining))
 
   (defthm tarjan-node-reaches-stack-of-member-cond-list-extension
       (implies (and (tarjan-stack-member-cond-list x stack preorder new-stack)
-                    (tarjan-preorder-member-cond-list x preorder new-preorder)
+                    (dfs-seen-member-cond-list x preorder new-preorder)
                     (subsetp stack preorder))
                (iff (tarjan-node-reaches-stack y new-stack new-preorder)
                     (tarjan-node-reaches-stack y stack preorder)))))
 
 
 
+(encapsulate nil
+  (defthm reachable*-from-succs-when-reachable*-from-node
+    (implies (and (reachable*-from-node x witness preorder)
+                  (not (equal x witness)))
+             (reachable*-from-list (graph-node-succs x) witness (append preorder (list x))))
+    :hints (("goal" :use ((:instance reachable*-from-node-implies-canonical-witness
+                           (y witness) (seen preorder))
+                          (:instance reachable*-from-list-by-path
+                           (x (graph-node-succs x))
+                           (y witness) (seen (append preorder (list x)))
+                           (path (cdr (reachable*-from-node-canonical-witness x witness preorder)))))
+             :in-theory (disable reachable*-from-node-canonical-witness
+                                 reachable*-from-list-by-path)
+             :do-not-induct t)))
 
+  (defthm not-reachable*-from-succs-when-not-reachable*-from-node
+    (implies (and (not (reachable*-from-node x witness preorder))
+                  (not (member-equal x preorder)))
+             (not (reachable*-from-list (graph-node-succs x) witness (append preorder (list x)))))
+    :hints (("goal" :use ((:instance reachable*-from-list-implies-witness
+                           (x (graph-node-succs x))
+                           (y witness) (seen (append preorder (list x))))
+                          (:instance reachable*-from-node-suff
+                           (y witness) (seen preorder)
+                           (path (cons x (reachable*-from-list-witness
+                                          (graph-node-succs x) witness (append preorder (list x)))))))
+             :in-theory (e/d ()
+                             (reachable*-from-list-implies-witness
+                              reachable*-from-node-suff))
+             :do-not-induct t)))
+
+  (defthmd reachable*-from-node-iff-reachable*-from-list
+    (iff (reachable*-from-node x witness preorder)
+         (and (not (member-equal x preorder))
+              (or (equal x witness)
+                  (reachable*-from-list (graph-node-succs x) witness (append preorder (list x))))))))
 
 
 ;; (fty::deflist true-list-listp :pred true-list-listp :elt-type true-listp :true-listp t)
@@ -3102,22 +2568,22 @@
                     (equal (min a b) a))
            :hints(("Goal" :in-theory (enable min)))))
 
-  (local (defthm reachable-through-unvisited-for-some-x-by-member-cond-1-rw
+  (local (defthm reachable*-from-list-by-member-cond-1-rw
            (implies (and (bind-free '((preorder . preorder)
                                       (x . (car x))) (x preorder))
-                         (tarjan-preorder-member-cond x preorder new-preorder)
-                         (not (graph-reachable-through-unvisited-for-some-x z y preorder)))
-                    (not (graph-reachable-through-unvisited-for-some-x z y new-preorder)))
-           :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))))
+                         (dfs-seen-member-cond x preorder new-preorder)
+                         (not (reachable*-from-list z y preorder)))
+                    (not (reachable*-from-list z y new-preorder)))
+           :hints(("Goal" :in-theory (enable reachable*-from-list)))))
 
-  (local (defthm reachable-through-unvisited-for-some-x-by-member-cond-2-rw
+  (local (defthm reachable*-from-list-by-member-cond-2-rw
            (implies (and (bind-free '((preorder . preorder)
                                       (x . (car x))) (x preorder))
-                         (tarjan-preorder-member-cond x preorder new-preorder)
-                         (not (graph-reachable-through-unvisited-p x y preorder))
-                         (graph-reachable-through-unvisited-for-some-x z y preorder))
-                    (graph-reachable-through-unvisited-for-some-x z y new-preorder))
-           :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))
+                         (dfs-seen-member-cond x preorder new-preorder)
+                         (not (reachable*-from-node x y preorder))
+                         (reachable*-from-list z y preorder))
+                    (reachable*-from-list z y new-preorder))
+           :hints(("Goal" :in-theory (enable reachable*-from-list)))
            :rule-classes ((:rewrite :match-free :all))))
 
   (std::defret-mutual tarjan-sccs-lowlink-correct
@@ -3158,7 +2624,7 @@
                             (simple-generalize-cp
                              clause '((,witness . witness)))))))
               (and stable-under-simplificationp
-                   '(:expand ((graph-reachable-through-unvisited-for-some-x x witness preorder)))))
+                   '(:expand ((reachable*-from-list x witness preorder)))))
       :fn tarjan-sccs-list)
     :otf-flg t)
 
@@ -3172,8 +2638,8 @@
     (forall (x y)
             (implies (member x scc)
                      (iff (member y scc)
-                          (and (graph-reachable-through-unvisited-p x y preorder)
-                               (graph-reachable-through-unvisited-p y x preorder)))))
+                          (and (reachable*-from-node x y preorder)
+                               (reachable*-from-node y x preorder)))))
     :rewrite :direct)
 
   (in-theory (disable scc-in-preorder-p))
@@ -3184,8 +2650,8 @@
                 (y (mv-nth 1 (scc-in-preorder-p-witness scc preorder))))
             (not (implies (member x scc)
                           (iff (member y scc)
-                               (and (graph-reachable-through-unvisited-p x y preorder)
-                                    (graph-reachable-through-unvisited-p y x preorder))))))
+                               (and (reachable*-from-node x y preorder)
+                                    (reachable*-from-node y x preorder))))))
     :generalize (((mv-nth 0 (scc-in-preorder-p-witness scc preorder)) . sccx)
                  ((mv-nth 1 (scc-in-preorder-p-witness scc preorder)) . sccy))
     :hints ('(:use (scc-in-preorder-p)
@@ -3229,8 +2695,8 @@
     (implies (and (scc-in-preorder-p scc preorder)
                   (member x scc)
                   (member y scc)
-                  (graph-reachable-through-unvisited-p x z preorder)
-                  (graph-reachable-through-unvisited-p z y preorder))
+                  (reachable*-from-node x z preorder)
+                  (reachable*-from-node z y preorder))
              (member z scc))
     :hints (("goal" :use ((:instance scc-in-preorder-p-necc
                            (x x) (y z))
@@ -3242,13 +2708,13 @@
     (implies (and (scc-in-preorder-p scc preorder)
                   (member x scc)
                   (member y scc)
-                  (graph-reachable-through-unvisited-p z x preorder))
-             (graph-reachable-through-unvisited-p z y preorder))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x z) (y y) (visited preorder)
-                           (path (append (graph-reachable-through-unvisited-p-witness
+                  (reachable*-from-node z x preorder))
+             (reachable*-from-node z y preorder))
+    :hints (("goal" :use ((:instance reachable*-from-node-suff
+                           (x z) (y y) (seen preorder)
+                           (path (append (reachable*-from-node-witness
                                           z x preorder)
-                                         (cdr (graph-reachable-through-unvisited-p-witness
+                                         (cdr (reachable*-from-node-witness
                                                x y preorder)))))
                           (:instance scc-in-preorder-p-necc))
              :in-theory (disable scc-in-preorder-p-necc))))
@@ -3257,13 +2723,13 @@
     (implies (and (scc-in-preorder-p scc preorder)
                   (member x scc)
                   (member y scc)
-                  (graph-reachable-through-unvisited-p x z preorder))
-             (graph-reachable-through-unvisited-p y z preorder))
-    :hints (("goal" :use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x x) (y z) (visited preorder)
-                           (path (append (graph-reachable-through-unvisited-p-witness
+                  (reachable*-from-node x z preorder))
+             (reachable*-from-node y z preorder))
+    :hints (("goal" :use ((:instance reachable*-from-node-suff
+                           (x x) (y z) (seen preorder)
+                           (path (append (reachable*-from-node-witness
                                           y x preorder)
-                                         (cdr (graph-reachable-through-unvisited-p-witness
+                                         (cdr (reachable*-from-node-witness
                                                x z preorder)))))
                           (:instance scc-in-preorder-p-necc))
              :in-theory (disable scc-in-preorder-p-necc))))
@@ -3284,13 +2750,13 @@
                           (x (car path))
                           (y (car (last path)))
                           (z k0))
-                         (:instance graph-reachable-through-unvisited-p-suff
+                         (:instance reachable*-from-node-suff
                           (x (car path))
-                          (y k0) (visited preorder)
+                          (y k0) (seen preorder)
                           (path (prefix-path-to k0 path)))
-                         (:instance graph-reachable-through-unvisited-p-suff
+                         (:instance reachable*-from-node-suff
                           (x k0) (y (car (last path)))
-                          (visited preorder)
+                          (seen preorder)
                           (path (member k0 path))))
                    :expand ((:free (x) (hide x)))))))
 
@@ -3315,13 +2781,13 @@
 
 
   (local (defun scc-in-preorder-p-preserved-by-extension-lemma1-hint (x a b preorder new-preorder scc)
-           (b* (((unless (graph-reachable-through-unvisited-p a b preorder))
+           (b* (((unless (reachable*-from-node a b preorder))
                  `(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq a)) (y ,(hq b))))))
-                (a-b (graph-reachable-through-unvisited-canonical-witness a b preorder))
+                (a-b (reachable*-from-node-canonical-witness a b preorder))
                 ((unless (intersectp a-b new-preorder))
-                 `(:use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x ,(hq a)) (y ,(hq b)) (visited new-preorder)
+                 `(:use ((:instance reachable*-from-node-suff
+                           (x ,(hq a)) (y ,(hq b)) (seen new-preorder)
                            (path ,(hq a-b))))))
                 (int (intersectp-witness a-b new-preorder))
                 ((when (member int preorder))
@@ -3332,11 +2798,11 @@
                            (y ,(hq preorder))))
                     :in-theory (disable intersectp-member
                                         scc-in-preorder-p-necc)))
-                ((unless (graph-reachable-through-unvisited-p x int preorder))
+                ((unless (reachable*-from-node x int preorder))
                  ;; int is reachable from x in preorder
-                 `(:use ((:instance tarjan-preorder-member-cond-necc
-                           (y ,(hq int))))
-                    :in-theory (disable tarjan-preorder-member-cond-necc
+                 `(:use ((:instance dfs-seen-member-cond-necc
+                           (y ,(hq int)) (seen preorder) (new-seen new-preorder)))
+                    :in-theory (disable dfs-seen-member-cond-necc
                                         scc-in-preorder-p-necc)))
                 ((unless (member int scc))
                  `(:use ((:instance scc-path-member-is-in-scc
@@ -3348,7 +2814,7 @@
                               (x ,(hq int))
                               (y ,(hq (car scc)))))))
              `(:use ,use-hints
-                :in-theory (disable tarjan-preorder-member-cond-necc
+                :in-theory (disable dfs-seen-member-cond-necc
                                     scc-in-preorder-p-necc)))))
 
 
@@ -3358,12 +2824,12 @@
            ;; Get the path from a to b in the old preorder. For any node in that path
            ;; intersecting the new preorder, we know that node is reachable from x in
            ;; the preorder by the preorder-member-cond. That implies (car scc) is reachable from x.
-           (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+           (implies (and (dfs-seen-member-cond x preorder new-preorder)
                          (scc-in-preorder-p scc preorder)
-                         (not (graph-reachable-through-unvisited-p x (car scc) preorder))
+                         (not (reachable*-from-node x (car scc) preorder))
                          (member a scc)
                          (member b scc))
-                    (graph-reachable-through-unvisited-p a b new-preorder))
+                    (reachable*-from-node a b new-preorder))
            :hints (("goal"
                     :in-theory (disable scc-in-preorder-p-necc)
                     :do-not-induct t)
@@ -3385,8 +2851,8 @@
                            (b ,(hq a))))
                     :in-theory (disable scc-in-preorder-p-preserved-by-extension-lemma1
                                         scc-in-preorder-p-necc)))
-                ((when (and (graph-reachable-through-unvisited-p a b new-preorder)
-                            (graph-reachable-through-unvisited-p b a new-preorder)))
+                ((when (and (reachable*-from-node a b new-preorder)
+                            (reachable*-from-node b a new-preorder)))
                  `'(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq a))
                            (y ,(hq b))
@@ -3398,9 +2864,9 @@
    (defthm scc-in-preorder-p-preserved-by-extension
      ;; ->: If a, b are members of scc, show that a reaches b in new-preorder:
      ;; Get the path from a to b in the
-     (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+     (implies (and (dfs-seen-member-cond x preorder new-preorder)
                    (scc-in-preorder-p scc preorder)
-                   (not (graph-reachable-through-unvisited-p x (car scc) preorder)))
+                   (not (reachable*-from-node x (car scc) preorder)))
               (scc-in-preorder-p scc new-preorder))
      :hints (("goal" :expand ((scc-in-preorder-p scc new-preorder))
               :in-theory (disable scc-in-preorder-p-necc))
@@ -3412,36 +2878,36 @@
            ;; Get the path from a to b in the new preorder. For any node in that path
            ;; intersecting the new preorder, we know that node is reachable from x in
            ;; the preorder by the preorder-member-cond. That implies (car scc) is reachable from x.
-           (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+           (implies (and (dfs-seen-member-cond x preorder new-preorder)
                          (scc-in-preorder-p scc new-preorder)
-                         (not (graph-reachable-through-unvisited-p x (car scc) preorder))
+                         (not (reachable*-from-node x (car scc) preorder))
                          (member a scc)
                          (member b scc))
-                    (graph-reachable-through-unvisited-p a b preorder))
+                    (reachable*-from-node a b preorder))
            :hints (("goal" :use ((:instance scc-in-preorder-p-necc
                                   (x a) (y b) (preorder new-preorder)))
                     :in-theory (disable scc-in-preorder-p-necc)))))
 
   (local (defun not-scc-in-preorder-lemma-hint (x a preorder new-preorder scc)
-                 (b* (;; ((unless (graph-reachable-through-unvisited-p x a preorder))
+                 (b* (;; ((unless (reachable*-from-node x a preorder))
                       ;;  ;; reachability is preserved by reachable-through-unvisited-by-member-cond-2.
                       ;;  `'(:use ((:instance reachable-through-unvisited-by-member-cond-2
                       ;;            (z ,(hq b)) (y ,(hq a))))))
                       ;; otherwise, since a reaches (car scc)...
-                      ((unless (graph-reachable-through-unvisited-p a (car scc) preorder))
+                      ((unless (reachable*-from-node a (car scc) preorder))
                        `'(:use ((:instance scc-in-preorder-p-necc
                                  (x ,(hq a)) (y ,(hq (car scc))) (preorder ,(hq new-preorder)))))))
                    ;; we show x reaches (car scc).
-                   `'(:use ((:instance graph-reachable-through-unvisited-transitive1
+                   `'(:use ((:instance reachable*-from-node-transitive1
                                  (x ,(hq x)) (y ,(hq a)) (z ,(hq (car scc)))
-                                 (visited ,(hq preorder))))))))
+                                 (seen ,(hq preorder))))))))
 
   (local (defthmd not-scc-in-preorder-lemma
            (implies (and (member a scc)
-                         (graph-reachable-through-unvisited-p x a preorder)
-                         (tarjan-preorder-member-cond x preorder new-preorder)
+                         (reachable*-from-node x a preorder)
+                         (dfs-seen-member-cond x preorder new-preorder)
                          (scc-in-preorder-p scc new-preorder))
-                    (graph-reachable-through-unvisited-p x (car scc) preorder))
+                    (reachable*-from-node x (car scc) preorder))
            :hints ((use-termhint (not-scc-in-preorder-lemma-hint x a preorder new-preorder scc)))))
 
   (defthmd not-scc-in-preorder-p-when-member-in-common-with-preorder
@@ -3450,31 +2916,31 @@
              (not (scc-in-preorder-p scc preorder)))
     :hints (("goal" :use ((:instance scc-in-preorder-p-necc
                            (x x) (y x)))
-             :expand ((graph-reachable-through-unvisited-p x x preorder)
+             :expand ((reachable*-from-node x x preorder)
                       (intersectp-equal
-                       (graph-reachable-through-unvisited-p-witness x x preorder)
+                       (reachable*-from-node-witness x x preorder)
                        preorder))
-             :in-theory (e/d (tarjan-preorder-member-cond-necc)
+             :in-theory (e/d (dfs-seen-member-cond-necc)
                              (scc-in-preorder-p-necc)))))
 
   (defthm not-scc-in-new-preorder-when-reachable
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (member a scc)
-                  (graph-reachable-through-unvisited-p x a preorder))
+                  (reachable*-from-node x a preorder))
              (not (scc-in-preorder-p scc new-preorder)))
     :hints (("goal" :use ((:instance scc-in-preorder-p-necc
                            (x a) (y a) (preorder new-preorder)))
-             :expand ((graph-reachable-through-unvisited-p a a new-preorder)
+             :expand ((reachable*-from-node a a new-preorder)
                       (intersectp-equal
-                       (graph-reachable-through-unvisited-p-witness a a new-preorder)
+                       (reachable*-from-node-witness a a new-preorder)
                        new-preorder))
-             :in-theory (e/d (tarjan-preorder-member-cond-necc)
+             :in-theory (e/d (dfs-seen-member-cond-necc)
                              (scc-in-preorder-p-necc)))))
 
   (local (defun not-scc-in-preorder-p-preserved-by-extension-hint (x preorder new-preorder scc)
            ;; We assume (scc-in-preorder-p scc new-preorder) and need to show
            ;; it's an scc in the old preorder.
-           (b* (((when (graph-reachable-through-unvisited-p x (car scc) preorder))
+           (b* (((when (reachable*-from-node x (car scc) preorder))
                  `'(:use ((:instance not-scc-in-new-preorder-when-reachable
                            (a (car scc))))))
                 ((mv a b) (scc-in-preorder-p-witness scc preorder))
@@ -3489,25 +2955,25 @@
                 ;; If b is not a member, then if a->b and b->a in the old
                 ;; preorder, will prove that they do in the new preorder via
                 ;; reachable-through-unvisited-by-member-cond-2.
-                ((unless (graph-reachable-through-unvisited-p b a new-preorder))
-                 ;; need to know (not (graph-reachable-through-unvisited-p x b preorder))
+                ((unless (reachable*-from-node b a new-preorder))
+                 ;; need to know (not (reachable*-from-node x b preorder))
                  ;; BOZO this is much the same process as below -- prove a lemma instead
-                 (b* (((unless (graph-reachable-through-unvisited-p x a preorder))
+                 (b* (((unless (reachable*-from-node x a preorder))
                        ;; reachability is preserved by reachable-through-unvisited-by-member-cond-2.
                        `'(:use ((:instance reachable-through-unvisited-by-member-cond-2
                                  (z ,(hq b)) (y ,(hq a)))))))
                  `'(:use ((:instance not-scc-in-preorder-lemma
                            (a ,(hq a)))))))
-                ((unless (graph-reachable-through-unvisited-p a b new-preorder))
-                 (b* (((unless (graph-reachable-through-unvisited-p x b preorder))
+                ((unless (reachable*-from-node a b new-preorder))
+                 (b* (((unless (reachable*-from-node x b preorder))
                        ;; reachability is preserved by reachable-through-unvisited-by-member-cond-2.
                        `'(:use ((:instance reachable-through-unvisited-by-member-cond-2
                                  (z ,(hq a)) (y ,(hq b))))))
                       ;; otherwise, x then reaches a ...
-                      ((unless (graph-reachable-through-unvisited-p x a preorder))
-                       `'(:use ((:instance graph-reachable-through-unvisited-transitive1
+                      ((unless (reachable*-from-node x a preorder))
+                       `'(:use ((:instance reachable*-from-node-transitive1
                                  (x ,(hq x)) (y ,(hq b)) (z ,(hq a))
-                                 (visited ,(hq preorder)))))))
+                                 (seen ,(hq preorder)))))))
                    ;; which means x reaches (car scc).
                    `'(:use ((:instance not-scc-in-preorder-lemma
                              (a ,(hq a))))))))
@@ -3516,22 +2982,22 @@
                        (preorder new-preorder)
                        (x ,(hq a)) (y ,(hq b))))))))
 
-  (local (in-theory (disable NOT-GRAPH-REACHABLE-THROUGH-UNVISITED-P-WHEN-MEMBER-LAST
-                             NOT-GRAPH-REACHABLE-THROUGH-UNVISITED-P-WHEN-MEMBER-first
+  (local (in-theory (disable NOT-REACHABLE*-FROM-NODE-WHEN-MEMBER-LAST
+                             NOT-REACHABLE*-FROM-NODE-WHEN-MEMBER-first
                              ;; reachable-through-unvisited-by-member-cond-1
-                             tarjan-preorder-member-cond-necc)))
+                             dfs-seen-member-cond-necc)))
 
 
   (defthm not-scc-in-preorder-p-preserved-by-extension
     ;; ->: If a, b are members of scc, show that a reaches b in new-preorder:
     ;; Get the path from a to b in the
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
                   (not (scc-in-preorder-p scc preorder)))
              (not (scc-in-preorder-p scc new-preorder)))
     :hints (("goal" :expand ((scc-in-preorder-p scc preorder))
              :in-theory (disable scc-in-preorder-p-necc
-                                 graph-reachable-through-unvisited-transitive1
-                                 graph-reachable-through-unvisited-transitive2
+                                 reachable*-from-node-transitive1
+                                 reachable*-from-node-transitive2
                                  not-scc-in-new-preorder-when-reachable)
              :do-not-induct t)
             (and stable-under-simplificationp
@@ -3540,54 +3006,54 @@
 
 
   (defthm scc-in-preorder-p-of-extension-iff-previous
-    (implies (and (tarjan-preorder-member-cond x preorder new-preorder)
-                  (not (graph-reachable-through-unvisited-p x (car scc) preorder)))
+    (implies (and (dfs-seen-member-cond x preorder new-preorder)
+                  (not (reachable*-from-node x (car scc) preorder)))
              (iff (scc-in-preorder-p scc new-preorder)
                   (scc-in-preorder-p scc preorder))))
 
-  (local (defun graph-reachable-through-unvisited-if-not-blocked-by-reachable-hint (a b x preorder)
-           (b* ((a-b (graph-reachable-through-unvisited-p-witness a b preorder))
+  (local (defun reachable*-from-node-if-not-blocked-by-reachable-hint (a b x preorder)
+           (b* ((a-b (reachable*-from-node-witness a b preorder))
                 (new-preorder (append preorder (list x)))
                 ((unless (intersectp a-b new-preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x ,(hq a)) (y ,(hq b)) (visited ,(hq new-preorder))
+                 `'(:use ((:instance reachable*-from-node-suff
+                           (x ,(hq a)) (y ,(hq b)) (seen ,(hq new-preorder))
                            (path ,(hq a-b)))))))
-             `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                       (x ,(hq a)) (y ,(hq x)) (visited ,(hq preorder))
+             `'(:use ((:instance reachable*-from-node-suff
+                       (x ,(hq a)) (y ,(hq x)) (seen ,(hq preorder))
                        (path ,(hq (prefix-path-to x a-b)))))))))
 
 
-  (defthmd graph-reachable-through-unvisited-if-not-blocked-by-reachable
-    (implies (and (graph-reachable-through-unvisited-p a b preorder)
-                  (not (graph-reachable-through-unvisited-p a x preorder)))
-             (graph-reachable-through-unvisited-p a b (append preorder (list x))))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p a b preorder))
-             :in-theory (disable graph-reachable-through-unvisited-p-suff)
+  (defthmd reachable*-from-node-if-not-blocked-by-reachable
+    (implies (and (reachable*-from-node a b preorder)
+                  (not (reachable*-from-node a x preorder)))
+             (reachable*-from-node a b (append preorder (list x))))
+    :hints (("goal" :expand ((reachable*-from-node a b preorder))
+             :in-theory (disable reachable*-from-node-suff)
              :do-not-induct t)
-            (use-termhint (graph-reachable-through-unvisited-if-not-blocked-by-reachable-hint
+            (use-termhint (reachable*-from-node-if-not-blocked-by-reachable-hint
                            a b x preorder)))
     :otf-flg t)
 
-  (local (defun graph-reachable-through-unvisited-if-not-blocked-by-reaching-hint (a b x preorder)
-           (b* ((a-b (graph-reachable-through-unvisited-p-witness a b preorder))
+  (local (defun reachable*-from-node-if-not-blocked-by-reaching-hint (a b x preorder)
+           (b* ((a-b (reachable*-from-node-witness a b preorder))
                 (new-preorder (append preorder (list x)))
                 ((unless (intersectp a-b new-preorder))
-                 `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                           (x ,(hq a)) (y ,(hq b)) (visited ,(hq new-preorder))
+                 `'(:use ((:instance reachable*-from-node-suff
+                           (x ,(hq a)) (y ,(hq b)) (seen ,(hq new-preorder))
                            (path ,(hq a-b)))))))
-             `'(:use ((:instance graph-reachable-through-unvisited-p-suff
-                       (x ,(hq x)) (y ,(hq b)) (visited ,(hq preorder))
+             `'(:use ((:instance reachable*-from-node-suff
+                       (x ,(hq x)) (y ,(hq b)) (seen ,(hq preorder))
                        (path ,(hq (member x a-b)))))))))
 
 
-  (defthmd graph-reachable-through-unvisited-if-not-blocked-by-reaching
-    (implies (and (graph-reachable-through-unvisited-p a b preorder)
-                  (not (graph-reachable-through-unvisited-p x b preorder)))
-             (graph-reachable-through-unvisited-p a b (append preorder (list x))))
-    :hints (("goal" :expand ((graph-reachable-through-unvisited-p a b preorder))
-             :in-theory (disable graph-reachable-through-unvisited-p-suff)
+  (defthmd reachable*-from-node-if-not-blocked-by-reaching
+    (implies (and (reachable*-from-node a b preorder)
+                  (not (reachable*-from-node x b preorder)))
+             (reachable*-from-node a b (append preorder (list x))))
+    :hints (("goal" :expand ((reachable*-from-node a b preorder))
+             :in-theory (disable reachable*-from-node-suff)
              :do-not-induct t)
-            (use-termhint (graph-reachable-through-unvisited-if-not-blocked-by-reaching-hint
+            (use-termhint (reachable*-from-node-if-not-blocked-by-reaching-hint
                            a b x preorder)))
     :otf-flg t)
 
@@ -3601,26 +3067,26 @@
                 ((when (let ((x a) (y b))
                            (implies (member x scc)
                                     (iff (member y scc)
-                                         (and (graph-reachable-through-unvisited-p x y preorder)
-                                              (graph-reachable-through-unvisited-p y x preorder))))))
+                                         (and (reachable*-from-node x y preorder)
+                                              (reachable*-from-node y x preorder))))))
                  `(:use ((:instance scc-in-preorder-p))))
                 ;; ((termhint-seq ))
                 ((when (member b scc))
                  `(:in-theory (enable scc-in-preorder-p-necc)))
                 ((termhint-seq `(:use ((:instance scc-in-preorder-p-necc
                                          (x ,(hq a)) (y ,(hq b)) (preorder ,(hq new-preorder)))))))
-                ((unless (graph-reachable-through-unvisited-p (car scc) a preorder))
+                ((unless (reachable*-from-node (car scc) a preorder))
                  `(:use ((:instance scc-in-preorder-p-necc
                            (x ,(hq (car scc))) (y ,(hq a)) (preorder ,(hq new-preorder))))))
-                ((unless (graph-reachable-through-unvisited-p a b new-preorder))
-                 (b* (((unless (graph-reachable-through-unvisited-p a x preorder))
-                       `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+                ((unless (reachable*-from-node a b new-preorder))
+                 (b* (((unless (reachable*-from-node a x preorder))
+                       `(:use ((:instance reachable*-from-node-if-not-blocked-by-reachable
                                  (a ,(hq a)) (b ,(hq b)))))))
                    ;; transitivity
                    nil))
                 ;; b can't reach a
-                ((unless (graph-reachable-through-unvisited-p b x preorder))
-                 `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+                ((unless (reachable*-from-node b x preorder))
+                 `(:use ((:instance reachable*-from-node-if-not-blocked-by-reachable
                            (a ,(hq b)) (b ,(hq a)))))))
              ;; transitivity
              nil)))
@@ -3633,7 +3099,7 @@
 
   (defthm not-scc-in-preorder-p-preserved-by-add-to-preorder-when-new-node-not-reachable
     (implies (and (not (scc-in-preorder-p scc preorder))
-                  (not (graph-reachable-through-unvisited-p (car scc) x preorder)))
+                  (not (reachable*-from-node (car scc) x preorder)))
              (not (scc-in-preorder-p scc (append preorder (list x)))))
     :hints (("goal" ; :Expand ((scc-in-preorder-p scc preorder))
              :in-theory (disable scc-in-preorder-p-necc)
@@ -3647,13 +3113,13 @@
 (define scc-reachable-from-node (scc node stack preorder)
   :verify-guards nil
   (and (consp scc)
-       (graph-reachable-through-unvisited-p node (car scc) preorder)
+       (reachable*-from-node node (car scc) preorder)
        (not (tarjan-node-reaches-stack (car scc) stack preorder))))
 
 (define scc-reachable-from-node-list (scc nodes stack preorder)
   :verify-guards nil
   (and (consp scc)
-       (graph-reachable-through-unvisited-for-some-x nodes (car scc) preorder)
+       (reachable*-from-list nodes (car scc) preorder)
        (not (tarjan-node-reaches-stack (car scc) stack preorder))))
 
 
@@ -3663,7 +3129,7 @@
             (implies (member scc sccs)
                      (and (consp scc)
                           (scc-in-preorder-p scc preorder)
-                          (graph-reachable-through-unvisited-p x (car scc) preorder)
+                          (reachable*-from-node x (car scc) preorder)
                           (not (tarjan-node-reaches-stack (car scc) stack preorder)))))
     :rewrite :direct)
   (in-theory (disable tarjan-sccs-produces-reachable-sccs-cond))
@@ -3693,7 +3159,7 @@
     (iff (tarjan-sccs-produces-reachable-sccs-cond x stack preorder (cons scc sccs))
          (and (consp scc)
               (scc-in-preorder-p scc preorder)
-              (graph-reachable-through-unvisited-p x (car scc) preorder)
+              (reachable*-from-node x (car scc) preorder)
               (not (tarjan-node-reaches-stack (car scc) stack preorder))
               (tarjan-sccs-produces-reachable-sccs-cond x stack preorder sccs)))
     :hints ((and stable-under-simplificationp
@@ -3715,9 +3181,9 @@
   ;;          (b* (((unless (and (consp scc)
   ;;                             (scc-in-preorder-p scc new-preorder)
   ;;                             (not (tarjan-node-reaches-stack (car scc) new-stack new-preorder))
-  ;;                             (graph-reachable-through-unvisited-p x (car scc) new-preorder)))
+  ;;                             (reachable*-from-node x (car scc) new-preorder)))
   ;;                '(:use ((:instance tarjan-sccs-produces-reachable-sccs-cond-necc))))
-  ;;               ((when (graph-reachable-through-unvisited-p x (car scc) preorder))
+  ;;               ((when (reachable*-from-node x (car scc) preorder))
 
   ;;               ((unless (scc-in-preorder-p scc preorder))
   ;;                '(:use scc-in-preorder-p-of-extension-iff-previous))
@@ -3726,13 +3192,13 @@
 
   ;; (defthm tarjan-sccs-produces-reachable-sccs-cond-of-extended-stack-lemma
   ;;   (implies (and (tarjan-sccs-produces-reachable-sccs-cond x new-stack new-preorder sccs)
-  ;;                 (tarjan-preorder-member-cond x preorder new-preorder)
+  ;;                 (dfs-seen-member-cond x preorder new-preorder)
   ;;                 (tarjan-stack-member-cond x stack preorder new-stack)
   ;;                 (subsetp stack preorder))
   ;;            (implies (member scc sccs)
   ;;                     (and (consp scc)
   ;;                          (scc-in-preorder-p scc preorder)
-  ;;                          (graph-reachable-through-unvisited-p x (car scc) preorder)
+  ;;                          (reachable*-from-node x (car scc) preorder)
   ;;                          (not (tarjan-node-reaches-stack (car scc) stack preorder)))))
   ;;   :hints(("Goal" :in-theory (disable tarjan-sccs-produces-reachable-sccs-cond-necc)
 
@@ -3742,7 +3208,7 @@
 
   ;; (defthm tarjan-sccs-produces-reachable-sccs-cond-of-extended-stack
   ;;   (implies (and (tarjan-sccs-produces-reachable-sccs-cond x new-stack new-preorder sccs)
-  ;;                 (tarjan-preorder-member-cond x preorder new-preorder)
+  ;;                 (dfs-seen-member-cond x preorder new-preorder)
   ;;                 (tarjan-stack-member-cond x stack preorder new-stack)
   ;;                 (subsetp stack preorder))
   ;;            (tarjan-sccs-produces-reachable-sccs-cond x stack preorder sccs))
@@ -3771,7 +3237,7 @@
             (implies (member scc sccs)
                      (and (consp scc)
                           (scc-in-preorder-p scc preorder)
-                          (graph-reachable-through-unvisited-for-some-x x (car scc) preorder)
+                          (reachable*-from-list x (car scc) preorder)
                           (not (tarjan-node-reaches-stack (car scc) stack preorder)))))
     :rewrite :direct)
 
@@ -3810,7 +3276,7 @@
              (and (not (tarjan-sccs-produces-reachable-sccs-cond (car x) stack preorder sccs))
                   (not (tarjan-sccs-list-produces-reachable-sccs-cond (cdr x) stack preorder sccs))))
     :hints(("goal" :expand ((tarjan-sccs-list-produces-reachable-sccs-cond x stack preorder sccs)
-                            (graph-reachable-through-unvisited-for-some-x
+                            (reachable*-from-list
                              x
                              (car (tarjan-sccs-list-produces-reachable-sccs-cond-witness
                                    x stack preorder sccs))
@@ -3829,21 +3295,21 @@
 
 
 
-  ;; (local (defthm reachable-through-unvisited-for-some-x-by-member-cond-2-rw
+  ;; (local (defthm reachable*-from-list-by-member-cond-2-rw
   ;;          (implies (and (bind-free '((preorder . preorder)
   ;;                                     (x . (car x))) (x preorder))
-  ;;                        (tarjan-preorder-member-cond x preorder new-preorder)
-  ;;                        (not (graph-reachable-through-unvisited-p x y preorder))
-  ;;                        (graph-reachable-through-unvisited-for-some-x z y preorder))
-  ;;                   (graph-reachable-through-unvisited-for-some-x z y new-preorder))
-  ;;          :hints(("Goal" :in-theory (enable graph-reachable-through-unvisited-for-some-x)))
+  ;;                        (dfs-seen-member-cond x preorder new-preorder)
+  ;;                        (not (reachable*-from-node x y preorder))
+  ;;                        (reachable*-from-list z y preorder))
+  ;;                   (reachable*-from-list z y new-preorder))
+  ;;          :hints(("Goal" :in-theory (enable reachable*-from-list)))
   ;;          :rule-classes ((:rewrite :match-free :all))))
 
 
 
   (defthm tarjan-sccs-list-produces-reachable-sccs-cond-of-extended-stack
     (implies (and (tarjan-sccs-list-produces-reachable-sccs-cond x new-stack new-preorder sccs)
-                  (tarjan-preorder-member-cond y preorder new-preorder)
+                  (dfs-seen-member-cond y preorder new-preorder)
                   (tarjan-stack-member-cond y stack preorder new-stack)
                   (subsetp stack preorder))
              (tarjan-sccs-list-produces-reachable-sccs-cond x stack preorder sccs))
@@ -3876,7 +3342,7 @@
   ;;               ((when (tarjan-node-reaches-stack (car scc) stack preorder))
   ;;                `'(:use ((:instance tarjan-node-reaches-stack-of-add-x-yes
   ;;                          (y ,(hq (car scc)))))))
-  ;;               ((when (graph-reachable-through-unvisited-p (car scc) x preorder))
+  ;;               ((when (reachable*-from-node (car scc) x preorder))
   ;;                ;; node reaches stack composition
   ;;                `'(:use ((:instance tarjan-node-reaches-stack-when-reaches-other-node
   ;;                          (x ,(hq (car scc))) (y ,(hq x))))))
@@ -3912,13 +3378,13 @@
                     (node (car (tarjan-sccs-produces-reachable-sccs-cond-witness
                           x stack preorder sccs)))
                     (preorder (append preorder (list x))))
-                   (:instance graph-reachable-through-unvisited-but-last-of-append-last
+                   (:instance reachable$-from-node-of-append-last
                     (y x)
                     (x (car (tarjan-sccs-produces-reachable-sccs-cond-witness
                           x stack preorder sccs))))
                    )
              :in-theory (disable tarjan-sccs-list-produces-reachable-sccs-cond-necc
-                                 graph-reachable-through-unvisited-but-last-of-append-last)
+                                 reachable$-from-node-of-append-last)
              :do-not-induct t)
             ;; (use-termhint (tarjan-sccs-produces-reachable-sccs-cond-by-successors-hint
             ;;                x stack preorder sccs))
@@ -4035,13 +3501,13 @@
 
   (local (defthm not-tarjan-node-reaches-stack-of-cons-implies-not-reachable
            (implies (not (tarjan-node-reaches-stack y (cons x stack) (append preorder (list x))))
-                    (not (graph-reachable-through-unvisited-p y x preorder)))
+                    (not (reachable*-from-node y x preorder)))
            :hints (("goal"
-                    :use ((:instance graph-reachable-through-unvisited-implies-canonical-witness
+                    :use ((:instance reachable*-from-node-implies-canonical-witness
                            (x y) (y x))
                           (:instance tarjan-node-reaches-stack-by-path
                            (node y) (stack (cons x stack)) (preorder (append preorder (list x)))
-                           (path (graph-reachable-through-unvisited-canonical-witness y x preorder))))))))
+                           (path (reachable*-from-node-canonical-witness y x preorder))))))))
 
   ;; (local (defthm reachable-through-succs-when-reachable
 
@@ -4055,13 +3521,13 @@
                   `(:use ((:instance tarjan-lowlink-node-exists-when-node-reaches-stack
                            (node y) (stack (cons x stack)) (preorder (append preorder (list x)))))
                     :in-theory (disable tarjan-lowlink-node-exists-when-node-reaches-stack
-                                        graph-reachable-through-unvisited-but-last-when-reachable-from-reachable))))
+                                        reachable$-from-node-when-reachable-from-reachable))))
                 ((when (or (equal y-stack-node x)
                            (not (member y-stack-node stack))))
                  nil)
-                ((unless (graph-reachable-through-unvisited-but-last-p
+                ((unless (reachable$-from-node
                           x y-stack-node preorder))
-                 `(:use ((:instance graph-reachable-through-unvisited-but-last-when-reachable-from-reachable
+                 `(:use ((:instance reachable$-from-node-when-reachable-from-reachable
                            (x x) (y y) (z ,(hq y-stack-node)))))))
              `(:use ((:instance tarjan-node-reaches-stack-sufficient
                        (some-node ,(hq y-stack-node))
@@ -4072,17 +3538,23 @@
            ;; case where sccx and sccy are both in the scc,
            ;; therefore both reachable from (succs x) and reach back to the stack+x
            (implies (and (not (tarjan-node-reaches-stack x stack preorder))
-                         (graph-reachable-through-unvisited-for-some-x
+                         (reachable*-from-list
                           (graph-node-succs x) y (append preorder (list x)))
                          (not (member x preorder))
                          (tarjan-node-reaches-stack y (cons x stack) (append preorder (list x))))
-                    (graph-reachable-through-unvisited-p y x preorder))
+                    (reachable*-from-node y x preorder))
            :hints ((use-termhint (stack-nodes-reach-x-hints x y stack preorder)))
            :rule-classes nil))
 
   ;; (local (defun take-difference-of-new-stack-is-scc-lemma-case1-hint (x stack preorder new-stack sccx sccy)
   ;;          (b* ((
 
+  (local
+   (defthm reachable*-from-node-when-reachable*-from-succs
+     (implies (and (reachable*-from-list (graph-node-succs x) witness (append preorder (list x)))
+                   (not (member-equal x preorder)))
+              (reachable*-from-node x witness preorder))))
+  
   (local (defthm take-difference-of-new-stack-is-scc-lemma-case1
            ;; When sccx and sccy are both members, they are both reachable from
            ;; (succs x) and therefore from x, and also both reach x, since they
@@ -4096,7 +3568,7 @@
                          (not (member x preorder)))
                     (implies (and (member sccx new-stack) (not (member sccx stack))
                                   (member sccy new-stack) (not (member sccy stack)))
-                             (graph-reachable-through-unvisited-p sccx sccy preorder)))
+                             (reachable*-from-node sccx sccy preorder)))
            :hints (("goal" :use ((:instance stack-nodes-reach-x
                                   (y sccx)))))
            :otf-flg t
@@ -4106,15 +3578,15 @@
            (declare (ignorable sccx new-stack))
            (b* (((when (tarjan-node-reaches-stack sccy (cons x stack) (append preorder (list x))))
                  nil)
-                ((when (graph-reachable-through-unvisited-p sccy sccx (append preorder (list x))))
+                ((when (reachable*-from-node sccy sccx (append preorder (list x))))
                  `(:use ((:instance tarjan-node-reaches-stack-when-reaches-other-node
                            (x sccy) (y sccx) (preorder (append preorder (list x)))
                            (stack (cons x stack))))
                     :in-theory (disable tarjan-node-reaches-stack-when-reaches-other-node)))
-                ;; ((when (graph-reachable-through-unvisited-but-last-p sccy x (append preorder (list x))))
+                ;; ((when (reachable$-from-node sccy x (append preorder (list x))))
                 ;;  `(:expand (,(hq (tarjan-node-reaches-stack sccy (cons x stack) (append preorder (list x)))))))
                 )
-             `(:use ((:instance graph-reachable-through-unvisited-if-not-blocked-by-reachable
+             `(:use ((:instance reachable*-from-node-if-not-blocked-by-reachable
                        (a sccy) (b sccx)))))))
 
 
@@ -4140,8 +3612,8 @@
                          (suffixp (list-fix (cons x stack)) new-stack))
                     (implies (and (member sccx new-stack) (not (member sccx stack))
                                   (not (and (member sccy new-stack) (not (member sccy stack))))
-                                  (graph-reachable-through-unvisited-p sccx sccy preorder))
-                             (not (graph-reachable-through-unvisited-p sccy sccx preorder))))
+                                  (reachable*-from-node sccx sccy preorder))
+                             (not (reachable*-from-node sccy sccx preorder))))
            :hints (("goal" :do-not-induct t)
                    (use-termhint (take-difference-of-new-stack-is-scc-lemma-case2-hint
                                   x stack preorder new-stack sccx sccy)))
@@ -4156,7 +3628,7 @@
                 ((unless (member sccy0 scc))
                  `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case2
                            (x ,(hq x)) (sccx ,(hq sccx0)) (sccy ,(hq sccy0))))))
-                ((when (graph-reachable-through-unvisited-p sccx0 sccy0 preorder))
+                ((when (reachable*-from-node sccx0 sccy0 preorder))
                  `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
                            (x ,(hq x)) (sccx ,(hq sccy0)) (sccy ,(hq sccx0)))))))
              `(:use ((:instance take-difference-of-new-stack-is-scc-lemma-case1
@@ -4185,7 +3657,7 @@
                                       (('cdr y) `((y . (car ,y))))
                                       (& nil))
                                     (y))
-                         (tarjan-preorder-member-cond y preorder new-preorder)
+                         (dfs-seen-member-cond y preorder new-preorder)
                          (tarjan-stack-member-cond y stack preorder new-stack)
                          (subsetp stack preorder))
                     (tarjan-sccs-list-produces-reachable-sccs-cond x stack preorder sccs))))
@@ -4226,7 +3698,7 @@
     (implies (and (subsetp stack preorder)
                   (not (member x preorder))
                   (no-duplicatesp stack))
-             (GRAPH-REACHABLE-THROUGH-UNVISITED-P
+             (REACHABLE*-FROM-NODE
               X
               (CAR (MV-NTH 2
                            (TARJAN-SCCS-LIST (GRAPH-NODE-SUCCS X)
@@ -4302,7 +3774,7 @@
                   (member scc sccs))
              (and (consp scc)
                   (scc-in-preorder-p scc preorder)
-                  (graph-reachable-through-unvisited-p x (car scc) preorder)
+                  (reachable*-from-node x (car scc) preorder)
                   (not (tarjan-node-reaches-stack (car scc) stack preorder))))
     :hints (("goal" :use tarjan-sccs-produces-reachable-sccs-lemma
              :in-theory (disable tarjan-sccs-produces-reachable-sccs-lemma)))
@@ -4314,7 +3786,7 @@
                   (member scc sccs))
              (and (consp scc)
                   (scc-in-preorder-p scc preorder)
-                  (graph-reachable-through-unvisited-for-some-x x (car scc) preorder)
+                  (reachable*-from-list x (car scc) preorder)
                   (not (tarjan-node-reaches-stack (car scc) stack preorder))))
     :hints (("goal" :use tarjan-sccs-list-produces-reachable-sccs-lemma
              :in-theory (disable tarjan-sccs-list-produces-reachable-sccs-lemma)))
@@ -4339,14 +3811,14 @@
 
   (defun-sk tarjan-sccs-collects-every-node-cond (x preorder new-stack sccs)
     (forall y
-            (implies (and (graph-reachable-through-unvisited-p x y preorder)
+            (implies (and (reachable*-from-node x y preorder)
                           (not (member y new-stack)))
                      (member y (append-lists sccs))))
     :rewrite :direct)
 
   (defun-sk tarjan-sccs-list-collects-every-node-cond (x preorder new-stack sccs)
     (forall y
-            (implies (and (graph-reachable-through-unvisited-for-some-x x y preorder)
+            (implies (and (reachable*-from-list x y preorder)
                           (not (member y new-stack)))
                      (member y (append-lists sccs))))
     :rewrite :direct)
@@ -4391,18 +3863,18 @@
                          (no-duplicatesp stack))
                     (iff (member y new-stack)
                          (or (member y stack)
-                             (and (graph-reachable-through-unvisited-p x y preorder)
+                             (and (reachable*-from-node x y preorder)
                                   (tarjan-node-reaches-stack y stack preorder)))))
            :hints (("goal" :use ((:instance tarjan-sccs-lowlink-correct))
                     :in-theory (disable tarjan-sccs-lowlink-correct)))
            :fn tarjan-sccs))
 
   (local (defret tarjan-sccs-member-reachable-through-unvisited
-           (implies (and (not (graph-reachable-through-unvisited-p x y preorder))
-                         (graph-reachable-through-unvisited-for-some-x z y preorder))
-                    (graph-reachable-through-unvisited-for-some-x z y new-preorder))
-           :hints (("goal" :use ((:instance tarjan-sccs-preorder-member-cond))
-                    :in-theory (disable tarjan-sccs-preorder-member-cond)))
+           (implies (and (not (reachable*-from-node x y preorder))
+                         (reachable*-from-list z y preorder))
+                    (reachable*-from-list z y new-preorder))
+           :hints (("goal" :use ((:instance tarjan-sccs-preorder-member-property))
+                    :in-theory (disable tarjan-sccs-preorder-member-property)))
            :fn tarjan-sccs))
 
   (local (defret tarjan-sccs-list-member-of-stack
@@ -4410,7 +3882,7 @@
                          (no-duplicatesp stack))
                     (iff (member y new-stack)
                          (or (member y stack)
-                             (and (graph-reachable-through-unvisited-for-some-x x y preorder)
+                             (and (reachable*-from-list x y preorder)
                                   (tarjan-node-reaches-stack y stack preorder)))))
            :hints (("goal" :use ((:instance tarjan-sccs-list-lowlink-correct))
                     :in-theory (disable tarjan-sccs-list-lowlink-correct)))
@@ -4431,7 +3903,7 @@
                           (new-stack preorder x))
                          (TARJAN-SCCS-LIST-COLLECTS-EVERY-NODE-COND
                           X PREORDER NEW-STACK SCCS))
-                    (IMPLIES (AND (GRAPH-REACHABLE-THROUGH-UNVISITED-FOR-SOME-X
+                    (IMPLIES (AND (REACHABLE*-FROM-LIST
                                    X Y PREORDER)
                                   (NOT (MEMBER Y NEW-STACK)))
                              (MEMBER Y (APPEND-LISTS SCCS))))
@@ -4443,7 +3915,7 @@
                           (new-stack preorder x))
                          (TARJAN-SCCS-COLLECTS-EVERY-NODE-COND
                           X PREORDER NEW-STACK SCCS))
-                    (IMPLIES (AND (GRAPH-REACHABLE-THROUGH-UNVISITED-p
+                    (IMPLIES (AND (reachable*-from-node
                                    X Y PREORDER)
                                   (NOT (MEMBER Y NEW-STACK)))
                              (MEMBER Y (APPEND-LISTS SCCS))))
@@ -4468,7 +3940,7 @@
                 :do-not-induct t)
               (and stable-under-simplificationp
                    `(:expand (,(car (last clause))
-                              (:free (y) (graph-reachable-through-unvisited-for-some-x x y preorder))))))
+                              (:free (y) (reachable*-from-list x y preorder))))))
       :fn tarjan-sccs-list)
     :otf-flg t)
 
@@ -4479,7 +3951,7 @@
   (defret tarjan-sccs-contains-all-non-stack-reaching-nodes
     (implies (and (subsetp stack preorder)
                   (no-duplicatesp stack)
-                  (graph-reachable-through-unvisited-p x y preorder)
+                  (reachable*-from-node x y preorder)
                   (not (tarjan-node-reaches-stack y stack preorder)))
              (member y (append-lists sccs)))
     :hints (("goal" :use ((:instance tarjan-sccs-collects-every-node))
@@ -4489,7 +3961,7 @@
   (defret tarjan-sccs-list-contains-all-non-stack-reaching-nodes
     (implies (and (subsetp stack preorder)
                   (no-duplicatesp stack)
-                  (graph-reachable-through-unvisited-for-some-x x y preorder)
+                  (reachable*-from-list x y preorder)
                   (not (tarjan-node-reaches-stack y stack preorder)))
              (member y (append-lists sccs)))
     :hints (("goal" :use ((:instance tarjan-sccs-list-collects-every-node))
@@ -4703,35 +4175,35 @@
 
 
 
-(defsection graph-reachable-through-unvisited-when-preorder-empty
-  (local (defun graph-reachable-through-unvisited-when-empty-hint (x y)
-           (if (graph-reachable-through-unvisited-p x y nil)
-               (b* ((path (graph-reachable-through-unvisited-canonical-witness x y nil)))
+(defsection reachable*-from-node-when-preorder-empty
+  (local (defun reachable*-from-node-when-empty-hint (x y)
+           (if (reachable*-from-node x y nil)
+               (b* ((path (reachable*-from-node-canonical-witness x y nil)))
                  `(:use ((:instance graph-reachable-p-suff
                            (x ,(hq x)) (y ,(hq y)) (path ,(hq path))))))
              (b* ((path (graph-reachable-canonical-witness x y)))
-               `(:use ((:instance graph-reachable-through-unvisited-p-suff
-                         (x ,(hq x)) (y ,(hq y)) (visited nil) (path ,(hq path)))))))))
+               `(:use ((:instance reachable*-from-node-suff
+                         (x ,(hq x)) (y ,(hq y)) (seen nil) (path ,(hq path)))))))))
 
-  (defthm graph-reachable-through-unvisited-when-preorer-empty
-    (iff (graph-reachable-through-unvisited-p x y nil)
+  (defthm reachable*-from-node-when-preorer-empty
+    (iff (reachable*-from-node x y nil)
          (graph-reachable-p x y))
-    :hints ((use-termhint (graph-reachable-through-unvisited-when-empty-hint x y)))))
+    :hints ((use-termhint (reachable*-from-node-when-empty-hint x y)))))
 
-(defsection graph-reachable-through-unvisited-for-some-x-when-empty
-  (local (defun graph-reachable-through-unvisited-for-some-x-when-preorder-empty-hint (x y)
-           (if (graph-reachable-through-unvisited-for-some-x x y nil)
-               (b* ((path (graph-reachable-through-unvisited-for-some-x-witness x y nil)))
+(defsection reachable*-from-list-when-empty
+  (local (defun reachable*-from-list-when-preorder-empty-hint (x y)
+           (if (reachable*-from-list x y nil)
+               (b* ((path (reachable*-from-list-witness x y nil)))
                  `(:use ((:instance graph-reachable-for-some-x-by-path
                            (x ,(hq x)) (y ,(hq y)) (path ,(hq path))))))
              (b* ((path (graph-reachable-for-some-x-witness x y)))
-               `(:use ((:instance graph-reachable-through-unvisited-for-some-x-by-path
-                         (x ,(hq x)) (y ,(hq y)) (preorder nil) (path ,(hq path)))))))))
+               `(:use ((:instance reachable*-from-list-by-path
+                         (x ,(hq x)) (y ,(hq y)) (seen nil) (path ,(hq path)))))))))
 
-  (defthm graph-reachable-through-unvisited-for-some-x-when-preorder-empty
-    (iff (graph-reachable-through-unvisited-for-some-x x y nil)
+  (defthm reachable*-from-list-when-preorder-empty
+    (iff (reachable*-from-list x y nil)
          (graph-reachable-for-some-x x y))
-    :hints ((use-termhint (graph-reachable-through-unvisited-for-some-x-when-preorder-empty-hint x y)))))
+    :hints ((use-termhint (reachable*-from-list-when-preorder-empty-hint x y)))))
 
 (defsection scc-p
   (defun-sk scc-p (scc)

@@ -170,8 +170,6 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-debug t
-
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          select-address-size)
@@ -345,7 +343,6 @@
 
           :parents (one-byte-opcodes)
 
-          :guard-debug t
           :guard-hints (("Goal" :in-theory (e/d (rime-size rme-size) ())))
 
           :returns (x86 x86p :hyp (x86p x86))

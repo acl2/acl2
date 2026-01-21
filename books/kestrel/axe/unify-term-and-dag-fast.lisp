@@ -186,7 +186,7 @@
                 (unify-term-and-dag-when-skeleton-correct term darg dag-array dag-len alist))
            (consp (unify-term-and-dag-when-skeleton-correct term darg dag-array dag-len alist)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :use (:instance alistp-of-unify-term-and-dag-when-skeleton-correct)
+  :hints (("Goal" :use alistp-of-unify-term-and-dag-when-skeleton-correct
            :in-theory (disable alistp-of-unify-term-and-dag-when-skeleton-correct))))
 
 (defthm true-listp-of-unify-terms-and-dag-when-skeleton-correct
@@ -196,7 +196,7 @@
                 (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist))
            (consp (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :use (:instance alistp-of-unify-terms-and-dag-when-skeleton-correct)
+  :hints (("Goal" :use alistp-of-unify-terms-and-dag-when-skeleton-correct
            :in-theory (disable alistp-of-unify-terms-and-dag-when-skeleton-correct))))
 
 (defthm-flag-unify-term-and-dag-when-skeleton-correct
@@ -322,5 +322,5 @@
   (implies (and (pseudo-term-listp terms) ;drop?
                 (not (equal :fail (unify-terms-and-dag-items-fast terms dargs dag-array dag-len))))
            (true-listp (unify-terms-and-dag-items-fast terms dargs dag-array dag-len)))
-  :hints (("Goal" :use (:instance symbol-alistp-of-unify-terms-and-dag-items-fast)
+  :hints (("Goal" :use symbol-alistp-of-unify-terms-and-dag-items-fast
            :in-theory (disable symbol-alistp-of-unify-terms-and-dag-items-fast))))

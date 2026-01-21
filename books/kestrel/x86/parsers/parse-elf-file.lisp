@@ -1,6 +1,6 @@
 ; A parser for ELF executables
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,14 +10,15 @@
 
 (in-package "ACL2")
 
-;; See https://refspecs.linuxfoundation.org/elf/elf.pdf
-;; and
+;; References:
+;; https://refspecs.linuxfoundation.org/elf/elf.pdf
 ;; https://www.uclibc.org/docs/elf-64-gen.pdf
-;; and
 ;; https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
+;; https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
+;; https://github.com/nasa/elf2cfetbl/blob/main/ELF_Structures.h
+;; https://gabi.xinuos.com/elf/a-emachine.html
 
 (include-book "parser-utils")
-(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; reduce?
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -36,23 +37,10 @@
 
 (in-theory (disable mv-nth))
 
-(local (defthm integerp-when-unsigned-byte-p-32
-         (implies (unsigned-byte-p 32 x)
-                  (integerp x))))
-
-(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
-                          byte-listp-of-mv-nth-2-of-parse-u8
-                          byte-listp-of-mv-nth-2-of-parse-u16
-                          byte-listp-of-mv-nth-2-of-parse-u32
-                          byte-listp-of-mv-nth-2-of-parse-u64
-                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
-                          acl2-numberp-when-integerp
-                          <=-of-0-when-natp)))
-
-(local (in-theory (disable natp)))
+(local
+  (defthm integerp-when-unsigned-byte-p-32
+    (implies (unsigned-byte-p 32 x)
+             (integerp x))))
 
 (local
   (defthm acl2-numberp-when-bytep
@@ -70,6 +58,22 @@
     (implies (symbol-listp (strip-cdrs alist))
              (symbolp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal)))))
+
+(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
+                          byte-listp-of-mv-nth-2-of-parse-u8
+                          byte-listp-of-mv-nth-2-of-parse-u16
+                          byte-listp-of-mv-nth-2-of-parse-u32
+                          byte-listp-of-mv-nth-2-of-parse-u64
+                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
+                          acl2-numberp-when-integerp
+                          <=-of-0-when-natp)))
+
+(local (in-theory (disable natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
 
@@ -102,10 +106,28 @@
           (cons flag (decode-val-with-mask-flag-alist val (rest mask-flag-alist)))
         (decode-val-with-mask-flag-alist val (rest mask-flag-alist))))))
 
-;; todo: There is an entry for Linux, but I don't see it being used.
+(defthm keyword-listp-of-decode-val-with-mask-flag-alist
+  (implies (keyword-listp (strip-cdrs mask-flag-alist))
+           (keyword-listp (decode-val-with-mask-flag-alist val mask-flag-alist)))
+  :hints (("Goal" :in-theory (enable decode-val-with-mask-flag-alist))))
+
+;; There seem to be somewhat different lists of these values floating around.
+;; One reference is https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 (defconst *osabis*
-  `((0 . :elfosabi_sysv)
+  `((0 . :elfosabi_none) ; was :elfosabi_sysv
     (1 . :elfosabi_hpux)
+    (2 . :elfosabi_netbsd)
+    (3 . :elfosabi_linux) ; also called :elfosabi_gnu ?
+    (6 . :elfosabi_solaris)
+    (7 . :elfosabi_aix)
+    (8 . :elfosabi_irix)
+    (9 . :elfosabi_freebsd)
+    (10 . :elfosabi_tru64)
+    (11 . :elfosabi_modesto)
+    (12 . :elfosabi_openbsd)
+    (13 . :elfosabi_openvms)
+    (14 . :elfosabi_nsk)
+    ;; todo: add more
     (255 . :elfosabi_standalone)))
 
 (defconst *program-header-types*
@@ -164,6 +186,9 @@
     (symbolp (decode-file-type e_type))
     :hints (("Goal" :in-theory (enable decode-file-type)))))
 
+;; TODO: Add/check these.  Where is the official list?
+;; There are more of these here:
+;; https://gist.github.com/x0nu11byt3/bcb35c3de461e5fb66173071a2379779
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
     (1 . :EM_M32)  ;       AT&T WE 32100
@@ -251,6 +276,7 @@
     (98 . :EM_TPC)       ;      Tenor Network TPC processor
     (99 . :EM_SNP1K)     ;      Trebia SNP 1000 processor
     (100 . :EM_ST200) ;     STMicroelectronics (www.st.com) ST200 microcontroller
+    (243 . :EM_RISCV)
     ))
 
 ;; Returns (mv erp u16 bytes).  Little endian.
@@ -387,8 +413,8 @@
                               (byte-listp bytes))
                   :measure (nfix (- count index))))
   (if (or (<= count index)
-          (not (natp index))
-          (not (natp count)))
+          (not (mbt (natp index)))
+          (not (mbt (natp count))))
       (mv nil (reverse acc))
     (mv-let (erp section-header bytes)
       (parse-elf-section-header 64-bitp bytes)
@@ -464,15 +490,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv foundp symbol-table-offset symbol-table-size).
 (defund symtab-offset-and-size (section-header-table)
   (declare (xargs :guard (section-header-tablep section-header-table)))
   (if (endp section-header-table)
-      (prog2$ (er hard? 'symtab-offset-and-size "No symbol table found.") ; todo: what about a stripped binary?
-              (mv 0 0))
+      (progn$ (cw "WARNING: No symbol table found.") ; todo: what about a stripped binary?
+              (mv nil 0 0))
     (let* ((section-header (first section-header-table))
            (type (lookup-eq-safe :type section-header)))
       (if (eq type :sht-symtab)
-          (mv (lookup-eq-safe :offset section-header)
+          (mv t
+              (lookup-eq-safe :offset section-header)
               (lookup-eq-safe :size section-header))
         (symtab-offset-and-size (rest section-header-table))))))
 
@@ -589,13 +617,19 @@
     (b* ((section-header (first section-header-table))
          (name (lookup-eq-safe :name section-header))
          (offset (lookup-eq-safe :offset section-header))
+         (type (lookup-eq-safe :type section-header))
          ((when (not (natp offset))) ; impossible?
           (mv :bad-size nil))
          (size (lookup-eq-safe :size section-header))
          ((when (not (natp size))) ; impossible?
           (mv :bad-size nil))
-         ((mv erp bytes &) (parse-n-bytes size (nthcdr offset all-bytes)))
-         ((when erp) (mv erp nil)))
+         ((mv erp bytes &)
+          (if (eq type :sht-nobits)
+              (mv nil nil nil) ; no bits ; todo: think about what happens downstream
+            (parse-n-bytes size (nthcdr offset all-bytes))))
+         ((when erp)
+          (cw "ERROR: Not enough bytes for ~x0 section (type: ~x1)." name type)
+          (mv erp nil)))
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
@@ -604,6 +638,18 @@
     (implies (alistp acc)
              (alistp (mv-nth 1 (extract-elf-sections section-header-table all-bytes acc))))
     :hints (("Goal" :in-theory (enable extract-elf-sections)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an entry in the program-header-table
+(defund elf-program-header-table-entryp (entry)
+  (declare (xargs :guard t))
+  (and (symbol-alistp entry)
+       (natp (lookup-eq :vaddr entry))
+       (natp (lookup-eq :memsz entry))
+       (keyword-listp (lookup-eq :flags entry))
+       ;; todo: more
+       ))
 
 ;move up
 ;; Returns (mv erp program-header bytes).
@@ -641,6 +687,14 @@
        ((when erp) (mv erp nil bytes))
        ((mv erp p_align bytes) (if 64-bitp (parse-xword bytes) (parse-word bytes)))
        ((when erp) (mv erp nil bytes))
+       ;; Check for errors:
+       ((when (not (unsigned-byte-p 47 p_vaddr)))
+        (er hard? 'parse-elf-program-header "Segment address ~x0 too large." p_vaddr)
+        (mv :vaddr-too-large nil bytes))
+       ((when (not (or (and (= 0 p_vaddr) (= 0 p_memsz)) ; would give -1 in the computation below
+                       (unsigned-byte-p 47 (+ p_vaddr p_memsz -1)))))
+        (er hard? 'parse-elf-program-header "Segment with vaddr ~x0 and size ~x1 too large." p_vaddr p_memsz)
+        (mv :segment-too-large nil bytes))
        ;; Assemble the result:
        (result nil) ; an alist, to be extended
        (result (acons :type p_type result))
@@ -654,10 +708,17 @@
        (result (acons :align p_align result)))
     (mv nil (reverse result) bytes)))
 
+;drop?
 (local
   (defthm alistp-of-mv-nth-1-of-parse-elf-program-header
     (alistp (mv-nth 1 (parse-elf-program-header 64-bitp bytes)))
     :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
+
+(local
+  (defthm elf-program-header-table-entryp-of-mv-nth-1-of-parse-elf-program-header
+    (implies (not (mv-nth 0 (parse-elf-program-header 64-bitp bytes)))
+             (elf-program-header-table-entryp (mv-nth 1 (parse-elf-program-header 64-bitp bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-program-header elf-program-header-table-entryp)))))
 
 (local
   (defthm byte-listp-of-mv-nth-2-of-parse-elf-program-header
@@ -665,10 +726,23 @@
              (byte-listp (mv-nth 2 (parse-elf-program-header 64-bitp bytes))))
     :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+;; Recognizes a program-header-table.
 (defund elf-program-header-tablep (program-header-table)
   (declare (xargs :guard t))
-  (alist-listp program-header-table))
+  (if (not (consp program-header-table))
+      (null program-header-table)
+    (and (elf-program-header-table-entryp (first program-header-table))
+         (elf-program-header-tablep (rest program-header-table)))))
+
+(local
+  (defthm elf-program-header-tablep-of-revappend
+    (implies (and (elf-program-header-tablep x)
+                  (elf-program-header-tablep y))
+             (elf-program-header-tablep (revappend x y)))
+    :hints (("Goal" :in-theory (enable elf-program-header-tablep revappend)))))
 
 ;move up
 ;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
@@ -682,8 +756,8 @@
                   :measure (nfix (- num-entries index))
                   :hints (("Goal" :in-theory (enable natp)))))
   (if (or (<= num-entries index)
-          (not (natp index))
-          (not (natp num-entries)))
+          (not (mbt (natp index)))
+          (not (mbt (natp num-entries))))
       (mv nil (reverse acc))
     (mv-let (erp program-header bytes)
       (parse-elf-program-header 64-bitp bytes)
@@ -697,7 +771,9 @@
 
 (local
   (defthm elf-program-header-tablep-of-mv-nth-1-of-parse-elf-program-header-table
-    (implies (elf-program-header-tablep acc)
+    (implies (and (elf-program-header-tablep acc)
+                  (not (mv-nth 0 (parse-elf-program-header-table index num-entries 64-bitp acc bytes)))
+                  )
              (elf-program-header-tablep (mv-nth 1 (parse-elf-program-header-table index num-entries 64-bitp acc bytes))))
     :hints (("Goal" :in-theory (enable parse-elf-program-header-table elf-program-header-tablep)))))
 
@@ -734,8 +810,8 @@
 
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
-       ;; Now we can set the magic number (todo: call this :executable-type?):
-       (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
+       ;; Now we can set the executable-type:
+       (result (acons :executable-type (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
        (result (acons :class class result))
        (data (lookup-safe ei_data *data-encodings*))
        (result (acons :data data result))
@@ -803,38 +879,47 @@
        (result (acons :program-header-table program-header-table result))
 
        ;; Parse the section header table:
-       ((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
-       ((when erp) (mv erp nil))
-
-       ;; Rewsolve the names of the section headers:
-       ((when (= e_shstrndx *shn_undef*))
-        (mv :no-section-contains-a-section-name-string-table nil))
-       (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))
-       (section-name-string-table-offset (lookup-eq-safe :offset section-name-string-table-header))
-       ((when (not (natp section-name-string-table-offset))) ; impossible?
-        (mv :bad-section-name-string-table-offset nil))
-       ((mv erp section-header-table) (assign-section-header-names section-header-table-without-names
-                                                                   (nthcdr section-name-string-table-offset all-bytes)
-                                                                   nil))
+       ((mv erp section-header-table)
+        (b* (((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
+             ((when erp) (mv erp nil))
+             ((when (not (consp section-header-table-without-names)))
+              (cw "WARNING: No section headers.~%")
+              (mv nil nil) ; no error, empty section-header-table
+              )
+             ;; Resolve the names of the section headers:
+             ((when (= e_shstrndx *shn_undef*))
+              (mv :no-section-contains-a-section-name-string-table nil))
+             (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))
+             (section-name-string-table-offset (lookup-eq-safe :offset section-name-string-table-header))
+             ((when (not (natp section-name-string-table-offset))) ; impossible?
+              (mv :bad-section-name-string-table-offset nil)))
+          (assign-section-header-names section-header-table-without-names
+                                       (nthcdr section-name-string-table-offset all-bytes)
+                                       nil)))
        ((when erp) (mv erp nil))
        (result (acons :section-header-table section-header-table result))
-
-       ((mv symbol-table-offset symbol-table-size) (symtab-offset-and-size section-header-table))
-       ((when (not (natp symbol-table-offset))) ; impossible?
-        (mv :bad-symbol-table-offset nil))
-       ((when (not (natp symbol-table-size))) ; impossible?
-        (mv :bad-symbol-table-size nil))
-       (string-table-offset (strtab-offset section-header-table))
-       ((when (not (natp string-table-offset))) ; impossible? but it may be :none
-        (mv :bad-string-table-offset nil))
-       ((mv erp symbol-table) (parse-elf-symbol-table symbol-table-size
-                                                      64-bitp
-                                                      (nthcdr string-table-offset all-bytes)
-                                                      nil
-                                                      (nthcdr symbol-table-offset all-bytes)))
+       ;; Parse the symbol-table (if any):
+       ((mv erp symbol-table)
+        (b* (((mv symbol-table-foundp symbol-table-offset symbol-table-size) (symtab-offset-and-size section-header-table))
+             ((when (not symbol-table-foundp))
+              (mv nil nil) ; no error, empty symbol-table
+              )
+             ((when (not (natp symbol-table-offset))) ; impossible?
+              (mv :bad-symbol-table-offset nil))
+             ((when (not (natp symbol-table-size))) ; impossible?
+              (mv :bad-symbol-table-size nil))
+             (string-table-offset (strtab-offset section-header-table))
+             ((when (not (natp string-table-offset))) ; impossible? but it may be :none
+              (mv :bad-string-table-offset nil)))
+          (parse-elf-symbol-table symbol-table-size
+                                  64-bitp
+                                  (nthcdr string-table-offset all-bytes)
+                                  nil
+                                  (nthcdr symbol-table-offset all-bytes))))
        ((when erp) (mv erp nil))
        (result (acons :symbol-table symbol-table result))
 
+       ;; Note that sections of type :sht-nobits, such as .bss, will be mapped to the empty list of bytes:
        ((mv erp sections) (extract-elf-sections section-header-table all-bytes nil))
        ((when erp) (mv erp nil))
        (result (acons :sections sections result))
@@ -849,6 +934,8 @@
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
+       ;; Check the :executable-type:
+       (member-eq (lookup-eq :executable-type parsed-elf) '(:elf-64 :elf-32))
        ;; Check the bytes:
        (assoc-eq :bytes parsed-elf)
        (byte-listp (lookup-eq :bytes parsed-elf))

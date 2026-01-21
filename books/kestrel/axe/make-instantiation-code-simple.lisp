@@ -1,7 +1,7 @@
 ; A tool to generate hyp instantiation code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,7 @@
 ;; version of instantiate-hyp that uses it.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
@@ -30,6 +31,8 @@
        (local (include-book "kestrel/lists-light/cons" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
+
+       (local (in-theory (disable member-equal strip-cars quote-listp)))
 
        ;; TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
        ;; ALIST binds vars to dargs (nodenums/ quoteps).

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function signed-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -120,4 +120,21 @@
                      (if (< x 0)
                          -1
                        0))))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthmd signed-byte-p-in-terms-of-floor-when-negative
+  (implies (< x 0)
+           (equal (signed-byte-p size x)
+                  (and (integerp x)
+                       (posp size)
+                       (equal (floor x (expt 2 (+ -1 size)))
+                              -1))))
+  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P))))
+
+(defthm floor-of-expt-2-of-one-less-when-signed-byte-p
+  (implies (signed-byte-p size x)
+           (equal (floor x (expt 2 (+ -1 size)))
+                  (if (< x 0)
+                      -1
+                    0)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))

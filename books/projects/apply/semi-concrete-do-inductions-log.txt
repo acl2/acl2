@@ -42,9 +42,10 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APPEND A B).
+We will induct according to a scheme suggested by (APPEND A B), while
+accommodating (APPEND A B C).
 
-This suggestion was produced using the :induction rule BINARY-APPEND.
+These suggestions were produced using the :induction rule BINARY-APPEND.
 If we let (:P A B C) denote *1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B C))
@@ -124,8 +125,8 @@ suggested by this conjecture.  These merge into two derived induction
 schemes.  By considering those suggested by the largest number of non-
 primitive recursive functions, we narrow the field to one.  
 
-We will induct according to a scheme suggested by (REV XXX), but modified
-to accommodate 
+We will induct according to a scheme suggested by (REV XXX), while
+accommodating 
 (DO$ (LAMBDA$ (ALIST)
        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
      (LIST (CONS 'ANS ANS0) (CONS 'LST XXX))
@@ -193,6 +194,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -201,6 +203,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION REV)
@@ -344,6 +347,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:DEFINITION TRUE-LISTP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -354,6 +358,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART REV)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -498,6 +503,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:DEFINITION TRUE-LISTP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -508,6 +514,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART REV)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -642,6 +649,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -653,6 +661,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
@@ -780,6 +789,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -791,6 +801,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
@@ -986,6 +997,7 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -994,6 +1006,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -1169,6 +1182,7 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -1177,6 +1191,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -1366,6 +1381,7 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
@@ -1376,6 +1392,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -1555,9 +1572,14 @@ is
               (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
                     ALIST)))
            (LIST ALIST)))))))
-     (LEX-FIX (APPLY$ (LAMBDA$ (ALIST)
-                        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
-                      (LIST ALIST))))))
+     (LEX-FIX (IF (NOT (ALL-NILS (TRUE-LIST-FIX NIL)))
+                  (AND (NOT (ALL-NILS (TRUE-LIST-FIX NIL)))
+                       (APPLY$ (LAMBDA$ (ALIST)
+                                 (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                               (LIST ALIST)))
+                (APPLY$ (LAMBDA$ (ALIST)
+                          (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                        (LIST ALIST)))))))
   (:P ALIST))
  (IMPLIES
   (AND
@@ -1621,9 +1643,14 @@ is
               (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
                     ALIST)))
           (LIST ALIST)))))))
-    (LEX-FIX (APPLY$ (LAMBDA$ (ALIST)
-                       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
-                     (LIST ALIST))))
+    (LEX-FIX (IF (NOT (ALL-NILS (TRUE-LIST-FIX NIL)))
+                 (AND (NOT (ALL-NILS (TRUE-LIST-FIX NIL)))
+                      (APPLY$ (LAMBDA$ (ALIST)
+                                (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                              (LIST ALIST)))
+               (APPLY$ (LAMBDA$ (ALIST)
+                         (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                       (LIST ALIST)))))
    (:P
     (CADDR
      (TRUE-LIST-FIX
@@ -1818,6 +1845,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
         (:EXECUTABLE-COUNTERPART ACL2-COUNT)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -1907,11 +1935,34 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (REV1 LST ANS0).
+We will induct according to a scheme suggested by (REV1 LST ANS0),
+while accommodating 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+     (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+           (LIST NIL NIL
+                 (LIST (CONS 'X
+                             (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                       (LIST* 'ANS
+                              (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+     '(NIL)
+     NIL).
 
-This suggestion was produced using the :induction rules DO$ and REV1.
-If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules DO$ and
+REV1.  If we let (:P ANS0 LST) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ENDP LST))
                    (:P (CONS (CAR LST) ANS0) (CDR LST)))
               (:P ANS0 LST))
@@ -1949,6 +2000,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -1957,6 +2009,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION REV1)
@@ -2018,11 +2071,39 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (MEMBER-EQUAL E LST).
+We will induct according to a scheme suggested by (MEMBER-EQUAL E LST),
+while accommodating 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+     (LIST (CONS 'X LST) (CONS 'E E))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+           (IF (EQUAL (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                      (CDR (ASSOC-EQ-SAFE 'E ALIST)))
+               (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'X ALIST))
+                     (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                           (CONS 'E
+                                 (CDR (ASSOC-EQ-SAFE 'E ALIST)))))
+             (LIST NIL NIL
+                   (LIST (CONS 'X
+                               (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                         (CONS 'E
+                               (CDR (ASSOC-EQ-SAFE 'E ALIST))))))
+         (LIST :RETURN NIL
+               (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'E
+                           (CDR (ASSOC-EQ-SAFE 'E ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'E
+                         (CDR (ASSOC-EQ-SAFE 'E ALIST))))))
+     '(NIL)
+     NIL).
 
-This suggestion was produced using the :induction rules DO$ and MEMBER-EQUAL.
-If we let (:P E LST) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules DO$ and
+MEMBER-EQUAL.  If we let (:P E LST) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP LST))
                    (NOT (EQUAL E (CAR LST)))
                    (:P E (CDR LST)))
@@ -2066,6 +2147,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -2074,6 +2156,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION MEMBER-EQUAL)
@@ -2153,11 +2236,12 @@ We will induct according to a scheme suggested by
                    (CONS 'ANS
                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
      '(NIL)
-     NIL).
+     NIL),
+while accommodating (LEN LST).
 
-This suggestion was produced using the :induction rules DO$ and LEN.
-If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules DO$ and
+LEN.  If we let (:P ANS0 LST) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP LST))
               (:P ANS0 LST))
      (IMPLIES (AND (CONSP LST)
@@ -2203,6 +2287,7 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -2210,6 +2295,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -2278,11 +2364,37 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (NTH N LST).
+We will induct according to a scheme suggested by (NTH N LST), while
+accommodating 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+     (LIST (CONS 'X LST) (CONS 'I N))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+           (IF (EQUAL (CDR (ASSOC-EQ-SAFE 'I ALIST)) 0)
+               (LIST :RETURN (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                     (CONS (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                           '((I . 0))))
+             (LIST NIL NIL
+                   (LIST (CONS 'X
+                               (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                         (CONS 'I
+                               (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+         (LIST :RETURN NIL
+               (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'I
+                           (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'I
+                         (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+     '(NIL)
+     NIL).
 
-This suggestion was produced using the :induction rules DO$ and NTH.
-If we let (:P LST N) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules DO$ and
+NTH.  If we let (:P LST N) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ENDP LST))
                    (NOT (ZP N))
                    (:P (CDR LST) (+ -1 N)))
@@ -2331,6 +2443,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -2342,6 +2455,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
@@ -2431,11 +2545,12 @@ We will induct according to a scheme suggested by
                  (CONS 'ANS
                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
    '(NIL)
-   NIL).
+   NIL),
+while accommodating (TRUE-LISTP LST).
 
-This suggestion was produced using the :induction rules DO$ and TRUE-LISTP.
-If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
-use is
+These suggestions were produced using the :induction rules DO$ and
+TRUE-LISTP.  If we let (:P ANS0 LST) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (NOT (CONSP LST))
               (:P ANS0 LST))
      (IMPLIES (AND (CONSP LST)
@@ -2483,6 +2598,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:DEFINITION TRUE-LISTP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -2491,6 +2607,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -2658,6 +2775,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -2669,6 +2787,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -2786,8 +2905,8 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (FACT N), but modified
-to accommodate 
+We will induct according to a scheme suggested by (FACT N), while ac-
+commodating 
 (DO$ (LAMBDA$ (ALIST)
        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
      (LIST (CONS 'I N) (CONS 'ANS ANS0))
@@ -2868,6 +2987,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -2879,6 +2999,7 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
@@ -2992,8 +3113,8 @@ by this conjecture.  Subsumption reduces that number to three.  These
 merge into one derived induction scheme.  
 
 We will induct according to a scheme suggested by 
-(SUM$ (LAMBDA$ (LOOP$-IVAR) (* LOOP$-IVAR LOOP$-IVAR)) LST0), but modified
-to accommodate 
+(SUM$ (LAMBDA$ (LOOP$-IVAR) (* LOOP$-IVAR LOOP$-IVAR)) LST0), while
+accommodating 
 (DO$ (LAMBDA$ (ALIST)
        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
      (LIST (CONS 'LST LST0)
@@ -3027,7 +3148,8 @@ to accommodate
                    (CONS 'V
                          (CDR (ASSOC-EQ-SAFE 'V ALIST))))))
      '(NIL)
-     NIL).
+     NIL),
+(INTEGER-LISTP LST0) and (SUM$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR) LST0).
 
 These suggestions were produced using the :induction rules DO$, INTEGER-LISTP
 and SUM$.  If we let (:P LST0 U0 V0) denote *1 above then the induction
@@ -3094,6 +3216,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:DEFINITION THE-NUMBER)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -3105,6 +3228,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART SUM$)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION INTEGER-LISTP)
@@ -3262,10 +3386,13 @@ We will induct according to a scheme suggested by
                    (CONS 'NON-SYMS
                          (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
      '(NIL)
-     NIL).
+     NIL),
+while accommodating 
+(WHEN$ (LAMBDA$ (LOOP$-IVAR) (NOT (SYMBOLP LOOP$-IVAR))) LST) and 
+(WHEN$ (LAMBDA$ (LOOP$-IVAR) (SYMBOLP LOOP$-IVAR)) LST).
 
-This suggestion was produced using the :induction rules DO$ and WHEN$.
-If we let (:P LST NON-SYMS SYMS) denote *1 above then the induction
+These suggestions were produced using the :induction rules DO$ and
+WHEN$.  If we let (:P LST NON-SYMS SYMS) denote *1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (NOT (CONSP LST))
               (:P LST NON-SYMS SYMS))
@@ -3330,6 +3457,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION SYNP)
         (:DEFINITION WHEN$)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART COLLECT$)
@@ -3342,6 +3470,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART REV)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
         (:INDUCTION WHEN$)
@@ -3644,6 +3773,7 @@ Rules: ((:DEFINITION DO$)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
@@ -3653,6 +3783,7 @@ Rules: ((:DEFINITION DO$)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -3933,6 +4064,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -3944,6 +4076,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)
@@ -4243,6 +4376,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION REWRITE-LAMBDA-MODEP)
         (:DEFINITION SYNP)
         (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALL-NILS)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONS)
@@ -4254,6 +4388,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
         (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:INDUCTION DO$)

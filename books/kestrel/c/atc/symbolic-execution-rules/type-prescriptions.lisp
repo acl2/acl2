@@ -40,7 +40,7 @@
     "We also need rules about the constructors of C integer values
      and the C functions that represent C operations and conversions,
      including array read operations."))
-  '((:t exec-expr-call-or-pure)
+  '((:t exec-expr)
     (:t exec-fun)
     (:t exec-stmt)
     (:t exec-block-item)

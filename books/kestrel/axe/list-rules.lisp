@@ -21,10 +21,11 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
-(defun sub1-cdr-cdr-induct (n x y)
-  (if (zp n)
-      (list n x y)
-    (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y))))
+(local
+  (defun sub1-cdr-cdr-induct (n x y)
+    (if (zp n)
+        (list n x y)
+      (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y)))))
 
 ;; todo: rephrase using take?
 ;; ;could also phrase this using clear-nth
@@ -149,7 +150,7 @@
                   (EQUAL (TAKE (+ 1 N) LST1)
                          (TAKE (+ 1 N) LST2))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
-  :HINTS (("Goal" :IN-THEORY (E/d (TAKE NTH) ()))))
+  :HINTS (("Goal" :IN-THEORY (enable TAKE NTH))))
 
 ;move?
 (theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
@@ -170,8 +171,8 @@
                     (append x
                             (repeat (- (nfix n) (len x))
                                     nil)))))
-  :hints (("Goal" :in-theory (e/d (take; list::nth-append
-                                   ) ()))))
+  :hints (("Goal" :in-theory (enable take; list::nth-append
+                                   ))))
 
 
 ;gen

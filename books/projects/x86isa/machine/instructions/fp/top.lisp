@@ -59,8 +59,6 @@
               :ttags (:undef-flg))
 (include-book "convert"
               :ttags (:undef-flg))
-(include-book "mov"
-              :ttags (:undef-flg))
 (include-book "non-arith"
               :ttags (:undef-flg))
 

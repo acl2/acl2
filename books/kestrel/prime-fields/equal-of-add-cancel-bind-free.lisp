@@ -1,6 +1,6 @@
 ; Prime fields library: cancellation using bind-free
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "bind-free-common")
 (include-book "prime-fields-rules") ;needed just for some "add of neg" rules?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system)) ;;for integerp of mod
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 
 (defun negate-non-excluded-terms (terms p exclude-fns)
@@ -41,13 +42,6 @@
                 (pseudo-termp p))
            (pseudo-term-listp (negate-non-excluded-terms terms p exclude-fns)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
-
-(local
- (defthm pseudo-term-listp-of-intersection-equal
-   (implies (and (pseudo-term-listp x)
-                 (pseudo-term-listp y))
-            (pseudo-term-listp (intersection-equal x y)))
-   :hints (("Goal" :in-theory (enable pseudo-term-listp intersection-equal)))))
 
 (defun bind-negated-sum-of-common-terms (x y)
   (declare (xargs :guard (and (pseudo-termp x)

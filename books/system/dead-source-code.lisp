@@ -46,7 +46,10 @@
 
 (defun constraint-info-fnnames (fn wrld)
   (mv-let (flg x)
-          (constraint-info fn wrld)
+          ; Old Code:
+          ; (constraint-info fn wrld)
+          ; New Code:
+          (pre-v8-7-constraint-info fn wrld)
           (cond ((null flg)
                  (all-fnnames x))
                 ((unknown-constraints-p x)

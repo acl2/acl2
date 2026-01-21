@@ -229,10 +229,14 @@
   :long
   (xdoc::topstring-p
    "For a function introduced via @(tsee defun-sk),
-    the name of the witness is the @('constraint-lst') property.
-    Retrieving it from there is faster than
-    calculating it from @('fn') and the options of the @(tsee defun-sk).")
-  (getpropc fn 'constraint-lst nil wrld))
+    the name of the witness is the old @('constraint-lst') property, now
+    found in the @('constraint-lst-etc') property.  Retrieving it from
+    there is faster than calculating it from @('fn') and the options of
+    the @(tsee defun-sk).")
+  ; Old Code:
+  ; (getpropc fn 'constraint-lst nil wrld)
+  ; New Code:
+  (pre-v8-7-getpropc-constraint-lst-nil fn wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -14,6 +14,7 @@
 (include-book "slice-def")
 (include-book "bvshl-def")
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
@@ -35,9 +36,8 @@
 
 ;; TODO: allow the widths to differ
 (defthm bvshl-of-bvchop
-  (implies (natp k)
-           (equal (bvshl width (bvchop width x) k)
-                  (bvshl width x k)))
+  (equal (bvshl width (bvchop width x) k)
+         (bvshl width x k))
   :hints (("Goal" :in-theory (enable bvshl))))
 
 (defthm integerp-of-bvshl

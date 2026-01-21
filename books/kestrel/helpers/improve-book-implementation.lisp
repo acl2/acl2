@@ -79,8 +79,8 @@
            (name (cadr event))
            (body (caddr event))
            (keyword-value-list (cdddr event)))
-       (let* ((keyword-value-list (clear-key-in-keyword-value-list :hints keyword-value-list))
-              (keyword-value-list (clear-key-in-keyword-value-list :instructions keyword-value-list)))
+       (let* ((keyword-value-list (remove-keyword :hints keyword-value-list))
+              (keyword-value-list (remove-keyword :instructions keyword-value-list)))
          `(,defthm-variant ,name ,body ,@keyword-value-list))))
     ;; fixme:
     ((defthm defthmd) ; (defun name args ...declares/doc-string... body)
@@ -430,6 +430,7 @@
           (remove-and-label-hint-parts (rest hints) theorem-name all-hints (append alist-with-replacements-for-hint res)))))))
 
 ;; Returns an alist mapping theorems with reduced lists to string descriptions of what was removed.
+;; TODO: For a disable/enable that has no effect (rule already disabled/enabled), consider also reporting that fact.
 (defun defthms-with-removed-hints (defthm-variant name term hints)
   (declare (xargs :mode :program))
   (let* ((len (len hints))

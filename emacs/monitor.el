@@ -95,7 +95,7 @@
 (defun dmr-star-lines-to-end ()
   (let ((max-1 (1- (point-max))))
     (while (progn (end-of-line)
-		  (< (point) max-1))
+                  (< (point) max-1))
       (forward-char 1) ; past newline
       (delete-char 1) ; delete space
       (insert "*"))))
@@ -180,8 +180,8 @@
   (when *dmr-timer*
     (if (string-match "XEmacs" emacs-version)
         (if (fboundp 'delete-itimer)
-	    (delete-itimer *dmr-timer*)
-	  (error "delete-itimer is unbound;
+            (delete-itimer *dmr-timer*)
+          (error "delete-itimer is unbound;
 please contact matthew.j.kaufmann@gmail.com"))
       (cancel-timer *dmr-timer*))
     (setq *dmr-timer* nil)))

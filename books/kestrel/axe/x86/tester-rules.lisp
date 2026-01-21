@@ -1,7 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; STATUS: IN-PROGRESS
+;; STATUS: To be deprecated (we no longer reason about SEPARATE)
 
 ;; TODO: Organize this material
 

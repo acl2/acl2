@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function termp
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; Note that termp-implies-pseudo-termp and
+;; term-listp-implies-pseudo-term-listp are built-in to ACL2.
 
 (in-theory (disable termp))
 

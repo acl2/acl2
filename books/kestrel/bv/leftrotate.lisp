@@ -1,7 +1,7 @@
 ; BV Library: leftrotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,12 +15,15 @@
 (include-book "slice-def")
 (include-book "getbit-def")
 (include-book "../arithmetic-light/power-of-2p")
-(include-book "../arithmetic-light/lg")
+(include-book "../arithmetic-light/lg-def")
+(local (include-book "../arithmetic-light/lg"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/plus-and-minus"))
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "unsigned-byte-p"))
 
 (local (in-theory (disable expt)))
@@ -28,11 +31,15 @@
 ;; Rotate VAL to the left by AMT positions within a field of width WIDTH.  We
 ;; reduce the rotation amount modulo the width.
 (defund leftrotate (width amt val)
-  (declare (type integer val amt)
+  (declare (xargs :guard (and (natp width)
+                              (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer val amt)
            (type (integer 0 *) width))
   (if (= 0 width)
       0
-    (let* ((amt (mod (nfix amt) width)))
+    (let* ((amt (mod (ifix amt) width)))
       (bvcat (- width amt)
              (slice (+ -1 width (- amt)) 0 val)
              amt
@@ -66,14 +73,14 @@
   :hints (("Goal" :in-theory (enable leftrotate))))
 
 (defthm leftrotate-of-plus-same
-  (implies (and (natp amt) ;was integerp
+  (implies (and (integerp amt)
                 (natp size))
            (equal (leftrotate size (+ size amt) val)
                   (leftrotate size amt val)))
   :hints (("Goal" :in-theory (enable leftrotate))))
 
-(defthm leftrotate-when-not-natp-arg1
-  (implies (not (natp amt))
+(defthm leftrotate-when-not-integerp-arg2
+  (implies (not (integerp amt))
            (equal (leftrotate width amt val)
                   (leftrotate width 0 val)))
   :hints (("Goal" :in-theory (enable leftrotate))))
@@ -86,15 +93,15 @@
 
 (defthm leftrotate-of-mod-same
   (implies (and (natp width)
-                (natp amt))
+                (integerp amt))
            (equal (leftrotate width (mod amt width) val)
                   (leftrotate width amt val)))
   :hints (("Goal" :in-theory (enable leftrotate))))
 
 (defthm leftrotate-of-leftrotate
   (implies (and (natp width)
-                (natp amt1)
-                (natp amt2))
+                (integerp amt1)
+                (integerp amt2))
            (equal (leftrotate width amt1 (leftrotate width amt2 val))
                   (leftrotate width (+ amt1 amt2) val)))
   :hints (("Goal" :in-theory (enable leftrotate mod-sum-cases))))
@@ -105,7 +112,7 @@
            (equal (leftrotate width amt val)
                   (if (equal width 0)
                       0
-                    (let* ((amt (mod (nfix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
+                    (let* ((amt (mod (ifix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
                                 ))
                       (bvcat (- width amt)
                              (slice (+ -1 width (- amt)) 0 val)
@@ -277,8 +284,7 @@
                                 (:rewrite bvcat-of-getbit-becomes-leftrotate)))
 
 (defthm leftrotate-of-bvchop-arg2-core
-  (implies (and (power-of-2p width)
-                (natp amt))
+  (implies (power-of-2p width)
            (equal (leftrotate width (bvchop (lg width) amt) x)
                   (leftrotate width amt x)))
   :hints (("Goal" :in-theory (enable leftrotate bvchop))))
@@ -287,9 +293,7 @@
   (implies (and (syntaxp (and (quotep width)
                               (quotep size)))
                 (equal size (lg width))
-                (power-of-2p width)
-                (natp amt) ; todo
-                )
+                (power-of-2p width))
            (equal (leftrotate width (bvchop size amt) x)
                   (leftrotate width amt x)))
   :hints (("Goal" :use (:instance leftrotate-of-bvchop-arg2-core (amt amt))
@@ -300,3 +304,13 @@
            (equal (leftrotate width amt (bvchop width x))
                   (leftrotate width amt x)))
   :hints (("Goal" :in-theory (enable leftrotate))))
+
+(defthm leftrotate-subst-arg2
+  (implies (and (equal (bvchop size amt) k)
+                (syntaxp (and (quotep k)
+                              (not (quotep amt))))
+                (equal size (lg width))
+                (power-of-2p width))
+           (equal (leftrotate width amt x)
+                  (leftrotate width k x)))
+  :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))

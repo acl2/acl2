@@ -43,3 +43,9 @@
          (acl2-numberp x))
   :hints (("Goal" :in-theory (enable abs)
            :cases ((acl2-numberp x)))))
+
+(defthm equal-of-0-and-abs
+  (implies (acl2-numberp x) ; for example, (abs t) = t
+           (equal (equal 0 (abs x))
+                  (equal 0 x)))
+  :hints (("Goal" :in-theory (enable abs))))

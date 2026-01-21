@@ -1,0 +1,8 @@
+[project]
+name = "compound-assignments"
+version = "0.1.0"
+description = "The compound-assignments package"
+license = "MIT"
+
+[remote]
+author = "[AUTHOR]" # Add your Aleo Package Manager username, team's name, or organization's name.

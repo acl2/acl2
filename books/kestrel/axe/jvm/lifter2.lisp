@@ -346,7 +346,7 @@
        ;;                       (print-list output-dag)
        ;;                       (cw ")~%"))))
        ;todo: should just be s0:
-       (dag-vars (dag-vars final-state-dag))
+       (dag-vars (dag-vars-unsorted final-state-dag))
        ((when (not (equal dag-vars '(s0))))
         (mv t (er hard 'lift-java-code2 "ERROR: Bad vars: ~x0!" dag-vars) state))
        ;; ;; TODO: Shouldn't we just add inputs automatically for this new stuff?
@@ -405,7 +405,7 @@
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
-;                                 (output ':auto) ;an output-indicatorp
+;                                 (output ':rv) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)
 ;                                 (classes-to-assume-initialized 'nil)

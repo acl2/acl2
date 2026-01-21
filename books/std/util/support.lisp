@@ -269,7 +269,7 @@ saying whether the key was bound.  Returns (mv value boundp)."
 @({
     (b* ((a (getarg :a nil alst))
          (b (getarg :b b-default-term alst))
-         ((mv c cp) (getarg+ :c nil alst))
+         ((mv c cp) (getarg+ :c c-default-term alst))
          (d (getarg :d nil alist)))
       form)
 })"

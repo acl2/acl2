@@ -50,5 +50,5 @@
   :description "<p>To inspect the resulting forms, call @('show-rename-calls') on the same
 arguments.</p>"
   :transform-specific-arg-descriptions
-  ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if mulitple options exist) and how to to find the corresponding rules.
+  ;; TODO: Think about the best way to specify which functions to rename, what they get renamed to (if mulitple options exist) and how to find the corresponding rules.
   ((extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")))

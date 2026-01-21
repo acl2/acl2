@@ -170,12 +170,12 @@ EXPORTED_VARS += OS_HAS_STP
 EOF
 fi
 
-echo "Determining whether cpp is installed" 1>&2
-if cpp --version 2>/dev/null;
+echo "Determining whether GCC is installed and supports the c17 standard" 1>&2
+if gcc -std=c17 -x c -c /dev/null -o /dev/null 2>/dev/null;
 then
     cat >> Makefile-features <<EOF
-export OS_HAS_CPP ?= 1
-EXPORTED_VARS += OS_HAS_CPP
+export OS_HAS_GCC_C17 ?= 1
+EXPORTED_VARS += OS_HAS_GCC_C17
 EOF
 fi
 

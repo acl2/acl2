@@ -16,13 +16,15 @@
 
 (defpkg "OMAP" (set-difference-eq
                 (append *std-pkg-symbols*
-                        '(defxdoc+
+                        '(define-sk
+                          defxdoc+
                           fast-<<))
                 '(assoc
                   map
                   values
                   set::emptyp
                   set::delete
+                  set::double-containment
                   set::head
                   set::in
                   set::tail)))

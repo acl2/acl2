@@ -1,6 +1,6 @@
 ; ACL2 versions of (some of) the Top 100 Theorems List
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/topics" :dir :system)
+(include-book "xdoc/top" :dir :system)
 
 ;; Include here any books that contain theorems cited below:
 (include-book "arithmetic/binomial" :dir :system)
@@ -39,6 +39,8 @@
 (include-book "projects/schroeder-bernstein/schroeder-bernstein" :dir :system)
 (include-book "projects/linear/reduction" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
+(include-book "projects/set-theory/cantor" :dir :system)
+(include-book "projects/set-theory/schroeder-bernstein" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
 ;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
 
@@ -156,7 +158,7 @@
 
      "<p>Theorem @('fundamental-theorem-of-calculus').</p>"
 
-     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp#L136\">books/nonstd/workshops/1999/calculus/book/fundamental-theorem-of-calculus.lisp</a>.</p>"
 
      "<p>Note: This theorem requires <see topic=\"@(url real)\">ACL2(r)</see>.</p>"
 
@@ -230,6 +232,12 @@
      "@(def sbt::surjectivity-of-sb)"
 
      "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroeder-bernstein/schroeder-bernstein.lisp\">books/projects/schroeder-bernstein/schroeder-bernstein.lisp</a>.</p>"
+
+     "@(def zf::schroeder-bernstein)"
+
+     "<p>An alternate formulation in pure set theory by Matt Kaufmann, derived
+     from Grant Jurgensen's proof and statement, in <a
+     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp#L28\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,7 +403,17 @@
 
      ;; "<h3 id=\"61\">61. Theorem of Ceva</h3>"
      ;; "<h3 id=\"62\">62. Fair Games Theorem</h3>"
-     ;; "<h3 id=\"63\">63. Cantor's Theorem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"63\">63. Cantor's Theorem</h3>"
+
+     "@(def zf::cantor)"
+
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp#L79\">books/projects/set-theory/cantor.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"64\">64. L'Hopital's Rule</h3>"
      ;; "<h3 id=\"65\">65. Isosceles Triangle Theorem</h3>"
 
@@ -449,10 +467,10 @@
 
      "<h3 id=\"72\">72. Sylow's Theorem</h3>"
 
-     "(def sylow-1)"
-     "(def sylow-2)"
-     "(def sylow-3)"
-     "(def sylow-4)"
+     "@(def dm::sylow-1)"
+     "@(def dm::sylow-2)"
+     "@(def dm::sylow-3)"
+     "@(def dm::sylow-4)"
 
      "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/groups/sylow.lisp\">books/projects/groups/sylow.lisp</a>.</p>"
 

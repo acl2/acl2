@@ -1,0 +1,9 @@
+switch-default-case-is-not-the-last.cpp:7-8 (4-12): Default case is not the last case
+ 6 |   switch (x) {
+ 7 |     default:
+   |     ^^^^^^^^^
+ 8 |       a = 0;
+   | ^^^^^^^^^^^^
+ 9 |     case 1:
+ 10 |       a = 1;
+ 11 |     }

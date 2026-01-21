@@ -61,6 +61,8 @@
         It is the target function for which the expression is generated.")
    (fn-guard symbol
              "Described in @(see atc-implementation).")
+   (fn-guard-unnorm symbol
+                    "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -71,7 +73,7 @@
            "A flag indicating whether modular proof generation
             should continue or not.
             This will be eliminated when modular proof generation
-            will cover all of the ATC-generated code."))
+            covers all of the ATC-generated code."))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -83,13 +85,13 @@
    (type type
          "The type returned by the expression. Never @('void').")
    (term pseudo-termp
-         "The term from which the expression is generated.
-          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+         "The term from which the expression is generated,
+          transformed by replacing @(tsee if) with @(tsee if*)
+          and a few other changes.")
    (events pseudo-event-form-list
            "All the events generated for the expression.")
    (thm-name symbol
-             "The name of the theorem about @(tsee exec-expr-pure)
-              applied to the expression.
+             "The name of the correctness theorem of the expression.
               This theorem is one of the events in @('events').
               It is @('nil') if no theorem was generated,
               which happens exactly when
@@ -119,7 +121,7 @@
                           (gin expr-ginp)
                           state)
   :returns (gout expr-goutp)
-  :short "Generate a C expression from an ACL2 variable."
+  :short "Generate a C expression and theorem from an ACL2 variable."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -127,7 +129,8 @@
      Its information is looked up in the symbol table.")
    (xdoc::p
     "If the variable has pointer or array type and is not an external object,
-     its correctness theorem equates it to the @('-ptr') variable."))
+     its correctness theorem equates its execution to the @('-ptr') variable,
+     because the ACL2 variable itself contains the pointed object or array."))
   (b* (((expr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -203,15 +206,6 @@
    (xdoc::p
     "The C integer constant is actually calculated by the caller,
      and passed as input here.")
-   (xdoc::p
-    "The theorem says that the execution yields the term.
-     It also says that the term satisfies
-     the applicable shallowly embedded type predicate.")
-   (xdoc::p
-    "This theorem holds unconditionally;
-     it does not actually depend on the computation state.
-     We do not need to contextualize the theorem,
-     i.e. we ignore the @(tsee atc-context).")
    (xdoc::p
     "The hints cover all possible integer constants,
      but we could make them more nuanced to the specifics of the constant."))
@@ -355,7 +349,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -513,7 +507,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -612,16 +606,13 @@
                            (gin expr-ginp)
                            state)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents an integer conversion."
   :long
   (xdoc::topstring
    (xdoc::p
     "The expression and theorem for the argument
-     are generated in the caller, and passed here.")
-   (xdoc::p
-    "For now we do not generate the theorem;
-     we will add suppor for that later."))
+     are generated in the caller, and passed here."))
   (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
        ((expr-gin gin) gin)
@@ -685,7 +676,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar assign)
+                     :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -759,7 +750,7 @@
                                      (gin expr-ginp)
                                      state)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a conversion to ACL2 boolean."
   :long
   (xdoc::topstring
@@ -865,7 +856,7 @@
                            (gin expr-ginp)
                            state)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a ternary conditional expression."
   (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
@@ -1021,7 +1012,7 @@
                           (gin expr-ginp)
                           state)
   :returns (gout expr-goutp)
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a logical conjunction."
   :long
   (xdoc::topstring
@@ -1160,7 +1151,7 @@
                          (gin expr-ginp)
                          state)
   :returns (gout expr-goutp)
-  :short "Generate a C expressino from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a logical disjunction."
   :long
   (xdoc::topstring
@@ -1298,7 +1289,7 @@
                                      (gin expr-ginp)
                                      state)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a conversion from ACL2 boolean."
   :long
   (xdoc::topstring
@@ -1378,7 +1369,7 @@
                                    state)
   :guard (type-nonchar-integerp type)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents an indirection of a pointer to integer."
   :long
   (xdoc::topstring
@@ -1400,14 +1391,14 @@
      extend the theorem about the argument to also say that
      dereferncing the pointer yields the integer variable,
      i.e. the same assertion in the symbol table:
-     doing this obviated the need to use, in the theorem generated here,
+     doing this obviates the need to use, in the theorem generated here,
      the theorem from the symbol table.
      However, that approach makes the theorem about the argument expression
-     disuniform with other theorems about expressions;
+     nonuniform with other theorems about expressions;
      in particular, @(tsee atc-gen-expr-pure-correct-thm)
      would have to be generalized.
      Thus, the approach we use here seems better for now,
-     since the only slight ``disuniformity'' is in the fact that
+     since the only slight ``nonuniformity'' is in the fact that
      we need to retrieve and use the theorem from the symbol table.
      The current approach critically depends on
      the argument of the indirection operator always being a variable;
@@ -1507,7 +1498,7 @@
                                  state)
   :guard (type-nonchar-integerp elem-type)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents an array read."
   :long
   (xdoc::topstring
@@ -1568,7 +1559,7 @@
                                  wrld))
              (okp-lemma-hints
               `(("Goal"
-                 :in-theory '(,gin.fn-guard if* test* declar assign)
+                 :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
                  :use (:guard-theorem ,gin.fn))))
              ((mv okp-lemma-event &)
               (evmac-generate-defthm okp-lemma-name
@@ -1679,7 +1670,7 @@
                                          state)
   :guard (type-nonchar-integerp mem-type)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a structure scalar read."
   (b* (((reterr) (irr-expr-gout))
        ((expr-gin gin) gin)
@@ -1859,7 +1850,7 @@
                                         (gin expr-ginp)
                                         state)
   :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
+  :short "Generate a C expression and theorem from an ACL2 term
           that represents a structure array read."
   (b* (((reterr) (irr-expr-gout))
        ((expr-gin gin) gin)
@@ -1933,7 +1924,8 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :in-theory '(,gin.fn-guard-unnorm
+                                       if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2068,7 +2060,8 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :in-theory '(,gin.fn-guard-unnorm
+                                       if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2174,9 +2167,7 @@
    (xdoc::p
     "We also generate correctness theorems for the generated expressions.
      The theorems relate (the semantics of) the expressions
-     to the ACL2 terms from which they are generated.
-     Fow now we only generate theorems for some expressions,
-     but eventually we plan to extend this to all the expressions.")
+     to the ACL2 terms from which they are generated.")
    (xdoc::p
     "As we generate the code, we ensure that the ACL2 terms
      are well-typed according to the C types.
@@ -2514,7 +2505,7 @@
              at a point where ~
              an expression term returning boolean is expected, ~
              the term ~x1 is encountered instead, ~
-             which is not a C epxression term returning boolean; ~
+             which is not a C expression term returning boolean; ~
              see the ATC user documentation."
             gin.fn term)))
     :measure (pseudo-term-count term))
@@ -2549,6 +2540,8 @@
         It is the target function for which the expressions are generated.")
    (fn-guard symbol
              "Described in @(see atc-implementation).")
+   (fn-guard-unnorm symbol
+                    "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -2573,11 +2566,11 @@
            None of these is @('void').")
    (terms pseudo-term-listp
           "The terms from which the expressions are generated, in order.
-          The terms are transformed by replacing @(tsee if) with @(tsee if*).")
+           The terms are transformed by replacing @(tsee if) with @(tsee if*).")
    (events pseudo-event-form-list
            "All the events generated for the expressions.")
    (thm-names symbol-list
-              "The name of the theorems about @(tsee exec-expr-pure)
+              "The names of the theorems about @(tsee exec-expr-pure)
                applied to the expressions.
                These theorems are some of the events in @('events').
                These are all @('nil') if no theorems were generated,
@@ -2613,8 +2606,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee atc-gen-expr-pure) to lists.
-     However, we do not return the C types of the expressions."))
+    "This lifts @(tsee atc-gen-expr-pure) to lists."))
   (b* (((reterr) (irr-exprs-gout))
        ((exprs-gin gin) gin)
        ((when (endp terms))
@@ -2633,6 +2625,7 @@
                             :prec-tags gin.prec-tags
                             :fn gin.fn
                             :fn-guard gin.fn-guard
+                            :fn-guard-unnorm gin.fn-guard-unnorm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid

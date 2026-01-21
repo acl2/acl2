@@ -165,6 +165,8 @@
 |#
 
 (must-succeed*
+ (set-induction-depth-limit 0)
+
  (fty::deftypes int-term-s
    (fty::deftagsum int-term-s
      (:num ((val integerp)))

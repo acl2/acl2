@@ -24,7 +24,7 @@ public:
   // error if found (like a unknown option) std::nullopt is returned.
   std::optional<Result> parse(int argc, char **argv) {
 
-    // If nothing is provided this is error.
+    // If nothing is provided this is an error.
     if (argc == 1) {
       help();
       return std::nullopt;
@@ -60,7 +60,7 @@ public:
           help();
           return std::nullopt;
         }
-        res.file = { arg };
+        res.file = {arg};
       }
     }
 
@@ -81,12 +81,16 @@ public:
       << "This is the RAC (Restricted Algorithmic C) parser which translates a\n"
          "RAC program into a list of S-Expressions.\n\n"
          "Usage:\n"
-         "  parse FILE [options]\n\n"
+         "  parse FILE [options]\n"
+         "\n"
          "Options:\n"
+         "  -v -version    display the version (the commit hash)\n"
+         "  -h -help       display this message\n"
+         "\n"
          "  -rac           convert to RAC pseudocode and write to file.pc\n"
          "  -acl2          write ACL2 translation to file.ast.lsp\n"
          "  -pedantic      enable all possible warnings/errors.\n"
-         "  -version       display the version (the commit hash)\n"
+         "\n"
          "  -dump-ast      display the intermediate AST in dot format\n"
          "  -trace-parser  enable bison tracing, used to debug the parser\n";
 

@@ -20,3 +20,9 @@
       nil
     (cons (strip-cars (first alists))
           (map-strip-cars (rest alists)))))
+
+(defthm map-strip-cars-of-cons
+  (equal (map-strip-cars (cons a x))
+         (cons (strip-cars a)
+               (map-strip-cars x)))
+  :hints (("Goal" :in-theory (enable map-strip-cars))))

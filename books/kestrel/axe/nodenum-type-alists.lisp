@@ -14,6 +14,7 @@
 
 (include-book "axe-types")
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 
@@ -169,3 +170,14 @@
            (iff (axe-typep (lookup-equal nodenum nodenum-type-alist))
                 (lookup-equal nodenum nodenum-type-alist)))
   :hints (("Goal" :in-theory (enable nodenum-type-alistp lookup-equal))))
+
+(defthm all-<-of-strip-cars-of-insert-pair-into-nodenum-type-alist
+  (equal (all-< (strip-cars (insert-pair-into-nodenum-type-alist key val alist)) bound)
+         (and (< key bound)
+              (all-< (strip-cars alist) bound)))
+  :hints (("Goal" :in-theory (enable insert-pair-into-nodenum-type-alist))))
+
+(defthm all-<-of-strip-cars-of-sort-nodenum-type-alist
+  (equal (all-< (strip-cars (sort-nodenum-type-alist alist)) bound)
+         (all-< (strip-cars alist) bound))
+  :hints (("Goal" :in-theory (enable sort-nodenum-type-alist))))

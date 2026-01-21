@@ -36,6 +36,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-insert
   (x
    (tree binary-tree-p))
@@ -251,7 +256,8 @@
     (x
      (set setp))
     :returns (set$ setp)
-    (tree-insert x (sfix set)))
+    (tree-insert x (sfix set))
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +278,7 @@
     (declare (xargs :guard t))
     (insert-macro-loop (list* x y rst)))
 
-  (add-macro-fn insert insert1 t))
+  (add-macro-fn insert insert1$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,7 +452,8 @@
      "This is just a wrapper around @(tsee insert-all).")
    (xdoc::p
      "Time complexity: @($O(n\\log(n))$)."))
-  (insert-all list nil))
+  (insert-all list nil)
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

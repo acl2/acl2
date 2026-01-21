@@ -1,7 +1,7 @@
 ; More rules about take
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "repeat")
+(include-book "firstn-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "take"))
 (local (include-book "cons"))
@@ -27,6 +28,13 @@
   (implies (not (consp x))
            (equal (take n x)
                   (repeat n nil)))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthm take-when-not-consp-cheap
+  (implies (not (consp x))
+           (equal (take n x)
+                  (repeat n nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable take))))
 
 ;; Not in the take book because this mentions repeat.
@@ -55,8 +63,7 @@
                   (EQUAL (take N LST1)
                          (take N LST2))))
   :hints (("Goal" :in-theory (enable take nth)
-           :induct t
-           :do-not '(generalize eliminate-destructors))))
+           :induct t)))
 
 ;bozo might loop?
 (defthmd take-equal-lengthen
@@ -71,8 +78,7 @@
                          (TAKE n lst2))
                   (EQUAL (TAKE (+ 1 n) lst1)
                          (TAKE (+ 1 n) lst2))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take nth))))
+  :hints (("Goal" :in-theory (enable take nth))))
 
 ;move
 (defthm take-of-update-nth-irrel
@@ -82,8 +88,7 @@
                 (integerp m))
            (EQUAL (take N (UPDATE-NTH m VAL LST))
                   (take N LST)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take update-nth))))
+  :hints (("Goal" :in-theory (enable take update-nth))))
 
 ;; (DEFTHM TAKE-1-REWRITE-better
 ;;   (EQUAL (TAKE 1 X)
@@ -152,3 +157,9 @@
            (equal (take m x)
                   (take m free)))
   :hints (("Goal" :in-theory (enable take))))
+
+;move or drop
+(defthm take-of-firstn-same
+  (equal (take n (firstn n x))
+         (take n x))
+  :hints (("Goal" :in-theory (enable take firstn))))

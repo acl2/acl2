@@ -179,7 +179,6 @@
  (2 2 (:REWRITE REDUCE-RATIONALP-+))
  (2 2 (:REWRITE REDUCE-RATIONALP-*))
  (2 2 (:REWRITE RATIONALP-MINUS-X))
- (2 2 (:REWRITE ACL2S::ACL2S-PREFER-POSITIVE-ADDENDS-<1))
  (2 2 (:REWRITE |(floor (* 2 x) 1)| . 3))
  (2 2 (:REWRITE |(floor (* 2 x) 1)| . 2))
  (2 2 (:REWRITE |(< y (+ (- c) x))|))

@@ -39,3 +39,27 @@
 
 - name: invalid-cast
   should_report_error: true
+
+- name: duplicate-template-fun
+  should_report_error: true
+
+- name: duplicate-param-fun
+  should_report_error: true
+
+- name: duplicate-param-fun-2
+  should_report_error: true
+
+- name: rac-mode
+  args: ['rac-mode.cpp', '-rac']
+  preprocess: 'rac-mode.cpp'
+  out_generated: rac-mode.cpp.pc
+  ref_generated: rac-mode.cpp.ref.pc
+
+- name: binary-expr-depends-on-template-sign
+
+- name: missing
+  should_report_error: true
+  description: >
+               The error message "Undefined function template" should never
+               be emited since to output a TEMPLATEID, the identifier must be
+               found as a template

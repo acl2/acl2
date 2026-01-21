@@ -1,4 +1,4 @@
 c-array-as-parameter-typedef.cpp:5 (23-24): Cannot pass a C array (`fixed_size_arr`) as function parameter
  5 | int foo(fixed_size_arr a) { return a[2]; }
    |                        ^
-note: use array<int> instead
+note: use array<int, 4> instead

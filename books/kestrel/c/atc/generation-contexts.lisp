@@ -42,7 +42,7 @@
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
      We call these tests and bindings `premises',
      which is not ideal terminology because
-     it is essentially synonmous of `hypotheses',
+     it is essentially synonymous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
      we may find a better nomenclature in the future.")
@@ -274,7 +274,8 @@
     "We ensure that the starting context is a prefix of the ending context,
      i.e. it has the same preamble and a prefix of the premises.
      This should be always the case when this ACL2 function is called,
-     but we defensively check that, stopping with an error if the check fails.")
+     but we defensively check that,
+     stopping with a hard error if the check fails.")
    (xdoc::p
     "We calculate the premises in the ending context
      that are not in the starting context,
@@ -284,7 +285,7 @@
      computation states and C variables.")
    (xdoc::p
     "We skip any test encountered in the list of premises.
-     Because of the way this function is used, this is adeguate.
+     Because of the way this function is used, this is appropriate.
      The context difference may include tests in modular proofs,
      so it would be inappropriate to stop with an error
      upon encountering a test here."))

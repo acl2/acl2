@@ -15,11 +15,12 @@
 ;TODO Move the things in this file into other files according to topic.  Start
 ;by splitting the list stuff from the bv stuff.
 
-;;  This file was called hacks6.lisp.
+;; This file is not used much, but ineq-hack is used in some derivations.
+
+;; This file was called hacks6.lisp.
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
-(include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
 ;(include-book "lenconsmeta") ;todo: did this speed things up?  try with and without...
 (include-book "kestrel/utilities/myif" :dir :system)
 ;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -32,16 +33,16 @@
 ;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 ;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
-(local (include-book "kestrel/lists-light/subrange" :dir :system))
+;(include-book "kestrel/lists-light/memberp-def" :dir :system) ; todo
+(include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-(local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
-                           ;usb-plus-from-bounds
-                           ;;unsigned-byte-p-plus
-                           ))) ;bad?
+;; (local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
+;;                            ;usb-plus-from-bounds
+;;                            ;;unsigned-byte-p-plus
+;;                            ))) ;bad?
 
-(local (in-theory (disable expt)))
+;; (local (in-theory (disable expt)))
 
 ;; (in-theory (disable ;logapp-0 ;bad forcing
 ;;                     ;logtail-equal-0
@@ -1726,8 +1727,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) ()))))
+;;   :hints (("Goal" :in-theory (bvxor))))
 
 ;; (defthm bvxor-convert-arg2-to-unsigned-better
 ;;   (implies (and (syntaxp; (and (not (quotep y))
@@ -1741,8 +1741,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size x (bvchop size y))))
-;;   :hints (("Goal" :in-theory (e/d (bvxor
-;;                                    ) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;should we break the tie between x and (lognot 1 x) when commuting bvxor's ops?
 
@@ -1855,7 +1854,7 @@
 ;;   :hints (("Goal" :cases ((and (integerp lowval) (integerp highval))
 ;;                           (and (integerp lowval) (not (integerp highval)))
 ;;                           (and (not (integerp lowval)) (integerp highval)))
-;;            :in-theory (e/d () ()))))
+;;            )))
 
 ;; (defthmd add-bvchop-to-bvcat-1
 ;;   (implies (and (syntaxp (and (not (quotep lowval))
@@ -1871,7 +1870,7 @@
 ;;   :hints (("Goal" :cases ((and (integerp lowval) (integerp highval))
 ;;                           (and (integerp lowval) (not (integerp highval)))
 ;;                           (and (not (integerp lowval)) (integerp highval)))
-;;            :in-theory (e/d () ()))))
+;;            )))
 
 ;(in-theory (enable bvchop-logapp))
 
@@ -2439,23 +2438,19 @@
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule
   (implies (not (< tp x))
-           (equal (< (IF test tp ep)
-                     x)
-                  (if test nil
-                    (< ep
-                       x)))))
+           (equal (< (if test tp ep) x)
+                  (if test nil (< ep x)))))
 
 ;BOZO think more about stuff like this?
 ;should ACL2 always do stuff like this?
+;rename
 (defthmd if-backchain-rule2
   (implies (< x tp)
-           (equal (< x
-                     (IF test tp ep))
-                  (if test t
-                    (< x
-                       ep)))))
+           (equal (< x (if test tp ep))
+                  (if test t (< x ep)))))
 
 ;; ;bozo drop some hyps?
 ;; (defthm byte-fix-list-of-update-subrange
@@ -2655,7 +2650,7 @@
 
 ;see the file "loops"
 ;rename
-;drop, but used in rules3.lisp and some derivations
+;drop, but used some derivations
 (defthmd ineq-hack
   (implies (and (< a b) ;free var
                 (<= b c)
@@ -2678,26 +2673,29 @@
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
 ;move to be next to the other one
-(defthm not-less-when->=-max-of-containing-bag
-  (implies (and (<= (maxelem bag) k)
-                (memberp elem bag))
-           (equal (> elem k)
-                  nil))
-  :hints (("Goal" :in-theory (enable maxelem))))
+;; (defthmd not-less-when->=-max-of-containing-bag
+;;   (implies (and (<= (maxelem bag) k)
+;;                 (memberp elem bag))
+;;            (equal (> elem k)
+;;                   nil))
+;;   :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthm memberp-of-maxelem-same
- (implies (consp x)
-          (memberp (maxelem x) x))
- :hints (("Goal" :in-theory (enable maxelem))))
+;drop?
+;; (defthmd memberp-of-maxelem-same
+;;  (implies (consp x)
+;;           (memberp (maxelem x) x))
+;;  :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthm memberp-maxelem-when-subsetp-equal
-  (implies (and (subsetp-equal bag1 bag2)
-                (consp bag1))
-           (memberp (maxelem bag1) bag2))
-  :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
-           :in-theory (disable memberp-of-maxelem-same))))
+;drop?
+;; (defthmd memberp-maxelem-when-subsetp-equal
+;;   (implies (and (subsetp-equal bag1 bag2)
+;;                 (consp bag1))
+;;            (memberp (maxelem bag1) bag2))
+;;   :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
+;;            :in-theory (disable memberp-of-maxelem-same))))
 
-(defthm maxelem-subrange-shorten-hackb
+;drop?
+(defthmd maxelem-subrange-shorten-hackb
   (implies (and (<= (NTH i x) y)
                 (< i (len x))
                 (natp i)
@@ -2720,19 +2718,20 @@
 ;;                                   heap))))
 ;;   :hints (("Goal" :expand ((ARRAY-REFP ref (LIST dim) type heap)))))
 
-(defthmd maxelem-split-hack
-  (implies (and (natp i)
-                (<= 1 i)
-                (< i (len x))
-                )
-           (equal (subrange 1 i x)
-                  (cons (nth 1 x)
-                        (subrange 2 i x))))
-  :hints (("Goal" :in-theory (enable ;EQUAL-CONS-CASES2
-                              ))))
+(local
+ (defthmd maxelem-split-hack
+   (implies (and (natp i)
+                 (<= 1 i)
+                 (< i (len x))
+                 )
+            (equal (subrange 1 i x)
+                   (cons (nth 1 x)
+                         (subrange 2 i x))))
+   :hints (("Goal" :in-theory (enable ;EQUAL-CONS-CASES2
+                               )))))
 
 ;bozo
-(defthm maxelem-of-subrange-lengthen-2-1
+(defthmd maxelem-of-subrange-lengthen-2-1
   (implies (and (<= (nth 1 x)
                     (maxelem (subrange 2 i x)))
                 (< i (len x))
@@ -2769,7 +2768,7 @@
 ;;  :hints (("Goal" :use (:instance take-split (n (+ 1 i)))
 ;;           :in-theory (disable take-split LIST::EQUAL-APPEND-REDUCTION!))))
 
-;move to seq?
+;move to lists-light?
 (defthm maxelem-of-first-n+1-when-nth-is-greatest
   (implies (and (<= (maxelem (take n x)) (nth n x))
                 (natp n)
@@ -2851,7 +2850,7 @@
 ;;                 (<= len end))
 ;;            (equal (SUBRANGE start end x)
 ;;                   (SUBRANGE start (+ -1 len) x)))
-;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
+;;   :hints (("Goal" :in-theory (enable SUBRANGE))))
 
 (defthm drop-linear-hyps1
   (implies (and (< (+ free x) y)
@@ -2923,8 +2922,7 @@
 ;may help during backchaining...
 (defthm not-equal-when-less
   (implies (< x y)
-           (equal (equal x y)
-                  nil))
+           (not (equal x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 ;; todo: compare to the rules below
@@ -3031,36 +3029,7 @@
 
 ;;== new stuff
 
-;; (defthm nth-of-push
-;;   (equal (nth n (jvm::push x y))
-;;          (if (zp n) x (nth (+ -1 n) y)))
-;;   :hints (("Goal" :in-theory (enable jvm::push list::nth-of-cons))))
-
-;;
-;; bvchop-list
-;;
-
-;; ;BOZO do i really not have this?
-;; ;dup from jvm
-;; ;move to an earlier book?
-;; (defund bvchop-list (size lst)
-;;   (declare (type (integer 0 *) size)
-;;            (xargs :guard (ALL-INTEGERP lst)))
-;;   (if (atom lst)
-;;       nil
-;;     (cons (bvchop size (car lst))
-;;           (bvchop-list size (cdr lst)))))
-
-;move
-(defthm all-integerp-when-all-signed-byte-p
-  (implies (all-signed-byte-p free x)
-           (all-integerp x))
-  :hints (("Goal" :in-theory (enable all-signed-byte-p all-integerp))))
-
 ;(in-theory (disable bvxor-1-becomes-bitxor)) ;trying without
-
-;new stuff:
-
 
 ;; ;this is when we know what the entire class is
 ;; (defthm open-execute-INVOKEspecial-another
@@ -3131,7 +3100,7 @@
 ;;                 )
 ;;            (equal (bvminus n x (bvplus m y z))
 ;;                   (bvminus n x (bvplus n y z))))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ()))))
+;;   :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
 ;; ;bozo handle this better
 ;; (defthm bvplus-of-bvminus
@@ -3139,7 +3108,7 @@
 ;;                 (integerp y))
 ;;            (equal (bvplus 5 x (bvminus 5 y x))
 ;;                   (bvchop 5 y)))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ())))
+;;   :hints (("Goal" :in-theory (enable bvminus bvplus)))
 ;;   )
 
 ;; (defthm iushr-constant-opener
@@ -3457,12 +3426,3 @@
 ;;                              trim-to-n-bits-meta-rule-for-logops
 ;;                              trim-to-n-bits-meta-rule-for-slice
 ;;                              ))
-
-;BOZO or should we handle this in our translation to STP?
-;we could also handle the adding of bvchops when we translate to stp?
-;; (deftheory add-padding '(bvcat-pad-low
-;;                          bvcat-pad-high
-;;                          bvmult-pad-arg1
-;;                          bvmult-pad-arg2
-;;                          bvxor-pad-arg1
-;;                          bvxor-pad-arg2))

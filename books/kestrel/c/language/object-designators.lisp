@@ -11,11 +11,11 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "identifiers")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,8 +80,7 @@
      and not their sub-objects."))
   ((number nat))
   :tag :address
-  :pred addressp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred addressp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +117,48 @@
   (:member ((super objdesign)
             (name ident)))
   :pred objdesignp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled equal-of-objdesign-auto-fix
+    (implies (and (objdesign-case objdes1 :auto)
+                  (objdesign-case objdes2 :auto))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (and (equal (objdesign-auto->name objdes1)
+                                (objdesign-auto->name objdes2))
+                         (equal (objdesign-auto->frame objdes1)
+                                (objdesign-auto->frame objdes2))
+                         (equal (objdesign-auto->scope objdes1)
+                                (objdesign-auto->scope objdes2)))))
+    :enable (objdesign-auto->name
+             objdesign-auto->frame
+             objdesign-auto->scope)
+    :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2)))
+
+  (defruled equal-of-objdesign-static-fix
+    (implies (and (objdesign-case objdes1 :static)
+                  (objdesign-case objdes2 :static))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (equal (objdesign-static->name objdes1)
+                           (objdesign-static->name objdes2))))
+    :enable objdesign-static->name
+    :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2)))
+
+  (defruled equal-of-objdesign-alloc-fix
+    (implies (and (objdesign-case objdes1 :alloc)
+                  (objdesign-case objdes2 :alloc))
+             (equal (equal (objdesign-fix objdes1)
+                           (objdesign-fix objdes2))
+                    (equal (objdesign-alloc->get objdes1)
+                           (objdesign-alloc->get objdes2))))
+    :enable objdesign-alloc->get
+    :expand ((objdesign-fix objdes1)
+             (objdesign-fix objdes2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,6 +166,35 @@
   objdesign
   :short "Fixtype of optional object designators."
   :pred objdesign-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define objdesign-top ((objdes objdesignp))
+  :returns (top-objdes objdesignp)
+  :short "Top object designator of an object designator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An element or member object designator
+     denotes a portion of an object
+     designated the @('super') component,
+     which in turn may be a portion of a larger object, and so on.
+     This function returns the topmost object designator."))
+  (objdesign-case objdes
+                  :static (objdesign-fix objdes)
+                  :auto (objdesign-fix objdes)
+                  :alloc (objdesign-fix objdes)
+                  :element (objdesign-top objdes.super)
+                  :member (objdesign-top objdes.super))
+  :measure (objdesign-count objdes)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+
+  ///
+
+  (defret objdesign-kind-of-objdesign-top
+    (member-equal (objdesign-kind top-objdes)
+                  '(:static :auto :alloc))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,7 +218,7 @@
        (objdesign-case objdes2 :alloc)
        (not (equal (objdesign-alloc->get objdes1)
                    (objdesign-alloc->get objdes2))))
-  :hooks (:fix)
+
   ///
 
   (defrule object-disjointp-commutative

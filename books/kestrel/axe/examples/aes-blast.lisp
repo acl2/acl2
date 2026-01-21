@@ -9,6 +9,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, due to regression failure 9/4/2025 using Allegro CL 10.1:
+; cert_param: (non-allegro)
+
 (in-package "ACL2")
 
 ;; See also aes-blast-boolean.lisp
@@ -23,14 +26,13 @@
                    `(aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16) ; 16 bytes of input
                                           ,(bit-blasted-symbolic-byte-list 'key 16)) ; AES-128 has 128 key bits (= 16 bytes)
                    :rules :auto
-                   :extra-rules (append (bit-blast-rules3)
+                   :extra-rules (append (bit-blast-rules)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    )
 
 (def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted*
   *aes-128-encrypt-spec-dag*
-  :rules (append '(bv-array-read-blast-one-step-better
-                   bif-rewrite ;bif
+  :rules (append '(bv-array-read-blast-one-step
                    bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
                    bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot)
                  (core-rules-bv) (type-rules)))

@@ -95,6 +95,11 @@
                   (natp size)))
   :hints (("Goal" :in-theory (enable bvdiv))))
 
+(defthm unsigned-byte-p-of-bvdiv-same
+  (equal (unsigned-byte-p size (bvdiv size x y))
+         (natp size))
+  :hints (("Goal" :in-theory (enable bvdiv))))
+
 (defthm bvchop-of-bvdiv
   (implies (and (<= size size2)
                 (natp size)

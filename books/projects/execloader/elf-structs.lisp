@@ -174,7 +174,7 @@
 (fty::defbitstruct elf_bits16 16)
 (fty::defbitstruct elf_bits32 32)
 (fty::defbitstruct elf_bits64 64)
-(fty::defbitstruct elf64_sym ;; LSB first                   
+(fty::defbitstruct elf64_sym ;; LSB first
   ;; typedef struct {
   ;;     uint32_t      st_name;
   ;;     unsigned char st_info;

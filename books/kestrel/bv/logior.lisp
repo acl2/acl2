@@ -1,7 +1,7 @@
 ; BV Library: logior
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -336,15 +336,35 @@
                            (lognot-of-logand
                             mod-sum-cases)))))
 
+(local
+  (defthm <-of-integer-and-tiny
+    (implies (and (< 0 i)
+                  (< i 1)
+                  (integerp j))
+             (equal (< j i)
+                    (<= j 0)))))
+
+(local
+  (defthm <-of-integer-and-plus-of-integer-and-tiny
+    (implies (and (< 0 i)
+                  (< i 1)
+                  (integerp j1)
+                  (integerp j2))
+             (equal (< j1 (+ j2 i))
+                    (<= j1 j2)))))
+
 (defthm <-of-logior-and-expt-of-2
   (implies (and (< i (expt 2 n))
                 (< j (expt 2 n))
-                (natp n))
+                ;; (natp n)
+                )
            (< (logior i j) (expt 2 n)))
   :hints (("Goal" :use (:instance logand-lower-bound-negative-2-alt
                                   (i (+ -1 (- I)))
                                   (j (+ -1 (- j)))
-                                  (n n))
+                                  (n (ifix n)))
+           :cases ((not (integerp n))
+                   (and (integerp n) (< n 0)))
            :in-theory (e/d (logior lognot)
                            (LOGAND-LOWER-BOUND-NEGATIVE-2-ALT)))))
 

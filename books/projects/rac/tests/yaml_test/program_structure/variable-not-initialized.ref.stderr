@@ -1,0 +1,4 @@
+variable-not-initialized.cpp:5 (6-7): variable must be assigned directly
+ 5 |   int a, b = 0;
+   |       ^
+note: non initialized variable can introduce undefined behavior

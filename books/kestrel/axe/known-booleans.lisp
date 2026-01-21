@@ -1,6 +1,6 @@
 ; A tool to track functions that are known to return only t or nil
 ;
-; Copyright (C) 2016-2024 Kestrel Institute
+; Copyright (C) 2016-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -62,10 +62,12 @@
   (symbol-listp (known-booleans wrld))
   :hints (("Goal" :in-theory (enable known-booleans))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: unify
 (defmacro make-event-quiet2 (&rest args)
   `(with-output
-     :off ,(remove1 'error *valid-output-names*)
+     :off ,(set-difference-eq *valid-output-names* '(error comment))
      :gag-mode nil
      ;; todo: don't add :on-behalf-of if it already exists
      (make-event ,@args :on-behalf-of :quiet)))
@@ -85,9 +87,8 @@
         (er-soft-logic 'add-known-boolean "~x0 is not in logic mode." fn))
        (old-known-booleans (known-booleans (w state)))
        ((when (member-eq fn old-known-booleans))
-        ;; TODO: Maybe return :redundant?
-        (prog2$ (cw "~x0 is already a known boolean.~%" fn)
-                (mv nil '(value-triple :invisible) state)))
+        (prog2$ (cw "NOTE: ~x0 is already a known boolean.~%" fn)
+                (mv nil '(value-triple :redundant) state)))
        (formals (fn-formals fn (w state))))
     (mv nil
         `(progn (defthm ,(pack$ fn '$-known-booleans-justification)
@@ -109,6 +110,8 @@
 
 (thm
   (symbol-listp (no-known-booleans)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; We can add built-in ACL2 functions freely to this list as long as they
 ;; provably always return booleans:

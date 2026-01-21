@@ -14,8 +14,10 @@
 (include-book "rules")
 (include-book "bvashr")
 ;(local (include-book "logior"))
+(local (include-book "bvand"))
 (local (include-book "logxor")) ; used in BVXOR-OF-BVIF?
 (local (include-book "logand-b"))
+(local (include-book "bvuminus"))
 ;(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -249,7 +251,7 @@
                                    LOGTAIL-OF-BVCHOP
                                    slice
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+
                                    BITXOR-SPLIT)
                            (
                             anti-slice
@@ -448,7 +450,7 @@
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
 
 (defthm bvcat-of-myif-arg2
-  (implies (and (Natp highsize)
+  (implies (and (natp highsize)
                 (<= 1 highsize)
                 (natp lowsize))
            (equal (bvcat highsize (myif test a b) lowsize lowval)
@@ -456,7 +458,7 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthm bvcat-of-myif-arg4
-  (implies (and (Natp highsize)
+  (implies (and (natp highsize)
                 (<= 1 highsize)
                 (natp lowsize))
            (equal (bvcat highsize highval lowsize (myif test a b))
@@ -464,15 +466,15 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthmd getbit-of-bvif-quoteps
-  (implies (and (syntaxp (quotep thenpart))
-                (syntaxp (quotep elsepart))
-                (syntaxp (quotep n))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep thenpart)
+                              (quotep elsepart)
+                              (quotep n)
+                              (quotep size)))
                 (< n size)
                 (natp n)
-                (integerp size)
-                )
+                (integerp size))
            (equal (getbit n (bvif size test thenpart elsepart))
+                  ;; the getbit calls should get computed:
                   (bvif 1 test (getbit n thenpart) (getbit n elsepart))))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
@@ -540,8 +542,8 @@
 ;; (DEFTHM logxor-BOUND
 ;;    (IMPLIES (AND (< x K)
 ;;                  (< y K)
-;;                  (Natp x)
-;;                  (Natp y)
+;;                  (natp x)
+;;                  (natp y)
 ;;                  (natp k))
 ;;             (EQUAL (< (logxor X Y) K)
 ;;                    T))
@@ -1174,7 +1176,6 @@
            :in-theory (e/d (bvplus ;bvchop-of-sum-cases
                                    slice-of-sum-cases
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    bitxor
                                    bvxor
                                    expt-of-+)
@@ -1293,7 +1294,6 @@
 ;;            (equal (bitxor (bitand x y) (bitxor 1 x))
 ;;                   (bitor (bitand x y) (bitxor 1 x))))
 ;;   :hints (("Goal"
-;;            :in-theory (disable)
 ;;            :cases ((and (equal 0 x) (equal 0 y))
 ;;                           (and (equal 0 x) (equal 1 y))
 ;;                           (and (equal 1 x) (equal 0 y))
@@ -1526,34 +1526,6 @@
                 )
            (< k1 (max x k2))))
 
-;; (defthm getbit-of-bif
-;;   (implies (and (natp n))
-;;            (equal (getbit n (bif test thenpart elsepart))
-;;                   (bif test (getbit n thenpart) (getbit n elsepart))))
-;;   :hints (("Goal" :in-theory (enable bvif myif))))
-
-
-(defthm bvif-1-equal-1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) tp ep)
-                  (bif x (getbit 0 tp) (getbit 0 ep))))
-  :hints (("Goal" :in-theory (disable BITXOR-OF-1-BECOMES-BITNOT-ARG1)
-           :DO-NOT '(preprocess))))
-
-;rename bif to bitif?
-(defthm bif-rewrite
-  (implies (unsigned-byte-p 1 test)
-           (equal (bif test x y)
-                  (bitor (bitand test x)
-                         (bitand (bitnot test) y))))
-  :hints (("Goal" :in-theory (disable BITXOR-OF-1-BECOMES-BITNOT-ARG1)
-           :DO-NOT '(preprocess))))
-
-(defthm bvif-becomes-bif
-  (equal (bvif 1 test x y)
-         (bif (bool-to-bit test) x y))
-  :hints (("Goal" :in-theory (enable bvif myif bool-to-bit))))
-
 ;actually, we should go to bvif?!
 (defthmd bvplus-of-myif
   (equal (bvplus size x (myif test a b))
@@ -1561,14 +1533,6 @@
                (bvplus size x a)
                (bvplus size x b)))
   :hints (("Goal" :in-theory (enable myif))))
-
-;expensive?
-(defthm integerp-implies-acl2-numberp
-  (implies (integerp x)
-           (acl2-numberp x)))
-
-(defthm acl2-numberp-of-sum
-  (acl2-numberp (+ x y)))
 
 (defthm <-from-<=-free
   (implies (and (equal (< free x) ; i think we have this rather than (not (< free x))
@@ -1721,6 +1685,7 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;do this better with congruences?
+;todo: can loop with bvplus
 (defthmd bvcat-of-+-high
   (implies (and (integerp x)
                 (integerp y)
@@ -1728,9 +1693,9 @@
                 (natp lowsize))
            (equal (bvcat highsize (+ x y) lowsize lowval)
                   (bvcat highsize (bvplus highsize x y) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
+;todo: can loop with bvplus
 (defthmd bvcat-of-+-low
   (implies (and (integerp x)
                 (integerp y)
@@ -1738,28 +1703,22 @@
                 (natp lowsize))
            (equal (bvcat highsize highval lowsize (+ x y))
                   (bvcat highsize highval lowsize (bvplus lowsize x y))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
-
-(defthm bvplus-of-*-arg2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (natp size))
+  :hints (("Goal" :in-theory (enable bvplus))))
+;todo: rename
+(defthmd bvplus-of-*-arg2
+  (implies (and (integerp y)
+                (integerp z))
            (equal (bvplus size x (* y z))
                   (bvplus size x (bvmult size y z))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-;add in:
-;; (defthm bvplus-of-*-arg1
-;;   (implies (and (integerp x)
-;;                 (integerp y)
-;;                 (integerp z)
-;;                 (natp size)
-;;                 )
-;;            (equal (bvplus size (* y z) x)
-;;                   (bvplus size (bvmult size y z) x)))
-;;   :hints (("Goal" :in-theory (enable bvmult))))
+;todo: rename
+(defthmd bvplus-of-*-arg1
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bvplus size (* y z) x)
+                  (bvplus size (bvmult size y z) x)))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;fixme gen
 (defthm bvplus-of-bvcat-of-0-hack
@@ -2007,7 +1966,7 @@
 
 (defthm bvplus-of-bvshl-becomes-bvcat-arg2
   (implies (and (<= amt size2)
-                (= size2 size) ; todo: gen!
+                (equal size2 size) ; todo: gen!
                 (natp size2)
                 (unsigned-byte-p amt x)
                 (natp size))
@@ -2017,7 +1976,7 @@
 
 (defthm bvplus-of-bvshl-becomes-bvcat-arg3
   (implies (and (<= amt size2)
-                (= size2 size) ; todo: gen!
+                (equal size2 size) ; todo: gen!
                 (natp size2)
                 (unsigned-byte-p amt x)
                 (natp size))
@@ -2095,7 +2054,7 @@
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)
-                (Natp y)
+                (natp y)
                 (natp x))
            (equal (getbit n (+ y (bvchop n x)))
                   (if (equal 0 (getbit n x))
@@ -2106,8 +2065,8 @@
 
 (defthmd getbit-of-+-bvchop-expand3
   (implies (and (natp n)
-                (Natp y1)
-                (Natp y2)
+                (natp y1)
+                (natp y2)
                 (natp x))
            (equal (getbit n (+ y1 (bvchop n x) y2))
                   (if (equal 0 (getbit n x))
@@ -2118,8 +2077,8 @@
 
 (defthmd getbit-of-+-bvchop-expand4
   (implies (and (natp n)
-                (Natp y1)
-                (Natp y2)
+                (natp y1)
+                (natp y2)
                 (natp x))
            (equal (getbit n (+ y1 y2 (bvchop n x)))
                   (if (equal 0 (getbit n x))

@@ -77,7 +77,7 @@
                        context (opentok-name tok1)))
               (lc-collect (cdr tokens) urls-acc context)))
           (lc-collect (cdr tokens)
-                      (cons (str::cat "images/" url) urls-acc)
+                      (cons url urls-acc)
                       context))))
 
     (lc-collect (cdr tokens) urls-acc context)))
@@ -188,5 +188,3 @@ system's package manager.</p>
 </html>
 " rchars)))
     (str::printtree->str rchars)))
-
-

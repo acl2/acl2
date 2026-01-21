@@ -49,11 +49,13 @@
 
 (fty::defbitstruct interp-flags
   ((intro-bvars booleanp :default t)
-   (intro-synvars booleanp :default t)
-   (simplify-logic booleanp :default t)
+   ;; (intro-synvars booleanp :default t)
+   ;; (simplify-logic booleanp :default t)
    (trace-rewrites booleanp :default nil)
    (make-ites booleanp :default nil)
-   (branch-on-ifs booleanp :default t)))
+   (branch-on-ifs booleanp :default t)
+   (hide          booleanp :default nil)
+   (if-merge-last-chance booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)
@@ -91,51 +93,84 @@
                           (bitarr)
                           (resize-bits 0 bitarr)
                           env$))))
-  
 
+(fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
+(fty::deflist trace-alistlist :elt-type trace-alist :true-listp t :elementp-of-nil t)
 
-(make-event
- `(stobjs::defnicestobj interp-st
-    (stack :type stack)
-    (logicman :type logicman)
-    (bvar-db :type bvar-db)
-    (pathcond :type pathcond)
-    (constraint :type pathcond)
-    (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :pred constraint-db-p)
-    (prof :type interp-profiler)
-    (backchain-limit :type integer :initially -1 :fix ifix)
-    ;; (bvar-mode :type t)
-    (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
-    (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
-    (flags :type (and (unsigned-byte 60)
-                      (satisfies interp-flags-p))
-           :initially ,(make-interp-flags)
-           :fix interp-flags-fix :pred interp-flags-p)
+(with-output
+  :off (event)
+  :summary-off (acl2::rules)
+  (make-event
+   `(stobjs::defnicestobj interp-st
+      (stack :type stack)
+      (logicman :type logicman)
+      (bvar-db :type bvar-db)
+      (pathcond :type pathcond)
+      (constraint :type pathcond)
+      (constraint-db :type (satisfies constraint-db-p) :fix constraint-db-fix :pred constraint-db-p :initially ,(make-constraint-db))
+      (prof :type interp-profiler)
+      (backchain-limit :type integer :initially -1 :fix ifix)
+      ;; (bvar-mode :type t)
+      (equiv-contexts :type (satisfies equiv-contextsp) :fix equiv-contexts-fix :pred equiv-contextsp)
 
-    ;; backing arrays for fgarray primitives -- see fgarrays.lisp
-    (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
-    (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (stacklimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (steplimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+    
+      (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
+      (flags :type (and (unsigned-byte 60)
+                        (satisfies interp-flags-p))
+             :initially ,(make-interp-flags)
+             :fix interp-flags-fix :pred interp-flags-p)
 
-    ;; no logical significance
-    (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
-    (cgraph-memo :type (satisfies cgraph-alist-p) :initially nil :fix cgraph-alist-fix)
-    (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    (ctrex-env :type env$)
-    (sat-ctrex :type bitarr)
+      (rewrite-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (binder-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (branch-merge-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
+      (congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
 
-    (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
-    (trace-scratch :type t :initially nil)
+      ;; backing arrays for fgarray primitives -- see fgarrays.lisp
+      (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
+      (next-fgarray :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
 
-    (errmsg :type t :initially nil)
-    (debug-info :type t)
-    (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix)))
+      ;; no logical significance
+      (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
+      (cgraph-memo :type (satisfies cgraph-memo-p) :initially nil :fix cgraph-memo-fix)
+      (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (ctrex-env :type env$)
+      (sat-ctrex :type bitarr)
+
+      (user-scratch :type (satisfies obj-alist-p) :initially nil :fix obj-alist-fix)
+      (trace-scratch :type t :initially nil)
+      (trace-depth :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
+      (trace-alist :type (satisfies trace-alist-p) :initially nil :fix trace-alist-fix)
+      (trace-stack :type (satisfies trace-alistlist-p) :initially nil :fix trace-alistlist-fix)
+      (tracespecs :type (satisfies true-list-listp) :initially nil :fix acl2::true-list-list-fix)
+
+      (errmsg :type t :initially nil)
+      (debug-info :type t)
+      (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix))))
+
+#!fgl
+(define interp-st-show-ctrex-env (interp-st)
+  (stobj-let ((env$ (interp-st->ctrex-env interp-st)))
+             (val)
+             (progn$ (cw "alist:     ~x0~%" (env$->alist env$))
+                     (cw "obj-alist: ~x0~%" (env$->obj-alist env$))
+                     nil)
+             val))
 
 
 (define interp-st-init (interp-st)
   :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
                                            update-nth
-                                           equal-of-len)
+                                           equal-of-len
+                                           (init-bvar-db$c)
+                                           ;; update-term-bvars$c
+                                           ;; update-bvar-fn-indices$c
+                                           ;; update-term-equivs$c
+                                           ;; update-next-bvar1$c
+                                           ;; update-base-bvar$c
+                                           )
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -167,12 +202,18 @@
                              (env$ (env$-init env$))
                              (bitarr (resize-bits 0 bitarr)))
                           (mv stack logicman bvar-db pathcond constraint-pathcond interp-profiler env$ bitarr))
-                        (b* ((interp-st (update-interp-st->constraint-db nil interp-st))
+                        (b* ((interp-st (update-interp-st->constraint-db (make-constraint-db) interp-st))
                              (interp-st (update-interp-st->backchain-limit -1 interp-st))
                              (interp-st (update-interp-st->equiv-contexts nil interp-st))
                              (interp-st (update-interp-st->reclimit 0 interp-st))
+                             (interp-st (update-interp-st->stacklimit 0 interp-st))
+                             (interp-st (update-interp-st->steplimit 0 interp-st))
                              (interp-st (update-interp-st->config (make-fgl-config) interp-st))
                              (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
+                             (interp-st (update-interp-st->rewrite-rules nil interp-st))
+                             (interp-st (update-interp-st->binder-rules nil interp-st))
+                             (interp-st (update-interp-st->branch-merge-rules nil interp-st))
+                             (interp-st (update-interp-st->congruence-rules nil interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))
                              (interp-st (update-interp-st->next-fgarray 0 interp-st))
                              (- (fast-alist-free (interp-st->cgraph interp-st))
@@ -183,7 +224,11 @@
                              (interp-st (update-interp-st->user-scratch nil interp-st))
                              (interp-st (update-interp-st->trace-scratch nil interp-st))
                              (interp-st (update-interp-st->errmsg nil interp-st))
-                             (interp-st (update-interp-st->debug-info nil interp-st)))
+                             (interp-st (update-interp-st->debug-info nil interp-st))
+                             (interp-st (update-interp-st->trace-alist nil interp-st))
+                             (interp-st (update-interp-st->trace-stack nil interp-st))
+                             (interp-st (update-interp-st->trace-depth 0 interp-st))
+                             (interp-st (update-interp-st->tracespecs nil interp-st)))
                           (update-interp-st->debug-stack (list (make-major-frame)) interp-st)))))
 
 
@@ -425,6 +470,15 @@
   (stobj-let ((stack (interp-st->stack interp-st)))
              (obj)
              (stack-nth-scratch n stack)
+             obj))
+
+(define interp-st-nth-scratch-kind ((n natp) interp-st)
+  :enabled t :hooks nil
+  :inline t
+  :guard (< n (interp-st-full-scratch-len interp-st))
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (obj)
+             (stack-nth-scratch-kind n stack)
              obj))
 
 
@@ -738,16 +792,24 @@
 
 
 (local
- (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$a
-   (implies (get-term->bvar$a x bvar-db)
+ (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$c
+   (implies (get-term->bvar$c x bvar-db)
             (subsetp (fgl-object-bfrlist x) (bvar-db-bfrlist bvar-db)))
    :hints (("goal" :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
-                          (m (get-term->bvar$a x bvar-db))))
+                          (m (get-term->bvar$c x bvar-db))))
             :in-theory (disable subsetp-bfrlist-of-bvar-db-bfrlist)))))
+
+(define interp-st-get-term->bvar ((x fgl-object-p) interp-st)
+  :returns (bvar acl2::maybe-natp :rule-classes :type-prescription)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (bvar)
+             (get-term->bvar x bvar-db)
+             bvar))
 
 (define interp-st-add-term-bvar ((x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
+  :guard-hints (("goal" :in-theory (enable interp-st-get-term->bvar)))
   :prepwork ((local (in-theory (enable interp-st-nvars-ok))))
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
@@ -780,9 +842,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
@@ -834,9 +896,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
@@ -1019,6 +1081,17 @@
              (bvar-db-debug bvar-db)
              alist))
 
+(define interp-st-bvar-fn-term-indices ((fn pseudo-fnsym-p) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-fn-term-indices fn bvar-db)
+             alist))
+
+(define interp-st-bvar-list-okp ((indices nat-listp) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-list-okp indices bvar-db)
+             alist))
 
 
 (defines fgl-minor-frame-subterm-count

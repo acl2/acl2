@@ -38,8 +38,7 @@
 // calls: TraverseExpression(), TraverseInteger(), WalkUpInteger(),
 // WalkUpConstant(), WalkUpExpression(), VisitExpression(), VisitConstant(),
 // VisitInteger().
-template <typename Derived>
-class RecursiveASTVisitor {
+template <typename Derived> class RecursiveASTVisitor {
 public:
   // Configure the order of the traversal. To do it in a postfix order,
   // overload this function and return true.
@@ -54,9 +53,12 @@ public:
   // it after.
   inline bool TraverseExpression(Expression *e);
   inline bool TraverseStatement(Statement *s);
-  inline bool TraverseType(Type *s);
+  inline bool TraverseType(const Type *s);
 #define APPLY(CLASS, PARENT) inline bool Traverse##CLASS(CLASS *);
 #include "../parser/ast/astnodes.def"
+#undef APPLY
+
+#define APPLY(CLASS, PARENT) inline bool Traverse##CLASS(const CLASS *);
 #include "../parser/ast/types.def"
 #undef APPLY
 
@@ -66,9 +68,12 @@ public:
   // hierarchy.
   inline bool WalkUpExpression(Expression *e);
   inline bool WalkUpStatement(Statement *s);
-  inline bool WalkUpType(Type *t);
+  inline bool WalkUpType(const Type *t);
 #define APPLY(CLASS, PARENT) inline bool WalkUp##CLASS(CLASS *);
 #include "../parser/ast/astnodes.def"
+#undef APPLY
+
+#define APPLY(CLASS, PARENT) inline bool WalkUp##CLASS(const CLASS *);
 #include "../parser/ast/types.def"
 #undef APPLY
 
@@ -102,15 +107,17 @@ public:
   inline bool VisitStatement(Statement *s);
 #define APPLY(CLASS, PARENT) inline bool Visit##CLASS(CLASS *);
 #include "../parser/ast/astnodes.def"
+#undef APPLY
+
+#define APPLY(CLASS, PARENT) inline bool Visit##CLASS(const CLASS *);
 #include "../parser/ast/types.def"
 #undef APPLY
-  inline bool VisitType(Type *t);
+  inline bool VisitType(const Type *t);
 
 private:
   inline Derived &derived() { return *static_cast<Derived *>(this); }
 
-  template <typename AbstractBase>
-  bool dispatchTraverse(AbstractBase *e);
+  template <typename AbstractBase> bool dispatchTraverse(AbstractBase *e);
 };
 
 #include "visitor.hxx"

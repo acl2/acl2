@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; See evaluator-basic.lisp for a newer evaluator which may often be more useful.
+
 ;clean this up!
 
 ;todo: reduce the amount of input that needs to be given to make the evaluator, also check that unguarded replacements are correct
@@ -26,7 +28,7 @@
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
-(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/boolif-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us sbvdiv
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
@@ -35,7 +37,8 @@
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
+(include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, etc.
 (include-book "kestrel/bv-lists/map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/map-reverse-list" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
@@ -43,11 +46,12 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
-(include-book "kestrel/lists-light/group" :dir :system) ;drop?
+(include-book "kestrel/lists-light/group-def" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
 (include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
@@ -178,32 +182,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund strip-cars-unguarded (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) nil)
-        (t (cons (car-unguarded (car-unguarded x))
-                 (strip-cars-unguarded (cdr-unguarded x))))))
-
-(defthm strip-cars-unguarded-correct
-  (equal (strip-cars-unguarded x)
-         (strip-cars x))
-  :hints (("Goal" :in-theory (enable strip-cars-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund strip-cdrs-unguarded (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) nil)
-        (t (cons (cdr-unguarded (car-unguarded x))
-                 (strip-cdrs-unguarded (cdr-unguarded x))))))
-
-(defthm strip-cdrs-unguarded-correct
-  (equal (strip-cdrs-unguarded x)
-         (strip-cdrs x))
-  :hints (("Goal" :in-theory (enable strip-cdrs-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund bvnot-list-unguarded (size lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -245,8 +223,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;TODO finish removing all guards!
 (defund unpackbv-less-guarded (num size bv)
   (declare (type (integer 0 *) size)
@@ -260,10 +236,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund map-reverse-list-unguarded (items)
+  (declare (xargs :guard t))
+  (if (atom items)
+      nil
+    (cons (reverse-list-unguarded (car items))
+          (map-reverse-list-unguarded (cdr items)))))
+
+(defthm map-reverse-list-unguarded-correct
+  (equal (map-reverse-list-unguarded l)
+         (map-reverse-list l))
+  :hints (("Goal" :in-theory (enable map-reverse-list-unguarded
+                                     map-reverse-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund intersection-equal-unguarded (l1 l2)
+  (declare (xargs :guard t))
+  (cond ((atom l1) nil)
+        ((member-equal-unguarded (car l1) l2)
+         (cons (car l1)
+               (intersection-equal-unguarded (cdr l1) l2)))
+        (t (intersection-equal-unguarded (cdr l1) l2))))
+
+(defthm intersection-equal-unguarded-correct
+  (equal (intersection-equal-unguarded l1 l2)
+         (intersection-equal l1 l2))
+  :hints (("Goal" :in-theory (enable intersection-equal-unguarded
+                                     intersection-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund first-non-member-unguarded (items items-to-exclude)
+  (declare (xargs :guard t))
+  (if (atom items)
+      nil
+    (if (not (member-equal-unguarded (car items) items-to-exclude))
+        (car items)
+      (first-non-member-unguarded (cdr items) items-to-exclude))))
+
+(defthm first-non-member-correct
+  (equal (first-non-member-unguarded items items-to-exclude)
+         (first-non-member items items-to-exclude))
+  :hints (("Goal" :in-theory (enable first-non-member-unguarded
+                                     first-non-member))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun update-nth-unguarded (key val l)
+  (declare (xargs :guard t))
+  (COND ((not (posp key)) (CONS VAL (CDR-unguarded L)))
+        (T (CONS (CAR-unguarded L)
+                 (UPDATE-NTH-unguarded (1- KEY) VAL (CDR-unguarded L))))))
+
+(defthm update-nth-unguarded-correct
+  (equal (update-nth-unguarded key val l)
+         (update-nth key val l))
+  :hints (("Goal" :in-theory (enable update-nth-unguarded
+                                     update-nth))))
+
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
- (defthm eql-becomes-eql
+ (defthm eql-becomes-equal
    (equal (eql x y)
+          (equal x y))))
+
+;; This justifies evaluating calls to = below by calling EQUAL.
+(local
+ (defthm =-becomes-equal
+   (equal (= x y)
           (equal x y))))
 
 ;; (defund getbit-is-always-0-unguarded (n items)
@@ -296,11 +337,14 @@
 ;is this same evaluator used for both?
 ;or use getprops (in which case the order won't matter)
 
+;; Justifies how lookup-eq is treated below:
+(thm (equal (lookup-eq key alist) (lookup-equal-unguarded key alist)))
+
 ;pairs each arity with an alist from fns to the terms to put in for them - fixme is the term ever more than a fn applied to arg1 arg2 ... ?
-;consider inlining some of the -unguarded functions for speed?
+;todo: consider inlining some of the -unguarded functions for speed?
 ;fixme add a test that all of these are functions, not macros
-;todo: get rid of set-field, set-fields, and get-field
-;todo: see adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
+;todo: adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
+;todo: check for duplicates in these lists
 (defund axe-evaluator-function-info ()
   (declare (xargs :guard t))
   (acons 1
@@ -308,49 +352,49 @@
          '((quotep quotep arg1) ;unguarded ;fixme is this still used?
            (natp natp arg1)     ;unguarded
            (posp posp arg1)     ;unguarded
-           (integerp integerp arg1)               ;(primitive)
-           (rationalp rationalp arg1)             ;(primitive)
+           (integerp integerp arg1)               ;unguarded, primitive
+           (rationalp rationalp arg1)             ;unguarded, primitive
            (print-constant print-constant arg1)   ;unguarded
            (not not arg1)                         ;unguarded
            (power-of-2p power-of-2p arg1)         ;unguarded
            (lg lg-unguarded arg1)                 ;see lg-unguarded-correct
-           (bool-to-bit bool-to-bit arg1)         ;unguarded
+           (bool-to-bit . (eval-in-logic (bool-to-bit arg1)))
            (char-code char-code-unguarded arg1) ;see char-code-unguarded-correct
            (code-char code-char-unguarded arg1) ;see code-char-unguarded-correct
            (symbol-package-name symbol-package-name-unguarded arg1) ;see symbol-package-name-unguarded-correct
            (symbol-name symbol-name-unguarded arg1) ;see symbol-name-unguarded-correct
-           (all-same all-same arg1)               ;unguarded
+           (all-same all-same-unguarded arg1)
            (bool-fix$inline bool-fix$inline arg1) ;unguarded
            (booleanp booleanp arg1) ;unguarded
 ;;           (contiguousp contiguousp arg1)
            ;(bit-listp bit-listp arg1) ;unguarded
            ;; (bitnot-list bitnot-list arg1)
-           (LIST::|2SET| LIST::|2SET| arg1)
+;           (LIST::|2SET| LIST::|2SET| arg1)
 ;           (new-ad new-ad arg1)
            (rkeys rkeys arg1)
            (key-list key-list arg1)
            (true-list-fix true-list-fix arg1) ;unguarded
            (all-integerp all-integerp arg1) ;unguarded
-           (no-duplicatesp-equal no-duplicatesp-equal arg1)
+           (no-duplicatesp-equal no-duplicatesp-equal-unguarded arg1) ; see no-duplicatesp-equal-unguarded-correct
            (strip-cdrs strip-cdrs-unguarded arg1) ;see strip-cdrs-unguarded-correct
            (strip-cars strip-cars-unguarded arg1) ;see strip-cars-unguarded-correct
            (stringp stringp arg1)       ;unguarded, primitive
            (true-listp true-listp arg1) ;unguarded
            (consp consp arg1)           ;unguarded, primitive
-           (bytes-to-bits bytes-to-bits arg1) ;fixme drop since we rewrite it?
-           (width-of-widest-int width-of-widest-int-unguarded arg1)
+           (bytes-to-bits . (eval-in-logic (bytes-to-bits arg1))) ;drop since we rewrite it? but that bytes-to-bits-rewrite seems gross
+           (width-of-widest-int width-of-widest-int-unguarded arg1) ; see width-of-widest-int-unguarded-correct
            (all-natp all-natp arg1) ;unguarded
            (endp endp-unguarded arg1) ;see endp-unguarded-correct
            ;(int-fix-list int-fix-list arg1) ;unguarded
            (bitnot bitnot-unguarded arg1)   ;see bitnot-unguarded-correct
-           (logmaskp logmaskp arg1)         ;drop?
+           (logmaskp logmaskp arg1)         ;drop? ; unguarded
            (integer-length integer-length-unguarded arg1) ;see INTEGER-LENGTH-UNGUARDED-CORRECT
            (ceiling-of-lg ceiling-of-lg-unguarded arg1) ; see ceiling-of-lg-unguarded-correct
            (unary-/ unary-/-unguarded arg1) ;see unary-/-unguarded-correct
            (nfix nfix arg1)                 ;unguarded
            (ifix ifix arg1)                 ;unguarded
            (len len arg1)                   ;unguarded
-           (reverse-list reverse-list-unguarded arg1)
+           (reverse-list reverse-list-unguarded arg1) ; see reverse-list-unguarded-correct
            (acl2-numberp acl2-numberp arg1) ;(primitive)
            (zp zp-unguarded arg1)           ;see zp-unguarded-correct
            (unary-- unary---unguarded arg1) ;see unary---unguarded-correct
@@ -358,29 +402,31 @@
            (car car-unguarded arg1)         ; see car-unguarded-correct
            (cdr cdr-unguarded arg1)         ; see cdr-unguarded-correct
            ;; (EXTRACT-PACKAGE-NAME EXTRACT-PACKAGE-NAME arg1)
-           (map-reverse-list map-reverse-list arg1)
-           (realpart realpart-unguarded arg1)
-           (imagpart imagpart-unguarded arg1)
-           (symbolp symbolp arg1) ;guard of t
-           (characterp characterp arg1) ;guard of t
-           (complex-rationalp complex-rationalp arg1) ;guard of t
-           (denominator denominator-unguarded arg1)
-           (numerator numerator-unguarded arg1)
+           (map-reverse-list map-reverse-list-unguarded arg1)
+           (realpart realpart-unguarded arg1) ; see realpart-unguarded-correct
+           (imagpart imagpart-unguarded arg1) ; see imagpart-unguarded-correct
+           (symbolp symbolp arg1) ;unguarded
+           (characterp characterp arg1) ;unguarded
+           (complex-rationalp complex-rationalp arg1) ;unguarded
+           (denominator denominator-unguarded arg1) ; see denominator-unguarded-correct
+           (numerator numerator-unguarded arg1) ;see numerator-unguarded-correct
            )
          (acons 2
                 '((mv-nth mv-nth-unguarded arg1 arg2)
                   (items-have-len items-have-len-unguarded arg1 arg2) ;see items-have-len-unguarded-correct
-                  (all-all-unsigned-byte-p all-all-unsigned-byte-p arg1 arg2)
-                  (add-to-end add-to-end arg1 arg2)
+                  (all-all-unsigned-byte-p all-all-unsigned-byte-p arg1 arg2) ;unguarded
+                  (add-to-end . (eval-in-logic (add-to-end arg1 arg2)))
                   (coerce coerce-unguarded arg1 arg2) ;see coerce-unguarded-correct
                   (< <-unguarded arg1 arg2) ;see <-unguarded-correct
-                  (equal equal arg1 arg2)   ;primitive
-                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive)
+                  (equal equal arg1 arg2)   ;primitive, unguarded
+                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive, unguarded)
+                  (= equal arg1 arg2)   ;to evaluate =, just call equal (primitive, unguarded)
                   (list-equiv list-equiv arg1 arg2) ;unguarded
                   (prefixp prefixp arg1 arg2) ;unguarded
-                  (lookup-equal lookup-equal arg1 arg2) ;or open to assoc-equal?
-                  ;(lookup arg1 arg2) ;whoa! this is missing an argument - this is an error!
-                  (lookup lookup arg1 arg2) ;or go to lookup-equal?
+                  (lookup-equal lookup-equal-unguarded arg1 arg2)
+                  ;(lookup arg1 arg2) ;whoa! this is missing a term! - this is an error!
+                  (lookup lookup-equal-unguarded arg1 arg2) ;drop if we rewrite this away
+                  (lookup-eq lookup-equal-unguarded arg1 arg2) ;drop if we rewrite this away
                   (bvnot bvnot-unguarded arg1 arg2) ;see bvnot-unguarded-correct
                   (bvuminus bvuminus-unguarded arg1 arg2) ;see bvuminus-unguarded-correct
                   (assoc-equal assoc-equal-unguarded arg1 arg2) ;see assoc-equal-unguarded-correct
@@ -390,25 +436,25 @@
                   (binary-+ binary-+-unguarded arg1 arg2) ;see binary-+-unguarded-correct
 
                   ;; (all-items-less-than all-items-less-than arg1 arg2)
-                  (every-nth every-nth arg1 arg2)
-                  (intersection-equal intersection-equal arg1 arg2)
+                  (every-nth every-nth-unguarded arg1 arg2)
+                  (intersection-equal intersection-equal-unguarded arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
                   (all-equal$ all-equal$-unguarded arg1 arg2)
                   (repeatbit repeatbit-unguarded arg1 arg2)
 ;                  (print-dag-expr print-dag-expr arg1 arg2)
                   ;; (binary-and binary-and arg1 arg2) ;unguarded
                   (implies implies arg1 arg2)       ;unguarded
-                  (first-non-member first-non-member arg1 arg2)
+                  (first-non-member first-non-member-unguarded arg1 arg2)
                   (booland booland arg1 arg2) ;unguarded
                   (boolor boolor arg1 arg2)   ;unguarded
                   (getbit-list getbit-list-unguarded arg1 arg2) ; see getbit-list-unguarded-correct
-                  (set::union set::union arg1 arg2)
+                  (set::union$inline . (eval-in-logic (set::union$inline arg1 arg2)))
                   (leftrotate32 leftrotate32-unguarded arg1 arg2)
 ;                  (list::val list::val arg1 arg2) ;new Tue Jul 17 16:49:17 2012
 ;                  (n-new-ads2 n-new-ads2 arg1 arg2)
-                  (set::insert set::insert arg1 arg2)
+                  (set::insert . (eval-in-logic (set::insert arg1 arg2)))
 ;                  (nth-new-ad nth-new-ad arg1 arg2)
-                  (floor floor arg1 arg2)
+                  (floor floor-unguarded arg1 arg2)
 ;                  (logext-list logext-list arg1 arg2)
 ;                  (list::memberp list::memberp arg1 arg2)
                   (member-equal member-equal-unguarded arg1 arg2)
@@ -426,16 +472,16 @@
 
                   (bvchop-list bvchop-list-unguarded arg1 arg2) ;see bvchop-list-unguarded-correct
                   (all-unsigned-byte-p all-unsigned-byte-p arg1 arg2) ;unguarded
-                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded
+                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded ; drop?
                   (bitor bitor-unguarded arg1 arg2) ;see bitor-unguarded-correct
                   (bitand bitand-unguarded arg1 arg2) ;see bitand-unguarded-correct
                   (bitxor bitxor-unguarded arg1 arg2) ;see bitxor-unguarded-correct
                   (expt expt-unguarded arg1 arg2) ;see expt-unguarded-correct
                   (min min-unguarded arg1 arg2) ;see min-unguarded-correct
                   (max max-unguarded arg1 arg2) ;see max-unguarded-correct
-                  (mod mod arg1 arg2)
+                  (mod mod-unguarded arg1 arg2)
                   (getbit getbit-unguarded arg1 arg2) ;see getbit-unguarded-correct
-                  (cons cons arg1 arg2)               ;primitive
+                  (cons cons arg1 arg2)               ;unguarded (primitive)
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
                   (logtail$inline logtail$inline-unguarded arg1 arg2) ;see logtail$inline-unguarded-correct
                   (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
@@ -444,27 +490,25 @@
                   (bvnot-list bvnot-list-unguarded arg1 arg2) ;see bvnot-list-unguarded-correct
                   (eq equal arg1 arg2) ;eq is logically the same as equal
                   (ceiling ceiling-unguarded arg1 arg2)
-                  (lookup-eq lookup-eq arg1 arg2)
-                  (lookup lookup arg1 arg2)
-                  (group group arg1 arg2)
-                  (group2 group2 arg1 arg2)
-                  (set::in set::in-unguarded arg1 arg2)
+                  (group . (eval-in-logic (group arg1 arg2)))
+                  (group2 . (eval-in-logic (group2 arg1 arg2)))
+                  (set::in . (eval-in-logic (set::in-unguarded arg1 arg2)))
                   (symbol< symbol<-unguarded arg1 arg2))
                 (acons 3
                        '((repeat-tail repeat-tail arg1 arg2 arg3) ;; can this blow up?
                          (negated-elems-listp negated-elems-listp-unguarded arg1 arg2 arg3)
-                         (leftrotate leftrotate arg1 arg2 arg3)
-                         (acons acons arg1 arg2 arg3)
-;                         (map-slice map-slice arg1 arg2 arg3)
-                         ;(myif-nest-needs-bvchop-list myif-nest-needs-bvchop-list arg1 arg2 arg3)
-;                         (EQUAL-LST-EXEC EQUAL-LST-EXEC arg1 arg2 arg3) ;Mon Mar  8 04:03:38 2010
-                         (bvshr bvshr arg1 arg2 arg3)
-                         (bvashr bvashr arg1 arg2 arg3) ;new
-;    (bitxor-terms-should-be-reordered arg1 arg2 arg3)
+                         (leftrotate leftrotate-unguarded arg1 arg2 arg3)
+                         (acons acons-unguarded arg1 arg2 arg3)
+                         ;; (map-slice map-slice arg1 arg2 arg3)
+                         ;; (myif-nest-needs-bvchop-list myif-nest-needs-bvchop-list arg1 arg2 arg3)
+                         ;; (EQUAL-LST-EXEC EQUAL-LST-EXEC arg1 arg2 arg3) ;Mon Mar  8 04:03:38 2010
+                         (bvshr bvshr-unguarded arg1 arg2 arg3) ;see bvshr-unguarded-correct
+                         (bvashr bvashr-unguarded arg1 arg2 arg3) ;see bvashr-unguarded-correct
+                         ;; (bitxor-terms-should-be-reordered arg1 arg2 arg3)
 
-                         (packbv packbv arg1 arg2 arg3)
-                         (unpackbv unpackbv-less-guarded arg1 arg2 arg3)
-;                         (map-packbv map-packbv arg1 arg2 arg3)
+                         (packbv packbv-unguarded arg1 arg2 arg3)
+                         (unpackbv . (eval-in-logic (unpackbv-less-guarded arg1 arg2 arg3)))
+                         ;; (map-packbv map-packbv arg1 arg2 arg3)
 
                          ;many of these call bvchop, whose guard should be improved..
                          ;; (bvplus-lst bvplus-lst arg1 arg2 arg3)
@@ -482,46 +526,46 @@
                          (bvdiv bvdiv-unguarded arg1 arg2 arg3) ;see bvdiv-unguarded-correct
 
                          (bvsx bvsx-unguarded arg1 arg2 arg3)
-                         (sbvdiv sbvdiv arg1 arg2 arg3)
-                         (sbvdivdown sbvdivdown arg1 arg2 arg3)
-                         (sbvrem sbvrem arg1 arg2 arg3)
-                         (sbvmoddown sbvmoddown arg1 arg2 arg3)
-                         (sbvlt sbvlt arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
-                         (sbvle sbvle arg1 arg2 arg3)
+                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3)
+                         (sbvdivdown . (eval-in-logic (sbvdivdown arg1 arg2 arg3)))
+                         (sbvrem . (eval-in-logic (sbvrem arg1 arg2 arg3)))
+                         (sbvmoddown . (eval-in-logic (sbvmoddown arg1 arg2 arg3)))
+                         (sbvlt sbvlt-unguarded arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
+                         (sbvle sbvle-unguarded arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
 ;;                         (nth2 nth2 arg1 arg2 arg3)
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
-                         (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
-                         (update-nth update-nth arg1 arg2 arg3)
-                         (if if arg1 arg2 arg3) ;primitive
+                         (array-elem-2d . (eval-in-logic (array-elem-2d arg1 arg2 arg3))) ;drop?
+                         (bv-arrayp bv-arrayp arg1 arg2 arg3)
+                         (update-nth update-nth-unguarded arg1 arg2 arg3)
+                         (if if arg1 arg2 arg3) ;unguarded
                          (slice slice-unguarded arg1 arg2 arg3)
-                         (bvshl bvshl arg1 arg2 arg3)
+                         (bvshl bvshl-unguarded arg1 arg2 arg3)
                          ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
                          (subrange subrange-unguarded arg1 arg2 arg3) ; see subrange-unguarded-correct
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
-                              '((update-subrange update-subrange arg1 arg2 arg3 arg4) ;new
+                              '((update-subrange . (eval-in-logic (update-subrange arg1 arg2 arg3 arg4))) ;new
                                 ;(bv-array-write-nest-with-val-at-indexp-axe bv-array-write-nest-with-val-at-indexp-axe arg1 arg2 arg3 arg4)
-                                (update-nth2 update-nth2 arg1 arg2 arg3 arg4)
-                                (bv-array-clear bv-array-clear arg1 arg2 arg3 arg4)
+                                (update-nth2 . (eval-in-logic (update-nth2 arg1 arg2 arg3 arg4)))
+                                (bv-array-clear . (eval-in-logic (bv-array-clear arg1 arg2 arg3 arg4)))
                                 (bvcat bvcat-unguarded arg1 arg2 arg3 arg4)
                                 ;; (bvnth bvnth arg1 arg2 (nfix arg3) arg4)
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
-                              (acons 5 '((update-subrange2 update-subrange2 arg1 arg2 arg3 arg4 arg5) ;new
-                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5)
-                                         (bv-array-clear-range bv-array-clear-range arg1 arg2 arg3 arg4 arg5)
+                              (acons 5 '((update-subrange2 . (eval-in-logic (update-subrange2 arg1 arg2 arg3 arg4 arg5))) ;new
+                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5) ; see bv-array-write-unguarded-correct
+                                         (bv-array-clear-range . (eval-in-logic (bv-array-clear-range arg1 arg2 arg3 arg4 arg5)))
                                          )
-                                     (acons 6 '()
-                                           nil)))))))
+                                     nil))))))
 
 ;was a function, but it seemed to get recomputed each time!
 ;FFIXME maybe this should include the dag-val function, eval-dag function, etc.
 (defconst *axe-evaluator-functions*
   (strip-cars-list (strip-cdrs (axe-evaluator-function-info))))
 
-
+;; TODO: This introduces a skip-proofs for termination
 ;think this stuff through
 (make-evaluator axe-evaluator
                 (axe-evaluator-function-info)
@@ -529,17 +573,100 @@
 ;                nil       ;don't quote result
                 )
 
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+
+(local (in-theory (disable aset1 aref1 array1p alen1 dimensions symbol-alistp)))
+
+;;(skip-proofs (make-flag apply-axe-evaluator))
+
+;; (defthm-flag-apply-axe-evaluator
+;;   ;; (defthm theorem-for-apply-axe-evaluator
+;;   ;;   (implies (and (or (symbolp fn) (pseudo-lambdap fn))
+;;   ;;                 (true-listp args)
+;;   ;;                 (interpreted-function-alistp interpreted-function-alist)
+;;   ;;                 (natp array-depth))
+;;   ;;            (prop (apply-axe-evaluator fn args interpreted-function-alist
+;;   ;;                                       array-depth)))
+;;   ;;   :flag apply-axe-evaluator)
+;;   ;; (defthm theorem-for-eval-axe-evaluator
+;;   ;;   (implies (and (symbol-alistp alist)
+;;   ;;                 (pseudo-termp form)
+;;   ;;                 (interpreted-function-alistp interpreted-function-alist)
+;;   ;;                 (natp array-depth))
+;;   ;;            (prop (eval-axe-evaluator alist form interpreted-function-alist
+;;   ;;                                      array-depth)))
+;;   ;;   :flag eval-axe-evaluator)
+;;   (defthm theorem-for-eval-list-axe-evaluator
+;;     (implies (and (symbol-alistp alist)
+;;                   (pseudo-term-listp form-lst)
+;;                   (interpreted-function-alistp interpreted-function-alist)
+;;                   (natp array-depth))
+;;              (true-listp (eval-list-axe-evaluator alist
+;;                                             form-lst interpreted-function-alist
+;;                                             array-depth)))
+;;     :flag eval-list-axe-evaluator)
+;;   ;; (defthm theorem-for-dag-val-with-axe-evaluator
+;;   ;;   (implies (and (or (quotep dag)
+;;   ;;                     (and (pseudo-dagp dag)
+;;   ;;                          (< (len dag) 1152921504606846974)))
+;;   ;;                 (symbol-alistp alist)
+;;   ;;                 (interpreted-function-alistp interpreted-function-alist)
+;;   ;;                 (natp array-depth))
+;;   ;;            (prop (dag-val-with-axe-evaluator dag alist interpreted-function-alist
+;;   ;;                                              array-depth)))
+;;   ;;   :flag dag-val-with-axe-evaluator)
+;;   (defthm theorem-for-eval-dag-with-axe-evaluator
+;;     (implies (and (nat-listp nodenum-worklist)
+;;                   (or (not (consp nodenum-worklist))
+;;                       (pseudo-dag-arrayp dag-array-name dag-array
+;;                                          (+ 1 (maxelem nodenum-worklist))))
+;;                   (symbol-alistp var-value-alist)
+;;                   (symbolp eval-array-name)
+;;                   (or (not (consp nodenum-worklist))
+;;                       (eval-arrayp eval-array-name eval-array
+;;                                    (+ 1 (maxelem nodenum-worklist))))
+;;                   (interpreted-function-alistp interpreted-function-alist)
+;;                   (natp array-depth))
+;;              (eval-arrayp dag-array-name
+;;                           (eval-dag-with-axe-evaluator nodenum-worklist
+;;                                                        dag-array-name dag-array
+;;                                                        var-value-alist eval-array-name
+;;                                                        eval-array interpreted-function-alist
+;;                                                        array-depth)
+;;                           (+ 1 (maxelem nodenum-worklist))))
+;;     :flag eval-dag-with-axe-evaluator)
+;;   :skip-others t
+;;   :hints (("Goal" :in-theory (enable eval-dag-with-axe-evaluator))))
+
+;move
+(defthm maxelem-of-cdr-linear-alt
+  (implies (consp (cdr lst))
+           (<= (maxelem (cdr lst)) (maxelem lst)))
+  :rule-classes ((:linear :trigger-terms ((maxelem (cdr lst)))))
+  :hints (("Goal" :in-theory (enable maxelem))))
+
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;ffffixme could lead to crashes?
+; could use the trick of calling eval-in-logic more
+; need return-type theorem for the clique first (see above)
 (skip-proofs
 (verify-guards apply-axe-evaluator
-  :hints (("Goal" :in-theory (e/d (TRUE-LIST-FIX
+  :otf-flg t
+  :hints (("Goal" :in-theory (e/d (true-list-fix
                                    true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-                                   symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp)
-                                  (INTERPRETED-FUNCTION-ALISTP ;todo
+                                   symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+                                   pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
+                                   true-listp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
+                                   consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
+                                   true-listp-of-assoc-equal-when-interpreted-function-alistp)
+                                  (interpreted-function-alistp ;todo
+                                   natp
                                    ))
            :do-not '(generalize eliminate-destructors)
-           ))))
+           :do-not-induct t)))
+)
 
+;fffixme could lead to crashes?
 (skip-proofs (verify-guards apply-axe-evaluator-to-quoted-args))
 
 (make-event (add-tracing-to-evaluator 'axe-evaluator))
@@ -613,7 +740,9 @@
                               (interpreted-function-alistp interpreted-function-alist))
                   :measure (nfix (+ 1 count))
                   :guard-hints (("Goal" :in-theory (e/d (lookup-equal interpreted-function-alistp)
-                                                        (interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp))
+                                                        (interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp
+                                                         member-equal ; for speed
+                                                         ))
                                  :use (:instance interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp (fn (car fns)))
                                  ))))
   (if (not (natp count))
@@ -648,12 +777,12 @@
   (let ((supporting-non-base-fns (supporting-non-base-fns 1000000000 fns interpreted-function-alist throw-errorp nil)))
     (get-entries-eq supporting-non-base-fns interpreted-function-alist)))
 
-;fixme use this more?
+;todo: use this more?
 ;; interpreted-function-alist must give meaning to all non-built-in functions in DAG.
 (defund wrap-dag-in-dag-val (dag interpreted-function-alist)
   (if (quotep dag)
       dag
-    (let* ((dag-vars (dag-vars dag))
+    (let* ((dag-vars (dag-vars-unsorted dag))
            (dag-fns (dag-fns dag)))
       `(dag-val-with-axe-evaluator ',dag
                                    ,(make-acons-nest dag-vars)
@@ -664,14 +793,14 @@
 
 ;; Create a term equivalent to DAG, where the meaning of any non-built-in
 ;; functions that support DAG comes from WRLD.
-;fixme use this more?
+;todo: use this more?
 (defund embed-dag-in-term (dag wrld)
   (declare (xargs :guard (and (or (quotep dag)
                                   (weak-dagp dag))
                               (plist-worldp wrld))))
   (if (quotep dag)
       dag
-    (let ((dag-vars (dag-vars dag))
+    (let ((dag-vars (dag-vars-unsorted dag))
           (dag-fns (dag-fns dag)))
       (if (not (function-symbolsp dag-fns wrld))
           (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)

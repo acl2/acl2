@@ -158,12 +158,17 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
-# The build of saved_acl2 may succeed even if the directory name has
-# spaces, but book certification will almost surely fail, so we
-# disallow such a build.  Comment out the three lines below if you
-# want to take your chances nonetheless!
+# The build system for books does not tolerate spaces in the books/
+# directory's full pathname, as of this writing (in July 2025).  The
+# message below provides a workaround, using a variable that is also
+# used in the parent directory's GNUmakefile.
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
 ifneq (,$(word 2, $(ACL2_SYSTEM_BOOKS)))
+$(info - Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+$(info -   To avoid this error, you can set variable ACL2_ALLOW_SPACES_IN_DIRECTORIES)
+$(info -   to a non-empty value.  But that will likely result in other errors.)
 $(error Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+endif
 endif
 
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
@@ -233,7 +238,7 @@ $(info OS_HAS_GLUCOSE      := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR       := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK      := $(OS_HAS_SMTLINK))
 $(info OS_HAS_STP          := $(OS_HAS_STP))
-$(info OS_HAS_CPP          := $(OS_HAS_CPP))
+$(info OS_HAS_GCC_C17      := $(OS_HAS_GCC_C17))
 $(info USE_QUICKLISP       := $(USE_QUICKLISP))
 $(info ACL2_USELESS_RUNES  := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
@@ -278,9 +283,8 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
-  time find . -name "*.lisp" \
+  time find . -name "*.lisp" -not -name '.*'\
     | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|kestrel/axe/jvm/examples|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
-    | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
@@ -414,9 +418,9 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-ifeq ($(OS_HAS_CPP), )
-$(info Excluding books that invoke cpp: [$(CERT_PL_USES_CPP)])
-OK_CERTS := $(filter-out $(CERT_PL_USES_CPP), $(OK_CERTS))
+ifeq ($(OS_HAS_GCC_C17), )
+$(info Excluding books that require a GCC with \"-std=c17\": [$(CERT_PL_USES_GCC_C17)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_GCC_C17), $(OK_CERTS))
 endif
 
 ifeq ($(ACL2_HAS_REALS), )
@@ -552,31 +556,30 @@ endif
 # systems), and that we want to work around for the moment:
 BROKEN_BOOKS :=
 
-# The models/y86 books are a special case.  We prefer to include them
-# only with the "all" target, not the "regression" target, since they
-# have large memory requirements -- and then, only for certain host
+# The models/y86-old books are a special case.  We prefer, since they
+# have large memory requirements, to build them only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
 # did not get the benefit of the cert.pl dependency analysis; for
 # example, if arithmetic-5/top.cert was out of date then "make" would
-# not rebuild the models/y86/ books as it should.  So we no longer
+# not rebuild the models/y86-old/ books as it should.  So we no longer
 # exclude them in the "egrep -v" command above, instead allowing
 # cert.pl to do its thing.
 
 ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books, even for the "all" target.  In
+# skip the models/y86-old/ books, even for the "all" target.  In
 # particular, we exclude GCL: in one ANSI GCL ACL2 regression,
 # certification runs were still proceeding after more than 10 hours
-# for each of four books under models/y86/
+# for each of four books under models/y86-old/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
 # y86-two-level-abs/common/x86-state-concrete, and
 # y86-basic/py86/popcount), probably because of the demands of
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+BROKEN_BOOKS += $(filter models/y86-old/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
@@ -966,14 +969,16 @@ critpath.txt: $(OK_CERTS)
 # Targets for building whole directories of books.
 
 # basic is the default set of books to build, in the sense that "make"
-# is equivalent to "make basic".  Note that instructions on the
-# installation page recommend "make basic".  The quicklisp books are
+# is equivalent to "make basic".  Note that :doc installation-instructions
+# and :doc books-certification recommend "make basic".  The quicklisp books are
 # avoided here, since otherwise the first impression of ACL2 could be
 # frustration over issues with installing OpenSSL, as may be necessary
 # when certifying Quicklisp books.  Thus we include only subsets of
 # the xdoc and tools targets.
+# WARNING: If you change the basic target, consider updating the list
+# of its contents in :doc books-certification.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std-without-some-tests xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1099,6 +1104,12 @@ tools: $(TOOLS_BOOKS)
 .PHONY: tools-without-quicklisp
 tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
 
+# Because std/util/add-io-pairs-tests.lisp brings in some slow number theory
+# stuff that we don't want included in the basic target:
+.PHONY: std-without-some-tests
+STD_BOOKS := $(filter std/%, $(OK_CERTS))
+std-without-some-tests: $(filter-out std/util/add-io-pairs-tests%, $(STD_BOOKS))
+
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))
 
@@ -1114,7 +1125,7 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011 workshop2013 workshop2014 \
         workshop2015 workshop2017 workshop2018 workshop2020 \
-        workshop2022 workshop2023
+        workshop2022 workshop2023 workshop2025
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1135,6 +1146,7 @@ workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
 workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
 workshop2023: $(filter workshops/2023/%, $(OK_CERTS))
+workshop2025: $(filter workshops/2025/%, $(OK_CERTS))
 
 # Projects targets:
 

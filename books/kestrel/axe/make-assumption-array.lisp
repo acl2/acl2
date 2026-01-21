@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "assumption-array")
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of

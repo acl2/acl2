@@ -28,8 +28,6 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-; cert_param: (non-acl2r)
-
 (in-package "GL")
 (include-book "bvecs")
 (include-book "bfr-reasoning")
@@ -1067,7 +1065,9 @@ for computing:</p>
                                       bfr-list->s
                                       equal-of-booleans-rewrite
                                       acl2::mod-type
-                                      acl2::floor-type-3 acl2::floor-type-1
+                                      #-:non-standard-analysis
+                                      acl2::floor-type-3
+                                      acl2::floor-type-1
                                       bitops::logcons-posp-1
                                       bitops::logcons-posp-2
                                       bitops::logcons-negp
@@ -1097,7 +1097,7 @@ for computing:</p>
                   (and stable-under-simplificationp
                        '(:in-theory (enable lognot)))
                   (and stable-under-simplificationp
-                       '(:error t))))
+                       '(:do-not-induct t))))
 
 (defsymbolic bfr-mod-ss-aux ((a s)
                              (b s)

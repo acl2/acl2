@@ -745,7 +745,34 @@
 ; triples!  So I coerce their answers to true-lists, which allows me
 ; to car and cdr them.
 
-  (let* ((triple (true-list-fix (apply$ do-fn (list alist))))
+  (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
+         (old-measure-value
+
+; We compute the measure in advance when necessary to avoid violating
+; single-threadedness of stobj tracking.  If instead we treat stobj-values-p as
+; nil, thus apply$ing the measure-fn only after checking exit-token below, then
+; the following example produces a runtime measure error.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defstobj st fld)
+;   (defwarrant stp)
+;   (defwarrant fld)
+;   (defwarrant update-fld)
+;   (update-fld '(a b c d) st)
+;   (loop$ with x = 'bogus ; avoid error with v8-6 and before
+;          do
+;          :guard (and (stp st)
+;                      (true-listp (fld st)))
+;          :measure (acl2-count (fld st))
+;          :values (st)
+;          (cond ((endp (fld st))
+;                 (return st))
+;                (t (setq st
+;                         (update-fld (cdr (fld st)) st)))))
+
+          (and stobj-values-p
+               (apply$ measure-fn (list alist))))
+         (triple (true-list-fix (apply$ do-fn (list alist))))
          (exit-token (car triple))
          (val (cadr triple))
          (new-alist (caddr triple)))
@@ -762,7 +789,9 @@
             val
             nil)))
      ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-          (lex-fix (apply$ measure-fn (list alist))))
+          (lex-fix (if stobj-values-p
+                       old-measure-value
+                     (apply$ measure-fn (list alist)))))
       (do$ measure-fn new-alist do-fn finally-fn values dolia))
      (t (prog2$
          (let ((all-stobj-names (true-list-fix
@@ -792,7 +821,9 @@
                nil
                (eviscerate-do$-alist alist all-stobj-names)
                (eviscerate-do$-alist new-alist all-stobj-names)
-               (apply$ measure-fn (list alist))
+               (if stobj-values-p
+                   old-measure-value
+                 (apply$ measure-fn (list alist)))
                (apply$ measure-fn (list new-alist))
                values))
          (loop$-default-values values new-alist))))))

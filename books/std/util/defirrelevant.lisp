@@ -16,7 +16,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ defirrelevant (name &key type body (parents 'nil parents-p) short)
+(defmacro+ defirrelevant (name
+                           &key
+                           type
+                           body
+                           (parents 'nil parents-p)
+                           short
+                           (long 'nil long-p))
   :parents (std/util)
   :short "Define an irrelevant value of a type."
   `(define ,name ()
@@ -24,9 +30,11 @@
      ,@(and parents-p `(:parents ,parents))
      :short ,short
      :long
-     (xdoc::topstring
-      (xdoc::p
-       "This can be used as a dummy value of the type."))
+     ,(if long-p
+          long
+        (xdoc::topstring
+         (xdoc::p
+          "This can be used as a dummy value of the type.")))
      ,body
      ///
      (in-theory (disable (:e ,name)))))

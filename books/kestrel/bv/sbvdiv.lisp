@@ -1,7 +1,7 @@
 ; Signed bit-vector division
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,9 @@
 
 (include-book "unsigned-byte-p-forced")
 (include-book "bvchop")
-(include-book "logext")
+(include-book "logext-def")
 (local (include-book "getbit"))
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 
 ;fixme make sure this is right

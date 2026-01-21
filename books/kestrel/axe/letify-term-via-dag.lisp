@@ -15,7 +15,7 @@
 ;; Uses DAGs under the hood, for efficiency
 
 (include-book "dag-to-term-with-lets")
-(include-book "dagify") ;for dagify-term, brings in skip-proofs
+(include-book "dagify0") ;for dagify-term
 
 ;; Returns (mv erp term).
 ;; Only used in the equivalence-checker.

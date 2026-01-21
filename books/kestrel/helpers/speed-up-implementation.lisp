@@ -605,7 +605,7 @@
 ;; Tries to speed up the given event but does not submit it.
 ;; See doc in doc.lisp.
 (defmacro speed-up-event (event &key
-                               (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                               (synonym-alist 'nil) ;; example '((local-defthm . defthm)) ; means treat local-defthm like defthm
                                (min-time-savings ':auto) ; in seconds
                                (min-event-time ':auto) ; in seconds
                                (print ':brief))
@@ -689,7 +689,7 @@
 (defmacro speed-up-book (bookname ; no extension
                         &key
                         (dir ':cbd)
-                        (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                        (synonym-alist 'nil) ;; example '((local-defthm . defthm)) ; means treat local-defthm like defthm
                         (min-time-savings ':auto) ; in seconds
                         (min-event-time ':auto) ; in seconds
                         (print ':brief))
@@ -744,7 +744,7 @@
 ;; Tries to speed-up all books in DIR, not including books in subdirectories.
 ;; By default, uses the connected book directory for DIR.
 (defmacro speed-up-books (&key
-                         (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                         (synonym-alist 'nil) ;; example '((local-defthm . defthm)) ; means treat local-defthm like defthm
                          (min-time-savings ':auto) ; in seconds
                          (min-event-time ':auto)
                          (print ':brief)
@@ -758,7 +758,7 @@
 ;; Tries to speed-up all books in DIR, including books in subdirectories.
 ;; By default, uses the connected book directory for DIR.
 (defmacro speed-up-books-in-subtree (&key
-                                     (synonym-alist 'nil) ;; example '((local-dethm . defthm)) ; means treat local-defthm like defthm
+                                     (synonym-alist 'nil) ;; example '((local-defthm . defthm)) ; means treat local-defthm like defthm
                                      (min-time-savings ':auto) ; in seconds
                                      (min-event-time ':auto)
                                      (print ':brief)

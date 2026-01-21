@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -312,13 +312,13 @@
 ; The function sync-ephemeral-whs-with-persistent-whs does what its name
 ; suggests and restores coherence.  The code for system wormholes like brr is
 ; careful to maintain coherence, e.g., :monitor uses wormhole-eval to change
-; the persistent-whs and then sync-ephemeral-whs-with-persistent-whs to to
-; restore coherence.  But users implementing wormholes of their own have to
-; decide whether they care about coherence or not.  (Note: if all reads and
-; writes to a wormhole's status are done with wormhole-eval, you needn't even
-; think about coherence.  There is never an ephemeral-whs; all operations are
-; done at a single location, the persistent-whs.  It's only when interaction is
-; allowed that one might need to worry about two copies of ``the'' status.)
+; the persistent-whs and then sync-ephemeral-whs-with-persistent-whs to restore
+; coherence.  But users implementing wormholes of their own have to decide
+; whether they care about coherence or not.  (Note: if all reads and writes to
+; a wormhole's status are done with wormhole-eval, you needn't even think about
+; coherence.  There is never an ephemeral-whs; all operations are done at a
+; single location, the persistent-whs.  It's only when interaction is allowed
+; that one might need to worry about two copies of ``the'' status.)
 
 ; A better way, from within a wormhole, to change the status is to change both,
 ; using set-persistent-whs-and-ephemeral-whs.
@@ -3582,7 +3582,7 @@
     (unbound-tilde-arg
      "Unbound Fmt Variable.  The tilde directive at location ~x0 in the fmt ~
       string below uses the variable ~x1.  But this variable is not bound in ~
-      the association list, ~x2, supplied with the fmt string.")
+      the association list, ~x2, supplied with the fmt string.~|~%~x3")
     (unrecognized-tilde-arg
      "The tilde directive at position ~x0 of the string below is ~
       unrecognized.~|~%~x1")
@@ -8399,22 +8399,6 @@
       (copy-array-fix-aref a1 a2
                            (the fixnum (1+ i))
                            n))))
-
-; In raw Lisp, the live version of state is held in the constant
-; *the-live-state* (whose value is actually just a symbol because we don't
-; really represent the live state as an object).  But what is the live version
-; of a user-defined stobj?  See the raw lisp variable *user-stobj-alist*.
-
-(defmacro live-stobjp (name)
-
-; Note that unlike the raw Lisp representation of a stobj, no ordinary ACL2
-; object is a vector, unless it is a string; nor is any ordinary ACL2 object a
-; hash table (unlike the raw Lisp representation of a single-field stobj whose
-; field is a hash table).
-
-  `(or (and (typep ,name 'vector)
-            (not (stringp ,name)))
-       (typep ,name 'hash-table)))
 
 (defun absstobj-name (name type)
 

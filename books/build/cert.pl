@@ -105,7 +105,7 @@ push (@orig_cmd_line_args, @ARGV);
 my $base_path = 0;
 
 my @user_targets = ();
-my $jobs = 1;
+my $jobs = 0;
 my $no_build = 0;
 my $no_makefile = 0;
 my $no_boilerplate = 0;
@@ -447,6 +447,11 @@ COMMAND LINE OPTIONS
            not itself added as a target, but anything necessary for
            its certification will be.
 
+   --image <imagename>
+   -g <imagename>
+           Add as a build target the given ACL2 custom image. See the
+           discussion of --image-sources below.
+
    --quiet
    -q
            Don\'t print any asides except for errors and output from
@@ -766,6 +771,7 @@ GetOptions ("help|h"               => sub {
             "cache-write-only"     => \$cache_write_only,
             "accept-cache"         => \$certlib_opts{"believe_cache"},
             "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
+	    "image|g=s"            => sub { shift; push(@user_targets, "-g " . shift); },
             "params=s"             => \$params_file,
             "write-certs=s"        => \$write_certs,
             "write-sources=s"      => \$write_sources,
@@ -1459,7 +1465,8 @@ unless ($no_makefile) {
     close($smf);
 
     unless ($no_build) {
-        my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name --no-builtin-rules ",
+        my $make_cmd = join(' ', ("$make -f $mf_name --no-builtin-rules ",
+				  ($jobs ? " -j $jobs" : ""),
                                   ($keep_going ? " -k" : ""),
                                   @make_args,
                                   "all-cert-pl-certs all-cert-pl-images"));

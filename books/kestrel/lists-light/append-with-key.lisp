@@ -1,6 +1,6 @@
 ; A tool for speeding up lookups in lists during rewriting
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "reverse-list-def")
-(include-book "kestrel/utilities/split-list-fast" :dir :system)
+(include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
 (local (include-book "member-equal"))
 (local (include-book "reverse-list"))
 (local (include-book "len"))

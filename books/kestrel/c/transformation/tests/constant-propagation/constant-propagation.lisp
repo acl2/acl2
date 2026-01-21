@@ -22,16 +22,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.CONST-PROP.c"
+    :file "new/test1.c"
     :content "int foo(void) {
   int x = 0;
   x = 8;
@@ -45,17 +46,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :process :parse
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.CONST-PROP.c"
+    :file "new/test2.c"
     :content "int foo(int y) {
   int x = 42;
   {
@@ -70,16 +72,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test3.c")
+  (c$::input-files :files '("test3.c")
                    :const *old*)
 
   (defconst *new*
-    (const-prop-transunit-ensemble *old*))
+    (const-prop-code-ensemble *old*))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test3.CONST-PROP.c"
+    :file "new/test3.c"
     :content "int foo(int y) {
   int x;
   if (y) {

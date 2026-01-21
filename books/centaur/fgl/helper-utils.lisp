@@ -47,14 +47,32 @@
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
 
+;; NOTE: The ones having to do with counterexamples are listed in the
+;; fgl-counterexamples doc topic.
 (fancy-ev-add-primitive interp-st-sat-counterexample t)
 
-(fancy-ev-add-primitive interp-st-counterex-stack-prev-bindings/print-errors
-                        (< 1 (interp-st-stack-frames interp-st)))
+(fancy-ev-add-primitive interp-st-counterex-bindings
+                        (and (fgl-object-bindings-p x)
+                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
 
 (fancy-ev-add-primitive interp-st-counterex-bindings/print-errors
                         (and (fgl-object-bindings-p x)
                              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
+
+(fancy-ev-add-primitive interp-st-counterex-stack-prev-bindings/print-errors
+                        (< 1 (interp-st-stack-frames interp-st)))
+
+(fancy-ev-add-primitive interp-st-eval-object-bindings-under-counterexample
+                        (and (fgl-object-bindings-p x)
+                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
+
+(fancy-ev-add-primitive interp-st-eval-objectlist-under-counterexample
+                        (and (fgl-objectlist-p x)
+                             (interp-st-bfr-listp (fgl-objectlist-bfrlist x))))
+
+(fancy-ev-add-primitive interp-st-eval-object-under-counterexample
+                        (and (fgl-object-p x)
+                             (interp-st-bfr-listp (fgl-object-bfrlist x))))
 
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings/print-errors t)
 
@@ -62,14 +80,13 @@
                         (and (fgl-object-p x)
                              (interp-st-bfr-listp (fgl-object-bfrlist x))))
 
-(fancy-ev-add-primitive interp-st-counterex-bindings
-                        (and (fgl-object-bindings-p x)
-                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
-
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings t)
 
+(fancy-ev-add-primitive boundp-global (symbolp x))
 (fancy-ev-add-primitive get-global (and (symbolp x)
                                         (boundp-global x state)))
+
+(fancy-ev-add-primitive acl2::time-tracker-fn t)
 
 (fancy-ev-add-primitive fgl-interp-store-debug-info (not (eq msg :unreachable)))
 
@@ -87,6 +104,12 @@
 (fancy-ev-add-primitive magitastic-ev (and (pseudo-termp x)
                                            (symbol-alistp alist)
                                            (natp reclimit)))
+(fancy-ev-add-primitive magitastic-ev-list (and (pseudo-term-listp x)
+                                                (symbol-alistp alist)
+                                                (natp reclimit)))
+(fancy-ev-add-primitive magitastic-ev-fncall (and (pseudo-fnsym-p fn)
+                                                  (true-listp args)
+                                                  (natp reclimit)))
 
 (fancy-ev-add-primitive interp-st->user-scratch$inline t)
 (fancy-ev-add-primitive interp-st-put-user-scratch t)
@@ -220,7 +243,22 @@
    ;; remove the one that references new-state
    (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
 
+  (defret <fn>-errmsg-not-unreachable
+    (not (equal errmsg :unreachable)))
+
+  (local (in-theory (disable interp-st-run-ctrex)))
   (fancy-ev-add-primitive interp-st-run-ctrex t))
+
+(encapsulate nil
+  (local (std::set-define-current-function interp-st-run-ctrex-with-errmsg))
+  (local (in-theory (enable interp-st-run-ctrex-with-errmsg)))
+
+  (make-event
+   ;; remove the one that references new-state
+   (cons 'progn (butlast  *fancy-ev-primitive-thms* 1)))
+
+  (local (in-theory (disable interp-st-run-ctrex-with-errmsg)))
+  (fancy-ev-add-primitive interp-st-run-ctrex-with-errmsg t))
 
 
 
@@ -379,9 +417,16 @@ be a string or message identifying the particular SAT check.</p>"
              (stack-extract stack)
              stk))
 
+(fancy-ev-add-primitive interp-st-extract-stack t)
+
+
 (defmacro save-fgl-stack (&key (to ':stack)
                                (interp-st 'interp-st))
   `(f-put-global ',to (interp-st-extract-stack ,interp-st) state))
+
+(defmacro save-fgl-stack-to-scratch (&key (to ':stack)
+                                          (interp-st 'interp-st))
+  `(interp-st-put-user-scratch ',to (interp-st-extract-stack ,interp-st) ,interp-st))
 
 (defxdoc save-fgl-stack
   :parents (fgl-debugging)
@@ -549,7 +594,7 @@ keyword argument. Examples of usage:</p>
              void))
 
 (fancy-ev-add-primitive interp-st-print-aig-lit (aignet::litp lit))
-
+(fancy-ev-add-primitive hard-error t)
 
 (defmacro fgl-error! (&key msg debug-obj)
   `(syntax-interp
@@ -639,6 +684,60 @@ keyword argument. Examples of usage:</p>
         (syntax-interp (cw
                         "Failed to find satisfying assignment for path condition: ~x0~%" error)))
        (obj-val (cdr (assoc 'obj bindings)))
-       (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
+       ;; (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val)))
+       )
     obj-val))
     
+(defmacro break-on-fgl-error ()
+  `(trace! (interp-st-set-error
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
+            :hide nil
+            :entry (let ((msg (or (interp-st->errmsg interp-st) msg))) (list 'interp-st-set-error msg))
+            :exit (break$))
+           (fgl-interp-store-debug-info
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
+            :hide nil
+            :entry (let* ((msg (or (interp-st->errmsg interp-st) msg))
+                          (obj (if (interp-st->errmsg interp-st)
+                                   (interp-st->debug-info interp-st)
+                                 obj)))
+                     (list 'fgl-interp-store-debug-info msg obj))
+            :exit (break$))))
+
+(defmacro stop-on-fgl-error ()
+  `(trace! (interp-st-set-error
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
+            :hide nil
+            :entry (let ((msg (or (interp-st->errmsg interp-st) msg))) (list 'interp-st-set-error msg))
+            :exit (er hard? 'interp-st-set-error
+                      "Stopping on error due to ~x0" 'stop-on-fgl-error))
+           (fgl-interp-store-debug-info
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
+            :hide nil
+            :entry (let* ((msg (or (interp-st->errmsg interp-st) msg))
+                          (obj (if (interp-st->errmsg interp-st)
+                                   (interp-st->debug-info interp-st)
+                                 obj)))
+                     (list 'fgl-interp-store-debug-info msg obj))
+            :exit (er hard? 'fgl-interp-store-debug-info
+                      "Stopping on error due to ~x0" 'stop-on-fgl-error))))
+
+
+
+(define interp-st-release-ipasirs (interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (logicman)
+             (logicman-release-ipasirs 0 logicman)
+             interp-st))

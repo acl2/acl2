@@ -51,7 +51,8 @@
                               (if (consp nodenums-to-assume-false)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false)))
                                 t))
-                  :guard-hints (("Goal" :in-theory (e/d (CAR-BECOMES-NTH-OF-0)
+                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
+                                                         natp-of-nth-when-all-natp)
                                                         (natp))))))
   (if (endp nodenums-to-assume-false)
       nil ;; failed to rewrite TERM
@@ -251,6 +252,7 @@
   :hints (("Goal"
            :in-theory (e/d (replace-nodenum-using-assumptions-for-axe-prover
                             car-becomes-nth-of-0
+                            natp-of-nth-when-all-natp
                             NATP-OF-+-OF-1)
                            (natp
                             ;;quotep

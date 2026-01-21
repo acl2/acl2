@@ -16,12 +16,9 @@
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
-; Added 7/1/2021 by Matt K. after 3 successive ACL2(p) certification failures:
-(set-waterfall-parallelism nil)
+(acl2::controlled-configuration)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-waterfall-parallelism nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,8 +74,7 @@
         (tyspec+declor-to-ident+params+tyname fundef.tyspec fundef.declor)))
     (make-fun-info :params params
                    :result tyname
-                   :body fundef.body))
-  :hooks (:fix))
+                   :body fundef.body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,8 +104,7 @@
   :short "Look up a function in an environment by name."
   (cdr (omap::assoc (ident-fix name)
                     (fun-env-fix fenv)))
-  :prepwork ((local (in-theory (enable fun-info-optionp))))
-  :hooks (:fix))
+  :prepwork ((local (in-theory (enable fun-info-optionp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,7 +123,7 @@
         (reserrf (list :duplicate-function-definition name)))
        (info (fun-info-from-fundef fundef)))
     (omap::update name info fenv))
-  :hooks (:fix))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +137,6 @@
      and we build the function environment for the function definitions,
      starting from the empty environment."))
   (init-fun-env-aux (transunit->declons tunit) nil)
-  :hooks (:fix)
 
   :prepwork
   ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))
@@ -157,4 +151,5 @@
         :tag-declon (init-fun-env-aux (cdr declons) fenv)
         :fundef (b* (((okf fenv) (fun-env-extend declon.get fenv)))
                   (init-fun-env-aux (cdr declons) fenv))))
-     :hooks (:fix))))
+     :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+     :no-function nil)))

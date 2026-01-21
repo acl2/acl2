@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,13 +21,14 @@
   :parents (ethereum)
   :short "Hex-prefix encoding."
   :long
-  (xdoc::topstring-p
-   "Hex-prefix is an encoding method for Ethereum,
-    described in [YP:C] and in
-    <a href=\"https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator\"
-    >Section
-    `Specification: Compact encoding of hex sequence with optional terminator'
-    of Page `Patricia Tree' of [Wiki]</a>.")
+  (xdoc::topstring
+   (xdoc::p
+    "Hex-prefix is an encoding method for Ethereum,
+     described in [YP:C] and in "
+    (xdoc::ahref
+     "https://github.com/ethereum/wiki/wiki/Patricia-Tree#specification-compact-encoding-of-hex-sequence-with-optional-terminator"
+     "Section `Specification: Compact encoding of hex sequence with optional terminator'")
+    " of Page `Patricia Tree' of [Wiki]."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -284,7 +284,7 @@
 ;;             (cons :guard
 ;;                   (cons new-guard
 ;;                         (combine-keyword-value-lists-for-xargs (rest (rest keyword-value-list1))
-;;                                                                (clear-key-in-keyword-value-list :guard keyword-value-list2)))))
+;;                                                                (remove-keyword :guard keyword-value-list2)))))
 ;;         (cons keyword
 ;;               (cons value
 ;;                     (combine-keyword-value-lists-for-xargs (rest (rest keyword-value-list1))
@@ -464,7 +464,7 @@
                               (all-declarep declares))))
   (let* ((xargs-key-vals (get-xargs-from-declares declares))
          (other-declare-args (get-non-xargs-from-declares declares))
-         (xargs-key-vals (clear-key-in-keyword-value-list xarg xargs-key-vals))
+         (xargs-key-vals (remove-keyword xarg xargs-key-vals))
          (xargs-key-vals (cons xarg (cons val xargs-key-vals))))
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
@@ -503,7 +503,7 @@
                               (all-declarep declares))))
   (let* ((xargs-key-vals (get-xargs-from-declares declares))
          (other-declare-args (get-non-xargs-from-declares declares))
-         (xargs-key-vals (clear-key-in-keyword-value-list :normalize xargs-key-vals)) ;clear any existing :normalize xarg
+         (xargs-key-vals (remove-keyword :normalize xargs-key-vals)) ;clear any existing :normalize xarg
          (xargs-key-vals `(:normalize nil ,@xargs-key-vals)))
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
@@ -520,7 +520,7 @@
                     (add-conjunct-to-uterm conjunct
                                           (cadr (assoc-keyword :guard xargs-key-vals)))
                   conjunct)) ;no existing guard
-         (xargs-key-vals (clear-key-in-keyword-value-list :guard xargs-key-vals))
+         (xargs-key-vals (remove-keyword :guard xargs-key-vals))
          (xargs-key-vals `(:guard ,guard ,@xargs-key-vals)))
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))
@@ -534,7 +534,7 @@
                     `(and ,conjunct
                           ,(cadr (assoc-keyword :guard xargs-key-vals)))
                   conjunct))
-         (xargs-key-vals (clear-key-in-keyword-value-list :guard xargs-key-vals))
+         (xargs-key-vals (remove-keyword :guard xargs-key-vals))
          (xargs-key-vals `(:guard ,guard ,@xargs-key-vals)))
     `((declare ,@other-declare-args
                (xargs ,@xargs-key-vals)))))

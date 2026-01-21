@@ -11,14 +11,16 @@
 
 (in-package "ACL2")
 
-;; The BV library doesn't use this function very much.  Instead, it uses
-;; all-unsigned-byte-p.  In this book, we provide some rules to connect the two
-;; functions.
+;; Historically, the BV library hasn't used this function very much.  Instead,
+;; it has used all-unsigned-byte-p.  In this book, we provide some rules to
+;; connect the two functions.
 
 (include-book "all-unsigned-byte-p") ; todo: separate out?
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system) ; todo: separate out?
 (include-book "unsigned-byte-listp-def")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "../utilities/equal-of-booleans"))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (defthmd unsigned-byte-listp-rewrite
   (equal (unsigned-byte-listp n x)
@@ -84,6 +86,11 @@
               (unsigned-byte-listp width y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp revappend))))
 
+(defthm unsigned-byte-listp-of-reverse-list
+  (equal (unsigned-byte-listp width (reverse-list x))
+         (unsigned-byte-listp width (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp reverse-list))))
+
 ;; The version of this in std is a :forward-chaining rule for some reason
 (defthm unsigned-byte-p-of-car-when-unsigned-byte-listp-2
   (implies (unsigned-byte-listp width x)
@@ -146,4 +153,22 @@
 (defthm all-integerp-when-unsigned-byte-listp
   (implies (unsigned-byte-listp size x) ; size is a free var
            (all-integerp x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+;; common special case (8-bit bytes) with no free var
+(defthm all-integerp-when-unsigned-byte-listp-8
+  (implies (unsigned-byte-listp 8 x)
+           (all-integerp x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm integer-listp-when-unsigned-byte-list-p
+  (implies (unsigned-byte-listp width x) ; width is a free var
+           (integer-listp x))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm unsigned-byte-listp-when-unsigned-byte-listp-and-<=
+  (implies (and (unsigned-byte-listp size2 x) ; size2 is a free var
+                (<= size2 size)
+                (integerp size))
+           (unsigned-byte-listp size x))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))

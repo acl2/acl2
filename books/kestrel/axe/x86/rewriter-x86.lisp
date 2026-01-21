@@ -58,4 +58,6 @@
 (make-rewriter-simple x86
                       axe-evaluator-x86
                       x86
-                      x86)
+                      x86
+                      :smt t ; do use SMT
+                      )

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvchop-def")
 
 ;; Compute the sum of X and Y, chopped down to SIZE bits.
 (defund bvplus (size x y)

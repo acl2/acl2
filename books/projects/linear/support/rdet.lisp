@@ -3701,17 +3701,18 @@
 
 ))
 
-(local-defun minors (a k)
-  (if (zp k)
-      ()
-    (cons (minor 0 (1- k) a)
-          (minors a (1- k)))))
 
-(local (encapsulate ()
+(encapsulate ()
 
   (local (include-book "ordinals/lexicographic-book" :dir :system))
 
   (set-well-founded-relation acl2::l<)
+
+  (defun minors (a k)
+    (if (zp k)
+        ()
+      (cons (minor 0 (1- k) a)
+            (minors a (1- k)))))
 
   (defun rdet-rec-rdet-induct (flg a n)
     (declare (xargs :measure (list (nfix n) (acl2-count a))))
@@ -3725,15 +3726,15 @@
         (if (> n 1)
             (rdet-rec-rdet-induct t (minors a n) (1- n))
 	  t))))
-))
+)
 
-(local-defun rmat-listp (l n)
+(defun rmat-listp (l n)
   (if (consp l)
       (and (rmatp (car l) n n)
 	   (rmat-listp (cdr l) n))
     t))
 
-(local-defun rdet-rec-equal-rdet-listp (l n)
+(defun rdet-rec-equal-rdet-listp (l n)
   (if (consp l)
       (and (equal (rdet-rec (car l) n)
 	          (rdet (car l) n))
@@ -3767,7 +3768,7 @@
                   :use ((:instance expand-rdet-rec-aux-rewrite (j n))
 		        (:instance expand-rdet-row-rdet (k 0))))))
 
-(local-defthm rdet-rec-rdet-lemma
+(defthm rdet-rec-rdet-lemma
   (implies (posp n)
            (if flg
                (implies (rmat-listp x n)

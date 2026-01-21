@@ -70,3 +70,11 @@
 ;;                   (and (consp c)
 ;;                        (equal a (car c))
 ;;                        (equal b (cdr c))))))
+
+;restrict to non-constants?
+(defthm equal-of-cons-and-cons-same-arg2
+  (equal (equal (cons x y) (cons z y))
+         (equal x z)))
+
+;move to axe?
+;; (defthmd cons-iff (iff (cons x y) t))

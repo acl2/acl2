@@ -113,9 +113,8 @@
 
    (xdoc::p
     "This "
-    (xdoc::ahref
-     "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
-     "VSTTE 2018 paper")
+    (xdoc::ahref "https://alessandrocoglio.info/vstte-2018.pdf"
+                 "VSTTE 2018 paper")
     " provides an overview
      of the ABNF notation formalization
      and of the verified parser

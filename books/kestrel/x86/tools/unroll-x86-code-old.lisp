@@ -1,7 +1,7 @@
-; An unrolling lifter xfor x86 code (not based on Axe)
+; An unrolling lifter for x86 code (not based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,8 +24,8 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-;; See also lifter-axe.lisp, for the Axe-based version of this lifter (which is
-;; what we mostly use).
+;; See also books/kestrel/axe/x86/unroll-x86-code.lisp, for the Axe-based
+;; version of this lifter (which is what we mostly use).
 
 (include-book "../support")
 (include-book "lifter-support")
@@ -38,7 +38,123 @@
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
 
-;todo: factor some of this stuff out into a lifter-common file
+
+;; Check that the x86 state has TEXT-SECTION-BYTES loaded starting at
+;; TEXT-OFFSET and has the program counter set to TEXT-OFFSET plus
+;; OFFSET-TO-SUBROUTINE.  Also assume things are disjoint.  TODO: Give this a
+;; better name, this is logical, not meta.
+(defun standard-assumptions-core-64 (text-section-bytes
+                                     text-offset
+                                     offset-to-subroutine ;from the start of the text section
+                                     stack-slots-needed
+                                     bvp
+                                     x86)
+  (declare (xargs :guard (and (consp text-section-bytes)
+                              (true-listp text-section-bytes)
+                              (acl2::all-unsigned-byte-p 8 text-section-bytes)
+                              (< (len text-section-bytes) (expt 2 48)) ; allow =?
+                              (integerp offset-to-subroutine) ; natp?
+                              (integerp text-offset) ; strengthen?
+                              (natp stack-slots-needed)
+                              (booleanp bvp))
+                  :stobjs x86))
+  (and (standard-state-assumption-64 x86)
+       (bytes-loaded-at-address-64 text-section-bytes text-offset bvp x86)
+       ;; The program counter is at the start of the routine to lift:
+       (equal (x86isa::rip x86) ; note that this is not x::rip!
+              (+ text-offset offset-to-subroutine))
+
+       ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
+       (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots stack-slots-needed (rgfi *rsp* x86)))
+       ;; old: (canonical-address-p (+ -8 (rgfi *rsp* x86))) ;; The stack slot where the RBP will be saved
+
+       ;; The program is disjoint from the part of the stack that is written:
+       (if (posp stack-slots-needed)
+           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+           (if bvp
+                ;; essentially the same as the below SEPARATE claim:
+               (disjoint-regions48p (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
+                                    (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
+             (separate :r (len text-section-bytes) text-offset
+                       ;; Only a single stack slot is written
+                       ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))
+             )
+         ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
+         t)))
+
+(defun standard-assumptions-mach-o-64 (subroutine-name
+                                       parsed-mach-o
+                                       stack-slots-needed
+                                       text-offset
+                                       bvp
+                                       x86)
+  (declare (xargs :guard (and (stringp subroutine-name)
+                              (acl2::parsed-mach-o-p parsed-mach-o)
+                              (natp stack-slots-needed)
+                              (natp text-offset)
+                              (booleanp bvp))
+
+             :stobjs x86
+             :verify-guards nil ;todo
+             ))
+  (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
+        (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
+        (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
+    (standard-assumptions-core-64 text-section-bytes
+                                  text-offset
+                                  (- subroutine-address text-section-address)
+                                  stack-slots-needed
+                                  bvp
+                                  x86)))
+
+;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
+(defun standard-assumptions-pe-64 (subroutine-name
+                                   parsed-executable
+                                   stack-slots-needed
+                                   text-offset
+                                   bvp
+                                   x86)
+  (declare (xargs :stobjs x86
+                  :verify-guards nil ;todo
+                  ))
+  (standard-assumptions-core-64 (b* (((mv erp info) (acl2::get-pe-text-section-info parsed-executable))
+                                     ((when erp) nil))
+                                  (acl2::lookup-eq :raw-data info)) ; text-section-bytes, all the code, not just the given subroutine
+                                text-offset
+                                (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
+                                stack-slots-needed
+                                bvp
+                                x86))
+
+;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
+;; text section)?  Transition to just generating a list of terms?
+(defun standard-assumptions-elf-64 (subroutine-name
+                                    parsed-elf
+                                    stack-slots-needed
+                                    text-offset
+                                    bvp
+                                    x86)
+  (declare (xargs :guard (and (stringp subroutine-name)
+                              (acl2::parsed-elfp parsed-elf) ; todo: import
+                              (natp stack-slots-needed)
+                              ;; text-offset is a term?
+                              (booleanp bvp)
+                              )
+                  :stobjs x86
+                  :verify-guards nil ; todo
+                  ))
+  (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
+        (text-section-address (acl2::get-elf-text-section-address parsed-elf))
+        (subroutine-address (acl2::subroutine-address-elf subroutine-name parsed-elf)))
+    (standard-assumptions-core-64 text-section-bytes
+                                  text-offset
+                                  (- subroutine-address text-section-address)
+                                  stack-slots-needed
+                                  bvp
+                                  x86)))
+
+;todo: factor some of this stuff out into a lifter-common file?
 
 ;; An attachable function that always returns nil.
 (defun nil2 (x y) (declare (xargs :guard t) (ignore x y)) nil)
@@ -63,7 +179,7 @@
                   :guard (and (symbolp lifted-name)
                               (stringp subroutine-name)
                               (natp stack-slots-needed)
-                              (output-indicatorp output)
+                              ;; (output-indicatorp output)
                               (booleanp non-executable))
                   :mode :program))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -82,11 +198,13 @@
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; assumptions (these get simplified and so don't have to be in normal form):
+       (64-bitp (member-eq executable-type '(:mach-o-64 :elf-64 :pe-64)))
        (assumptions (if (eq :mach-o-64 executable-type)
                         (cons `(standard-assumptions-mach-o-64 ',subroutine-name
                                                                ',parsed-executable
                                                                ',stack-slots-needed
                                                                text-offset
+                                                               nil ; bvp
                                                                x86)
                               assumptions)
                       ;; TODO: Support :pe-32
@@ -95,6 +213,7 @@
                                                              ',parsed-executable
                                                              ',stack-slots-needed
                                                              text-offset
+                                                             nil ; bvp
                                                              x86)
                                 assumptions)
                         (if (eq :elf-64 executable-type)
@@ -102,6 +221,7 @@
                                                                 ',parsed-executable
                                                                 ',stack-slots-needed
                                                                 text-offset
+                                                                nil ; bvp
                                                                 x86)
                                   assumptions)
                           assumptions))))
@@ -123,7 +243,7 @@
        ;; Do the symbolic simulation:
        (enables (append enables *standard-lifter-enables*))
        (term-to-simulate '(run-until-return x86))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate))
+       (term-to-simulate (wrap-in-output-extractor output term-to-simulate 64-bitp (w state)))
        ((mv result runes state)
         (symsim$-fn term-to-simulate
                     assumptions

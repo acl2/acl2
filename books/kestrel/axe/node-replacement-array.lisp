@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -548,6 +548,75 @@
               bound))
   :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund apply-node-replacement-array-to-darg (darg node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (dargp darg)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (consp darg) ;; checks for quotep
+      darg ;; already a constant, so do not replace
+    ;; returns darg if no replacement:
+    (apply-node-replacement-array darg node-replacement-array node-replacement-count)))
+
+(defthm dargp-of-apply-node-replacement-array-to-darg
+  (implies (and (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (dargp (apply-node-replacement-array-to-darg darg node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-darg))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-to-darg
+  (implies (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
+                (dargp-less-than darg bound)
+                (natp bound)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (dargp-less-than (apply-node-replacement-array-to-darg darg node-replacement-array node-replacement-count) bound))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-darg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Applies replacements to a list of dargs.
+;; The result is equivalent to DARGS under iff (but not necessarily equal), given the information in the node-replacement-array.
+(defund apply-node-replacement-array-to-dargs (dargs node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (darg-listp dargs)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (endp dargs)
+      nil
+    (let* ((darg (first dargs))
+           (new-darg (if (consp darg) ;; checks for quotep
+                         darg ;; already a constant, so do not replace
+                       ;; returns darg if no replacement:
+                       (apply-node-replacement-array darg node-replacement-array node-replacement-count))))
+      (cons-with-hint new-darg
+                      (apply-node-replacement-array-to-dargs (rest dargs) node-replacement-array node-replacement-count)
+                      dargs))))
+
+(defthm darg-listp-of-apply-node-replacement-array-to-dargs
+  (implies (and (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                (darg-listp dargs)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (darg-listp (apply-node-replacement-array-to-dargs dargs node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-dargs))))
+
+(defthm bounded-darg-listp-of-apply-node-replacement-array-to-dargs
+  (implies (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
+                (bounded-darg-listp dargs bound)
+                (natp bound)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (bounded-darg-listp (apply-node-replacement-array-to-dargs dargs node-replacement-array node-replacement-count) bound))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-dargs bounded-darg-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand
 ;;;
@@ -743,6 +812,7 @@
 ;; Extends ACC.
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
 ;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
+;; See also refine-assumption-for-matching.
 (defun term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
@@ -772,7 +842,7 @@
                    (acons x y acc) ; replace x with y since y is a constant and x is not
                  ;; Neither is a constant, so replace x with y (we interpret the assumption as a directed equality):
                  (acons x y acc)
-                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexoected forms):
+                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexpected forms):
                  ;; ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
                  ;; ;; We add the fact that the equality oriented either way is true.
                  ;; ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
@@ -1064,6 +1134,23 @@
                            (<= dag-len new-dag-len)
                            ))))
   :hints (("Goal" :in-theory (e/d (make-node-replacement-array-and-extend-dag) (symbol-listp)))))
+
+;; generalizes the bound
+(defthm make-node-replacement-array-and-extend-dag-return-type-gen
+  (implies (and (pseudo-term-listp assumptions)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-listp known-booleans))
+           (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-node-replacement-array-and-extend-dag assumptions
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         known-booleans)
+             (declare (ignore node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
+             (implies (and (not erp)
+                           (natp bound)
+                           (<= new-dag-len bound))
+                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))))
+  :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
+           :in-theory (disable make-node-replacement-array-and-extend-dag-return-type))))
 
 (defthm make-node-replacement-array-and-extend-dag-return-type-corollary
   (implies (and (pseudo-term-listp assumptions)

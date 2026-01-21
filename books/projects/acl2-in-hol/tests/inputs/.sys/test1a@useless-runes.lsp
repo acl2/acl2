@@ -1,0 +1,9 @@
+(FOO)
+(G
+ (1 1 (:TYPE-PRESCRIPTION G))
+ )
+(FOO-PROP
+ (1 1 (:REWRITE DEFAULT-CAR))
+ )
+(BAR)
+(H)

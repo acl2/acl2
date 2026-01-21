@@ -17,9 +17,11 @@
 (include-book "rightrotate32")
 (include-book "bvif")
 (include-book "bvminus") ;todo
-(include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

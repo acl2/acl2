@@ -1065,15 +1065,6 @@
        (ec-call (stack$c-scratch-codeslots-ok stack$c))
        (ec-call (stack$c-scratch-welltyped stack$c))))
 
-(local (defthm scatchobj-code->kind-is-cinstlist-when-not-others
-         (implies (and (not (equal (nfix x) 0))
-                       (not (equal (nfix x) 1))
-                       (not (equal (nfix x) 2))
-                       (not (equal (nfix x) 3))
-                       (not (equal (nfix x) 4)))
-                  (equal (scratchobj-code->kind x) :cinstlist))
-         :hints(("Goal" :in-theory (enable scratchobj-code->kind)))))
-
 
 
 (local
@@ -3087,6 +3078,34 @@
             :expand ((:free (n a b) (nth n (cons a b)))
                      (:free (a b) (len (cons a b))))))))
 
+(define stack$c-nth-frame-rule ((n natp)
+                              (stack$c stack$c-okp))
+  :guard (< n (stack$c-frames stack$c))
+  :guard-hints (("goal" :in-theory (e/d (stack$c-frames)
+                                        (stack$c-major-frames-welltyped-necc))
+                 :use ((:instance stack$c-major-frames-welltyped-necc
+                        (i (nfix (- (stack$c-top-frame stack$c) (nfix n))))))))
+  (maybe-fgl-generic-rule-fix
+    (stack$c-majori (+ 1 (* 3 (mbe :logic (nfix (- (stack$c-top-frame stack$c) (nfix n)))
+                                   :exec (- (stack$c-top-frame stack$c) n))))
+                    stack$c))
+  ///
+  (local (defthm diff-equal-0
+           (equal (equal (+ (- n) x) 0)
+                  (equal (fix n) (fix x)))))
+
+  (defthm stack$a-nth-frame-rule-of-stack$c-extract
+    (equal (stack$a-nth-frame-rule n (stack$c-extract stack$c))
+           (stack$c-nth-frame-rule n stack$c))
+    :hints(("Goal" :in-theory (enable stack$a-nth-frame-rule
+                                      stack$c-extract
+                                      stack$a-frames
+                                      stack$c-build-major-frame
+                                      stack$c-build-top-major-frame
+                                      max)
+            :expand ((:free (n a b) (nth n (cons a b)))
+                     (:free (a b) (len (cons a b))))))))
+
 (define stack$c-nth-frame-minor-frames ((n natp)
                                         (stack$c stack$c-okp))
   :guard (< n (stack$c-frames stack$c))
@@ -4176,6 +4195,7 @@
               (stack-add-minor-bindings :logic stack$a-add-minor-bindings :exec stack$c-add-minor-bindings)
               (stack-bindings :logic stack$a-bindings :exec stack$c-bindings)
               (stack-nth-frame-bindings :logic stack$a-nth-frame-bindings :exec stack$c-nth-frame-bindings)
+              (stack-nth-frame-rule :logic stack$a-nth-frame-rule :exec stack$c-nth-frame-rule)
               (stack-minor-bindings :logic stack$a-minor-bindings :exec stack$c-minor-bindings)
               (stack-nth-frame-minor-bindings :logic stack$a-nth-frame-minor-bindings :exec stack$c-nth-frame-minor-bindings)
               (stack-rule :logic stack$a-rule :exec stack$c-rule)

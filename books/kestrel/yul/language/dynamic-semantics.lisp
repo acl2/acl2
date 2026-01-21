@@ -16,16 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; To generate additional theorems.
-(local
- (fty::deflist value-list
-   :elt-type value
-   :true-listp t
-   :elementp-of-nil nil
-   :pred value-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ dynamic-semantics
   :parents (language)
   :short "Dynamic semantics of Yul."

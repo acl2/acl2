@@ -15,7 +15,9 @@
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
 (include-book "bvminus") ;drop! but is used below
-(local (include-book "slice"))
+(include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
+(local (include-book "slice")) ; since we open getbit below
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -29,6 +31,15 @@
   (equal (bvlt size 0 x)
          (not (equal 0 (bvchop size x))))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;rename
+(defthm bvlt-when-not-posp-arg1
+  (implies (not (posp size))
+           (not (bvlt size x y)))
+  :hints (("Goal"
+           :cases ((equal 0 size))
+           :in-theory (enable bvlt))))
+;move
 
 (defthm booleanp-of-bvlt
   (booleanp (bvlt size x y)))
@@ -288,6 +299,18 @@
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable bvlt))))
 
+(defthm bvlt-of-bvchop-arg2-same
+  (equal (bvlt size (bvchop size x) y)
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt)
+                  :cases ((natp size)))))
+
+(defthm bvlt-of-bvchop-arg3-same
+  (equal (bvlt size x (bvchop size y))
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt)
+                  :cases ((natp size)))))
+
 (defthm bvlt-of-bvchop-arg2
   (implies (and (<= size size2)
                 (integerp size2))
@@ -388,14 +411,6 @@
                 (bvlt size x free))
            (bvlt size x k)))
 
-;rename
-(defthm bvlt-when-not-posp-arg1
-  (implies (not (posp size))
-           (not (bvlt size x y)))
-  :hints (("Goal"
-           :cases ((equal 0 size))
-           :in-theory (enable bvlt))))
-
 ;is this expensive?
 ;the quotep hyps are new
 ;rename
@@ -455,7 +470,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;disabled during library proofs
@@ -601,18 +616,6 @@
            (not (equal const (bvchop size x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm bvlt-of-bvchop-arg3-same
-  (equal (bvlt size x (bvchop size y))
-         (bvlt size x y))
-  :hints (("Goal" :cases ((natp size)))))
-
-(defthm bvlt-of-bvchop-arg2-same
-  (equal (bvlt size (bvchop size x) y)
-         (bvlt size x y))
-  :hints (("Goal" :cases ((natp size)))))
-
-
 
 ;todo: compare these to the transitive rules
 ;todo: more like these?
@@ -970,4 +973,67 @@
                 ;; (unsigned-byte-p freesize y)
                 (integerp size))
            (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd bvchop-tighten-when-bvlt-of-constant-helper
+    (implies (and (bvlt size x k) ; k is a free var
+                  (syntaxp (and (quotep k)
+                                (quotep size)))
+                  (< (ceiling-of-lg k) size) ; avoids loops
+                  (unsigned-byte-p size x) ; dropped below
+                  (natp k))
+             (equal (bvchop size x)
+                    (bvchop (ceiling-of-lg k) x)))
+    :hints (("Goal" :in-theory (enable bvlt)))))
+
+(defthmd bvchop-tighten-when-bvlt-of-constant
+  (implies (and (bvlt size x k) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep size)))
+                (< (ceiling-of-lg k) size) ; avoids loops
+                ;; (unsigned-byte-p size x)
+                (natp k))
+           (equal (bvchop size x)
+                  (bvchop (ceiling-of-lg k) x)))
+  :hints (("Goal" :use (:instance bvchop-tighten-when-bvlt-of-constant-helper
+                                  (x (bvchop size x)))
+           :in-theory (disable bvchop-tighten-when-bvlt-of-constant-helper))))
+
+(local
+  (defthmd bvchop-tighten-when-not-bvlt-of-constant-helper
+    (implies (and (not (bvlt size k x)) ; k is a free var
+                  (syntaxp (and (quotep k)
+                                (quotep size)))
+                  (< (ceiling-of-lg (+ 1 k)) size) ; avoids loops
+                  (unsigned-byte-p size x) ; dropped below
+                  (natp k))
+             (equal (bvchop size x)
+                    (bvchop (ceiling-of-lg (+ 1 k)) x)))
+    :hints (("Goal" :in-theory (enable bvlt)))))
+
+(defthmd bvchop-tighten-when-not-bvlt-of-constant
+  (implies (and (not (bvlt size k x)) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep size)))
+                (< (ceiling-of-lg (+ 1 k)) size) ; avoids loops
+                ;; (unsigned-byte-p size x)
+                (integerp size)
+                (natp k))
+           (equal (bvchop size x)
+                  (bvchop (ceiling-of-lg (+ 1 k)) x)))
+:hints (("Goal" :use (:instance bvchop-tighten-when-not-bvlt-of-constant-helper
+                                (x (bvchop size x)))
+         :in-theory (disable bvchop-tighten-when-not-bvlt-of-constant-helper))))
+
+(defthm bvlt-of-ifix-arg2
+  (equal (bvlt size (ifix x) y)
+         (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthm bvlt-of-ifix-arg3
+  (equal (bvlt size x (ifix y))
+         (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))

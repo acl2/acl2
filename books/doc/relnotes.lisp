@@ -123,12 +123,52 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "HOL-ACL2 Link Support")
+   (xdoc::h4 (xdoc::seetopic "abstract-domains" "Abstract Domains"))
 
    (xdoc::p
-    "See projects/hol-acl2/README-acl2.  That directory provides modifications
+    "A collection of abstract domains. This includes a theory of rational
+     @(see interval::intervals), and a "
+    (xdoc::seetopic "3vl" "three-valued logic")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
+
+   (xdoc::p
+    "Formalizations and proofs about the "
+    (xdoc::ahref "https://aleo.org" "Aleo blockchain and ecosystem")
+    ".")
+
+   (xdoc::p
+    "The existing "
+    (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
+    " is now a sub-library of this broader Aleo library.")
+
+   (xdoc::p
+    "We have added an ABNF grammar of the "
+    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
+    ", along with ACL2 code to parse the grammar into an ACL2 representation
+     and prove some properties of the grammar.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
+
+   (xdoc::p
+    "See projects/acl2-in-hol/README-acl2.  That directory provides modifications
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "HOL4 to ACL2 Translator")
+
+   (xdoc::p
+    "The directory @('[books]/projects/hol-in-acl2/') contains a translator
+     from HOL4 to ACL2 &mdash; more specifically, a translator to the
+     integration of set theory with ACL2 supported by directory
+     @('[books]/projects/set-theory/').  Examples are included.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,9 +182,34 @@
      fully readable and writable address space,
      and no alignment checks.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "treeset::set" "Treesets"))
+
+   (xdoc::p
+    "A tree-based implementation of finite sets. This library offers a similar
+     interface to @(see std/osets), but with improved performance
+     (generally scaling logarithmically instead of linearly).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
+
+   (xdoc::p
+    "This work in progress supports the use of ACL2 to reason both about
+     first-order set theory and about &ldquo;higher-order&rdquo;
+     notions (without involving @(tsee apply$)).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bridge::bridge" "Bridge"))
+
+   (xdoc::p
+    "Python bindings are available in @('[books]/centaur/bridge/python').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,8 +220,7 @@
    (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
 
    (xdoc::p
-    "We have added a tool, @(tsee c$::defpred),
-     to concisely define predicates over the abstract syntax.")
+    "We have added a disambiguator and a validator.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,13 +236,61 @@
      to generate reducing folds,
      according to the nomenclature explained in "
     (xdoc::seetopic "fty::fold" "the page on general folds")
-    ".")
+    ". Similarly, an event macro @(tsee fty::deffold-map) has been added
+     to generate mapping folds.")
+
+   (xdoc::p
+    "A new event macro @(tsee fty::defmake-self) has been added
+     to generate functions for fixtype families mapping values to their
+     canonical constructor forms.")
 
    (xdoc::p
     "Some utilities have been added to operate on the FTY database:
      see @(see fty::database).
      The data structures for the FTY database have been put into
      guard-verified logic mode.")
+
+   (xdoc::p
+    "The @(tsee fty::defset) and @(tsee fty::defomap) fixtype generators
+     were improved to produce more robust proofs
+     (with respect to the current theory, configuration, etc.).")
+
+   (xdoc::p
+    "A documentation topic has been added for @(tsee fty::defoption).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
+
+   (xdoc::p
+    "A new book was added for lightweight reasoning about ordinals.")
+
+   (xdoc::p
+    "A variant of @(tsee msg) called @(tsee msg$) was added to
+     @(see message-utilities). @(tsee msg$) may be more convenient than
+     to reason about, because it expands to a function which is disabled by
+     default (in contrast to @(tsee msg), which macro-expands directly into a
+     cons nest).")
+
+   (xdoc::p
+    "A new book, @('arith-fix-and-equiv.lisp'), has been added.
+     This book defines predicates, fixers, and equivalence relations
+     for the basic arithmetic types, as well as the ``maybe'' variants,
+     It reuses existing definitions in the standard library when available.
+     It introduces basic theorems, and refinements
+     between all of the equivalence relations.
+     The book @('arith-fix-and-equiv-defs.lisp')
+     contains all of the definitions with no theorems and no dependencies.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "oslib" "Oslib"))
+
+   (xdoc::p
+    "A new function, @(tsee oslib::get-decoded-time$), was introduced.")
+
+   (xdoc::p
+    "@(tsee oslib::date) now optionally includes a timezone.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,6 +312,25 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "omap::omaps"
+                             "Standard Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "The theories around @(tsee omap::submap) and @(tsee omap::compatiblep)
+     have been greatly extended.
+     The @(see omap::pick-a-point) and @(see omap::double-containment)
+     proof strategies have been added, mirroring those from @(see std/osets).
+     Similarly, an @(see omap::extensionality) rule has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "set::std/osets" "Standard Osets Library"))
+
+   (xdoc::p
+    "Many non-recursive @(see set::primitives) have been declared inline.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
@@ -208,6 +339,20 @@
     " for @(tsee b*) has been added. This binder closely resembles the "
     (xdoc::seetopic "patbind-fun" "@('fun') binder")
     ", but expands to a @(tsee macrolet) instead of an @(tsee flet).")
+
+   (xdoc::p
+    "The untranslation procedure for function macros introduced by
+     @(see define) was fixed to properly handle nullary function macros.")
+
+   (xdoc::p
+    "The @(tsee defirrelevant) event macro was extended to optionally take a
+     @(':long') form, overriding the default if present.")
+
+   (xdoc::p
+    "The @(tsee std::defredundant) event macro was extended to accommodate
+     function definitions with all kinds of supported "
+    (xdoc::seetopic "declare" "declarations")
+    ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,9 +363,48 @@
       handle theorems over trivial @(tsee mutual-recursion) cliques consisting
       of just one function.")
 
+   (xdoc::p
+     "The utility, @(tsee with-supporters), has been improved to deal with the
+      case that support comes from a @(see local) event preceding the
+      @('with-supporters') call.  Thanks to Eric Smith for providing an example
+      to show the need for this improvement, and for suggesting that the
+      generated supporting events be elided (see discussion of @(tsee
+      elide-event) just below)")
+
+   (xdoc::p
+     "A new utility, @(tsee elide-event), maps an event to one that avoids
+      declarations that are unnecessary when either including a book or making
+      the second pass of an @(tsee encapsulate) event.  Thanks to Eric Smith
+      for a chat leading to development of this utility.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
+
+   (xdoc::p
+    "@(see xdoc::Defsection) now prints the corresponding error message
+     when the event fails due to a malformed @(':short') or @(':long') form.")
+
+   (xdoc::p
+    "XDOC support for a number of HTML @(see xdoc::entities) was added.
+     In particular, many letter variants with diacritics.")
+
+   (xdoc::p
+    "Added utility @(tsee eval-events-from-file), to create an event that
+     evaluates events from a file.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
+
+   (xdoc::p
+    "A new topic, @(see how-to-contribute), was added.
+     The existing @(see best-practices) topic was greatly extended.")
+
+   (xdoc::p
+    "A new topic, @(see osicat), was added. It describes an occasional
+     build issue caused by a race condition in the build logic,
+     as well as the fix.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,13 +433,35 @@
 
    (xdoc::p
     "The new directory @('demos/attach-stobj/') illustrates the use of @(tsee
-     attach-stobj).  See file @('README.txt') in that directory.")
+     attach-stobj).  See file @('README.txt') in that directory.  Additional
+     tests of @('attach-stobj') may be found in the directory
+     @('system/tests/attachable-stobjs/')")
 
    (xdoc::p
     "The new book @('demos/fp.lisp') (with associated files @('fp.acl2') and
      @('fp-raw.lsp') in the same directory) illustrates the power of @(tsee
      partial-encapsulate), showing how it is used in the implementation of
-     floating-point operations in ACL2.")
+     floating-point operations in ACL2.  Note that an extensive test suite for
+     floating-point operations may be found in
+     @('demos/floating-point-input.lsp'), with associated output file
+     @('demos/floating-point-log.txt'), with associated output file")
+
+   (xdoc::p
+    "The publications page available from the ACL2 home page has been replaced
+     by the :DOC topic, @(see publications).")
+
+   (xdoc::p
+    "Several changes were made to the "
+    (xdoc::ahref "https:://acl2.org/doc" "web manual")
+    ". The ``jump to'' bar now shows more results in the preview.
+     If the current text is not a prefix of an topic, the preview now shows
+     substring matches. General improvements were made to the local ``search''
+     functionality, including improving tokenization and searching through
+     @(':short') forms. Finally, when the manual is deployed with a database
+     (in contrast to viewing a local copy, see @(see xdoc::deploying-manuals)),
+     we offer server-side searching using sqlite's built-in search
+     capabilities. This searches through @(':long')s,
+     in addition to @(':short')s and topic names.")
 
    ))
 
@@ -2936,7 +3142,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
-    "This is a library about " (xdoc::ahref "json.org" "JSON") ".
+    "This is a library about " (xdoc::ahref "https://json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
      consisting of " (xdoc::seetopic "fty" "fixtypes") ";
      it also contains some initial operations on this abstract syntax,

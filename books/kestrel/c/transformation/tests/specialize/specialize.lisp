@@ -21,25 +21,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
+  (c$::input-files :files '("test1.c")
                    :const *old*)
 
-  ;; TODO: transformation should define the const
-  ;; TODO: transformation should take strings, not idents
-  (defconst *new*
-    (b* ((const
-           (expr-const
-             (c$::const-int
-               (c$::make-iconst :core (c$::dec/oct/hex-const-dec 1))))))
-      (specialize-transunit-ensemble *old*
-                                     (c$::ident "foo")
-                                     (c$::ident "y")
-                                     const)))
+  (specialize *old*
+              *new*
+              :target "foo"
+              :param "y"
+              :const (make-expr-const
+                       :const
+                       (c$::const-int
+                         (c$::make-iconst
+                           :core (c$::dec/oct/hex-const-dec 1)))))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPECIALIZE.c"
+    :file "new/test1.c"
     :content "int foo(int z) {
   int y = 1;
   int x = 5;
@@ -52,23 +51,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
-  (c$::input-files :files ("test2.c")
+  (c$::input-files :files '("test2.c")
                    :const *old*)
 
-  (defconst *new*
-    (b* ((const
-           (expr-const
-             (c$::const-int
-               (c$::make-iconst :core (c$::dec/oct/hex-const-dec 42))))))
-      (specialize-transunit-ensemble *old*
-                                     (c$::ident "foo")
-                                     (c$::ident "z")
-                                     const)))
+  (specialize *old*
+              *new*
+              :target "foo"
+              :param "z"
+              :const (make-expr-const
+                       :const
+                       (c$::const-int
+                         (c$::make-iconst
+                           :core (c$::dec/oct/hex-const-dec 42)))))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.SPECIALIZE.c"
+    :file "new/test2.c"
     :content "int foo(int y) {
   int z = 42;
   int x = 5;

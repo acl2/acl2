@@ -3,6 +3,7 @@
 
 #include "fwd.h"
 #include "nodesid.h"
+#include "types.h"
 
 #include "../../sexpressions.h"
 #include "../utils/diagnostics.h"
@@ -19,8 +20,10 @@ public:
   virtual void display(std::ostream &os, unsigned indent = 0) = 0;
   virtual void displayAsRightBranch(std::ostream &os, unsigned indent = 0);
   virtual void displayWithinBlock(std::ostream &os, unsigned indent = 0);
+
   virtual Block *blockify();
   virtual Block *blockify(Statement *s);
+
   virtual Sexpression *ACL2Expr() = 0;
 
   inline NodesId id() const { return id_; }
@@ -46,32 +49,32 @@ public:
   Symbol *sym;
 
   Expression *init;
-  SymDec(NodesId id, Location loc, const char *n, Type *t,
+  SymDec(NodesId id, Location loc, const char *n, const Type *t,
          Expression *i = nullptr);
 
   const char *getname() const { return sym->getname(); }
   virtual void displaySymDec(std::ostream &os) const;
-  virtual bool isGlobal();
+  virtual bool isGlobal() const { return false; }
 
-  Type *get_type() { return type_; }
-  void set_type(Type *t) {
+  const Type *get_type() const { return type_; }
+  void set_type(const Type *t) {
     type_ = t;
     if (!original_type_) {
       original_type_ = t;
     }
   }
-  Type *get_original_type() { return original_type_; }
+  const Type *get_original_type() { return original_type_; }
 
-  virtual bool isStaticallyEvaluable();
+  virtual bool isStaticallyEvaluable() const;
   int evalConst();
 
   virtual Sexpression *ACL2SymExpr();
 
 private:
-  Type *type_;
-  // Used to report the error with the original typedef (type will be
-  // dereferenced later).
-  Type *original_type_;
+  const Type *type_;
+  // Used to display in RAC the original typedef (type will be dereferenced
+  // later).
+  const Type *original_type_;
 };
 
 class EnumConstDec final : public SymDec {
@@ -80,9 +83,11 @@ public:
   // TODO indent.
   void display(std::ostream &os, unsigned) override;
   void displaySimple(std::ostream &os) override { display(os, 0); }
-  bool isStaticallyEvaluable() override;
+  bool isStaticallyEvaluable() const override;
 
-  Sexpression *ACL2Expr() override;
+  // Enum are not translate to ACL2 (we use directly the underlying values).
+  Sexpression *ACL2Expr() override { UNREACHABLE(); }
+
   Sexpression *ACL2SymExpr() override;
 };
 
@@ -94,29 +99,16 @@ public:
   void displaySimple(std::ostream &os) override;
   Sexpression *ACL2Expr() override;
   Sexpression *ACL2SymExpr() override;
-};
 
-class ConstDec : public VarDec {
-public:
-  ConstDec(Location loc, const char *n, Type *t, Expression *i);
-  void displaySimple(std::ostream &os) override;
-  bool isStaticallyEvaluable() override;
-  bool isGlobal() override;
-  Sexpression *ACL2SymExpr() override;
+  virtual bool isStaticallyEvaluable() const override {
+    return get_type()->isConst() && isIntegerType(get_type());
+  }
 
   void setGlobal() { isGlobal_ = true; }
+  bool isGlobal() const override { return isGlobal_; }
 
 private:
   bool isGlobal_ = false;
-};
-
-class MulConstDec : public SimpleStatement {
-public:
-  std::vector<ConstDec *> decs;
-  MulConstDec(Location loc, ConstDec *dec1, ConstDec *dec2);
-  MulConstDec(Location loc, std::vector<ConstDec *> &&decs);
-  Sexpression *ACL2Expr() override;
-  void displaySimple(std::ostream &os) override;
 };
 
 class MulVarDec : public SimpleStatement {
@@ -130,13 +122,13 @@ public:
 
 class TempParamDec final : public SymDec {
 public:
-  TempParamDec(Location loc, const char *n, Type *t);
-  bool isStaticallyEvaluable() override;
+  TempParamDec(Location loc, const char *n, const Type *t);
+  bool isStaticallyEvaluable() const override;
   Sexpression *ACL2SymExpr() override;
 
   // TODO
-  void display(std::ostream &, unsigned) override{};
-  void displaySimple(std::ostream &) override{};
+  void display(std::ostream &, unsigned) override {};
+  void displaySimple(std::ostream &) override {};
 
   Sexpression *ACL2Expr() override {
     assert(false);
@@ -154,7 +146,7 @@ public:
 class ReturnStmt final : public SimpleStatement {
 public:
   Expression *value;
-  Type *returnType = nullptr;
+  const Type *returnType = nullptr;
   ReturnStmt(Location loc, Expression *v);
   void displaySimple(std::ostream &os) override;
   Sexpression *ACL2Expr() override;
@@ -236,15 +228,22 @@ public:
 
 class ForStmt final : public Statement {
 public:
-  SimpleStatement *init;
-  Expression *test;
-  Assignment *update;
-  Statement *body;
-
   ForStmt(Location loc, SimpleStatement *v, Expression *t, Assignment *u,
           Statement *b);
+
+  SimpleStatement *init() { return init_; }
+  Expression *test() { return test_; }
+  Assignment *update() { return update_; }
+  Statement *body() { return body_; }
+
   void display(std::ostream &os, unsigned indent = 0) override;
   Sexpression *ACL2Expr() override;
+
+private:
+  SimpleStatement *init_;
+  Expression *test_;
+  Assignment *update_;
+  Statement *body_;
 };
 
 class Case final : public Statement {
@@ -261,7 +260,7 @@ public:
   std::vector<Statement *> action;
 };
 
-class SwitchStmt : public Statement {
+class SwitchStmt final : public Statement {
 public:
   SwitchStmt(Location loc, Expression *t, std::vector<Case *> c);
   void display(std::ostream &os, unsigned indent = 0) override;

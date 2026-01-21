@@ -425,15 +425,15 @@
 ;; The definition of the nxn identity matrix is based on that of an rlist of length n
 ;; with (r1) at index j and (r0) elsewhere:
 
-(defun runit (j n)
+(defun runit (i n)
   (if (zp n)
       ()
-    (if (zp j)
+    (if (zp i)
         (cons (r1) (rlistn0 (1- n)))
-      (cons (r0) (runit (1- j) (1- n))))))
+      (cons (r0) (runit (1- i) (1- n))))))
 
 (defthm rlistnp-runit
-  (rlistnp (runit j n) n))
+  (rlistnp (runit i n) n))
 
 ;; The Kronecker delta function:
 
@@ -459,10 +459,10 @@
 
 ;; nxn identity matrix:
 
-(defun id-rmat-aux (j n)
-  (declare (xargs :measure (nfix (- n j))))
-  (if (and (natp j) (natp n) (< j n))
-      (cons (runit j n) (id-rmat-aux (1+ j) n))
+(defun id-rmat-aux (i n)
+  (declare (xargs :measure (nfix (- n i))))
+  (if (and (natp i) (natp n) (< i n))
+      (cons (runit i n) (id-rmat-aux (1+ i) n))
     ()))
 
 (defund id-rmat (n)
@@ -556,7 +556,19 @@
                 (natp i) (< i m) (natp j) (< j q))
 	   (rmatp (rmat12 a b c i j) n p)))
 
-;; We derive the following expression for each entry of this matrix:
+;; We shall derive an expression for (entry r s (rmat12 a b c i j)).  First we compute its rth row:
+
+;;  (nth r (rmat12 a b c i j)) = (rlist-scalar-mul (nth r (row i a)) (nth r (rlist-mul-list (col j c) b)))
+;;                             = (rlist-scalar-mul (entry i r a) (rlist-mul (col j c) (nth r b)))
+
+;; Now the sth entry of the rth row:
+
+;;  (entry r s (rmat12 a b c i j)) = (nth s (nth r (rmat12 a b c i j)))
+;;                                 = (nth s (rlist-scalar-mul (entry i r a) (rlist-mul (col j c) (nth r b))))
+;;                                 = (entry i r a) * (nth s (rlist-mul (col j c) (nth r b)))
+;;                                 = (entry i r a) * ((nth s (col j c)) * (nth s (nth r b)))
+;;                                 = (entry i r a) * ((entry s j c) * (entry r s b))
+;;                                 = (entry i r a) * (entry r s b) * (entry s j c)
 
 (defthmd rmat12-entry
   (implies (and (rmatp a m n) (rmatp b n p) (rmatp c p q) (posp m) (posp n) (posp p) (posp q)
@@ -565,7 +577,30 @@
            (equal (entry r s (rmat12 a b c i j))
 	          (r* (r* (entry i r a) (entry r s b)) (entry s j c)))))
 
-;; The sum of these entries:
+;; Next we show that (rmat-sum (rmat12 a b c i j)) = (entry i j (rmat* a (rmat* b c).  As a first step, it is easily 
+;; shown by induction that if x is an rlist of length n and l is a matrix with n rows, then
+
+;;    (rmat-sum (rlist-scalar-mul-list x l)) = (rdot x (rlist-sum-list l)).
+
+;; We apply this result to the definition of rmat-sum, substituting (row i a) for x and (rlist-mul-list (col j c) b)
+;; for l.  This yields
+
+;;    (rmat-sum (rmat12 a b c i j)) = (rdot (row i a) (rlist-sum-list (rlist-mul-list (col j c) b))),
+
+;; Note that (rlist-sum-list (rlist-mul-list (col j c) b)) and (col j (rmat* b c)) are both rlists of length n.
+;; To prove that they are equal, it suffices to show that corresponding members are equal:
+
+;;    (nth k (rlist-sum-list (rlist-mul-list (col j c) b))) = (rlist-sum (nth k (rlist-mul-list (col j c) b)))
+;;                                                          = (rlist-sum (rlist-mul (col j c) (nth k b)))
+;;                                                          = (rdot (col j c) (nth k b))
+;;                                                          = (rdot (col j c) (row k b))
+;;                                                          = (rdot (row k b) (col j c))
+;;                                                          = (entry k j (rmat* b c))
+;;                                                          = (nth k (col j (rmat* b c)))
+
+;; Thus, (rlist-sum-list (rlist-mul-list (col j c) b)) = (col j (rmat* b c)).  It follows that
+
+;;    (rmat-sum (rmat12 a b c i j)) = (rdot (row i a) (col j (rmat* b c))) = (entry i j (rmat* a (rmat* b c))):
 
 (defthm rmat-sum-rmat12
   (implies (and (rmatp a m n) (rmatp b n p) (rmatp c p q) (posp m) (posp n) (posp p) (posp q)

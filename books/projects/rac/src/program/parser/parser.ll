@@ -54,6 +54,7 @@ static void lineba();
 "struct"                    {return STRUCT;}
 "enum"                      {return ENUM;}
 "const"                     {return CONST;}
+"static"                    {return STATIC;}
 "int"                       {return INT;}
 "uint"                      {return UINT;}
 "int64"                     {return INT64;}
@@ -75,7 +76,8 @@ static void lineba();
 "set_slc"                   {return SET_SLC;}
 
 "tuple"                     {return TUPLE;}
-"array"                     {return ARRAY;}
+"array"                     {yylval.s = tokstr(); return ARRAY;}
+"fast_array"                {yylval.s = tokstr(); return ARRAY;}
 "tie"                       {return TIE;}
 
 "ac_int"                    {return AC_INT;}
@@ -155,17 +157,20 @@ static bool
 comment ()
 {
   int c = yyinput();
+  yylloc.f_pos_end += 1;
 
   while (c != '\0')
     {
       if (c == '*')
         {
           c = yyinput();
+          yylloc.f_pos_end += 1;
           if (c == '/')
             return true;
         }
       else {
         c = yyinput();
+        yylloc.f_pos_end += 1;
       }
     }
   yyast.diag().new_error(yylloc, "Unterminated comment").report();
@@ -192,6 +197,6 @@ lineba ()
   char *i = strtok_r(yytext, "# \"", &cur);
   yylineno = atoi(i);
 
-  char *f = strtok_r(cur, "# \"", &cur);
+  char *f = strtok_r(nullptr, "# \"", &cur);
   yylloc.file_name = std::string(f);
 }

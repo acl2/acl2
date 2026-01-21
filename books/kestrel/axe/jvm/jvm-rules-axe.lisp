@@ -223,10 +223,10 @@
 (def-constant-opener n-new-ads2)
 
 (def-constant-opener set::delete)
-(def-constant-opener set::tail)
-(def-constant-opener set::head)
-(def-constant-opener set::emptyp)
-(def-constant-opener set::sfix)
+(def-constant-opener set::tail$inline)
+(def-constant-opener set::head$inline)
+(def-constant-opener set::emptyp$inline)
+(def-constant-opener set::sfix$inline)
 (def-constant-opener set::setp)
 (def-constant-opener FAST-<<)
 

@@ -1,11 +1,11 @@
 ; Ethereum Semaphore Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;          Alessandro Coglio (coglio@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,8 +39,9 @@
     "This library provides an ACL2 formalization of the Semaphore functionality,
     and formal proofs that the R1CS used to implement Semaphore are equivalent
     to the formalization.  The formalization is primarily based on the specification in the paper "
-    (xdoc::ahref "https://github.com/appliedzkp/semaphore/blob/master/spec/Semaphore%20Spec.pdf"
-                 "Community Proposal: Semaphore: Zero-Knowledge Signaling on Ethereum")
+    (xdoc::ahref
+     "https://docs.zkproof.org/pages/standards/accepted-workshop3/proposal-semaphore.pdf"
+     "Community Proposal: Semaphore: Zero-Knowledge Signaling on Ethereum")
     ", referenced here as `[Sema-Spec]' for brevity.
     Sections are referenced by appending their designations separated by a colon,
     e.g.,

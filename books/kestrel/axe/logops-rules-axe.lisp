@@ -1,7 +1,7 @@
 ; Axe rules about logops
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,3 +24,9 @@
 
 (def-constant-opener logmask$inline)
 (def-constant-opener binary-logand)
+(def-constant-opener logapp)
+(def-constant-opener logtail$inline)
+
+(def-constant-opener expt2$inline)
+(def-constant-opener ifloor$inline)
+(def-constant-opener ash)

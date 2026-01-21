@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pseudo-term-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,8 +39,8 @@
   :hints (("Goal" :in-theory (enable pseudo-term-listp union-equal))))
 
 (defthm pseudo-term-listp-of-intersection-equal
-  (implies (and (pseudo-term-listp x)
-                (pseudo-term-listp y))
+  (implies (or (pseudo-term-listp x)
+               (pseudo-term-listp y))
            (pseudo-term-listp (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp intersection-equal))))
 

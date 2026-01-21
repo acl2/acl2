@@ -1,7 +1,7 @@
 ; DAG builders that depend on the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; NOTE: This book is not used much any more.
 
 ;; See also simpler functions for making dags, such as
 ;; make-term-into-dag-simple and make-term-into-dag-basic.
@@ -36,18 +38,6 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 ;(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
-;; (local (in-theory (disable member-equal
-;;                            subsetp-equal
-;;                            ;; axe-treep
-;;                            axe-tree-listp
-;;                            ;; for speed:
-;;                            largest-non-quotep-bound
-;;                            largest-non-quotep-bound-alt
-;;                            myquotep
-;;                            ;; mv-nth-of-if
-;;                            symbol-alistp ;don't induct
-;;                            )))
-
 (local (in-theory (disable consp-from-len-cheap
                            axe-tree-listp-when-pseudo-term-listp
                            ;;list::nth-with-large-index-2
@@ -64,7 +54,24 @@
                            nat-listp ;for speed
                            pseudo-dag-arrayp
                            true-listp-of-nth-1-of-nth-0-when-axe-treep
-                           ;CAR-OF-CAR-WHEN-PSEUDO-TERMP  ;; try
+                           car-of-car-when-pseudo-termp
+                           natp
+                           cddr-when-pseudo-termp-and-quotep
+                           len-when-pseudo-termp-and-quotep-alt
+                           len-of-car-when-pseudo-termp-cheap
+                           nth-when-all-same-cheap
+                           ;; nth-when-not-consp-cheap
+                           nth-when-zp-cheap
+                           ;; member-equal
+                           ;; subsetp-equal
+                           ;; ;; axe-treep
+                           ;; axe-tree-listp
+                           ;; ;; for speed:
+                           ;; largest-non-quotep-bound
+                           ;; largest-non-quotep-bound-alt
+                           ;; myquotep
+                           ;; ;; mv-nth-of-if
+                           ;; symbol-alistp ;don't induct
                            )))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
@@ -296,7 +303,7 @@
                      ;;term is a call of dag-val-with-axe-evaluator, and we can inline its embedded dag:
                      (b* ((quoted-dag (first arg-nodenums-or-quoteps))
                           (dag (unquote quoted-dag))
-                          (vars (dag-vars dag))
+                          (vars (dag-vars-unsorted dag))
                           (alist-nodenum (second arg-nodenums-or-quoteps)) ;todo: handle a constant alist
                           ((mv erp variable-node-alist-for-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                            (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array
@@ -458,7 +465,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array)
-    :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array) ()))))
+    :hints (("Goal" :in-theory (enable merge-term-into-dag-array merge-terms-into-dag-array))))
 
 ;drop?
 (defthm-flag-merge-term-into-dag-array
@@ -485,11 +492,10 @@
                                                       DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
                                                       DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                       INTERPRETED-FUNCTION-ALIST))
-                  :in-theory (e/d (merge-term-into-dag-array
-                                   merge-terms-into-dag-array
+           :in-theory (enable merge-term-into-dag-array
+                              merge-terms-into-dag-array
                                    ;call-of-dag-val-with-axe-evaluator-with-inlineable-dagp ;somewhat slow. why didn't the forward-chaining rules suffice?
-                                   )
-                                  ()))))
+                              ))))
 
 (local (in-theory (disable use-all-<-for-car
                            bounded-darg-listp-when-<-of-largest-non-quotep
@@ -500,7 +506,6 @@
 (set-case-split-limitations '(10 10))
 
 (local (in-theory (disable consp-from-len-cheap
-                           ;use-all-consp-for-car
                            default-+-2 default-cdr
                            quote-lemma-for-bounded-darg-listp-gen-alt)))
 
@@ -692,7 +697,7 @@
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-return-type)
-           :in-theory (e/d () (merge-term-into-dag-array-return-type)))))
+           :in-theory (disable merge-term-into-dag-array-return-type))))
 
 (defthm merge-term-into-dag-array-return-type-corollary2
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array
@@ -760,7 +765,6 @@
            :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-return-type)))))
 
 (verify-guards merge-term-into-dag-array
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp
@@ -771,19 +775,6 @@
                                                       ;wf-dagp-expander
                                                       )
                            (natp dargp pseudo-term-listp pseudo-termp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv erp dag-or-quotep).
-(defun dag-or-term-to-dag (item wrld)
-  (declare (xargs :mode :program)) ;; because this calls translate-term
-  (if (eq nil item) ; we assume nil is the constant nil, not an empty DAG
-      (mv (erp-nil) *nil*)
-    (if (weak-dagp item)
-        (mv (erp-nil) item) ;already a DAG
-      ;; translate the given form to obtain a pseudo-term and then make that into a DAG:
-      (dagify-term-unguarded
-       (translate-term item 'dag-or-term-to-dag wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -800,7 +791,7 @@
             ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
             ;; explosion in the term size:
             `(dag-val-with-axe-evaluator ',item
-                                         ,(make-acons-nest (dag-vars item))
+                                         ,(make-acons-nest (dag-vars-unsorted item))
                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                          '0 ;array depth (not very important)
                                          )))

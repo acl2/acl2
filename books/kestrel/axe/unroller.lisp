@@ -1,7 +1,7 @@
 ; Constant-factor unrolling of a function
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,8 @@
 
 ;this book contains a tool that takes a function (with one recursive call) and generates a new function that does k repetitions per recursive call.
 ;also proves them the same (seems to be automatic?)
+
+;; NOTE: This book is unrelated to the various binary unroller/lifter tools, e.g., x86/unroller.lisp.
 
 ;FIXME - this doesn't handle MV and MV-LET correctly...
 ;fixme what about lets?
@@ -266,7 +268,7 @@
                   :verify-guards nil))
   (let* ((props (getprops function-name 'current-acl2-world (w state))))
     (if (not props)
-        (hard-error 'unroll-events "Can't find the function ~x0" (acons #\0 function-name nil))
+        (er hard? 'unroll-events "Can't find the function ~x0" function-name)
       (let* ((body (lookup-eq 'unnormalized-body props))
              (formals (lookup-eq 'formals props))
              (unrolled-body (expand-function-call-k-times (+ -1 unrolling-factor) body function-name formals body))

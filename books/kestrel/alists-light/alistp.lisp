@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function alistp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,12 +33,12 @@
   (equal (alistp (append x y))
          (and (alistp (true-list-fix x))
               (alistp y)))
-  :hints(("Goal" :in-theory (enable append))))
+  :hints (("Goal" :in-theory (enable append))))
 
 (defthm alistp-true-list-fix
   (implies (alistp x)
            (alistp (true-list-fix x)))
-  :hints(("Goal" :in-theory (enable true-list-fix))))
+  :hints (("Goal" :in-theory (enable true-list-fix))))
 
 (defthm alistp-of-union-equal
   (equal (alistp (union-equal x y))

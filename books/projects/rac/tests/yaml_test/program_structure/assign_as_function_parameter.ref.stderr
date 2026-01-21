@@ -1,0 +1,3 @@
+assign_as_function_parameter.cpp:3 (14-15): syntax error, unexpected '=', expecting '[' or ',' or ')'
+ 3 | int foo(int a = 3) {
+   |               ^

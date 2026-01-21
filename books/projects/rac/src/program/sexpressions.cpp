@@ -35,6 +35,7 @@ Symbol s_as("as");
 Symbol s_ash("ash");
 Symbol s_assert("assert");
 Symbol s_assign("assign");
+Symbol s_ainit("ainit");
 Symbol s_bitn("bitn");
 Symbol s_bits("bits");
 Symbol s_block("block");

@@ -30,3 +30,6 @@
 
 #!ACL2
 (ld "package.lsp")
+
+#!ACL2
+(ld "doc/publications.acl2" :dir :system)

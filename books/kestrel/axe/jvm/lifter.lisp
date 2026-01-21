@@ -1,7 +1,7 @@
 ; A JVM lifter for use when not unrolling
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -73,12 +73,21 @@
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for right-cancellation-for-+
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; for speed:
 (local (in-theory (disable acl2-count
                            consp-from-len-cheap
                            all-natp-when-nat-listp
                            nat-listp)))
+
+;dup
+(local
+  (defthmd <-of-+-of-1-when-natps
+    (implies (and (syntaxp (not (quotep y)))
+                  (natp x)
+                  (natp y))
+             (equal (< x (+ 1 y)) (<= x y)))))
 
 (in-theory (disable dag-to-term
                     top-nodenum
@@ -160,7 +169,7 @@
       (if (dag-or-quotep-size-less-thanp dag max-term-size)
           (dag-to-term dag) ;todo: respect use-lets-in-terms here as well?
         ;; term would be too big, so use an embedded dag:
-        (let ((dag-vars (dag-vars dag)))
+        (let ((dag-vars (dag-vars-unsorted dag)))
           `(dag-val-with-axe-evaluator ',dag
                                        ,(make-acons-nest dag-vars)
                                        ',interpreted-function-alist ;todo: trim this down to only what is needed
@@ -3233,7 +3242,7 @@
 ;fixme what if the heap changes but not in a way that depends on s?
   ;; todo: use this get-subdag below (or don't compute it here)?
   ;; todo: drop this check (can it ever happen?)?
-  (if (subsetp-eq (dag-vars (get-subdag (top-nodenum heap-dag) heap-dag)) previous-state-vars) ;todo: what about inputs?
+  (if (subsetp-eq (dag-vars-unsorted (get-subdag (top-nodenum heap-dag) heap-dag)) previous-state-vars) ;todo: what about inputs?
       (prog2$ (er hard 'get-heap-update-triples "Heap check failed: ~x0." heap-dag)
               nil)
     (get-heap-update-triples-aux (top-nodenum heap-dag) heap-dag `(jvm::heap ,state-var) previous-state-vars)))
@@ -3300,7 +3309,7 @@
    (declare (xargs :mode :program))
    ;;check whether the static field map doesn't depend on s: ;;fixme is this check appropriate?
   ;;fixme, can the static field map be a quotep?
-  (if (subsetp-eq (dag-vars (get-subdag (top-nodenum dag) dag)) previous-state-vars)
+  (if (subsetp-eq (dag-vars-unsorted (get-subdag (top-nodenum dag) dag)) previous-state-vars)
       nil
     (get-static-field-update-pairs-aux (top-nodenum dag) dag state-var)))
 
@@ -4543,6 +4552,7 @@
       (append assumptions (make-input-assumptions (rest input-source-alist) state-term)))))
 
 ; returns (mv erp result state)
+;; todo: use rewriter-jvm and put in :logic mode and verify-guards?
 (defun extract-output-dag (output-indicator
                            dag ;; a DAG giving the final state, in terms of s0
                            assumptions ;can be needed to show lack of aliasing (e.g., array inputs are already allocated, so they can't alias new-ads).  these also replace components of s0 with input vars?
@@ -4550,9 +4560,9 @@
                            return-type
                            class-table-alist
                            state)
-  (declare (xargs :mode :program
-                  :guard (and (output-indicatorp output-indicator)
+  (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (class-table-alistp class-table-alist))
+                  :mode :program
                   :stobjs state))
   (b* ((term (output-extraction-term output-indicator initial-locals-term return-type class-table-alist))
        ((mv erp dag2) (wrap-term-around-dag term 'replace-me dag))
@@ -6018,9 +6028,10 @@
                                              (g :extra-rules options))
                                      (g :remove-rules options))
                                     :none ; todo: pass a rule-alist here?
-                                    nil ; interpreted-fns
+                                    nil ; interpreted-function-alist
                                     (g :monitor options)
                                     (g :call-stp options)
+                                    *no-warn-ground-functions-jvm*
                                     print
                                     state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
@@ -6374,7 +6385,7 @@
                           (or (eq :auto param-names)
                               (symbol-listp param-names) ;; todo: what else to check here?
                               )
-                          (or (booleanp prune-branches)
+                          (or (booleanp prune-branches) ; todo: precise or approx?
                               (natp prune-branches))
                           (booleanp disable-loop-openers)
                           )
@@ -6547,16 +6558,17 @@
                                             (g :extra-rules options))
                                     (g :remove-rules options))
                                    :none ; todo: pass a rule-alist here?
-                                   nil ; interpreted-fns
+                                   nil ; interpreted-function-alist
                                    (g :monitor options)
                                    (g :call-stp options)
+                                   *no-warn-ground-functions-jvm*
                                    print
                                    state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
                              (print-list output-dag)
                              (cw ")~%"))))
-       (dag-vars (dag-vars output-dag)) ; these get sorted below
+       (dag-vars (dag-vars-unsorted output-dag)) ; these get sorted below
        ;; TODO: Shouldn't we just add inputs automatically for this new stuff?
        (- (and (not (subsetp-eq dag-vars input-vars))
                (cw "WARNING: Unexpected variables, ~x0, appear in the DAG.  At this point only input vars should remain.  If state vars such as S0 remain, consider identifying additional state components that should be considered inputs (using input-vars plus assumptions that equate the state components with the new input vars).~%"  (set-difference-eq dag-vars input-vars))))
@@ -6593,7 +6605,7 @@
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
-                                 (output ':auto) ;an output-indicatorp
+                                 (output ':rv) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)
                                  (classes-to-assume-initialized 'nil)
@@ -6842,8 +6854,8 @@
                                          method-indicator
                                          start-pc
                                          segment-pcs ;is there a nicer way to specify the segment (line numbers in the source)?
-                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto) ;todo: call this "output"
                                          &key
+                                         (output ':rv) ;an output-indicatorp
                                          (input-source-alist 'nil) ;an input-source-alistp
                                          (assumptions 'nil)
                                          (classes-to-assume-initialized 'nil)
@@ -6872,7 +6884,7 @@
                                           ,start-pc
                                           ,segment-pcs ;is there a nicer way to specify the segment?
                                           ,input-source-alist
-                                          ,output-indicator ; todo: don't evaluate this?
+                                          ,output ; todo: don't evaluate this?
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
@@ -6901,8 +6913,8 @@
                                               method-indicator
                                               start-pc
                                               segment-pcs
-                                              output-indicator ;an output-indicatorp
                                               &key
+                                              (output ':rv) ;an output-indicatorp
                                               (input-source-alist 'nil) ;an input-source-alistp
                                               (assumptions 'nil)
                                               (classes-to-assume-initialized 'nil)
@@ -6929,7 +6941,7 @@
                               ,start-pc
                               ,segment-pcs ;is there a nicer way to specify the segment?
                               ,input-source-alist
-                              ,output-indicator
+                              ,output
                               ,assumptions
                               ,classes-to-assume-initialized
                               ,print

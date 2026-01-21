@@ -1,0 +1,14 @@
+
+typedef ac_int<64, false> ui64;
+
+
+<ui64, ui64> foo() {
+  return <0, 0>;
+}
+
+int main() {
+  ui64 a, b;
+  <a, b> = foo();
+  return 0;
+}
+

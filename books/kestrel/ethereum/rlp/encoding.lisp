@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,18 +75,22 @@
      see theorem @('len-of-rlp-encode-bytes-lower-bound-when-len-len')."))
   (b* ((bytes (byte-list-fix bytes)))
     (cond ((and (= (len bytes) 1)
-                (< (car bytes) 128)) (mv nil bytes))
-          ((< (len bytes) 56) (b* ((encoding (cons (+ 128 (len bytes))
-                                                   bytes)))
-                                (mv nil encoding)))
+                (< (car bytes) 128))
+           (mv nil bytes))
+          ((< (len bytes) 56)
+           (b* ((encoding (cons (+ 128 (len bytes))
+                                bytes)))
+             (mv nil encoding)))
           ((< (len bytes)
-              (expt 2 64)) (b* ((be (nat=>bebytes* (len bytes)))
-                                (encoding (cons (+ 183 (len be))
-                                                (append be bytes))))
-                             (mv nil encoding)))
+              (expt 2 64))
+           (b* ((be (nat=>bebytes* (len bytes)))
+                (encoding (cons (+ 183 (len be))
+                                (append be bytes))))
+             (mv nil encoding)))
           (t (mv t nil))))
   :no-function t
   :hooks (:fix)
+
   ///
 
   (defrule consp-of-rlp-encode-bytes-when-no-error
@@ -360,6 +364,7 @@
                  (and (not error?)
                       (equal encoding1 (byte-list-fix encoding))))))
   :skolem-name rlp-tree-encoding-witness
+
   ///
 
   (fty::deffixequiv-sk rlp-tree-encoding-p
@@ -411,6 +416,7 @@
                  (and (not error?)
                       (equal encoding1 (byte-list-fix encoding))))))
   :skolem-name rlp-bytes-encoding-witness
+
   ///
 
   (fty::deffixequiv-sk rlp-bytes-encoding-p
@@ -478,6 +484,7 @@
                  (and (not error?)
                       (equal encoding1 (byte-list-fix encoding))))))
   :skolem-name rlp-scalar-encoding-witness
+
   ///
 
   (fty::deffixequiv-sk rlp-scalar-encoding-p

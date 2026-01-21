@@ -77,7 +77,7 @@ Subtopics
   [defthm], [in-theory], [xargs], [state], etc., without an [47macl2::[0m
   prefix.
 
-  The constant [47m*acl2-exports*[0m lists [47m1659[0m symbols, including most
+  The constant [47m*acl2-exports*[0m lists [47m1663[0m symbols, including most
   documented ACL2 system constants, functions, and macros.  You will
   typically also want to import many symbols from Common Lisp; see
   [*common-lisp-symbols-from-main-lisp-package*].
@@ -212,11 +212,11 @@ Subtopics
        complex-implies1 complex-rationalp
        complex/complex-rationalp
        compress1 compress11 compress2
-       compress21 compress211 concatenate
-       cond cond-clausesp cond-macro
-       conjugate cons cons-equal cons-subtrees
-       cons-with-hint consp consp-assoc-equal
-       constraint-info corollary
+       compress21 compress211 concatenate cond
+       cond-clausesp cond-macro conjugate cons
+       cons-equal cons-subtrees cons-with-hint
+       consp consp-assoc-equal constraint-info
+       constraint-tracking corollary
        count-keys cpu-core-count ctx ctxp
        current-package current-theory cw cw!
        cw!+ cw+ cw-gstack cw-gstack-for-subterm
@@ -595,8 +595,9 @@ Subtopics
        set-case-split-limitations
        set-cbd set-check-invariant-risk
        set-checkpoint-summary-limit
-       set-compile-fns
-       set-compiler-enabled set-debugger-enable
+       set-compile-fns set-compiler-enabled
+       set-constraint-tracking
+       set-debugger-enable
        set-default-backchain-limit
        set-default-hints set-default-hints!
        set-deferred-ttag-notes set-difference$
@@ -664,9 +665,9 @@ Subtopics
        set-skip-meta-termp-checks
        set-skip-meta-termp-checks!
        set-slow-alist-action
-       set-splitter-output
-       set-standard-co set-standard-oi
-       set-state-ok set-table-guard
+       set-splitter-output set-standard-co
+       set-standard-oi set-state-ok
+       set-subgoal-loop-limits set-table-guard
        set-tau-auto-mode set-temp-touchable-fns
        set-temp-touchable-vars set-timer
        set-total-parallelism-work-limit
@@ -719,7 +720,8 @@ Subtopics
        string<-l-trichotomy
        string<= string> string>=
        stringp stringp-symbol-package-name
-       strip-cars strip-cdrs sublis sublis-fn
+       strip-cars strip-cdrs
+       subgoal-loop-limits sublis sublis-fn
        sublis-fn-lst-simple sublis-fn-simple
        subseq subseq-list subsequencep
        subsetp subsetp-eq subsetp-equal
@@ -1623,16 +1625,19 @@ Subtopics
   (START-HERE)
   "General information About ACL2
 
-  This is ACL2 Version 8.6, [copyright] (C) 2025, Regents of the
+  This is ACL2 Version 8.6, [copyright] (C) 2026, Regents of the
   University of Texas, authored by Matt Kaufmann and J Strother
   Moore.
 
-  See the {ACL2 home page | http://www.cs.utexas.edu/users/moore/acl2/}
-  for additional information including tutorials, installation
-  instructions, mailing lists, related publications, ACL2 workshops
-  and seminars, acknowledgments, and other ACL2 releases.
+  This manual contains installation instructions (see [INSTALLATION]),
+  tutorials (see [ACL2-TUTORIAL]), and [acknowledgments], as well as
+  information about mailing lists (see [MAILING-LISTS]), related
+  publications, and ACL2 Workshops.
 
-  See [documentation] for how to access the ACL2 User's Manual.
+  See [documentation] for how to access the ACL2+Books User's Manual.
+  See [releases] for information about past ACL2 releases.  See the
+  {ACL2 home page | http://www.cs.utexas.edu/users/moore/acl2/} for
+  other information, including seminars.
 
   For statistics on ACL2 code size, see file [47mdoc/acl2-code-size.txt[0m.
 
@@ -1645,20 +1650,26 @@ Subtopics
   [ACL2-help]
       The acl2-help mailing list
 
-  [Bibliography]
-      Reports about ACL2
-
-  [Building-ACL2]
-      How to build an ACL2 executable
+  [ACL2-tutorial]
+      Tutorial introduction to ACL2
 
   [Common-lisp]
       Relation to Common Lisp, including deviations from the spec
 
   [Copyright]
-      ACL2 copyright, license, sponsorship
+      ACL2 copyright, license, authorship
 
   [Git-quick-start]
-      Git quick start guide
+      Git quick start guide.
+
+  [How-to-contribute]
+      Guide to contributing code to ACL2.
+
+  [Installation]
+      Installing ACL2
+
+  [Mailing-lists]
+      Mailing lists for ACL2 users
 
   [Operational-semantics]
       Modeling State Machines
@@ -1672,8 +1683,14 @@ Subtopics
   [Release-notes]
       Pointers to what has changed
 
+  [Releases]
+      ACL2 releases
+
   [Soundness]
       Correctness property claimed for ACL2
+
+  [Using-ACL2]
+      Using ACL2
 
   [Version]
       ACL2 Version Number")
@@ -1707,12 +1724,13 @@ Subtopics
 
   {IMAGE} (see [What_Is_ACL2{Q}])
 
-  The {ACL2 Home Page | http://www.cs.utexas.edu/users/moore/acl2/} on
+  The {ACL2 Home Page | https://www.cs.utexas.edu/users/moore/acl2/} on
   the web contains links to demos, publications, mailing lists,
   installation instructions, and more --- and, especially, to the
-  extensive {online documentation |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/acl2-doc.html#User's-Manual}
-  for ACL2 and its libraries, known as ``books''.
+  {ACL2+Books Manual |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html},
+  which provides online documentation for ACL2 and its libraries,
+  known as ``books''.
 
   For example, to use the online documentation to find out about
   [rewrite] {ICON} (see [A_Tiny_Warning_Sign]) rules you could click
@@ -2729,31 +2747,19 @@ Subtopics
   logo (which for example appears on the ACL2 home page), based on an
   original design created in the 1990s by Computational Logic, Inc.")
  (ACL2
-  NIL
-  "ACL2 documentation (system only, not including the community books)
+  (TOP)
+  "ACL2 system documentation
 
-  This is the ACL2 documentation.  For the ACL2+Books Manual, which
-  that includes both the ACL2 documentation and the ACL2
-  [community-books], see the {ACL2+Books Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
+  Those topics that pertain to the ACL2 system belong under this node
+  of the [documentation].  See [top] for the top node of this manual,
+  under which may be found many topics pertaining to the
+  [community-books].
 
 
 Subtopics
 
   [Bdd]
       Ordered binary decision diagrams with rewriting
-
-  [Books]
-      [3mBooks[0m are files of ACL2 [events]---they are the main way to split up
-      large ACL2 developments into separate modules.
-
-  [Debugging]
-      Tools for debugging failed or slow proofs, or misbehaving functions.
-
-  [Documentation]
-      Information about options for downloading and viewing the ACL2
-      documentation, contributing documentation, and the available
-      tools for documenting your own books.
 
   [Events]
       Functions that extend the logic
@@ -2764,14 +2770,14 @@ Subtopics
   [Hons-and-memoization]
       Hash cons, function memoization, and applicative hash tables
 
-  [Interfacing-tools]
-      Libraries and tools for doing basic file i/o (see [STD/IO]), using
-      raw Common Lisp libraries (see [QUICKLISP]), working with the
-      operating system (see [OSLIB]), and interfacing with other
-      programs (see [BRIDGE]).
+  [Installation]
+      Installing ACL2
 
   [Macros]
       Macros allow you to extend the syntax of ACL2.
+
+  [Mailing-lists]
+      Mailing lists for ACL2 users
 
   [Miscellaneous]
       A miscellany of documented functions and concepts (often cited in
@@ -3909,7 +3915,7 @@ Subtopics
       Converting [multiple-value] result to a single-value list
 
   [Mv-nth]
-      The mv-nth element (zero-based) of a list
+      The nth element (zero-based) of a multiply valued expression
 
   [Mv?]
       Return one or more values
@@ -4197,7 +4203,7 @@ Subtopics
       Control radix in which numbers are printed and printing of the radix
 
   [Set-print-case]
-      Control whether symbols are printed in upper case or in lower case
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Set-print-radix]
       Control printing of the radix for numbers
@@ -4806,6 +4812,12 @@ Silent loading of ACL2 customization files
   from all suitable [47mdefun[0ms and from all suitable [47mdefthm[0ms (with
   non-[47mnil[0m [47m:[0m[47m[rule-classes][0m).  See [set-tau-auto-mode].
 
+    :subgoal-loop-limits
+
+  This key's value must be a [47m[cons][0m whose [47m[car][0m is either [47mnil[0m or a
+  natural number and whose [47m[cdr][0m is [47mnil[0m or a natural number.  See
+  [set-subgoal-loop-limits].
+
     :ruler-extenders
 
   This key's value may be a list of symbols, indicating those function
@@ -4966,7 +4978,7 @@ Silent loading of ACL2 customization files
 
   As discussed elsewhere (see [documentation]), the web-based
   {ACL2+Books Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
   provides a way to browse the combined documentation for the ACL2
   system and community books.  Such documentation can also be read at
   the terminal using the [47m:[0m[47m[doc][0m command, though documentation for
@@ -5097,7 +5109,7 @@ Silent loading of ACL2 customization files
     i             acl2-doc-index
        Go to the specified topic or else one containing it as a substring;
        performs completion.  If the empty string is supplied, then go to the
-       index buffer.  Otherwise, with prefix argument, consider only descendents
+       index buffer.  Otherwise, with prefix argument, consider only descendants
        of the topic supplied in response to a prompt.  Note that the index buffer
        is in ACL2-Doc mode; thus, in particular, you can type <RETURN> while
        standing on a topic in order to go directly to that topic.
@@ -5149,14 +5161,14 @@ Silent loading of ACL2 customization files
        search succeeds, then go to that topic with the cursor put immediately
        after the found text, with the topic name displayed in the minibuffer.
        With prefix argument, consider (also for subsequent \"n\" and \"p\"
-       commands) only descendents of the topic supplied in response to a prompt.
+       commands) only descendants of the topic supplied in response to a prompt.
 
     S             acl2-doc-re-search
        Perform a regular expression search, forward from the top of the manual,
        for the input string.  If the search succeeds, then go to that topic with
        the cursor put immediately after the found text, with the topic name
        displayed in the minibuffer.  With prefix argument, consider (also for
-       subsequent \"n\" and \"p\" commands) only descendents of the topic
+       subsequent \"n\" and \"p\" commands) only descendants of the topic
        supplied in response to a prompt.
 
     t             acl2-doc-top
@@ -5290,7 +5302,7 @@ Silent loading of ACL2 customization files
              \"books/system/doc/rendered-doc-combined.lsp\")
      'TOP
      \"ACL2+Books Manual\"
-     \"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz\"
+     \"https://acl2.org/doc/rendered-doc-combined.lsp.gz\"
      (concat *acl2-sources-dir* \"TAGS-acl2-doc\")
      (concat *acl2-sources-dir* \"TAGS\"))
 
@@ -5435,11 +5447,11 @@ Silent loading of ACL2 customization files
       to download it: for example, when you start ACL2-Doc, you may
       be given the option of downloading {a tarball for the latest
       ``bleeding edge'' copy |
-      http://www.cs.utexas.edu/users/moore/acl2/manuals/current/rendered-doc-combined.lsp.gz}
-      and extracting into directory [47msystem/doc/[0m of your community
-      books directory.  Indeed, the system will do all this for you
-      if you answer [47my[0m to that query.  Alternatively, you can insist
-      on a download of a ``bleeding edge'' version by using the `[47mD[0m'
+      https://acl2.org/doc/rendered-doc-combined.lsp.gz} and
+      extracting into directory [47msystem/doc/[0m of your community books
+      directory.  Indeed, the system will do all this for you if you
+      answer [47my[0m to that query.  Alternatively, you can insist on a
+      download of a ``bleeding edge'' version by using the `[47mD[0m'
       command.  However, if you prefer to browse the ACL2 User's
       Manual (without the books), you can put the following form into
       your [47m~/.emacs[0m file, above the form that loads the code for
@@ -5587,7 +5599,7 @@ Silent loading of ACL2 customization files
   on the ACL2 Sedan and for making their books available to ACL2
   users.")
  (ACL2-TUTORIAL
-  (START-HERE)
+  (START-HERE ABOUT-ACL2)
   "Tutorial introduction to ACL2
 
   To learn about ACL2, read at least the following two links.
@@ -5623,7 +5635,7 @@ Silent loading of ACL2 customization files
       days working through this material.
 
     * The book {Computer-Aided Reasoning: An Approach |
-      http://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html}
+      https://www.cs.utexas.edu/users/moore/publications/acl2-books/car/index.html}
       is worth a careful read, as you work exercises and learn
       [the-method].
 
@@ -5647,7 +5659,7 @@ Silent loading of ACL2 customization files
 
   Note that ACL2 has a very supportive user network.  See the link to
   ``Mailing Lists'' on the {ACL2 home page |
-  http://www.cs.utexas.edu/users/moore/acl2}.
+  https://www.cs.utexas.edu/users/moore/acl2}.
 
   The topics listed below are a hodge podge, developed over time.
   Although some of these are not mentioned above, you might find some
@@ -5699,7 +5711,10 @@ Subtopics
       Some basic hints for using ACL2
 
   [Tips]
-      Some hints for using the ACL2 prover")
+      Some hints for using the ACL2 prover
+
+  [Tours]
+      The Tours")
  (ACL2-UNWIND-PROTECT (POINTERS)
                       "See [system-utilities].")
  (ACL2-USER
@@ -5939,14 +5954,14 @@ Subtopics
   symbols but [47m+12[0m is a number.  Roughly speaking, when symbols are
   read lower case characters are converted to upper case, so we
   frequently do not distinguish [47mABC[0m from [47mAbc[0m or [47mabc[0m.  Click here (see
-  [Conversion]) for information about case conversion when symbols
-  are read.  However, any character can be used in a symbol, but some
-  characters must be ``escaped'' to allow the Lisp reader to parse
-  the sequence as a symbol.  For example, [47m|Abc|[0m is a symbol whose
-  first character is capitalized and whose remaining characters are
-  in lower case.  [47m|An odd duck|[0m is a symbol containing two #\\Space
-  characters.  See any Common Lisp documentation for the syntactic
-  rules for symbols.
+  [SYMBOLS]) {ICON} (see [A_Tiny_Warning_Sign]) for information about
+  case conversion when symbols are read.  However, any character can
+  be used in a symbol, but some characters must be ``escaped'' to
+  allow the Lisp reader to parse the sequence as a symbol.  For
+  example, [47m|Abc|[0m is a symbol whose first character is capitalized and
+  whose remaining characters are in lower case.  [47m|An odd duck|[0m is a
+  symbol containing two #\\Space characters.  See any Common Lisp
+  documentation for the syntactic rules for symbols.
 
   Technically, a symbol is a special kind of pair consisting of a
   package name (which is a string) and a symbol name (which is also a
@@ -6446,15 +6461,36 @@ Subtopics
   This example associates the function symbol [47m[binary-append][0m with the
   macro name [47m[append][0m.  As a result, the name [47m[append][0m may be used as
   a runic designator (see [theories]) by the various theory
-  functions.  See [macro-aliases-table] for more details.  Also see
-  [add-macro-fn] for an extension of this utility that also affects
-  printing.
+  functions.  See [add-macro-fn] and [add-binop] for extensions of
+  this utility that also affect printing.
 
     General Form:
-    (add-macro-alias macro-name function-name)
+    (add-macro-alias macro-name sym)
 
-  This is a convenient way to add an entry to [47m[macro-aliases-table][0m.
-  See [macro-aliases-table] and also see [remove-macro-alias].")
+  where [47mmacro-name[0m is a macro name and [47msym[0m is a symbol.  If [47msym[0m is a
+  function symbol, then this event establishes [47mmacro-name[0m as a
+  [3mmacro-alias[0m for [47msym[0m by associating [47mmacro-name[0m with [47msym[0m in the
+  [table], [47mmacro-aliases-table[0m; see [macro-aliases-table] for
+  detailed discussion.  In particular, that discussion explains the
+  use of macro-aliases to allow a macro name as the second argument
+  of [47madd-macro-alias[0m, as in the example below.
+
+    (defun fn (x) x)
+    (defmacro mac1 (x) (fn x))
+    (defmacro mac2 (x) (list 'mac1 x))
+    (add-macro-alias mac1 fn); or (table macro-aliases-table 'mac1 'fn)
+
+    ; The following is equivalent to (add-macro-alias mac2 fn), since
+    ; mac1 is a macro-alias for fn by virtue of the preceding event.
+    ; Note that the form (table macro-aliases-table 'mac2 'mac1)
+    ; would not suffice here; that is, the in-theory event below would cause an
+    ; error, because mac1 is not a function symbol.
+    (add-macro-alias mac2 mac1)
+
+    ; Success:
+    (in-theory (disable mac2))
+
+  Also see [macro-aliases-table] and also see [remove-macro-alias].")
  (ADD-MACRO-FN
   (MACROS)
   "Associate a function name with a macro name
@@ -7195,6 +7231,94 @@ Subtopics
                "See [system-utilities].")
  (ALL-VARS (POINTERS)
            "See [system-utilities].")
+ (ALLEGRO-CL
+  (OBTAINING-COMMON-LISP)
+  "Allegro Common Lisp as a host for ACL2
+
+  {Allegro Common Lisp |
+  https://franz.com/products/allegro-common-lisp/} (Allegro CL) is
+  one of the Common Lisp implementations upon which an ACL2
+  executable can be built (see [obtaining-common-lisp]).  But here,
+  we discuss a concern.
+
+  Although testing is ongoing for ACL2 built upon Allegro CL, the
+  version used has been Allegro CL 10.1 since 2017.  What's more, in
+  September 2025, for an ACL2 executable built with host Lisp Allegro
+  CL, the use of ``[47mmake regression[0m'' resulted in four books (in the
+  [community-books]) that failed to certify.  We discuss those
+  failures in the ``[31;1mDetails[0m'' section below.  These failures may
+  suggest that Allegro CL, at least for its Version 10.1, does not
+  correctly support the Common Lisp language, or at least there is
+  problematic ACL2 code specific to Allegro CL.  In practice we don't
+  expect a lot of problems when using ACL2 built on Allegro CL.
+  However, since Allegro CL is relatively slow compared to several
+  other Common Lisp implementations that can host ACL2 --- SBCL, CCL,
+  LispWorks, and GCL --- those failures suggest that Allegro CL might
+  not be a good choice for ACL2 users.
+
+
+Details
+
+  Here are details regarding the four certification failures under
+  [47mbooks/[0m that are referenced above.  [31;1mThese details are quite
+  technical and probably only of interest to system implementors.[0m
+
+    * [47mkestrel/c/syntax/validator.lisp[0m
+
+        The following error from the corresponding [47mvalidator.cert.out[0m file is
+        very surprising, since the [47m[defrec][0m form for
+        [47mACL2::CLAUSE-PROCESSOR-HINT[0m has a ``cheap'' flag of [47mnil[0m, so
+        the same error can be expected to show up regardless of the
+        host Lisp --- yet as of this writing (in September 2025) it
+        seems not to have shown up for a long time, if ever.
+
+          HARD ACL2 ERROR in ACL2::RECORD-ERROR:  An attempt was made to treat
+          (49683 :TYPE-PRESCRIPTION BLOCK-ITEM-TYPES) as a record of type
+          ACL2::CLAUSE-PROCESSOR-HINT.
+
+        There were other errors like that one as well.
+
+        So for that same ACL2 version (ACL2 git hash
+        fe29908c4589c1de3b41d6c98cc8bec012c7eba3), the same book and
+        the books that (recursively) support it were certified using
+        a safety-3 ACL2 executable built on CCL.  The book certified
+        without any ``HARD ACL2 ERROR''.  This suggests that the
+        problem is likely restricted to runs using Allegro CL.
+
+        However, that book allows some trust tags (in file [47mcert.acl2[0m in that
+        directory), so perhaps there are shenanigans that somehow
+        exonerate the Allegro CL build of ACL2.  But the last failure
+        discussed below does not involve trust tags.
+
+    * [47mkestrel/axe/examples/aes-blast.lisp[0m
+      [47mkestrel/axe/examples/aes-blast-boolean.lisp[0m
+
+        These two report errors (in their [47m.cert.out[0m files) that involve using
+        the [serialize] capability to write the [47m.cert[0m file.  But
+        [47mcert.acl2[0m in that directory allows trust tags, which could be
+        relevant.  Note that serialize errors may be very difficult
+        to debug.
+
+        A second certification was tried on the second of these (picked
+        arbitrarily) in case this was just a weird glitch.  However,
+        a similar error occurred (though with a slightly different
+        backtrace).
+
+    * [47mprojects/aleo/vm/circuits/axe/blake2s-proof2.lisp[0m
+
+        This one shows a backtrace that includes the following form.
+
+          (RATIONALP 8444461749428370424248824938781546531375899335154063827935233455916872368129)
+
+        That shouldn't cause an error, but apparently it did.  Maybe the
+        image was already corrupted.  Submitting that form in a fresh
+        session produced no error.
+
+        As with the first example, a safety-3 CCL-based certification (of
+        this book and all supporting books, recursively) produced no
+        errors.  But unlike the first example, this book does not
+        allow trust tags.  This example thus provides strong evidence
+        that Allegro CL is not a great choice for hosting ACL2.")
  (ALLOCATE-FIXNUM-RANGE
   (NUMBERS ACL2-BUILT-INS)
   "Set aside fixnums in GCL
@@ -7729,18 +7853,18 @@ Subtopics
     induction schemes.  However, one of these is flawed and so we are
     left with one viable candidate.
 
-    We will induct according to a scheme suggested by (LEN X), but
-    modified to accommodate (MY-APP X Y).  If we let (:P X Y) denote *1
-    above then the induction scheme we'll use is
+    We will induct according to a scheme suggested by (LEN X), while
+    accommodating (MY-APP X Y).
+
+    These suggestions were produced using the :induction rules LEN and
+    MY-APP. If we let (:P X Y) denote *1 above then the induction scheme
+    we'll use is
     (AND (IMPLIES (NOT (CONSP X)) (:P X Y))
          (IMPLIES (AND (CONSP X) (:P (CDR X) Y))
                   (:P X Y))).
-    This induction is justified by the same argument used to admit LEN,
-    namely, the measure (ACL2-COUNT X) is decreasing according to the
-    relation O< (which is known to be well-founded on the domain
-    recognized by O-P).  When applied to the goal at hand the
-    above induction scheme produces the following two nontautological
-    subgoals.
+    This induction is justified by the same argument used to admit LEN.
+    When applied to the goal at hand the above induction scheme produces
+    two nontautological subgoals.
 
     Subgoal *1/2
     (IMPLIES (NOT (CONSP X))
@@ -7991,7 +8115,7 @@ Subtopics
   [47mbooks/demos/[0m, and its subdirectories.
 
   The web page {Brief ACL2 Tutorial |
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/rev3.html}
+  https://www.cs.utexas.edu/users/moore/publications/tutorial/rev3.html}
   contains a script that illustrates how it feels to use The Method
   to prove an unusual list reverse function correct.  The screen
   shots of ACL2's proof output are outdated --- in the version shown,
@@ -7999,7 +8123,7 @@ Subtopics
   checkpoint is clear in the discussion and the behavior of the user.
 
   See {Polishing Proofs Tutorial |
-  http://www.cs.utexas.edu/users/moore/acl2/contrib/POLISHING-PROOFS-TUTORIAL.html}
+  https://www.cs.utexas.edu/users/moore/acl2/contrib/POLISHING-PROOFS-TUTORIAL.html}
   for a tutorial on becoming successful at approaching a
   formalization and proof problem in ACL2.  That tutorial, written by
   Shilpi Goel and Sandip Ray, has two parts: it illustrates how to
@@ -8008,17 +8132,17 @@ Subtopics
   of the resulting book (see [books]).
 
   The {ACL2 Demo Given at TPHOLs 2008 |
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/kaufmann-TPHOLs08/index.html}
+  https://www.cs.utexas.edu/users/moore/publications/tutorial/kaufmann-TPHOLs08/index.html}
   by Matt Kaufmann includes scripts and a gzipped tar file containing
   the entire contents of the demos.
 
   The {sort equivalence demo |
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence}
+  https://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence}
   is a collection of scripts illustrating both high-level strategy
   and lower-level tactics dealing with the functional equivalence of
   various list sorting algorithms.  Start with the [47mREADME[0m on that
   directory.  There is also a {gzipped tar file |
-  http://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence.tgz}
+  https://www.cs.utexas.edu/users/moore/publications/tutorial/sort-equivalence.tgz}
   with all of these scripts.
 
   When you feel you have read enough examples, you might want to try
@@ -8193,8 +8317,8 @@ Subtopics
 
   We recommend that you read the paper {``Limited Second-Order
   Functionality in a First-Order Setting'' |
-  http://www.cs.utexas.edu/users/kaufmann/papers/apply/index.html} by
-  Matt Kaufmann and J Strother Moore for both motivation and
+  https://www.cs.utexas.edu/users/kaufmann/papers/apply/index.html}
+  by Matt Kaufmann and J Strother Moore for both motivation and
   foundational details.  You might also read
   [introduction-to-apply$]!
 
@@ -8886,8 +9010,8 @@ Theorems Involving [47mApply$[0m
   [47mapply$[0m[3m and all of its scions that makes every warrant issued by
   [47mdefwarrant[0m[3m valid.[0m The proof of this is sketched in {``Limited
   Second-Order Functionality in a First-Order Setting'' |
-  http://www.cs.utexas.edu/users/kaufmann/papers/apply/index.html} by
-  Matt Kaufmann and J Strother Moore and fully fleshed out in the
+  https://www.cs.utexas.edu/users/kaufmann/papers/apply/index.html}
+  by Matt Kaufmann and J Strother Moore and fully fleshed out in the
   comment titled [47mEssay on Admitting a Model for Apply$ and the
   Functions that Use It[0m in the ACL2 source file [47mapply-raw.lisp[0m.
 
@@ -10865,7 +10989,11 @@ Subtopics
 
   For an illustration of [47mattach-stobj[0m, see [community-books] directory
   [47mbooks/demos/attach-stobj/[0m, in particular file [47mREADME.txt[0m in that
-  directory.
+  directory.  An overview of the subject of this topic may be found
+  in the paper, {``Extended Abstract: Mutable Objects with Several
+  Implementations'' |
+  https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL2in2025.7} by Matt
+  Kaufmann, Yahya Sohail, and Warren A. Hunt Jr.
 
   This topic assumes familiarity with abstract [stobj]s; see
   [defabsstobj].  It documents a way to modify the foundation and
@@ -11282,7 +11410,7 @@ Subtopics
   ACL2 supports the backquote ([47m`[0m) construct of Common Lisp.  See any
   Common Lisp documentation for details, for example, its {discussion
   in the Common Lisp HyperSpec |
-  http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm}.
+  https://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm}.
   Here we give only a brief introduction.
 
   Together with the use of comma ([47m,[0m) and comma-atsign ([47m,@[0m), backquote
@@ -11556,7 +11684,7 @@ Subtopics
   [Xor]
       Logical ``exclusive or''")
  (BDD
-  (ACL2)
+  (ACL2 BOOLEAN-REASONING PROOF-AUTOMATION)
   "Ordered binary decision diagrams with rewriting
 
   Note.  The ACL2 bdd capability has been essentially superseded by GL;
@@ -12313,12 +12441,8 @@ Subtopics
     ACL2 !>
 
   See [if*] for another example.")
- (BIBLIOGRAPHY
-  (ABOUT-ACL2)
-  "Reports about ACL2
-
-  The ACL2 home page includes a {list of notes and reports about ACL2 |
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html}.")
+ (BIBLIOGRAPHY (POINTERS)
+               "See publications.")
  (BINARY-*
   (* ACL2-BUILT-INS)
   "Multiplication function
@@ -13624,15 +13748,14 @@ Subtopics
     make regression-fresh \\
     ACL2_CUSTOMIZATION={DIR}/acl2-customization-files/bookdata.lisp")
  (BOOKS
-  (ACL2)
+  (TOP)
   "[3mBooks[0m are files of ACL2 [events]---they are the main way to split up
   large ACL2 developments into separate modules.
 
   This [documentation] topic is about ACL2 {source code |
   https://en.wikipedia.org/wiki/Source_code} files.  However, there
-  are also {traditional, paper books |
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html#Books}
-  published about ACL2 and its applications.
+  are also books published about ACL2 and its applications; see
+  pubs::pubs-books.
 
   You will almost surely want to organize your own ACL2 work into
   books.  They facilitate reuse, allow you to reload proofs more
@@ -13753,17 +13876,13 @@ Subtopics
 
 Prerequisites
 
-  We assume that you have already downloaded and installed ACL2 as per
-  the {ACL2 installation instructions |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/HTML/installation/installation.html}
-  on the ACL2 home page.
+  We assume that you have already installed ACL2 as per the
+  [installation-instructions].  In particular, the [community-books]
+  should be present as the [47mbooks/[0m subdirectory of your ACL2
+  distribution.
 
   We assume you know the path to your ACL2 executable.  Typically this
   is a script named [47msaved_acl2[0m in your [47macl2-sources[0m directory.
-
-  We assume the ACL2 [community-books] are installed in the [47mbooks/[0m
-  subdirectory of your ACL2 distribution, as is the case when you
-  have followed the ACL2 installation instructions above.
 
   The instructions below are suitable for ACL2 and all of its
   experimental extensions, e.g., ACL2(p) and ACL2(r).
@@ -13776,13 +13895,11 @@ Prerequisites
 
 A Basic Build
 
-  Before ACL2 Version 6.4, building the Community Books could take
-  several hours.  Now, the default [47mmake[0m target in [47mbooks/GNUmakefile[0m,
-  called [47mbasic[0m, is much faster --- it excludes many books and
-  certifies only books listed below, which tend to be widely used.
-  [31;1mWARNING[0m: the [47mbasic[0m target of [47mbooks/GNUmakefile[0m is insufficient for
-  validating changes that will go into the [community-books]; for
-  that, use the [47mall[0m target.
+  The default [47mmake[0m target in [47mbooks/GNUmakefile[0m, called [47mbasic[0m, is quite
+  fast --- it excludes many books and certifies only the directories
+  listed below, which tend to be widely used.  [31;1mWARNING[0m: This basic
+  build is insufficient for validating changes that will go into the
+  [community-books]; for that, see [how-to-contribute].
 
     * arithmetic
 
@@ -13796,11 +13913,13 @@ A Basic Build
 
     * tools (mostly)
 
-    * [std]
+    * [std] (mostly)
 
     * [xdoc] (in part)
 
     * data-structures
+
+    * apply
 
   To certify these books, you should be able to run [47mmake[0m as follows.
   The [47m-j 2[0m part of this command is suitable for a computer with two
@@ -13887,8 +14006,7 @@ Building the manual
   viewing, you probably [31;1mdon't need to build it yourself[0m because you
   can just {download | download/} a copy.  If for some reason you do
   want to build the manual yourself, you should be able to do so as
-  follows, provided you have installed glucose.  (That requirement
-  might be eliminated in the future.)
+  follows.
 
     $ cd /path/to/acl2-sources/books
     $ make manual -j 4
@@ -14021,10 +14139,8 @@ Subtopics
   and History'', and for additional technical details not covered in
   this topic.
 
-  For more information about installing ACL2, see the {ACL2
-  installation instructions |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/HTML/installation/installation.html}.
-  For information about so-called ``classic ACL2 `make'-based
+  For more information about installing ACL2, see [installation].  For
+  information about so-called ``classic ACL2 `make'-based
   certification'', which provides support for certifying directories
   of books but may disappear in a future ACL2 release, see
   [books-certification-classic].
@@ -14041,7 +14157,7 @@ Subtopics
 
     * The ACL2 [community-books] are installed in the [47mbooks/[0m subdirectory
       of your ACL2 distribution, as is the case when you have
-      followed the standard installation instructions.
+      followed the standard [installation] instructions.
 
   Note: All commands shown below are issued in the top-level (ACL2
   sources) directory of your ACL2 distribution.
@@ -14067,7 +14183,7 @@ Subtopics
   particular, is useful in case you encounter problems to report.
 
   If you fetched the community books using git, then you will have a
-  directories such [47mbooks/workshops/[0m that is not necessary for
+  directory such [47mbooks/workshops/[0m that is not necessary for
   certifying the most widely-included books.  You can certify just
   such books as follows.
 
@@ -14273,9 +14389,9 @@ Subtopics
   We assume here a familiarity with Unix/Linux `make'.  We also assume
   that you are using GNU `make' rather than some other flavor of
   `make'.  And finally, we assume, as is typically the case by
-  following the standard installation instructions, that you install
-  the ACL2 community books in the [47mbooks/[0m subdirectory of your ACL2
-  distribution.  We will refer below to that directory as [47mBOOKS[0m.
+  following the standard [installation] instructions, that you
+  install the ACL2 community books in the [47mbooks/[0m subdirectory of your
+  ACL2 distribution.  We will refer below to that directory as [47mBOOKS[0m.
 
   In summary: to use `make' to certify [books] under a given directory,
   you may create a simple Makefile in that directory (as explained
@@ -14602,9 +14718,9 @@ Subtopics
   bit-wise logical operation specified by [47mop[0m.  The following table is
   adapted from documentation for the analogous Common Lisp function
   {boole |
-  http://www.lispworks.com/documentation/HyperSpec/Body/f_boole.htm}
+  https://www.lispworks.com/documentation/HyperSpec/Body/f_boole.htm}
   in the {Common Lisp Hyperspec |
-  http://www.lispworks.com/documentation/HyperSpec/}.  Note that the
+  https://www.lispworks.com/documentation/HyperSpec/}.  Note that the
   values of [47mop[0m for [47mboole$[0m are ACL2 constants, rather than
   corresponding values of [47mop[0m for the Common Lisp function [47mboole[0m.
 
@@ -15596,9 +15712,6 @@ Subtopics
   [Why-brr]
       An explanation of why ACL2 has an explicit [47m[brr][0m mode
 
-  [Windows-installation]
-      Installing ACL2 on Windows
-
   [With-brr-data]
       Finding the source of a term in prover output")
  (BREAKS
@@ -15655,7 +15768,7 @@ Subtopics
   contains [documentation] only about the ACL2 [3msystem[0m, and does not
   include documentation from the [community-books].  Please point
   your browser at the {ACL2+Books Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
   (or if browsing in [ACL2-Doc], switch to that manual with meta-0 I)
   to access the desired topic.
 
@@ -15702,6 +15815,7 @@ Subtopics
        (build::cert_param \"[books]/build/doc.lisp\")
        (cgen \"[books]/acl2s/cgen/top.lisp\")
        (checkpoint-list \"[books]/kestrel/utilities/checkpoints-doc.lisp\")
+       (community \"[books]/doc/more-topics.lisp\")
        (consideration \"[books]/hints/consider-hint.lisp\")
        (build::custom-certify-book-commands \"[books]/build/doc.lisp\")
        (std::defaggregate \"[books]/std/util/defaggregate.lisp\")
@@ -16251,41 +16365,6 @@ Subtopics
   macros, we anticipate that a set of convenient primitives will
   gradually evolve within the ACL2 community.  It is to encourage
   this evolution that [47mbrr@[0m provides access to the [47m*[0m'd data.")
- (BUILDING-ACL2
-  (ABOUT-ACL2)
-  "How to build an ACL2 executable
-
-  This topic summarizes steps for building an ACL2 executable.  For
-  more details see the {ACL2 installation page |
-  https://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html}.
-
-  To build an ACL2 executable, submit the following command while
-  standing in the main ACL2 directory, where [47m<my-lisp>[0m invokes your
-  Lisp executable (default: [47mccl[0m).
-
-    make LISP=<my-lisp>
-
-  You should find \"Initialization SUCCEEDED.\" near the end of the log.
-  Note: There may be ACL2 warnings, for example: \"ACL2 Warning
-  [Skip-proofs] in....\".  These may be safely ignored.
-
-  Note that you will want to certify [books] in order to take full
-  advantage of ACL2.  See [books-certification].
-
-  See [save-exec] for how to build an ACL2 executable from a state
-  resulting from the running of specified [command]s.
-
-
-Subtopics
-
-  [Ccl-installation]
-      Installing Clozure Common Lisp (CCL)
-
-  [Sbcl-installation]
-      Installing Steel Bank Common Lisp (SBCL)
-
-  [Sbcl-installation-brief]
-      Installing Steel Bank Common Lisp (SBCL)")
  (BUILT-IN-CLAUSE
   (RULE-CLASSES)
   "To build a [clause] into the simplifier
@@ -17027,7 +17106,7 @@ Subtopics
   rendered uncertified) if the inferiors are moved to new
   directories.")
  (CCL-INSTALLATION
-  (BUILDING-ACL2)
+  (OBTAINING-COMMON-LISP)
   "Installing Clozure Common Lisp (CCL)
 
   For those who use ACL2 built on CCL as the host Common Lisp
@@ -17643,6 +17722,8 @@ configure-ccl.lisp
                   1))
               (t (- (nonnegative-integer-quotient (- n)
                                                   d))))))")
+ (CERTIFIABLE (POINTERS)
+              "See [certify-book].")
  (CERTIFICATE
   (BOOKS-TOUR)
   "A file specifying validity of a given book
@@ -19791,10 +19872,10 @@ Failure due to disabled or missing warrants
   See [defun-mode-caveat].
 
   The Common Lisp spec, specifically Section {Section 3.2.2.3 |
-  http://www.lispworks.com/documentation/HyperSpec/Body/03_bbc.htm}
+  https://www.lispworks.com/documentation/HyperSpec/Body/03_bbc.htm}
   of the {Common Lisp Hyperspec |
-  http://www.lispworks.com/documentation/HyperSpec/Front}, allows for
-  undefined results when a function is ``multiply defined'' in a
+  https://www.lispworks.com/documentation/HyperSpec/Front}, allows
+  for undefined results when a function is ``multiply defined'' in a
   compiled file.  ACL2 allows redundant [47m[defun][0ms in a book, and in
   general [books] are compiled by [47mcertify-book[0m (but see
   [certify-book] and see [compilation] for how to control such
@@ -19909,8 +19990,8 @@ Subtopics
   (BOOKS)
   "Libraries of ACL2 [books] developed by the ACL2 community.
 
-  ACL2 [books] are files of ACL2 [events] like definitions and
-  theorems.
+  This topic discusses ACL2 [books], which are files of ACL2 [events]
+  like definitions and theorems.  See also [community].
 
   The ACL2 [31;1mCommunity Books[0m are the canonical set of open-source books
   for ACL2, developed since the early 1990s by members of the ACL2
@@ -19920,21 +20001,14 @@ Subtopics
   productivity tools for better proof automation and debugging, and
   specialty libraries for areas like hardware verification.
 
-  From the {github ACL2 project | https://github.com/acl2/acl2/} web
-  site you can:
+  Most installations of ACL2 contain a copy of the Community Books.
+  See [installation].
 
-    * Download the Community Books;
+  Users are encouraged to contribute their own books.  See
+  [how-to-contribute].
 
-    * Learn how to contribute books to the ACL2 community; and
-
-    * Obtain updates between ACL2 releases.
-
-  See [git-quick-start] for information about how to download the
-  ``bleeding edge'' ACL2 system and community books.
-
-  The community books are also available with ACL2 releases.  See the
-  ``Installing'' link from the {ACL2 home page |
-  http://www.cs.utexas.edu/users/moore/acl2/}.
+  See [community] for more ways to become involved with the ACL2
+  community.
 
 
 Subtopics
@@ -21913,7 +21987,10 @@ Subtopics
 
   The remainder of this note explains what we mean by ``constraint'' in
   the words above.  For a utility that obtains the constraint for a
-  given function symbol, see [constraint-info].
+  given function symbol, see [constraint-info].  For help in dealing
+  with failures to prove constraint obligations generated by the
+  [47m:functional-instance[0m hint (see [hints]), see
+  [47m[set-constraint-tracking][0m.
 
   In a certain sense, function symbols are introduced in essentially
   two ways.  The most common way is to use [47m[defun][0m (or when there is
@@ -22386,13 +22463,21 @@ Subtopics
   (SYSTEM-UTILITIES CONSTRAINT)
   "Obtaining the [constraint] on a function symbol
 
+  See [constraint]s for relevant background.  [47mConstraint-info[0m is a
+  rather technical system utility, and detailed documentation may be
+  found in comments in the ACL2 source code, in particular in the
+  definition of [47mconstraint-info[0m.  Here we give only an overview of
+  this utility.
+
   For a function symbol, [47mfn[0m, and a logical [world], [47mwrld[0m --- for
   example, the current world, [47m(w state)[0m --- evaluation of the form
-  [47m(constraint-info fn wrld)[0m returns [47m(mv flg c)[0m, where [47mc[0m is the list
-  of [constraint]s on [47mfn[0m (implicitly conjoined), and [47mflg[0m is [47mnil[0m if [47mfn[0m
-  is a defined function and otherwise is a function symbol with that
-  same list of constraints (possibly [47mfn[0m itself).  See [constraint]
-  for relevant background.
+  [47m(constraint-info fn wrld)[0m returns [47m(mv flg x origins)[0m, as follows.
+  When [47mflg[0m is [47mnil[0m, [47mx[0m is a term and [47morigins[0m is a single [3morigin token[0m
+  such as [47m(DEFUN FN)[0m, indicating the source of the constraint, [47mx[0m, on
+  [47mfn[0m.  When [47mflg[0m is non-[47mnil[0m it is a function name, and usually [47mx[0m is a
+  list of terms and [47morigins[0m is an equally long list of corresponding
+  origin tokens; but there is a special case if the constraints are
+  unknown, as can be the case with use of [47m[partial-encapsulate][0m.
 
   We illustrate with the following example.
 
@@ -22409,22 +22494,38 @@ Subtopics
   function symbol, as follows.
 
     ACL2 !>(let ((wrld (w state)))
-              (list
-               'result
-               'f1 (mv-let (flg1 c1) (constraint-info 'f1 wrld) (list flg1 c1))
-               'f2 (mv-let (flg2 c2) (constraint-info 'f2 wrld) (list flg2 c2))
-               'f3 (mv-let (flg3 c3) (constraint-info 'f3 wrld) (list flg3 c3))
-               'f4 (mv-let (flg4 c4) (constraint-info 'f4 wrld) (list flg4 c4))))
+             (list
+              'result
+              'f1
+              (mv-let (flg1 x1 origin1)
+                (constraint-info 'f1 wrld)
+                (list flg1 x1 origin1))
+              'f2
+              (mv-let (flg2 x2 origin2)
+                (constraint-info 'f2 wrld)
+                (list flg2 x2 origin2))
+              'f3
+              (mv-let (flg3 x3 origin3)
+                (constraint-info 'f3 wrld)
+                (list flg3 x3 origin3))
+              'f4
+              (mv-let (flg4 x4 origin4)
+                (constraint-info 'f4 wrld)
+                (list flg4 x4 origin4))))
     (RESULT F1
             (F1 ((EQUAL (F4 X) (F3 X))
-                 (EQUAL (F1 X) (F4 X))))
-            F2 (NIL (EQUAL (F2 X) (F1 X)))
+                 (EQUAL (F1 X) (F4 X)))
+                ((DEFUN F4) (THEOREM F1-PROP)))
+            F2
+            (NIL (EQUAL (F2 X) (F1 X)) (DEFUN F2))
             F3
             (F1 ((EQUAL (F4 X) (F3 X))
-                 (EQUAL (F1 X) (F4 X))))
+                 (EQUAL (F1 X) (F4 X)))
+                ((DEFUN F4) (THEOREM F1-PROP)))
             F4
             (F1 ((EQUAL (F4 X) (F3 X))
-                 (EQUAL (F1 X) (F4 X)))))
+                 (EQUAL (F1 X) (F4 X)))
+                ((DEFUN F4) (THEOREM F1-PROP))))
     ACL2 !>
 
   Notice that the flag (first result) for [47mf2[0m is [47mnil[0m, because even
@@ -22433,10 +22534,12 @@ Subtopics
   just after the [47mencapsulate[0m.  However, the definition of [47mf4[0m does
   affect (or ``infect''; see [subversive-recursions]) the
   constraints: it can't be moved to after the [47mencapsulate[0m because of
-  the [47mdefthm[0m after it.
+  the [47mdefthm[0m after it.")
+ (CONSTRAINT-TRACKING
+  (ENCAPSULATE)
+  "Generate markers to indicate origins of constraints
 
-  Also see [constraint].  For more details, see comments in the
-  definition of [47mconstraint-info[0m in the ACL2 source code.")
+See [47m[set-constraint-tracking][0m.")
  (CONTEXT (POINTERS) "See [ctx].")
  (CONTEXT-MESSAGE-PAIR
   (KESTREL-UTILITIES SYSTEM-UTILITIES-NON-BUILT-IN)
@@ -22551,36 +22654,19 @@ Subtopics
                                (value-cmp (* 3 4)))
           (NIL 12)
           ACL2 !>")
- (CONVERSION
-  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
-  "Conversion to Uppercase
-
-  When symbols are read by Common Lisp they are converted to upper
-  case.  Note carefully that this remark applies to the characters in
-  [3msymbols[0m.  The characters in strings are not converted upper case.
-
-  To type a symbol containing lower case characters you can enclose the
-  symbol in vertical bars, as in [47m|AbC|[0m or you can put a ``backslash''
-  before each lower case character you wish to preserve, as in [47mA\\bC[0m.
-  [47m|AbC|[0m and [47mA\\bC[0m are two different ways of writing the same symbol
-  (just like 2/4 and 1/2 are two different ways of writing the same
-  rational and 123 and 0123 are two different ways to write the same
-  natural number).  The symbol has three characters in its name, the
-  middle one of which is a lower case b.")
  (COPYRIGHT
   (ABOUT-ACL2)
-  "ACL2 copyright, license, sponsorship
+  "ACL2 copyright, license, authorship
 
-  This topic provides information about copyright, license, authorship,
-  and sponsorship of the ACL2 system.  For information about
-  copyright and authorship of [documentation], see
-  [documentation-copyright], which notes that there are many
-  documentation authors.
+  This topic provides information about copyright, license, and
+  authorship of the ACL2 system.  For information about copyright and
+  authorship of [documentation], see [documentation-copyright], which
+  notes that there are many documentation authors.
 
   ACL2 Version 8.6 --- A Computational Logic for Applicative Common
   Lisp
 
-  Copyright (C) 2025, Regents of the University of Texas
+  Copyright (C) 2026, Regents of the University of Texas
 
   This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic
@@ -22800,6 +22886,151 @@ Subtopics
               (read-acl2-oracle state)
         (declare (ignore nullp))
         (mv val state)))")
+ (CREATING-EXECUTABLE
+  (INSTALLATION-SUPPORT)
+  "Creating or obtaining an executable image
+
+  This topic may be avoided by following the
+  [installation-instructions], which are intended to be
+  self-contained.
+
+  After obtaining the ACL2 sources, the next step is to produce an
+  executable image.  Proceed according to one of the four sections
+  below, and after reading that section, continue by reading the
+  topic, see [using-ACL2].
+
+    * Pre-built images
+
+    * Building an executable image on a Unix-like system
+
+    * Building an executable image on other than a Unix-like system
+
+    * Observations on building an executable image on a Windows system
+
+
+Pre-built images
+
+  {This website |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/Readme.html}
+  contains links to ACL2 executables and packages.  Each [47m-md5sum[0m file
+  was created using [47mmd5sum[0m.  We may add additional links from time to
+  time.
+
+  See also [pre-built-binary-distributions].
+
+
+Building an executable image on a Unix-like system
+
+  We assume you have obtained ACL2, described in
+  [installation-instructions], but you have not obtained a pre-built
+  image.  Change to the directory containing the ACL2 sources and
+  execute the command
+
+    make LISP=<your_lisp>
+
+  where [47m<your_lisp>[0m is the command to run your local Common Lisp.  By
+  default, if no [47mLISP=<your_lisp>[0m is specified, then [47mLISP=ccl[0m is
+  used, which presumably invokes CCL (see [obtaining-common-lisp]).
+
+  This will create executable [47msaved_acl2[0m in the current directory.
+
+  The time taken to carry out this process depends on the host Lisp and
+  the host processor but may well be under a minute.  The size of the
+  resulting binary image is dependent on which Lisp was used, but it
+  may be on the order of a couple hundred megabytes or so.
+
+  This [47mmake[0m command works for the supported host Common Lisp
+  implementations; see [obtaining-common-lisp], on systems we have
+  tested.  If this [47mmake[0m command does not work for you, see the
+  instructions below for ``Building an executable image on other than
+  a Unix-like system''.
+
+  See [save-exec] for how to build an ACL2 executable from a state
+  resulting from the running of specified [command]s.
+
+
+Building an executable image on other than a Unix-like system
+
+  It may be best to use this option only if you are using a Common Lisp
+  on which you cannot save an image (e.g., a trial version of a
+  commercial lisp).
+
+  Next we describe how to create a binary image containing ACL2 without
+  using the `[47mmake[0m' utility.  If you cannot save an image, perhaps
+  because you are using a trial version of your Common Lisp, then you
+  may not be able to save an image.  In that case, see
+  [running-ACL2-without-executable].
+
+  Your Common Lisp should be one of those listed in
+  [obtaining-common-lisp].  Stand in the directory where you have
+  downloaded ACL2.
+
+   1. Remove file [47mnsaved_acl2[0m if it exists.
+
+   2. Start up Common Lisp and submit the following sequence of commands.
+
+          (load \"init.lisp\")
+          (in-package \"ACL2\")
+          (compile-acl2) ; essentially a no-op if the Lisp is CCL or SBCL
+
+      The commands above may, depending on the host Lisp, compile the ACL2
+      sources and create compiled object files in the current
+      directory.  (But they should be run even for Lisps that do not
+      compile the ACL2 sources.)  Below, we assume that saved images
+      have extension [47m.core[0m; but this will depend on your host Lisp
+      and operating system.
+
+   3. Now exit your Common Lisp.  Make sure you are in the directory where
+      you ran the commands displayed above.  Start your Common Lisp
+      and run the following commands to [3minitialize[0m ACL2.
+
+          (load \"init.lisp\")
+          (in-package \"ACL2\")
+          (save-acl2 (quote (initialize-acl2)) \"saved_acl2\")
+
+      This will load ACL2 source files (possibly compiled) into Lisp and
+      then bootstrap ACL2 by reading and processing the source files,
+      concluding by saving an image.  Exit Lisp now.  Subsequent
+      steps will put the image in the right place.
+
+   4. Remove [47mosaved_acl2[0m if it exists.
+
+   5. [31;1mIF[0m [47msaved_acl2[0m and [47msaved_acl2.core[0m both exist [31;1mTHEN[0m:
+
+        * move [47msaved_acl2.core[0m to [47mosaved_acl2.core[0m
+
+        * move [47msaved_acl2[0m to [47mosaved_acl2[0m and edit [47mosaved_acl2[0m, changing
+          [47msaved_acl2.core[0m (at end of line) to [47mosaved_acl2.core[0m
+
+      [31;1mELSE IF[0m [47msaved_acl2[0m exists [31;1mTHEN[0m:
+
+        * move [47msaved_acl2[0m to [47mosaved_acl2[0m
+
+   6. Move [47mnsaved_acl2[0m to [47msaved_acl2[0m .
+
+   7. Move [47mnsaved_acl2.core[0m to [47msaved_acl2.core[0m .
+
+   8. Make sure [47msaved_acl2[0m is executable.  For Windows this involves two
+      mini-steps:
+
+        * Remove the [47m\"$@\"[0m from the [47msaved_acl2[0m script (because Windows may not
+          understand [47m\"$@\"[0m).  Consequently, any arguments you pass to
+          ACL2 via the command line will be ignored.
+
+        * Rename [47msaved_acl2[0m to [47msaved_acl2.bat[0m, for example by executing the
+          following command.
+
+              rename saved_acl2 saved_acl2.bat
+
+
+Observations on building an executable image on a Windows system
+
+  You may be able to avoid this section by downloading a pre-built
+  binary distribution; see [pre-built-binary-distributions], and also
+  see ``Pre-built images'' above.
+
+  Otherwise, see [windows-installation] for information on installing
+  ACL2 on Windows systems.")
  (CTX
   (ERRORS)
   "Context object for error messages
@@ -23609,7 +23840,7 @@ Subtopics
   [47m(:executable-counterpart tau-system)[0m) or change the legacy hints to
   use the new subgoal names.")
  (DEBUGGING
-  (TOP ACL2)
+  (TOP)
   "Tools for debugging failed or slow proofs, or misbehaving functions.
 
 
@@ -24458,6 +24689,7 @@ Subtopics
       :recognizer recognizer
       :creator creator
       :corr-fn corr-fn
+      :corr-fn-exists corr-fn-exists
       :congruent-to congruent-to
       :non-executable non-executable
       :protect-default protect-default
@@ -24474,19 +24706,19 @@ Subtopics
 
     (fn [47m:kwd1[0m val1 ... [47m:kwdn[0m valn),
 
-  that is, a symbol followed by a [47m[keyword-value-listp][0m.  We view the
-  case of a symbol, [47ms[0m, as the function spec [47m(s)[0m, with no keywords.
-  There must be no duplicate keywords.  In each case that we expect a
-  function spec, the context provides a set of valid keywords for
-  that function spec; it is an error to provide any other keyword in
-  the function spec.  Each function spec is interpreted as its
-  ``completion'', obtained by extending the function spec with a
-  default value for each valid keyword as indicated below.  With that
-  interpretation, the ``exported function'' of a function spec is its
-  [47mcar[0m, and that function symbol and each keyword value must be a
-  guard-verified function symbol; and moreover, the [47m:EXEC[0m function
-  must not include the new abstract stobj name, [47mst[0m, among its
-  formals.
+  that is, a symbol followed by a [47m[keyword-value-listp][0m.  Each [47mvali[0m
+  must be a symbol.  We view the case of a symbol, [47ms[0m, as the function
+  spec [47m(s)[0m, with no keywords.  There must be no duplicate keywords.
+  In each case that we expect a function spec, the context provides a
+  set of valid keywords for that function spec; it is an error to
+  provide any other keyword in the function spec.  Each function spec
+  is interpreted as its ``completion'', obtained by extending the
+  function spec with a default value for each valid keyword as
+  indicated below.  With that interpretation, the ``exported
+  function'' of a function spec is its [47mcar[0m, and that function symbol
+  and each keyword value must be a guard-verified function symbol;
+  and moreover, the [47m:EXEC[0m function must not include the new abstract
+  stobj name, [47mst[0m, among its formals.
 
   We are ready to describe the arguments of [47mdefabsstobj[0m.
 
@@ -24514,6 +24746,10 @@ Subtopics
       [47mCorr-fn[0m is a known function symbol that takes two arguments (for the
       correspondence theorems).  The default for [47mcorr-fn[0m is obtained
       by adding the suffix [47m\"$CORR\"[0m to [47mname[0m.
+
+      [47mCorr-fn-exists[0m is a Boolean with default [47mnil[0m, which will generally
+      serve well.  See [stobj-attachment-restrictions] for a
+      discussion of this argument.
 
       [47mCongruent-to[0m should either be [47mnil[0m (the default) or the name of an
       abstract stobj previously introduced (by [47m[defabsstobj][0m).  In
@@ -24543,14 +24779,14 @@ Subtopics
       An important aspect of the [47mcongruent-to[0m parameter is that if it is
       not [47mnil[0m, then the checks for lemmas --- [47m{CORRESPONDENCE}[0m,
       [47m{GUARD-THM}[0m, and [47m{PRESERVED}[0m --- are omitted.  Thus, the values
-      of keyword [47m:CORR-FN[0m, and the values of keywords
-      [47m:CORRESPONDENCE[0m, [47m:GUARD-THM[0m, and [47m:PRESERVED[0m in each export (as
-      we discuss next), are irrelevant; they are not inferred and
-      they need not be supplied.
+      of keywords [47m:CORR-FN[0m and [47m:CORR-FN-EXISTS[0m, and the values of
+      keywords [47m:CORRESPONDENCE[0m, [47m:GUARD-THM[0m, and [47m:PRESERVED[0m in each
+      export (as we discuss next), are irrelevant; they are not
+      inferred and they need not be supplied.
 
       The value of [47m:EXPORTS[0m is a non-empty true list.  Each [47mei[0m is a
       function spec (for an exported function).  The valid keywords
-      are [47m:LOGIC[0m, [47m:EXEC[0m, [47m:CORRESPONDENCE[0m, and [47m:GUARD-THM[0m, [47m:PROTECT[0m,
+      are [47m:LOGIC[0m, [47m:EXEC[0m, [47m:CORRESPONDENCE[0m, [47m:GUARD-THM[0m, [47m:PROTECT[0m, and
       [47m:UPDATER[0m, and also [47m:PRESERVED[0m if and only if the specified
       [47m:EXEC[0m function returns the foundational stobj.  The default
       values for all of these keywords except [47m:UPDATER[0m and [47m:PROTECT[0m
@@ -26108,6 +26344,9 @@ Subtopics
   code), consider using [defconsts] instead.  Also see
   [using-tables-efficiently] for an analogous issue with [47m[table][0m
   events.
+
+  [47mDefconst[0m sets the [47mconst[0m property of [47mname[0m to the quoted value of [47mterm[0m.
+  This can be retrieved with [47m[getpropc][0m.
 
   It may be of interest to note that [47mdefconst[0m is implemented at the
   lisp level using [47mdefparameter[0m, as opposed to [47mdefconstant[0m.
@@ -28197,18 +28436,40 @@ Restrictions on the Field Descriptions in Defstobj
   more precise below about what we mean by ``expected.'' Below we
   present the restrictions on [47mtypei[0m and [47mvali[0m.
 
-  Remark on [47mSATISFIES[0m.  As suggested above, each type indicator may be
-  a legal [type-spec].  But for a type-spec [47m(SATISFIES pred)[0m, not
-  only must [47mpred[0m be unary --- it also must be a [guard]-verified
-  [47m:[0m[47m[logic][0m mode function whose guard is [47mt[0m.  For example, since the
-  guard of [47m[evenp][0m specifies an integer, the type-spec [47m(SATISFIES
-  evenp)[0m is not legal for a stobj field.  However, the following is
+  Remark on [47mSATISFIES[0m.  As suggested above, each type indicator must be
+  a legal [type-spec] or a stobj name.  But if it is a type-spec
+  involving [47m(SATISFIES pred)[0m, then not only must [47mpred[0m be a unary
+  [47m:[0m[47m[logic][0m mode function symbol, but the type-spec is subject to a
+  form of [guard] verification.  For example, the type-spec
+  [47m(SATISFIES evenp)[0m is not legal for a stobj field because the guard
+  generated for [47m(evenp x)[0m is [47m(integerp x)[0m.  However, the following is
   legal.
 
     (defun my-evenp (x)
       (declare (xargs :guard t))
       (and (integerp x) (evenp x)))
     (defstobj st (fld :type (satisfies my-evenp) :initially 4))
+
+  The following is also legal, as explained below.
+
+    (defstobj st (a :type (and integer (satisfies evenp)) :initially 0))
+
+  The type-spec displayed immediately above is legal because it
+  generates the term [47m(and (integerp x) (evenp x)[0m), which macroexpands
+  to [47m(if (integerp x) (evenp x) nil)[0m and hence can be trivially
+  guard-verified.
+
+  To understand this notion of trivial guard verification, first note
+  that every type-spec gives rise to a corresponding term in the
+  variable [47mx[0m, as in the example just above.  If the type-spec uses
+  [47mSATISFIES[0m, then the guard proof obligation for that term is subject
+  to the limited simplification used by [47m[verify-guards][0m with option
+  [47m:guard-simplify :limited[0m; see [verify-guards], specifically
+  regarding that option.  The requirement is that this limited
+  simplifcation completes the proof, without further simplification
+  or a call to the theorem prover.  This restriction to limited
+  simplification is probably not much of a restriction for typical
+  uses of [47mSATISFIES[0m in type-specs.  End of Remark on [47mSATISFIES[0m.
 
 
 Scalar Types
@@ -28373,7 +28634,6 @@ The Default Function Names
               ...
               (fieldk :type typek :initially valk)
               :renaming doublets
-              :doc doc-string
               :inline inline-flag)
 
   [47mname[0m must be a new symbol, each [47mfieldi[0m must be a symbol, each [47mtypei[0m
@@ -28553,7 +28813,7 @@ Constants
   terms, and see [nth-aliases-table].
 
 
-Inspecting the Effects of a Defstobj
+The Effects of a [47mDefstobj[0m
 
   Because the stobj functions are introduced as ``sub-events'' of the
   [47mdefstobj[0m the history commands [47m:[0m[47m[pe][0m and [47m:[0m[47m[pc][0m will not print the
@@ -28570,6 +28830,11 @@ Inspecting the Effects of a Defstobj
   functions that contain [47m(DECLARE (STOBJ-INLINE-FN T))[0m will generate
   [47m[defabbrev][0m forms because the [47m:inline[0m keyword of [47mdefstobj[0m was
   supplied the value [47mt[0m.  The rest will generate [47m[defun][0m forms.
+
+  Evaluation of a [47mdefstobj[0m event [disable]s the
+  [executable-counterpart] of the creator function.  This is useful
+  for proofs, since calls of that function always cause an error
+  (albeit one which is handled during proofs).
 
   A [47mdefstobj[0m is considered redundant only if it is syntactically
   identical to a previously executed [47mdefstobj[0m.  Note that a redundant
@@ -29665,7 +29930,7 @@ Subtopics
   satisfying the same requirements as in the General Form for [47m[defun][0m.
   The effect is to define a macro [47mfn[0m and a function [47mfn$inline[0m (i.e.,
   a symbol in the same package as [47mfn[0m but whose [47m[symbol-name][0m has the
-  suffix [47m\"$INLINE\"[0m, such that each call of [47mfn[0m expands to a call of
+  suffix [47m\"$INLINE\"[0m), such that each call of [47mfn[0m expands to a call of
   the function symbol [47mfn$inline[0m on the same arguments.  Moreover,
   [47m[table][0m [events] are generated that allow the use of [47mfn[0m in [theory]
   expressions to represent [47mfn$inline[0m and that cause any untranslated
@@ -29727,8 +29992,11 @@ Subtopics
 
   (2) Every function symbol defined in ACL2 whose [47m[symbol-name][0m has the
   suffix [47m\"$INLINE\"[0m is proclaimed to be inline; similarly for
-  [47m\"$NOTINLINE\"[0m and notinline.  These restrictions are explained in a
-  comment in the ACL2 source definition of macro [47mdefun-inline[0m.
+  [47m\"$NOTINLINE\"[0m and notinline.  These suffix restrictions are
+  explained in a comment in the ACL2 source definition of macro
+  [47mdefun-inline[0m.  Note that only the functions themselves are thus
+  proclaimed, not their executable counterparts (also known as *1*
+  functions; see [evaluation]).
 
   (3) No special treatment for inlining (or notinlining) is given for
   function symbols locally defined by [47m[flet][0m, with two exceptions:
@@ -29753,8 +30021,7 @@ Subtopics
   with argument [47m:load-compiled-file :comp[0m.  Then in subsequent
   sessions, including that book with the second host Lisp will not
   result in any inline or notinline behavior for functions defined in
-  the book.  This may be fixed in a future release if someone
-  complains."
+  the book."
 )
  (DEFUN-MODE
   (DEFUN)
@@ -32509,7 +32776,10 @@ Subtopics
 
   Note that all the names are implicitly quoted.  If you wish to
   disable a computed list of names, [47mlst[0m, use the theory expression
-  [47m(set-difference-theories (current-theory :here) lst)[0m.")
+  [47m(set-difference-theories (current-theory :here) lst)[0m.
+
+  To see the runes currently disabled that are among those created when
+  a function symbol [47mFN[0m is introduced, evaluate [47m(disabledp 'FN)[0m.")
  (DISABLE-FORCING
   (FORCE)
   "To disallow forced case-splits
@@ -32965,7 +33235,10 @@ Subtopics
                                  (apply$-guard do-fn '(nil))
                                  (apply$-guard finally-fn '(nil))
                                  (weak-dolia-p dolia))))
-     (let* ((triple (true-list-fix (apply$ do-fn (list alist))))
+     (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
+            (old-measure-value (and stobj-values-p
+                                    (apply$ measure-fn (list alist))))
+            (triple (true-list-fix (apply$ do-fn (list alist))))
             (exit-token (car triple))
             (val (cadr triple))
             (new-alist (caddr triple)))
@@ -32978,7 +33251,8 @@ Subtopics
           (val (cadr triple)))
          (if (eq exit-token :return) val nil)))
        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (apply$ measure-fn (list alist))))
+            (lex-fix (if stobj-values-p old-measure-value
+                       (apply$ measure-fn (list alist)))))
         (do$ measure-fn new-alist
              do-fn finally-fn values dolia))
        (t
@@ -33010,7 +33284,8 @@ Subtopics
            untrans-measure untrans-do-loop$ nil
            (eviscerate-do$-alist alist all-stobj-names)
            (eviscerate-do$-alist new-alist all-stobj-names)
-           (apply$ measure-fn (list alist))
+           (if stobj-values-p old-measure-value
+             (apply$ measure-fn (list alist)))
            (apply$ measure-fn (list new-alist))
            values))
          (loop$-default-values values new-alist))))))
@@ -33024,10 +33299,20 @@ Subtopics
 
   This topic assumes that you have read the introduction to [47mloop$[0m
   expressions in ACL2; see [loop$].  Here we give more complete
-  documentation on [47mDO[0m [47mloop$[0m expressions, beginning with an informal
-  introduction based largely on examples and then continuing with
-  detailed syntax and semantics.  For a discussion of proofs about
-  [47mloop$[0ms, see [stating-and-proving-lemmas-about-loop$s].
+  documentation on [47mDO[0m [47mloop$[0m expressions.  This discussion is
+  partitioned into the following sections
+
+    * INFORMAL INTRODUCTION --- examples of [47mDO[0m [47mloop$[0m expressions
+
+    * SYNTAX --- detailed discussion of the legal syntax
+
+    * SEMANTICS --- detailed discussion of how [47mDO[0m [47mloop$[0m expressions are
+      translated into calls of the general-purpose function [47m[do$][0m
+
+    * SIGNALING ERRORS --- how [47mDO[0m [47mloop$[0ms can signal errors
+
+  For a discussion of proofs about [47mloop$[0ms, see
+  [stating-and-proving-lemmas-about-loop$s].
 
   More examples of [47m[loop$][0m expressions, including [47mDO[0m [47mloop$[0ms, may be
   found in [community-book] [47mprojects/apply/loop-tests.lisp[0m.
@@ -33102,7 +33387,7 @@ INFORMAL INTRODUCTION
     ACL2 !>
 
   See [lp-section-14] of the [47mLoop$[0m Primer for some exercises in writing
-  and executing [47mDO[0m [47mLoop$[0ms (with answers in a Community Book).  But
+  and executing [47mDO[0m [47mloop$[0ms (with answers in a Community Book).  But
   remember to come back here when you get to the end of that section.
 
   [31;1mParallel Assignment Using [47mMv-setq[0m[31;1m[0m
@@ -33248,6 +33533,29 @@ INFORMAL INTRODUCTION
   in a [47mWITH[0m clause or be a known stobj.  Of course, here [47mst[0m is a
   known stobj.  In fact, stobjs are not allowed to be declared in
   [47mWITH[0m clauses (and that is not necessary for assigning to them).
+
+  Note that it is possible to write [47mDO[0m loops without any [47mWITH[0m clauses,
+  provided a stobj is being manipulated and measured in the body.
+  For example, using the stobj declared in the previous example,
+
+    (loop$ do
+           :values (st)
+           :measure (acl2-count (fld st))
+           (if (endp (fld st))
+               (return st)
+               (if (equal 3 (car (fld st)))
+                   (return st)
+                   (setq st (update-fld (cdr (fld st)) st)))))
+
+  is acceptable.  In Common Lisp, [47m(loop$ do <body>)[0m loops until a
+  [47mreturn[0m is executed and so to be admissible in ACL2 some [47m:measure[0m
+  must be specified (unless there is [47mreturn[0m on every branch through
+  [47m<body>[0m).  If there are no [47mWITH[0m clauses, stobjs are the only objects
+  that might be measured to explain termination, and ACL2 cannot
+  guess effective measures of stobjs.
+
+  To see some advice about proving inductive theorems about [47mDO[0m loops
+  measured by stobjs, see [stating-and-proving-lemmas-about-loop$s].
 
   [31;1mThe [47mOF-TYPE[0m[31;1m Keyword[0m
 
@@ -33476,8 +33784,8 @@ INFORMAL INTRODUCTION
     :df is #d0.0 and the value of any stobj component is the last latched
     value of that stobj.
 
-    ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-    gv, see :DOC trace, and see :DOC wet.
+    ACL2 Error [Evaluation] in TOP-LEVEL: Evaluation aborted.  To debug
+    see :DOC print- gv, see :DOC trace, and see :DOC wet.
 
     ACL2 !>
 
@@ -33642,7 +33950,7 @@ SYNTAX
       [47mvar[0m if [47mvar[0m is a stobj
 
     * [47m(MV-SETQ (var0 ... varn) term)[0m for two or more distinct variables
-      [47mvari[0m, where each [47mvari[0m is declared in a [47mWITH[0m declaration or is a
+      [47mvari[0m, where each [47mvari[0m is declared in a [47mWITH[0m clause or is a
       stobj name, and [47mterm[0m is an ordinary term that returns n+1
       values, where if [47mvari[0m is a stobj then the ith value returned is
       of that type
@@ -33656,20 +33964,20 @@ SYNTAX
   We conclude this section by discussing some syntactic restrictions.
 
   The following restriction applies to [47mloop$[0m expressions meeting the
-  following two conditions: [47m:VALUES[0m specifies other than the default
-  of [47m(NIL)[0m, and there is at least one [47mloop-finish[0m expression in the
-  [47mloop$[0m body.  In that case, there must be a [47mFINALLY[0m clause that ACL2
-  recognizes as always executing a [47mreturn[0m call.  This makes sense,
-  since in Common Lisp, the value returned by a [47mloop[0m is [47mnil[0m when
-  ``falling through'' without executing a [47mreturn[0m; but [47mnil[0m would
-  violate the specified [47m:VALUES[0m in the case above.
+  following two conditions: [47m:VALUES[0m specifies something other than
+  the default of [47m(NIL)[0m, and there is at least one [47mloop-finish[0m
+  expression in the [47mloop$[0m body.  In that case, there must be a
+  [47mFINALLY[0m clause that ACL2 recognizes as always executing a [47mreturn[0m
+  call.  This makes sense, since in Common Lisp, the value returned
+  by a [47mloop[0m is [47mnil[0m when ``falling through'' without executing a
+  [47mreturn[0m; but [47mnil[0m would violate the specified [47m:VALUES[0m in the case
+  above.
 
   As noted above, assignments with [47msetq[0m and [47mmv-setq[0m may only set stobj
   variables and variables declared using [47mWITH[0m.  This restriction
   applies to the innermost [47mloop$[0m that contains the assignment.  The
-  following, for example, is illegal because the [47mWITH[0m declaration for
-  [47mx[0m is not in the [47mloop$[0m immediately above the assignment to [47mx[0m with
-  [47msetq[0m.
+  following, for example, is illegal because the [47mWITH[0m clause for [47mx[0m is
+  not in the [47mloop$[0m immediately above the assignment to [47mx[0m with [47msetq[0m.
 
     (defun do-loop-nested-outer-with-var-bad (lst)
       (loop$ with x = lst
@@ -33712,6 +34020,10 @@ SYNTAX
 
   In a function call, it is illegal for a LOOP$ expression to occur in
   a slot whose [ilk] is not [47mnil[0m.
+
+  See the section SIGNALING ERRORS, below, for how the syntax described
+  here allows for [47mDO[0m [47mloop$[0ms to manipulate [47m[stobj][0ms and [47m[state][0m,
+  including how to signal errors from within the body of the [47mloop$[0m.
 
 
 SEMANTICS
@@ -33921,7 +34233,10 @@ SEMANTICS
                                  (apply$-guard do-fn '(nil))
                                  (apply$-guard finally-fn '(nil))
                                  (weak-dolia-p dolia))))
-     (let* ((triple (true-list-fix (apply$ do-fn (list alist))))
+     (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
+            (old-measure-value (and stobj-values-p
+                                    (apply$ measure-fn (list alist))))
+            (triple (true-list-fix (apply$ do-fn (list alist))))
             (exit-token (car triple))
             (val (cadr triple))
             (new-alist (caddr triple)))
@@ -33934,7 +34249,8 @@ SEMANTICS
           (val (cadr triple)))
          (if (eq exit-token :return) val nil)))
        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (apply$ measure-fn (list alist))))
+            (lex-fix (if stobj-values-p old-measure-value
+                       (apply$ measure-fn (list alist)))))
         (do$ measure-fn new-alist
              do-fn finally-fn values dolia))
        (t
@@ -33966,7 +34282,8 @@ SEMANTICS
            untrans-measure untrans-do-loop$ nil
            (eviscerate-do$-alist alist all-stobj-names)
            (eviscerate-do$-alist new-alist all-stobj-names)
-           (apply$ measure-fn (list alist))
+           (if stobj-values-p old-measure-value
+             (apply$ measure-fn (list alist)))
            (apply$ measure-fn (list new-alist))
            values))
          (loop$-default-values values new-alist))))))
@@ -34094,6 +34411,225 @@ SEMANTICS
   evaluates to [47mnil[0m.
 
 
+SIGNALING ERRORS
+
+  We explain the subtleties of error signaling from within [47mDO[0m [47mloop$[0ms by
+  example.  To illustrate the full complexity of the situation, our
+  example will involve a [47mDO[0m that is manipulating a [stobj], and we'll
+  verify the guards.  The basic idea is that we'll define a function,
+  called [47mtransaction[0m, that either detects and signals an error or
+  updates the stobj, and then we'll write a [47mDO[0m [47mloop$[0m that executes a
+  series of transactions.  In fact, you may think of the stobj as
+  representing an account that must maintain a non-negative balance
+  and the transaction as taking an integer and adding it to the
+  balance provided that doesn't produce a negative balance.  Managing
+  the signatures of the various functions in body of the [47mloop$[0m and
+  declaring the ``right'' guards takes some experience.  After we've
+  presented a correct solution we will show some plausible
+  alternatives and explain why they are unacceptable.
+
+  Recall that the standard idiom for signaling a ``soft'' error in ACL2
+  is to call the function [47m[error1][0m, usually via the macro [47m[er][0m.
+  [47mError1[0m returns an [error-triple] of the form [47m(mv t nil state)[0m.  So
+  our [47mDO[0m [47mloop$[0m will necessarily manipulate [47mstate[0m in addition to the
+  user's stobj.
+
+  To admit the functions shown below, first execute these three
+  commands.
+
+    (include-book \"projects/apply/top\" :dir :system)
+    (set-state-ok t)
+    (defstobj st (balance :type (satisfies natp) :initially 0))
+
+  Note that our stobj has just one field, named [47mbalance[0m, which must be
+  a natural number and is initially 0.  Below is the basic
+  [47mtransaction[0m function which may signal an error.  Note that two
+  unnecessary lines are commented out as explained in note [1] below.
+
+    (defun transaction (delta st state)
+      (declare (xargs :stobjs (st state)
+                      :guard (and (integerp delta)
+    ;                             (stp st)                     ; [1]
+    ;                             (state-p state)              ; [1]
+                                  (error1-state-p state))))    ; [2]
+      (cond ((< (balance st) (- delta))
+             (mv-let (erp val state)                           ; [3]
+               (er soft 'transaction
+                   \"The stobj's balance is ~x0 but the delta is ~x1, so this ~
+                    transaction is not allowed!\"
+                   (balance st)
+                   delta)
+               (declare (ignore val))
+               (mv erp st state)))
+            (t (let ((st (update-balance (+ (balance st) delta)
+                                         st)))
+                 (mv nil st state)))))
+
+  Notes on [47mtransaction[0m:
+
+    * [1] We don't need to include [47m(stp state)[0m and [47m(state-p state)[0m
+      explicitly in the [47m:guard[0m for the function because they're
+      implicitly included by the [47m:stobjs[0m declaration.
+
+    * [2] The [47m[er][0m macro expands to a call of the function [47m[error1][0m, and
+      [47merror1[0m requires that its [47m[state][0m argument not only satisfy the
+      recognizer for ACL2 states, [47mstate-p[0m, but also some other
+      conditions to allow formatted printing to certain channels.
+      See [47m:[0m[47m[pe][0m [47merror1-state-p[0m and its subroutine [47mfmt-state-p[0m.  By
+      the way, you won't see ``[47m(state-p state)[0m'' in the [47m:guard[0m
+      declaration of [47merror1[0m.  But it is implicit in the use of the
+      variable named [47mstate[0m as a formal.  To see the full guard of a
+      function, [3mfn[0m, you can do [47m:[0m[47m[args][0m [3mfn[0m or, alternatively, [47m(guard
+      '[0m[3mfn[0m[47m nil (w state))[0m.
+
+    * [3] We signal an error with the [47mer[0m macro.  But the signature of [47mer[0m is
+      [47m(mv * * state)[0m, i.e., the first two values returned are
+      ``ordinary'' objects, not stobjs.  But our function,
+      [47mtransaction[0m, must return the (possibly) modified stobj [47mst[0m.  So
+      we ``catch'' the error triple generated by [47mer[0m and replace the
+      ordinary [47mval[0m, which in this case is [47mnil[0m, by [47mst[0m.
+
+  Since we'll use [47mtransaction[0m in a [47mDO[0m [47mloop$[0m, we need a warrant.
+
+    (defwarrant transaction)
+
+  The lemma below is not strictly necessary.  If we don't prove it
+  here, the guard proof for our [47mloop$[0m takes longer because we have to
+  prove a more complicated instance of this lemma by induction.
+
+    (defthm dumb-lemma
+      (implies (and lst
+                    (integer-listp lst))
+               (integerp (car lst)))
+      :rule-classes :type-prescription)
+
+  Finally, we define the function that executes a series of
+  [47mtransaction[0ms on a sequence of integers.  But it may detect and
+  signal an error partway through the sequence.  Note that several
+  lines are commented out, either because they are optional or
+  because they are prohibited, as explained in the accompanying notes
+  below.
+
+    (defun transaction-loop (delta-lst st state)
+      (declare (xargs :stobjs (st state)
+                      :guard (and (integer-listp delta-lst)
+    ;                             (stp st)                     ; See Note [1] above
+    ;                             (state-p state)              ; See Note [1] above
+                                  (error1-state-p state))
+                      :guard-hints ((\"Goal\" :in-theory (enable error1)))))
+      (loop$ with lst = delta-lst
+    ;        with st                                           ; [4]
+    ;        with state                                        ; [4]
+             with erp                                          ; [5]
+             do
+             :guard (and (integer-listp lst)
+                         (stp st)                              ; [6]
+                         (state-p state)                       ; [6]
+                         (error1-state-p state))
+             :values (nil st state)
+             (cond
+              ((eq lst nil) (return (mv nil st state)))
+              (t (progn                                        ; [7]
+                   (mv-setq (erp st state)
+                            (transaction (car lst) st state))
+                   (cond
+                    (erp (return (mv erp st state)))
+                    (t (setq lst (cdr lst)))))))))
+
+  Notes on [47mtransaction-loop[0m:
+
+    * [4] One might think that we need to bind [47mst[0m and [47mstate[0m in [47mWITH[0m clauses
+      because, in the body of the [47mDO[0m [47mloop$[0m, we assign to them, with
+      [47mmv-setq[0m, here, or in other examples, with [47msetq[0m.  But ACL2
+      disallows binding stobj names in [47mWITH[0m clauses.  A syntax error
+      is signaled if you try that.
+
+    * [5] We must bind [47merp[0m in a [47mWITH[0m clause because we assign to it in the
+      body and it is an ordinary object.
+
+    * [6] One might think that we do not need to include [47m(stp st)[0m and
+      [47m(state-p state)[0m in the [47m:guard[0m of the [47mDO[0m [47mloop$[0m body, for the
+      same reasons we did not have to include them in the [47m:guard[0m of
+      the function itself: might they be implicitly included by
+      virtue of their being stobj names?  The answer is no!  If a
+      stobj is used in the body of a [47mDO[0m [47mloop$[0m, the [47m:guard[0m for the [47mDO[0m
+      [47mloop$[0m must include the stobj recognizer if guard checking is to
+      succeed.
+
+    * [7] Finally, the construction
+
+          (progn (mv-setq (erp st state) <term>) <do-body-term>)
+
+      used here may seem odd.  One might be inclined to write something
+      like this instead:
+
+          (mv-let (erp st state) <term> <do-body-term>)
+
+      However, the latter construction is syntactically illegal in the
+      body of a [47mDO[0m [47mloop$[0m.  The reason has to do with the precise
+      definition of ``do-body terms'' (see the SYNTAX section above).
+      Recall that do-body terms are term-like but allow very
+      restricted uses of [47mreturn[0m, [47mprogn[0m, [47msetq[0m, [47mmv-setq[0m, and
+      [47mloop-finish[0m and possibly other do-body subterms.  Do-body terms
+      are not actually ACL2 terms!
+
+      To be precise, one might have tried to use the following as the body
+      of the [47mloop$[0m in [47mtransaction-loop[0m.
+
+          (cond
+            ((eq lst nil) (return (mv nil st state)))
+            (t (mv-let (erp st state)
+                       (transaction (car lst) st state)
+                 (cond
+                  (erp (return (mv erp st state)))
+                  (t (setq lst (cdr lst)))))))
+
+      Note the [47mmv-let[0m.  It is syntactically illegal because its final
+      argument, namely the [47mcond[0m-expression, uses [47mreturn[0m and [47msetq[0m
+      where ACL2 function names are required.  In writing the above,
+      the user has presumed that an [47mmv-let[0m expression in a do-body
+      term allows the final argument to be a do-body term instead of
+      an ACL2 term.  This presumption is incorrect.  Instead, use
+      [47mprogn[0m and [47mmv-setq[0m to field the values of a multi-valued
+      function like [47mtransaction[0m and then write the do-body term to
+      process them.
+
+  Here is a sample session log after introducing the correct
+  definitions above.  Note that the balance starts at 0, the user,
+  employing the function [47mtransaction[0m, adds 100 and then attempts to
+  subtract 150.  An error is signaled and the balance remains 100.
+  Then the user runs the [47mtransaction-loop[0m function with a starting
+  balance of 100 and attempts to successively subtract 20, then 30,
+  then 55, and then attempts to add 200.  The loop terminates with an
+  error on the 55 and leaves the balance at 50, never processing the
+  200.
+
+    ACL2 !>(balance st)
+    0
+    ACL2 !>(transaction 100 st state)
+    (NIL <st> <state>)
+    ACL2 !>(balance st)
+    100
+    ACL2 !>(transaction -150 st state)
+
+
+    ACL2 Error in TRANSACTION:  The stobj's balance is 100 but the delta
+    is -150, so this transaction is not allowed!
+
+    (T <st> <state>)
+    ACL2 !>(balance st)
+    100
+    ACL2 !>(transaction-loop '(-20 -30 -55 200) st state)
+
+
+    ACL2 Error in TRANSACTION:  The stobj's balance is 50 but the delta
+    is -55, so this transaction is not allowed!
+
+    (T <st> <state>)
+    ACL2 !>(balance st)
+    50
+
+
 Subtopics
 
   [Do$]
@@ -34122,7 +34658,7 @@ Subtopics
   users will probably access the ACL2 documentation in other ways;
   see [documentation].  In particular, consider using the {ACL2+Books
   Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html},
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html},
   for topics documented in the ACL2 community [books] or in the ACL2
   system (where the latter are rearranged).
 
@@ -34162,7 +34698,7 @@ Subtopics
   HERE][0m[4m[31;1m[3m Bold italics underlined[0m[4m[31;1m Bold underlined.[0m[4m Underlined[0m Normal
   text")
  (DOCUMENTATION
-  (ACL2)
+  (TOP)
   "Information about options for downloading and viewing the ACL2
   documentation, contributing documentation, and the available tools
   for documenting your own books.
@@ -34183,7 +34719,7 @@ Available Documentation
     * [31;1mThe online version (recommended).[0m If you expect to have an internet
       connection while using the documentation, you may prefer to use
       the online version of the {ACL2+Books Manual |
-      http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
+      https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
 
     * [31;1mA local version.[0m If you sometimes work without an internet
       connection, you can {download | download/} a local copy of any
@@ -34201,12 +34737,11 @@ Available Documentation
   often handy, but note that it won't show you any documentation for
   books that you haven't loaded yet!
 
-  Separately from the ACL2+Books Manual, the [4mACL2 User's Manual[0m is
-  distributed with ACL2.  This is much like the ACL2+Books Manual but
-  it does not include documentation from the books.  A web-based copy
-  is included with the ACL2 distribution in directory [47mdoc/manual/[0m,
-  and you can easily get to it by opening file [47mdoc/home-page.html[0m in
-  your browser.
+  When you type [47m:DOC <topic>[0m at the terminal for a given [47m<topic>[0m, ACL2
+  responds with documentation for that topic.  Unless you include
+  books that incorporate additional documentation, [47m<topic>[0m must be
+  documentation that is provided with the ACL2 system (not the
+  [community-books]).
 
 
 Documenting Your Books
@@ -34323,11 +34858,12 @@ Subtopics
   since it extends the ACL2 User's Manual with documentation obtained
   from the [community-books].
 
-  The ACL2 User's Manual is copyrighted under the terms of the [47mLICENSE[0m
-  file distributed with ACL2.  Its original authors are the ACL2
-  authors, but it is now defined in an ACL2 community book,
-  [47mbooks/system/doc/acl2-doc.lisp[0m, so that members of the ACL2
-  community may contribute to it.
+  The ACL2 User's Manual is the basis for using the [47m:[0m[47m[doc][0m command at
+  the terminal when ACL2 starts up.  Its source in the ACL2
+  [community-books] as file [47mbooks/system/doc/acl2-doc.lisp[0m.  Members
+  of the ACL2 community contribute to it, although its original
+  authors are the ACL2 authors.  It is copyrighted under the terms of
+  the [47mLICENSE[0m file distributed with ACL2.
 
   The ACL2+Books Manual is a mechanically generated mashup derived from
   both the ACL2 User's Manual and the [community-books].  The
@@ -35456,7 +35992,10 @@ Miscellaneous efficiency ideas
 
   Note that all the names are implicitly quoted.  If you wish to enable
   a computed list of names, [47mlst[0m, use the theory expression
-  [47m(union-theories (current-theory :here) lst)[0m.")
+  [47m(union-theories (current-theory :here) lst)[0m.
+
+  To see the runes currently disabled that are among those created when
+  a function symbol [47mFN[0m is introduced, evaluate [47m(disabledp 'FN)[0m.")
  (ENABLE-FORCING
   (FORCE)
   "To allow forced case splits
@@ -35845,6 +36384,9 @@ Subtopics
       Restrictions on certain functions introduced in [47m[encapsulate][0m
       [events]
 
+  [Constraint-tracking]
+      Generate markers to indicate origins of constraints
+
   [Functional-instantiation]
       An analogue in ACL2 of higher-order logical reasoning.  Functional
       instantiation allows you to prove theorems ``by analogy'' with
@@ -35858,6 +36400,9 @@ Subtopics
 
   [Redundant-encapsulate]
       Redundancy of [47m[encapsulate][0m [events]
+
+  [Set-constraint-tracking]
+      Generate markers to indicate origins of constraints
 
   [Signature]
       How to specify the arity of a constrained function")
@@ -36753,18 +37298,19 @@ Subtopics
     (er-soft  'top-level \"Illegal-inputs\" \"Illegal inputs, ~x0 and ~x1.\" a b)
 
   The examples above all print an error message to standard output
-  saying that [47ma[0m and [47mb[0m are illegal inputs.  However, the first three
-  abort evaluation after printing an error message (while logically
-  returning [47mnil[0m, though in ordinary evaluation the return value is
-  never seen); while the last two return [47m(mv t nil state)[0m after
-  printing an error message.  The result in each of the last two
-  cases can be interpreted as an ``error'' when programming with the
-  ACL2 [47m[state][0m, something most ACL2 users will probably not want to
-  do unless they are building systems of some sort; see
-  [programming-with-state].  If state is not available in the current
-  context then you will probably want to use a call other than the
-  last to cause an error; for example, if you are returning two
-  values, you may write [47m(mv (er hard ...) nil)[0m.
+  saying that (the values of) [47ma[0m and [47mb[0m are illegal inputs.  However,
+  the first three --- which we call [3mhard errors[0m --- abort evaluation
+  after printing an error message (while logically returning [47mnil[0m,
+  though in ordinary evaluation the return value is never seen);
+  while the last two --- so-called [3msoft errors[0m --- return an
+  [error-triple], [47m(mv t nil state)[0m, after printing an error message.
+  The result in each of the two soft error cases can be interpreted
+  as an ``error'' when programming with the ACL2 [47m[state][0m, something
+  most ACL2 users will probably not want to do unless they are
+  building systems of some sort; see [programming-with-state].  If
+  state is not available in the current context then you will
+  probably want to cause a hard error; for example, if you are
+  returning two values, you may write [47m(mv (er hard ...) nil)[0m.
 
   The difference between the [47mhard[0m and [47mhard?[0m forms is one of guards.
   Use [47mhard[0m if you want the call to generate a (clearly impossible)
@@ -36787,10 +37333,16 @@ Subtopics
   [47mEr[0m is a macro, and the examples above expand to calls of ACL2
   functions; see below.  Also see [illegal], [hard-error], and
   [error1].  The [47mhard?[0m/[47mhard?![0m forms have expansions that call the
-  function, [47m[hard-error][0m, which has a [guard] of [47mT[0m, while the
-  [47mhard[0m/[47mhard![0m forms have expansions that call the function, [47m[illegal][0m,
+  function [47m[hard-error][0m, which has a [guard] of [47mT[0m, while the
+  [47mhard[0m/[47mhard![0m forms have expansions that call the function [47m[illegal][0m,
   which has a guard that is logically [47mNIL[0m.  Those generate code that
-  is in [47m:[0m[47m[logic][0m mode, as do variants of [47m(er soft ...)[0m.
+  is in [47m:[0m[47m[logic][0m mode, as do variants of [47m(er soft ...)[0m.  The soft
+  error forms expand to calls of the function [47m[error1][0m, which
+  necessarily takes [47m[state][0m as an explicit argument since it returns
+  an [error-triple].  The guard for the soft error forms is that of
+  [47m[error1][0m.  Note in particular that soft errors require the state to
+  satisfy certain restrictions beyond just the usual [47mstate-p[0m
+  predicate.
 
   The general forms of the macros are as follows.  Their
   macroexpansions include code that avoids the printing of error
@@ -37033,10 +37585,24 @@ Subtopics
 
   [47mError1[0m can be interpreted as causing an ``error'' when programming
   with the ACL2 [47m[state][0m, something most ACL2 users will probably not
-  want to do; see [ld-error-triples] and see [er-progn].  In order to
-  cause errors with [47m:[0m[47m[logic][0m mode functions, see [hard-error] and see
-  [illegal].  Better yet, see [er] for a macro that provides a
-  unified way of signaling errors.
+  want to do; see [ld-error-triples] and see [er-progn].  However,
+  [47merror1[0m is a guard verified [47m[logic][0m mode function whose guard is
+
+    (AND (STATE-P STATE)
+         (STRINGP STR)
+         (ERROR1-STATE-P STATE)
+         (CHARACTER-ALISTP ALIST)
+         (OR (NULL SUMMARY) (STRINGP SUMMARY)))
+
+  Note in particular that the state must not only satisfy the basic
+  recognizer, [47mstate-p[0m, for ACL2 states but must also satisfy
+  [47merror1-state-p[0m, which includes additional restrictions ensuring
+  that [47merror1[0m can print formatted output to the standard character
+  output channel, [47m[standard-co][0m, interpret the table maintained by
+  [47m[set-inhibit-er][0m, etc.  If the complexity of [error1]'s guard
+  discourages you from using it in guard-verified logic mode systems
+  you may wish to cause a [hard-error] with [47m[illegal][0m or the more
+  unified way of signaling errors with the macro [47m[er][0m.
 
   As mentioned above, [47merror1[0m always returns [47m(mv t nil state)[0m.  But if a
   call [47m(error1 ctx summary str alist)[0m is encountered during
@@ -37164,13 +37730,16 @@ Subtopics
 
   {IMAGE}
 
+  Click here (see [SYMBOLS]) {ICON} (see [A_Tiny_Warning_Sign]) for an
+  explanation of conversion of symbols to upper case.
+
     ACL2 !>[31;1m(app nil '(x y z))[0m
     (X Y Z)
 
     ACL2 !>[31;1m(app '(1 2 3) '(4 5 6 7))[0m
     (1 2 3 4 5 6 7)
 
-    ACL2 !>[31;1m(app '(a b c d e f g) '(x y z))[0m   ; click here (see [Conversion]) for an explanation
+    ACL2 !>[31;1m(app '(a b c d e f g) '(x y z))[0m
     (A B C D E F G X Y Z)
 
     ACL2 !>[31;1m(app (app '(1 2) '(3 4)) '(5 6))[0m
@@ -39932,12 +40501,15 @@ Subtopics
                   "See [character-encoding].")
  (EXTRA-INFO
   (GUARD)
-  "Sources of measure or guard proof obligations
+  "Sources of measure, guard, or constraint proof obligations
 
   [47m(Extra-info x y)[0m always returns [47mt[0m by definition.  See [guard-debug]
   and see [measure-debug] for a discussion of this function, which is
   useful for debugging failures from attempts to prove measure
-  conjectures or to verify [guard]s.")
+  conjectures or to verify [guard]s.  See [set-constraint-tracking]
+  to see how [47mextra-info[0m can help in debugging failures to prove
+  constraint obligations generated by [47m:functional-instance[0m [hints]
+  (see [lemma-instance]).")
  (F-BOUNDP-GLOBAL
   (PROGRAMMING-WITH-STATE ACL2-BUILT-INS)
   "Check whether a global variable in [47m[state][0m has a value
@@ -41434,7 +42006,7 @@ Example 2
   not included in the current ACL2 session?
 
   The [xdoc] {ACL2+Books Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
   includes documentation for both the ACL2 system and the
   [community-books].  For more information on this manual and how to
   view it, see [documentation].")
@@ -42369,10 +42941,10 @@ Example 2
   [47mFmx-cw[0m is a variant of [47mcw[0m: both take the same arguments and have the
   same behavior on well-formed input, and both return [47mnil[0m.  See [cw]
   for documentation on how to use both utilities.  Unlike [47mcw[0m, which
-  has a [guard] of [47mt[0m, [47mfmx-cw[0m has a non-trivial guard that can can
-  catch errors in the use of tilde-directives.  Here is an example of
-  such a guard violation, where the corresponding call of [47mcw[0m would
-  instead cause a hard error.
+  has a [guard] of [47mt[0m, [47mfmx-cw[0m has a non-trivial guard that can catch
+  errors in the use of tilde-directives.  Here is an example of such
+  a guard violation, where the corresponding call of [47mcw[0m would instead
+  cause a hard error.
 
     ACL2 !>(fmx-cw \"Hello ~s0.\" '(world))
 
@@ -45068,7 +45640,7 @@ Subtopics
 
   [31;1mQ[0m.  How do I find something in the [31;1mACL2 documentation[0m?  [31;1mA[0m.  Try the
   ``Jump to'' or ``Search'' boxes at the {ACL2+Books Manual |
-  http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html}.
+  https://acl2.org/doc/index.html}.
 
   [31;1mQ[0m.  How does the theorem prover work?  [31;1mA[0m.  We really don't think you
   need to know much about the inner workings of the prover to become
@@ -45549,7 +46121,7 @@ Subtopics
 
   [31;1mQ[0m. Where are the books referenced by [31;1m:dir :system[0m on my machine?  [31;1mA[0m.
   If your ACL2 is installed on the directory [3mdir[0m[47m/acl2-sources[0m and you
-  follow the standard installation instructions, then the books are
+  follow the standard [installation] instructions, then the books are
   typically the files under the directory [3mdir[0m[47m/acl2-sources/books/[0m.
 
   [31;1mQ[0m. How can I find out [31;1mwhat books are available[0m?  [31;1mA[0m. Go to the ACL2
@@ -45781,7 +46353,9 @@ Subtopics
 
   Also see [constraint] for more about [47m:functional-instance[0m and see
   [lemma-instance] for general information about the use of
-  previously-proved lemmas.
+  previously-proved lemmas.  It may also be helpful to see
+  [47m[set-constraint-tracking][0m or to run the script below after doing
+  [47m(set-constraint-tracking t)[0m.
 
     (in-package \"ACL2\")
 
@@ -45964,15 +46538,16 @@ Subtopics
     (include-book \"arithmetic/top-with-meta\" :dir :system)
 
   which loads into ACL2 all the rules in one of the so-called ACL2
-  ``community books''.  ([3mBooks[0m are certified files of definitions,
-  lemmas, etc., usually prepared by other ACL2 users and explicitly
-  shared with the community.  The ACL2 installation instructions
-  suggest downloading the community books.)  The book \"top-with-meta\"
-  is the most elementary and most widely used arithmetic book.  Other
-  community books include \"arithmetic-5/top\" and various hardware and
-  floating-point arithmetic books; if including
-  \"arithmetic/top-with-meta\" isn't sufficient, you could try
-  [47m(include-book \"arithmetic-5/top\" :dir :system)[0m.
+  ``community books'' (see [community-books]).  ([3mBooks[0m are certified
+  files of definitions, lemmas, etc., usually prepared by other ACL2
+  users and explicitly shared with the community.  The ACL2
+  [installation] instructions suggest downloading the community
+  books.)  The book \"top-with-meta\" is the most elementary and most
+  widely used arithmetic book.  Other community books include
+  \"arithmetic-5/top\" and various hardware and floating-point
+  arithmetic books; if including \"arithmetic/top-with-meta\" isn't
+  sufficient, you could try [47m(include-book \"arithmetic-5/top\" :dir
+  :system)[0m.
 
   [31;1mRules Concluding with Arithmetic Inequalities[0m: If you are tempted to
   create a rewrite rule with an arithmetic inequality as its
@@ -46270,7 +46845,7 @@ Subtopics
   (MISCELLANEOUS)
   "Tips on building and using ACL2 based on Gnu Common Lisp
 
-  See the installation instructions for basic information about
+  See the [installation] instructions for basic information about
   building ACL2 on top of GCL, including information about where to
   fetch GCL.  Here, we provide some tips that may be useful.
 
@@ -46954,7 +47529,7 @@ Getting Started
   those instructions make clear, to run ACL2 you'll need a Common
   Lisp implementation.  The instructions name several suitable ones.
 
-  In addition to the installation instructions, the Home Page has a
+  In addition to the [installation] instructions, the Home Page has a
   wealth of documentation.  You should visit ``The User's Manuals''.
   There you'll see several versions of the manual, depending on
   whether you want information about utilities developed by users.
@@ -48633,30 +49208,32 @@ Conclusion
                   "See [ACL2-tutorial].")
  (GIT-QUICK-START
   (ABOUT-ACL2)
-  "Git quick start guide
+  "Git quick start guide.
 
-  Each of the two topics [github-commit-code-using-push] and
-  [github-commit-code-using-pull-requests] presents a minimal guide
-  to using the Github repository for ACL2+Books.  That {repository |
-  https://github.com/acl2/acl2} exists on the web and contains the
-  ``bleeding edge'' ACL2 source code and [community-books], available
-  between ACL2 releases (see [release-notes]).  Those who are
-  familiar with older version control systems, or perhaps with no
-  version control systems, might find this guide to be helpful.  For
-  additional information, including the use of branches and links to
-  more information about git, see {the wiki page for git tips |
-  https://github.com/acl2/acl2/wiki/ACL2-repo-git-tips},
-  [books-certification], and the Internet in general.  However, both
-  of the above-mentioned guides are intended to be sufficient for you
-  to obtain the latest ACL2 source code and community-books, and
-  optionally, for you to contribute to the [community-books].
+  The {ACL2 GitHub repository | https://github.com/acl2/acl2} contains
+  the ``bleeding edge'' ACL2 source code and [community-books],
+  available between ACL2 releases (see [RELEASE-NOTES]).
 
-  Select the guide that is right for you based upon the headings below.
+  Here we provide minimal instructions for working with the ACL2 GitHub
+  repo.  Many git tutorials are available elsewhere on the web (e.g.,
+  {at GitHub | https://docs.github.com/en/get-started}).
 
 
-For non-contributors:
+For non-contributors (to use ACL2 without contributing changes):
 
-See sections (A) and (B) in [github-commit-code-using-push].
+  Start by obtaining the ACL2 GitHub repository (this command makes a
+  directory called [47macl2[0m that contains the current contents of the
+  [47mmaster[0m branch):
+
+    git clone https://github.com/acl2/acl2
+
+  Later, to update your copy to get the latest changes:
+
+    cd acl2
+    git pull
+
+  Once you have ACL2, you will probably want to certify some books (see
+  [books-certification]).
 
 
 For infrequent contributors:
@@ -48674,79 +49251,70 @@ For those contributing on a monthly or weekly basis, see
 Subtopics
 
   [Github-commit-code-using-pull-requests]
-      How to commit code to the books using pull requests
+      How to commit code to the books using pull requests.
 
   [Github-commit-code-using-push]
-      How to commit code to the books using direct push access")
+      How to commit code to the books using direct push access.")
  (GITHUB-COMMIT-CODE-USING-PULL-REQUESTS
   (GIT-QUICK-START)
-  "How to commit code to the books using pull requests
+  "How to commit code to the books using pull requests.
 
-  This guide is written for contributors who will probably only commit
-  to the repository a few times a year. If you find yourself
-  committing more often, you should see
-  [github-commit-code-using-push].
+  This guide is for contributors who will commit to the repository
+  rarely (e.g., a few times a year). If you find yourself committing
+  more often, see [github-commit-code-using-push].
 
-A nice result of using pull requests is that all changes will be
-peer-reviewed before being committed.  Also, we sometimes call this
-method the [3mFork and Pull[0m method.
+  If you do not plan to commit your own changes, see [git-quick-start]
+  instead.
+
+  A nice result of using pull requests is that all changes will be
+  peer-reviewed before being committed.  Also, we sometimes call this
+  method the [3mFork and Pull[0m method.
 
 
 (A) GETTING STARTED
 
    1. Go to {https://github.com/acl2/acl2 | https://github.com/acl2/acl2}
       and click on the [47mfork[0m button on the top-right.  Fork the
-      repository into your github space.  This will create a new
+      repository into your GitHub space.  This will create a new
       repository at [47mhttps://github.com/<your-github-username>/acl2[0m.
 
-   2. In your working space on your computer, create a [47mclone[0m of your github
+   2. In your working space on your computer, create a [47mclone[0m of your GitHub
       repository and [47mcd[0m into it:
 
           git clone https://github.com/<your-github-username>/acl2
           cd acl2
 
-   3. Add the Community ACL2 repository as a git remote:
+   3. Add the main ACL2 repository as a git remote:
 
           git remote add upstream https://github.com/acl2/acl2
 
 
 (B) UPDATING
 
-  The following commands will update your local repository to match the
-  latest contents of the ACL2 Community github repository (on the
-  web).
+  The following commands will update your directory to match the latest
+  contents of the main ACL2 repository on GitHub.
 
     git fetch --all
-    git merge remotes/upstream/master
+    git merge -m \"Merge.\" remotes/upstream/master
 
 
 (C) CONTRIBUTING
 
 
-Change and Test
+Make Changes and Test Them
 
-   1. Before beginning your edits, update, as in (B) above:
-
-          git fetch --all
-          git merge remotes/upstream/master
+   1. Before beginning your edits, update, as in (B) above.
 
    2. Build an executable.
 
-          (time nice make LISP=<your_lisp>) >& make.log
+          make update LISP=<your_lisp>
 
-   3. Make book changes.  If you are creating any new books, tell git that
-      you intend to add them (but the local repository on the web
-      won't change until the [47mcommit[0m step below is executed).
-
-          git add file1 file2 ...
-
-      Also, consider adding some high-level information about your changes
-      to the Community Books' release notes --- i.e., the appropriate
-      [release-notes-books] XDOC topic in [47mbooks/doc/relnotes.lisp[0m.
+   3. Make book changes.  See the guidelines in the [how-to-contribute]
+      topic (e.g., about updating the book release notes).
 
    4. Run a regression.
 
-          (time nice make -j 8 regression-fresh) >& make-regression.log
+          (make -j 8 regression) >& make-regression.log
 
       Note that the [47m-j 8[0m option specifies the use of 8 hardware threads;
       feel free to omit it or use a more suitable number (especially
@@ -48756,58 +49324,54 @@ Change and Test
 
           fgrep -a '**' make-regression.log
 
-   6. If there were failures, then go back to Step 1 above to make
-      appropriate changes and re-test, but you can replace the '[47mmake[0m'
-      step by replacing [47mregression-fresh[0m with [47mregression[0m, since
-      '[47mmake[0m' is clever enough to avoid recertifying more than is
-      necessary.  For example:
+   6. If there were failures, then go back to Step 3 above to make
+      appropriate changes and re-test.
 
-          (time nice make -j 8 regression) >& make-regression-finish-1.log
+   7. Commit your changes.  First do [47mgit status[0m to see the list of all
+      new/changed files:
 
+          git status
 
-Update, and Iterate If Necessary
+      Ensure that none of the reported additions/changes was
+      unintentional.  Next, do [47mgit add[0m to add each file you want to
+      commit (normally, everything reported by [47mgit status[0m, to match
+      what was tested in the regression above):
 
-  Update again as in (B) above:
+          git add <file1> <file2> ...
 
-    git fetch --all
-    git merge remotes/upstream/master
+      Now commit your changes locally:
 
-      The merge may fail if there have been remote updates, that is updates
-      in the repository on the web.  In that case, commit your
-      changes locally and then try the merge again.  You might want
-      to use the [47m-F[0m option instead of [47m-m[0m; see the next section for
-      more on those options.
+          git commit -m '<some message, with descriptive first line>'
 
-        git commit -a -m '<some message, with descriptive first line>'
-        git merge remotes/upstream/master
+      The [47m-m ...[0m option is a log message, where the first line is a
+      summary of your changes and additional lines give more details.
+      You can replace the [47m-m ...[0m option by [47m-F <filename>[0m, where
+      [47m<filename>[0m is the name of a file that contains your log
+      message.
 
-      If the second command (the [47mgit merge[0m) prompts you for a message, the
-      empty message should suffice as a reasonable default (in emacs
-      --- if vi tries to come up, just type [47m:q[0m and [47m<RETURN>[0m.
-
-  You can now go on to the next step (Contribute Your Changes).  But
-  ideally: If the output indicates that anything has changed, then go
-  back to ``Change and Test'' above.  Of course, you can skip the
-  build if no ACL2 sources have changed, and you can skip making book
-  changes if you are still happy with your changes.
+   8. Merge in remote changes, if any, by updating again as in (B) above.
+      If the merge changed anything, go back to Step 4 above to
+      ensure that your changes are compatible with the remote changes
+      you just obtained.  If the merge did not change anything,
+      continue to the next step (Contribute Your Changes).  In rare
+      cases, you may get a merge conflict (concurrent changes to the
+      same files), in which case you will need to resolve the
+      conflict by editing files and committing them (see the [47mgit
+      commit[0m command above in Step 7).  Then go back to Step 4 above
+      to test that everything is working.
 
 
 Contribute Your Changes
 
-  The following commands will update your github repository on the web.
-  The [47m-m ...[0m option is a log message whose first line should be a
-  summary of your changes and other lines may give more details.  You
-  are welcome to replace the [47m-m ...[0m option by [47m-F <filename>[0m, where
-  [47m<filename>[0m is the name of a file that contains your log message.
+  The following command will update your fork on GitHub.
 
-    git commit -a -m '<some message, with descriptive first line>'
     git push
 
 You now need to create a [3mpull request[0m, where you request that
-changes from your github repository be accepted into the Community
-ACL2 repository.  To achieve this:
+changes from your fork be accepted into the main ACL2 repository.  To
+achieve this:
 
-   1. Goto [47mhttps://github.com/<your-github-username>/acl2[0m.
+   1. Go to [47mhttps://github.com/<your-github-username>/acl2[0m.
 
    2. Click the [47mNew pull request[0m button (you can search for it with your
       browser).
@@ -48817,61 +49381,53 @@ ACL2 repository.  To achieve this:
 
    4. Click [47mCreate pull request[0m.
 
-   5. Put some explanation about what's in the changes in the comments
-      section.  It's helpful if you quote (possibly abbreviated)
-      versions of your commit log messages here, as that way the
-      descriptions are easily read when clicking on the Community
-      Repository [47mcommits[0m tab, which goes to {
-      https://github.com/acl2/acl2/commits/master |
-      https://github.com/acl2/acl2/commits/master}.
+   5. Put a description of your changes in the comments section.  You may
+      want to quote text from your commit log messages.
 
    6. Click [47mCreate pull request[0m.
 
-At this point, the Community ACL2 repository maintainers will be
-notified, check that things seem to be in order, and then adopt your
-changes.")
+At this point, the main ACL2 repository maintainers will be
+notified, check that things seem to be in order, and then either
+request modifications or adopt your changes.")
  (GITHUB-COMMIT-CODE-USING-PUSH
   (GIT-QUICK-START)
-  "How to commit code to the books using direct push access
+  "How to commit code to the books using direct push access.
 
-  This guide is written for two groups of people:
+  This guide is for contributors who commit to the repository often
+  (e.g., monthly or weekly).  Such contributors will typically begin
+  with the [github-commit-code-using-pull-requests] method, and after
+  they are familiar with the process and community, will switch to
+  this method.
 
-    * Users of the ACL2 System and Books who do not plan to contribute to
-      the books, and
-
-    * Contributors who commit to the repository on a monthly or weekly
-      basis.  In this case, a contributor will typically begin with
-      the [github-commit-code-using-pull-requests] method, and after
-      they are familiar with the process and community, they will
-      move to this method.
+  If you do not plan to commit your own changes, see [git-quick-start]
+  instead.
 
 
 (A) GETTING STARTED
 
-  Start by obtaining an up-to-date copy of the web-based github
-  repository.  Here, we show how to put it into into a directory
-  called [47mACL2[0m (but name it whatever you like).
+  Start by obtaining an up-to-date copy of the web-based GitHub
+  repository (this command makes a directory called [47macl2[0m that
+  contains the current contents of the [47mmaster[0m branch).
 
-    mkdir ACL2
-    cd ACL2
-    git clone https://github.com/acl2/acl2 .
+    git clone https://github.com/acl2/acl2
+    cd acl2
 
 
 (B) UPDATING
 
   The following commands will update your directory to match the latest
-  contents of the github repository (on the web).
+  contents of the main ACL2 repository on GitHub.
 
     git fetch --all
-    git merge remotes/origin/master
+    git merge -m \"Merge.\" remotes/origin/master
 
 
-(C) CONTRIBUTING (optional)
+(C) CONTRIBUTING
 
-  To join the {github project | https://github.com/acl2/acl2/}, please
+  To join the {GitHub project | https://github.com/acl2/acl2/}, please
   send email to one of the following individuals.
 
-    * Jared Davis ([47mjared.c.davis@gmail.com[0m)
+    * Eric Smith ([47meric.smith@kestrel.edu[0m)
 
     * David Rager ([47mragerdl@gmail.com[0m)
 
@@ -48881,85 +49437,79 @@ changes.")
   you are ready to contribute.
 
 
-Change and Test
+Make Changes and Test Them
 
-   1. Update as in (B) above:
-
-          git fetch --all
-          git merge remotes/origin/master
+   1. Before beginning your edits, update, as in (B) above.
 
    2. Build an executable.
 
-          (time nice make LISP=<your_lisp>) >& make.log
+          make update LISP=<your_lisp>
 
-   3. Make book changes.  If you are creating any new books, tell git that
-      you intend to add them (but the repository on the web won't
-      change until the last step below is executed).
-
-          git add file1 file2 ...
-
-      Also, consider adding some high-level information about your changes
-      to the Community Books' release notes --- i.e., the appropriate
-      [release-notes-books] XDOC topic in [47mbooks/doc/relnotes.lisp[0m.
+   3. Make book changes.  See the guidelines in the [how-to-contribute]
+      topic (e.g., about updating the book release notes).
 
    4. Run a regression.
 
-          (time nice make -j 8 regression-fresh) >& make-regression.log
-
-   5. Look for failures, as indicated by [47m**[0m in the log.
-
-          fgrep -a '**' make-regression.log
-
-   6. If there were failures, then go back to Step 1 above to make
-      appropriate changes and re-test, but you can replace the '[47mmake[0m'
-      step by replacing [47mregression-fresh[0m with [47mregression[0m, since
-      '[47mmake[0m' is clever enough to avoid recertifying more than is
-      necessary.  For example:
-
-          (time nice make -j 8 regression) >& make-regression-finish-1.log
+          (make -j 8 regression) >& make-regression.log
 
       Note that the [47m-j 8[0m option specifies the use of 8 hardware threads;
       feel free to omit it or use a more suitable number (especially
       if your computer has other than 8 hardware threads).
 
+   5. Look for failures, as indicated by [47m**[0m in the log.
 
-Update, and Iterate If Necessary
+          fgrep -a '**' make-regression.log
 
-  Update again as in (B) above:
+   6. If there were failures, then go back to Step 3 above to make
+      appropriate changes and re-test.
 
-    git fetch --all
-    git merge remotes/origin/master
+   7. Commit your changes.  First do [47mgit status[0m to see the list of all
+      new/changed files:
 
-      The merge may fail if there have been remote updates, that is updates
-      in the repository on the web.  In that case, commit your
-      changes locally and then try the merge again.  You might want
-      to use the [47m-F[0m option instead of [47m-m[0m; see the next section for
-      more on those options.
+          git status
 
-        git commit -a -m '<some message, with descriptive first line>'
-        git merge remotes/origin/master
+      Ensure that none of the reported additions/changes was
+      unintentional.  Next, do [47mgit add[0m to add each file you want to
+      commit (normally, everything reported by [47mgit status[0m, to match
+      what was tested in the regression above):
 
-      If the second command prompts you for a message, the empty message
-      should suffice as a reasonable default.  (In emacs, if vi tries
-      to come up, just type [47m:q[0m and [47m<RETURN>[0m.
+          git add <file1> <file2> ...
 
-  You can now go on to the next step (Contribute Your Changes).  But
-  ideally: If the output indicates that anything has changed, then go
-  back to ``Change and Test'' above.  Of course, you can skip the
-  build if no ACL2 sources have changed, and you can skip making book
-  changes if you are still happy with your changes.
+      Now commit your changes locally:
+
+          git commit -m '<some message, with descriptive first line>'
+
+      The [47m-m ...[0m option is a log message, where the first line is a
+      summary of your changes and additional lines give more details.
+      You can replace the [47m-m ...[0m option by [47m-F <filename>[0m, where
+      [47m<filename>[0m is the name of a file that contains your log
+      message.
+
+   8. Merge in remote changes, if any, by updating again as in (B) above.
+      If the merge changed anything, go back to Step 4 above to
+      ensure that your changes are compatible with the remote changes
+      you just obtained.  If the merge did not change anything,
+      continue to the next step (Contribute Your Changes).  In rare
+      cases, you may get a merge conflict (concurrent changes to the
+      same files), in which case you will need to resolve the
+      conflict by editing files and committing them (see the [47mgit
+      commit[0m command above in Step 7).  Then go back to Step 4 above
+      to test that everything is working.
 
 
 Contribute Your Changes
 
-  The following commands will update the github repository on the web.
-  The [47m-m ...[0m option is a log message whose first line should be a
-  summary of your changes and other lines may give more details.  You
-  are welcome to replace the [47m-m ...[0m option by [47m-F <filename>[0m, where
-  [47m<filename>[0m is the name of a file that contains your log message.
+  The following command will update the main ACL2 repository on GitHub.
 
-    git commit -a -m '<some message, with descriptive first line>'
-    git push origin testing")
+    git push origin testing
+
+  This will cause your changes to be merged into the [47mtesting[0m branch.
+  From there, they will be automatically merged into [47mmaster[0m if the
+  automated regression testing system successfully tests them.
+
+  Note: If you are changing someone else's files, or would like someone
+  to review your changes, you might consider making a pull request
+  instead of pushing directly.")
  (GOAL-SPEC
   (HINTS OUTPUT-CONTROLS)
   "To indicate where a hint is to be used
@@ -48975,7 +49525,7 @@ Contribute Your Changes
   to specify the goal to which the [hints] are to be applied.  The
   [hints] provided are carried along innocuously until the named goal
   arises.  When it arises, the [hints] are ``activated'' for that
-  goal and its descendents.
+  goal and its descendants.
 
   A legal goal specification may be extracted from the theorem prover's
   output.  Certain lines clearly label formulas, as in
@@ -49973,7 +50523,7 @@ Subtopics
       Execute a call in the ACL2 logic instead of raw Lisp
 
   [Extra-info]
-      Sources of measure or guard proof obligations
+      Sources of measure, guard, or constraint proof obligations
 
   [Guard-checking-inhibited]
       Avoiding certain warnings when evaluating ACL2 expressions
@@ -53097,7 +53647,7 @@ Subtopics
              :in-theory (set-difference-theories
                           (current-theory :here)
                           '(assoc))
-             :induct (and (nth n a) (nth n b))
+             :induct (list (nth n a) (nth n b))
              :use ((:instance assoc-of-append
                               (x a) (y b) (z c))
                    (:functional-instance
@@ -53723,9 +54273,30 @@ Subtopics
         Thus, if [47mvalue[0m contains several mergeable [induction]s, the
         ``best'' will be created and chosen.  E.g., the [47m:induct[0m hint
 
-          (and (nth i a) (nth j a))
+          (list (nth i a) (nth j a))
 
         suggests simultaneous [induction] on [47mi[0m, [47mj[0m, and [47ma[0m.
+
+        When the selected induction scheme is suggested by just one term the
+        induction is announced with a message like ``[47mWe will induct
+        according to a scheme suggested by[0m'' the term in question.
+        But if several terms are involved in the suggestion, either
+        because they suggested the same scheme or because their
+        suggestions were merged with others to form the selected
+        scheme, the announcement includes the phrase ``[47mwhile
+        accommodating[0m'' the other terms.  Furthermore, as noted in
+        [induction-heuristics], the induction mechanism communicates
+        to the simplifier, passing to it the list of all the terms
+        being accommodated.  The simplifier preferentially expands
+        those terms during the subsequent proof attempt.
+
+        Thus, if the prover automatically selects an induction that
+        accommodates terms besides the one suggesting and justifying
+        the induction, and you want to give an [47m:induct[0m hint that
+        causes the same behavior, your hint should include the term
+        suggesting the induction and all of the accommodated terms.
+        We typically do this with a hint like [47m:induct (list term0
+        term1 ... termk)[0m.
 
         If both an [47m:induct[0m and a [47m:do-not-induct[0m hint are supplied for a given
         goal then the indicated [induction] is applied to the goal
@@ -53876,32 +54447,32 @@ Subtopics
         [47m:restrict[0m hints, at least if the rules in question are
         abbreviations (see [simple]).
 
-        [47mValue[0m is an association list.  Its members are of the form [47m(x subst1
-        subst2 ...)[0m, where: [47mx[0m is either (1) a [rune] whose [47m[car][0m is
+        [47mValue[0m is an association list.  Its members are of the form [47m(x subst_1
+        subst_2 ...)[0m, where: [47mx[0m is either (1) a [rune] whose [47m[car][0m is
         [47m:[0m[47m[rewrite][0m or [47m:[0m[47m[definition][0m or (2) an event name
-        corresponding to one or more such [rune]s; and [47m(subst1 subst2
-        ...)[0m is a non-empty list of substitutions, i.e., of
+        corresponding to one or more such [rune]s; and [47m(subst_1
+        subst_2 ...)[0m is a non-empty list of substitutions, i.e., of
         association lists pairing variables with terms.  First
         consider the case that [47mx[0m is a [47m:[0m[47m[rewrite][0m or [47m:[0m[47m[definition][0m
         [rune].  Recall that without this hint, the rule named [47mx[0m is
         used by matching its left-hand side (call it [47mlhs[0m) against the
         term currently being considered by the rewriter, that is, by
-        attempting to find a substitution [47ms[0m such that the
+        attempting to find a [3mmatching substitution[0m, [47ms[0m, such that the
         instantiation of [47mlhs[0m using [47ms[0m is equal to that term.  If
-        however the [47m:restrict[0m hint contains [47m(x subst1 subst2 ...)[0m,
+        however the [47m:restrict[0m hint contains [47m(x subst_1 subst_2 ...)[0m,
         then this behavior will be modified by restricting [47ms[0m so that
-        it must extend [47msubst1[0m; and if there is no such [47ms[0m, then [47ms[0m is
-        restricted so that it must extend [47msubst2[0m; and so on, until
-        the list of substitutions is exhausted.  If no such [47ms[0m is
-        found, then the rewrite or definition rule named [47mx[0m is not
-        applied to that term.  Finally, if [47mx[0m is an event name
-        corresponding to one or more [47m:[0m[47m[rewrite][0m or [47m:[0m[47m[definition][0m
-        [rune]s (that is, [47mx[0m is the ``base symbol'' of such [rune]s;
-        see [rune]), say [rune]s [47mr1[0m, ... [47mrn[0m, then the meaning is the
-        same except that [47m(x subst1 subst2 ...)[0m is replaced by [47m(ri
-        subst1 subst2 ...)[0m for each [47mi[0m.  Once this replacement is
-        complete, the hint may not contain two members whose [47m[car][0m is
-        the same [rune].
+        it must extend [47msubst_1[0m; and if there is no such [47ms[0m, then [47ms[0m is
+        restricted so that it must extend [47msubst_2[0m; and so on, until
+        such [47ms[0m is produced --- or, the list of substitutions is
+        exhausted without producing a matching substitution, in which
+        case the rewrite or definition rule named [47mx[0m is not applied to
+        that term.  Finally, if [47mx[0m is an event name corresponding to
+        one or more [47m:[0m[47m[rewrite][0m or [47m:[0m[47m[definition][0m [rune]s (that is, [47mx[0m
+        is the ``base symbol'' of such [rune]s; see [rune]), say
+        [rune]s [47mr1[0m, ... [47mrn[0m, then the meaning is the same except that
+        [47m(x subst_1 subst_2 ...)[0m is replaced by [47m(rj subst_1 subst_2
+        ...)[0m for each [47mj[0m.  Once this replacement is complete, the hint
+        may not contain two members whose [47m[car][0m is the same [rune].
 
         Note that the substitutions in [47m:restrict[0m hints refer to the variables
         actually appearing in the goals, not to the variables
@@ -55382,6 +55953,124 @@ Subtopics
   in the top-level loop, you can use [47mhons-wash![0m, which does not check
   for parallelism violations.  However, [47mhons-wash![0m requires a trust
   tag; see [defttag].")
+ (HOW-TO-CONTRIBUTE
+  (ABOUT-ACL2 COMMUNITY)
+  "Guide to contributing code to ACL2.
+
+  The main way to contribute code to ACL2 is to open a pull request
+  (PR) to the {ACL2 GitHub repository |
+  https://github.com/acl2/acl2}.  First create a personal fork of the
+  repository and commit your changes/additions there.  Then open a PR
+  to merge your changes into the main ACL2 repository.  Please ensure
+  your PR follows these guidelines:
+
+
+Required: Make Changes Only Within the [47mbooks/[0m Directory
+
+  While the community is invited to submit contributions to the
+  Community Books (see [COMMUNITY-BOOKS]), source files outside of
+  the [47mbooks/[0m directory should not be modified, except by system
+  maintainers.
+
+  Suggestions for system changes can be emailed to {Matt Kaufmann |
+  mailto:kaufmann@cs.utexas.edu}. (Prospective system developers
+  should see the [developers-guide].)
+
+  New developments that do not clearly belong in an existing directory
+  are often put into the [47mprojects[0m subdirectory of [47mbooks/[0m.
+
+
+Required: Avoid Problematic Constructs
+
+  Avoid introducing code that may fail on machines/environments other
+  than your own.  In particular, avoid the following:
+
+    * Dependence on any files not included in your PR.  In particular, any
+      book that depends on an external tool, such as an SMT solver,
+      should include an appropriate [build::cert_param].
+
+    * Dependence on environment variables that will not be set in other
+      users' environments.
+
+    * Use of absolute pathnames (e.g., mentions of your home directory).
+      These are likely to cause problems for other users.  To bring
+      in other Community Books, use the [47m:dir :system[0m option of
+      [47m[include-book][0m.
+
+    * Constructs with timeouts that cause proof attempts to be aborted
+      after a short time.  These may cause failures on slower or
+      heavily loaded machines.
+
+
+Required: Check the Build
+
+  Before making your PR, you should run a regression to ensure that
+  your changes/additions do not break the build. To do so, run the
+  following [47mmake[0m command in the ``books'' directory:
+
+    make -j 8 regression
+
+  (Note: the [47m-j 8[0m option in the above command is only illustrative. It
+  instructs [47mmake[0m to use 8 hardware threads. You may use a higher or
+  lower number to align with your system. See [books-certification]
+  for an extended discussion on community book certification.)
+
+
+Required: Change the Base Branch of your PR to [47mtesting[0m
+
+  When opening your PR to merge changes into the main ACL2 repository,
+  set the base branch to the [47mtesting[0m branch (or similar) ([3mnot[0m the
+  [47mmaster[0m branch).  Once your PR is accepted into the [47mtesting[0m branch,
+  it will be tested and merged automatically into the [47mmaster[0m branch
+  if all tests pass.
+
+
+Suggested: Follow Best Practices for ACL2 Code
+
+  See best-practices for recommended code practices.
+
+
+Suggested: Document Your New Books
+
+  Consider creating documentation using the [47m[xdoc][0m system.  Then, to
+  ensure your new topics appear in the manual, ensure they are
+  included by [47mbooks/doc/top.lisp[0m, perhaps via another book that it
+  includes, such as [47mbooks/projects/top-doc.lisp[0m.
+
+
+Suggested: Update the Release Notes
+
+  Consider adding some high-level information about your changes to the
+  Community Books' release notes --- i.e., the appropriate
+  [release-notes-books] XDOC topic in [47mbooks/doc/relnotes.lisp[0m.
+
+
+Resources for Git/GitHub
+
+  For those new to Git (the version control system) or GitHub (the
+  platform on which the ACL2 Git repository is hosted), see
+  [git-quick-start].
+
+
+Frequent Contributors
+
+  Frequent contributors may request to join the {ACL2 GitHub project |
+  https://github.com/acl2/acl2}. Such contributors may push directly
+  to various testing branches without opening a PR (although it is
+  still good practice to open a PR when modifying a widely used book
+  or one primarily authored by someone else).
+
+  To request to join the project, email one of the following
+  individuals:
+
+    * Eric Smith ([47meric.smith@kestrel.edu[0m)
+
+    * David Rager ([47mragerdl@gmail.com[0m)
+
+    * Sol Swords ([47msswords@gmail.com[0m)
+
+  See also the [community] topic for other ways to connect with the
+  ACL2 community, and ways to get help.")
  (HOW_LONG_DOES_IT_TAKE_TO_BECOME_AN_EFFECTIVE_USER{Q}
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "How Long Does It Take to Become an Effective User?
@@ -56376,7 +57065,7 @@ Subtopics
     export ACL2_SYSTEM_BOOKS
     ACL2_SYSTEM_BOOKS=/home/acl2/4-0/acl2-sources/books
 
-  If you follow suggestions in the installation instructions, these
+  If you follow suggestions in the [installation] instructions, these
   books will be the ACL2 community books; see [community-books].  For
   another way to set the system books directory, which also permits
   similar handling for other directories, see [project-dir-alist].
@@ -57153,6 +57842,9 @@ Conclusion
 
   To change the limit, see [set-induction-depth-limit].
 
+  For another way to limit the lengths of proof attempts, see
+  [47m[set-subgoal-loop-limits][0m.
+
 
 Subtopics
 
@@ -57388,6 +58080,184 @@ Subtopics
     ACL2 !>")
  (INLINE (POINTERS)
          "See [defun-inline].")
+ (INSTALLATION
+  (ACL2 ABOUT-ACL2)
+  "Installing ACL2
+
+  See the [installation-instructions] for steps to install ACL2 on
+  Unix-like systems (Linux, macOS, and FreeBSD).
+
+  If you encounter problems installing ACL2, or need more information,
+  see [installation-support].
+
+  See [copyright] for information about copyright, license, and
+  authorship of the ACL2 system, and see [acknowledgments] for
+  sponsorship information.
+
+  For a variant of ACL2 that supports reasoning about the real numbers,
+  see [real].
+
+  See [mailing-lists] for information about mailing lists for ACL2
+  users, including how to post and how to access archives.
+
+  ACL2 may be exported to any countries except those subject to
+  embargoes under various laws administered by the Office of Foreign
+  Assets Control (``OFAC'') of the U. S. Department of the Treasury.
+
+  For more information about getting started with ACL2, see
+  [start-here].  Also see [using-ACL2] for information about running
+  ACL2 and about its [documentation].
+
+
+Subtopics
+
+  [Installation-instructions]
+      ACL2 installation instructions for Unix-like systems
+
+  [Obtaining-common-lisp]
+      Obtaining Common Lisp
+
+  [Installation-support]
+      Additional support for ACL2 installation
+
+  [Using-ACL2]
+      Using ACL2")
+ (INSTALLATION-INSTRUCTIONS
+  (INSTALLATION)
+  "ACL2 installation instructions for Unix-like systems
+
+  These instructions describe how to install ACL2 on ``Unix-like
+  systems'', including Linux, macOS (with Intel or ARM processors),
+  and FreeBSD.  To install ACL2 on Windows, see
+  [windows-installation].
+
+  ACL2 installations include both the ACL2 system and the open-source
+  ACL2 libraries developed by the ACL2 community, called the
+  Community Books (see [COMMUNITY-BOOKS]).
+
+   1. Decide which of the following you want to install:
+
+        * The [31;1mlatest ACL2 release[0m (version 8.6 (see [NOTE-8-6])).  The release
+          is stable and very well tested but does not include any
+          improvements or fixes made since October, 2024.  It may be
+          appropriate if you do not need the very latest tools and
+          libraries and do not plan to contribute to the
+          [community-books].  A pre-built binary distribution (see
+          [PRE-BUILT-BINARY-DISTRIBUTIONS]) of the release may be
+          available for your platform, which can let you avoid
+          following these installation instructions.
+
+        * The [31;1mlatest development snapshot[0m from GitHub (likely at most a few
+          days old). Development snapshots are only minimally tested
+          and may (rarely) have problems.  However, they provide the
+          latest iteration of ACL2 and the [community-books].  Use a
+          development snapshot if you plan to  contribute (see
+          [GITHUB-COMMIT-CODE-USING-PULL-REQUESTS]) additions or
+          changes to the [community-books], or if you plan to update
+          your copy of ACL2 later.  Pre-built binary distributions of
+          development snapshots are generally not available.
+
+   2. Obtain a Common Lisp implementation if you don't already have one;
+      see [obtaining-common-lisp].  (Note: Some of the
+      [community-books] depend on [Quicklisp], and those are only
+      guaranteed to work with CCL or SBCL.)
+
+   3. Depending on your decision in Step 1, download ACL2 by doing either
+      of the following:
+
+        * [31;1mFor the latest ACL2 release[0m (version 8.6):
+
+           1. Change to a directory that does not already contain a subdirectory
+              called [47macl2-8.6[0m.
+
+           2. Download { [47macl2-8.6.tar.gz[0m |
+              https://github.com/acl2-devel/acl2-devel/releases/download/8.6/acl2-8.6.tar.gz}
+              to that directory.
+
+           3. Execute the following:
+
+                  tar xfz acl2-8.6.tar.gz
+                  cd acl2-8.6
+
+          The new subdirectory [47macl2-8.6[0m should now be your shell's current
+          directory.
+
+        * [31;1mOr, for the latest development snapshot[0m:
+
+           1. Change to a directory that does not already contain a subdirectory
+              named [47macl2[0m.
+
+           2. Execute the following:
+
+                  git clone https://github.com/acl2/acl2
+                  cd acl2
+
+          The new subdirectory [47macl2[0m should now be your shell's current
+          directory.
+
+   4. Compile ACL2:
+
+          make LISP=<your_command_to_run_lisp>
+
+      where [47m<your_command_to_run_lisp>[0m is a command that runs your
+      selected Common LISP and is not merely a shell alias. The
+      default for [47m<your_command_to_run_lisp>[0m is [47mccl[0m.  [31;1mNote:[0m You will
+      need GNU Make (preferably newer than Version 3.82).  This will
+      create an executable script named [47msaved_acl2[0m (in the current
+      directory) that can be used to run ACL2.
+
+   5. Optionally, test ACL2 as follows:
+
+          ./saved_acl2
+          :mini-proveall
+          (quit)
+
+      You should see \"Mini-proveall completed successfully.\" a few lines
+      above the bottom of the output.
+
+   6. Certify some books, for example with
+
+          make basic
+
+      or something fancier such as the following.
+
+          (time nice make -j 8 ACL2=/u/smith/bin/acl2 basic) >& make-basic.log
+
+      This may take only a few minutes, depending your [47m-j[0m value, your
+      machine, and your host Common Lisp.  The resulting log should
+      contain no occurrences of the string ``CERTIFICATION FAILED'';
+      a normal exit (status 0) should guarantee this.  If you want
+      further options or additional explanation (e.g., you can
+      certify many more books with [47mmake regression[0m, and there is a
+      discussion of avoiding root login), see [books-certification].
+
+  You now have an executable script called [47msaved_acl2[0m and access to
+  certified community books.  Enjoy!  And please consider
+  contributing to the ACL2 libraries; see [how-to-contribute].")
+ (INSTALLATION-SUPPORT
+  (INSTALLATION)
+  "Additional support for ACL2 installation
+
+  To install ACL2, it will generally suffice to see the
+  [installation-instructions].  You should read the subtopics below
+  only if those instructions were somehow not sufficient.  They
+  provide alternate and additional information for obtaining and
+  installing ACL2 and associated libraries.
+
+
+Subtopics
+
+  [Creating-executable]
+      Creating or obtaining an executable image
+
+  [Running-ACL2-without-executable]
+      Running ACL2 without building an executable image
+
+  [Summary-of-ACL2-system-distribution]
+      Summary of ACL2 system distribution
+
+  [Windows-installation]
+      Installing ACL2 on Windows")
  (INSTRUCTIONS
   (PROOF-BUILDER)
   "Instructions to the interactive proof-builder
@@ -57905,9 +58775,10 @@ Subtopics
 
   [47m(int= x y)[0m is logically equivalent to [47m(equal x y)[0m.
 
-  Unlike [47m[equal][0m, [47mint=[0m requires its arguments to be numbers (or else
-  causes a [guard] violation; see [guard]).  Generally, [47mint=[0m is
-  executed more efficiently than [47m[equal][0m or [47m[=][0m on integers.
+  Unlike [47m[equal][0m, [47mint=[0m requires its arguments to be integers (or else
+  causes a [guard] violation; see [guard]).  [47mInt=[0m is intended to
+  execute more efficiently on integers than [47m[equal][0m or [47m[=][0m, though
+  this may not be true for all host Lisps.
 
   [31;1mMacro: [0m<int=>
 
@@ -57990,8 +58861,7 @@ Subtopics
   Here we list just a few of the industrially-relevant results obtained
   with ACL2.  Reading the list may help you decide you want to learn
   how to use ACL2.  If you do decide you want to learn more, we
-  recommend that you take The Tours (see [The_Tours]) after you leave
-  this page.
+  recommend that you take the [tours] after you leave this page.
 
   ACL2 was used at [31;1mMotorola Government Systems[0m to certify several
   microcode programs for the [31;1mMotorola CAP digital signal processor[0m,
@@ -58098,13 +58968,10 @@ Subtopics
 
   These are but a few of the interesting projects carried out with
   ACL2.  Many of the authors mentioned above have versions of the
-  papers on their web pages.  In addition, see {Books and Papers
-  about ACL2 and its Applications |
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html}.
-  Also, see the presentations in each of the {ACL2 Workshops |
-  http://www.cs.utexas.edu/users/moore/acl2/workshops.html}.")
+  papers on their web pages.  Also see publications and see the
+  presentations in each of the ACL2 Workshops.")
  (INTERFACING-TOOLS
-  (TOP ACL2)
+  (TOP)
   "Libraries and tools for doing basic file i/o (see [STD/IO]), using
   raw Common Lisp libraries (see [QUICKLISP]), working with the
   operating system (see [OSLIB]), and interfacing with other programs
@@ -58153,10 +59020,10 @@ Subtopics
   that would be premature because the imports to the package are
   unknown.  For example, if [47m\"P\"[0m were introduced with
 
-    (defpkg \"P\" '(LISP::X))
+    (defpkg \"P\" '(COMMON-LISP::X))
 
   then in Common Lisp [47m(symbol-package-name (intern \"X\" \"P\"))[0m returns
-  [47m\"LISP\"[0m.
+  [47m\"COMMON-LISP\"[0m.
 
   The obvious restriction on [47mintern[0m is that its second argument be the
   name of a package known to ACL2.  We cannot express such a
@@ -58213,7 +59080,7 @@ Subtopics
 
   For example, suppose [47m\"MY-PKG\"[0m was created by
 
-    (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+    (defpkg \"MY-PKG\" '(ACL2::ABC COMMON-LISP::CAR)).
 
   Let [47mw[0m be [47m'my-pkg::witness[0m.  Observe that
 
@@ -58232,7 +59099,7 @@ Subtopics
 
     (intern-in-package-of-symbol \"ABC\" w) is ACL2::ABC
 
-    (intern-in-package-of-symbol \"CAR\" w) is LISP::CAR
+    (intern-in-package-of-symbol \"CAR\" w) is COMMON-LISP::CAR (i.e., ACL2::CAR)
 
     (intern-in-package-of-symbol \"car\" w) is MY-PKG::|car|")
  (INTERRUPTS (POINTERS)
@@ -58873,8 +59740,8 @@ Exercises and Lessons
   range.  We would call them ``functionals'' except that suggests
   ACL2 is higher-order and it is not!  So we most often call them
   [scion]s of [47mapply$[0m.  In ordinary English usage, a ``scion'' is a
-  descendent of an important family or individual; our scions are
-  ``descendents'' of [47mapply$[0m and inherit its power and restrictions.
+  descendant of an important family or individual; our scions are
+  ``descendants'' of [47mapply$[0m and inherit its power and restrictions.
 
     ACL2 !>(defun$ my-collect$ (fn lst)
              (if (endp lst)
@@ -59213,7 +60080,7 @@ Some Practice Problems
 
     (defthm examples-of-orderedp$
       (and (orderedp$ '(1 3 5 7) '<)
-           (not (orderedp '(1 3 3 5 7) '<)))
+           (not (orderedp$ '(1 3 3 5 7) '<)))
       :rule-classes nil)
 
   [31;1mProblem 6[0m: You might hope that [47m(orderedp$ (sort$ lst fn) fn)[0m is a
@@ -59299,7 +60166,7 @@ Some Practice Problems
   and its children, where [3mhints2[0m is used instead.
 
   There are a few hints which ``take effect'' exactly on the subgoal to
-  which they are attached and are not inherited by their descendents.
+  which they are attached and are not inherited by their descendants.
 
   Here is an incomplete list of some of the more common hints; we note
   the ones that do not pass on their effects to their descendants.
@@ -59351,12 +60218,12 @@ Some Practice Problems
   theorem prover to go immediately into induction for the subgoal in
   question, and to use the induction scheme suggested by the hint
   rather than the one suggested by the terms in the subgoal itself.
-  This hint is not inherited by its descendents.
+  This hint is not inherited by its descendants.
 
   See [hints] {ICON} (see [A_Tiny_Warning_Sign]) for a complete list of
   all hints, and see [hints-and-the-waterfall] {ICON} (see
   [A_Tiny_Warning_Sign]) for a more thorough description of how the
-  effects of hints at a subgoal are inherited by the descendents.
+  effects of hints at a subgoal are inherited by the descendants.
 
   If you are reading this as part of the tutorial introduction to the
   theorem prover, use your browser's [31;1mBack Button[0m now to return to
@@ -60739,21 +61606,19 @@ Subtopics
   at the ACL2 Demos, at the ``Demos'' link of the {ACL2 home page |
   http://www.cs.utexas.edu/users/moore/acl2}.
 
-  Most users of ACL2 have bought the book
+  Many users of ACL2 have bought the book
 
   [3mComputer-Aided Reasoning: An Approach[0m, Kaufmann, Manolios, and Moore,
   Kluwer Academic Publishers, June, 2000
 
-  which is available {in paperback |
-  http://www.lulu.com/content/1746161} from Lulu for approximately
-  $20 (as of 2010).  That book contains hundreds of exercises in
-  programming, proof, and using The Method described here to prove
-  theorems.  Solutions to the exercises are online, as are
-  {appendices |
+  which is { available in paperback |
+  https://www.lulu.com/shop/j-moore-and-panagiotis-manolios-and-matt-kaufmann/computer-aided-reasoning-an-approach/paperback/product-1p52nnn.html}
+  from Lulu for approximately $22 (as of 2025).  That book contains
+  hundreds of exercises in programming, proof, and using The Method
+  described here to prove theorems.  Solutions to the exercises are
+  online, as are {appendices |
   http://link.springer.com/content/pdf/bbm%3A978-1-4615-4449-4%2F1.pdf}
-  that focus on some practical usage aspects.  See this { web page
-  about the book |
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html#Books},
+  that focus on some practical usage aspects.  See pubs::pubs-books,
   which also includes information about its companion (also available
   on Lulu) describing applications of ACL2, some of which are from
   industry.
@@ -60979,21 +61844,6 @@ Subtopics
 
   We also recommend that you look at the ACL2 Demos mentioned in the
   [ACL2-tutorial].
-
-  Most users of ACL2 have bought the book
-
-  [3mComputer-Aided Reasoning: An Approach[0m, Kaufmann, Manolios, and Moore,
-  Kluwer Academic Publishers, June, 2000
-
-  which is {available in paperback from Lulu |
-  http://www.lulu.com/content/1746161} for approximately $20 (as of
-  2010).  That book contains hundreds of exercises in programming,
-  proof, and using The Method to prove theorems.  Solutions to the
-  exercises are online.  See also this { web page about the book |
-  http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html#Books},
-  which also includes information about its companion (also available
-  on Lulu) describing applications of ACL2, some of which are from
-  industry.
 
   Thank you for spending the time to get acquainted with the basics of
   the ACL2 theorem prover.  Don't hesitate to send further questions
@@ -62870,7 +63720,7 @@ Subtopics
       Control radix in which numbers are printed and printing of the radix
 
   [Set-print-case]
-      Control whether symbols are printed in upper case or in lower case
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Set-print-radix]
       Control printing of the radix for numbers
@@ -64163,6 +65013,9 @@ Subtopics
   [Reset-ld-specials]
       Restores initial settings of the [47m[ld][0m specials
 
+  [Stobj-attachment-restrictions]
+      Restrictions on attachments to supporters of [stobj] primitives
+
   [Wormhole]
       [47m[ld][0m without [47m[state][0m --- a short-cut to a parallel universe")
  (LD-ALWAYS-SKIP-TOP-LEVEL-LOCALS
@@ -65339,7 +66192,9 @@ Subtopics
   avoids re-proving that constraint in future [events].
 
   See [functional-instantiation-example] for an example of the use of
-  [47m:functional-instance[0m (so-called ``functional instantiation'').
+  [47m:functional-instance[0m (so-called ``functional instantiation'').  See
+  [47m[set-constraint-tracking][0m for help figuring out where subgoals
+  generated by [47m:functional-instance[0m hints came from.
 
   Note that ACL2(r) (see [real]) imposes additional requirements for
   functional instantiation.  See [functional-instantiation-in-ACL2r].
@@ -66272,6 +67127,94 @@ Subtopics
 
   [Update-nth]
       Modify a list by putting the given value at the given position")
+ (LIVE-STOBJ-IN-PROOF
+  (RAW-LISP-ERROR)
+  "Error messages about ``live'' [stobj]s during proofs
+
+  It is possible to see an error like the following.  (This error is
+  probably very rare, and perhaps can only occur during a proof.)
+
+    ***********************************************
+    ************ ABORTING from raw Lisp ***********
+    ********** (see :DOC raw-lisp-error) **********
+    Error:  A live stobj (for stobj ST) was unexpectedly encountered
+            when evaluating a call of the function, ST-INIT.
+            See :DOC live-stobj-in-proof.
+    ***********************************************
+
+  The solution is generally to [disable] the [executable-counterpart]
+  of the offending function.  It may well be that the only way to get
+  an unexpected ``live'' [stobj] is by the use of [47m[swap-stobjs][0m, as
+  suggested by the example shown below (essentially provided by Sol
+  Swords) --- which results in a different error message, shown
+  below, than the one above.
+
+  First introduce a pair of congruent [stobj]s.
+
+    (defstobj st (fld))
+    (defstobj st1 (fld1) :congruent-to st)
+
+  Now define a function that ``initializes'' the stobj [47mst[0m by creating a
+  new stobj [47mst1[0m and swapping the two (see [swap-stobjs]).
+
+    (defun st-init (st)
+      (declare (xargs :stobjs (st)))
+      (with-local-stobj st1
+        (mv-let (st1 st)
+          (swap-stobjs st1 st)
+          st)))
+
+  Here is a proof attempt that results in a raw Lisp error due to a
+  live stobj being introduced by [47m[swap-stobjs][0m.
+
+    ACL2 !>(thm (not (equal (st-init '(1)) '(nil))))
+
+    ***********************************************
+    Note:  SWAP-STOBJS has been called on stobjs named ST1 and ST,
+    where the value of ST1 is a live stobj but the value of ST is not.
+    This is an error, as such calls are unsupported; see :DOC swap-stobjs.
+    Advanced users may find it helpful to evaluate the form
+    (set-debugger-enable :bt)
+    to see a backtrace of calls leading to this error;
+    see :DOC set-debugger-enable.
+      Will attempt to exit the proof in progress;
+      otherwise, the next interrupt will abort the proof.
+      For an immediate abort see :DOC abort-soft.
+    ***********************************************
+
+    The message above might explain the error.  If not, and
+    if you didn't cause an explicit interrupt (Control-C),
+    then it may help to see :DOC raw-lisp-error.
+
+    To enable breaks into the debugger (also see :DOC acl2-customization):
+    (SET-DEBUGGER-ENABLE T)
+
+    Summary
+    Form:  ( THM ...)
+    Rules: NIL
+    Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+    *** Note: No checkpoints to print. ***
+
+    ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+    ******** FAILED ********
+    ACL2 !>
+
+  In fact, that formula is not a theorem!  Through Version 8.6, ACL2
+  mistakenly proved this alleged theorem by evaluating the indicated
+  call of [47mst-init[0m to obtain an actual Lisp array, because of how ACL2
+  handles [stobj]s in Lisp.  But now ACL2 produces the error
+  displayed just above.
+
+  The error is avoided if we [disable] the [executable-counterpart] of
+  the offending function, [47mst-init[0m.  Indeed, the following theorem,
+  which contradicts the false claim above and disables the offending
+  executable-counterpart, shows that the logical value of [47m(st-init
+  '(1))[0m is indeed [47m'(nil)[0m.
+
+    (thm (equal (st-init '(1)) '(nil))
+         :hints((\"Goal\" :in-theory (disable (:e st-init)))))")
  (LOCAL
   (EVENTS)
   "Hiding an event in an encapsulation or book
@@ -70829,7 +71772,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
       (loop$ for i from 1 to imax
              append
              (loop$ for j from 1 to jmax
-                    collect (make-pair i j)))))
+                    collect (make-pair i j))))
 
     ACL2 Error [Translate] in ( DEFUN ALL-PAIRS-LOOP$ ...):  The body of
     a LAMBDA object, lambda$ term, or loop$ statement should be fully badged
@@ -70871,7 +71814,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
       (loop$ for i from 1 to imax
              append
              (loop$ for j from 1 to jmax
-                    collect (make-pair i j)))))
+                    collect (make-pair i j))))
 
     *** Key checkpoint at the top level: ***
 
@@ -71043,7 +71986,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
       (implies (and (natp imax)
                     (natp jmax))
                (equal (all-pairs-loop$ imax jmax)
-                      (all-pairs imax jmax)))))
+                      (all-pairs imax jmax))))
 
     *** Key checkpoint at the top level: ***
 
@@ -71102,7 +72045,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
                              (loop$-as (list (from-to-by 1 (car loop$-gvars) 1)))))
          (list jmax)
          (loop$-as (list (from-to-by i0 imax 1))))
-        (all-pairs-helper1 i0 imax jmax)))))
+        (all-pairs-helper1 i0 imax jmax))))
 
     *** Key checkpoint under a top-level induction: ***
 
@@ -71179,7 +72122,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
                              (loop$-as (list (from-to-by 1 (car loop$-gvars) 1)))))
          (list jmax)
          (loop$-as (list (from-to-by i0 imax 1))))
-        (all-pairs-helper1 i0 imax jmax)))))
+        (all-pairs-helper1 i0 imax jmax))))
 
     *** Key checkpoint at the top level: ***
 
@@ -71228,7 +72171,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
                     (natp jmax))
                (equal (all-pairs-loop$ imax jmax)
                       (all-pairs imax jmax)))
-      :hints ((\"Goal\" :do-not-induct t))))
+      :hints ((\"Goal\" :do-not-induct t)))
 
     *** Key checkpoints at the top level: ***
 
@@ -71305,7 +72248,7 @@ LP11: Proving Theorems about [47mFOR[0m [47mLoop$[0ms
   The final series of events to solve this problem is shown below.
 
     ; Include standard apply$ book.
-    (include-book \"projects/apply/top\" :dir :system)}
+    (include-book \"projects/apply/top\" :dir :system)
 
     ; Define and verify the guards of the recursive all-pairs.
     (defun make-pair (i j)
@@ -72098,7 +73041,9 @@ LP16: Proving Theorems about [47mDO[0m [47mLoop$[0ms
         (DO$
          (LAMBDA$ (ALIST)
                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-         (CONS (CONS 'I N) (cons 'ans ans0)) ; note generalization of 0!
+         (CONS (CONS 'I N)
+               (cons (cons 'ans ans0)
+                     nil)) ; note generalization of 0!
          (LAMBDA$
           (ALIST)
           (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
@@ -72126,11 +73071,12 @@ LP16: Proving Theorems about [47mDO[0m [47mLoop$[0ms
 
   The UPPERCASE part above was just copied from the checkpoint and then
   the pair in the initial alist binding [47mANS[0m, which was [47m'(ANS . 0)[0m,
-  was replaced by [47m(cons 'ans ans0)[0m.  So while it looks messy, it's
-  not hard to enter.  Furthermore, it saves us from having to figure
-  out the normal form --- it's already in the checkpoint.  The [47mDO$[0m
-  term in this version of [47mlemma1[0m is just the formal translation of
-  the generalized [47mDO[0m [47mloop$[0m we wrote in the earlier version of [47mlemma1[0m.
+  was replaced by [47m(cons (cons 'ans ans0) nil)[0m.  So while it looks
+  messy, it's not hard to enter.  Furthermore, it saves us from
+  having to figure out the normal form --- it's already in the
+  checkpoint.  The [47mDO$[0m term in this version of [47mlemma1[0m is just the
+  formal translation of the generalized [47mDO[0m [47mloop$[0m we wrote in the
+  earlier version of [47mlemma1[0m.
 
   Next we prove ``lemma 2'' equating the recursive function with the
   (generalized) specification.  This theorem does not involve [47mloop$[0m
@@ -72189,8 +73135,8 @@ LP16: Proving Theorems about [47mDO[0m [47mLoop$[0ms
                              do
                              (if (zp i)
                                  (return ans)
-    			   (progn (setq ans (+ 1 ans))
-    				  (setq i (- i 1)))))
+                             (progn (setq ans (+ 1 ans))
+                                    (setq i (- i 1)))))
                       n)))
 
   For more details about rewriting [47mlambda[0m objects you can leave the
@@ -73510,7 +74456,7 @@ LP9: Semantics of [47mFOR[0m [47mLoop$[0ms
   (MACROS)
   "A [table] used to associate function names with macro names
 
-    Example:
+    Example Form:
     (table macro-aliases-table 'append 'binary-append)
 
   This example associates the function symbol [47m[binary-append][0m with the
@@ -73522,56 +74468,116 @@ LP9: Semantics of [47mFOR[0m [47mLoop$[0ms
 
   as an abbreviation for
 
-    (in-theory (disable binary-append))
-
-  which in turn really abbreviates
-
-    (in-theory (set-difference-theories (current-theory :here)
-                                        '(binary-append)))
+    (in-theory (disable binary-append)).
 
     General Form:
 
     (table macro-aliases-table 'macro-name 'function-name)
 
-  or very generally
+  or more generally
 
     (table macro-aliases-table macro-name-form function-name-form)
 
-  where [47mmacro-name-form[0m and [47mfunction-name-form[0m evaluate, respectively,
-  to a macro name and a symbol in the current ACL2 [world].  See
-  [table] for a general discussion of tables and the [47mtable[0m event used
-  to manipulate tables.
+  where [47mmacro-name-form[0m and [47mfunction-name-form[0m evaluate to values [47mMAC[0m
+  and [47mFN[0m, subject to the following requirements.
 
-  Note that [47mfunction-name-form[0m (above) does not need to evaluate to a
-  function symbol, but only to a symbol.  As a result, one can
-  introduce the alias before defining a recursive function, as
-  follows.
+    * [47mMAC[0m is a symbol that is a macro name.
 
-    (table macro-aliases-table 'mac 'fn)
-    (defun fn (x)
-      (if (consp x)
-          (mac (cdr x))
-        x))
+    * [47mFN[0m is a symbol.
 
-  Although this is obviously a contrived example, this flexibility can
-  be useful to macro writers; see for example the definition of ACL2
-  system macro [47m[defun-inline][0m.
+    * [47mFN[0m is either a function symbol or else a symbol that does not have a
+      definition (a [3mnew name[0m).  In particular, [47mFN[0m is not a macro
+      name.
 
-  The [47m[table][0m [47m[macro-aliases-table][0m is an alist that associates macro
-  symbols with function symbols, so that macro names may be used as
-  runic designators (see [theories]).  For a convenient way to add
-  entries to this [table], see [add-macro-alias].  To remove entries
-  from the [table] with ease, see [remove-macro-alias].
+  After admitting the [table] event displayed above, we may say that
+  [47mMAC[0m is a [3mmacro-alias for[0m [47mFN[0m.
 
-  This [table] is used by the theory functions; see [theories].  For
-  example, in order that [47m(disable append)[0m be interpreted as [47m(disable
-  binary-append)[0m, it is necessary that the example form above has
-  been executed.  In fact, this [table] does indeed associate many of
-  the macros provided by the ACL2 system, including [47m[append][0m, with
-  function symbols.  Loosely speaking, it only does so when the macro
-  is ``essentially the same thing as'' a corresponding function; for
-  example, [47m(append x y)[0m and [47m(binary-append x y)[0m represent the same
-  term, for any expressions [47mx[0m and [47my[0m.")
+
+Further Explanation
+
+  See [table] for a general discussion of tables and the [47mtable[0m [event],
+  which is used to manipulate tables.  The table,
+  [47m[macro-aliases-table][0m, is an alist that can associate macro symbols
+  with function symbols, so that macro names may be used as runic
+  designators (see [theories] and discussion below).  For a
+  convenient way to add entries to this [table], see
+  [add-macro-alias], which allows the second argument to be, itself,
+  a macro-alias.  To remove entries conveniently from the [table],
+  see [remove-macro-alias].
+
+  As hinted above, this [table] is used by theory functions; see
+  [theories].  For example, in order that [47m(disable append)[0m be
+  interpreted as [47m(disable binary-append)[0m, it suffices that [47m(table
+  macro-aliases-table 'append 'binary-append)[0m, has been executed.  In
+  fact, this [table] does indeed establish many of the macros
+  provided by the ACL2 system as macro-aliases, such as establishing
+  [47m[append][0m as a macro-alias for [47m[binary-append][0m.  This only takes
+  place when the macro is ``essentially the same thing as'' a
+  corresponding function; for example, [47m(append x y)[0m and
+  [47m(binary-append x y)[0m represent the same term, for any expressions [47mx[0m
+  and [47my[0m.
+
+  Note that the value [47mFN[0m of [47mfunction-name-form[0m (above) is allowed to be
+  a symbol to be defined later as a function symbol.  The following
+  examples illustrate some approaches that work and some that do not.
+
+    ;;;;;;;;;;
+    ;;; Example 1: No errors, with function defined before setting the table.
+    ;;;;;;;;;;
+
+    (defun fn (x) x)
+    (defmacro mac (x) (list 'fn x))
+    (table macro-aliases-table 'mac 'fn) ; or (add-macro-alias mac fn)
+    (in-theory (disable mac))
+
+    ;;;;;;;;;;
+    ;;; Example 2: No errors, with function defined after setting the table.
+    ;;;;;;;;;;
+
+    (defmacro mac (x) (list 'fn x))
+
+    ; Legal, even though fn is not yet defined:
+    (table macro-aliases-table 'mac 'fn) ; or (add-macro-alias mac fn)
+
+    (defun fn (x) x)
+    (in-theory (disable mac))
+
+    ;;;;;;;;;;
+    ;;; Example 3: ERROR.
+    ;;;;;;;;;;
+
+    (defun fn (x) x)
+    (defmacro mac1 (x) (fn x))
+    (defmacro mac2 (x) (list 'mac1 x))
+
+    ; BAD, since the table event above anticipates fn to be defined as
+    ; a function, not a macro (but, no error yet) -- but not (yet) an error:
+    (table macro-aliases-table 'mac2 'mac1) ; or (add-macro-alias mac2 mac1)
+
+    ; ERROR, since mac2 does not designate rules, because it aliases a macro:
+    (in-theory (disable mac2))
+
+    ; OK, but too late to help with that in-theory event; see below:
+    (table macro-aliases-table 'mac1 'fn) ; or (add-macro-alias mac1 fn)
+
+    ; ERROR, since mac2 is still associated with mac1, not with fn:
+    (in-theory (disable mac2))
+
+    ;;;;;;;;;;
+    ;;; Example 4: Fixed version of Example 3.
+    ;;;;;;;;;;
+
+    (defun fn (x) x)
+    (defmacro mac1 (x) (fn x))
+    (defmacro mac2 (x) (list 'mac1 x))
+    (add-macro-alias mac1 fn); or (table macro-aliases-table 'mac1 'fn)
+
+    ; The following is equivalent to (add-macro-alias mac2 fn), since
+    ; mac1 is a macro-alias for fn by virtue of the preceding event.
+    (add-macro-alias mac2 mac1)
+
+    ; Success:
+    (in-theory (disable mac2))")
  (MACRO-ARGS
   (MACROS)
   "The formals list of a macro definition
@@ -73905,7 +74911,7 @@ Subtopics
       Print the translation of a form
 
   [Trans!]
-      Print the translation of a form without code restrictions
+      Print the translation without code restrictions on the input
 
   [Trans*]
       Show intermediate expansion results for the translation of a form
@@ -74019,6 +75025,47 @@ Subtopics
 
     * A reasonable model for [47m(magic-ev-fncall 'fn (list a1 a2 ...) state h
       aokp)[0m is [47m(ec-call (fn a1 a2 ...))[0m.")
+ (MAILING-LISTS
+  (ACL2 ABOUT-ACL2 COMMUNITY)
+  "Mailing lists for ACL2 users
+
+  There are the following mailing lists for ACL2 users.  You can post
+  messages to these lists only if you are a member, but anyone can
+  view the archives.
+
+      * [31;1macl2 list[0m: General ACL2 list for users and others interested in ACL2
+
+          * To post: [47m{acl2@utlists.utexas.edu | mailto:acl2@utlists.utexas.edu}[0m
+
+          * To subscribe, unsubscribe, or view archives:
+            [47m{https://utlists.utexas.edu/sympa/info/acl2 |
+            https://utlists.utexas.edu/sympa/info/acl2}[0m
+
+      * [31;1macl2-help list[0m: ACL2 help list, for questions about using ACL2(recommended for new users)
+
+          * To post: [47m{acl2-help@utlists.utexas.edu |
+            mailto:acl2-help@utlists.utexas.edu}[0m
+
+          * To subscribe, unsubscribe, or view archives:
+            [47m{https://utlists.utexas.edu/sympa/info/acl2-help |
+            https://utlists.utexas.edu/sympa/info/acl2-help}[0m
+
+      * [31;1macl2-books list[0m: Mailing list for discussion of cutting-edge
+        developments in ACL2 and the ACL2 Community Books
+
+          * To post: [47m{acl2-books@googlegroups.com |
+            mailto:acl2-books@googlegroups.com}[0m
+
+          * To subscribe, unsubscribe, or view archives:
+            [47m{https://groups.google.com/forum/#!forum/acl2-books |
+            https://groups.google.com/forum/#!forum/acl2-books}[0m
+
+  Finally, please report bugs in ACL2 to {Matt Kaufmann |
+  mailto:kaufmann@cs.utexas.edu}.
+
+  See [community] for ways to connect with other ACL2 users, get help
+  with ACL2, and contribute to improving ACL2 and its
+  [community-books].")
  (MAKE
   (DEFREC ACL2-BUILT-INS)
   "Constructor macro for [defrec] structures.
@@ -76352,9 +77399,9 @@ Subtopics
   "Declare a measure for a [47m[defun][0m
 
   See [xargs] for discussion of how to use the [47m:measure[0m keyword to
-  specify a measure for a definition.  A related utility, [47mmeasure[0m,
-  may be found in the [community-books], file
-  [47mkestrel/utilities/system/world-queries.lisp[0m.
+  specify a measure for a definition.  A related utility,
+  [47mget-measure[0m, may be found in the [community-books], file
+  [47mstd/system/get-measure.lisp[0m.
 
 
 Subtopics
@@ -78731,8 +79778,14 @@ Subtopics
   [Set-prover-step-limit]
       Sets the step-limit used by the ACL2 prover
 
+  [Set-subgoal-loop-limits]
+      Set the maximum length and repetition count of the subgoal path
+
   [Specious-simplification]
       Nonproductive proof steps
+
+  [Subgoal-loop-limits]
+      maximum length of the subgoal stack
 
   [Subversive-inductions]
       Why we restrict [encapsulate]d recursive functions
@@ -79984,7 +81037,7 @@ Subtopics
       Converting [multiple-value] result to a single-value list
 
   [Mv-nth]
-      The mv-nth element (zero-based) of a list
+      The nth element (zero-based) of a multiply valued expression
 
   [Mv?]
       Return one or more values
@@ -80153,7 +81206,7 @@ Subtopics
       x)")
  (MV-NTH
   (MV ACL2-BUILT-INS)
-  "The mv-nth element (zero-based) of a list
+  "The nth element (zero-based) of a multiply valued expression
 
   [47m(Mv-nth n l)[0m is the [47mn[0mth element of [47ml[0m, zero-based.  If [47mn[0m is greater
   than or equal to the length of [47ml[0m, then [47mmv-nth[0m returns [47mnil[0m.
@@ -80391,7 +81444,7 @@ Subtopics
   For this topic we assume that you already understand the basics of
   single-threaded objects in ACL2.  See [stobj], and in particular,
   see [defstobj], which notes that a stobj field can itself be a
-  stobj, an array or hash-tablle of stobjs, or a [stobj-table].  The
+  stobj, an array or hash-table of stobjs, or a [stobj-table].  The
   present [documentation] topic expands on that point.  However, we
   ignore stobj-table fields here; see [stobj-table] for such
   documentation.
@@ -80572,11 +81625,12 @@ SECTION: Accessing and updating stobj fields of stobjs using
   [47mparent[0m, which is a stobj isomorphic to [47mchild[0m, to have a value of 3.
   Below we explain the terms ``bindings'', ``producer variables'',
   ``producer'', and ``consumer'', as well as how to understand this
-  form.
+  form.  (Note that ``producer variables'' refers to a list of one or
+  more variables.)
 
     (stobj-let
      ((child (fld2 parent)))  ; bindings
-     (child)                  ; producer variable(s)
+     (child)                  ; producer variables
      (update-fld 3 child)     ; producer
      (update-fld3 'a parent)) ; consumer
 
@@ -80586,7 +81640,7 @@ SECTION: Accessing and updating stobj fields of stobjs using
     * Bindings:
           Bind [47mchild[0m to [47m(fld2 parent)[0m.
 
-    * Producer variable(s) and producer:
+    * Producer variables and producer:
           Then bind the variable, [47mchild[0m, to the value of the producer,
           [47m(update-fld 3 child)[0m.
 
@@ -80600,7 +81654,7 @@ SECTION: Accessing and updating stobj fields of stobjs using
   following expression, though this is approximate (see below).
 
     (let ((child (fld2 parent))) ; bindings
-      (let ((child (update-fld 3 child))) ; bind producer vars to producer
+      (let ((child (update-fld 3 child))) ; bind producer variables to producer
         (let ((parent (update-fld2 child parent))) ; implicit update of parent
           (update-fld3 'a parent))))
 
@@ -80980,7 +82034,7 @@ SECTION: Precise documentation for [47mstobj-let[0m
 
     (let BINDINGS'
       (declare (ignorable . STOBJ-LET-BOUND-VARIABLES))
-      (mv-let PRODUCER-VARS
+      (mv-let PRODUCER-VARIABLES
               PRODUCER
               (let* UPDATES
                 CONSUMER)))
@@ -81148,7 +82202,7 @@ SECTION: Using [47mstobj-let[0m with abstract stobjs
     ; bindings:
        ((n$  (uenslot1 two-usuallyequal-nums))
         (n$2 (uenslot2 two-usuallyequal-nums)))
-    ; producer variable:
+    ; producer variables:
        (n1 n2)
     ; producer:
        (mv (n$val n$) (n$val n$2))
@@ -104708,8 +105762,8 @@ Heuristic and Efficiency Improvements
   Thanks to Sol Swords for requesting this enhancement.  This lack of
   duplication also applies to any such [47mdefconst[0m event in a book that
   is in the scope of a [47m[progn][0m or [47m[encapsulate][0m event when there is
-  at one [47mmake-event[0m call in that scope; similarly for such [47mdefconst[0m
-  events within calls of [47m[skip-proofs][0m, [47m[with-output][0m,
+  at most one [47mmake-event[0m call in that scope; similarly for such
+  [47mdefconst[0m events within calls of [47m[skip-proofs][0m, [47m[with-output][0m,
   [47m[with-guard-checking][0m, or [47m[with-prover-step-limit][0m.
 
   Each new stobj was being created twice at [47m[include-book][0m time, once
@@ -104730,7 +105784,7 @@ Heuristic and Efficiency Improvements
   2.1\"[0m, [47m\"Subgoal 2.1.3.4.5\"[0m, [47m\"Subgoal 2.1.3.4.5'\"[0m, and [47m\"Subgoal
   2.1.3.4.5''\"[0m --- in general, such addition of equalities can only
   be performed five times along a chain of goals where each is a
-  descendent (not necessarily an immediate subgoal) of the one
+  descendant (not necessarily an immediate subgoal) of the one
   before, and each induction and forcing round provides a fresh
   start.  You can change that default from 5 to [47mn[0m, where [47mn[0m is a
   natural number, by evaluating the following form.
@@ -105139,7 +106193,7 @@ Changes at the System Level
       past standalone versions and integrated into the rest of the
       documentation.
 
-    * [Loop$-primer] provides an extensive primer on the the ACL2 [47m[loop$][0m
+    * [Loop$-primer] provides an extensive primer on the ACL2 [47m[loop$][0m
       feature.
 
     * [Type-reasoning] gives a basic introduction to what has sometimes
@@ -105302,8 +106356,69 @@ Experimental Versions
 
 Changes to Existing Features
 
+  The output generated by the induction routine has been slightly
+  changed.  Now, if term [47mt0[0m suggested the induction scheme but other
+  terms, [47mt1[0m, ... [47mtk[0m, either suggested the same scheme or schemes that
+  merged with [47mt0[0m's to create the selected scheme, the induction
+  output includes the sentence ``[47mWe will induct according to a scheme
+  suggested by t0, while accommodating t1, ..., tk[0m''.  The terms
+  mentioned are all preferentially expanded by the simplifier when
+  they arise in the subgoals produced by that induction.  The fact
+  that the terms are preferentially expanded is not new.  What's new
+  is that ACL2 now lists all the accommodated terms.
+
+  When the [summary] prints ``Modified system attachments'', it now
+  sorts that information before printing it.
+
+  Improved the error message when the package name is missing
+  immediately after `#!', as in #!(foo).
+
+  It was the case that in an [event] [47m(add-macro-alias mac fn)[0m,
+  [47m(add-macro-fn mac fn)[0m, or [47m(add-binop mac fn)[0m, if [47mfn[0m was a macro
+  name then this event generally had no effect.  Now, if in addition
+  an event [47m(add-macro-alias fn fn2)[0m has first been admitted (and no
+  later such event has been admitted), then in these three events, [47mfn[0m
+  will be treated as [47mfn2[0m.  See [add-macro-alias].  Thanks to Grant
+  Jurgensen for sending an example that showed how a confusing
+  [47m[in-theory][0m error could occur before this change, in the situation
+  described above: after the change, [47m(in-theory (disable mac))[0m is
+  treated as a directive to [disable] [47mfn2[0m; but before the change it
+  was treated as an attempt to [disable] the macro, [47mfn[0m, which caused
+  an error.
+
+  The utility [47m:[0m[47m[trans*][0m new uses the [47m:TERM[0m [evisc-tuple] (see
+  [set-evisc-tuple]) to print terms, as was already being done by
+  [47m:[0m[47m[trans][0m.
+
+  The behavior and documentation for [47m[read-file-into-string][0m have been
+  cleaned up and put in sync.  Thanks to Eric Smith and Grant
+  Jurgensen for communication that led to these improvements.
+
 
 New Features
+
+  The new function symbol [47mstrict-table-guard[0m returns its single
+  argument unchanged, but has a special meaning when a [table]'s
+  [47m:guard[0m is a call of that function symbol.  In that case, a term
+  supplied for updating the table --- that is, for the [47m:put[0m and
+  [47m:clear[0m operations --- must have no free variables, even though
+  variables [47mWORLD[0m and [47mENS[0m are normally permitted.  See [table].
+
+  A new feature provides ways to stop certain infinite loops in the
+  waterfall.  It is now possible to specify a limit on how many times
+  the waterfall can produce a new subgoal along a branch.  It is also
+  possible to specify that the prover should check for ``simple''
+  loops in the waterfall.  The default setting for this new feature
+  limits the branch length to 1000 and enables checking for duplicate
+  goals.  See [47m[set-subgoal-loop-limits][0m for details.  Thanks to Eric
+  Smith for suggesting that we consider supporting loop detection at
+  the goal level.
+
+  A new feature provides help in debugging failed proofs involving
+  functional instantiation.  In particular, it helps you answer the
+  question ``where did this subgoal come from?'' when looking at a
+  subgoal produced by functionally instantiating a constraint.  See
+  [47m[set-constraint-tracking][0m.
 
 
 Heuristic and Efficiency Improvements
@@ -105315,12 +106430,89 @@ Heuristic and Efficiency Improvements
   SBCL to support this improvement (made by adding suitable
   proclaiming in ACL2).
 
+  Avoided a potential quadratic blowup in [guard] generation by
+  improving how guard obligations are simplified.  Specifically,
+  improved the simplification of ground subterms so that [47m(if x y y)[0m
+  can simplify to [47my[0m; other uses in ACL2 of ground subterm
+  simplification similarly benefit.  Thanks to Eric Smith for sending
+  the following example, which now generates a simpler guard proof
+  obligation.
+
+    (defun foo (x y)
+      (declare (xargs :guard t))
+      (let ((x (+ 1 x)))
+        (case x
+          (1 (natp x))
+          (2 (consp x))
+          (3 (rationalp x))
+          (otherwise (+ x y)))))
+
+  Sped up [47m[include-book][0m by significantly reducing time in translating
+  calls of [47m[with-output][0m and some other macros (for some technical
+  details see ACL2 source function [47mmacroexpand1*-cmp[0m) and in
+  creatiion of the so-called post-alist in a [certificate] (for
+  relevant code, which shows the use of [fast-alists], see ACL2
+  source function [47maccumulate-post-alist[0m).  For examples showing
+  reduction by about 1/3 in include-book time, see the comment ``Here
+  are sample time reports (...)  for include-book speedups due
+  to...'' in the form [47m(defxdoc note-8-7 ...)[0m in [community-book]
+  [47mbooks/system/doc/acl2-doc.lisp[0m.  Thanks to Eric Smith for sending
+  an example book for which to speed up [47m[include-book][0m.
+
+  When a function, constant, or macro was defined within an
+  [47m[encapsulate][0m form, its definition was evaluated in Lisp with each
+  pass of evaluating the [47mencapsulate[0m form, and similarly for the
+  definition of its executable-counterpart (see [evaluation]).  For
+  CCL and SBCL, that implies that such function definitions were
+  compiled with each pass.  Now, with a few exceptions, these
+  definitions are saved in the first pass of evaluating the
+  [47mencapsulate[0m form and retrieved, rather than re-evaluated, in the
+  second pass.  The exceptions include the following.
+
+      * No definition is stored or retrieved that is within the scope of an
+        [47mencapsulate[0m form with a non-empty list of [signature]s.
+
+      * No definition of the executable-counterpart of a function symbol is
+        retrieved when that symbol has a non-redundant [logic]-mode
+        definition in the scope of [47m[local][0m that was evaluated within
+        the first pass of the same [47mencapsulate[0m.
+
+      * No [local] definition is stored that is within two or more nested
+        [47mencapsulate[0m events.
+
+  Thanks to Eric Smith for asking if a function defined within an
+  encapsulate can be expected to be compiled twice, once for each
+  pass of the encapsulate.  Implementation-level details are
+  explained in the section entitled ``Appendix 2: Extension for
+  Encapsulate'' in the ACL2 source code comment, ``Essay on Hash
+  Table Support for Compilation''.
+
 
 Bug Fixes
 
   Fixed a soundness bug in the [proof-builder] that could cause goals
   from [47m[force][0md hypotheses to be created incorrectly.  (This bug has
   been around for at least 10 years and probably for 30 years!)
+
+  Fixed a soundness bug based on the use of [47m[swap-stobjs][0m on two
+  [stobj]s of which one is ``live''.  See [live-stobj-in-proof].
+  Thanks to Sol Swords for reporting this bug, including an example
+  and analysis of possible fixes in his report.  (Technical Note.  We
+  have added code to check for live [stobj]s in proofs, which was
+  sufficient to fix the bug.  But the situation described above is
+  caught by a change to [47mswap-stobjs[0m, which now signals an error in
+  the relevant case (exactly one live stobj input).)
+
+  Fixed a soundness bug due to the interaction of [stobj]s and
+  [47m[defattach][0m.  The fundamental problem was that [47mdefattach[0m events can
+  cause a stobj recognizer to become false; see [community-book]
+  [47mbooks/system/tests/stobj-attach-unsoundness.lisp[0m.  The solution is
+  to disallow attachments for certain supporters of stobj primitives;
+  see [stobj-attachment-restrictions].  Thanks to Sol Swords for
+  reporting the bug, analyzing it quite thoroughly, contributing the
+  book mentioned above, modifying other books as necessary, and
+  providing preliminary code to fix the bug, and for helpful
+  conversations.
 
   A Lisp error is now avoided when saving event-data (see
   [saving-event-data] and submitting certain ill-formed attempts at
@@ -105342,6 +106534,132 @@ Bug Fixes
   bug has been fixed: the stobj is now created by the [47m:EXEC[0m of the
   attachment's creator.
 
+  Fixed a bug in [47m[trans*][0m when its use encounters a call of
+  [47m[make-event][0m with the [47m:on-behalf-of[0m keyword.  Thanks to Grant
+  Jurgensen for reporting this bug using a simple example.
+
+  According to the documentation for [47m[table][0m, the variable [47mENS[0m is
+  allowed in both the key and value expressions when updating the
+  table, that is, using the [47m:put[0m and [47m:clear[0m operations.  However, [47mENS[0m
+  was not being allowed in the key expression.  That has been fixed.
+
+  (SBCL only) Fixed a bug, for ACL2 hosted on SBCL, that was preventing
+  inlining of functions whose name ends in [47m\"$INLINE\"[0m, such as those
+  generated by [47m[defun-inline][0m.  Thanks to Grant Jurgensen for
+  reporting this bug with a helpful example.
+
+  A [47m[defabsstobj][0m event contains [3mfunction specs[0m that are each either a
+  symbol or a list of the form [47m(fn :kwd1 val1 ... :kwdn valn)[0m.  Each
+  [47mvali[0m must be a symbol, but when this was not the case, a raw Lisp
+  error could occur.  Now a clean error message is printed, and this
+  requirement on the [47mvali[0m has been made explicit in the documentation
+  for [47m[defabsstobj][0m.
+
+  ACL2 rejected some valid [47m:type[0m fields in defstobj forms.  This has
+  been fixed; see [defstobj], where the ``Remark on [47mSATISFIES[0m'' has
+  been extended to describe the requisite [guard] verification.
+  Thanks to J. David Taylor for reporting this issue (as Issue 1852
+  in the ACL2 GitHub repository) and including the following examples
+  that ACL2 rejected (but now accepts).
+
+      (defstobj st
+        (a :type (complex rational)
+           :initially #c(0 1)))
+
+      (defstobj st (a :type (string 1)
+                      :initially \"a\"))
+
+  The following additional example from Issue 1852 is still rejected,
+  because [47m[evenp][0m has a non-trivial [guard]; its argument must be an
+  integer.
+
+      (defstobj st (a :type (satisfies evenp)
+                      :initially 0))
+
+  However, the following variant produces a term, [47m(and (integerp x)
+  (evenp x))[0m, that is trivially guard-verifiable, so it is accepted
+  by ACL2 (but was not accepted before the bug fix).
+
+      (defstobj st (a :type (and integer (satisfies evenp))
+                      :initially 0))
+
+  Fixed a bug that was causing errors for [stobj]s introduced with
+  [47m[defstobj][0m keyword argument [47m:non-executable t[0m in the presence of
+  large arrays.  This should not have caused an error, since that
+  keyword argument prevents attempts at contructing the stobj (with
+  its arrays).
+
+  Fixed a bug in [47m:[0m[47m[pr][0m to work on function symbols introduced by
+  [47m[defstobj][0m (GitHub Issue 1851).  Thanks to David Taylor for
+  reporting this bug.
+
+  Fixed a [proof-builder] bug that could occasionally cause two goals
+  to exist with the same name.
+
+  The [47m:native[0m option of [47m[trace!][0m and [47m[trace$][0m did not work as one would
+  reasonably expect when SBCL is the host Lisp; now it does.
+
+  Some ill-formed hard errors, for example from calls of [47m[er][0m, caused
+  raw Lisp errors.  This has been fixed.  Thanks to Eric Smith for
+  reporting this bug with an example.
+
+  [47mDO[0m [47m[Loop$][0m expressions (see [do-loop$]) are now allowed that have no
+  [47mWITH[0m clauses.  Formerly, an expression [47m(loop$ do ...)[0m caused an
+  error with a rather nonsensical message.
+
+  For a [47mDO[0m [47m[loop$][0m expression returning a [stobj] that participates in
+  its measure, it was possible to get an inappropriate runtime
+  measure error.  (An example appears in a comment in the definition
+  of [47m[do$][0m in the ACL2 sources.)  This bug has been fixed by
+  modifying the definition of [47m[do$][0m to respect singled-threadedness.
+
+  A [47mDO[0m [47m[loop$][0m expression returning a [stobj] could cause a confusing
+  error; see ACL2 source function [47mchk-for-live-stobj[0m for an example.
+  This bug has been fixed so that no error occurs.
+
+  ACL2 did an incomplete job of excluding certain forms from being
+  evaluated in the top-level loop, including calls of [47m[swap-stobjs][0m,
+  parallelism primitives ([47m[pand][0m, [47m[por][0m, [47m[pargs][0m, and [47m[plet][0m) when
+  parallel evaluation is enabled (ACL2(p) only), and [47m[return-last][0m
+  calls.  For example, no error was signalled by the following, even
+  though the two stobjs were not swapped (as shown below).
+
+      (defstobj st1 (fld1))
+      (defstobj st2 (fld2) :congruent-to st1)
+      (update-fld1 1 st1)
+      (update-fld2 2 st2)
+      (assert-event (and (equal (fld1 st1) 1) (equal (fld2 st2) 2)))
+      ; The following is equivalent to (swap-stobjs st1 st2), and it
+      ; now causes an error but it did not cause an error in Version 8.6:
+      (mv-let (st1 st2) (swap-stobjs st1 st2) (mv st1 st2))
+      ; The following succeeds, showing that st1 and st2 were not actually swapped:
+      (assert-event (and (equal (fld1 st1) 1) (equal (fld2 st2) 2)))
+
+  This bug has been fixed.
+
+  [Stobj] creators are once again disallowed in execution contexts (but
+  are still allowed in theorems).  This requirement was relaxed
+  (perhaps inadvertently) in Version 8.5.  The following example
+  shows a problem with relaxing that restriction, as these events are
+  accepted in Versions 8.5 and 8.6, but no longer.
+
+    (defstobj st fld)
+    ; Admitted in Versions 8.5 and 8.6, but no longer:
+    (defun foo () (declare (xargs :guard t)) (create-st))
+    (update-fld 3 st)
+    (assert-event (equal (fld st) 3))
+    ; Should not change global value of st:
+    (foo)
+    ; But (fld st) has indeed changed:
+    (assert-event (equal (fld st) nil))
+
+  We fixed a low-level bug in [47m[include-book][0m, which we have only
+  observed using ACL2 built on host Lisp SBCL with safety 3 (an
+  optimization setting that causes more runtime checks at the cost of
+  longer run times).  (Technical note: The bug was in bogus type
+  declarations in the definition of ACL2 source macro
+  [47mwith-hcomp-bindings[0m.)  Thanks to Jim White for reporting the bug.
+
 
 Changes at the System Level
 
@@ -105359,6 +106677,54 @@ Changes at the System Level
   [47mbooks/system/doc/acl2-doc.lisp[0m.  Thanks to Camm Maguire for his
   help with this project, including (but by no means limited to) his
   contribution of a new sbits implementation.
+
+  The ACL2-only manual is no longer advertised on the ACL2 home page.
+  The ACL2+Books manual is favored both because it does not have the
+  broken links found in the ACL2-only manual and because the
+  ACL2+Books manual is helpful for informing new users about the
+  libraries provided by the [community-books].  Thanks to Eric Smith
+  for encouraging this change.  Note that the ACL2-only manual may
+  continue to be built in directory [47mdoc/manual/[0m when certifying
+  [47mbooks/system/doc/acl2-manual.lisp[0m.  (Directory [47mdoc/manual/[0m is not
+  to be confused with [47mbooks/doc/manual/[0m, where the ACL2+Books manual
+  is built.)
+
+  For the built-in [47m:[0m[47m[doc][0m command at the terminal: changed the top
+  topic of that ``acl2-only'' manual from [47mACL2[0m to [47mTOP[0m.  The
+  structures of the documentation trees for that version of the
+  manual and the usual ACL2+Books manual are now consistent.  Thanks
+  to Eric Smith for suggesting that those two manual structures be
+  consistent.
+
+  Replaced information about mailing lists in the [installation]
+  instructions using a link to a corresponding, new documentation
+  topic, [mailing-lists].  So now, the community can make suitable
+  updates to that page.  Thanks to Eric Smith for suggesting this
+  change.
+
+  The installation instructions have been moved into the manual; see
+  [installation].  Thanks to Eric Smith for suggesting this change,
+  which will allow the ACL2 community (specifically, the acl2-books
+  community) to improve those instructions.
+
+  By default, the directory where an ACL2 executable is to be built
+  must not have a pathname that contains spaces, as before.  However,
+  now there is a `[47mmake[0m' variable, [47mACL2_ALLOW_SPACES_IN_DIRECTORIES[0m,
+  that may be set to a non-empty value in order to build an ACL2
+  executable in such a directory, as noted in the error message.
+  That message points out that there may be errors, however, when
+  certifying books.  Thanks to Eric Smith for a discussion leading to
+  this change.
+
+  References to the old ``bleeding edge'' manual
+  ({https://www.cs.utexas.edu/users/moore/acl2/manuals/latest/' |
+  https://www.cs.utexas.edu/users/moore/acl2/manuals/latest/}) have
+  been replaced by references to the new one ({https://acl2.org/doc/
+  | https://acl2.org/doc/}).
+
+  The documentation for [47m[do-loop$][0m has been extended to illustrate how
+  to signal a soft error from within the body of a [47mDO[0m [47m[loop$][0m
+  expression.
 
 
 EMACS Support
@@ -106554,6 +107920,118 @@ Subtopics
   that yourself.")
  (OBSERVATION-CW (POINTERS)
                  "See [observation].")
+ (OBTAINING-COMMON-LISP
+  (INSTALLATION)
+  "Obtaining Common Lisp
+
+  A requirement for installing ACL2 is to install a suitable Common
+  Lisp implementation.  ACL2 can be hosted by several Common Lisp
+  implementations, as listed alphabetically below.  The most
+  commonly-used of these are SBCL and CCL, which can be obtained
+  without charge.
+
+  Regardless of which Common Lisp you choose, it is highly recommended
+  that you install a 64-bit implementation.  While 32-bit Lisps are
+  supported by the core ACL2 system, using a 32-bit Lisp may result
+  in reduced performance as well as certification failures for
+  certain [community-books].  If you are unsure whether your
+  installed Common Lisp is 64-bit or not, try running the following:
+
+    ;; If you are in an ACL2 REPL, first do :q to exit to Common Lisp.
+    ;; Evaluates to t if in a 64-bit Lisp.
+    (>= most-positive-fixnum (1- (expt 2 60)))
+
+
+Allegro Common Lisp
+
+  {Allegro Common Lisp | https://franz.com/} is a commercial
+  implementation.  It has been maintained for many years, but it
+  generally runs ACL2 more slowly than most other implementations,
+  and there are other issues; see [allegro-cl].
+
+
+Clozure Common Lisp (CCL)
+
+  {CCL | https://ccl.clozure.com/} is available without charge.  See
+  [ccl-installation] for instructions on how to fetch and install
+  CCL.
+
+  Quoting the {CCL website | https://ccl.clozure.com/}:
+      Clozure CL (often called CCL for short) is a free Common Lisp
+      implementation with a long history. Some distinguishing
+      features of the implementation include fast compilation speed,
+      native threads, a precise, generational, compacting garbage
+      collector, and a convenient foreign-function interface.
+
+  As of this writing (July 2025), CCL does not run natively on
+  Arm-based Macs.  There is an effort in progress to remedy that.
+
+
+CMU Common Lisp (CMUCL)
+
+  {CMUCL | https://cmucl.org} is available without charge.
+
+  Follow the {Download | https://cmucl.org/download.html} link on {the
+  CMUCL website | https://cmucl.org} to obtain CMUCL.  It has been
+  maintained for many years, but it generally runs ACL2 more slowly
+  than most other implementations.  At the time of writing (July,
+  2025), CMUCL does not offer a 64-bit version.
+
+
+GNU Common Lisp (GCL)
+
+  {GCL | https://www.gnu.org/software/gcl/} is available without
+  charge.
+
+  You can {download a binary Debian package for ACL2 |
+  https://tracker.debian.org/pkg/acl2}.  Thanks to Camm Maguire for
+  maintaining this package.  Note however that it may take some time
+  after each ACL2 release for this package to be updated for that
+  release.
+
+  Otherwise, it should be easy to obtain and build GCL yourself.  Note
+  that ACL2 requires ANSI GCL version 2.6.12 or later.  See
+  {[47mhttps://www.gnu.org/software/gcl/[0m |
+  https://www.gnu.org/software/gcl/} for instructions.  If you
+  encounter difficulties, see [gcl] and perhaps consider the
+  following instructions for obtaining an older version and then
+  building the executable [47mgcl/gcl/bin/gcl[0m.
+
+    git clone git://git.sv.gnu.org/gcl.git
+    cd gcl/gcl
+    git checkout Version_2_6_13pre
+    ./configure --enable-ansi && make
+
+
+LispWorks
+
+  {LispWorks | https://www.lispworks.com/} is a commercial
+  implementation.  You may ask the vendor for an evaluation license
+  for the full product if you are considering purchasing a license.
+
+
+Steel Bank Common Lisp (SBCL)
+
+  {SBCL | https://sbcl.org/} is available without charge.  See
+  [sbcl-installation-brief] for instructions on how to fetch and
+  install SBCL.  [31;1mImportant[0m: For maximum performance, build from
+  source using the options indicated in [sbcl-installation] when
+  building with [47mmake.sh[0m.
+
+
+Subtopics
+
+  [Allegro-cl]
+      Allegro Common Lisp as a host for ACL2
+
+  [Ccl-installation]
+      Installing Clozure Common Lisp (CCL)
+
+  [Sbcl-installation]
+      Installing Steel Bank Common Lisp (SBCL)
+
+  [Sbcl-installation-brief]
+      Installing Steel Bank Common Lisp (SBCL)")
  (ODDP
   (NUMBERS ACL2-BUILT-INS)
   "Test whether an integer is odd
@@ -107901,7 +109379,7 @@ Programming M1
   rearranging our clocks!  That is, [47m(m1 s (+ i j))[0m will decompose
   differently than [47m(m1 s (+ j i))[0m, but the arithmetic library might
   rearrange the clock, e.g., by using the commutativity of addition.
-  So instead of using [47m+[0m to express the the addition of two clocks we
+  So instead of using [47m+[0m to express the addition of two clocks we
   define [47mclk+[0m to be [47m+[0m, but we'll disable its definition to protect
   clocks from arithmetic reasoning.  We will arrange for [47mclk+[0m to take
   more than just two arguments and will reveal that it is
@@ -109349,8 +110827,7 @@ Subtopics
       J. Sawada, ``Verification of a Simple Pipelined Machine Model,'' in
       M. Kaufmann, P. Manolios, J S. Moore, editors, [3mComputer-Aided
       Reasoning: ACL2 Case Studies[0m, Kluwer Academic Publishers,
-      Chapter 9, pp. 137-150, 2000. (See also {ACL2 books |
-      https://www.cs.utexas.edu/~moore/publications/acl2-papers.html#Books}).
+      Chapter 9, pp. 137-150, 2000. (See also pubs::pubs-books.)
       [31;1mRelevance:[0m operational model of a pipelined machine and its
       verification
 
@@ -109449,21 +110926,20 @@ Subtopics
   regression, see the Nqthm installation instructions in
   [47mnqthm-1992/README[0m.
 
-  The ACL2 system, as it stood in 2000, is documented in two textbooks
-  described {here |
-  https://www.cs.utexas.edu/~moore/publications/acl2-papers.html#Books}.
-  These books are a good place for a beginner to start, even though
-  some of the material is out-of-date.  Up-to-date user-level
-  [documentation] of ACL2 is available online as described in the
-  User's Manuals link on the homepage (below), and a wealth of
-  information is available there.  Some of it is organized for the
-  experienced user trying to get information about a particular
-  feature, but there is a documentation topic, [start-here], that
-  provides many starting points for the beginning ACL2 user.
+  The ACL2 system, as it stood in 2000, is documented in two textbooks;
+  see pubs::pubs-books.  These books are a good place for a beginner
+  to start, even though some of the material is out-of-date.
+  Up-to-date user-level [documentation] of ACL2 is available online
+  as described in the User's Manuals link on the homepage (below),
+  and a wealth of information is available there.  Some of it is
+  organized for the experienced user trying to get information about
+  a particular feature, but there is a documentation topic,
+  [start-here], that provides many starting points for the beginning
+  ACL2 user.
 
-  Source code, input files, installation instructions, extensive online
-  documentation and other material is available on the {ACL2 homepage
-  | http://www.cs.utexas.edu/users/moore/acl2/}:
+  Source code, input files, [installation] instructions, extensive
+  online documentation and other material is available from the {ACL2
+  homepage | http://www.cs.utexas.edu/users/moore/acl2/}:
 
     https://www.cs.utexas.edu/~moore/acl2/
 
@@ -109474,20 +110950,17 @@ Subtopics
     https://github.com/acl2/acl2
 
   As with Nqthm, to explore ACL2 source files or prover input files we
-  recommend that you perform the first step of the installation
-  instructions found under the {``Obtaining, Installing, and
-  License'' |
-  https://www.cs.utexas.edu/~moore/acl2/current/HTML/installation/installation.html}
-  link of the ACL2 homepage above.  That first step downloads a
-  gzipped tar file of the latest sources and input scripts (but not
-  prover output) to a directory of your choosing.  The filenames
-  suffixed with [47m.lisp[0m at the top-level of that directory constitute
-  the ACL2 source code.  The ACL2 regression suite consists of
-  thousands of files called ``[books]'' and are available under the
-  [47mbooks/[0m subdirectory.  So, for example, you'll find a toy model of
-  the JVM at [47mbooks/models/jvm/m1/m1.lisp[0m.  If you want to see proofs
-  you must build ACL2 on your machine and run a full regression as
-  described in the installation instructions.
+  recommend that you see [installation] and follow the instructions
+  there.  That includes placing a copy of the latest sources and
+  input scripts (but not prover output) in a directory on your
+  computer.  The filenames suffixed with [47m.lisp[0m at the top-level of
+  that directory constitute the ACL2 source code.  The ACL2
+  regression suite consists of thousands of files called ``[books]''
+  and are available under the [47mbooks/[0m subdirectory.  So, for example,
+  you'll find a toy model of the JVM at [47mbooks/models/jvm/m1/m1.lisp[0m.
+  If you want to see proofs you must build ACL2 on your machine and
+  run a full regression as described in the [installation]
+  instructions.
 
 
 Quick Index to Related Topics
@@ -109954,6 +111427,8 @@ Further Explanation
   The [47m:otf-flg[0m may be supplied to [47m[defun][0m via the [47m[xargs][0m declare
   option.  When you supply an [47m:otf-flg[0m hint to [47mdefun[0m, the flag is
   effective for the termination proofs and the guard proofs, if any.")
+ (OTHER-RELEASES (POINTERS)
+                 "See [releases].")
  (OTHER_REQUIREMENTS
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Other Requirements
@@ -109968,7 +111443,8 @@ Further Explanation
   ACL2 currently runs on [31;1mUnix[0m, [31;1mLinux[0m, [31;1mWindows[0m, and [31;1mMacintosh OS X[0m
   operating systems.
 
-  It can generally be built in any of the following Common Lisps:
+  It can generally be built in any of the following Common Lisps (but
+  see [allegro-cl] for a caveat about Allegro Common Lisp):
 
     * [31;1mAllegro Common Lisp[0m,
     * [31;1mCCL[0m (formerly OpenMCL)
@@ -110710,7 +112186,7 @@ Subtopics
   node just visited.  If you wish to look at the pages below, we
   strongly recommend that you do so via a HTML-based Web browser.
   Indeed, you should simply visit ACL2's Home Page and take one of
-  the Tours.
+  the [Tours].
 
   Generally, the topics listed above will not be of use to the ACL2
   user.
@@ -110789,9 +112265,6 @@ Subtopics
 
   [Common_Lisp_as_a_Modeling_Language]
       Common Lisp as a Modeling Language
-
-  [Conversion]
-      Conversion to Uppercase
 
   [Corroborating_Models]
       Corroborating Models
@@ -110900,6 +112373,9 @@ Subtopics
 
   [Symbolic_Execution_of_Models]
       Symbolic Execution of Models
+
+  [Tours]
+      The Tours
 
   [The_Admission_of_App]
       The Admission of App
@@ -111018,14 +112494,8 @@ Subtopics
   [The_Time_Taken_to_do_the_Associativity_of_App_Proof]
       The Time Taken to do the Associativity of App Proof
 
-  [The_Tours]
-      The Tours
-
   [The_WARNING_about_the_Trivial_Consequence]
       The WARNING about the Trivial Consequence
-
-  [Undocumented_Topic]
-      Undocumented Topic
 
   [Using_the_Associativity_of_App_to_Prove_a_Trivial_Consequence]
       Using the Associativity of App to Prove a Trivial Consequence
@@ -112006,12 +113476,12 @@ Implementation
   The macro, [47mset-unknown-constraints-supporters[0m, extends a table,
   [47munknown-constraints-table[0m.  As evaluation of the
   partial-encapsulate concludes, the world is extended so that each
-  signature function has a [47m'constraint-lst[0m property indicating that
-  its constraints are unknown, but with supporters (``ancestors'', as
-  discussed above) according to that table.  This macro call can thus
-  be inserted non-[local]ly within an encapsulate, anywhere after the
-  local function definitions, to make an encapsulate behave like a
-  partial-encapsulate.")
+  signature function has a [47m'constraint-lst-etc[0m property indicating
+  that its constraints are unknown, but with supporters
+  (``ancestors'', as discussed above) according to that table.  This
+  macro call can thus be inserted non-[local]ly within an
+  encapsulate, anywhere after the local function definitions, to make
+  an encapsulate behave like a partial-encapsulate.")
  (PARTITION-REST-AND-KEYWORD-ARGS (POINTERS)
                                   "See [system-utilities].")
  (PATHNAME
@@ -112541,9 +114011,11 @@ Implementation
   imported into [47mpkg[0m, which should be the name of a package known to
   ACL2.  For example, suppose [47m\"MY-PKG\"[0m was created by
 
-    (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+    (defpkg \"MY-PKG\" '(ACL2::ABC COMMON-LISP::CAR)).
 
-  Then [47m(pkg-imports \"MY-PKG\")[0m equals the list [47m(ACL2::ABC LISP::CAR)[0m.
+  Then [47m(pkg-imports \"MY-PKG\")[0m equals the list [47m(ACL2::ABC
+  COMMON-LISP::CAR)[0m.  Note that [47mCOMMON-LISP::CAR[0m is the same as
+  [47mACL2::CAR[0m, which is printed as just [47mCAR[0m.
 
   If [47mpkg[0m is not a string, then [47m(pkg-imports pkg)[0m is [47mnil[0m.  If [47mpkg[0m is a
   string but not the name of a package known to ACL2, then the value
@@ -112905,6 +114377,9 @@ Subtopics
   [Backtrack]
       See [hints] for information about the keyword [47m:backtrack[0m.
 
+  [Bibliography]
+      See publications.
+
   [Binary-df*]
       See [df].
 
@@ -112931,6 +114406,9 @@ Subtopics
 
   [Ccl-updates]
       See [ccl-installation].
+
+  [Certifiable]
+      See [certify-book].
 
   [Certify-book-failure]
       See [certify-book-debug].
@@ -113688,6 +115166,9 @@ Subtopics
   [Optimize]
       See [declare].
 
+  [Other-releases]
+      See [releases].
+
   [Package]
       See [packages].
 
@@ -114113,6 +115594,9 @@ Subtopics
 
   [Typespec-check]
       See [meta-extract].
+
+  [The_Tours]
+      See [tours].
 
   [Unary-df-]
       See [df].
@@ -114657,8 +116141,10 @@ Subtopics
   but it is useful to see [linear] to learn about maximal terms
   (which, as one might guess, are stored under ``Max-term'').
 
-  Currently, this function does not print congruence rules, equivalence
-  rules, or refinement rules.
+  Currently, this function does not print [congruence] rules,
+  [equivalence] rules, or [refinement] rules.  Moreover, [induction]
+  rules that are created by recursive definitions will not show up
+  with [47m:pr[0m.
 
   The expert user might also wish to use [47m[find-rules-of-rune][0m.  See
   [find-rules-of-rune].")
@@ -115266,11 +116752,8 @@ Windows
 
   In the past, a Windows Installer for ACL2 has included a Unix
   environment, pre-certified standard and workshop books, and a copy
-  of Gnu Emacs.  This capability has largely been superseded in the
-  installation instructions' {section on Building an Executable Image
-  on Some Particular Systems |
-  https://www.cs.utexas.edu/~moore/acl2/current/HTML/installation/obtaining-and-installing.html#Build-Particular}.
-  See also [windows-installation].
+  of Gnu Emacs.  This capability has largely been superseded; see
+  [windows-installation].
 
 
 macOS
@@ -115288,7 +116771,7 @@ Debian GNU Linux
   A Debian Gnu Linux package is available, which is likely to work on
   other Linux systems as well.  Thanks to Camm Maguire for
   maintaining this package, and for pointing out that as Debian
-  packages are simply ar and tar archives, they can be unpacked on
+  packages are simply [47mar[0m and [47mtar[0m archives, they can be unpacked on
   any linux system, and who has said: ``If someone is running Debian,
   all they want to do is 'apt-get install acl2', doing likewise for
   any optional add-on package they wish as well, e.g. emacs, infix,
@@ -116946,11 +118429,12 @@ Subtopics
   [31;1mQ[0m: How did [47mrev[0m change the case of the elements, e.g., lowercase [47ma[0m was
   in the input list but uppercase [47mA[0m was in the output?  [31;1mA[0m: This is a
   trick question.  [47mRev[0m doesn't change the case of the elements.  ACL2
-  is case-insensitive when dealing with symbols.  The symbol [47ma[0m is
-  read in as the symbol [47mA[0m.  Thus, when writing function names, for
-  example, we can write [47mrev[0m, [47mRev[0m, [47mREV[0m, or even [47mReV[0m and always be
-  referring to the function [47mREV[0m.  By default, ACL2 prints symbols in
-  uppercase.
+  typically converts to upper case when reading symbols (see
+  [symbols] {ICON} (see [A_Tiny_Warning_Sign]) for details).  The
+  symbol [47ma[0m is read in as the symbol [47mA[0m.  Thus, when writing function
+  names, for example, we can write [47mrev[0m, [47mRev[0m, [47mREV[0m, or even [47mReV[0m and
+  always be referring to the function [47mREV[0m.  By default, ACL2 prints
+  symbols in uppercase.
 
   [31;1mQ[0m: What does [47m(rev '((a b c) \"Abc\" \"a\" b #\\c))[0m return?  [31;1mA[0m: [47m(#\\c B \"a\"
   \"Abc\" (A B C))[0m.  If you thought the answer was either of these,
@@ -121431,23 +122915,111 @@ Subtopics
   (RECURSION-AND-INDUCTION)
   "Recursion and Induction: Abbreviations for Terms
 
-  If [3mx[0m  is [47mt[0m, [47mnil[0m, an integer, a character object, or a string, and [3mx[0m
-  is used where a term is expected, then [3mx[0m  abbreviates the quoted
-  constant [47m'[0m[3mx[0m.  Recall that a single quote mark followed by a symbol,
-  e.g., [47m'load[0m, is a quoted constant.
+  Recall that a term is a variable symbol, a quoted constant, or a
+  function application written as a sequence, enclosed in
+  parentheses, consisting of a function symbol of arity [3mn[0m  followed
+  by [3mn[0m  terms.  See Terms (see [R-AND-I-TERMS]).  However, we
+  implement certain conventions that allow terms to be abbreviated.
+  The conventions allow case to be ignored (when writing symbols),
+  certain constants to be written without being quoted, and certain
+  primitive functions to be given more arguments than their arity
+  implies.  The ACL2 implementation also supports a powerful macro
+  facility inherited from Lisp, but we do not discuss macros in this
+  course.
 
-  In the following, an [3mexpression[0m  is an integer, a character object,
-  a string, a symbol, an optionally dotted parenthesized sequence of
+  When input is being read in and parsed into lexical tokens, the
+  characters in tokens parsed as Lisp symbols are converted to upper
+  case.  Thus, the following are three different ways to type in the
+  same symbol: [47mNIL[0m, [47mNil[0m, and [47mnil[0m.  Similarly, [47m(cons 'e x)[0m and [47m(Cons
+  'E x)[0m are both read the same way as [47m(CONS 'E X)[0m.  It may seem
+  strange to have different ways to write the same symbol but you're
+  very familiar with the similar conventions applied to numbers: 123,
+  +123, and 0123 are three different ways to write the same integer.
+  If you wish to type a symbol whose name includes lower case
+  characters you must surround the whole symbol with vertical bars.
+  E.g., [47m|nil|[0m is a different symbol than [47mnil[0m.  But in this course we
+  do not use symbols whose names include lower case characters.
+
+  The conversion to upper case only happens when parsing symbols.
+  Strings and character objects are not automatically converted to
+  upper case.  Thus, [47m\"NIL\"[0m, [47m\"Nil\"[0m and [47m\"nil\"[0m are three different
+  strings, and [47m#\\a[0m is a different character object than [47m#\\A[0m.
+
+  In this document, when we write symbols we generally write them in
+  lower case typewriter font, e.g., [47mnil[0m, and we capitalize them when
+  used as the first word of a sentence, e.g., [47mNil[0m. Occasionally we
+  write them in all upper case, e.g., [47mNIL[0m, to emphasize that
+  particular symbol or to further distinguish the symbol from a
+  nearby English word with the same spelling, as in the sentence
+  ``[47mAND[0m and [47mOR[0m denote conjunction and disjunction.'' But regardless
+  of the case we use --- whether lower case, captialized, or upper
+  case --- we are referring to the same upper case symbol.
+
+  The next convention allows you to drop the single quote mark on
+  certain constants.  The definition of a term requires constants to
+  be quoted.  E.g., since [47mevenp[0m is a function symbol of arity 1,
+  [47m(evenp '3)[0m is a term but [47m(evenp 3)[0m is not because [47m3[0m is neither a
+  variable symbol, a [3mquoted[0m  constant, or a function application.
+  But we accept the latter as an abbreviation of the former because
+  what else could it mean?  To see that ambiguity is lurking if quote
+  marks are dropped, consider [47m(member 'e '(a b c))[0m, where [47mmember[0m is a
+  function symbol of arity 2.  What happens if we drop either or both
+  of the quote marks?  Then we might still get a term that means
+  something completely different.  Here, the function [47mmember[0m means
+  ``is the first argument an element of the second?''
+
+    * [47m(member 'e '(a b c))[0m: is the constant symbol [47me[0m an element of the
+      constant list [47m(a b c)[0m?
+
+    * [47m(member e '(a b c))[0m: is the value of the variable [47me[0m an element of the
+      constant list [47m(a b c)[0m?
+
+    * [47m(member 'e (a b c))[0m: is the constant symbol [47me[0m an element of the list
+      computed by applying the function [47ma[0m to the values of variables
+      [47mb[0m and [47mc[0m?
+
+    * [47m(member e (a b c))[0m: is the value of the variable [47me[0m an element of the
+      list computed by applying the function [47ma[0m to the values of
+      variables [47mb[0m and [47mc[0m?
+
+  Meaning changes if quote marks are dropped from symbols and lists.
+  When the symbol [47me[0m is quoted in a term it denotes the constant [47me[0m;
+  when [47me[0m is not quoted it is a variable symbol and takes on whatever
+  value that variable has been assigned in the environment.
+  Similarly, when a list is quoted it denotes that list constant;
+  when it is not quoted it denotes the application of its first
+  element to the values of the other elements.
+
+  But unquoted numbers, character objects, and strings used as terms
+  cannot be confused with variable symbols or function applications,
+  so by convention they just abbreviate their own quotations.
+
+  More precisely, the quote convention for atomic objects is as
+  follows: If [3mx[0m  is the symbol [47mT[0m, the symbol [47mNIL[0m, an integer, a
+  character object, or a string, and [3mx[0m  is used where a term is
+  expected, then [3mx[0m  abbreviates the quoted constant [47m'[0m[3mx[0m.
+
+  Next we deal with quoted parenthesized expressions.  In the
+  following, an [3mexpression[0m  is an integer, a character object, a
+  string, a symbol, an optionally dotted parenthesized sequence of
   expressions, or a single quote mark followed by an expression.  By
   [3moptionally dotted parenthesized sequence of expressions[0m we mean a
   parenthesized non-empty sequence of expressions, optionally
   containing a dot (.) between the last two expressions in the
-  sequence.  For example ``[47m(A 123 . B)[0m'' and ``[47m(A (123 B) 'C)[0m'' are
-  both optionally dotted parenthesized sequences of expressions.
+  sequence.  For example ``[47m(A 123 B)[0m'' and ``[47m(A 123 . B)[0m'' are both
+  optionally dotted parenthesized sequences of expressions.  (There's
+  no dot in the first expression; the dot in the second one changes
+  the meaning.)
 
-  A single quote mark followed by an optionally dotted parenthesized
-  sequence of expressions, when used as a term, denotes a [47mcons[0m term
-  as follows, using these four rules:
+  We'll be precise in a moment, but [47m'(A 123 B)[0m is an abbreviation for
+  [47m(cons 'A (cons '123 (cons 'B 'nil)))[0m, which could also be written
+  [47m(cons 'A (cons 123 (cons 'B nil)))[0m.  Meanwhile, [47m'(A 123 . B)[0m is an
+  abbreviation for [47m(cons 'A (cons '123 'B))[0m which could also be
+  written [47m(cons 'A (cons 123 'B))[0m.
+
+  More generally, a single quote mark followed by an optionally dotted
+  parenthesized sequence of expressions, when used as a term, denotes
+  a [47mcons[0m term as follows, using these four rules:
 
   [3mNULL Rule:[0m  If '() is used as a term, it abbreviates [47m'nil[0m.
 
@@ -121467,10 +123039,13 @@ Subtopics
 
   If [47m'(A B . C)[0m is used as a term it denotes [47m(cons 'A (cons 'B 'C))[0m.
 
-  It remains to deal with cases like [47m'[0m[47m'A[0m and [47m'[0m[47m'(A 'B)[0m involving
-  multiple single quote marks.  We do not expect to use such
-  expressions in this course but we specify their meaning just for
-  completeness.
+  It remains to deal with cases like [47m'[0m[47m'A[0m and [47m'[0m[47m'(A 'B)[0m involving nested
+  single quote marks.  Expressions involving nested single quote
+  marks will not arise in this course.  But we specify their meaning
+  for completeness.
+
+  [3mYou may consider the following paragraph and the subsequent example
+  as optional![0m
 
   Let [3m\\alpha[0m  be an expression that does not start with a single quote
   mark.  Consider a sequence of two or more single quote marks
@@ -121497,19 +123072,20 @@ Subtopics
   Note that every occurrence of single quote now marks a quoted
   constant.
 
+  [3mEnd of optional material.[0m
+
   When [47m(list [3mx_1[0m[47m   ... )[0m is used as a term, it abbreviates [47m(cons [3mx_1[0m[47m
   (list  ... ))[0m.  When [47m(list)[0m is used as a term, it abbreviates [47mnil[0m.
   Thus [47m(list a b c)[0m abbreviates [47m(cons a (cons b (cons c nil)))[0m.
 
-  [47mAnd[0m and [47mor[0m will be defined as function symbols of two arguments.
-  But if [47mand[0m is used as though it were a function symbol of more than
-  two arguments, then it abbreviates the corresponding
-  right-associated nest of [47mand[0ms.  Thus, [47m(and p q r s)[0m, when used
-  where a term is expected, abbreviates [47m(and p (and q (and r s)))[0m.
-
-  If [47mor[0m is used as though it were a function symbol of more than two
-  arguments, then it abbreviates the corresponding right-associated
-  nest of [47mor[0ms.
+  For the purposes of this course you may imagine that [47mAND[0m and [47mOR[0m are
+  defined as function symbols of two arguments.  But we use them as
+  though they were function symbols of varying numbers of argument.
+  When [47mAND[0m and [47mOR[0m are provided more than two arguments it just
+  abbreviates the corresponding right-associated nest.  Thus, [47m(and p
+  q r s)[0m, when used where a term is expected, abbreviates [47m(and p (and
+  q (and r s)))[0m.  In the actual ACL2 implementation, [47mAND[0m and [47mOR[0m are
+  ``macros.''
 
   (Maybe explore term abbreviation in ACL2?  But abbreviation is
   complicated in ACL2 by the presence of a powerful macro facility.
@@ -121862,10 +123438,10 @@ Annotated Bibliography
       the ACL2 <<[Community-Books]>>, contains thousands of verified
       files created by the ACL2 user community containing definitions
       and theorems.  If you scan down to the [31;1mSubtopics[0m section of the
-      <<top>> node of the manual you will find a list of many topics
-      for which certified <<[books]>> are available.  To take just
-      one example from that top-level list of Subtopics, scroll down
-      to Hardware Verification.  In that Subtopic you find
+      <<[top]>> node of the manual you will find a list of many
+      topics for which certified <<[books]>> are available.  To take
+      just one example from that top-level list of Subtopics, scroll
+      down to Hardware Verification.  In that Subtopic you find
       directories dealing with symbolic simulation, register transfer
       logic (including tools for reasoning about floating point
       implementations), a Verilog translator, an x86 ISA model, and
@@ -121912,9 +123488,8 @@ Annotated Bibliography
       Common Lisp.  Indeed, we don't recommend [6] or [7] for that
       purpose either.  Many good introductions to Common Lisp are
       available via the web.  There are many implementations of
-      Common Lisp available and the installation instructions on the
-      {ACL2 home page | http://www.cs.utexas.edu/users/moore/acl2/}
-      list several.
+      Common Lisp available and the [installation] instructions list
+      several; see [obtaining-common-lisp].
 
     * [8] W. A. Hunt, Jr., M. Kaufmann, J S. Moore and A. Slobodova.
       Industrial Hardware and Software Verification with ACL2.
@@ -122901,15 +124476,14 @@ Subtopics
   to related discussions of issues and features of the ACL2 system.
   You'll need to be connected to the web to access some of these
   pages, unless you have installed ACL2 on your system and built the
-  full manual and books documentation.  See the installation
-  instructions on the ACL2 home page [4].  We provide this material
-  for students who want to explore further.  But these links are
-  technically irrelevant to the student who is focused on working the
-  exercises here, even if your ultimate goal is to learn how to use
-  ACL2.  First, learn how to do the exercises here.  In a second
-  pass, where you're trying to get ACL2 to do your proofs, you might
-  want to explore.  And remember, it is easy for explorers to get
-  lost!
+  full manual and books documentation.  See the [installation]
+  instructions.  We provide this material for students who want to
+  explore further.  But these links are technically irrelevant to the
+  student who is focused on working the exercises here, even if your
+  ultimate goal is to learn how to use ACL2.  First, learn how to do
+  the exercises here.  In a second pass, where you're trying to get
+  ACL2 to do your proofs, you might want to explore.  And remember,
+  it is easy for explorers to get lost!
 
   [31;1mIf you are working your way through [3mRecursion and Induction[0m[31;1m and
   decide to follow one of these explorer links be sure to use the
@@ -124512,14 +126086,15 @@ Recursion and Induction Table of Contents
 
   For the purposes of this document, a [3mterm[0m  is a variable symbol, a
   quoted constant, or a function application written as a sequence,
-  enclosed in parenthesis, consisting of a function symbol of arity [3mn[0m
+  enclosed in parentheses, consisting of a function symbol of arity [3mn[0m
   followed by [3mn[0m  terms.
 
   Since [47mcar[0m is a function symbol of arity one and [47mcons[0m is a function
-  symbol of arity two, then [47m(cons (car x) y)[0m is a term.  In more
-  conventional notation this term would be written [3mcons[0m ([3mcar[0m ([3mx[0m ), [3my[0m
-  ).  We call [47m(car x)[0m and [47my[0m the [3mactual expressions[0m  or [3mactuals[0m  of
-  the [3mfunction call[0m  [47m(cons (car x) y)[0m.
+  symbol of arity two, and [47mx[0m and [47my[0m are variable symbols, then [47m(cons
+  (car x) y)[0m is a term.  In more conventional notation this term
+  would be written [3mcons[0m ([3mcar[0m ([3mx[0m ), [3my[0m ).  We call [47m(car x)[0m and [47my[0m the
+  [3mactual expressions[0m  or [3mactuals[0m  of the [3mfunction call[0m  [47m(cons (car x)
+  y)[0m.
 
   Semantically, terms are interpreted with respect to (i) an
   assignment binding variable symbols to constants and (ii) an
@@ -125231,7 +126806,16 @@ Recursion and Induction Table of Contents
 
     * [47m[Defattach][0m using argument [47m:skip-checks t[0m
 
-    * Reader errors (for examples see [reader] and see [set-iprint])")
+    * Reader errors (for examples see [reader] and see [set-iprint])
+
+    * Certain errors during proofs (for an example see
+      [live-stobj-in-proof]
+
+
+Subtopics
+
+  [Live-stobj-in-proof]
+      Error messages about ``live'' [stobj]s during proofs")
  (RAW-MODE (POINTERS)
            "See [set-raw-mode].")
  (READ-ACL2-ORACLE
@@ -125268,11 +126852,14 @@ Recursion and Induction Table of Contents
   (IO)
   "The contents of a file (or part of it) as a string
 
-  When this macro is passed a valid filename and the ACL2 [state], it
-  generally returns the contents of the file (or a specified part of
-  the file) as a string.  Otherwise, it returns [47mnil[0m or causes an
-  error.  Unlike other ACL2 functions for reading a file, this one
-  does not return the ACL2 [47mstate[0m, and it is generally much faster.
+  This macro returns the contents of the file, or a specified part of
+  the file, as a string.  Otherwise, it returns [47mnil[0m or causes an
+  error.  Although this macro implicitly takes the ACL2 [state], it
+  differs from other ACL2 file-reading utilities in that it does not
+  return the ACL2 [47mstate[0m, and it is generally [3mmuch[0m faster.
+
+
+Summary
 
     Example Forms:
 
@@ -125290,107 +126877,200 @@ Recursion and Induction Table of Contents
                            )
 
   where [47mfilename[0m is a string, which is typically the name of a file,
-  and the keyword argument are optional and evaluated, as follows: [47ms[0m
-  has default [47m0[0m and its value is a natural number (except, an error
-  occurs if that number exceeds the length of the given file), [47mb[0m has
-  default [47mnil[0m and its value is either a natural number or [47mnil[0m, and [47mc[0m
-  has default [47m:default[0m and its value is otherwise considered to be
-  false (when [47mnil[0m) or true (when not [47mnil[0m).
+  and the keyword arguments, which are optional and evaluated, are as
+  follows: [47ms[0m has default [47m0[0m and its value is a natural number, where
+  an error occurs if that number exceeds the length of the given
+  file; [47mb[0m has default [47mnil[0m and its value is either a natural number or
+  [47mnil[0m; and [47mc[0m has default [47m:default[0m and its value is otherwise
+  considered to be false (when [47mnil[0m) or true (when not [47mnil[0m).  The
+  effects of these arguments are described below.
 
   For examples, see [community-books] file
   [47mbooks/system/tests/read-file-into-string.lisp[0m.
+
+
+Summary documentation
+
+  Typical use of [47mread-file-into-string[0m will either return the contents
+  of the given file (as a string) or will return specified segments
+  of the file.  Here is a log illustrating how we can read the full
+  contents of a file and then read it in pieces.  The form
+  [47m(INCREMENT-FILE-CLOCK STATE)[0m is necessary in order to make certain
+  successive calls; this is discussed further below.
+
+    ACL2 !>(read-file-into-string \"tmp.txt\")
+    \"Hello
+    world.
+    \"
+    ACL2 !>(INCREMENT-FILE-CLOCK STATE)
+    <state>
+    ACL2 !>(read-file-into-string \"tmp.txt\" :start 0 :bytes 3)
+    \"Hel\"
+    ACL2 !>(read-file-into-string \"tmp.txt\" :start 3 :bytes 2)
+    \"lo\"
+    ACL2 !>(read-file-into-string \"tmp.txt\" :start 5)
+    \"
+    world.
+    \"
+    ACL2 !>
+
+  For two successive calls of [47mread-file-into-string[0m on the same input
+  string, the second call must generally start beyond the last byte
+  that was read by the first call.  An exception is made when the
+  second call specifies [47m:bytes 0[0m, when [47m:start[0m is either omitted or
+  has value 0; in that case, the empty string is returned without
+  error.  An exception is also made when the form
+  [47m(INCREMENT-FILE-CLOCK STATE)[0m is evaluated between the two calls.
+
+  It may seem odd to require a call of [47mincrement-file-clock[0m to avoid
+  errors from successive reads.  The reason stems from the fact that
+  [47mincrement-file-clock[0m is a function.  The concern is that the file
+  may change between successive calls of [47mread-file-into-string[0m
+  (perhaps made hours apart!), for reasons external to ACL2, in which
+  case it could appear that [47mread-file-into-string[0m returns different
+  values for the same inputs.  By evaluating [47m(INCREMENT-FILE-CLOCK
+  STATE)[0m, one is incrementing the file-clock field of the [47mstate[0m
+  argument, so the next call is on a different [47mstate[0m argument.  This
+  is all explained logically by the definitions of
+  [47mread-file-into-string[0m and its subroutines in ACL2, as shown in the
+  final section of this documentation.  (But the implementation of
+  [47mread-file-into-string[0m involves raw Lisp code.)  ACL2 causes various
+  informative Lisp errors when functional semantics could otherwise
+  be violated, and some of these errors are shown below.
+
+  Note that ACL2 characters always fit into a single byte, which is why
+  we can talk about ``bytes''.
+
+  Compared with the usual [io] routines provided by ACL2,
+  [47mread-file-into-string[0m is generally much more efficient, and also it
+  does not return [47m[state][0m.  Note that the macroexpansion of a call of
+  this macro takes [47mstate[0m as an argument; so if you call it in the
+  body of a function definition, then --- as usual for functions that
+  take [47mstate[0m --- either [47m(set-state-ok t)[0m must have been evaluated or
+  else a suitable [47m:stobjs[0m declaration, typically [47m:stobjs state[0m, must
+  be provided (see [xargs]).
+
+  The very large constant [47m*read-file-into-string-bound*[0m, whose
+  definition is shown in the final section below, establishes a
+  strict upper bound on the size of the string returned.  If the file
+  (or specified portion thereof) contains more bytes than this, then
+  [47mnil[0m is returned.
+
+
+Detailed discussion of keyword arguments
 
   The result, when not [47mnil[0m or an error, is a string representing the
   specified file contents.  For the default of [47m:start 0[0m and [47m:bytes
   nil[0m, or equivalently, when no keyword arguments are specified, the
   entire file contents are returned as a string.  In general, [47m:start
   s[0m specifies the part of the file starting at byte position [47ms[0m of the
-  file, and [47m:bytes b[0m specifies that only the first [47mb[0m bytes are to be
-  read starting at that position --- however, stopping at the end of
-  the file if [47mb+s[0m exceeds the length [47mL[0m of the file.  Below we call
-  this case that [47mb+s>L[0m the ``truncation case''.
-
-  Note that ACL2 characters always fit into a single byte, which is why
-  we can talk about ``bytes'' here.
+  file, and the [47m:bytes[0m argument specifies the number of consecutive
+  bytes to be included starting at that position: [47m:bytes nil[0m
+  specifies that the rest of the file is to be included, while for a
+  natural number [47mb[0m, [47m:bytes b[0m specifies that only the next [47mb[0m bytes are
+  to be included --- but, stopping at the end of the file if [47mb+s[0m
+  exceeds the length [47mL[0m of the file.  Below we call this case that
+  [47mb+s>L[0m the [3mtruncation case[0m.
 
   The [47m:close[0m argument affects handling of the Lisp stream that is
   created for the specified file.  When the value of [47m:close[0m is the
-  default, [47m:default[0m, this stream is closed immediately after the read
-  exactly when either [47m:bytes[0m has value [47mnil[0m (the default) or we are in
-  the truncation case [47mb+s>L[0m described above.  But otherwise the
-  stream remains open, which could cause a problem since operating
-  systems can complain when too many streams are open at the same
-  time.  If the value of [47m:bytes[0m is non-[47mnil[0m (hence, a natural number),
-  then you may want to specify [47m:close t[0m to prevent that problem,
-  unless you plan to read more bytes from the same file.  If you
-  decide to close the file later, this can be accomplished
-  efficiently by evaluating the following form for your file,
-  [47m\"<file>\"[0m.
+  default, [47m:default[0m, the criterion for closing the stream immediately
+  after the read completes is that either [47m:bytes[0m has value [47mnil[0m (the
+  default) or we are in the truncation case [47mb+s>L[0m described above.
+  Once this stream is closed, a Lisp error occurs if
+  [47mread-file-with-string[0m is called when either [47m:start[0m or [47m:bytes[0m
+  specifies a non-zero value unless the file-clock of the state is
+  advanced first by evaluating [47m(INCREMENT-FILE-CLOCK STATE)[0m.  See
+  [state] for a discussion of the logical role of the file-clock of
+  the state.
 
-    (time$ (read-file-into-string \"<file>\" :start 0 :bytes 0 :close t))
+  Here is a typical log showing such an error message from successive
+  reads, together with the evaluation of [47m(INCREMENT-FILE-CLOCK STATE)[0m
+  as a remedy.  The next section, further below, discusses the
+  closing of streams.
 
-  Compared with the usual [io] routines provided by ACL2,
-  [47mread-file-into-string[0m is generally much more efficient, and also it
-  does not return [47m[state][0m.  Note that the expansion of a call of this
-  macro takes [47mstate[0m as an argument; so if you call it in the body of
-  a function definition, then --- as usual for functions that take
-  [47mstate[0m --- either [47m(set-state-ok t)[0m must have been evaluated or else
-  a suitable [47m:stobjs[0m declaration, typically [47m:stobjs state[0m, must be
-  provided (see [xargs]).
-
-  The constant [47m*read-file-into-string-bound*[0m (see the definition below)
-  establishes a strict upper bound on the size of the string
-  returned.  If the file (or specified portion thereof) contains more
-  bytes than this, then [47mnil[0m is returned.
-
-  There are two checks to guarantee that [47mread-file-into-string[0m is truly
-  a function --- that is, it returns the same value for two calls
-  with the same inputs.  The primary check ensures that the write
-  date of the file has not changed in the interval between two such
-  calls unless the [47mfile-clock[0m component of the ACL2 state has been
-  updated within that interval.  That update takes place when an
-  input or output channel is opened or closed in the usual way (that
-  is, using [47mopen-input-channel[0m, [47mopen-output-channel[0m,
-  [47mclose-input-channel[0m, or [47mclose-output-channel[0m; see [io]).  However,
-  it suffices to evaluate the following form, which returns the
-  [47m[state][0m obtained by incrementing its [47mfile-clock[0m.
-
-    (increment-file-clock state)
-
-  If however you make illegal successive reads as described above, a
-  Lisp error will occur with a message of the following form.
+    ACL2 !>(read-file-into-string \"tmp.txt\")
+    \"Hello
+    world.
+    \"
+    ACL2 !>(read-file-into-string \"tmp.txt\")
 
     ***********************************************
     ************ ABORTING from raw Lisp ***********
     ********** (see :DOC raw-lisp-error) **********
-    Error:  Illegal consecutive reads from file
-    \"<some_filename>\",
-    which appears to have been written between the two reads.
-    Execute (INCREMENT-FILE-CLOCK STATE) to avoid this error.
+    Error:  Apparently READ-FILE-INTO-STRING has previously closed the stream
+    that is associated with file
+    \"tmp.txt\".
+    Consider evaluating (INCREMENT-FILE-CLOCK STATE).
     See :DOC read-file-into-string.
     While executing: READ-FILE-INTO-STRING2
     ***********************************************
 
-  A similar error may occur when a call of [47mread-file-into-string[0m is
-  followed by a call of [47m[open-input-channel][0m on the same filename
-  when that file is modified between the two calls.  For low-level
-  details about logical issues being addressed by such errors, see
-  the comment in the definition of [47m*read-file-into-string-alist*[0m in
-  the ACL2 sources.
+    The message above might explain the error.  If not, and
+    if you didn't cause an explicit interrupt (Control-C),
+    then it may help to see :DOC raw-lisp-error.
 
-  The other check ensures that the write date of the file has not
-  changed while a call is in progress.  When that check fails the
-  corresponding Lisp error is of the following form.
+    To enable breaks into the debugger (also see :DOC acl2-customization):
+    (SET-DEBUGGER-ENABLE T)
+    ACL2 !>(INCREMENT-FILE-CLOCK STATE)
+    <state>
+    ACL2 !>(read-file-into-string \"tmp.txt\")
+    \"Hello
+    world.
+    \"
+    ACL2 !>
 
+  The implementation of [47mread-file-into-string[0m advances a pointer with
+  each successive read while the stream is open.  An error is
+  signaled when attempting to call [47mread-file-into-string[0m with a
+  [47m:start[0m value that points to a byte that is not beyond all bytes
+  already read by previous calls (unless there is an intervening
+  evaluation of [47m(INCREMENT-FILE-CLOCK STATE)[0m).  Here is a sample log
+  to illustrate this point.
+
+    ACL2 !>(read-file-into-string \"tmp.txt\" :bytes 3)
+    \"Hel\"
+    ACL2 !>(read-file-into-string \"tmp.txt\" :start 3 :bytes 2)
+    \"lo\"
+    ACL2 !>(read-file-into-string \"tmp.txt\" :start 4)
+
+    ***********************************************
     ************ ABORTING from raw Lisp ***********
     ********** (see :DOC raw-lisp-error) **********
-    Error:  Illegal attempt to call READ-FILE-INTO-STRING concurrently
-    with some write to that file!  See :DOC read-file-into-string.
+    Error:  The :start value, 4, specified for a call of READ-FILE-INTO-STRING,
+    is less than the position 5 immediately after a previous read of file
+    \"tmp.txt\" at the same file-clock.
+    Consider evaluating (INCREMENT-FILE-CLOCK STATE).
+    See :DOC read-file-into-string.
+    While executing: READ-FILE-INTO-STRING2
     ***********************************************
 
-  We close by showing the relevant ACL2 definitions in the logic, that
-  is, not including the special raw Lisp (under the hood) code in the
-  definition of [47mread-file-into-string2[0m.
+
+Closing streams
+
+  A call of [47mread-file-into-string[0m on a given filename opens a Lisp
+  stream connected to the given file.  ACL2 keeps track of such an
+  association of filenames with streams.
+
+  If the stream remains open for numerous calls of
+  [47mread-file-into-string[0m, the operating system could eventually
+  complain because too many streams are open at the same time.
+  Recall that if the value of [47m:bytes[0m is non-[47mnil[0m (hence, a natural
+  number), then, except in the truncation case, the stream remains
+  open.  In such cases may want to specify [47m:close t[0m to prevent
+  leaving too many streams open, unless you plan to read more bytes
+  from the same file.  If you decide to close the stream later, this
+  can be accomplished efficiently without reading any bytes by
+  evaluating the following form for your file, [47m\"<file>\"[0m.
+
+    (read-file-into-string \"<file>\" :bytes 0 :close t)
+
+
+Logical definitions
+
+  We close by showing the relevant ACL2 definitions in the logic.
+  Thus, these do not show the special raw Lisp (under the hood) code
+  in the definition of [47mread-file-into-string2[0m.
 
   [31;1mFunction: [0m<read-file-into-string1>
 
@@ -127612,6 +129292,164 @@ Subtopics
 
   [Note-8-7]
       ACL2 Version 8.7 (xxx, 20xx) Notes")
+ (RELEASES
+  (ABOUT-ACL2)
+  "ACL2 releases
+
+  The current ACL2 release on the {ACL2 home page |
+  http://www.cs.utexas.edu/users/moore/acl2/index.html} is Version
+  8.6; see [note-8-6] for release notes.
+
+  Below is a list of past releases and their corresponding past ACL2
+  home pages.  (Note: Some older versions of the manuals have been
+  made unreadable to avoid potential security issues.)
+
+    * {Version 8.5 (July, 2022) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-5/index.html}
+
+    * {Version 8.4 (August, 2021) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-4/index.html}
+
+    * {Version 8.3 (April, 2020) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-3/index.html}
+
+    * {Version 8.2 (May, 2019) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-2/index.html}
+
+    * {Version 8.1 (September, 2018) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-1/index.html}
+
+    * {Version 8.0 (December, 2017) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-0/index.html}
+
+    * {Version 7.4 (March, 2017) |
+      http://www.cs.utexas.edu/users/moore/acl2/v7-4/index.html}
+
+    * {Version 7.3 (December, 2016) |
+      http://www.cs.utexas.edu/users/moore/acl2/v7-3/index.html}
+
+    * {Version 7.2 (January, 2016) |
+      http://www.cs.utexas.edu/users/moore/acl2/v7-2/index.html}
+
+    * {Version 7.1 (May, 2015) |
+      http://www.cs.utexas.edu/users/moore/acl2/v7-1/index.html}
+
+    * {Version 7.0 (January, 2015) |
+      http://www.cs.utexas.edu/users/moore/acl2/v7-0/index.html}
+
+    * {Version 6.5 (August, 2014) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-5/index.html}
+
+    * {Version 6.4 (January, 2014) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-4/index.html}
+
+    * {Version 6.3 (October, 2013) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-3/index.html}
+
+    * {Version 6.2 (June, 2013) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-2/index.html}
+
+    * {Version 6.1 (February, 2013) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-1/index.html}
+
+    * {Version 6.0 (December, 2012) |
+      http://www.cs.utexas.edu/users/moore/acl2/v6-0/index.html}
+
+    * {Version 5.0 (August, 2012) |
+      http://www.cs.utexas.edu/users/moore/acl2/v5-0/index.html}
+
+    * {Version 4.3 (July, 2011) |
+      http://www.cs.utexas.edu/users/moore/acl2/v4-3/index.html}
+
+    * {Version 4.2 (January, 2011) |
+      http://www.cs.utexas.edu/users/moore/acl2/v4-2/index.html}
+
+    * {Version 4.1 (September, 2010) |
+      http://www.cs.utexas.edu/users/moore/acl2/v4-1/index.html}
+
+    * {Version 4.0 (July, 2010) |
+      http://www.cs.utexas.edu/users/moore/acl2/v4-0/index.html}
+
+    * {Version 3.6.1 (September, 2009) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-6/new/v3-6-1/index.html}
+
+    * {Version 3.6 (August, 2009) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-6/index.html}
+
+    * {Version 3.5 (May, 2009) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-5/index.html}
+
+    * {Version 3.4 (August, 2008) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-4/index.html}
+
+    * {Version 3.3 (November, 2007) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-3/index.html}
+
+    * {Version 3.2.1 (June, 2007) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-2/new/v3-2-1/index.html}
+
+    * {Version 3.2 (April, 2007) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-2/index.html}
+
+    * {Version 3.1 (December, 2006) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-1/index.html}
+
+    * {Version 3.0.1 (August, 2006) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-0/new/v3-0-1/index.html}
+
+    * {Version 3.0 (June, 2006) |
+      http://www.cs.utexas.edu/users/moore/acl2/v3-0/index.html}
+
+    * {Version 2.9.4 (January, 2006) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-9/new/v2-9-4/index.html}
+
+    * {Version 2.9.3 (August, 2005) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-9/new/v2-9-3/index.html}
+
+    * {Version 2.9.2 (April, 2005) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-9/new/v2-9-2/index.html}
+
+    * {Version 2.9.1 (December, 2004) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-9/new/v2-9-1/index.html}
+
+    * {Version 2.9 (October, 2004) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-9/index.html}
+
+    * {Version 2.8 (March, 2004) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-8/index.html}
+
+    * {Version 2.7 (November, 2002) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-7/index.html}
+
+    * {Version 2.6 (November, 2001) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-6/index.html}
+
+    * {Version 2.5 (June, 2000) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-5/index.html}
+
+    * {Version 2.4 (August, 1999) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-4/index.html}
+
+    * {Version 2.3 (October, 1998) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-3/index.html}
+
+    * {Version 2.2 (August, 1998) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-2/index.html}
+
+    * {Version 2.1 (December, 1997) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-1/index.html}
+
+    * {Version 2.0 (July, 1997) |
+      http://www.cs.utexas.edu/users/moore/acl2/v2-0/index.html}
+
+    * {Version 1.9 (Fall, 1996) |
+      http://www.cs.utexas.edu/users/moore/acl2/v1-9/acl2-doc.html}
+
+  [31;1mNote[0m: The ACL2 Home Pages for versions between 5.0 and 7.0, listed
+  above, did not directly include the Community Books, which were
+  distributed separately.  You may find the books for those versions
+  at [47m{http://acl2.org/books-pre-7.0/ |
+  http://acl2.org/books-pre-7.0/}[0m.")
  (REM
   (NUMBERS ACL2-BUILT-INS)
   "Remainder using [47m[truncate][0m
@@ -128399,7 +130237,7 @@ Subtopics
     ACL2 !>
 
   The first top-level form sets the values of [47m[state][0m globals [47mmy-w1[0m and
-  [47mmy-w3[0m to to the worlds obtained by extending the empty world one or
+  [47mmy-w3[0m to the worlds obtained by extending the empty world one or
   three times, respectively, as shown.  The second top-level form
   [3minstalls[0m the value of [47mmy-w1[0m as the world that is current for the
   name [47m'my-world[0m.  The third top-level form returns the [47m'my-key1[0m
@@ -131536,11 +133374,10 @@ Subtopics
       help.  See [induction-coarse-v-fine-grained].
 
   To see the ruler-extenders of an existing function symbol, [47mfn[0m, in a
-  logical [world], [47mwrld[0m, evaluate [47m(ruler-extenders 'fn wrld)[0m after
-  [47m(include-book \"kestrel/utilities/system/world-queries\" :dir
-  :system)[0m.  For example, evaluation of [47m(ruler-extenders 'fn (w
-  state))[0m provides the ruler-extenders of [47mfn[0m in the current logical
-  world.
+  logical [world], [47mwrld[0m, evaluate [47m(get-ruler-extenders 'fn wrld)[0m
+  after [47m(include-book \"std/system/get-ruler-extenders\" :dir :system)[0m.
+  For example, evaluation of [47m(get-ruler-extenders 'fn (w state))[0m
+  provides the ruler-extenders of [47mfn[0m in the current logical world.
 
   Below we describe the notion of ruler-extenders in detail, as well as
   how to set its default using [47mset-ruler-extenders[0m.
@@ -131990,6 +133827,36 @@ Subtopics
       Find the rules named rune")
  (RUNES-DIFF (POINTERS)
              "See [saving-event-data].")
+ (RUNNING-ACL2-WITHOUT-EXECUTABLE
+  (INSTALLATION-SUPPORT)
+  "Running ACL2 without building an executable image
+
+  The most convenient way to use ACL2 is first to install an executable
+  image; see [creating-executable].  However, in some cases this is
+  not possible, for example, perhaps if you are using a trial version
+  of a Common Lisp implementation.  In that case you should follow
+  the steps below each time you want to start up ACL2.
+
+  We assume you have obtained ACL2 and placed it in your current
+  directory.  Start up your Common Lisp in that directory, and
+  compile by executing the following forms.  [3mThis sequence of steps
+  needs to be performed only once.[0m
+
+    (load \"init.lisp\")
+    (in-package \"ACL2\")
+    (compile-acl2)
+
+  Now each time you want to use ACL2, execute the following forms after
+  starting up Common Lisp in that same directory.  This may take a
+  minute or two.
+
+    (load \"init.lisp\")
+    (in-package \"ACL2\")
+    (load-acl2)
+    (initialize-acl2)
+    (lp) ; enter the ACL2 read-eval-print loop
+
+  Now see [using-ACL2].")
  (RUNNING_MODELS
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Running Models
@@ -132710,7 +134577,7 @@ Further information
     (runes-diff-fn book-string name namep dir ctx state)
     (old-and-new-event-data book-string name namep dir ctx state)")
  (SBCL-INSTALLATION
-  (BUILDING-ACL2)
+  (OBTAINING-COMMON-LISP)
   "Installing Steel Bank Common Lisp (SBCL)
 
   SBCL is available from [47m{https://www.sbcl.org | https://www.sbcl.org}[0m.
@@ -132725,14 +134592,14 @@ Further information
 
    1. Download an SBCL binary from
       [47m{https://www.sbcl.org/platform-table.html |
-      https://www.sbcl.org}[0m.  That page contains a table with
-      combinations of operating systems and hardware architectures,
-      from which you have to pick the one that applies to you.  Note
-      that you need an SBCL binary in order to compile from source
-      (see below).  The file downloaded from the table will have a
-      name like [47msbcl-2.1.2-arm64-darwin-binary.tar.bz2[0m, where the
-      [47marm64-darwin[0m part depends on the chosen combination of
-      operating system and hardware architecture.
+      https://www.sbcl.org/platform-table.html}[0m.  That page contains
+      a table with combinations of operating systems and hardware
+      architectures, from which you have to pick the one that applies
+      to you.  Note that you need an SBCL binary in order to compile
+      from source (see below).  The file downloaded from the table
+      will have a name like [47msbcl-2.1.2-arm64-darwin-binary.tar.bz2[0m,
+      where the [47marm64-darwin[0m part depends on the chosen combination
+      of operating system and hardware architecture.
 
    2. Untar the file in a directory of your choice, which will create a
       subdirectory with a name like [47msbcl-2.1.2-arm64-darwin[0m,
@@ -132773,10 +134640,10 @@ Further information
 
    6. Download the SBCL source from
       [47m{https://www.sbcl.org/platform-table.html |
-      https://www.sbcl.org}[0m, the same page with the table of
-      binaries.  There should be one link to the sources, above the
-      table of binaries.  The downloaded file will have a name like
-      [47msbcl-2.3.9-source.tar.bz2[0m.
+      https://www.sbcl.org/platform-table.html}[0m, the same page with
+      the table of binaries.  There should be one link to the
+      sources, above the table of binaries.  The downloaded file will
+      have a name like [47msbcl-2.3.9-source.tar.bz2[0m.
 
    7. Untar the file in a directory of your choice, which will create a
       subdirectory with a name like [47msbcl-2.3.9[0m.
@@ -132785,9 +134652,10 @@ Further information
 
           sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header
 
-      These options prevents certain possible errors.  The compilation
-      process prints a lot of stuff on the screen, and should
-      succeed.
+      You might also need option [47m--with-sb-thread[0m; this has been necessary
+      on a machine running FreeBSD.  These options prevent certain
+      possible errors.  The compilation process prints a lot of stuff
+      on the screen, and should succeed.
 
    9. The final part of the screen output will suggest to run the tests,
       via:
@@ -132831,7 +134699,7 @@ Further information
       the script should contain just [47msbcl[0m instead of
       [47m<dir>/run-sbcl.sh[0m.")
  (SBCL-INSTALLATION-BRIEF
-  (BUILDING-ACL2)
+  (OBTAINING-COMMON-LISP)
   "Installing Steel Bank Common Lisp (SBCL)
 
   The topic [sbcl-installation] contains full installation instructions
@@ -132861,7 +134729,7 @@ Further information
       follows (again, where ``[47m2.2.10[0m'' is replaced by the current
       SBCL version number).
 
-          tar xfj sbcl-2.2.10-source.tar.bz2
+          tar jxf sbcl-2.2.10-source.tar.bz2
 
    4. Change to the new directory and build SBCL with options appropriate
       for ACL2, as follows (again, replacing ``[47m2.2.10[0m'' as
@@ -132869,6 +134737,9 @@ Further information
 
           cd sbcl-2.2.10
           sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header
+
+      You might also need option [47m--with-sb-thread[0m; this has been necessary
+      on a machine running FreeBSD.
 
    5. Create a script file in a directory that is on your path (or, if you
       are updating your sbcl, just replace your current sbcl script;
@@ -133932,6 +135803,210 @@ Subtopics
   [47m[include-book][0m from attempting to include compiled files:
 
     (set-compiler-enabled nil state)")
+ (SET-CONSTRAINT-TRACKING
+  (ENCAPSULATE)
+  "Generate markers to indicate origins of constraints
+
+    General Form:
+    (set-constraint-tracking flg)
+
+  where [47mflg[0m is Boolean.
+
+  When [47mflg[0m is [47mt[0m the constraint subgoals generated by the
+  [47m:functional-instance[0m hint (see [hints] and [lemma-instance]) have
+  an additional hypothesis of the form [47m(extra-info :constraint ...)[0m
+  where the second argument to [47mextra-info[0m is a quoted expression that
+  indicates where the constraint came from.  Since [47mextra-info[0m is a
+  disabled defined function that always returns [47mt[0m, the addition of
+  this hypothesis does not change the meaning of the formula.
+
+  Note: This is an event!  It does not print the usual event [summary]
+  but nevertheless changes the ACL2 logical [world] and is so
+  recorded.  It uses the [47m[ACL2-defaults-table][0m, and hence its effect
+  is [47m[local][0m to the book or [47m[encapsulate][0m form in which it occurs.
+
+  We expect this facility to be used only when a proof involving
+  functional instantiation is failing and inspection of the subgoals
+  or checkpoints leaves you asking the question ``why is it trying to
+  prove this?'' But turning on this facility can cause a failing
+  proof to fail even earlier because the [47mextra-info[0m hypotheses may
+  change the course of the proof.  We discuss some ways of handling
+  this below.
+
+  But first we give an example of the output that might be seen when
+  the [47mconstraint-tracking[0m flag is set.  This example is intended to
+  give you an idea of how to read the [47mextra-info[0m --- which of course
+  is only visible if [47m[gag-mode][0m is [47mnil[0m or a checkpoint is printed.
+  Because the ``quoted expression that indicates where the constraint
+  came from'' is entirely informal, we do not give you a formal
+  syntax and semantics for it.  Just study the examples.
+  Furthermore, as this facility matures we may well change the quoted
+  expressions to be more informative.
+
+  Recall the example use of [47m:functional-instance[0m in
+  [functional-instantiation-example].  (To understand what follows
+  you really ought to read the example just cited.)  In particular,
+  after we use [47m[encapsulate][0m to constrain some functions and then
+  prove a few useful lemmas, we prove the following by functional
+  instantiation.  We include the entire un-gagged proof output below
+  from a session in which the [47mconstraint-tracking[0m flag has been set.
+
+    ACL2 !>(DEFTHM TIMES-LIST-REV
+             (IMPLIES (NUMBER-LISTP X)
+                      (EQUAL (TIMES-LIST (REV X))
+                             (TIMES-LIST X)))
+             :HINTS
+             ((\"Goal\"
+                :USE
+                ((:FUNCTIONAL-INSTANCE AC-FN-LIST-REV
+                    (AC-FN *)
+                    (AC-FN-ROOT (LAMBDA NIL 1))
+                    (AC-FN-DOMAIN ACL2-NUMBERP)
+                    (AC-FN-LIST TIMES-LIST)
+                    (AC-FN-DOMAIN-LIST NUMBER-LISTP))))))
+
+    [Note:  A hint was supplied for the goal above.  Thanks!]
+
+    We augment the goal with the hypothesis provided by the :USE hint.
+    The hypothesis can be derived from AC-FN-LIST-REV via functional in-
+    stantiation, provided we can establish the seven constraints generated;
+    the constraints can be simplified using the :executable-counterparts
+    of IF and TAU-SYSTEM and the simple :rewrite rules ASSOCIATIVITY-OF-*
+    and UNICITY-OF-1.  We are left with the following four subgoals.
+
+    Subgoal 4
+    (IMPLIES (EXTRA-INFO :CONSTRAINT '((DEFUN AC-FN-LIST)
+                                       ((AC-FN BINARY-*)
+                                        (AC-FN-LIST TIMES-LIST)
+                                        (AC-FN-ROOT (LAMBDA NIL '1)))))
+             (EQUAL (TIMES-LIST X)
+                    (IF (ATOM X)
+                        1
+                      (* (CAR X) (TIMES-LIST (CDR X)))))).
+
+    But simplification reduces this to T, using the :definitions ATOM and
+    TIMES-LIST and primitive type reasoning.
+
+    Subgoal 3
+    (IMPLIES (AND (EXTRA-INFO :CONSTRAINT '((THEOREM AC-FN-ID)
+                                            ((AC-FN BINARY-*)
+                                             (AC-FN-DOMAIN ACL2-NUMBERP)
+                                             (AC-FN-ROOT (LAMBDA NIL '1)))))
+                  (ACL2-NUMBERP X))
+             (EQUAL (FIX X) X)).
+
+    But simplification reduces this to T, using the :definition FIX and
+    primitive type reasoning.
+
+    Subgoal 2
+    (IMPLIES (EXTRA-INFO :CONSTRAINT '((THEOREM AC-FN-COMM)
+                                       ((AC-FN BINARY-*)
+                                        (AC-FN-DOMAIN ACL2-NUMBERP)
+                                        (AC-FN-ROOT (LAMBDA NIL '1)))))
+             (EQUAL (* X Y) (* Y X))).
+
+    But simplification reduces this to T, using primitive type reasoning
+    and the :rewrite rule COMMUTATIVITY-OF-*.
+
+    Subgoal 1
+    (IMPLIES (EXTRA-INFO :CONSTRAINT '((DEFUN AC-FN-DOMAIN-LIST)
+                                       ((AC-FN-DOMAIN ACL2-NUMBERP)
+                                        (AC-FN-DOMAIN-LIST NUMBER-LISTP))))
+             (EQUAL (NUMBER-LISTP X)
+                    (COND ((ATOM X) T)
+                          ((ACL2-NUMBERP (CAR X))
+                           (NUMBER-LISTP (CDR X)))
+                          (T NIL)))).
+
+    But simplification reduces this to T, using the :definitions ATOM and
+    NUMBER-LISTP and primitive type reasoning.
+
+    Q.E.D.
+
+  Note the [47mEXTRA-INFO[0m hypotheses.  For example, in [47mSubgoal 1[0m, just
+  above, the hypothesis is
+
+    (EXTRA-INFO :CONSTRAINT '((DEFUN AC-FN-DOMAIN-LIST)
+                              ((AC-FN-DOMAIN ACL2-NUMBERP)
+                               (AC-FN-DOMAIN-LIST NUMBER-LISTP))))
+
+  which indicates that [47mSubgoal 1[0m is the functional instantiation of the
+  defining equation for constrained function [47mAC-FN-DOMAIN-LIST[0m under
+  the functional substitution shown.  [47mSubgoal 1[0m establishes that
+  [47mNUMBER-LISTP[0m satisfies the constraint on [47mAC-FN-DOMAIN-LIST[0m.
+
+  You can view the definition of [47mAC-FN-DOMAIN-LIST[0m with the [47m:[0m[47mpe[0m
+  command.
+
+  By inspecting the [47mextra-info[0m in [47mSubgoal 2[0m, above,
+
+    (EXTRA-INFO :CONSTRAINT '((THEOREM AC-FN-COMM)
+                              ((AC-FN BINARY-*)
+                               (AC-FN-DOMAIN ACL2-NUMBERP)
+                               (AC-FN-ROOT (LAMBDA NIL '1)))))
+
+  you should be able to recognize that it establishes that
+  multiplication is commutative, which is required by the
+  constraining [47mTHEOREM[0m named [47mAC-FN-COMM[0m, since we are replacing [47mAC-FN[0m
+  by multiplication.  You can view the named theorem with the [47m:[0m[47mpe[0m
+  command.
+
+  You might occasionally see something like this
+
+    (EXTRA-INFO :CONSTRAINT '((:THEOREM <term>) <fn-substitution>))
+
+  Note that this occurrence of the word ``THEOREM'' is as a keyword and
+  what follows it is a term rather than a name.  This stems from the
+  use of the [47m:THEOREM[0m [lemma-instance] in the [47m:functional-instance[0m
+  hint.  In this case, the constraint is the term shown.
+
+  The presence of these additional hypotheses may break some proofs
+  that formerly worked!  For example, if [47mconstraint-tracking[0m is off,
+  the events in the ACL2 Community Book
+  [47m/books/centaur/misc/tailrec.lisp[0m can be processed successfully.
+  But if the flag is on the proofs fails because the book is
+  employing a very restrictive proof strategy designed to deal
+  exactly with proving certain mechanically generated formulas and
+  the [47mextra-info[0m hypothesis makes the subgoals unrecognizable to that
+  strategy.
+
+  One way of dealing with this is to issue ``bye'' [hints], e.g., [47m:by
+  nil[0m, to subgoals that are failing before the one you want to see.
+  Alternatively, you might use the [47m:[0m[47m[otf-flg][0m option to allow failing
+  subgoals to be pushed so the prover can carry on to later subgoals.
+
+  A third way to deal with this is to prove the rewrite rule
+
+    (defthm drop-extra-info-constraints
+     (implies (equal x :constraint)
+              (equal (extra-info x y) t))
+     :hints ((\"Goal\" :in-theory (enable extra-info))))
+
+  which will cause the [47mextra-info[0m hypotheses to rewrite to [47mt[0m by the
+  first simplification.  (Aside: The corresponding unconditional
+  [rewrite] rule, [47m(equal (extra-info :constraint y) t)[0m, is
+  undesirable because it causes the [47mextra-info[0m hypotheses to be
+  simplified to [47mt[0m before the goals are displayed to the user.)  So
+  for example, if a [47m:functional-instance[0m hint produced several
+  immediate goals, one of which is [47mSubgoal 3[0m, and the constraint
+  tracking flag is set, then [47mSubgoal 3[0m will have an [47mextra-info[0m
+  hypothesis indicating the origin of that subgoal.  If the rewrite
+  rule above is available, the [47mextra-info[0m will have disappeared in
+  the descendants of [47mSubgoal 3[0m.  So if you find yourself asking
+  ``Where did this goal come from?'' you might refer back to the
+  parent, [47mSubgoal 3[0m, produced by the functional instance hint.
+  (Remember, descendant subgoals, e.g., [47mSubgoal 3.17''[0m, have
+  [clause-identifier]s that indicate their parentage, [47mSubgoal 3[0m.)
+
+  That said, some proof strategies employed in the regression
+  (including the one in the [47mtailrec.lisp[0m book cited above) are so
+  automatic and thus so tightly restricted that you may not find a
+  way to get over the obstacles created by the [47mextra-info[0m hypotheses!
+  However, of the thousands of books in the regression, as of Version
+  8.6, only three books fail to recertify when the constraint
+  tracking flag is turned on, and one of those three succeeds if the
+  rewrite rule above is included.  So we await further experience
+  with this utility before investing more time in it.")
  (SET-DEBUGGER-ENABLE
   (DEBUGGING)
   "Control whether Lisp errors and breaks invoke the Lisp debugger
@@ -136328,13 +138403,13 @@ Example
     (25 25/3)
     ACL2 !>")
  (SET-PRINT-CASE
-  (IO ACL2-BUILT-INS)
-  "Control whether symbols are printed in upper case or in lower case
+  (IO ACL2-BUILT-INS SYMBOLS)
+  "Control whether [symbols] are printed in upper case or in lower case
 
-  By default, symbols are printed in upper case when vertical bars are
-  not required, as specified by Common Lisp.  As with Common Lisp,
-  ACL2 supports printing in a \"downcase\" mode, where symbols are
-  printed in lower case.  Many printing functions (some details
+  By default, [symbols] are printed in upper case when vertical bars
+  are not required, as specified by Common Lisp.  As with Common
+  Lisp, ACL2 supports printing in a \"downcase\" mode, where symbols
+  are printed in lower case.  Many printing functions (some details
   below) print characters in lower case for a symbol when the ACL2
   [state] global variable [47mprint-case[0m has value [47m:downcase[0m and vertical
   bars are not necessary for printing that symbol.  (Thus, this state
@@ -137302,6 +139377,150 @@ Subtopics
 
   The mode is stored in the defaults table, See [ACL2-defaults-table].
   Thus, the mode may be set [47m[local][0mly in books.")
+ (SET-SUBGOAL-LOOP-LIMITS
+  (MISCELLANEOUS)
+  "Set the maximum length and repetition count of the subgoal path
+
+  The ACL2 ``waterfall'' (see [hints-and-the-waterfall]) produces a
+  tree of Goals and Subgoals.  Consider a path through this tree in
+  which each formula is an immediate descendant of the previous
+  formula.  More precisely, each element of the path records a goal
+  formula (represented as a [clause]), the name by which the user may
+  refer to it, e.g., [47m\"Goal''\"[0m or [47m\"Subgoal *1/2.3\"[0m (represented as a
+  [clause-identifier]), the clause processor that produced the
+  formula, e.g., [47msimplify-clause[0m, [47meliminate-destructors-clause[0m,
+  [47mfertilize-clause[0m, etc., and the [ttree] that records the [rune]s
+  the processor used and other information about what the processor
+  did.  Finally, each path starts with the top-level Goal or one of
+  the cases produced by induction or a forcing round, and ends with
+  (i) the reduction of the current goal to true, (ii) the abandonment
+  of the proof attempt, or (iii) the addition of the current goal to
+  the ``pool'' for a subsequent attempt at an inductive proof.
+
+  [47mSubgoal-loop-limits[0m is a user-settable parameter that can limit (a)
+  the maximum length of a path and (b) the maximum number of
+  repetitions in the path of a formula and the clause processor that
+  produced it.  In particular, [47msubgoal-loop-limits[0m is a pair, [47m(len .
+  cnt)[0m.  If [47mlen[0m is [47mnil[0m, there is no limit on the length of a path,
+  otherwise proof attempts are aborted if the length of any subgoal
+  path exceeds [47mlen[0m.  If [47mcnt[0m is [47mnil[0m, no check for formula repetition
+  is made, otherwise each new subgoal formula (and its processor) is
+  compared with [47m[equal][0m to the ancestors along the path.  A probable
+  loop is signaled and the proof is aborted if the number of
+  occurrences exceeds [47mcnt[0m.
+
+  The initial setting of [47msubgoal-loop-limits[0m is [47m(1000 . 2)[0m.  That is,
+  no proof can produce a path longer than a 1000 successive
+  descendants or with more than 2 repetitions of the same formula
+  (and processor).
+
+  One might assume that a repetition count greater than 1 indicates a
+  loop, but that is not true.  Various ACL2 clause processors may see
+  the same formula at different points along a path and, guided by
+  heuristics sensitive to what happened the last time the formula was
+  seen, do something different.
+
+  This function, [47mset-subgoal-loop-limits[0m, sets the [47msubgoal-loop-limits[0m.
+
+    Example Forms:
+    (set-subgoal-loop-limits nil) ; = (set-subgoal-loop-limits '(nil . nil))
+    (set-subgoal-loop-limits t)   ; = (set-subgoal-loop-limits '(nil . 2))
+    (set-subgoal-loop-limits 100) ; = (set-subgoal-loop-limits '(100 . 2))
+    (set-subgoal-loop-limits :default) ; = (set-subgoal-loop-limits '(100 . 2))
+    (set-subgoal-loop-limits '(100 . 5))
+
+    General Form:
+    (set-subgoal-loop-limits term)
+
+  where [47mterm[0m should evaluate to a [47m[cons][0m whose [47m[car][0m is either [47mnil[0m or a
+  natural number and whose [47m[cdr][0m is [47mnil[0m or a non-0 natural number.
+  However, several abbreviations are allowed.
+
+    * If [47mterm[0m evaluates to [47mnil[0m, then [47m(nil . nil)[0m is used, imposing no limit
+      on the length of a path and disabling loop detection.
+
+    * If [47mterm[0m evaluates to [47mt[0m, then [47m(nil . 3)[0m is used, imposing no length
+      limit but defining a loop to be 3 or more repetitions of a
+      formula and proof technique.
+
+    * If [47mterm[0m evaluates to a natural number, [47mn[0m, then the pair constructed
+      by [47m(cons n 3)[0m is used, imposing a length limit of [47mn[0m and
+      defining a loop to be 3 or more repetitions of a formula and
+      proof technique.
+
+    * If [47mterm[0m evaluates to [47m:DEFAULT[0m, then the pair [47m(1000 . 2)[0m is used,
+      which sets the [47msubgoal-loop-limits[0m to its initial value,
+      imposing a maximum path length of 1000 and a maximum repetition
+      count of 2.
+
+  When these limits are violated, an error occurs and the proof attempt
+  is abandoned.
+
+  Of course, there are loops other than the simple ones this feature
+  enables!  For example, the available rules may cause the simplifier
+  to transform a subgoal into a bigger one, e.g., [47mGoal[0m [47m(p x)[0m may be
+  transformed to [47mGoal'[0m [47m(p (f x))[0m, which may then transform to [47mGoal''[0m
+  [47m(p (f (f x)))[0m, etc.  [3mThe prover does not check for such loops.[0m
+  However, such loops are stopped by the path length limit.
+  (Internal rewrite loops, in which control never exits the
+  simplifier, are not stopped even by a short path length.)  For
+  other ways to restrict the prover, see [set-rewrite-stack-limit],
+  [with-prover-time-limit], [with-prover-step-limit],
+  [set-prover-step-limit], and [set-induction-depth-limit].
+
+  If a proof aborts because of a probable loop and you suspect the
+  prover is not really in a loop, i.e., that further iteration will
+  break the cycle and make progress, use [47mset-subgoal-loop-limits[0m to
+  change the default 3 to a bigger number and try the proof again!
+
+  Checking for simple loops will slow down the prover in proofs
+  producing very long subgoal paths.
+
+  Note: [47mSet-subgoal-loop-limits[0m is an [event]!  It does not print the
+  usual event [summary] but nevertheless changes the ACL2 logical
+  [world] and is so recorded.  Moreover, its effect is to set the
+  [47m[ACL2-defaults-table][0m, and hence its effect is [47m[local][0m to the book
+  or [47m[encapsulate][0m form containing it; see [ACL2-defaults-table].
+
+  To see the current limit
+
+    (subgoal-loop-limits (w state))
+
+  When a loop is detected an error is signaled naming the clause
+  processor, the repeated identical subgoals, and the runes used in
+  each passage through the loop.  One such error message is shown
+  below.
+
+    ACL2 Error [Waterfall-loop] in ( THM ...): The clause processor
+    SIMPLIFY-CLAUSE has been applied to the same formula more than 2 times, namely
+    at Goal', Goal'10' and Goal'19'.  That suggests a loop in the waterfall.
+    Consequently, we are aborting!  The following list shows the runes used in
+    each passage through the loop between successive subgoals.
+
+    ((\"Goal'\" ((:EXECUTABLE-COUNTERPART BINARY-+)
+               (:REWRITE RULE1)
+               (:REWRITE RULE2)
+               (:REWRITE RULE3)
+               (:REWRITE RULE4))
+              \"Goal'10'\")
+     (\"Goal'10'\" ((:EXECUTABLE-COUNTERPART BINARY-+)
+                  (:REWRITE RULE1)
+                  (:REWRITE RULE2)
+                  (:REWRITE RULE3)
+                  (:REWRITE RULE4))
+                 \"Goal'19'\")).
+
+    For more information see :DOC set-subgoal-loop-limits.
+
+  In the above example, we see that [47m\"Goal'\"[0m was transformed by
+  [47mSIMPLIFY-CLAUSE[0m, using the runes listed, into [47m\"Goal'10'\"[0m.
+  Furthermore, the formulas of [47m\"Goal'\"[0m and [47m\"Goal'10'\"[0m are identical.
+  We also see that [47mSIMPLIFY-CLAUSE[0m then transformed [47m\"Goal'10'\"[0m, using
+  the same runes, to the same formula again at [47m\"Goal'19'\"[0m.
+
+  After the error, and if you so choose, you can use the utility [47m[pso][0m
+  to display the (possibly gagged, see [set-gag-mode]) prover output
+  between the named subgoals.")
  (SET-TABLE-GUARD
   (TABLE EVENTS)
   "Set the [47m:guard[0m for a [table]
@@ -140264,12 +142483,13 @@ Subtopics
       to obtain and build ACL2, copyright and license material,
       mailing lists, connection with GitHub, and so on.
 
-    * [31;1mOverviews at a high level[0m may be found in {The Tours |
-      https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html?topic=ACL2____The_02Tours}.
-      The paper [3m{Industrial Proofs with ACL2 |
-      https://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms/intro-to-acl2.pdf}[0m
-      was written in the 1990s but is still useful for providing a
-      brief overview of what can be done with ACL2.
+    * See [using-ACL2] for introductory material about [31;1musing[0m ACL2.
+
+    * See [tours] for [31;1moverviews at a high level[0m.  Also see the paper
+      [3m{Industrial Proofs with ACL2 |
+      https://www.cs.utexas.edu/users/moore/publications/how-to-prove-thms/intro-to-acl2.pdf}[0m,
+      which was written in the 1990s but is still useful for
+      providing a brief overview of what can be done with ACL2.
 
     * [31;1mTutorial Introductions[0m at various levels are available at the
       [ACL2-tutorial] documentation topic and especially its
@@ -140292,13 +142512,9 @@ Subtopics
         * See [interesting-applications] for an overview of some projects that
           have used ACL2.
 
-        * A {publications page |
-          https://www.cs.utexas.edu/users/moore/publications/acl2-papers.html}
-          has links to many books and papers.  You can also follow
-          links starting at the {ACL2 Workshops page |
-          https://www.cs.utexas.edu/users/moore/acl2/workshops.html}
-          to see programs, talks, and papers presented at ACL2
-          Workshops (25 and counting as of 2022).
+        * See publications for links to many books and papers.  You can also
+          see workshops for programs, talks, and papers presented at
+          the numerous ACL2 Workshops.
 
         * The {Community Books |
           https://github.com/acl2/acl2/tree/master/books} is a
@@ -140306,7 +142522,7 @@ Subtopics
           continuously by virtue of constituting the ACL2 regression
           suite.  Many of those projects are descried in the
           {ACL2+books online manual |
-          http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html}.
+          https://acl2.org/doc/index.html}.
 
     * [31;1mProgramming with ACL2[0m is introduced gently in the documentation
       topic, [gentle-introduction-to-ACL2-programming].
@@ -140458,9 +142674,9 @@ Subtopics
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2025  10:09:28.                                  +
-    +   (Git commit hash: 89b2701f59f8e561b17121cf0a25cb8d1910377f)        +
-    + Copyright (C) 2025, Regents of the University of Texas.              +
+    +   built January 14, 2026  10:09:28.                                  +
+    +   (Git commit hash: 1234567890abcdefghijklmnopqrstuvwxyz!@#$)        +
+    + Copyright (C) 2026, Regents of the University of Texas.              +
     + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
     + you are welcome to redistribute it under certain conditions.  For    +
     + details, see the LICENSE file distributed with ACL2.                 +
@@ -140474,10 +142690,10 @@ Subtopics
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2025  09:56:49.                                  +
+    +   built January 14, 2026  09:56:49.                                  +
     +   (Note from the environment when this executable was saved:         +
     +    This is my private executable.)                                   +
-    + Copyright (C) 2025, Regents of the University of Texas.              +
+    + Copyright (C) 2026, Regents of the University of Texas.              +
     + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
     + you are welcome to redistribute it under certain conditions.  For    +
     + details, see the LICENSE file distributed with ACL2.                 +
@@ -140869,7 +143085,7 @@ Generalizing the Initial Values
                 (progn (setq a (cons (car tail) a))
                         (setq tail (cdr tail))))))
 
-  The experienced ACL2 user would not attept to prove that [47m(rev-loop$
+  The experienced ACL2 user would not attempt to prove that [47m(rev-loop$
   x)[0m is [47m(rev x)[0m by induction!  The problem is the same as before: the
   [47mnil[0m initialization of the iterative variable [47ma[0m in the [47mdo[0m [47mloop$[0m does
   not permit an appropriate inductive hypothesis.  Instead, the user
@@ -140904,7 +143120,7 @@ Generalizing the Initial Values
   non-variables, generalize them before expecting an induction to
   work!  If the [47mloop$[0m is buried in a definition you'll have to lift
   the [47mloop$[0m out of the definition to generalize it and prove a
-  theorem about the the generalized [47mloop$[0m.
+  theorem about the generalized [47mloop$[0m.
 
 
 Normal Forms in [47mLoop$[0m Bodies
@@ -141048,6 +143264,104 @@ Normal Forms in [47mLoop$[0m Bodies
   tail)[0m in the [47mdefun[0m of [47mrev-loop$[0m but lemma deals with the normalized
   form of that body.
 
+  Here is another example, this one involving a [47mdo[0m loop without any
+  [47mWITH[0m clauses.  That in itself causes no special proof problems, but
+  as noted in [do-loop$], it necessitates the use of a stobj in the
+  body and that raises issues similar to those just mentioned.  So
+  below we introduce a stobj, [47mst[0m, with one field, [47mfld[0m.  We define
+  [47m[warrant][0ms for both [47mfld[0m and [47mupdate-fld[0m, and then we define a
+  function, [47mstobj-mem[0m, that uses a [47mdo[0m loop to determine whether a
+  given element occurs in the field, simultaneously shortening the
+  list in the field so that its [47mcar[0m is the element in question.  Here
+  is the setup.
+
+    (defstobj st fld)
+    (defwarrant fld)
+    (defwarrant update-fld)
+
+    (defun stobj-mem (e st)
+      (declare (xargs :stobjs (st)
+                      :guard (true-listp (fld st))))
+      (loop$ do
+             :values (st)
+             :guard (and (stp st)
+                         (true-listp (fld st)))
+             :measure (acl2-count (fld st))
+             (if (endp (fld st))
+                 (return st)
+                 (if (equal e (car (fld st)))
+                     (return st)
+                     (setq st (update-fld (cdr (fld st)) st))))))
+
+  Note that there is no [47mWITH[0m clause but the size of [47m(fld st)[0m is
+  decreasing.
+
+  Suppose we want to prove that after running [47m(stobj-mem e st)[0m on
+  proper input, the final value of [47mfld[0m is equal to [47m(member e (fld
+  st))[0m.  The desired formal statement is
+
+    (defthm stobj-mem-correct
+      (implies (and (stp st)
+                    (true-listp (fld st))
+                    (warrant fld update-fld))
+               (let ((st1 (stobj-mem e st)))
+                 (and (stp st1)
+                      (equal (fld st1)
+                             (member e (fld st))))))
+      :hints ...)
+
+  Note that in the theorem we use [47mst1[0m to denote the final value of the
+  stobj whose initial value is [47mst[0m.  We have to provide the warrants
+  for the accessor and updater used in the body of the [47mloop$[0m.
+
+  This theorem is a little tricky to prove because we're proving a
+  conjunction and after the [47m(stobj-mem e st)[0m and the [47m(stp st)[0m expand
+  we get several conjectures, each of which requires induction.  It
+  is simply easier to prove that the [47mloop$[0m in [47mstobj-mem[0m has the
+  desired property and then use that lemma.  So we first prove:
+
+    (defthm stobj-mem-correct-lemma
+      (implies (and (stp st)
+                    (true-listp (fld st))
+                    (warrant fld update-fld))
+               (let ((st1 (loop$ do
+                                 :values (st)
+                                 :guard (and (stp st)
+                                             (true-listp (fld st)))
+                                 :measure (acl2-count (fld st))
+                                 (if (consp (fld st))
+                                     (if (equal e (car (fld st)))
+                                         (return st)
+                                         (setq st (update-fld (cdr (fld st)) st)))
+                                     (return st)))))
+                 (and (stp st1)
+                      (equal (fld st1)
+                             (member e (fld st)))))))
+
+  But note that we expanded the [47mendp[0m in the statement of this lemma
+  because [47mendp[0m is built-in in a way that causes it often to expand
+  even when disabled (as is actually noted in a warning message if
+  we'd left the [47mendp[0m in place).  We also normalized the resulting [47m(if
+  (not (consp (fld st))) ...)[0m as explained in Lesson 2 above.
+
+  Now we'd like to prove the desired theorem about [47mstobj-mem[0m, expecting
+  that function to expand and then the lemma to hit it and complete
+  the proof.  But that won't work without a little more help!  The
+  problem is that the lemma mentions [47mstp[0m, [47mfld[0m, and [47mupdate-fld[0m in its
+  left-hand side and those are non-recursively defined functions that
+  will expand.  So to make the lemma match the rewritten main theorem
+  we must disable those three functions.
+
+    (defthm stobj-mem-correct
+      (implies (and (stp st)
+                    (true-listp (fld st))
+                    (warrant fld update-fld))
+               (let ((st1 (stobj-mem e st)))
+                 (and (stp st1)
+                      (equal (fld st1)
+                             (member e (fld st))))))
+      :hints ((\"Goal\" :in-theory (disable stp fld update-fld))))
+
 
 The Secret [47mSetq[0m Problem
 
@@ -141066,7 +143380,7 @@ The Secret [47mSetq[0m Problem
                              (setq j (+ 1 j)))))))
 
   The function counts [47mj[0m up from [47m0[0m until it is equal to [47mk[0m, while [47mcdr[0ming
-  [47mx[0m.  It returns [47mgood[0m if it [47mj[0m reaches [47mk[0m before the list is exhausted,
+  [47mx[0m.  It returns [47mgood[0m if [47mj[0m reaches [47mk[0m before the list is exhausted,
   and returns [47mbad[0m otherwise.  Thus, this is a theorem.
 
     (defthm secret-setq-problem-main
@@ -141163,7 +143477,7 @@ The Secret [47mSetq[0m Problem
                       (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                             (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
                             (CONS 'K (CDR (ASSOC-EQ-SAFE 'K ALIST))))))
-                (NIL) NIL)
+                '(NIL) NIL)
     Rhs:     'GOOD
     Backchain-limit-lst: NIL
     Subclass: BACKCHAIN
@@ -141199,7 +143513,7 @@ The Secret [47mSetq[0m Problem
              (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
                    (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
                    (CONS 'K (CDR (ASSOC-EQ-SAFE 'K ALIST))))))
-       (NIL) NIL)
+       '(NIL) NIL)
 
   Note that the [47mLhs[0m matches the actual term, when [47mJ[0m is instantiated
   with [47m0[0m, [3mexcept[0m in one place: the alist constructed in the [47m(LIST
@@ -141252,8 +143566,8 @@ The Secret [47mSetq[0m Problem
   new subterms to the translation, it merely allows assignment to a
   previously used but never assigned variable.  The order of the [47mwith[0m
   clauses determines the order of the alists being constructed, so
-  this pay attention to where [47m'k[0m is bound in the alists.  Also note
-  that the new [47msetq[0m does not add any new subterms to the translation,
+  pay attention to where [47m'k[0m is bound in the alists.  Also note that
+  the new [47msetq[0m does not add any new subterms to the translation; it
   just affects the final value of [47m'k[0m on that branch of the [47mif[0m tree.
   Finally note that we phrase the [47mloop$[0m this way in the lemma [3mwithout
   changing how we write the [47mloop$[0m[3m in the [47mdefun[0m[3m.[0m Writing the [47mloop$[0m
@@ -141335,7 +143649,7 @@ The Hidden Hypothesis Problem
           'good
           (derived-fn lo (- j 1)))).
 
-  That derived function doesn't terminate.
+  That derived function doesn't necessarily terminate.
 
   Now let's try to prove that the [47mloop$[0m always returns [47m'good[0m.  Note
   that it doesn't matter if we include guards in the conjecture or
@@ -141446,9 +143760,10 @@ The Hidden Hypothesis Problem
   the hidden hypothesis problem.
 
   Note that the derived function from the [47mloop$[0m in the hint doesn't
-  terminate either (because no mention is made that [47mJ[0m is a natural).
-  But the induction-time proof obligation is provable because it is
-  still augmented by [47m(INTEGERP J)[0m and [47m(<= 0 J)[0m as before.
+  necessarily terminate either (because no mention is made that [47mJ[0m is
+  a natural).  But the induction-time proof obligation is provable
+  because it is still augmented by [47m(INTEGERP J)[0m and [47m(<= 0 J)[0m as
+  before.
 
 
 Avoiding Some Specially Defined Hint Functions
@@ -141705,6 +144020,81 @@ Subtopics
 
   [With-local-stobj]
       Locally bind a single-threaded object")
+ (STOBJ-ATTACHMENT-RESTRICTIONS
+  (LD)
+  "Restrictions on attachments to supporters of [stobj] primitives
+
+  This topic assumes that the reader is familiar with the basics of
+  [47m[defattach][0m and [stobj]s (which are introduced by [47m[defstobj][0m and
+  [47m[defabsstobj][0m).  It concerns restrictions that disallow the use of
+  [47m[defattach][0m on [3msupporters[0m of [stobj] recognizers and, for
+  [47m[defabsstobj][0m, other stobj primitives that return the new stobj.
+  Here, a [3msupporter[0m of a function symbol [47mf[0m is a function symbol used
+  in the event that introduces [47mf[0m or, recursively, is a supporter of
+  any of those function symbols.
+
+  The [community-book]
+  [47mbooks/system/tests/stobj-attach-unsoundness.lisp[0m, developed by Sol
+  Swords, illustrates a soundness bug that existed through ACL2
+  Version_8.6.  That book shows several ways that [47mnil[0m could be proved
+  by using [47m[defattach][0m to falsify stobj invariants --- either the
+  recognizer or, for abstract stobjs, the correspondence function.
+
+  Those proofs of [47mnil[0m no longer succeed because of the following two
+  restrictions now imposed by ACL2.
+
+   1. No supporter of a stobj recognizer is allowed to have an attachment.
+
+   2. For a [47m[defabsstobj][0m event, there must be a correspondence function
+      whose supporters are not allowed to have attachments.
+
+  The second of these criteria may be met by the [47mdefabsstobj[0m event in
+  [3meither[0m of the following two ways.
+
+      Keyword [47m:CORR-FN-EXISTS[0m has value [47mt[0m, and the value of [47m:CORR-FN[0m is a
+      function symbol whose supporters are not allowed to have
+      attachments.
+
+      [31;1mOR[0m
+
+      Keyword [47m:CORR-FN-EXISTS[0m has value [47mnil[0m (the default), and the
+      supporters of any stobj primitive (the creator and exports, in
+      addition to the recognizer) that returns the new stobj are not
+      allowed to have attachments.
+
+  Note that in the first sub-case, where keyword argument
+  [47m:CORR-FN-EXISTS[0m has value [47mt[0m, the definition of the [47m:CORR-FN[0m symbol
+  must be non-[local].  In the second sub-case, where keyword
+  argument [47m:CORR-FN-EXISTS[0m has value [47mnil[0m, the notion of ``supporter''
+  of a stobj primitive is understood to include any function symbol
+  that is a supporter of either the [47m:LOGIC[0m or the [47m:EXEC[0m function of
+  that stobj primitive.
+
+  We conclude with an optional remark (for those interested in theory)
+  that discusses how the two sub-cases above are related.  Namely,
+  for an abstract stobj [47mst[0m, there is always an implicit
+  correspondence function definable in terms of the primitives as
+  follows.  A concrete state [47mc_k[0m and abstract state [47ma_k[0m correspond if
+  there are corresponding sequences of values [47mc_i[0m and [47ma_i[0m (i <= k)
+  produced by corresponding applications of primitives, each of which
+  returns the new stobj, as follows.
+
+    * [47mc_0[0m and [47ma_0[0m are the initial concrete (foundational) and abstract
+      copies of [47mst[0m, that is, produced by applying the [47m:EXEC[0m and
+      [47m:LOGIC[0m creator of [47mst[0m, respectively.
+
+    * For all i < k, there is a stobj export [47mfi[0m returning [47mst[0m with [47m:EXEC[0m
+      function [47mfi_E[0m and [47m:LOGIC[0m function [47mfi_L[0m and well-guarded
+      parameter lists [47mp_E[0m and [47mp_L[0m for [47mfi[0m, such that the following
+      conditions hold.  The lists [47mp_E[0m and [47mp_L[0m agree except in one
+      position,which is where [47mst[0m is returned.  The actual parameter
+      at that positioni s[47mc_i[0m for [47mp_E[0m and [47ma_i[0m for [47mp_L[0m.  Then [47mc_j[0m and
+      [47ma_j[0m are returned by the respective calls of [47mfi_E[0m on [47mp_E[0m and
+      [47mfi_L[0m on [47mp_L[0m.
+
+  For theoretical details pertaining to this topic, see the long
+  comment, ``Essay on the Correctness of Abstract Stobjs'', in the
+  ACL2 source code.")
  (STOBJ-EXAMPLE-1
   (STOBJ)
   "An example of the use of single-threaded objects
@@ -143263,6 +145653,16 @@ Subtopics
   return to [introduction-to-key-checkpoints].")
  (SUBCOR-VAR (POINTERS)
              "See [system-utilities].")
+ (SUBGOAL-LOOP-LIMITS
+  (MISCELLANEOUS)
+  "maximum length of the subgoal stack
+
+    General Form:
+    (subgoal-loop-limits (w state))
+
+  See [47m[set-subgoal-loop-limits][0m for a discussion of how you can set
+  this parameter, which can be used to detect simple looping by the
+  prover and to cut off some forms of infinite looping.")
  (SUBLIS
   (ALISTS ACL2-BUILT-INS)
   "Substitute an alist into a tree
@@ -143698,20 +146098,70 @@ Subtopics
 
   [Checkpoint-summary-limit]
       Control printing of key checkpoints upon a proof's failure")
+ (SUMMARY-OF-ACL2-SYSTEM-DISTRIBUTION
+  (INSTALLATION-SUPPORT)
+  "Summary of ACL2 system distribution
+
+  This topic discusses a distribution that includes only the ACL2
+  system, without the [community-books].
+
+  See [installation-instructions] for how to obtain a gzipped tarfile
+  that contains both the ACL2 sources and community books.  Below we
+  describe the ACL2 distribution only (without the community books).
+  Its files are available by obtaining a gzipped tarfile,
+  {acl2.tar.gz |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/acl2.tar.gz}.
+  If you download this file and extract it with
+
+    tar xfz acl2.tar.gz
+
+  then you will create a subdirectory, [47macl2-sources[0m, which is
+  approximately the usual ACL2 distribution (see
+  [installation-instructions]) without the [47mbooks[0m subdirectory.  Among
+  its contents, in addition to the ACL2 source files, are the
+  following.
+
+    LICENSE       ; ACL2 license file
+    GNUmakefile   ; For use with GNU make
+    TAGS          ; Handy for looking at source files with emacs
+    TAGS-acl2-doc ; Handy for finding code in books, e.g., with the acl2-doc browser
+    acl2-customization-files/ ; Useful for certifying books, e.g., with ACL2(p)
+    bin/          ; Contains an executable script, bin/acl2, which invokes ACL2
+    doc/          ; ACL2 documentation
+    emacs/        ; Some helpful emacs utilities
+
+  Also available are {images/ |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/},
+  which may contain executables; see {images/Readme.html |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/Readme.html}
+
+
+GitHub Distributions
+
+  We strongly recommend that ACL2 users update their local copies of
+  the system and [community-books] every time there is an ACL2
+  release.  While that should suffice for many ACL2 users,
+  nevertheless for those who prefer to obtain the latest
+  developments, the ACL2 source code and community books are
+  available between ACL2 releases, by way of revision control using
+  git.  See the {GitHub ACL2 project website |
+  https://github.com/acl2/acl2} for more information.")
  (SWAP-STOBJS
   (STOBJ ACL2-BUILT-INS)
   "Swap two congruent [stobj]s
 
   See [stobj] for relevant background on single-threaded objects.
 
-  The macro call [47m(swap-stobjs st1 st2)[0m is allowed exactly when [47mst1[0m and
-  [47mst2[0m are congruent [stobj]s.  The logical meaning is simply to
-  return the two stobjs in reverse order, [47m(list st2 st1)[0m:
+  The macro call [47m(swap-stobjs st1 st2)[0m is allowed when [47mst1[0m and [47mst2[0m are
+  congruent [stobj]s.  The logical meaning is simply to return the
+  two stobjs in reverse order, [47m(list st2 st1)[0m:
 
   [31;1mMacro: [0m<swap-stobjs>
 
     (defmacro swap-stobjs (x y)
-      (cons 'mv (cons y (cons x 'nil))))
+      (cons 'progn$
+            (cons (cons 'mv (cons y (cons x 'nil)))
+                  'nil)))
 
   However, for purposes of tracking single-threadedness, the result [47m(mv
   st2 st1)[0m of [47m(swap-stobjs st1 st2)[0m is treated as a list of new
@@ -143742,7 +146192,18 @@ Subtopics
   even when stobjs are involved that are bound by [47m[with-local-stobj][0m
   or [47m[stobj-let][0m.  It also explains subtle interaction with
   [47m[trans-eval][0m.  For another example, see
-  [47mbooks/demos/swap-stobj-fields.lisp[0m")
+  [47mbooks/demos/swap-stobj-fields.lisp[0m.
+
+  In the example above, we call [47mfoo[0m rather than calling [47mswap-stobjs[0m
+  directly.  That is because [47mswap-stobjs[0m calls must not be made
+  directly in the top-level loop.  Instead, put those calls in
+  function bodies or in theorems.
+
+  Both inputs to [47mswap-stobjs[0m are required to be [stobj]s.  However, the
+  usual tracking of stobjs is relaxed during proofs.  See
+  [live-stobj-in-proof] for an error caused by [47m[swap-stobjs][0m during a
+  proof when exactly one of the arguments is truly a stobj (i.e., a
+  so-called ``live'' stobj).")
  (SYMBOL-ALISTP
   (ALISTS ACL2-BUILT-INS)
   "Recognizer for association lists with symbols as keys
@@ -143898,6 +146359,21 @@ Subtopics
   has two components: its name (see [symbol-name]) and its package
   name (see [symbol-package-name]).
 
+  When symbols are read by Common Lisp or ACL2, they are converted to
+  upper case.  Note carefully that this remark applies to the
+  characters in [3msymbols[0m.  The characters in strings are not converted
+  to upper case.
+
+  To type a symbol containing lower case characters you can enclose the
+  symbol in vertical bars, as in [47m|AbC|[0m, or you can put a
+  ``backslash'' before each lower case character you wish to
+  preserve, as in [47mA\\bC[0m.  [47m|AbC|[0m and [47mA\\bC[0m are two different ways of
+  writing the same symbol (just like 2/4 and 1/2 are two different
+  ways of writing the same rational and 123 and 0123 are two
+  different ways to write the same natural number).  The symbol has
+  three characters in its name, the middle one of which is a lower
+  case b.
+
 
 Subtopics
 
@@ -143912,6 +146388,9 @@ Subtopics
 
   [Packn-pos]
       Build a symbol in a specified package from a list
+
+  [Set-print-case]
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Symbol-listp]
       Recognizer for a true list of symbols
@@ -144152,10 +146631,9 @@ Subtopics
   This clearly evaluates to [47mt[0m.  When a [47msyntaxp[0m test evaluates to true,
   we consider the [47msyntaxp[0m hypothesis to have been established; this
   is sound because logically [47m(syntaxp test)[0m is [47mt[0m regardless of [47mtest[0m.
-  If the test evaluates to [47mnil[0m (or fails to evaluate because of
-  [guard] violations) we act as though we cannot establish the
-  hypothesis and abandon the attempt to apply the rule; it is always
-  sound to give up.
+  If the test evaluates to [47mnil[0m, we act as though we cannot establish
+  the hypothesis and abandon the attempt to apply the rule; it is
+  always sound to give up.
 
   The acute reader will have noticed something odd about the form
 
@@ -145618,13 +148096,14 @@ Subtopics
 
   where [47mtable-name[0m is a symbol that is the name of a (possibly new)
   table; [47mkey-term[0m and [47mvalue-term[0m, if present, are arbitrary terms
-  involving (at most) the variables [47mWORLD[0m and [47mENS[0m; [47mop[0m, if present, is
-  one of the table operations below; and [47mterm[0m, if present, is a term.
-  [47mTable[0m returns an ACL2 [error-triple].  The effect of [47mtable[0m on
-  [47m[state][0m depends on [47mop[0m and how many arguments are presented.  Some
-  invocations actually have no effect on the ACL2 [world] and hence
-  an invocation of [47mtable[0m is not always an ``event''.  We explain
-  below, after giving some background information.
+  involving (at most) the variables [47mWORLD[0m and [47mENS[0m with exceptions
+  noted below; [47mop[0m, if present, is one of the table operations below;
+  and [47mterm[0m, if present, is a term.  [47mTable[0m returns an ACL2
+  [error-triple].  The effect of [47mtable[0m on [47m[state][0m depends on [47mop[0m and
+  how many arguments are presented.  Some invocations actually have
+  no effect on the ACL2 [world] and hence an invocation of [47mtable[0m is
+  not always an ``event''.  We explain below, after giving some
+  background information.
 
   [31;1mImportant Note:[0m The [47mtable[0m forms above are calls of a macro that
   expands to involve the special variable [47m[state][0m.  This will prevent
@@ -145707,11 +148186,14 @@ Subtopics
   is passed as a formal parameter to many built-in functions; for
   example, see [system-utilities] for a description of built-in
   utilities [47menabled-numep[0m and [47menabled-runep[0m.)  However, in the
-  special case that the table in question is named
-  [47m[ACL2-defaults-table][0m, the [47mkey[0m and [47mvalue[0m terms may not contain any
-  variables.  Essentially, the keys and values used in [events]
-  setting the [47m[ACL2-defaults-table][0m must be explicitly given
-  constants.  See [ACL2-defaults-table].
+  following two special cases, the [47mkey[0m and [47mvalue[0m terms may not
+  contain any variables: when the table is named
+  [47m[ACL2-defaults-table][0m; or when the table's [47m:guard[0m is a call of the
+  unary function [47mstrict-table-guard[0m, which returns its argument
+  unchanged but indicates this restriction on variables for
+  specifying keys and values.  Essentially, the keys and values used
+  in [events] setting such tables must be explicitly given constants.
+  See [ACL2-defaults-table].
 
     (table name key-term nil :get)          ; long form
     (table name key-term)                   ; short form
@@ -146154,9 +148636,8 @@ Subtopics
       annotated list of links to several talks about the use of ACL2
       for hardware specification and verification.
 
-  Note that many talks are also available from the {ACL2 Workshops |
-  http://www.cs.utexas.edu/users/moore/acl2/workshops.html} pages and
-  on the {University of Texas ACL2 Seminar page |
+  Note that many talks are also available from the ACL2 Workshops pages
+  and on the {University of Texas ACL2 Seminar page |
   http://www.cs.utexas.edu/users/moore/acl2/seminar/}.")
  (TAME
   (APPLY$)
@@ -147421,10 +149902,9 @@ Subtopics
   explanation of terms).
 
     Examples of Terms:
+
     (cond ((caar x) (cons t x)) (t 0))   ; an untranslated term
-
     (if (car (car x)) (cons 't x) '0)    ; a translated term
-
     (car (cons x y) 'nil v)              ; a pseudo-term
 
   In traditional first-order predicate calculus a ``term'' is a
@@ -147432,9 +149912,10 @@ Subtopics
   individuals.  Often, for example, the syntactic characterization of
   a term is that it is either a variable symbol or the application of
   a function symbol to the appropriate number of argument terms.
-  Traditionally, ``atomic formulas'' are built from terms with
-  predicate symbols such as ``equal'' and ``member;'' ``formulas''
-  are then built from atomic formulas with propositional
+  (Note that ACL2 is case-insensitive when dealing with symbols; see
+  [symbols].)  Traditionally, ``atomic formulas'' are built from
+  terms with predicate symbols such as ``equal'' and ``member;''
+  ``formulas'' are then built from atomic formulas with propositional
   ``operators'' like ``not,'' ``and,'' and ``implies.'' Theorems are
   formulas.  Theorems are ``valid'' in the sense that the value of a
   theorem is true, in any model of the axioms and under all possible
@@ -147473,12 +149954,12 @@ Subtopics
 
   The function [47mtermp[0m, which takes two arguments, an alleged term [47mx[0m and
   a logical world [47mw[0m (see [world]), recognizes terms of a given
-  extension of the logic.  [47mTermp[0m is defined in [47m:[0m[47m[program][0m mode.  Its
-  definition may be inspected with [47m:[0m[47m[pe][0m [47mtermp[0m for a complete
-  specification of what we mean by ``term'' in the most strict sense.
-  Most ACL2 term-processing functions deal with terms in this strict
-  sense and use [47mtermp[0m as a [guard].  That is, the ``internal form''
-  of a term satisfies [47mtermp[0m, the strict sense of the word ``term.''
+  extension of the logic.  Its definition may be inspected with [47m:[0m[47m[pe][0m
+  [47mtermp[0m for a complete specification of what we mean by ``term'' in
+  the most strict sense.  Most ACL2 term-processing functions deal
+  with terms in this strict sense and use [47mtermp[0m as a [guard].  That
+  is, the ``internal form'' of a term satisfies [47mtermp[0m, the strict
+  sense of the word ``term.''
 
   [3mUntranslated Terms: What the User Types[0m
 
@@ -147489,10 +149970,10 @@ Subtopics
   functions that produce terms as their results.  Constants are
   symbols that are associated with quoted objects.  Terms in this
   sugary syntax are ``translated'' to terms in the strict sense; the
-  sugary syntax is more often called ``untranslated.'' Roughly
-  speaking, translation just implements macroexpansion, the
-  replacement of constant symbols by their quoted values, and the
-  checking of all the rules governing the strict sense of ``term.''
+  sugary syntax is more often called ``untranslated.'' Translation
+  includes the process of macroexpansion as well as the replacement
+  of constant symbols by their quoted values, while checking all the
+  rules governing the strict sense of ``term.''
 
   More precisely, macro symbols are as described in the documentation
   for [47m[defmacro][0m.  A macro, [47mmac[0m, can be thought of as a function,
@@ -147539,6 +150020,46 @@ Subtopics
   translated terms it is convenient to use the keyword command
   [47m:[0m[47m[trans][0m to see examples of translations.  See [trans] and also see
   [trans1].
+
+  Note that translation produces a translated term that need not obey
+  code restrictions: a translated term can be used in theorems but
+  might not be allowed in definitions (except in [non-executable]
+  contexts; see [defun-nx] and see [non-exec]).  Suppose for example
+  that we make the following definition, so that [47mfoo[0m returns two
+  values (see [mv]).
+
+    (defun foo (x)
+      (mv x x))
+
+  Now consider the following translation of a use of [47m[mv-let][0m.
+
+    ACL2 !>:trans (mv-let (a b) (foo x) (+ a b))
+
+    ((LAMBDA (MV)
+       ((LAMBDA (A B) (BINARY-+ A B))
+        (MV-NTH '0 MV)
+        (MV-NTH '1 MV)))
+     (FOO X))
+
+    => *
+
+    ACL2 !>
+
+  The first definition below is legal.  But the second definition ---
+  which uses the translation of the body of the first definition ---
+  is not legal.  That's because a [lambda] application, as with any
+  function application, expects each of its arguments to represent a
+  single value, but the argument [47m(foo x)[0m returns two values.
+
+    (defun legal-def (x)
+      (mv-let (a b) (foo x) (+ a b)))
+
+    (defun illegal-def (x)
+       ((LAMBDA (MV)
+          ((LAMBDA (A B) (BINARY-+ A B))
+           (MV-NTH '0 MV)
+           (MV-NTH '1 MV)))
+        (FOO X)))
 
   Finally, we note that the theorem prover prints terms in untranslated
   form.  But there can be more than one correct untranslated term
@@ -149915,49 +152436,7 @@ Subtopics
   Basically, this proof flashes across your screen before you can read
   it; you see the [31;1mQ.E.D.[0m and don't bother to scroll back to read it.
   You have more important things to do than read successful proofs.")
- (THE_TOURS
-  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
-  "The Tours
-
-  ACL2 is a very large, multipurpose system.  You can use it as a
-  programming language, a specification language, a modeling
-  language, a formal mathematical logic, or a semi-automatic theorem
-  prover, just to name its most common uses.  It has been used on a
-  number of industrial applications (see [INTERESTING-APPLICATIONS]).
-  If you're uncertain as to whether your project is appropriate for
-  ACL2 we urge you to look over this list or contact the ACL2
-  developers.
-
-  This home page includes all of ACL2's online documentation, which is
-  quite extensive (over 4 megabytes).  To help ease your introduction
-  to ACL2, we have built two tours through this documentation.
-
-  If you are familiar with at least some of the industrial applications
-  (see [INTERESTING-APPLICATIONS]) of ACL2, then you will understand
-  the distance between the simple examples we talk about in these
-  tours and the kinds of things ACL2 users do with the system.
-
-  Newcomers to ACL2 should first take the ``Flying Tour.'' Then, if you
-  want to know more, take the ``Walking Tour.'' On your first
-  reading, follow the two Tours linearly, clicking only on the icon
-  of the Tour you're on.  Beware of other links, which might jump you
-  from one tour to the other or into the ACL2 User's Manual!  Once
-  you've had a coherent overview of the system, you might quickly
-  repeat both Tours to see if there are unvisited links you're
-  interested in, using your browser's Back Button to return to your
-  starting points.
-
-  If after all this you want to learn how to use the theorem prover
-  (!), see [introduction-to-the-theorem-prover].
-
-  To start a tour, click on the appropriate icon below.
-
-  {IMAGE} (see [A_Flying_Tour_of_ACL2]) {IMAGE} (see
-  [A_Walking_Tour_of_ACL2])
-
-  If you take the tours in a text-based format (such as using the :DOC
-  command in Emacs), they will probably be unsatisfying because we
-  use gif files and assume you can navigate ``back.''")
+ (THE_TOURS (POINTERS) "See [tours].")
  (THE_WARNING_ABOUT_THE_TRIVIAL_CONSEQUENCE
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "The WARNING about the Trivial Consequence
@@ -151111,6 +153590,38 @@ Subtopics
   [47matomic-macro[0m, in any package), or else there is no change.")
  (TOO-MANY-IFS (POINTERS)
                "See [efficiency].")
+ (TOP
+  NIL
+  "ACL2 documentation (system only, not including the community books)
+
+  This is the documentation for the ACL2 system.  For the ACL2+Books
+  Manual, which documents both the ACL2 system and the ACL2
+  [community-books], see the {ACL2+Books Manual |
+  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
+
+
+Subtopics
+
+  [ACL2]
+      ACL2 system documentation
+
+  [Books]
+      [3mBooks[0m are files of ACL2 [events]---they are the main way to split up
+      large ACL2 developments into separate modules.
+
+  [Debugging]
+      Tools for debugging failed or slow proofs, or misbehaving functions.
+
+  [Documentation]
+      Information about options for downloading and viewing the ACL2
+      documentation, contributing documentation, and the available
+      tools for documenting your own books.
+
+  [Interfacing-tools]
+      Libraries and tools for doing basic file i/o (see [STD/IO]), using
+      raw Common Lisp libraries (see [QUICKLISP]), working with the
+      operating system (see [OSLIB]), and interfacing with other
+      programs (see [BRIDGE]).")
  (TOP-LEVEL
   (MISCELLANEOUS)
   "Evaluate a top-level form as a function body
@@ -151193,6 +153704,49 @@ Subtopics
     ***********************************************")
  (TOP-LEVEL-LOOP (POINTERS)
                  "See [guarantees-of-the-top-level-loop].")
+ (TOURS
+  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS ACL2-TUTORIAL)
+  "The Tours
+
+  ACL2 is a very large, multipurpose system.  You can use it as a
+  programming language, a specification language, a modeling
+  language, a formal mathematical logic, or a semi-automatic theorem
+  prover, just to name its most common uses.  It has been used on a
+  number of industrial applications (see [INTERESTING-APPLICATIONS]).
+  If you're uncertain as to whether your project is appropriate for
+  ACL2 we urge you to look over this list or contact the ACL2
+  developers.
+
+  This home page includes all of ACL2's online documentation, which is
+  quite extensive (over 4 megabytes).  To help ease your introduction
+  to ACL2, we have built two tours through this documentation.
+
+  If you are familiar with at least some of the industrial applications
+  (see [INTERESTING-APPLICATIONS]) of ACL2, then you will understand
+  the distance between the simple examples we talk about in these
+  tours and the kinds of things ACL2 users do with the system.
+
+  Newcomers to ACL2 should first take the ``Flying Tour.'' Then, if you
+  want to know more, take the ``Walking Tour.'' On your first
+  reading, follow the two Tours linearly, clicking only on the icon
+  of the Tour you're on.  Beware of other links, which might jump you
+  from one tour to the other or into the ACL2 User's Manual!  Once
+  you've had a coherent overview of the system, you might quickly
+  repeat both Tours to see if there are unvisited links you're
+  interested in, using your browser's Back Button to return to your
+  starting points.
+
+  If after all this you want to learn how to use the theorem prover
+  (!), see [introduction-to-the-theorem-prover].
+
+  To start a tour, click on the appropriate icon below.
+
+  {IMAGE} (see [A_Flying_Tour_of_ACL2]) {IMAGE} (see
+  [A_Walking_Tour_of_ACL2])
+
+  If you take the tours in a text-based format (such as using the :DOC
+  command in Emacs), they will probably be unsatisfying because we
+  use gif files and assume you can navigate ``back.''")
  (TRACE
   (DEBUGGING)
   "Tracing functions in ACL2
@@ -151432,29 +153986,7 @@ Subtopics
      (2 . 2)
      (1 . 1)
      (0 . 1))
-    ACL2 !>
-
-  Finally, we remark that using [47mtrace![0m can cause errors in situations
-  where tracing is automatically suspended and re-introduced.  This
-  is likely to be a rare occurrence, but consider the following
-  example.
-
-    (trace! (lexorder :native t :multiplicity 1))
-    (certify-book \"foo\" 0 t)
-
-  If the certify-book causes compilation, you may see an error such as
-  the following.
-
-    ACL2 Error in (CERTIFY-BOOK \"foo\" ...):  The keyword :NATIVE cannot
-    be used in a trace spec unless there is an active trust tag.  The trace
-    spec (LEXORDER :NATIVE T :MULTIPLICITY 1) is thus illegal.  Consider
-    using trace! instead.  The complete list of keywords that require a
-    trust tag for use in a trace spec is: (:NATIVE :DEF :MULTIPLICITY).
-
-  This error is harmless.  The function will appear, when calling
-  [47m(trace$)[0m, to remain traced, but in fact there will be no tracing
-  behavior, so you may want to call [47m[untrace$][0m on the function symbol
-  in question.")
+    ACL2 !>")
  (TRACE$
   (TRACE)
   "Trace function evaluations
@@ -151632,8 +154164,8 @@ Subtopics
   to trace a function that is defined in raw Lisp, then you can use
   option [47m:native[0m (see below), but then many other [47mtrace$[0m options will
   not be available to you: all of them except [47m:multiplicity[0m and
-  [47m:native[0m itself will be passed directly to the [47mtrace[0m utility of the
-  underlying Common Lisp.
+  [47m:native[0m itself will be passed, as described below, to the [47mtrace[0m
+  utility of the underlying Common Lisp.
 
   [47m:COND[0m, [47m:ENTRY[0m, and [47m:EXIT[0m
 
@@ -151808,23 +154340,18 @@ Advanced Options (alphabetical list)
   [47m:DEF[0m, [47m:MULTIPLICITY[0m
 
   ACL2's [47mtrace$[0m mechanism often needs to know the number of outputs of
-  a traced function, in the sense of [47m[mv][0m.  If you trace a function
-  that was not defined inside the ACL2 loop (hence you are using the
-  [47m:native[0m option), or if you provide an alternative definition using
-  option [47m:def[0m (see below) and the new definition changes the number
-  of values returned, then a natural number value for [47m:multiplicity[0m
-  informs the trace utility of the number of expected outputs of the
-  function being traced.  In the case that [47m:native[0m is supplied, the
-  effect of a non-[47mnil[0m [47m:multiplicity[0m value depends on the host Lisp.
-  In the case of Lisps for which ACL2 uses the built-in Lisp
-  mechanism for returning multiple values (see [mv]), which are CCL
-  and threaded SBCL as of June, 2010, [47m:multiplicity[0m is not needed and
-  is ignored with [47m:native t[0m.  For GCL and Allegro CL, [47m:multiplicity[0m
-  is used to generate a suitable [47m:exit[0m form if the [47m:exit[0m keyword was
-  not already supplied.  For the other Lisps, the [47m:multiplicity[0m value
-  is treated essentially as 1 whether it is supplied or not, because
-  we do not know how to pass suitable information based on this value
-  to the host Lisp's built-in tracing mechanism.
+  a traced function, in the sense of [47m[mv][0m.  If you provide an
+  alternative definition using option [47m:def[0m (see below) and the new
+  definition changes the number of values returned, then a natural
+  number value for [47m:multiplicity[0m informs the trace utility of the
+  number of expected outputs of the function being traced.  In the
+  case that [47m:native[0m is supplied, the [47m:multiplicity[0m option is ignored.
+  For GCL and Allegro CL, [47m:multiplicity[0m is used to generate a
+  suitable [47m:exit[0m form if the [47m:exit[0m keyword was not already supplied.
+  For the other Lisps, the [47m:multiplicity[0m value is treated essentially
+  as 1 whether it is supplied or not, because we do not know how to
+  pass suitable information based on this value to the host Lisp's
+  built-in tracing mechanism.
 
   Note that even supplying a [47m:multiplicity[0m option does not change the
   meaning of the variable [47mvalues[0m.  See the discussion of [47m:native[0m
@@ -151832,16 +154359,16 @@ Advanced Options (alphabetical list)
 
   A useful option can be to supply a definition as the value of [47m:def[0m.
   (Again, note that if [47m:native[0m is used, then all options other than
-  [47m:multiplicity[0m are passed directly to the underlying Lisp; in
-  particular, [47m:def[0m will have no effect with [47m:native[0m except in the
-  unlikely case that the raw Lisp provides some sort of support for
-  [47m:def[0m.)  Note that this definition should be like a [47m[defun][0m form,
-  but without the leading [47mdefun[0m symbol; and it should define the
-  function symbol being traced, with the same formal parameter list.
-  However, tracing of the ``executable-counterpart'' of a function
-  (see [evaluation] is not sensitive to the [47m:def[0m option; rather, if a
-  function has an executable-counterpart then that
-  executable-counterpart is traced.
+  [47m:multiplicity[0m are passed to the trace utility of the underlying
+  Lisp; in particular, [47m:def[0m will have no effect with [47m:native[0m except
+  in the unlikely case that the raw Lisp provides some sort of
+  support for [47m:def[0m.)  Note that this definition should be like a
+  [47m[defun][0m form, but without the leading [47mdefun[0m symbol; and it should
+  define the function symbol being traced, with the same formal
+  parameter list.  However, tracing of the ``executable-counterpart''
+  of a function (see [evaluation] is not sensitive to the [47m:def[0m
+  option; rather, if a function has an executable-counterpart then
+  that executable-counterpart is traced.
 
   [47m:EVISC-TUPLE[0m
 
@@ -151928,32 +154455,31 @@ Advanced Options (alphabetical list)
   [47m:NATIVE[0m
 
   If [47m:native[0m is supplied with a non-[47mnil[0m value, then the trace spec is
-  passed to the native Lisp trace (after removing the [47m:native[0m
-  option).  A trust tag (see [defttag]) is required in order to use
-  this option, because no syntactic check is made on the [47m:cond[0m,
-  [47m:entry[0m, or [47m:exit[0m forms --- arbitrary raw Lisp may occur in them!
+  passed to the native Lisp trace (after removing the [47m:native[0m and
+  [47m:multiplicity[0m options).  Each trace spec generates its own call of
+  Lisp [47mtrace[0m: directly in most cases, but if SBCL is the host Lisp
+  then the SBCL [47mtrace[0m syntax is accommodated by placing the the
+  function symbol last, after any keyword options.  A trust tag (see
+  [defttag]) is required in order to use the [47m:native[0m option, because
+  arbitrary raw Lisp may be executed by the options!
 
   Note that by ``native Lisp trace'' we mean the currently installed
   [47mtrace[0m.  As discussed briefly elsewhere (see [trace]), ACL2 has
   modified that trace to be more useful if the underlying host Lisp
-  is GCL, Allegro CL, or CCL (OpenMCL).  If you need the original
-  trace utility supplied for those Lisps, quit the ACL2 loop with [47m:q[0m
-  and call [47mold-trace[0m and [47mold-untrace[0m in raw Lisp where you would
-  otherwise call [47mtrace[0m and [47muntrace[0m.  Note that the original trace
-  utility supplied with a given Lisp will not hide the ACL2 logical
-  [world] or give special treatment to [stobj]s.
+  is GCL, Allegro CL, or CCL.  If you need the original trace utility
+  supplied for those Lisps, quit the ACL2 loop with [47m:q[0m and call
+  [47mold-trace[0m and [47mold-untrace[0m in raw Lisp where you would otherwise
+  call [47mtrace[0m and [47muntrace[0m.  Note that the original trace utility
+  supplied with a given Lisp will not hide the ACL2 logical [world]
+  or give special treatment to [stobj]s.
 
   It is important to understand that if [47m:native t[0m is specified, then
   all other options are interpreted by the native Lisp trace.  For
   example, that trace probably has no understanding of the use of
   [47m:fmt[0m described above for [47m:entry[0m or [47m:exit[0m.  Indeed, the native trace
   may not even accept any of [47m:cond[0m, [47m:entry[0m or [47m:exit[0m, let alone any of
-  the advanced options!  Moreover, if [47m:native t[0m is specified, then
-  even a [47m:multiplicity[0m option does not provide the meaning of the
-  variable [47mvalues[0m that one might desire.  In GCL for example, in the
-  case of an [47m[mv][0m return of a function defined only in raw Lisp (not
-  in ACL2), this variable will be bound to a list containing only the
-  first result.
+  the advanced options!  (But it may accept many options that are not
+  available with the non-native ACL2 [47mtrace$[0m.)
 
   [47m:NOTINLINE[0m
 
@@ -152033,15 +154559,23 @@ Remarks
     :trans (caddr x)
     :trans (cond (p q) (r))
 
-  ACL2 accepts user-level syntax as input, but [3mtranslates[0m it to an
-  internal syntax.  This translation includes macroexpansion,
-  replacing [47m[let][0m forms by [47m[lambda][0m expressions, quoting constants,
-  and so on.  See [term] for relevant background.
+  ACL2 accepts user-level syntax as input, and it prints the result of
+  [3mtranslating[0m it to an internal syntax.  This translation includes
+  macroexpansion, replacing [47m[let][0m forms by [47m[lambda][0m expressions,
+  quoting constants, and so on.  See [term] for relevant background.
+  The printing can be abbreviated, as it uses the [47m:term[0m [evisc-tuple]
+  (with a [47mflg[0m of [47mnil[0m, hence without any abbreviation by default; see
+  [set-evisc-tuple]).
+
+  Note that the [47mtrans[0m command prints a [47m[term][0m that need not obey code
+  restrictions: that term can be used in theorems but might not be
+  allowed in definitions (except in [non-executable] contexts; see
+  [defun-nx] and see [non-exec]).
 
   [47mTrans[0m takes one argument, an alleged term in user syntax, and
   translates it, expanding the macros in it completely.  Either an
   error is caused or the internal syntax for the term (representing
-  its formal meaning) is printed.  We also print the ``output
+  its formal meaning) is printed.  It also prints the ``output
   signature'' which indicates how many results are returned and which
   are single-threaded objects.  For example, a term that returns one
   ordinary object (e.g., an object other than [47m[state][0m or a
@@ -152073,13 +154607,13 @@ Remarks
   causes an error; to see the desired translation use [47m:trans! (df+ x
   y)[0m.
 
-  It is sometimes more convenient to use [47m[trans1][0m which is like trans
-  but which only does top-level macroexpansion.
+  It is sometimes more convenient to use [47m:[0m[47m[trans1][0m, which, unlike
+  [47m:trans[0m, only does top-level macroexpansion.
 
   For more, see [term].")
  (TRANS!
   (MACROS)
-  "Print the translation of a form without code restrictions
+  "Print the translation without code restrictions on the input
 
     Examples:
     :trans! (list a b c)
@@ -152101,15 +154635,22 @@ Remarks
   [trans], [trans!], and [47m[trans1][0m for other utilities that expand and
   translate their input.
 
-  Unlike [47mtrans[0m, the [47mtrans*[0m command can show not only the translation of
-  a given expression but also the intermediate expansions leading to
-  that translation, and [47mtrans*[0m can also show [47m[make-event][0m expansions.
-  Another difference between [47mtrans*[0m and [47mtrans[0m is that [47mtrans*[0m does not
-  enforce code restrictions; thus, multiple-value mismatches and
-  violations of single-threadedness are permitted by [47mtrans*[0m.  That
-  is: when [47mtrans*[0m takes steps to convert an untranslated term to a
-  translated term, it does so as though one is translating a theorem
-  statement, not a definition body.
+  Unlike [47mtrans[0m, the [47mtrans*[0m command can print not only the translation
+  of a given expression but also the intermediate expansions leading
+  to that translation, and [47mtrans*[0m can also print [47m[make-event][0m
+  expansions.  Another difference between [47mtrans*[0m and [47mtrans[0m is that
+  [47mtrans*[0m does not enforce code restrictions; thus, multiple-value
+  mismatches and violations of single-threadedness are permitted by
+  [47mtrans*[0m.  That is: when [47mtrans*[0m takes steps to convert an
+  untranslated term to a translated term, it does so as though one is
+  translating a theorem statement, not a definition body.
+
+  But like [47mtrans[0m, the [47mtrans*[0m command prints [47m[term][0ms that need not obey
+  code restrictions: they can be used in theorems but might not be
+  allowed in definitions (except in [non-executable] contexts; see
+  [defun-nx] and see [non-exec]).  Also like [47mtrans[0m, the printing uses
+  the [47m:term[0m [evisc-tuple] (with a [47mflg[0m of [47mnil[0m, hence without any
+  abbreviation by default; see [set-evisc-tuple]).
 
   For discussion of how one may use a keyword command like [47m:trans*[0m in
   place of calling the corresponding utility, in this case [47mtrans*[0m,
@@ -155195,6 +157736,7 @@ Type Specs
     (INTEGER i j)          (AND (INTEGERP X)   ; See notes below.
                                 (<= i X)
                                 (<= X j))
+    LIST                   (LISTP X)
     (MEMBER x1 ... xn)     (MEMBER X '(x1 ... xn))
     (MOD i)                same as (INTEGER 0 i-1)
     NIL                    NIL
@@ -155216,7 +157758,7 @@ Type Specs
     (SATISFIES pred)       (pred X) ; Lisp requires a unary function, not a macro
     SIGNED-BYTE            (INTEGERP X)
     (SIGNED-BYTE i)        same as (INTEGER k m) where k=-2^(i-1), m=2^(i-1)-1
-    STANDARD-CHAR          (STANDARD-CHARP X)
+    STANDARD-CHAR          (STANDARD-CHAR-P X)
     STRING                 (STRINGP X)
     (STRING max)           (AND (STRINGP X) (EQUAL (LENGTH X) max))
     SYMBOL                 (SYMBOLP X)
@@ -155652,11 +158194,6 @@ Subtopics
 
   [Ubu?]
       Undo [command]s, with queries as appropriate")
- (UNDOCUMENTED_TOPIC
-      (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
-      "Undocumented Topic
-
-  This topic has not yet been documented.  Sorry")
  (UNDOING (POINTERS) "See [undo].")
  (UNION$
   (LISTS ACL2-BUILT-INS)
@@ -156951,6 +159488,147 @@ Subtopics
                               (er soft 'top \"Failed!\"))
                            'top state t)
                (value '(value-triple :success))))")
+ (USING-ACL2
+  (INSTALLATION ABOUT-ACL2)
+  "Using ACL2
+
+  [31;1mTable of Contents[0m
+
+    * Invoking ACL2
+
+    * Testing ACL2
+
+    * Certifying ACL2 Books
+
+    * Documentation
+
+    * Emacs
+
+
+Invoking ACL2
+
+  We assume that you have followed the [installation] instructions to
+  install ACL2.  The sources and, in general, an executable image are
+  located in that directory.  However, if you have not saved an
+  executable image but instead use the directions for running ACL2
+  without building an executable image (see
+  [running-ACL2-without-executable]), skip to ``When ACL2 Starts Up''
+  below.
+
+  Invoke ACL2 by running the executable file, [47msaved_acl2[0m, for example
+  as follows (but you can supply a suitable pathname if you are not
+  standing in the directory that contains [47msaved_acl2[0m).
+
+    mycomputer% ./saved_acl2
+
+  If you on a Unix-like system, then to make it easy to invoke ACL2 by
+  typing a short command, e.g.,
+
+    mycomputer% acl2
+
+  you may want to install an executable file on your path, e.g.,
+  [47m~/bin/acl2[0m, containing the following two lines where [47m<path>[0m is the
+  absolute pathname for the directory of [47msaved_acl2[0m.
+
+    #!/bin/sh
+    <path>/saved_acl2 \"$@\"
+
+  Note: A carriage return in the file after the last line above may be
+  important!
+
+  [3mWhen ACL2 Starts Up[0m
+
+  When you invoke ACL2, you should see the host Common Lisp print a
+  header concerning the ACL2 version, license and copyright.
+
+  Most or all hosts then automatically enter the ACL2 [3mcommand loop[0m, an
+  ACL2 read-eval-print loop with the prompt:
+
+    ACL2 !>
+
+  In the very unlikely case that a host leaves you in Common Lisp's
+  read-eval-print loop, then you'll need to evaluate the Common Lisp
+  expression [47m(ACL2::LP)[0m or simply [47m(LP)[0m if the current package is
+  [47m\"ACL2\"[0m.
+
+  Once in the ACL2 command loop, you can type an ACL2 term, typically
+  followed by ``return'' or ``enter,'' and ACL2 will evaluate the
+  term, print its value, and prompt you for another one.  Below are
+  three simple interactions.
+
+    ACL2 !>t
+    T
+    ACL2 !>'abc
+    ABC
+    ACL2 !>(+ 2 2)
+    4
+
+  To get out of the ACL2 command loop, type the [47m:q[0m command.  This
+  returns you to the host Common Lisp.  We sometimes call this ``raw
+  Lisp.'' You may re-enter the command loop with [47m(LP)[0m as above.  To
+  quit ACL2 (and Lisp) entirely, submit the command, [47m(quit)[0m.
+
+  Note that when you are in raw Lisp you can overwrite or destroy ACL2
+  by executing inappropriate Common Lisp expressions.  [31;1mAll bets are
+  off once you've exited the ACL2 loop.[0m That said, this is typically
+  safe and many users do it.  For example, you might exit the ACL2
+  loop, activate some debugging or trace features in raw Lisp, and
+  then reenter the ACL2 loop.  While developing proofs or tracking
+  down problems, this can occasionally be reasonable behavior.
+
+  Now you are ready to test your copy of ACL2.
+
+
+Testing ACL2
+
+  An easy way to test the theorem prover is to type the following term
+  to the ACL2 command loop.
+
+    :mini-proveall
+
+  This will cause a sequence of commands to be processed, each of which
+  is first printed out as though you had typed it.  Each will print
+  some text, generally a proof of some conjecture.  None should fail.
+
+  A more elaborate test is to certify the community books; see
+  [community-books] and [certify-book].  This certification is a good
+  idea anyhow; this is our next topic.  On a Unix-like system, you
+  can also certify just a small but useful subset of the books in a
+  few minutes by executing [47mmake basic[0m in either the main ACL2
+  directory or the [47mbooks/[0m subdirectory.
+
+
+Certifying ACL2 Books
+
+  The [3mcommunity books[0m (see [COMMUNITY-BOOKS]), which reside in
+  subdirectory [47mbooks/[0m, have been contributed by many ACL2 users.  See
+  [books] for a through discussion of the general topic of books.
+
+  Books should be [3mcertified[0m before they are used.  ACL2 is distributed
+  without book [certificate]s, mainly because certification produces
+  compiled code specific to the host.  You should certify the books
+  locally, both as a test of your ACL2 image and because books
+  generally need to be certified before they can be used.  See
+  [installation], or more specifically [installation-instructions],
+  for how to perform this certification.  For additional explanation
+  and further options, see [books-certification].
+
+
+Documentation
+
+  See [documentation] for a discussion of ACL2's documentation system.
+  To query ACL2 about a built-in topic, [47m<topic>[0m, submit [47m:DOC <topic>[0m
+  to ACL2.
+
+
+Emacs
+
+  Emacs users may find it helpful to load into emacs the file
+  [47memacs/emacs-acl2.el[0m for Emacs 24 or 25 or the file
+  [47mbooks/emacs/emacs-acl2.el[0m for later Emacs versions.  Utilities
+  offered by this file are documented near the top of the file.  In
+  particular, this file automatically loads the [ACL2-doc]
+  Emacs-based browser for ACL2 documentation.")
  (USING-COMPUTED-HINTS
   (COMPUTED-HINTS HINTS)
   "How to use computed hints
@@ -160498,9 +163176,9 @@ The Differences Between Well-Formed and Merely Tame Lambda Objects
   "Show that a relation is well-founded on a set
 
   See [well-founded-relation-rule] for discussion of well-founded
-  relations in ACL2.  A related utility, [47mwell-founded-relation[0m, may
-  be found in the [community-books], file
-  [47mkestrel/utilities/system/world-queries.lisp[0m.")
+  relations in ACL2.  A related utility, [47mget-well-founded-relation[0m,
+  may be found in the [community-books], file
+  [47mstd/system/get-well-founded-relation.lisp[0m.")
  (WELL-FOUNDED-RELATION-RULE
   (RULE-CLASSES)
   "Show that a relation is well-founded on a set
@@ -161074,7 +163752,7 @@ Concluding Remark
   to do [47m:[0m[47m[brr][0m [47mnil[0m in the external state when the next opportunity
   arises.")
  (WINDOWS-INSTALLATION
-  (BREAK-REWRITE)
+  (INSTALLATION-SUPPORT)
   "Installing ACL2 on Windows
 
   Windows users will probably want to do one of the following to
@@ -161084,7 +163762,7 @@ Concluding Remark
     * Use a Virtual Machine platform, such as VMware Player (free for
       non-commercial use) or Oracle Virtualbox (free even for
       commercial use) to install Linux, and then follow the normal
-      installation instructions to install ACL2.  As of 2014, at
+      [installation-instructions] to install ACL2.  As of 2014, at
       least a couple of our power users are very happy with this
       solution, as it provides first-class access to utilities
       relevant to maintaining the ACL2 system and books (like GNU
@@ -161093,8 +163771,8 @@ Concluding Remark
     * Set up {Windows Subsystem for Linux |
       https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux}
       (WSL) on a 64-bit version of Windows 10 (or later, once
-      available).  Within that subsystem, follow the setup and
-      installation instructions for ACL2. See the below section
+      available).  Within that subsystem, follow the normal
+      [installation-instructions] for ACL2. See the below section
       regarding the ACL2 Sedan Windows installation instructions for
       more info, as that involves installing the ACL2 Sedan in WSL on
       Windows.
@@ -161111,7 +163789,113 @@ Concluding Remark
   release |
   http://www.cs.utexas.edu/users/moore/acl2/v3-6/distrib/windows/},
   which mimics some of Linux and provides Emacs.  Updated ACL2
-  binaries have been successfully installed in such an environment.")
+  binaries have been successfully installed in such an environment.
+
+  When installing ACL2 on Windows without a Unix-like environment,
+  consider at least downloading a utility such as [47mdjtarnt.exe[0m to use
+  with the [47m-x[0m option on gzipped tarfiles.
+
+  Gnu tar is preferred, as there have been some problems with long file
+  names when using at least one other tar program.  You may want to
+  use the [47m-i[0m option, [47mtar xpvfi ...[0m, if you have problems with other
+  than Gnu tar.  You can see if you have Gnu tar by running [47mtar -v[0m.
+
+  WARNING: At least one user experienced CR/LF issues when using
+  WinZIP, but we have received the suggestion that people untarring
+  with that utility should probably turn off smart cr/lf conversion.
+
+  Here are links to some older documentation topics, possibly out of
+  date, that provide additional information for installing ACL2 on
+  Windows.
+
+    * See [windows-installation-gcl] for building an executable image on a
+      Windows system using GCL
+
+    * Click {here |
+      https://www.cs.utexas.edu/users/moore/acl2/contrib/windows7.html}
+      for some older instructions for building ACL2 on Windows.
+
+    * Click {here |
+      https://www.cs.utexas.edu/users/moore/acl2/contrib/windows-gcl-jared.html}
+      for yet older instructions for building ACL2 on Windows using
+      mingw.
+
+
+Subtopics
+
+  [Windows-installation-gcl]
+      Building an executable image on a Windows system using GCL")
+ (WINDOWS-INSTALLATION-GCL
+  (WINDOWS-INSTALLATION)
+  "Building an executable image on a Windows system using GCL
+
+  This topic is based on very old documentation that is probably
+  superseded by the topic, [windows-installation].  But here are
+  steps that [3mmay[0m be helpful when installing ACL2 on Windows with GCL
+  as the host Common Lisp.
+
+   1. [31;1mFIRST[0m get GCL running on your Windows system using [31;1mONE[0m of the
+      following two options.  Note that GCL can be unhappy with
+      spaces in filenames, so you should probably save the GCL
+      distribution to a directory whose path is free of spaces.
+
+        * {Obtain GCL for Windows systems | https://www.gnu.org/software/gcl/}
+          if such a distribution is available.
+
+        * [31;1mOR[0m, perhaps you can build GCL on your Windows system from the
+          sources.  The mingw tools and the cygnus bash shell have
+          been used to build distributed GCL executables.
+
+   2. [31;1mSECOND[0m, create an appropriate GCL batch file.  When we tried running
+      the script [47mgclm/bin/gclm.bat[0m, a separate window popped up, and
+      with an error.  Many ACL2 users prefer running in an emacs
+      shell buffer.  The following modification of [47mgclm.bat[0m seemed to
+      solve the problem (your pathnames may vary).
+
+          @
+          % do not delete this line %
+          @ECHO off
+          set cwd=%cd%
+          path C:\\gcl\\gclm\\mingw\\bin;%PATH%
+          C:\\gcl\\gclm\\lib\\gcl-2.6.2\\unixport\\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/unixport/ -libdir  C:/gcl/gclm/lib/gcl-2.6.2/ -eval \"(setq si::*allow-gzipped-file* t)\" %1 %2 %3 %4 %5 %6 %7 %8 %9
+
+   3. [31;1mTHIRD[0m, see [creating-executable], and follow the instructions in the
+      section, ``Building an executable image on other than a
+      Unix-like system''.  The resulting file may be called
+      [47msaved_acl2.exe[0m rather than [47msaved_acl2[0m.
+
+   4. [31;1mFINALLY[0m, create a suitable file [47macl2.bat[0m.
+
+  If you experience problems, the following hints may help.
+
+
+TROUBLESHOOTING
+
+    * In an attempt to build ACL2 on Windows XP on top of GCL, the attempt
+      broke at the end of the ``Initialization, first pass'' step
+      (see [creating-executable]), while compiling [47mTMP1.lisp[0m.  That
+      was easily remedied by starting up a fresh GCL session and
+      invoking [47m(compile-file \"TMP1.lisp\")[0m before proceeding to the
+      next step.
+
+    * When you want to quit ACL2, invoke [47m(good-bye)[0m.  The point here is to
+      avoid [47mcontrol-c control-d[0m, even though that often works fine in
+      Emacs under Unix-like systems.
+
+    * If the above batch file does not work for some reason, an alternate
+      approach may be to set environment variables.  You may be able
+      to add to the [47mPATH[0m variable [3mgcl-dir[0m[47m\\gcc\\bin[0m, where [3mgcl-dir[0m is
+      the directory where GCL is installed.  To get to the place to
+      set environment variables, you might be able to go to the
+      control panel, under system, under advanced.  Alternately, you
+      might be able to get there by opening [47mMy Computer[0m and
+      right-clicking to get to [47mProperties[0m, then selecting the
+      [47mAdvanced[0m tab.  At one time, when GCL/Windows was released as
+      Maxima, Pete Manolios once suggested adding the system variable
+      [47mLD_LIBRARY_PATH[0m with the value
+      [47m\"maxima-dir\\gcc\\i386-mingw32msvc\\include\"[0m; this may or may not
+      be necessary for your GCL installation (and the path would of
+      course likely be different).")
  (WITH-BRR-DATA
   (DEBUGGING BREAK-REWRITE)
   "Finding the source of a term in prover output
@@ -164736,7 +167520,7 @@ Subtopics
   ``special variables;'' output is directed to the comment window.
   In that copy of the state, the state global variables
   [47mwormhole-name[0m, [47mwormhole-input[0m and [47mwormhole-status[0m are assigned
-  [47mname[0m, the the value of [47minput[0m and the persistent-whs, respectively.
+  [47mname[0m, the value of [47minput[0m and the persistent-whs, respectively.
   Thus, inside the wormhole, [47m(@ wormhole-name)[0m returns the name of
   the current wormhole, [47m(@ wormhole-input)[0m returns the list of
   inputs, [47m(@ wormhole-status)[0m returns the ephemeral-whs.  The first
@@ -170463,8 +173247,7 @@ Subtopics
   "J. Sawada, ``Verification of a Simple Pipelined Machine Model,'' in
   M. Kaufmann, P. Manolios, J S. Moore, editors, [3mComputer-Aided
   Reasoning: ACL2 Case Studies[0m, Kluwer Academic Publishers, Chapter
-  9, pp. 137-150, 2000. (See also {ACL2 books |
-  https://www.cs.utexas.edu/~moore/publications/acl2-papers.html#Books}).
+  9, pp. 137-150, 2000. (See also pubs::pubs-books.)
   [31;1mRelevance:[0m operational model of a pipelined machine and its
   verification
 

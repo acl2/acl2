@@ -1,6 +1,6 @@
 ; Idioms for expressing BV ops in terms of more common ones
 ;
-; Copyright (C) 2017-2024 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ; Copyright (C) 2017-2018 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,11 +13,12 @@
 
 (include-book "bvshl")
 (include-book "bvshr")
-(include-book "bvand")
+(include-book "bvand-def")
 (include-book "rules") ;for BVAND-OF-EXPT, todo reduce
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(include-book "bvand") ; todo: for the disables at the bottom
 
 ;;
 ;; library material
@@ -117,14 +118,7 @@
   :hints (("Goal" :in-theory (enable bvshl))))
 
 ;these undo the shifting/masking changes
-(in-theory (disable bvand-of-expt
-                    bvand-128-hack
-                    bvand-64-hack
-                    bvand-32-hack
-                    bvand-16-hack
-                    bvand-8-hack
-                    bvand-4-hack
-                    bvand-2-hack
+(in-theory (disable bvand-of-constant-when-power-of-2p
                     bvand-with-constant-mask-arg2
                     bvand-with-constant-mask-arg3
                     ;bvand-of-constant-tighten

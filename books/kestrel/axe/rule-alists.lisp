@@ -16,6 +16,7 @@
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system) ; move this book
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
@@ -168,14 +169,14 @@
       (union-eq (stored-rule-names stored-rules)
                 (rules-from-rule-alist (rest alist))))))
 
+(verify-guards rules-from-rule-alist
+  :hints (("Goal" :in-theory (enable rule-alistp))))
+
 (defthm symbol-listp-of-rules-from-rule-alist
   (implies (rule-alistp alist)
            (symbol-listp (rules-from-rule-alist alist)))
   :hints (("Goal" :in-theory (enable rules-from-rule-alist
                                      rule-alistp))))
-
-(verify-guards rules-from-rule-alist
-  :hints (("Goal" :in-theory (enable rule-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,7 +308,7 @@
 ;; Warning: If any of these rules have :rule-classes nil, ACL2 won't allow us to use them.
 (defund make-rule-alist (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp nil))
        (priorities (table-alist 'axe-rule-priorities-table wrld))
@@ -328,7 +329,7 @@
 ;; Returns a rule-alist.  Can throw an error but doesn't return erp.
 (defund make-rule-alist! (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-alist)
     (make-rule-alist rule-names wrld)
     (if erp
@@ -346,7 +347,7 @@
 (defund add-to-rule-alist (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp nil))
        (priorities (table-alist 'axe-rule-priorities-table wrld)))
@@ -359,7 +360,7 @@
 (defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
   (implies (and (symbol-listp rule-names)
                 (rule-alistp rule-alist)
-                (ilks-plist-worldp wrld))
+                (plist-worldp wrld))
            (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
   :hints (("Goal" :in-theory (enable add-to-rule-alist))))
 
@@ -369,7 +370,7 @@
 (defund add-to-rule-alist! (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (mv-let (erp rule-alist)
     (add-to-rule-alist rule-names rule-alist wrld)
     (if erp
@@ -388,6 +389,13 @@
     (if (not (alistp priorities))
         (er hard? 'extend-rule-alist2 "Ill-formed priorities table.")
       (extend-rule-alist axe-rules t priorities rule-alist))))
+
+(defthm rule-alistp-of-extend-rule-alist2
+  (implies (and (axe-rule-listp axe-rules)
+                (rule-alistp rule-alist)
+                (plist-worldp wrld))
+           (rule-alistp (extend-rule-alist2 axe-rules rule-alist wrld)))
+  :hints (("Goal" :in-theory (enable extend-rule-alist2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,6 +437,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund rule-alistsp (rule-alists)
+  (declare (xargs :guard t))
+  (if (not (consp rule-alists))
+      (null rule-alists)
+    (and (rule-alistp (first rule-alists))
+         (rule-alistsp (rest rule-alists)))))
+
+(defthm rule-alistp-of-car-when-rule-alistsp
+  (implies (rule-alistsp rule-alists)
+           (rule-alistp (car rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+(defthm rule-alistsp-of-cdr-when-rule-alistsp
+  (implies (rule-alistsp rule-alists)
+           (rule-alistsp (cdr rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+(defthm rule-alistsp-forward-to-true-listp
+  (implies (rule-alistsp rule-alists)
+           (true-listp rule-alists))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+(defthm rule-alistsp-of-cons
+  (equal (rule-alistsp (cons rule-alist rule-alists))
+         (and (rule-alistp rule-alist)
+              (rule-alistsp rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a list of rule-names.
 (defund rules-from-rule-alists (alists)
   (declare (xargs :guard (and (all-rule-alistp alists)
@@ -437,6 +476,11 @@
       nil
     (union-eq (rules-from-rule-alist (first alists))
               (rules-from-rule-alists (rest alists)))))
+
+(defthm symbol-listp-of-rules-from-rule-alists
+  (implies (all-rule-alistp alists)
+           (symbol-listp (rules-from-rule-alists alists)))
+  :hints (("Goal" :in-theory (enable rules-from-rule-alists))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,7 +499,7 @@
 ;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
   (declare (xargs :guard (and (symbol-list-listp rule-name-lists)
-                              (ilks-plist-worldp wrld))))
+                              (plist-worldp wrld))))
   (if (endp rule-name-lists)
       (mv (erp-nil) nil)
     (b* (((mv erp rule-alist)
@@ -482,22 +526,27 @@
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alists2 (axe-rules rule-alists wrld)
   (declare (xargs :guard (and (axe-rule-listp axe-rules)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists)
+                              (rule-alistsp rule-alists)
                               (plist-worldp wrld))))
   (if (endp rule-alists)
       nil
     (cons (extend-rule-alist2 axe-rules (first rule-alists) wrld)
           (extend-rule-alists2 axe-rules (rest rule-alists) wrld))))
 
+(defthm rule-alistsp-of-extend-rule-alists2
+  (implies (and (axe-rule-listp axe-rules)
+                (rule-alistsp rule-alists)
+                (plist-worldp wrld))
+           (rule-alistsp (extend-rule-alists2 axe-rules rule-alists wrld)))
+  :hints (("Goal" :in-theory (enable rule-alistsp extend-rule-alists2))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-alists).
 (defund add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists)
-                              (ilks-plist-worldp wrld))))
+                              (rule-alistsp rule-alists)
+                              (plist-worldp wrld))))
   (if (endp rule-alists)
       (mv (erp-nil) nil)
     (b* (((mv erp rule-alist)
@@ -509,18 +558,26 @@
       (mv (erp-nil)
           (cons rule-alist rule-alists)))))
 
+(defthm rule-alistsp-of-mv-nth-1-of-add-to-rule-alists
+  (implies (and (rule-alistsp rule-alists)
+                (symbol-listp rule-names)
+                (plist-worldp wrld))
+           (rule-alistsp (mv-nth 1 (add-to-rule-alists rule-names rule-alists wrld))))
+  :hints (("Goal" :in-theory (enable rule-alistsp
+                                     add-to-rule-alists))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund remove-from-rule-alists (rule-names rule-alists)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists))))
+                              (rule-alistsp rule-alists))))
   (if (endp rule-alists)
       nil
     (cons (remove-from-rule-alist rule-names (first rule-alists))
           (remove-from-rule-alists rule-names (rest rule-alists)))))
 
-(defthm symbol-listp-of-rules-from-rule-alists
-  (implies (all-rule-alistp alists)
-           (symbol-listp (rules-from-rule-alists alists)))
-  :hints (("Goal" :in-theory (enable rules-from-rule-alists))))
+(defthm rule-alistsp-of-remove-from-rule-alists
+  (implies (rule-alistsp rule-alists)
+           (rule-alistsp (remove-from-rule-alists rule-names rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp
+                                     remove-from-rule-alists))))

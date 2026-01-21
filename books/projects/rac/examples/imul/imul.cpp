@@ -66,7 +66,7 @@ array<ui3, 17> Booth(ui35 x) {
   ui35 x35 = x << 1;
 
   // Compute the booth encodings:
-  array<ui3, 17> a = {};
+  array<ui3, 17> a = {{}};
   for (int k = 0; k < 17; k++) {
     a[k] = Encode(x35.slc<3>(2 * k));
   }
@@ -76,7 +76,7 @@ array<ui3, 17> Booth(ui35 x) {
 // Step 2: Form the partial products.
 
 array<ui33, 17> PartialProducts(array<ui3, 17> m21, ui33 y) {
-  array<ui33, 17> pp = {};
+  array<ui33, 17> pp = {{}};
 
   for (int k = 0; k < 17; k++) {
     ui33 row = 0;
@@ -101,15 +101,15 @@ array<ui33, 17> PartialProducts(array<ui3, 17> m21, ui33 y) {
 array<ui64, 17> Align(array<ui3, 17> bds, array<ui33, 17> pps) {
 
   // Extract the sign bits from the booth encodings:
-  array<bool, 17> sb = {};
-  array<bool, 18> psb = {};
+  array<bool, 17> sb = {{}};
+  array<bool, 18> psb = {{}};
   for (int k = 0; k < 17; k++) {
     sb[k] = bds[k][2];
     psb[k + 1] = bds[k][2];
   }
 
   // Build the table:
-  array<ui64, 17> tble = {};
+  array<ui64, 17> tble = {{}};
   for (int k = 0; k < 17; k++) {
     ui67 tmp = 0;
     tmp.set_slc(2 * k, pps[k]);
@@ -143,8 +143,8 @@ tuple<ui64, ui64> Compress32(ui64 in0, ui64 in1, ui64 in2) {
 tuple<ui64, ui64> Compress42(ui64 in0, ui64 in1, ui64 in2, ui64 in3) {
   ui64 temp = (in1 & in2 | in1 & in3 | in2 & in3) << 1;
   ui64 out0 = in0 ^ in1 ^ in2 ^ in3 ^ temp;
-  ui64 out1
-      = (in0 & ~(in0 ^ in1 ^ in2 ^ in3)) | (temp & (in0 ^ in1 ^ in2 ^ in3));
+  ui64 out1 =
+      (in0 & ~(in0 ^ in1 ^ in2 ^ in3)) | (temp & (in0 ^ in1 ^ in2 ^ in3));
   out1 <<= 1;
   return tuple<ui64, ui64>(out0, out1);
 }
@@ -152,25 +152,25 @@ tuple<ui64, ui64> Compress42(ui64 in0, ui64 in1, ui64 in2, ui64 in3) {
 ui64 Sum(array<ui64, 17> in) {
 
   // level 1 consists of 4 4:2 compressors
-  array<ui64, 8> A1 = {};
+  array<ui64, 8> A1 = {{}};
   for (uint i = 0; i < 4; i++) {
-    tie(A1[2 * i + 0], A1[2 * i + 1])
-        = Compress42(in[4 * i], in[4 * i + 1], in[4 * i + 2], in[4 * i + 3]);
+    tie(A1[2 * i + 0], A1[2 * i + 1]) =
+        Compress42(in[4 * i], in[4 * i + 1], in[4 * i + 2], in[4 * i + 3]);
   }
 
   // level 2 consists of 2 4:2 compressors
-  array<ui64, 4> A2 = {};
+  array<ui64, 4> A2 = {{}};
   for (uint i = 0; i < 2; i++) {
-    tie(A2[2 * i + 0], A2[2 * i + 1])
-        = Compress42(A1[4 * i], A1[4 * i + 1], A1[4 * i + 2], A1[4 * i + 3]);
+    tie(A2[2 * i + 0], A2[2 * i + 1]) =
+        Compress42(A1[4 * i], A1[4 * i + 1], A1[4 * i + 2], A1[4 * i + 3]);
   }
 
   // level 3 consists of 1 4:2 compressor
-  array<ui64, 2> A3 = {};
+  array<ui64, 2> A3 = {{}};
   tie(A3[0], A3[1]) = Compress42(A2[0], A2[1], A2[2], A2[3]);
 
   // level 4 consists of 1 3:2 compressor
-  array<ui64, 2> A4 = {};
+  array<ui64, 2> A4 = {{}};
   tie(A4[0], A4[1]) = Compress32(A3[0], A3[1], in[16]);
 
   // The final sum:
@@ -183,8 +183,8 @@ ui64 Imul(ui32 s1, ui32 s2) {
 
 #ifdef DEBUG
   cout << "Operands: \n"
-    << s1.to_string(AC_HEX, false) << '\n'
-    << s2.to_string(AC_HEX, false) << '\n';
+       << s1.to_string(AC_HEX, false) << '\n'
+       << s2.to_string(AC_HEX, false) << '\n';
 #endif
 
   array<ui3, 17> bd = Booth(s1);

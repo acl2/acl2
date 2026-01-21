@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nthcdr.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -292,9 +292,25 @@
                 (true-listp x))
            (equal (nthcdr n x)
                   (list (nth n x))))
-  :hints (("Goal" :in-theory (enable NTHCDR))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
 
 (defthm nthcdr-of-len-same-when-true-listp
   (implies (true-listp x)
            (equal (nthcdr (len x) x)
                   nil)))
+
+(defthmd nth-sum-when-nthcdr-known ; can loop?
+  (implies (and (equal vals2 (nthcdr m vals))
+                (natp n)
+                (natp m))
+           (equal (nth (+ m n) vals)
+                  (nth n vals2))))
+
+; maybe disable this, as it is hung on equal
+(defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
+  (implies (and (equal (nthcdr n x) (nthcdr n y)) ; n is a free var
+                (or (< n (len x))
+                    (< n (len y))))
+           (equal (equal (len x) (len y))
+                  t))
+  :hints (("Goal" :in-theory (enable nthcdr))))

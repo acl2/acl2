@@ -1,14 +1,20 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.3]
+; See grammar.lisp for documentation.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:3.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 unicode-input-character = unicode-escape
                         / raw-input-character
@@ -20,11 +26,14 @@ unicode-marker = 1*%s"u"
 hex-digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
           / "a" / "b" / "c" / "d" / "e" / "f" ; includes A B C D E F
 
-raw-input-character = %x0000-ffff ; any Unicode character
+raw-input-character = %x0000-ffff
+                      ; any Unicode character representable in UTF-16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.4]
+; [JLS25:3.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 line-terminator = %d10 ; the ASCII LF character, also known as "newline"
                 / %d13 ; the ASCII CR character, also known as "return"
@@ -35,7 +44,9 @@ input-character = unicode-input-character ; but not CR or LF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.5]
+; [JLS25:3.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 input = *input-element [sub]
 
@@ -53,7 +64,9 @@ sub = %d26 ; the ASCII SUB character, also known as "control-Z"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.6]
+; [JLS25:3.6]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 white-space = %d32 ; the ASCII SP character, also known as "space"
             / %d9  ; the ASCII HT character, also known as "horizontal tab"
@@ -62,7 +75,9 @@ white-space = %d32 ; the ASCII SP character, also known as "space"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.7]
+; [JLS25:3.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 comment = traditional-comment
         / end-of-line-comment
@@ -86,10 +101,12 @@ end-of-line-comment = "/" "/" *input-character
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.8]
+; [JLS25:3.8]
 
-identifier =
-  identifier-chars ; but not a keyword or boolean-literal or null-literal
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+identifier = identifier-chars
+             ; but not a reserved-keyword or boolean-literal or null-literal
 
 identifier-chars = java-letter *java-letter-or-digit
 
@@ -99,82 +116,108 @@ java-letter-or-digit = raw-input-character ; that is a "java letter-or-digit"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-type-identifier = identifier ; but not var
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+type-identifier = identifier ; but not permits, record, sealed, var, or yield
 
 unqualified-method-identifier = identifier ; but not yield
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.9]
+; [JLS25:3.9]
 
-keyword = %s"abstract"
-        / %s"assert"
-        / %s"boolean"
-        / %s"break"
-        / %s"byte"
-        / %s"case"
-        / %s"catch"
-        / %s"char"
-        / %s"class"
-        / %s"const"
-        / %s"continue"
-        / %s"default"
-        / %s"do"
-        / %s"double"
-        / %s"else"
-        / %s"enum"
-        / %s"extends"
-        / %s"final"
-        / %s"finally"
-        / %s"float"
-        / %s"for"
-        / %s"if"
-        / %s"goto"
-        / %s"implements"
-        / %s"import"
-        / %s"instanceof"
-        / %s"int"
-        / %s"interface"
-        / %s"long"
-        / %s"native"
-        / %s"new"
-        / %s"package"
-        / %s"private"
-        / %s"protected"
-        / %s"public"
-        / %s"return"
-        / %s"short"
-        / %s"static"
-        / %s"strictfp"
-        / %s"super"
-        / %s"switch"
-        / %s"synchronized"
-        / %s"this"
-        / %s"throw"
-        / %s"throws"
-        / %s"transient"
-        / %s"try"
-        / %s"void"
-        / %s"volatile"
-        / %s"while"
-        / "_"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+keyword = reserved-keyword
+        / contextual-keyword
+
+reserved-keyword = %s"abstract"
+                 / %s"assert"
+                 / %s"boolean"
+                 / %s"break"
+                 / %s"byte"
+                 / %s"case"
+                 / %s"catch"
+                 / %s"char"
+                 / %s"class"
+                 / %s"const"
+                 / %s"continue"
+                 / %s"default"
+                 / %s"do"
+                 / %s"double"
+                 / %s"else"
+                 / %s"enum"
+                 / %s"extends"
+                 / %s"final"
+                 / %s"finally"
+                 / %s"float"
+                 / %s"for"
+                 / %s"if"
+                 / %s"goto"
+                 / %s"implements"
+                 / %s"import"
+                 / %s"instanceof"
+                 / %s"int"
+                 / %s"interface"
+                 / %s"long"
+                 / %s"native"
+                 / %s"new"
+                 / %s"package"
+                 / %s"private"
+                 / %s"protected"
+                 / %s"public"
+                 / %s"return"
+                 / %s"short"
+                 / %s"static"
+                 / %s"strictfp"
+                 / %s"super"
+                 / %s"switch"
+                 / %s"synchronized"
+                 / %s"this"
+                 / %s"throw"
+                 / %s"throws"
+                 / %s"transient"
+                 / %s"try"
+                 / %s"void"
+                 / %s"volatile"
+                 / %s"while"
+                 / "_"
+
+contextual-keyword = %s"exports"
+                   / %s"module"
+                   / %s"non-sealed"
+                   / %s"open"
+                   / %s"opens"
+                   / %s"permits"
+                   / %s"provides"
+                   / %s"record"
+                   / %s"requires"
+                   / %s"sealed"
+                   / %s"to"
+                   / %s"transitive"
+                   / %s"uses"
+                   / %s"var"
+                   / %s"when"
+                   / %s"with"
+                   / %s"yield"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10]
+; [JLS25:3.10]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 literal = integer-literal
         / floating-point-literal
         / boolean-literal
         / character-literal
         / string-literal
+        / text-block
         / null-literal
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.1]
+; [JLS25:3.10.1]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 integer-literal = decimal-integer-literal
                 / hex-integer-literal
@@ -219,6 +262,8 @@ hex-numeral = "0x" hex-digits ; includes 0X
 hex-digits = hex-digit
            / hex-digit [hex-digits-and-underscores] hex-digit
 
+; hex-digit is introduced earlier in this file
+
 hex-digits-and-underscores = 1*hex-digit-or-underscore
 
 hex-digit-or-underscore = hex-digit
@@ -255,7 +300,9 @@ binary-digit-or-underscore = binary-digit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.2]
+; [JLS25:3.10.2]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 floating-point-literal = decimal-floating-point-literal
                        / hexadecimal-floating-point-literal
@@ -290,13 +337,17 @@ binary-exponent-indicator = "p" ; includes P
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.3]
+; [JLS25:3.10.3]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 boolean-literal = %s"true" / %s"false"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.4]
+; [JLS25:3.10.4]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 character-literal = "'" single-character "'"
                   / "'" escape-sequence "'"
@@ -305,7 +356,9 @@ single-character = input-character ; but not ' or \
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.5]
+; [JLS25:3.10.5]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 string-literal = %d34 *string-character %d34
 
@@ -314,33 +367,60 @@ string-character = input-character ; but not " or \
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.6]
+; [JLS25:3.10.6]
 
-escape-sequence = %s"\b"       ; (backspace BS, Unicode \u0008)
-                / %s"\t"       ; (horizontal tab HT, Unicode \u0009)
-                / %s"\n"       ; (linefeed LF, Unicode \u000a)
-                / %s"\f"       ; (form feed FF, Unicode \u000c)
-                / %s"\r"       ; (carriage return CR, Unicode \u000d)
-                / "\" %d34     ; (double quote ", Unicode \u0022)
-                / "\'"         ; (single quote ', Unicode \u0027)
-                / "\\"         ; (backslash \, Unicode \u005c)
-                / octal-escape ; (octal value, Unicode \u0000 to \u00ff)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+text-block = %d34 %d34 %d34 ; " " "
+             *text-block-white-space line-terminator *text-block-character
+             %d34 %d34 %d34 ; " " "
+
+text-block-white-space = white-space ; but not line-terminator
+
+text-block-character = input-character ; but not \
+                     / escape-sequence
+                     / line-terminator
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS25:3.10.7]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+escape-sequence = %s"\b"          ; (backspace BS, Unicode \u0008)
+                / %s"\s"          ; (space SP, Unicode \u0020)
+                / %s"\t"          ; (horizontal tab HT, Unicode \u0009)
+                / %s"\n"          ; (linefeed LF, Unicode \u000a)
+                / %s"\f"          ; (form feed FF, Unicode \u000c)
+                / %s"\r"          ; (carriage return CR, Unicode \u000d)
+                / line-terminator ; (line continuation,
+                                  ; no Unicode representation)
+                / "\" %d34        ; (double quote ", Unicode \u0022)
+                / "\'"            ; (single quote ', Unicode \u0027)
+                / "\\"            ; (backslash \, Unicode \u005c)
+                / octal-escape    ; (octal value, Unicode \u0000 to \u00ff)
 
 octal-escape = "\" octal-digit
              / "\" octal-digit octal-digit
              / "\" zero-to-three octal-digit octal-digit
 
-zero-to-three = "0" / "1" / "2"
+; octal-digit is introduced earlier in this file
+
+zero-to-three = "0" / "1" / "2" / "3"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.7]
+; [JLS25:3.10.8]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 null-literal = %s"null"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.8]
+; [JLS25:3.11]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 separator = "("
           / ")"
@@ -357,7 +437,9 @@ separator = "("
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; [JLS:3.10.9]
+; [JLS25:3.12]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 operator = "="
          / ">"

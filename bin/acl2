@@ -1,6 +1,8 @@
 #!/bin/sh
 
 { cd $(dirname "$0") ; invoking_dir="`pwd`" ; cd - ; } > /dev/null
+# At this point, invoking_dir is of the form <top-level-acl2-dir>/bin.
+# The dirname of that, in turn, is <top-level-acl2-dir>.
 my_acl2=$(dirname "$invoking_dir")/saved_acl2
 if [ -x "$my_acl2" ] ; then \
     "$my_acl2" "$@" ;\

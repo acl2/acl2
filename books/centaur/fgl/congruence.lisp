@@ -206,7 +206,7 @@
 
 
 
-(define congruence-rule-table-from-runes (runes (w plist-worldp))
+(define fgl-congruence-rules (runes (w plist-worldp))
   :returns (table congruence-rule-table-p)
   (b* (((unless (fgl-congruence-runelist-p runes))
         (er hard? 'fgl-congruence-rules
@@ -222,30 +222,17 @@
                   (equal w (w state)))
              (fgl-ev-congruence-rule-table-correct-p table)))
 
-  (memoize 'congruence-rule-table-from-runes))
-
-(define fgl-congruence-rules ((w plist-worldp))
-  :returns (table congruence-rule-table-p)
-  (b* ((runes (fgl-congruence-runes w)))
-    (congruence-rule-table-from-runes runes w))
-  ///
-  (defret fgl-ev-congruence-rule-table-correct-p-of-<fn>
-    (implies (and (fgl-ev-meta-extract-global-facts)
-                  (equal w (w state)))
-             (fgl-ev-congruence-rule-table-correct-p table)))
-
   (memoize 'fgl-congruence-rules))
-    
-
 
 
 (define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp)
                                            (fn pseudo-fnsym-p)
                                            (arity natp)
+                                           (runes)
                                            (w plist-worldp))
   :returns (new-contexts equiv-argcontexts-p)
   (b* (((when (member-eq 'unequiv (equiv-contexts-fix contexts))) t)
-       (rules (cdr (hons-get (pseudo-fnsym-fix fn) (fgl-congruence-rules w)))))
+       (rules (cdr (hons-get (pseudo-fnsym-fix fn) (fgl-congruence-rules runes w)))))
     (apply-congruence-rules rules fn contexts arity nil))
   ///
   (local (defthm nth-equiv-when-equal-length

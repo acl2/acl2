@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,7 @@
 
 ;do we have a congruence rule for true-list-fix?
 
-;what is open-small-nthcdr?
+;open-small-nthcdr is from std/lists
 (theory-invariant (incompatible (:rewrite 3-cdrs) (:rewrite open-small-nthcdr)))
 
 ;; ;BOZO gen! see NTH-OF-SUBRANGE-GEN

@@ -40,6 +40,7 @@
 (include-book "obags/top")
 (include-book "omaps/top")
 (include-book "osets/top")
+(include-book "osets/nonemptyp")
 (include-book "util/top")
 (include-book "typed-alists/top")
 (include-book "testing/top")

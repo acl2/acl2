@@ -22,12 +22,6 @@
  (len (xdoc::get-xdoc-table (w state))) ;; 1555, as expected
  )
 
-(defxdoc top
-  :short "ACL2 User's Manual (not including documentation for the community books)"
-
-  :long "<p>This manual is generated from ACL2 documentation only; it excludes
-  documentation from the community books.</p>")
-
 (xdoc::save "../../../doc/manual"
             ; :import nil ; no longer supported
             )

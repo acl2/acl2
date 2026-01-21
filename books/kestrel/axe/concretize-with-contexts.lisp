@@ -25,7 +25,7 @@
               (< x y)
             (< x z)))))
 
-(local (in-theory (enable <-OF-IF-ARG1)))
+;(local (in-theory (enable <-OF-IF-ARG1)))
 (local (in-theory (disable len)))
 
 (defthm not-<-of-caar-and-caadr-when-pseudo-dagp

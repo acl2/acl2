@@ -427,6 +427,24 @@
          :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
 
+
+(local
+ (defthm interp-st-sat-check-of-t
+   (b* (((mv status & &)
+         (interp-st-sat-check params t interp-st state)))
+     (implies (and (interp-st-bfrs-ok interp-st)
+                   (logicman-pathcond-eval env
+                                           (interp-st->pathcond interp-st)
+                                           (interp-st->logicman interp-st))
+                   (logicman-pathcond-eval env
+                                           (interp-st->constraint interp-st)
+                                           (interp-st->logicman interp-st)))
+              (not (equal status :unsat))))
+   :hints (("goal" :use ((:instance interp-st-sat-check-unsat-implies
+                          (bfr t)
+                          (env (fgl-env nil env))))
+            :in-theory (disable interp-st-sat-check-unsat-implies)))))
+
 (def-fgl-binder-meta sat-check-raw-binder
   (if (and (eq (pseudo-fnsym-fix fn) 'sat-check-raw)
            (eql (len args) 2))
@@ -442,9 +460,15 @@
              :msg (msg "~x0 called on object not yet converted to Boolean formula: ~x1"
                        'sat-check-raw (fgl-object-fix x))
              :nvals 4))
+           (bool (gobj-syntactic-boolean->bool xbool))
            ((mv ans interp-st state)
-            (interp-st-sat-check (g-concrete->val config) (gobj-syntactic-boolean->bool xbool)
-                                 interp-st state)))
+            (interp-st-sat-check (g-concrete->val config) bool interp-st state))
+           ((when (and (eq ans :unsat)
+                       (eq bool t)))
+            (b* ((interp-st (if (interp-st->errmsg interp-st)
+                                interp-st
+                              (update-interp-st->errmsg :unreachable interp-st))))
+              (mv t 'x '((x . :unsat)) nil interp-st state))))
         (mv t 'x
             (case ans
               (:sat '((x . :sat)))
@@ -505,6 +529,12 @@
            (bfr (gobj-syntactic-boolean->bool xbool))
            ((mv ans interp-st state)
             (interp-st-sat-check config bfr interp-st state))
+           ((when (and (eq ans :unsat)
+                       (eq bfr t)))
+            (b* ((interp-st (if (interp-st->errmsg interp-st)
+                                interp-st
+                              (update-interp-st->errmsg :unreachable interp-st))))
+              (mv t 'x '((x . :unsat)) nil interp-st state)))
            ((unless (eq ans :sat))
             (mv t 'x
                 (case ans

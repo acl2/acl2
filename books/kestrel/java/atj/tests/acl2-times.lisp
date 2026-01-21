@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,7 +28,7 @@
 ; (depends-on "../../../java/language/lexical-grammar.abnf")
 ; (depends-on "../../../java/language/syntactic-grammar.abnf")
 ; (depends-on "../../../json/grammar.abnf")
-; (depends-on "../../../yul/language/grammar-new.abnf")
+; (depends-on "../../../yul/language/grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,7 +331,7 @@
      (value `(defconst *json* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../yul/language/grammar-new.abnf" state)
+     (get-input-from-file "../../../yul/language/grammar.abnf" state)
      (value `(defconst *yul* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell

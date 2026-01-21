@@ -1,0 +1,3 @@
+array-dim-expr-invalid-2.cpp:4 (8-13): Invalid array size (it shoud be a constant, stricly positive expression)
+ 4 |   int a[1 + n] = {0, 0, 0};
+   |         ^^^^^

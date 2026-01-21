@@ -32,6 +32,9 @@
 
 (local (in-theory (disable bst<-rules)))
 
+(std::make-define-config
+  :no-function t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection rotations
@@ -66,7 +69,6 @@
                               (tree-left (tree-right tree)))
                    (tree-right (tree-right tree)))
       (tree-fix tree))
-    :no-function t
     :inline t)
 
   (define rotate-right
@@ -86,7 +88,6 @@
                               (tree-right (tree-left tree))
                               (tree-right tree)))
       (tree-fix tree))
-    :no-function t
     :inline t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

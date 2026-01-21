@@ -15,6 +15,8 @@
 (include-book "nat-listp")
 (include-book "nat-list-listp")
 (include-book "integer-listp")
+(include-book "integer-listp2")
+(include-book "integer-list-listp")
 (include-book "pseudo-term-listp")
 (include-book "pseudo-term-list-listp")
 (include-book "string-listp")
@@ -25,6 +27,7 @@
 (include-book "true-list-listp")
 
 (include-book "character-list-listp")
+(include-book "make-character-list")
 (include-book "string-list-listp")
 
 (include-book "all-true-listp")
@@ -52,11 +55,18 @@
 (include-book "all-less")
 (include-book "all-less-rules")
 (include-book "all-less-than-or-equal")
+(include-book "less-than-all")
 (include-book "less-than-or-equal-all")
 (include-book "all-less-than-or-equal-all")
 (include-book "rational-lists")
 
 (include-book "all-greater")
+(include-book "all-greater-than-or-equal")
+(include-book "all-greater-than-or-equal-all")
+
+(include-book "decreasingp")
+(include-book "sortedp-less-than-or-equal")
+(include-book "sortedp-greater-than-or-equal")
 
 (include-book "cons-listp-dollar")
 

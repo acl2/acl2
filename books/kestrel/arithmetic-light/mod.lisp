@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -131,11 +131,17 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+(defthm +-of-mod-and-*-of-floor-same
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
+  :hints (("Goal" :in-theory (enable mod))))
+
 ;; Trying to avoid name clash
 (defthm floor-mod-elim-rule
-  (implies (acl2-numberp i)
-           (equal (+ (mod i j) (* j (floor i j)))
-                  i))
+  (implies (acl2-numberp x)
+           (equal (+ (mod x y) (* y (floor x y)))
+                  x))
   :rule-classes :elim
   :hints (("Goal" :in-theory (enable mod))))
 
@@ -805,6 +811,34 @@
            (equal (mod (+ x1 x2) y)
                   (mod x2 y))))
 
+;; Disabled in case we want to keep negative constants like -1 (vs some huge
+;; positive number), but see mod-of-+-reduce-positive-constant.
+(defthmd mod-of-+-reduce-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep y)
+                              (not (and (<= 0 (unquote k))
+                                        (< (unquote k) (unquote y))))))
+                (rationalp y)
+                (< 0 y)
+                (rationalp x)
+                (rationalp k))
+           (equal (mod (+ k x) y)
+                  ;; the (mod k y) should get computed:
+                  (mod (+ (mod k y) x) y))))
+
+(defthm mod-of-+-reduce-positive-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (< 0 (unquote k))
+                              (quotep y)
+                              (not (< (unquote k) (unquote y)))))
+                (rationalp y)
+                (< 0 y)
+                (rationalp x)
+                (rationalp k))
+           (equal (mod (+ k x) y)
+                  ;; the (mod k y) should get computed:
+                  (mod (+ (mod k y) x) y))))
+
 (defthm mod-of-*-of-/-arg2-arg2
   (implies (and (rationalp y2)
                 (not (equal 0 y2)))
@@ -859,3 +893,36 @@
                                   ;; these looped:
                                   (prefer-positive-addends-equal
                                    simplify-sums-equal)))))
+
+(defthm <-of-mod-and-0
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (< (mod x y) 0)
+                  (if (equal 0 y)
+                      (< (fix x) 0)
+                    (if (< y 0)
+                        (not (integerp (/ x y)))
+                      nil)))))
+
+;todo: gen to reduce the constant even if not down to 0
+(defthm mod-of-+-of-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep j)))
+                (equal 0 (mod k j))
+                (rationalp j)
+                (rationalp k)
+                (not (equal 0 j))
+                (integerp x))
+           (equal (mod (+ k x) j)
+                  (mod x j))))
+
+;drop or move hyps?
+;expensive?
+(defthmd mod-equal-impossible-value
+  (implies (and (<= j k) ; unusual
+                (natp i)
+                (natp j))
+           (equal (equal k (mod i j))
+                  (if (equal 0 j)
+                      (equal k i)
+                    nil))))

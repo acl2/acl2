@@ -15,6 +15,15 @@
 
 (assert-equal (tea-encrypt '(0 0) '(0 0 0 0)) '(#x41EA3A0A #x94BAA940))
 
+(assert-equal (tea-decrypt '(#x41EA3A0A #x94BAA940) '(0 0 0 0)) '(0 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (assert-equal (tea-encrypt '(#x01234567 #x89abcdef)
                            '(#x00112233 #x44556677 #x8899aabb #xccddeeff))
               '(#x126c6b92 #xc0653a3e))
+
+
+(assert-equal (tea-decrypt '(#x126c6b92 #xc0653a3e)
+                           '(#x00112233 #x44556677 #x8899aabb #xccddeeff))
+              '(#x01234567 #x89abcdef))

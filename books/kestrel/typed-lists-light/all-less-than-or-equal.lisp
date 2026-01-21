@@ -1,7 +1,7 @@
 ; Checking that everything in a list is <= a bound
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,7 +14,7 @@
 
 ;; Somewhat similar to bounded-integer-listp, which is built-in.
 
-(include-book "kestrel/sequences/defforall" :dir :system) ;reduce?
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ;reduce?
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 (defforall all-<= (x n) (<= x n) :fixed (n) :declares ((xargs :guard (and (rational-listp x) (rationalp n))))) ;why did (rationalp x) work as a guard?
@@ -28,18 +28,18 @@
 ;restrict?
 (defthmd <=-of-nth-when-all-<=
   (implies (and (all-<= items x)
-                ;(consp items)
-                (natp x)
-                )
+                (or (<= 0 x)
+                    (and (natp n)
+                         (< n (len items)))))
            (<= (nth n items) x))
   :hints (("Goal" :in-theory (enable all-<= nth))))
 
 (defthm <=-of-nth-when-all-<=-free
   (implies (and (all-<= items x2)
                 (<= x2 x)
-                ;(consp items)
-                (natp x)
-                )
+                (or (<= 0 x)
+                    (and (natp n)
+                         (< n (len items)))))
            (<= (nth n items) x))
   :hints (("Goal" :in-theory (enable all-<= nth))))
 

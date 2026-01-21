@@ -204,9 +204,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
 
@@ -224,14 +224,14 @@
 
   (local
    (defret base-bvar-of-<fn>
-     (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-            (base-bvar$a (interp-st->bvar-db interp-st)))
+     (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+            (base-bvar$c (interp-st->bvar-db interp-st)))
      :hints(("Goal" :in-theory (enable <fn>)))
      :fn interp-st-add-term-bvar-unique))
   
   (defret base-bvar-of-<fn>
-    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-           (base-bvar$a (interp-st->bvar-db interp-st))))
+    (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+           (base-bvar$c (interp-st->bvar-db interp-st))))
 
   (defret logicman-get-of-<fn>
     (implies (not (equal (logicman-field-fix key) :aignet))
@@ -241,30 +241,30 @@
   (local
    (defret get-bvar->term-old-of-<fn>
      (b* ((bvar-db (interp-st->bvar-db interp-st)))
-       (implies (< (nfix n) (next-bvar$a bvar-db))
-                (equal (get-bvar->term$A n (interp-st->bvar-db new-interp-st))
-                       (get-bvar->term$A n (interp-st->bvar-db interp-st)))))
+       (implies (< (nfix n) (next-bvar$c bvar-db))
+                (equal (get-bvar->term$c n (interp-st->bvar-db new-interp-st))
+                       (get-bvar->term$c n (interp-st->bvar-db interp-st)))))
      :hints(("Goal" :in-theory (enable <fn>)))
      :fn interp-st-add-term-bvar-unique))
 
   (local
    (defret next-bvar-of-<fn>
-     (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-         (next-bvar$a (interp-st->bvar-db interp-st)))
+     (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+         (next-bvar$c (interp-st->bvar-db interp-st)))
      :hints(("Goal" :in-theory (enable <fn>)))
      :fn interp-st-add-term-bvar-unique
      :rule-classes :linear))
 
   (defret next-bvar-of-<fn>
-    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-        (next-bvar$a (interp-st->bvar-db interp-st)))
+    (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+        (next-bvar$c (interp-st->bvar-db interp-st)))
     :rule-classes :linear)
   
   (defret get-bvar->term-old-of-<fn>
     (b* ((bvar-db (interp-st->bvar-db interp-st)))
-      (implies (< (nfix k) (next-bvar$a bvar-db))
-               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
-                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+      (implies (< (nfix k) (next-bvar$c bvar-db))
+               (equal (get-bvar->term$c k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$c k (interp-st->bvar-db interp-st))))))
 
   (defret interp-st-bvar-db-ok-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -301,10 +301,10 @@
   ;;          (implies (interp-st-bvar-db-ok interp-st env)
   ;;                   (b* ((bvar-db (interp-st->bvar-db interp-st))
   ;;                        (logicman (interp-st->logicman interp-st)))
-  ;;                     (implies (and (<= (base-bvar$a bvar-db) (nfix n))
-  ;;                                   (< (nfix n) (next-bvar$a bvar-db)))
+  ;;                     (implies (and (<= (base-bvar$c bvar-db) (nfix n))
+  ;;                                   (< (nfix n) (next-bvar$c bvar-db)))
   ;;                              (iff* (gobj-bfr-eval (bfr-var n) env logicman)
-  ;;                                    (fgl-object-eval (get-bvar->term$a n bvar-db) env logicman)))))))
+  ;;                                    (fgl-object-eval (get-bvar->term$c n bvar-db) env logicman)))))))
   (local (in-theory (disable interp-st-bvar-db-ok-necc)))
 
   (local (defret eval-of-interp-st-add-term-bvar-unique
@@ -315,10 +315,10 @@
                           (fgl-object-eval x env (interp-st->logicman interp-st))))
            :hints(("Goal" :in-theory (enable <fn>)
                    :use ((:instance interp-st-bvar-db-ok-necc
-                          (n (get-term->bvar$a x (interp-st->bvar-db interp-st)))
+                          (n (get-term->bvar$c x (interp-st->bvar-db interp-st)))
                           (interp-st new-interp-st))
                          (:instance interp-st-bvar-db-ok-necc
-                          (n (next-bvar$a (interp-st->bvar-db interp-st)))
+                          (n (next-bvar$c (interp-st->bvar-db interp-st)))
                           (interp-st new-interp-st)))))
            :hints-sub-returnnames t
            :fn interp-st-add-term-bvar-unique))
@@ -396,9 +396,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
 
@@ -415,8 +415,8 @@
     :rule-classes :linear)
   
   (defret base-bvar-of-<fn>
-    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-           (base-bvar$a (interp-st->bvar-db interp-st))))
+    (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+           (base-bvar$c (interp-st->bvar-db interp-st))))
 
   ;; (defret logicman-get-of-<fn>
   ;;   (implies (not (equal (logicman-field-fix key) :aignet))
@@ -424,15 +424,15 @@
   ;;                   (logicman-get key (interp-st->logicman interp-st)))))
 
   (defret next-bvar-of-<fn>
-    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-        (next-bvar$a (interp-st->bvar-db interp-st)))
+    (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+        (next-bvar$c (interp-st->bvar-db interp-st)))
     :rule-classes :linear)
 
   (defret get-bvar->term-old-of-<fn>
     (b* ((bvar-db (interp-st->bvar-db interp-st)))
-      (implies (< (nfix k) (next-bvar$a bvar-db))
-               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
-                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+      (implies (< (nfix k) (next-bvar$c bvar-db))
+               (equal (get-bvar->term$c k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$c k (interp-st->bvar-db interp-st))))))
 
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -494,9 +494,9 @@
 (local
  (defthm bfr-listp-of-bvar->term-bfrlist-when-interp-st-bfrs-ok
    (implies (and (interp-st-bfrs-ok interp-st)
-                 (<= (base-bvar$a (interp-st->bvar-db interp-st)) (nfix n))
+                 (<= (base-bvar$c (interp-st->bvar-db interp-st)) (nfix n))
                  (< (nfix n) (bfr-nvars (interp-st->logicman interp-st))))
-            (lbfr-listp (fgl-object-bfrlist (get-bvar->term$a n (interp-st->bvar-db interp-st)))
+            (lbfr-listp (fgl-object-bfrlist (get-bvar->term$c n (interp-st->bvar-db interp-st)))
                         (interp-st->logicman interp-st)))))
 
 
@@ -569,9 +569,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bfr-nvars-of-<fn>
@@ -580,19 +580,19 @@
     :rule-classes :linear)
   
   (defret base-bvar-of-<fn>
-    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-           (base-bvar$a (interp-st->bvar-db interp-st))))
+    (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+           (base-bvar$c (interp-st->bvar-db interp-st))))
 
   (defret next-bvar-of-<fn>
-    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-        (next-bvar$a (interp-st->bvar-db interp-st)))
+    (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+        (next-bvar$c (interp-st->bvar-db interp-st)))
     :rule-classes :linear)
 
   (defret get-bvar->term-old-of-<fn>
     (b* ((bvar-db (interp-st->bvar-db interp-st)))
-      (implies (< (nfix k) (next-bvar$a bvar-db))
-               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
-                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+      (implies (< (nfix k) (next-bvar$c bvar-db))
+               (equal (get-bvar->term$c k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$c k (interp-st->bvar-db interp-st))))))
 
   (defret interp-st-bfrs-ok-of-<fn>
     (implies (and (interp-st-bfrs-ok interp-st)
@@ -810,9 +810,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bfr-nvars-of-<fn>
@@ -821,19 +821,19 @@
     :rule-classes :linear)
   
   (defret base-bvar-of-<fn>
-    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-           (base-bvar$a (interp-st->bvar-db interp-st))))
+    (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+           (base-bvar$c (interp-st->bvar-db interp-st))))
 
   (defret next-bvar-of-<fn>
-    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-        (next-bvar$a (interp-st->bvar-db interp-st)))
+    (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+        (next-bvar$c (interp-st->bvar-db interp-st)))
     :rule-classes :linear)
 
   (defret get-bvar->term-old-of-<fn>
     (b* ((bvar-db (interp-st->bvar-db interp-st)))
-      (implies (< (nfix k) (next-bvar$a bvar-db))
-               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
-                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+      (implies (< (nfix k) (next-bvar$c bvar-db))
+               (equal (get-bvar->term$c k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$c k (interp-st->bvar-db interp-st))))))
 
   (local (defthm fgl-object-alist-bfrlist-of-append
            (equal (fgl-object-alist-bfrlist (append x y))

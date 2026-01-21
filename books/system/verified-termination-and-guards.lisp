@@ -90,7 +90,6 @@
                       (equal (assoc-equal-cdr key x) nil)))
          :rule-classes :type-prescription))
 (verify-termination runep) ; and guards
-(verify-termination deref-macro-name) ; and guards
 (verify-termination write-for-read) ; and guards
 (verify-termination fnume) ; and guards
 (verify-termination translate-abbrev-rune) ; and guards

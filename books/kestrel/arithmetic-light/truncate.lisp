@@ -226,7 +226,8 @@
                   (truncate x 1)))
   :hints (("Goal" :use (:instance nonnegative-integer-quotient-of-numerator-and-denominator (x (- x)))
            :in-theory (e/d (truncate)
-                           (nonnegative-integer-quotient-of-numerator-and-denominator)))))
+                           (nonnegative-integer-quotient-of-numerator-and-denominator
+                            nonnegative-integer-quotient-when-multiple)))))
 
 ;; (thm
 ;;  (implies (and (< i 0)

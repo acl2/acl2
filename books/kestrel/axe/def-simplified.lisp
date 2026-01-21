@@ -15,9 +15,11 @@
 ;; This tool simplifies a term and stores the resulting DAG as a defconst.
 
 ;; See also the generated def-simplified-xxx functions (see make-rewriter-simple.lisp).
-;; TODO: Deprecate this file in favor of def-simplified-basic.
+;; TODO: Deprecate this file in favor of def-simplified-basic (defined in rewriter-basic.lisp).
 
 ;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
+
+;; See tests in def-simplified-tests.lisp.
 
 (include-book "rewriter-basic")
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
@@ -27,6 +29,7 @@
 (include-book "choose-rules")
 ;(include-book "rules-in-rule-lists")
 ;; The rest of these include-books are to bring in everything included in def-simplified-rules below:
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "rules1") ; for BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-SAME
 (include-book "basic-rules") ;for equal-same
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
@@ -34,6 +37,8 @@
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for BVPLUS-COMMUTATIVE-AXE, etc
+(include-book "convert-to-bv-rules-axe")
+(include-book "trim-intro-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
@@ -48,10 +53,11 @@
 (include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
+(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
-(include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
@@ -87,8 +93,6 @@
           ))
 
 (ensure-rules-known (def-simplified-rules))
-
-(local (in-theory (disable ilks-plist-worldp)))
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; TODO: Compare to the generated ,def-simplified-name.
@@ -126,8 +130,7 @@
                               (booleanp normalize-xors)
                               (print-levelp print)
                               (consp whole-form)
-                              (symbolp (car whole-form))
-                              (ilks-plist-worldp (w state)))))
+                              (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
        ;; Choose which set of rules to use:
@@ -148,8 +151,14 @@
                              count-hits
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
+       ;; Print the result: todo: print as a term when small
+       (- (and print
+               (progn$ (cw "(Result:~%")
+                       (cw "~X01" dag nil)
+                       (cw ")~%"))))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)
@@ -202,10 +211,11 @@
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state))))
     (def-simplified-fn-core defconst-name term rules extra-rules remove-rules assumptions interpreted-function-alist monitor memoizep count-hits normalize-xors print whole-form state)))
 
-;; ;; TODO: update, or use defmacro-doc
+;; ;; TODO: update, or use defmacrodoc
 ;; (defxdoc def-simplified
-;;   :parents (axe)
-;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+;;   :parents (axe-core)
+;;   :short "A tool to simplify a term or DAG."
+;; ;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
 ;;   :long "<h3>General Form:</h3>
 
 ;; @({

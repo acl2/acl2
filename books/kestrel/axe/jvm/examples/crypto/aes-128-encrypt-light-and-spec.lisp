@@ -14,7 +14,7 @@
 ;; See README.md for setup instructions.
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
-(include-book "kestrel/axe/jvm/unroll-java-code" :dir :system :ttags :all)
+(include-book "kestrel/axe/jvm/unroller" :dir :system :ttags :all)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
 (include-book "kestrel/crypto/aes/aes-spec" :dir :system)
 
@@ -51,6 +51,6 @@
                   :vars-for-array-elements :bits)
 
 ;; Prove equivalence of unrolled code and spec:
-(prove-equivalence *aes-128-encrypt-light-dag*
-                   *aes-128-encrypt-spec-dag*
-                   :tactic :rewrite)
+(prove-equal-with-axe *aes-128-encrypt-light-dag*
+                      *aes-128-encrypt-spec-dag*
+                      :tactic :rewrite)

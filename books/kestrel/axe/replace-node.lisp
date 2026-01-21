@@ -65,12 +65,16 @@
                               (<= n dag-len)
                               ;(NOT (< *max-1d-array-index* N))
                               ;(<= dag-len 1152921504606846973)
-                              (<= new-nodenum old-nodenum))
+                              (<= new-nodenum old-nodenum)
+                              (< old-nodenum dag-len))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp ;todo
                                                            )
                                  :use (:instance <-when-member-equal-of-dargs-of-aref1
                                                  (darg old-nodenum)
-                                                 (nodenum n))))))
+                                                 (nodenum n))))
+                  :split-types t)
+           (type (unsigned-byte 60) n dag-len old-nodenum new-nodenum)
+           )
   (if (or (not (mbt (and (natp n)
                          (natp dag-len))))
           (>= n dag-len))
@@ -90,7 +94,7 @@
                                            (fixup-args3 old-nodenum
                                                         new-nodenum
                                                         dargs)))
-                            ;; common case (don't re-cons the dargs):
+                            ;; common case (don't re-cons the dargs or call aset1):
                             dag-array)))))
       (change-mentions-of-nodenum (+ 1 n) dag-len old-nodenum new-nodenum dag-array-name dag-array))))
 

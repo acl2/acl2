@@ -1225,10 +1225,10 @@ Rules: ((:DEFINITION F1)
 Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION F3))
 Modified system attachments:
-       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
-        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+       ((BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL)
+        (BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
         (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
-        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL))
 
 ---
 The key checkpoint goal, below, may help you to debug this failure.
@@ -1360,10 +1360,10 @@ Rules: ((:DEFINITION F1)
 Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION F3))
 Modified system attachments:
-       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
-        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+       ((BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL)
+        (BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
         (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
-        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL))
 
 ---
 The key checkpoint goal, below, may help you to debug this failure.
@@ -1468,10 +1468,10 @@ Summary
 Form:  ( DEFCONST *STANDARD-OI* ...)
 Rules: NIL
 Modified system attachments:
-       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
-        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+       ((BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL)
+        (BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
         (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
-        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL))
 Warnings:  Redef
  *STANDARD-OI*
 ACL2 p!>>(REDEF-)

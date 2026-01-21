@@ -16,14 +16,16 @@
  (er-soft-logic ctx fmt-string arg1 arg2 ... argk)
  })
 
- <p>The form above has the same effect as</p>
+ <p>The form above has essentially the same effect as the following.</p>
 
  @({
  (er soft ctx fmt-string arg1 arg2 ... argk)
  })
 
- <p>but unlike the latter call, the call of @('er-soft-logic') generates
- @(':')@(tsee logic) mode code.  It works by invoking the function call
+ <p>Both expressions generate @(see logic)-mode code, though the latter
+ generates a stronger @(see guard) proof obligation.  (At one time, the latter
+ generated @(see program)-mode code, which is why @('er-soft-logic') was
+ introduced.)  @('Er-soft-logic') works by invoking the function call
  @('(error-fms-soft-logic ctx fmt-string alist state)'), where @('alist') is as
  in the @('alist') argument of @(tsee fmt).</p>
 

@@ -453,6 +453,13 @@
                 (and (natp top-nodenum) ; we check this here but avoid checking natp for every nodenum in pseudo-dagp-aux as we decrement
                      (pseudo-dagp-aux dag top-nodenum)))))))
 
+;; So we can always tell which we have:
+;; In fact, even an untranslated term cannot be a dag (consider its car).
+(thm
+  (not (and (pseudo-dagp x)
+            (pseudo-termp x)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
 ;keeping this disabled for now, since it could be expensive.
 (defthmd alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
@@ -601,31 +608,52 @@
            (weak-dagp x))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(defthmd not-pseudo-dagp-when-quotep-cheap
+  (implies (quotep x)
+           (not (pseudo-dagp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Recognize either a dag or a quoted constant (which can occur if rewriting
 ;; reduces a dag to simply a constant).
+;; Disable?
 (defun pseudo-dag-or-quotep (obj)
   (declare (xargs :guard t))
   (or (pseudo-dagp obj)
       (myquotep obj)))
 
-(defthm pseudo-dag-or-quotep-forward-to-pseudo-dagp-when-not-quote
+(defthm pseudo-dag-or-quotep-forward-to-pseudo-dagp-when-not-quotep
   (implies (and (pseudo-dag-or-quotep dag)
                 (not (quotep dag)))
            (pseudo-dagp dag))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
 
-(defthm PSEUDO-DAG-OR-QUOTEP-when-quotep-cheap
+(defthm pseudo-dag-or-quotep-when-quotep-cheap
   (implies (quotep x)
-           (equal (PSEUDO-DAG-OR-QUOTEP x)
+           (equal (pseudo-dag-or-quotep x)
                   (myquotep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
 
-;;
-;; dag-vars
-;;
+;; ;; uses quotep as the normal form
+;; (defthmd pseudo-dagp-when-pseudo-dag-or-quotep-cheap
+;;   (implies (pseudo-dag-or-quotep obj)
+;;            (equal (pseudo-dagp obj)
+;;                   (not (quotep obj))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;; uses quotep as the normal form
+(defthmd myquotep-when-pseudo-dag-or-quotep-cheap
+  (implies (pseudo-dag-or-quotep obj)
+           (equal (myquotep obj)
+                  (quotep obj)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The result is not necessarily sorted
 (defun dag-vars-aux (dag acc)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp acc))))
@@ -644,24 +672,55 @@
            (symbol-listp (dag-vars-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The result is not necessarily sorted
-(defund dag-vars (dag)
+(defund dag-vars-unsorted (dag)
   (declare (xargs :guard (or (quotep dag)
                              (weak-dagp dag))))
   (if (quotep dag)
       nil
     (dag-vars-aux dag nil)))
 
+(defthm symbol-listp-of-dag-vars-unsorted
+  (implies (weak-dagp dag)
+           (symbol-listp (dag-vars-unsorted dag)))
+  :hints (("Goal" :in-theory (enable dag-vars-unsorted))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a sorted list of symbols.
+;; todo: use a better ordering that sorted numbered symbols numerically (x10 should not follow x1; x2-x9 should come first)
+;; todo: remove handling of quoteps here (use dag-or-quotep-vars below)
+(defund dag-vars (dag)
+  (declare (xargs :guard (or (quotep dag)
+                             (weak-dagp dag))))
+  (if (quotep dag)
+      nil
+    (merge-sort-symbol< (dag-vars-unsorted dag))))
+
 (defthm symbol-listp-of-dag-vars
   (implies (weak-dagp dag)
            (symbol-listp (dag-vars dag)))
   :hints (("Goal" :in-theory (enable dag-vars))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-quotep-vars (x)
+  (declare (xargs :guard (or (quotep x)
+                             (weak-dagp x))))
+  (if (quotep x)
+      nil ; no vars
+    (dag-vars x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The result is not necessarily sorted
 (defun get-vars-from-dags-aux (dags acc)
   (if (endp dags)
       acc
     (let* ((dag (first dags))
-           (vars (dag-vars dag)))
+           (vars (dag-vars-unsorted dag)))
       (get-vars-from-dags-aux (rest dags) (union-eq vars acc)))))
 
 (defun get-vars-from-dags (dags)
@@ -692,6 +751,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Return a list of all the functions that appear in the DAG-OR-QUOTEP
+;; todo: remove handling of quoteps here (use dag-or-quotep-fns below)
 (defund dag-fns (dag-or-quotep)
   (declare (xargs :guard (or (quotep dag-or-quotep)
                              (weak-dagp dag-or-quotep))))
@@ -700,9 +760,19 @@
     (merge-sort-symbol< (dag-fns-aux dag-or-quotep nil))))
 
 (defthm symbol-listp-of-dag-fns
-  (implies (weak-dagp dag-or-quotep)
+  (implies (or (quotep dag-or-quotep)
+               (weak-dagp dag-or-quotep))
            (symbol-listp (dag-fns dag-or-quotep)))
   :hints (("Goal" :in-theory (enable dag-fns))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-or-quotep-fns (x)
+  (declare (xargs :guard (or (quotep x)
+                             (weak-dagp x))))
+  (if (quotep x)
+      nil ; no fns
+    (dag-fns x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -741,14 +811,10 @@
 
 ; allows a subset
 (defun check-dag-vars (allowed-vars dag)
-  (let ((actual-vars (dag-vars dag)))
+  (let ((actual-vars (dag-vars-unsorted dag)))
     (if (subsetp-eq actual-vars allowed-vars)
         dag
-      (hard-error 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23"
-                  (acons #\0 actual-vars
-                         (acons #\1 allowed-vars
-                                (acons #\2 dag
-                                       (acons #\3 nil nil))))))))
+      (er hard? 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23" actual-vars allowed-vars dag nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -845,9 +911,7 @@
            (equal (max-key dag max-so-far)
                   (max (car (car dag))
                        max-so-far)))
-  :hints (("Goal" ;:cases ()
-           :do-not '(generalize)
-           :in-theory (enable pseudo-dagp-aux max-key))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux max-key))))
 
 (defthm max-key-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
@@ -1134,6 +1198,7 @@
            (bounded-darg-listp (dargs expr) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
+;move
 ;; use consp as our normal form
 (defthm len-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items bound)
@@ -1144,7 +1209,8 @@
                     0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
-(defthm len-of-nth-when-darg-listp
+;move
+(defthmd len-of-nth-when-darg-listp
   (implies (and (darg-listp items)
                 (< (nfix n) (len items)))
            (equal (len (nth n items))
@@ -1548,3 +1614,78 @@
          (append (reverse-list (keep-nodenum-dargs items))
                  acc))
   :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd natp-of-car-of-nth-when-pseudo-dagp
+  (implies (and (pseudo-dagp dag)
+                (natp n))
+           (equal (natp (car (nth n dag)))
+                  (<= n (top-nodenum dag))))
+  :hints (("Goal" :in-theory (e/d (pseudo-dagp
+                                   natp-of-car-of-nth-when-pseudo-dagp-aux)
+                                  (natp)))))
+
+(defthmd <-of-car-of-nth-when-bounded-natp-alistp
+  (implies (and (bounded-natp-alistp dag bound)
+                (natp n)
+                (< n (len dag))
+                )
+           (< (car (nth n dag)) bound))
+  :hints (("Goal" :in-theory (e/d (bounded-natp-alistp nth)
+                                  (natp)))))
+
+(defthmd <-of-car-of-nth-when-pseudo-dagp
+  (implies (and (<= (len dag) bound)
+                (pseudo-dagp dag)
+                (natp n)
+                (< n (len dag))
+                (natp bound))
+           (< (car (nth n dag)) bound))
+  :hints (("Goal" :in-theory (e/d (<-of-car-of-nth-when-bounded-natp-alistp)
+                                  (natp)))))
+
+(defthmd not-equal-of-car-of-nth-when-not-member-equal-of-strip-cars
+  (implies (and (not (member-equal key (strip-cars alist)))
+                (natp n)
+                (< n (len alist))
+                (alistp alist))
+           (not (equal key (car (nth n alist)))))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(defthmd assoc-equal-of-car-of-nth-same-when-alistp-and-no-duplicatesp-equal-of-strip-cars
+  (implies (and (alistp alist)
+                (no-duplicatesp-equal (strip-cars alist))
+                (natp n)
+                (< n (len alist)))
+           (equal (assoc-equal (car (nth n alist)) alist)
+                  (nth n alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal nth not-equal-of-car-of-nth-when-not-member-equal-of-strip-cars))))
+
+(defthmd member-equal-of-strip-cars-when-pseudo-dagp-aux-iff
+  (implies (and (pseudo-dagp-aux dag curr)
+                (integerp curr)
+                (<= -1 curr))
+           (iff (member-equal n (strip-cars dag))
+                (and (natp n)
+                     (<= n curr))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthmd member-equal-of-strip-cars-when-pseudo-dagp-iff
+  (implies (pseudo-dagp dag)
+           (iff (member-equal n (strip-cars dag))
+                (and (natp n)
+                     (<= n (top-nodenum dag)))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp member-equal-of-strip-cars-when-pseudo-dagp-aux-iff))))
+
+(defthmd no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                (natp curr))
+           (no-duplicatesp-equal (strip-cars dag)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable pseudo-dagp-aux member-equal-of-strip-cars-when-pseudo-dagp-aux-iff))))
+
+(defthmd no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (no-duplicatesp-equal (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp-aux))))

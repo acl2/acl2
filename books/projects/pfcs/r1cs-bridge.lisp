@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 (include-book "r1cs-subset")
 
 (include-book "r1cs-lib-ext")
@@ -33,7 +33,7 @@
    (xdoc::p
     "PFCSes are a generalization of R1CSes.
      Thus, there is an embedding of R1CSes into PFCSes,
-     which we reify by providing a mapping from R1CSes and PFCSes.")
+     which we reify by providing a mapping from R1CSes to PFCSes.")
    (xdoc::p
     "The mapping functions are accompanied by theorems
      showing that the resulting PFCSes are in the "
@@ -69,9 +69,11 @@
   (b* ((coeff (first elem))
        (pvar (second elem)))
     (cond ((equal pvar 1) (expression-const coeff))
-          ((equal coeff 1) (expression-var (symbol-name pvar)))
-          (t (make-expression-mul :arg1 (expression-const (first elem))
-                                  :arg2 (expression-var (symbol-name pvar))))))
+          ((equal coeff 1) (expression-var (name-simple (symbol-name pvar))))
+          (t (make-expression-mul
+              :arg1 (expression-const (first elem))
+              :arg2 (expression-var (name-simple (symbol-name pvar)))))))
+
   ///
 
   (more-returns
@@ -105,7 +107,9 @@
                :arg1 (r1cs-vector-to-pfcs-aux (cdr rev-vec))
                :arg2 (r1cs-vec-elem-to-pfcs (car rev-vec)))))
      :verify-guards :after-returns
+
      ///
+
      (more-returns
       (expr r1cs-polynomialp
             :hints (("Goal" :induct t :in-theory (enable r1cs-polynomialp)))))))
@@ -131,6 +135,7 @@
     (make-constraint-equal
      :left (make-expression-mul :arg1 a-expr :arg2 b-expr)
      :right c-expr))
+
   ///
 
   (more-returns
@@ -148,6 +153,7 @@
    (xdoc::p
     "These are translated element-wise."))
   (r1cs-constraint-to-pfcs x)
+
   ///
 
   (more-returns
@@ -170,6 +176,7 @@
   (make-system :definitions nil
                :constraints (r1cs-constraints-to-pfcs
                              (r1cs::r1cs->constraints r1cs)))
+
   ///
 
   (more-returns

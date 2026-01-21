@@ -51,14 +51,16 @@ version.h:
 	sh -e generate_version.sh || sh -e generate_version.sh -default
 
 # Run bison and flex.
-program/parser/parser.tab.cpp: program/parser/parser.yy
+# parser.tab is generated in first, we had version.h as dependency to force its
+# generation before compiling the rest.
+program/parser/parser.tab.cpp: program/parser/parser.yy version.h
 	bison -d -v -o program/parser/parser.tab.cpp program/parser/parser.yy -Wall
 
 program/parser/lex.yy.cpp: program/parser/parser.ll program/parser/parser.tab.cpp
 	flex -o program/parser/lex.yy.cpp program/parser/parser.ll
 
 # Build the binary.
-parse: version.h ${OBJS}
+parse: ${OBJS}
 	${CXX} -o parse $(LDFLAGS) ${OBJS}
 
 clean:

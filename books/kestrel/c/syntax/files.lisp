@@ -15,6 +15,8 @@
 (include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ files
@@ -55,6 +57,13 @@
      We wrap that into this fixtype for separation and extensibility."))
   ((unwrap byte-list))
   :pred filedatap)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-filedata
+  :short "An irrelevant file data value."
+  :type filedatap
+  :body (filedata nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,8 +116,7 @@
    (xdoc::p
     "Together with @(tsee file-at-path),
      it can be used as an API to inspect a file set."))
-  (omap::keys (fileset->unwrap files))
-  :hooks (:fix))
+  (omap::keys (fileset->unwrap files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,6 +136,4 @@
     "Together with @(tsee fileset-paths),
      it can be used an as API to inspect a file set."))
   (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
-  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
-                                           fileset-paths)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable fileset-paths))))

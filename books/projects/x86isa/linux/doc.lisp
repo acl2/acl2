@@ -62,8 +62,7 @@
            our timer and TTY devices and a few other minor changes.</p>
 
            <p>To run Linux, you need to certify the books, as described in @(see
-           x86isa-build-instructions) (Note: you do NOT need to set @('X86ISA_EXEC=t')
-           to run Linux). If you wish to interact with the model over a TCP
+           x86isa-build-instructions). If you wish to interact with the model over a TCP
            socket, you need to use ACL2 built with Clozure Common Lisp (CCL). You
            must also obtain a Linux kernel image and a rootfs (root filesystem)
            image. We provide instructions to build your own in @(see
@@ -149,7 +148,56 @@
            @('blkx86isa'). This device is essentially a view into the gigabyte of
            physical memory at address @('0x100000000'). This could be useful for
            transfering files into and out of the Linux system running in the
-           model. You can mount it like any other drive on a Linux system.</p>"))
+           model. You can mount it like any other drive on a Linux system.</p>
+
+           <p>To measure the performance of booting Linux on the @('x86isa') model
+           (running on your specific machine), add code the form</p>
+
+           <code>
+           (defun run-model-count-steps (n x86)
+             (declare (xargs :mode :program
+                             :stobjs (x86)))
+             (b* (((when (equal (cpl x86) 3)) (mv n x86))
+                  (x86 (x86-fetch-decode-execute x86)))
+               (run-model-count-steps (1+ n) x86)))
+
+           (defun run-model-measure-speed (x86 state)
+             (declare (xargs :mode :program
+                             :stobjs (x86 state)))
+             (b* (((mv start state) (get-real-time state))
+                  ((mv steps x86) (run-model-count-steps 0 x86))
+                  ((mv end state) (get-real-time state))
+                  (duration (round (- end start) 1))
+                  (steps-per-second (round steps duration))
+                  (- (cw \"~%~
+                          Time: ~x0 seconds~%~
+                          Steps: ~x1~%~
+                          Speed: ~x2 steps/second~%~%\"
+                         duration steps steps-per-second)))
+               (mv x86 state)))
+           </code>
+
+           <p>The first function runs the model
+           until we enter privilege lever 3,
+           which corresponds to user mode;
+           that is, we execute Linux until
+           it drops into user mode to run @('init').
+           The second function measures the time elapsed
+           and divides the number of instructions (i.e. steps) by that time,
+           to obtain the average number of instructions per second.</p>
+
+           <p>Run the code above with</p>
+
+           <code>
+           (run-model-measure-speed x86 state)
+           </code>
+
+           <p>This may take a while.
+           At the end, it will print
+           time elapsed,
+           number of instructions,
+           and average number of instructions per second,
+           surrounded by blank lines for readability.</p>"))
 
 (defxdoc building-linux
          :parents (running-linux)
@@ -230,7 +278,7 @@
          initial file system which resides in RAM. The kernel then starts
          @('/init'), which mounts the \"real\" root file system, usually from a
          disk. Then it uses the @('pivot_root') syscall to make it the new
-         @('/'). This allows Linux to dynamicly link in the appropriate kernel
+         @('/'). This allows Linux to dynamically link in the appropriate kernel
          modules from the initramfs, including disk and file system drivers
          necessary to mount the \"real\" disk.</p>
 

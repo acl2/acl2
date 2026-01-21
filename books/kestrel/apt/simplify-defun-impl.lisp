@@ -1141,7 +1141,7 @@
 
 ; and gave us a single hypothesis of the form (not (if ...)), while the present
 ; code instead gave the expected list of 9 terms (note that expr1 called a
-; function that is is defined to be a rather large conjunction), implicitly
+; function that is defined to be a rather large conjunction), implicitly
 ; conjoined.
 
   (flatten-ands-in-lit

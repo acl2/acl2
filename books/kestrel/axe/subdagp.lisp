@@ -1,7 +1,7 @@
 ; Test whether a DAG's corresponding term is present in another DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -23,7 +23,7 @@
     (if erp
         nil ;todo: pass back the error?
       (if (quotep nodenum-or-quotep-for-dag1)
-          (hard-error 'subdagp "didn't expect a quotep." nil)
+          (er hard? 'subdagp "didn't expect a quotep.")
         (<= nodenum-or-quotep-for-dag1 (top-nodenum dag2))))))
 
 (defun subdag-of-somep (dag dags)

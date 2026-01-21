@@ -796,7 +796,7 @@ picking these up.
 ;; (include-book "centaur/bed/portcullis" :dir :system)
 ;; (include-book "centaur/defrstobj/portcullis" :dir :system)
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system)
-;; (include-book "projects/doc" :dir :system)
+;; (include-book "projects/top-doc" :dir :system)
 ;; (include-book "acl2s/portcullis" :dir :system)
 ;; (include-book "centaur/sv/portcullis" :dir :system)
 ;; (include-book "rtl/rel11/portcullis" :dir :system)

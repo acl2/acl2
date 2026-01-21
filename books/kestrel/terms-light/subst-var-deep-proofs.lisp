@@ -1,6 +1,6 @@
 ; Proofs about subst-var-deep
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,6 +25,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "make-lambda-terms-simple")
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "replace-corresponding-arg-proofs"))
@@ -461,8 +462,7 @@
 ;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
                             ALISTS-EQUIV-ON-OF-APPEND-ARG1
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
-                            main.help.help))))
-  :otf-flg t)
+                            main.help.help)))))
 
 
 ;; ;; for the proof, consider 3 cases: var, other trivial formal, non-trivial formal

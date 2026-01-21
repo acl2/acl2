@@ -2,7 +2,7 @@
 ;
 ; Poseidon Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -29,7 +29,8 @@
    (xdoc::p
     "This is the instantiation of Poseidon used internally by the
      Aleo Instructions opcode "
-    (xdoc::ahref "https://developer.aleo.org/aleo/opcodes#hashpsd8" "hash.psd8")
+    (xdoc::ahref "https://developer.aleo.org/guides/aleo/opcodes/#hashpsd8"
+                 "hash.psd8")
     ".")
    (xdoc::p
     "Note, there are also some test cases for this instantiation
@@ -135,7 +136,7 @@
 (define hash8-many ((inputs (fe-listp inputs primes::*bls12-377-scalar-field-prime*))
                     (count natp))
   :guard (fep (len inputs) primes::*bls12-377-scalar-field-prime*)
-  :returns (outputs (fe-listp outputs 
+  :returns (outputs (fe-listp outputs
                               primes::*bls12-377-scalar-field-prime*)
                     :name fe-listp-of-hash8-many
                     :hints (("Goal" :use (:instance fe-listp-of-hash

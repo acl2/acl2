@@ -190,7 +190,8 @@
     :bfr (scratchobj-bfr (gobj-bfr-eval x.val env))
     :bfrlist (scratchobj-bfrlist (gobj-bfr-list-eval x.val env))
     :cinst (scratchobj-cinst (fgl-constraint-instance-concretize x.val env))
-    :cinstlist (scratchobj-cinstlist (fgl-constraint-instancelist-concretize x.val env)))
+    :cinstlist (scratchobj-cinstlist (fgl-constraint-instancelist-concretize x.val env))
+    :otherwise (scratchobj-fix x))
   ///
   (defthm fgl-scratchobj-concretize-of-logicman-extension
     (implies (and (bind-logicman-extension new old)

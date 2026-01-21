@@ -1,4 +1,4 @@
-; C Library
+; FTY Library
 ;
 ; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)

@@ -17,10 +17,7 @@
 
 (local (include-book "std/lists/len" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,8 +37,7 @@
    (xdoc::p
     "These are unary plus, unary minus, and bitwise/logical negation/complement.
      The other two, address and indirection, involve pointers."))
-  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
-  :hooks (:fix))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,8 +77,7 @@
                         :asg-and
                         :asg-xor
                         :asg-ior))
-       t)
-  :hooks (:fix))
+       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,8 +108,43 @@
                         :bitior
                         :logand
                         :logor))
-       t)
-  :hooks (:fix))
+       t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-purep ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is pure."
+  (expr-case
+   expr
+   :ident t
+   :const t
+   :arrsub (and (expr-purep expr.arr)
+                (expr-purep expr.sub))
+   :call nil
+   :member (expr-purep expr.target)
+   :memberp (expr-purep expr.target)
+   :postinc nil
+   :postdec nil
+   :preinc nil
+   :predec nil
+   :unary (expr-purep expr.arg)
+   :cast (expr-purep expr.arg)
+   :binary (and (binop-purep expr.op)
+                (expr-purep expr.arg1)
+                (expr-purep expr.arg2))
+   :cond (and (expr-purep expr.test)
+              (expr-purep expr.then)
+              (expr-purep expr.else)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-purep (x)
+  :guard (expr-listp x)
+  :short "Check if all the expressions in a list are pure."
+  (expr-purep x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,8 +167,7 @@
             (mv id (make-obj-adeclor-array :decl sub :size declor.size))))
   :measure (obj-declor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,7 +190,7 @@
   :measure (obj-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
-  :hooks (:fix)
+
   ///
 
   (defrule ident+adeclor-to-obj-declor-of-obj-declor-to-ident+adeclor
@@ -197,8 +226,7 @@
               (mv id (fun-adeclor-pointer sub))))
   :measure (fun-declor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,7 +246,7 @@
   :measure (fun-adeclor-count adeclor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
-  :hooks (:fix)
+
   ///
 
   (defrule ident+adeclor-to-fun-declor-of-fun-declor-to-ident+adeclor
@@ -259,8 +287,7 @@
               (mv params (make-obj-adeclor-pointer :decl sub))))
   :measure (fun-adeclor-count declor)
   :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :verify-guards :after-returns
-  :hooks (:fix))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,8 +309,7 @@
     "In essence, we turn (the constituents of) an object declaration
      into its name and type, which are somewhat mixed in the C syntax."))
   (b* (((mv id adeclor) (obj-declor-to-ident+adeclor declor)))
-    (mv id (make-tyname :tyspec tyspec :declor adeclor)))
-  :hooks (:fix))
+    (mv id (make-tyname :tyspec tyspec :declor adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,7 +330,7 @@
     "This is the inverse of @(tsee tyspec+declor-to-ident+tyname)."))
   (b* (((tyname tyname) tyname))
     (mv tyname.tyspec (ident+adeclor-to-obj-declor id tyname.declor)))
-  :hooks (:fix)
+
   ///
 
   (defrule ident+tyname-to-tyspec+declor-of-tyspec+declor-to-ident+tyname
@@ -349,8 +375,7 @@
      but we do not need the inverse for now."))
   (b* (((mv id fun-adeclor) (fun-declor-to-ident+adeclor declor))
        ((mv params obj-adeclor) (fun-adeclor-to-params+declor fun-adeclor)))
-    (mv id params (make-tyname :tyspec tyspec :declor obj-adeclor)))
-  :hooks (:fix))
+    (mv id params (make-tyname :tyspec tyspec :declor obj-adeclor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,8 +383,7 @@
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a structure declaration into an identifier and a type name."
   (b* (((struct-declon declon) declon))
-    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor))
-  :hooks (:fix))
+    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -367,8 +391,7 @@
   :returns (mv (id identp) (tyname tynamep))
   :short "Decompose a parameter declaration into an identifier and a type name."
   (b* (((param-declon declon) declon))
-    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor))
-  :hooks (:fix))
+    (tyspec+declor-to-ident+tyname declon.tyspec declon.declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +404,7 @@
        ((mv ids tynames) (param-declon-list-to-ident+tyname-lists
                           (cdr declons))))
     (mv (cons id ids) (cons tyname tynames)))
-  :hooks (:fix)
+
   ///
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.ids
@@ -409,8 +432,7 @@
   (b* (((obj-declon declon) declon)
        ((mv id tyname) (tyspec+declor-to-ident+tyname declon.tyspec
                                                       declon.declor)))
-    (mv id declon.scspec tyname declon.init?))
-  :hooks (:fix))
+    (mv id declon.scspec tyname declon.init?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,8 +451,7 @@
                                    (ext-declon-list->fundef-list (cdr exts)))
                      :fun-declon (ext-declon-list->fundef-list (cdr exts))
                      :obj-declon (ext-declon-list->fundef-list (cdr exts))
-                     :tag-declon (ext-declon-list->fundef-list (cdr exts))))
-  :hooks (:fix))
+                     :tag-declon (ext-declon-list->fundef-list (cdr exts)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -438,8 +459,7 @@
   :returns (name identp)
   :short "Name of a function in a definition."
   (b* (((mv name &) (fun-declor-to-ident+adeclor (fundef->declor fundef))))
-    name)
-  :hooks (:fix))
+    name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,7 +468,9 @@
   :returns (names ident-listp)
   :short "Lift @(tsee fundef->name) to lists."
   (fundef->name x)
+
   ///
+
   (fty::deffixequiv fundef-list->name-list
     :args ((x fundef-listp))))
 
@@ -509,8 +531,7 @@
               (expr-constp e.then)
               (expr-constp e.else)))
   :measure (expr-count e)
-  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable o< o-finp o-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -520,6 +541,7 @@
   (expr-constp x)
   :true-listp nil
   :elementp-of-nil nil
+
   ///
 
   (fty::deffixequiv expr-list-constp
@@ -539,8 +561,7 @@
      for the technical reasons explained there.
      But this ACL2 function explicates that mapping."))
   (make-fun-declon :tyspec (fundef->tyspec fundef)
-                   :declor (fundef->declor fundef))
-  :hooks (:fix))
+                   :declor (fundef->declor fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -549,6 +570,166 @@
   :returns (declons fun-declon-listp)
   :short "Lift @(tsee fundef-to-fun-declon) to lists."
   (fundef-to-fun-declon x)
+
   ///
+
   (fty::deffixequiv fundef-list-to-fun-declon-list
     :args ((x fundef-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-nocallsp ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression does not contain any function calls."
+  (expr-case
+   expr
+   :ident t
+   :const t
+   :arrsub (and (expr-nocallsp expr.arr)
+                (expr-nocallsp expr.sub))
+   :call nil
+   :member (expr-nocallsp expr.target)
+   :memberp (expr-nocallsp expr.target)
+   :postinc (expr-nocallsp expr.arg)
+   :postdec (expr-nocallsp expr.arg)
+   :preinc (expr-nocallsp expr.arg)
+   :predec (expr-nocallsp expr.arg)
+   :unary (expr-nocallsp expr.arg)
+   :cast (expr-nocallsp expr.arg)
+   :binary (and (expr-nocallsp expr.arg1)
+                (expr-nocallsp expr.arg2))
+   :cond (and (expr-nocallsp expr.test)
+              (expr-nocallsp expr.then)
+              (expr-nocallsp expr.else)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-nocallsp (x)
+  :guard (expr-listp x)
+  :short "Check if a list of expressions does not contain any function calls."
+  (expr-nocallsp x)
+  :elementp-of-nil t
+
+  ///
+
+  (fty::deffixequiv expr-list-nocallsp
+    :args ((x expr-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-option-nocallsp ((expr? expr-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional expression does not contain any function calls."
+  (expr-option-case
+   expr?
+   :some (expr-nocallsp expr?.val)
+   :none t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-nocallsp ((initer initerp))
+  :returns (yes/no booleanp)
+  :short "Check if an initializer does not contain any function calls."
+  (initer-case
+   initer
+   :single (expr-nocallsp initer.get)
+   :list (expr-list-nocallsp initer.get)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-option-nocallsp ((initer? initer-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional initializer does not contain any function calls."
+  (initer-option-case
+   initer?
+   :some (initer-nocallsp initer?.val)
+   :none t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define obj-declon-nocallsp ((declon obj-declonp))
+  :returns (yes/no booleanp)
+  :short "Check if an object declaration does not contain any function calls."
+  (initer-option-nocallsp (obj-declon->init? declon)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define label-nocallsp ((label labelp))
+  :returns (yes/no booleanp)
+  :short "Check if a label does not contain any function calls."
+  (label-case
+   label
+   :name t
+   :cas (expr-nocallsp label.get)
+   :default t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines stmts/blocks-nocallsp
+  :short "Check if statements, block items, and lists of block items
+          do not contain any function calls."
+
+  (define stmt-nocallsp ((stmt stmtp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a statement does not contain any function calls."
+    (stmt-case
+     stmt
+     :labeled (and (label-nocallsp stmt.label)
+                   (stmt-nocallsp stmt.body))
+     :compound (block-item-list-nocallsp stmt.items)
+     :expr (expr-nocallsp stmt.get)
+     :null t
+     :if (and (expr-nocallsp stmt.test)
+              (stmt-nocallsp stmt.then))
+     :ifelse (and (expr-nocallsp stmt.test)
+                  (stmt-nocallsp stmt.then)
+                  (stmt-nocallsp stmt.else))
+     :switch (and (expr-nocallsp stmt.ctrl)
+                  (stmt-nocallsp stmt.body))
+     :while (and (expr-nocallsp stmt.test)
+                 (stmt-nocallsp stmt.body))
+     :dowhile (and (stmt-nocallsp stmt.body)
+                   (expr-nocallsp stmt.test))
+     :for (and (expr-option-nocallsp stmt.init)
+               (expr-option-nocallsp stmt.test)
+               (expr-option-nocallsp stmt.next)
+               (stmt-nocallsp stmt.body))
+     :goto t
+     :continue t
+     :break t
+     :return (expr-option-nocallsp stmt.value))
+    :measure (stmt-count stmt))
+
+  (define block-item-nocallsp ((item block-itemp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a block item does not contain any function calls."
+    (block-item-case
+     item
+     :declon (obj-declon-nocallsp item.get)
+     :stmt (stmt-nocallsp item.get))
+    :measure (block-item-count item))
+
+  (define block-item-list-nocallsp ((items block-item-listp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a list of block items does not contain any function calls."
+    (or (endp items)
+        (and (block-item-nocallsp (car items))
+             (block-item-list-nocallsp (cdr items))))
+    :measure (block-item-list-count items))
+
+  :hints (("Goal" :in-theory (enable o-p o-finp o<)))
+
+  ///
+
+  (fty::deffixequiv-mutual stmts/blocks-nocallsp)
+
+  (std::deflist block-item-list-nocalls (x)
+    :guard (block-item-listp x)
+    :parents nil
+    (block-item-nocallsp x)
+    :elementp-of-nil t))

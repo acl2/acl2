@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function revappend.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -151,3 +151,30 @@
        (or (member-equal a x)
            (member-equal a y)))
   :hints (("Goal" :in-theory (enable revappend member-equal))))
+
+(local
+  (defthm not-equal-when-different-lengths
+    (implies (not (equal (len x) (len y)))
+             (not (equal x y)))))
+
+(defthm equal-of-revappend-same-arg2
+  (equal (equal y (revappend x y))
+         (not (consp x)))
+  :hints (("Goal" :in-theory (enable revappend))))
+
+(local
+  (defun double-revappend-induct (x1 x2 y1 y2)
+    (if (endp x1)
+        (list x1 x2 y1 y2)
+      (double-revappend-induct (cdr x1) (cdr x2) (cons (car x1) y1) (cons (car x2) y2)))))
+
+(defthm equal-of-revappend-and-revappend-when-same-length
+  (implies (equal (len y1) (len y2))
+           (equal (equal (revappend x1 y1) (revappend x2 y2))
+                  (and (equal y1 y2)
+                       (equal (true-list-fix x1)
+                              (true-list-fix x2)))))
+  :hints (("Goal" :induct (double-revappend-induct x1 x2 y1 y2)
+           :expand ((revappend x1 y1)
+                    (revappend x2 y2))
+           :in-theory (enable revappend true-list-fix))))

@@ -38,6 +38,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-intersect
   ((x binary-tree-p)
    (y binary-tree-p))
@@ -186,7 +191,8 @@
     ((x setp)
      (y setp))
     :returns (set setp)
-    (tree-intersect (sfix x) (sfix y)))
+    (tree-intersect (sfix x) (sfix y))
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -207,7 +213,7 @@
     (declare (xargs :guard t))
     (intersect-macro-loop (list* x y rst)))
 
-  (add-macro-fn intersect binary-intersect t)
+  (add-macro-fn intersect binary-intersect$inline t)
 
   "@(def intersect)")
 

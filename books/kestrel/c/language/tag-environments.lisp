@@ -13,9 +13,7 @@
 
 (include-book "types")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,8 +85,7 @@
        (member (car (last members)))
        (type (member-type->type member)))
     (and (type-case type :array)
-         (not (type-array->size type))))
-  :hooks (:fix))
+         (not (type-array->size type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,8 +125,7 @@
   :returns (info tag-info-optionp
                  :hints (("Goal" :in-theory (enable tag-info-optionp))))
   :short "Look up a tag in a tag environment."
-  (cdr (omap::assoc (ident-fix tag) (tag-env-fix env)))
-  :hooks (:fix))
+  (cdr (omap::assoc (ident-fix tag) (tag-env-fix env))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,5 +153,4 @@
        (env (tag-env-fix env)))
     (if (omap::assoc tag env)
         (tag-env-option-none)
-      (tag-env-option-some (omap::update tag info env))))
-  :hooks (:fix))
+      (tag-env-option-some (omap::update tag info env)))))

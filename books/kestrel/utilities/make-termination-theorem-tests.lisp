@@ -84,7 +84,10 @@
 (assert!
  (flet ((defstub-p (fn wrld)
           (mv-let (flg constraint-lst)
-            (constraint-info fn wrld)
+            ; Old Code:
+            ; (constraint-info fn wrld)
+            ; New Code:
+            (pre-v8-7-constraint-info fn wrld)
             (and flg (null constraint-lst)))))
    (let ((wrld (w state)))
      (and (defstub-p 'f1$stub wrld)

@@ -36,13 +36,6 @@
                      '((:INDUCTION F2)))
               :on-skip-proofs t)
 
-; Expansion of the above:
-
-#||
-(PROGN (STD::DEFREDUNDANT F1 F2 F3)
-       (DEFUN H1 (X) (F3 X)))
-||#
-
 (with-supporters
 
 ; We generate an (encapsulate () ...) with suitable events (all redundant on
@@ -57,16 +50,11 @@
  (defun h2 (x)
    (g3 x)))
 
-; Expansion of the above:
-
-#||
-(ENCAPSULATE NIL
-              (LOCAL (INCLUDE-BOOK "with-supporters-test-sub"))
-              (DEFUN MAC1-FN (X) X)
-              (DEFMACRO MAC1 (X) (MAC1-FN X))
-              (STD::DEFREDUNDANT G1 MAC2-FN-B MAC2-FN MAC2 G2 G3)
-              (DEFUN H2 (X) (G3 X)))
-||#
+; Test elide-event:
+(assert-event (equal (get-event 'g2 (w state))
+                     '(DEFUN G2 (X)
+                        (DECLARE (XARGS :GUARD (G1 X)))
+                        (MAC2 X))))
 
 ; Test use of :names without any events.
 

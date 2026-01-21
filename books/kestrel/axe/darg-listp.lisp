@@ -1,7 +1,7 @@
 ; Recognize a true-list of dargs ("dag args")
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,8 @@
 (in-package "ACL2")
 
 (include-book "dargp")
-(include-book "kestrel/typed-lists-light/all-consp" :dir :system) ; reduce?
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 ;; Recognizes a list of dargs, e.g., the arguments in a DAG node that is a function call.
 (defund darg-listp (items)

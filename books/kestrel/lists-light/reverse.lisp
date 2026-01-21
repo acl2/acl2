@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function reverse.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 ;; rid of it in favor of rev or reverse-list.
 
 (local (include-book "revappend"))
+(local (include-book "true-list-fix"))
 
 (in-theory (disable reverse))
 
@@ -65,4 +66,12 @@
 (defthm member-equal-of-reverse-iff
   (iff (member-equal a (reverse x))
        (member-equal a x))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+;; injectivity (almost)
+(defthm equal-of-reverse-and-reverse-when-true-lists
+  (implies (and (true-listp x) ; excludes the string case
+                (true-listp y))
+           (equal (equal (reverse x) (reverse y))
+                  (equal x y)))
   :hints (("Goal" :in-theory (enable reverse))))

@@ -43,12 +43,8 @@
 
 (local (in-theory (e/d (integerp-when-natp)
                        (consp-from-len-cheap
-                        use-all-consp-for-car
-                        use-all-consp
-                        use-all-consp-2
                         nth-when-not-consp-cheap
                         nth-when-zp-cheap
-                        all-consp-when-not-consp
                         nat-listp
                         bounded-darg-listp-when-all-< ;limit?
                         all-<-of-alen1-when-pseudo-dag-arrayp-list
@@ -292,7 +288,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array-basic)
-  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) ()))))
+  :hints (("Goal" :in-theory (enable merge-term-into-dag-array-basic merge-terms-into-dag-array-basic))))
 
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm merge-term-into-dag-array-basic-return-type

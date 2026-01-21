@@ -364,3 +364,13 @@
 (assert-equal (omap::from-lists '(b a) '(2 1)) '((a . 1) (b . 2)))
 
 (assert-equal (omap::from-lists '(a a) '(1 2)) '((a . 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (omap::from-alist nil) nil)
+
+(assert-equal (omap::from-alist '((a . 1) (b . 2))) '((a . 1) (b . 2)))
+
+(assert-equal (omap::from-alist '((b . 2) (a . 1))) '((a . 1) (b . 2)))
+
+(assert-equal (omap::from-alist '((a . 1) (a . 2))) '((a . 1)))

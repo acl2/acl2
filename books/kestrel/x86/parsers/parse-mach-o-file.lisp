@@ -1,7 +1,7 @@
 ; A parser for Mach-O executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 (include-book "parser-utils")
-(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -40,10 +39,18 @@
 ;; - Disadvantage: This tool does not yet support exotic load commands.
 
 ;; The constants in this file are from /usr/include/mach-o/loader.h on
-;; my Mac.  I believe they all agree with the ones in
-;; projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-constants.lisp.
+;; my Mac.  I believe that most or all agree with the ones in:
+;; books/projects/execloader/mach-o-constants.lisp
+;; I also used:
+;; https://github.com/apple/darwin-xnu/blob/main/EXTERNAL_HEADERS/mach-o/loader.h
 
 (local (in-theory (disable mv-nth)))
+
+(local
+ (defthm symbolp-of-lookup-equal
+   (implies (symbol-listp (strip-cdrs alist))
+            (symbolp (lookup-equal key alist)))
+   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cdrs)))))
 
 ;;;
 ;;; magic numbers
@@ -368,8 +375,8 @@
                 (cons :type section-type)
                 (cons :segname segname)
                 (cons :addr addr)
-  ;              (cons :size size)
-   ;             (cons :offset offset)
+                (cons :size size)
+                (cons :offset offset)
                 (cons :align align)
                 (cons :reloff reloff)
                 (cons :nreloc nreloc)
@@ -428,8 +435,8 @@
               (cons :type section-type)
               (cons :segname segname)
               (cons :addr addr)
-;                (cons :size size)
- ;               (cons :offset offset)
+              (cons :size size)
+              (cons :offset offset)
               (cons :align align)
               (cons :reloff reloff)
               (cons :nreloc nreloc)
@@ -576,12 +583,12 @@
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
-       (stabp (not (eql 0 (logand #xe0 n-type))))
+       (stabp (not (= 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
-                 (b* ((n-pext (not (eql 0 (logand #x10 n-type))))
+                 (b* ((n-pext (not (= 0 (logand #x10 n-type))))
                       (n-type (logand #x0e n-type))
-                      (n-ext (not (eql 0 (logand #x01 n-type)))))
+                      (n-ext (not (= 0 (logand #x01 n-type)))))
                      (list (cons :n-pext n-pext)
                            (cons :n-type (lookup-safe n-type *mach-o-symbol-n-types*))
                            (cons :n-ext n-ext))))))
@@ -612,7 +619,13 @@
     (#x4 . :SG_NORELOC)
     (#x8 . :SG_PROTECTED_VERSION_1)))
 
-; Returns (mv erp cmd-data bytes).
+(defconst *mach-o-protection-flags*
+  '((#x1 . :VM_PROT_READ)
+    (#x2 . :VM_PROT_WRITE)
+    (#x4 . :VM_PROT_EXECUTE)))
+
+; Returns (mv erp cmd-data).
+;; Note that the caller adds the cmd itself to the alist returned.
 (defun parse-mach-o-load-command (cmd ; the type of the command
                                   architecture
                                   all-bytes
@@ -622,109 +635,104 @@
                               (byte-listp all-bytes)
                               (byte-listp bytes))))
   (let ((cmd-data nil)) ;empty accumulator (TODO: remove)
+    ;; for all of the options below, the cmd and cmdsize are already parsed:
     (cond ((eq cmd :LC_UUID)
-           (b* (((mv erp uuid bytes) (parse-n-bytes 16 bytes)) ;todo: assemble the value
-                ((when erp) (mv erp nil bytes))
+           (b* (((mv erp uuid &) (parse-n-bytes 16 bytes)) ;todo: assemble the value
+                ((when erp) (mv erp nil))
                 (cmd-data (acons :uuid uuid cmd-data)))
-               (mv nil cmd-data bytes)))
+               (mv nil cmd-data)))
           ((eq cmd :LC_SEGMENT)
            (b* (((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp vmaddr bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp vmsize bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
-                ((mv erp & ;fileoff
-                     bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
-                ((mv erp & ;filesize
-                     bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp fileoff bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp filesize bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp maxprot bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp initprot bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp nsects bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp flags bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ;; now come the sections commands:
-                ((mv erp sections bytes) (parse-mach-o-sections nsects segname nil all-bytes bytes))
-                ((when erp) (mv erp nil bytes)))
+                ((mv erp sections &) (parse-mach-o-sections nsects segname nil all-bytes bytes))
+                ((when erp) (mv erp nil)))
                (mv nil
                    (list (cons :segname segname)
                          (cons :vmaddr vmaddr)
                          (cons :vmsize vmsize)
-                         ;;(cons :fileoff fileoff)
-                         ;;(cons :filesize filesize)
-                         (cons :maxprot maxprot)
-                         (cons :initprot initprot)
-                         ;;(cons :nsects nsects)
+                         (cons :fileoff fileoff)
+                         (cons :filesize filesize)
+                         (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                         (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
+                         (cons :nsects nsects)
                          (cons :flags (decode-flags flags *mach-o-segment-flags*))
-                         (cons :sections sections))
-                   bytes)))
+                         (cons :sections sections)))))
           ((eq cmd :LC_SEGMENT_64)
            (b* (((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp vmaddr bytes) (parse-u64 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp vmsize bytes) (parse-u64 bytes))
-                ((when erp) (mv erp nil bytes))
-                ((mv erp & ;fileoff
-                     bytes) (parse-u64 bytes))
-                ((when erp) (mv erp nil bytes))
-                ((mv erp & ;filesize
-                     bytes) (parse-u64 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp fileoff bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp filesize bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp maxprot bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp initprot bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp nsects bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ((mv erp flags bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 ;; now come the sections commands:
-                ((mv erp sections bytes) (parse-mach-o-sections-64 nsects segname nil all-bytes bytes))
-                ((when erp) (mv erp nil bytes)))
+                ((mv erp sections &) (parse-mach-o-sections-64 nsects segname nil all-bytes bytes))
+                ((when erp) (mv erp nil)))
                (mv nil
                    (list (cons :segname segname)
                           (cons :vmaddr vmaddr)
                           (cons :vmsize vmsize)
-                          ;;(cons :fileoff fileoff)
-                          ;;(cons :filesize filesize)
-                          (cons :maxprot maxprot)
-                          (cons :initprot initprot)
-                          ;;(cons :nsects nsects)
+                          (cons :fileoff fileoff)
+                          (cons :filesize filesize)
+                          (cons :maxprot (decode-flags maxprot *mach-o-protection-flags*))
+                          (cons :initprot (decode-flags initprot *mach-o-protection-flags*))
+                          (cons :nsects nsects)
                           (cons :flags (decode-flags flags *mach-o-segment-flags*))
-                          (cons :sections sections))
-                   bytes)))
+                          (cons :sections sections)))))
           ((eq cmd :LC_TWOLEVEL_HINTS)
            (b* (((mv erp offset bytes) (parse-u32 bytes)) ;todo: dereference
-                ((when erp) (mv erp nil bytes))
+                ((when erp) (mv erp nil))
                 (cmd-data (acons :offset offset cmd-data))
-                ((mv erp nhints bytes) (parse-u32 bytes))
-                ((when erp) (mv erp nil bytes))
+                ((mv erp nhints &) (parse-u32 bytes))
+                ((when erp) (mv erp nil))
                 (cmd-data (acons :nhints nhints cmd-data)))
-               (mv nil cmd-data bytes)))
+               (mv nil cmd-data)))
           ((eq cmd :LC_DYLD_INFO_ONLY)
            (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
-                   (mv nil (acons :unsupported t nil) bytes)))
+                   (mv nil (acons :unsupported t nil))))
           ((eq cmd :LC_SYMTAB) ;TODO: look this up?
              (b* (((mv erp symoff bytes) (parse-u32 bytes))
-                  ((when erp) (mv erp nil bytes))
+                  ((when erp) (mv erp nil))
                   ((mv erp nsyms bytes) (parse-u32 bytes))
-                  ((when erp) (mv erp nil bytes))
+                  ((when erp) (mv erp nil))
                   ((mv erp stroff bytes) (parse-u32 bytes))
-                  ((when erp) (mv erp nil bytes))
-                  ((mv erp strsize bytes) (parse-u32 bytes))
-                  ((when erp) (mv erp nil bytes))
+                  ((when erp) (mv erp nil))
+                  ((mv erp strsize &) (parse-u32 bytes))
+                  ((when erp) (mv erp nil))
                   ((mv erp string-table &) (parse-n-bytes strsize (nthcdr stroff all-bytes)))  ;todo: make an nthcdr-safe and use it here
-                  ((when erp) (mv erp nil bytes))
+                  ((when erp) (mv erp nil))
                   ((mv erp syms) (if (eql architecture 32)
                                      (parse-mach-o-nlists nsyms nil string-table (nthcdr symoff all-bytes))
                                    (parse-mach-o-nlist-64s nsyms nil string-table (nthcdr symoff all-bytes))))
-                  ((when erp) (mv erp nil bytes)))
+                  ((when erp) (mv erp nil)))
                  (mv nil
                      (list ;(cons :symoff symoff)
                            ;(cons :nsyms nsyms)
@@ -732,24 +740,24 @@
                            ;(cons :strsize strsize)
                            (cons :syms syms)
                            ;; Make it into one big string, for readability:
-                           (cons :string-table (coerce (map-code-char string-table) 'string)))
-                     bytes)))
+                           (cons :string-table (coerce (map-code-char string-table) 'string))))))
+          ((eq cmd :LC_MAIN)
+           (b* (((mv erp entryoff bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp stacksize &) (parse-u64 bytes))
+                ((when erp) (mv erp nil)))
+             (mv nil
+                 (list (cons :entryoff entryoff)
+                       (cons :stacksize stacksize)))))
           ;;TODO: Add more!
           (t (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
                      (mv nil ; :unsupported-comment-type
-                         (acons :unsupported t nil)
-                         bytes))
+                         (acons :unsupported t nil)))
              ;; (mv (er hard 'parse-mach-o-load-command "Unsupported command type: ~x0." cmd)
              ;;     bytes)
              ))))
 
-(local
- (defthm symbolp-of-lookup-equal
-   (implies (symbol-listp (strip-cdrs alist))
-            (symbolp (lookup-equal key alist)))
-   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cdrs)))))
-
-; Returns (mv erp cmd-data-list bytes).
+; Returns (mv erp cmds).
 (defun parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
   (declare (xargs :guard (and (natp ncmds)
                               (true-listp acc)
@@ -757,26 +765,27 @@
                               (byte-listp all-bytes)
                               (byte-listp bytes))))
   (if (zp ncmds)
-      (mv nil (reverse acc) bytes)
+      (mv nil (reverse acc))
     (b* ((orig-bytes bytes)
          ((mv erp cmd-u32 bytes) (parse-u32 bytes))
-         ((when erp) (mv erp nil bytes))
+         ((when erp) (mv erp nil))
          ((mv erp cmdsize bytes) (parse-u32 bytes))
-         ((when erp) (mv erp nil bytes))
+         ((when erp) (mv erp nil))
          (cmd (lookup cmd-u32 *mach-o-load-commands*)))
       (if (not cmd)
           (b* ((- (cw "NOTE: Ignoring unsupported load command: ~x0.~%" cmd-u32))
                (bytes (nthcdr cmdsize orig-bytes)))
             (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))
-        (b* (;; for all of the options below, the cmd and cmdsize are already parsed:
-             ((mv erp cmd-data & ;bytes
-                  )
+        (b* (((mv erp cmd-data)
               (parse-mach-o-load-command cmd architecture all-bytes bytes))
-             ((when erp) (mv erp nil bytes))
+             ((when erp) (mv erp nil))
              (acc (cons (acons :cmd cmd ; (acons :cmdsize cmdsize
                                cmd-data ;)
-                               ) acc))
-             ;; For robustness, we discard exactly cmdsize bytes here, regardless of how many were actually consumed (TODO: add a check)
+                               )
+                        acc))
+             ;; For robustness, we discard exactly cmdsize bytes here,
+             ;; regardless of how many were actually consumed (TODO: add a
+             ;; check):
              (bytes (nthcdr cmdsize orig-bytes)))
           (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))))))
 
@@ -792,19 +801,23 @@
         (er hard? 'parse-mach-o-file-bytes "Bad magic number: ~x0." magic)
         (mv :bad-magic-number nil))
        (architecture (if (member-eq magic *32-bit-magic-numbers*) 32 64)) ; todo: change to pass a 64-bitp value
+       ;; Parse the header:
        ((mv erp header bytes)
         (if (eql architecture 32)
             (parse-mach-o-header-32 bytes)
           (parse-mach-o-header-64 bytes)))
        ((when erp) (mv erp nil))
+       ;; Parse the load-commands:
        (ncmds (lookup-eq-safe :ncmds header))
-       ((mv erp cmds & ;bytes
-            ) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
+       ((mv erp cmds) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
        ((when erp) (mv erp nil)))
     (mv nil
-        (list (cons :magic magic)
+        (list (cons :executable-type (if (eql architecture 32) :mach-o-32 :mach-o-64)) ; for use by parsed-executable-type
+              (cons :magic magic)
               (cons :header header)
-              (cons :cmds cmds)))))
+              (cons :cmds cmds)
+              (cons :bytes all-bytes) ; todo: some bytes are replicated in the :contents fields of sections!  avoid that.
+              ))))
 
 ;; ;; Parse a file that is known to be a Mach-O executable.  Returns (mv
 ;; ;; erp contents state) where contents in an alist representing the
@@ -813,7 +826,6 @@
 ;;   (declare (xargs :guard (stringp filename)
 ;;                   :stobjs state
 ;; ;                  :mode :program
-;;                   :verify-guards nil ; todo
 ;;                   ))
 ;;   (b* (((mv existsp state) (file-existsp filename state))
 ;;        ((when (not existsp))

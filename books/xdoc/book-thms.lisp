@@ -173,7 +173,12 @@
       (theorem
        (cons (list name :theorem prop) acc))
       (unnormalized-body
-       (cond ((eq (getprop name 'constraint-lst t 'current-acl2-world wrld) t)
+       (cond ((eq ; Old code:
+                  ; (getprop name 'constraint-lst t 'current-acl2-world wrld)
+                  ; New code:
+                  (car (getprop name 'constraint-lst-etc '(t . nil)
+                                'current-acl2-world wrld))
+                  t)
               (cons (list name
                           :def
                           `(equal (,name ,@(formals name wrld))
@@ -181,13 +186,19 @@
                     acc))
              (t ; function is really constrained
               acc)))
-      (constraint-lst
-       (cond ((and prop (symbolp prop))
+      (constraint-lst-etc  ; Old code: constraint-lst with value prop
+                           ; New code: constraint-lst-etc with value (car prop)
+
+; In the conversion of this book from pre-v8-7 to use the 'constraint-lst-etc
+; property we ignore the origins component in our reporting of :constraint.  We
+; return the same thing the pre-v8-7 code did.
+
+       (cond ((and (car prop) (symbolp (car prop)))
               acc)
              (t
               (cons (list (getprop name 'siblings nil 'current-acl2-world wrld)
                           :constraint
-                          (untranslate (cons 'and prop) t wrld))
+                          (untranslate (cons 'and (car prop)) t wrld))
                     acc))))
       (defchoose-axiom
         (cons (list name :defchoose (untranslate prop t wrld))

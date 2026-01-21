@@ -28,7 +28,7 @@
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -92,6 +92,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm x::cf-spec8-becomes-getbit
+  (implies (unsigned-byte-p 9 x)
+           (equal (cf-spec8 x)
+                  (acl2::getbit 8 x)))
+  :hints (("Goal" :in-theory (enable cf-spec8))))
+
+(defthm x::cf-spec16-becomes-getbit
+  (implies (unsigned-byte-p 17 x)
+           (equal (cf-spec16 x)
+                  (acl2::getbit 16 x)))
+  :hints (("Goal" :in-theory (enable cf-spec16))))
+
+(defthm x::cf-spec32-becomes-getbit
+  (implies (unsigned-byte-p 33 x)
+           (equal (cf-spec32 x)
+                  (acl2::getbit 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32))))
+
+;; todo: just put the result of this into the alt-def?
+;see cf-spec64-becomes-getbit
+(defthm x::cf-spec64-becomes-getbit
+  (implies (unsigned-byte-p 65 x) ; example; sum of two u64s
+           (equal (cf-spec64 x)
+                  (acl2::getbit 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A wrapper indicating that the CF functions should be opened when they are an
 ;; argument of this function.  We want to open the cf-spec functions when they
 ;; are used for something other than a conditional jump (see conditions.lisp).
@@ -124,7 +152,7 @@
 ;; todo: just put the result of this into the alt-def?
 ;see cf-spec64-becomes-getbit
 (defthm x::open-carry-of-cf-spec64
-  (implies (unsigned-byte-p 65 x)
+  (implies (unsigned-byte-p 65 x) ; example; sum of two u64s
            (equal (x::open-carry (cf-spec64 x))
                   (acl2::getbit 64 x)))
   :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
@@ -134,6 +162,11 @@
   (equal (integerp (x::open-carry x))
          (integerp x))
   :hints (("Goal" :in-theory (enable x::open-carry))))
+
+(defthmd open-carry-of-rflagsbits->cf
+  (equal (x::open-carry (rflagsbits->cf input-rflags))
+         (acl2::getbit 0 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->cf x::open-carry rflagsbits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2327,7 +2360,7 @@
 ;;                                     :EXEC UNDEFINED-FLAGS)))
 ;;            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
 ;;   :otf-flg t
-;;   :hints (("Goal" :expand ()
+;;   :hints (("Goal"
 ;;            :in-theory (e/d (acl2::bvashr ;acl2::bvsx
 ;;                             SAR-SPEC-64 ACL2::BVSHR
 ;;                                         ;;ACL2::LOGEXT-CASES
@@ -3211,3 +3244,54 @@
               (undefined-flags (!rflagsbits->af 1 0)))
            (mv result output-rflags undefined-flags)))
   :hints (("Goal" :in-theory (enable* gpr-xor-spec-8 rflag-rows-enables))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm gpr-sbb-spec-4-alt-def
+  (equal (x86isa::gpr-sbb-spec-4 dst src input-rflags)
+         (b* ((dst (mbe :logic (x86isa::n-size 32 dst) :exec dst))
+              (src (mbe :logic (x86isa::n-size 32 src)
+                        :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (x86isa::input-cf (the (unsigned-byte 1)
+                                  (rflagsbits->cf input-rflags)))
+              (x86isa::signed-raw-result (the (signed-byte 34)
+                                           (- (the (signed-byte 32)
+                                                (x86isa::n32-to-i32 dst))
+                                              (the (signed-byte 33)
+                                                (+ (the (signed-byte 32)
+                                                     (x86isa::n32-to-i32 src))
+                                                   ;; open the carry:
+                                                   (x::open-carry x86isa::input-cf))))))
+              (result (the (unsigned-byte 32)
+                        (x86isa::n-size 32 x86isa::signed-raw-result)))
+              (cf (sub-cf-spec8 dst (+ (x::open-carry x86isa::input-cf) src))
+                  ;; (the (unsigned-byte 1)
+                  ;;     (bool->bit (< dst
+                  ;;                   (the (unsigned-byte 33)
+                  ;;                     (+ x86isa::input-cf src)))))
+                  )
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (af (the (unsigned-byte 1)
+                    ;; open the carry:
+                    (sbb-af-spec32 dst src (x::open-carry x86isa::input-cf))))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec32 x86isa::signed-raw-result)))
+              ;; changed this:
+              (x86isa::output-rflags (!rflagsbits->cf cf
+                                                      (!rflagsbits->pf pf
+                                                                       (!rflagsbits->af af
+                                                                                        (!rflagsbits->zf zf
+                                                                                                         (!rflagsbits->sf sf
+                                                                                                                          (!rflagsbits->of of input-rflags)))))))
+              ;; (x86isa::output-rflags (mbe :logic (n32 x86isa::output-rflags)
+              ;;                             :exec x86isa::output-rflags))
+              (x86isa::undefined-flags 0))
+           (mv result x86isa::output-rflags x86isa::undefined-flags)))
+  :hints (("Goal" :in-theory (enable* x86isa::gpr-sbb-spec-4 x::open-carry rflag-rows-enables sub-cf-spec8))))
