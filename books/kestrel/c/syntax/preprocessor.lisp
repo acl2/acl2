@@ -702,7 +702,7 @@
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-lexmark ((ppstate ppstatep))
   :returns (mv erp
@@ -750,7 +750,7 @@
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable nfix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-token-handling-markers ((stop-at-newline-p booleanp)
                                      (disabled ident-listp)
@@ -825,6 +825,55 @@
     (implies (not erp)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define peek-token/newline ((ppstate ppstatep))
+  :returns (mv erp
+               (toknl? plexeme-optionp)
+               (new-ppstate ppstatep))
+  :short "Peek the next token or new line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently used only in one situation,
+     namely to see whether a function-like macro name
+     is followed by an open parenthesis or not.
+     [C17:6.10.3/10] says that
+     every occurrence of the macro name followed by an open parenthesis
+     is expanded as a macro call;
+     the implication, easily verified in Clang,
+     is that an occurrence of the macro not followed by an open parenthesis
+     is not an error, but the name is simply treated as an identifier.")
+   (xdoc::p
+    "We go through lexmarks until we reach the end of file,
+     in which case we return @('nil'),
+     or a token or new line, which we return.
+     But none of the lexmarks are consumed:
+     they are all pushed back onto the pending lexmarks."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       ((erp lexmark ppstate) (read-lexmark ppstate)))
+    (cond
+     ((not lexmark) ; EOF
+      (retok nil ppstate))
+     ((and (lexmark-case lexmark :lexeme) ; token/EOL
+           (plexeme-token/newline-p (lexmark-lexeme->lexeme lexmark)))
+      (b* ((ppstate (push-lexmark lexmark ppstate)))
+        (retok (lexmark-lexeme->lexeme lexmark) ppstate)))
+     (t ; comment or white space
+      (b* (((erp toknl? ppstate) (peek-token/newline ppstate))
+           (ppstate (push-lexmark lexmark ppstate)))
+        (retok toknl? ppstate)))))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret ppstate->size-of-peek-token/newline
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -2491,7 +2540,18 @@
                                 ppstate
                                 (1- limit)))
                :function
-               (b* (((erp token span2 disabled ppstate)
+               (b* (((erp toknl ppstate) (peek-token/newline ppstate))
+                    ((unless (and toknl
+                                  (plexeme-punctuatorp toknl "(")))
+                     (pproc-lexemes mode
+                                    (cons lexeme rev-lexemes)
+                                    paren-level
+                                    no-expandp
+                                    disabled
+                                    directivep
+                                    ppstate
+                                    (1- limit)))
+                    ((erp token span2 disabled ppstate)
                      (read-token-handling-markers directivep
                                                   disabled
                                                   ppstate))
