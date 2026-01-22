@@ -21,3 +21,9 @@ int z3 = G(a,b);
 int z4 = G(a, b);
 int z5 = G(a,        b);
 int z6 = G((a,b));
+
+H(3);
+H(5.7e88);
+H(x);
+H(+uu); // needs a space
+H(x+y);
