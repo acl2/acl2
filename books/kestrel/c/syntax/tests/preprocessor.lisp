@@ -185,7 +185,7 @@ int z6 = (1, (a,b));
 ((1)*(2),3);
 ((1)*(2),3, 4);
 ")
-; TODO: printer must add space where needed (see comment)
+; TODO: printer must add space where needed (see comments)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,10 +197,9 @@ int z6 = (1, (a,b));
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
-// int table[TABSIZE];
+int table[100];
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
