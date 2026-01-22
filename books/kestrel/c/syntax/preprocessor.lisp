@@ -2029,7 +2029,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines pproc-lexemes-/-macro-args
+(defines pproc-lexemes/macroargs
   :short "Preprocess lexemes and macro arguments, expanding macros."
   :long
   (xdoc::topstring
@@ -2081,7 +2081,7 @@
      we are preprocessing a directive [C17:6.10/2] or not.
      This affects the treatment of new lines within macro arguments.")
    (xdoc::p
-    "As in @(tsee pproc),
+    "As in @(tsee pproc-files/groups/etc),
      we use an artificial limit to ensure termination.
      There should be a termination argument,
      but it is a bit more complicated than
@@ -2105,7 +2105,7 @@
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep))
-    :parents (preprocessor pproc-lexemes-/-macro-args)
+    :parents (preprocessor pproc-lexemes/macroargs)
     :short "Preprocess lexemes."
     :long
     (xdoc::topstring
@@ -2148,7 +2148,7 @@
        If the next lexmark is a @(':end') marker,
        we remove the macro name (once) from the multiset
        and continue preprocessing.
-       That multiset is discusssed in @(tsee pproc-lexemes-/-macro-args).")
+       That multiset is discusssed in @(tsee pproc-lexemes/macroargs).")
      (xdoc::p
       "If tne next lexmark is a new line,
        it is always added to the reversed lexemes.
@@ -2519,7 +2519,7 @@
     :returns (mv erp
                  (subst ident-plexeme-list-alistp)
                  (new-ppstate ppstatep))
-    :parents (preprocessor pproc-lexemes-/-macro-args)
+    :parents (preprocessor pproc-lexemes/macroargs)
     :short "Preprocess macro arguments."
     :long
     (xdoc::topstring
@@ -2601,8 +2601,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines pproc
-  :short "Preprocess files and entities therein."
+(defines pproc-files/groups/etc
+  :short "Preprocess files, groups, and some related entities."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2732,7 +2732,7 @@
                  (scfile scfilep)
                  (new-preprocessed string-scfile-alistp)
                  state)
-    :parents (preprocessor pproc)
+    :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a file."
     :long
     (xdoc::topstring
@@ -2768,7 +2768,7 @@
        and the consequent extension of the @('preprocessed') alist.
        If the file is not self-contained,
        @(tsee pproc-*-group-part) returns @(':not-self-contained') as error
-       (see @(tsee pproc)),
+       (see @(tsee pproc-files/groups/etc)),
        which this function also returns;
        the caller handles that.
        We ensure that the optional group read by @(tsee pproc-*-group-part)
@@ -2853,7 +2853,7 @@
                  (new-ppstate ppstatep)
                  (new-preprocessed string-scfile-alistp)
                  state)
-    :parents (preprocessor pproc)
+    :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess zero or more group parts."
     :long
     (xdoc::topstring
@@ -2908,7 +2908,7 @@
                  (new-ppstate ppstatep)
                  (new-preprocessed string-scfile-alistp)
                  state)
-    :parents (preprocessor pproc)
+    :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a group part, if present."
     :long
     (xdoc::topstring
@@ -3132,7 +3132,7 @@
                  (new-ppstate ppstatep)
                  (new-preprocessed string-scfile-alistp)
                  state)
-    :parents (preprocessor pproc)
+    :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a @('#include') directive."
     :long
     (xdoc::topstring
@@ -3324,7 +3324,7 @@
      the @(see self-contained) ones are in the file set,
      and the non-@(see self-contained) ones have been expanded.")
    (xdoc::p
-    "The recursion limit is discussed in @(tsee pproc).
+    "The recursion limit is discussed in @(tsee pproc-files/groups/etc).
      It seems best to let the user set this limit (outside this function),
      with perhaps a reasonably large default."))
   (b* (((reterr) (irr-fileset) state)
