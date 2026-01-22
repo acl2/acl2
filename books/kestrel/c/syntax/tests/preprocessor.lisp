@@ -123,7 +123,11 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc-1 "macros.c" "")
+(test-preproc-1 "macros.c"
+                "
+char[100] buffer;
+int x =  0;
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

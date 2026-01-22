@@ -8,3 +8,6 @@
 #define K(X,Y,...) ((X)*(Y),__VA_ARGS__)
 #define N 100
 #define H(X) +X
+
+char[N] buffer;
+int x = EMPTY 0;
