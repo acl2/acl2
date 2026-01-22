@@ -1,7 +1,7 @@
 ; A tool to make an Axe Rewriter for a given application
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -84,7 +84,6 @@
 ;(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
-(include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
 (include-book "kestrel/utilities/with-local-stobjs" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system) ; for command-is-redundantp
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system) ; for starts-and-ends-with-starsp
@@ -713,6 +712,7 @@
          (local (include-book "kestrel/utilities/mv-nth" :dir :system))
          (local (include-book "kestrel/utilities/read-run-time" :dir :system)) ; for get-real-time, below
          (local (include-book "kestrel/utilities/w" :dir :system))
+         (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system)) ;need strip-cdrs-of-append for the generated proofs
 
          (local (in-theory (disable mv-nth
                                     wf-dagp wf-dagp-expander
