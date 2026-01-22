@@ -7,12 +7,44 @@
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
 (in-theory (disable min))
+
+(defthm min-commutative
+  (implies (and (acl2-numberp x) ; note that (min t 0) <> (min 0 t)
+                (acl2-numberp y))
+           (equal (min x y)
+                  (min y x)))
+  :hints (("Goal"
+           :cases ((acl2-numberp x))
+           :in-theory (enable min))))
+
+(defthm min-associative
+  (equal (min (min x y) z)
+         (min x (min y z)))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm min-commutative-2
+  (implies (and (acl2-numberp x) ; note that (min t 0) <> (min 0 t)
+                (acl2-numberp y))
+           (equal (min x (min y z))
+                  (min y (min x z))))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm min-same
+  (equal (min x x)
+         x)
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm min-same-2
+  (equal (min x (min x y))
+         (min x y))
+  :hints (("Goal" :in-theory (enable min))))
 
 (defthmd min-when-<=-1
   (implies (and (<= x y)
