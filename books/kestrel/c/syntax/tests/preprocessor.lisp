@@ -36,6 +36,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Turn fileset into map from strings to strings.
+
+(defun fileset-map-to-string-map (fileset-map)
+  (b* (((when (omap::emptyp fileset-map)) nil)
+       ((mv filepath filedata) (omap::head fileset-map)))
+    (omap::update (filepath->unwrap filepath)
+                  (acl2::nats=>string (filedata->unwrap filedata))
+                  (fileset-map-to-string-map (omap::tail fileset-map)))))
+
+(defun fileset-to-string-map (fileset)
+  (fileset-map-to-string-map (fileset->unwrap fileset)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Check result of preprocessing against expectation.
 
 (defmacro test-preproc (files &key expected)
@@ -49,7 +63,8 @@
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
-                (cw "Actual:~%~x0" fileset))) ; CW returns nil (see above)
+                (cw "Actual:~%~x0" ; CW returns nil (see above)
+                    (fileset-to-string-map fileset))))
           state))
     state))
 
@@ -123,7 +138,54 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc-1 "macros.c" "")
+(test-preproc-1 "macros.c"
+                "
+char[100] buffer;
+
+int x =  0;
+
+int y = 3;
+
+int z1 = (1, );
+int z2 = (1, i);
+int z3 = (1, a,b);
+int z4 = (1, a, b);
+int z5 = (1, a, b);
+int z6 = (1, (a,b));
+
++;
++3;
++5.7e88;
++x;
+++uu; // needs a space: + +uu
++x+y;
+++7; // needs a space: + +7
+
+-;
+-3;
+-5.7e88;
+-x;
+-+uu;
+-x+y;
+-0;
+
+(a)+(b);
+(a * b)+(a / b);
+()+(78);
+(87)+();
+()+();
+(f(x,y))+(g(w));
+
+((a)*(b),);
+((a + b)*(a - b),);
+(()*(78),);
+((87)*(),);
+(()*(),);
+((f(x,y))*(g(w)),);
+((1)*(2),3);
+((1)*(2),3, 4);
+")
+; TODO: printer must add space where needed (see comments)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,10 +197,9 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
-// int table[TABSIZE];
+int table[100];
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
