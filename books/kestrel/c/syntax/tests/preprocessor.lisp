@@ -157,8 +157,9 @@ int z6 = (1, (a,b));
 +3;
 +5.7e88;
 +x;
-++uu; // needs a space
+++uu; // needs a space: + +uu
 +x+y;
+++7; // needs a space: + +7
 
 -;
 -3;
@@ -167,6 +168,22 @@ int z6 = (1, (a,b));
 -+uu;
 -x+y;
 -0;
+
+(a)+(b);
+(a * b)+(a / b);
+()+(78);
+(87)+();
+()+();
+(f(x,y))+(g(w));
+
+((a)*(b),);
+((a + b)*(a - b),);
+(()*(78),);
+((87)*(),);
+(()*(),);
+((f(x,y))*(g(w)),);
+((1)*(2),3);
+((1)*(2),3, 4);
 ")
 ; TODO: printer must add space where needed (see comment)
 

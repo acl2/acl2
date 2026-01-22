@@ -26,8 +26,9 @@ H();
 H(3);
 H(5.7e88);
 H(x);
-H(+uu); // needs a space
+H(+uu); // needs a space: + +uu
 H(x+y);
+H(H(7)); // needs a space: + +7
 
 I(,);
 I(3,);
@@ -36,3 +37,19 @@ I(x,);
 I(+uu,);
 I(x+y,);
 I(0,lots of other stuff is ignored, including commas);
+
+J(a, b);
+J(a * b, a / b);
+J(, 78);
+J(87, );
+J(,);
+J(f(x,y), g(w));
+
+K(a, b, );
+K(a + b, a - b, );
+K(, 78, );
+K(87, , );
+K(,,);
+K(f(x,y), g(w), );
+K(1, 2, 3);
+K(1, 2, 3, 4);
