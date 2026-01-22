@@ -10,4 +10,14 @@
 #define H(X) +X
 
 char[N] buffer;
+
 int x = EMPTY 0;
+
+int y = F();
+
+int z1 = G();
+int z2 = G(i);
+int z3 = G(a,b);
+int z4 = G(a, b);
+int z5 = G(a,        b);
+int z6 = G((a,b));

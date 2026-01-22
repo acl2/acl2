@@ -126,7 +126,17 @@ void f(double y) {
 (test-preproc-1 "macros.c"
                 "
 char[100] buffer;
+
 int x =  0;
+
+int y = 3;
+
+int z1 = (1, );
+int z2 = (1, i);
+int z3 = (1, a,b);
+int z4 = (1, a, b);
+int z5 = (1, a, b);
+int z6 = (1, (a,b));
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
