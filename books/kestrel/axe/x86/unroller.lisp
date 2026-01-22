@@ -313,7 +313,7 @@
                               (symbol-listp remove-assumption-rules)
                               (count-hits-argp count-hits)
                               (print-levelp print)
-                              (equal executable-type (acl2::parsed-executable-type parsed-executable))
+                              (equal executable-type (parsed-executable-type parsed-executable))
                               (booleanp position-independentp))
                   :stobjs state))
   (if (eq :elf-64 executable-type)
@@ -747,7 +747,7 @@
                                       limits)) ; don't recompute for each small run?
          ;; Do the run:
          ((mv erp dag-or-constant limits state)
-          (acl2::simplify-dag-x86 dag
+          (simplify-dag-x86 dag
                                   assumptions
                                   rule-alist
                                   nil ; interpreted-function-alist
@@ -855,7 +855,7 @@
                (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
                 (mv-let (erp result limits state)
-                  (acl2::simplify-dag-x86 dag
+                  (simplify-dag-x86 dag
                                           assumptions
                                           rule-alist
                                           nil ; interpreted-function-alist
@@ -979,19 +979,19 @@
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (widen-margins state))
        ;; Get and check the executable-type:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Make sure it's an x86 executable:
-       (- (acl2::ensure-x86 parsed-executable))
+       (- (ensure-x86 parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
                                     (if (eq executable-type :elf-64)
-                                        (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
+                                        (let ((elf-type (parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
-                                                  (if (acl2::parsed-elf-program-header-table parsed-executable)
+                                                  (if (parsed-elf-program-header-table parsed-executable)
                                                       ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
                                                       (if (member-eq elf-type '(:rel :dyn)) t nil)
                                                     ;; TODO: Get this to work:
@@ -1007,7 +1007,7 @@
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-       ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+       ;;                                  ;(parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
        ;;                                  ))
        ;; (new-canonicalp (or (eq :elf-64 executable-type)
        ;;                     (eq :mach-o-64 executable-type)
@@ -1015,7 +1015,7 @@
        ;;                     ))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
-               (acl2::ensure-target-exists-in-executable target parsed-executable)))
+               (ensure-target-exists-in-executable target parsed-executable)))
 
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
@@ -1237,7 +1237,7 @@
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
@@ -1300,7 +1300,7 @@
        ;; Possibly produce a defun:
 
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Build the defun that will contain the result of lifting:
        ;; Create the list of formals for the function:
