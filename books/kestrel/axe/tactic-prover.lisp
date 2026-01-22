@@ -338,7 +338,7 @@
        ;; WARNING: This can blow up:
        (term (dag-to-term dag))
        ;; Call the rewriter:
-       ((mv erp dag-or-quotep)
+       ((mv erp dag-or-quotep &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -600,6 +600,7 @@
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
        ((mv erp dag-or-quotep & ;limits
+            & ; hits
             )
         (simplify-dag-basic dag
                             assumptions
