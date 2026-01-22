@@ -70,7 +70,7 @@
        ((when erp) (er-soft+ ctx t nil
                              "Failed to make Axe rules from the rules ~x0."
                              method-rules))
-       ((mv erp term) (acl2::simplify-term-to-term-basic
+       ((mv erp term &) (acl2::simplify-term-to-term-basic
                         matrix
                         nil ; assumptions
                         rule-alist

@@ -139,7 +139,7 @@
        ((mv erp rule-alist)
         (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp dag)
+       ((mv erp dag &)
         (simplify-term-basic term
                              assumptions
                              rule-alist
