@@ -830,56 +830,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-ptoken ((ppstate ppstatep))
-  :returns (mv erp
-               (nontokens plexeme-listp)
-               (token? plexeme-optionp)
-               (token-span spanp)
-               (new-ppstate ppstatep))
-  :short "Read a token during preprocessing."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We lex zero or more non-tokens, until we find a token.
-     We return the list of non-tokens, and the token with its span.
-     If we reach the end of file, we return @('nil') as the token,
-     and a span consisting of just the current position."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil nil (irr-span) ppstate)
-       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
-       ((when (not lexeme)) (retok nil nil span ppstate))
-       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
-       ((erp nontokens token token-span ppstate) (read-ptoken ppstate)))
-    (retok (cons lexeme nontokens) token token-span ppstate))
-  :measure (ppstate->size ppstate)
-
-  ///
-
-  (defret plexeme-list-not-tokenp-of-read-ptoken
-    (plexeme-list-not-tokenp nontokens)
-    :hints (("Goal" :induct t)))
-
-  (defret plexeme-tokenp-of-read-ptoken
-    (implies token?
-             (plexeme-tokenp token?))
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-uncond
-    (<= (ppstate->size new-ppstate)
-        (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-read-ptoken-cond
-    (implies (and (not erp)
-                  token?)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define read-token/newline-header? ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontoknls plexeme-listp)
