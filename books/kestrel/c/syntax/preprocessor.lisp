@@ -341,15 +341,9 @@
       and the stopping criterion is
       a comma for @(':arg-nonlast'),
       and a right parenthesis for @(':arg-last') and @(':arg-dots').
-      These apply to arguments whose corresponding formal parameter,
-      in the replacement list of the macro definition,
-      is not immediately preceded by @('#') or @('##')
-      and not immediately followed by @('##'),
-      because such arguments are not macro-expanded [C17:6.10.3.1/1];
-      that also includes the argument(s) corresponding to @('__VA_ARGS__')
-      [C17:6.10.3.1/2].
       For a macro without the ellipsis,
-      all the arguments except the last are handled in the @(':arg-nonlast') mode,
+      all the arguments except the last one
+      are handled in the @(':arg-nonlast') mode,
       while the last argument is handled in the @(':arg-last') mode;
       if the macro has no parameters, there are no arguments to handle.
       For a macro with the ellipsis,
