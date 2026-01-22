@@ -26,11 +26,16 @@
 (local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))
 (local (include-book "in"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (disable acl2::equal-of-booleans-cheap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,24 +133,10 @@
   (implies (tree-in x tree)
            (equal (<< (tree-min tree) x)
                   (not (equal (tree-min tree) x))))
-  :disable acl2::<<-trichotomy
-  :use (:instance acl2::<<-trichotomy
-                  (acl2::x (tree-min tree))
-                  (acl2::y x)))
+  :enable (data::<<-rules
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-;; MOVE
-(defrule equal-of-tree->head-of-tree->left-and->tree->head
-  (implies (and (bstp tree)
-                (not (tree-empty-p (tree->left tree))))
-           (not (equal (tagged-element->elem (tree->head (tree->left tree)))
-                       (tagged-element->elem (tree->head tree)))))
-  :use ((:instance <<-of-tree->head-when-<<-all-l
-                   (tree (tree->left tree))
-                   (x (tagged-element->elem (tree->head tree)))))
-  :enable (data::<<-rules)
-  :disable <<-of-tree->head-when-<<-all-l)
 
 ;; TODO: improve proof
 (defrule tree-min-when-bstp-definition
@@ -260,10 +251,8 @@
   (implies (tree-in x tree)
            (equal (<< x (tree-max tree))
                   (not (equal (tree-max tree) x))))
-  :disable acl2::<<-trichotomy
-  :use (:instance acl2::<<-trichotomy
-                  (acl2::x (tree-max tree))
-                  (acl2::y x)))
+  :enable (data::<<-rules
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
 

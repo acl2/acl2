@@ -180,32 +180,6 @@
            data::<<-rules
            acl2::fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule tree-all-acl2-numberp-of-tree-delete
-  (implies (tree-all-acl2-numberp tree)
-           (tree-all-acl2-numberp (tree-delete x tree)))
-  :induct t
-  :enable (tree-delete
-           tree-all-acl2-numberp
-           tree-join-at))
-
-(defrule tree-all-symbolp-of-tree-delete
-  (implies (tree-all-symbolp tree)
-           (tree-all-symbolp (tree-delete x tree)))
-  :induct t
-  :enable (tree-delete
-           tree-all-symbolp
-           tree-join-at))
-
-(defrule tree-all-eqlablep-of-tree-delete
-  (implies (tree-all-eqlablep tree)
-           (tree-all-eqlablep (tree-delete x tree)))
-  :induct t
-  :enable (tree-delete
-           tree-all-eqlablep
-           tree-join-at))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define acl2-number-tree-delete

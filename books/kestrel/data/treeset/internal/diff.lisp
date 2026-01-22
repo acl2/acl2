@@ -48,12 +48,7 @@
   (cond ((or (tree-empty-p x)
              (tree-empty-p y))
          (tree-fix x))
-        ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                            (tagged-element->elem (tree->head y)))
-              :exec (heap<-with-hashes (tagged-element->elem (tree->head x))
-                                       (tagged-element->elem (tree->head y))
-                                       (tagged-element->hash (tree->head x))
-                                       (tagged-element->hash (tree->head y))))
+        ((heap<-with-tagged-element (tree->head x) (tree->head y))
          (mv-let (in left right)
                  (tree-split (tagged-element->elem (tree->head y)) x)
            (declare (ignore in))
@@ -184,32 +179,6 @@
   :induct t
   :enable tree-diff)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule tree-all-acl2-numberp-of-tree-diff
-  (implies (tree-all-acl2-numberp x)
-           (tree-all-acl2-numberp (tree-diff x y)))
-  :induct t
-  :enable (tree-diff
-           tree-all-acl2-numberp
-           tree-join-at))
-
-(defrule tree-all-symbolp-of-tree-diff
-  (implies (tree-all-symbolp x)
-           (tree-all-symbolp (tree-diff x y)))
-  :induct t
-  :enable (tree-diff
-           tree-all-symbolp
-           tree-join-at))
-
-(defrule tree-all-eqlablep-of-tree-diff
-  (implies (tree-all-eqlablep x)
-           (tree-all-eqlablep (tree-diff x y)))
-  :induct t
-  :enable (tree-diff
-           tree-all-eqlablep
-           tree-join-at))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define acl2-number-tree-diff
@@ -220,13 +189,7 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tagged-element->elem (tree->head y)) x)
@@ -259,13 +222,7 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (symbol-tree-split
                         (tagged-element->elem (tree->head y)) x)
@@ -297,13 +254,7 @@
        (cond ((or (tree-empty-p x)
                   (tree-empty-p y))
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tagged-element->elem (tree->head y)) x)

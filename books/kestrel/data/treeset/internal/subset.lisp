@@ -13,6 +13,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/polarity" :dir :system)
+
 (include-book "tree-defs")
 (include-book "in-defs")
 
@@ -80,13 +82,18 @@
 
 ;; TODO: disable by default?
 (defrule tree-in-when-tree-in-and-tree-subset-p
-  ;; (implies (and (tree-in a x)
-  ;;               (tree-subset-p x y))
-  (implies (and (tree-subset-p x y)
-                (tree-in a x))
+  (implies (and (tree-in a x)
+                (tree-subset-p x y))
            (tree-in a y))
   :induct t
   :enable tree-subset-p)
+
+;; TODO: disable by default?
+(defrule tree-in-when-tree-subset-p-and-tree-in
+  (implies (and (tree-subset-p x y)
+                (tree-in a x))
+           (tree-in a y))
+  :by tree-in-when-tree-in-and-tree-subset-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -173,7 +180,7 @@
   (tree-subset-p x x)
   :enable tree-subset-p)
 
-;; Note: antisymmetry is proved in antisymmetry.lisp
+;; Note: antisymmetry is proved separately in antisymmetry.lisp
 
 (defrule tree-subset-p-transitivity
   (implies (and (tree-subset-p x y)
@@ -230,6 +237,7 @@
 (defruled tree-subset-p-becomes-tree-subset-p-sk
   (equal (tree-subset-p x y)
          (tree-subset-p-sk x y))
+  :rule-classes :definition
   :use (tree-subset-p-sk-when-tree-subset-p
         tree-subset-p-when-tree-subset-p-sk)
 
@@ -252,6 +260,7 @@
 (defruled tree-subset-p-sk-becomes-tree-subset-p
   (equal (tree-subset-p-sk x y)
          (tree-subset-p x y))
+  :rule-classes :definition
   :by tree-subset-p-becomes-tree-subset-p-sk)
 
 (defrule tree-subset-p-sk-when-tree-equiv-of-arg1-congruence
@@ -267,6 +276,24 @@
                   (tree-subset-p-sk x y1)))
   :rule-classes :congruence
   :enable tree-subset-p-sk-becomes-tree-subset-p)
+
+(defruled tree-subset-p-pick-a-point
+  (equal (tree-subset-p x y)
+         (let ((elem (tree-subset-p-sk-witness x y)))
+           (implies (tree-in elem x)
+                    (tree-in elem y))))
+  :rule-classes :definition
+  :use (tree-subset-p-becomes-tree-subset-p-sk
+        tree-subset-p-sk))
+
+(defruled tree-subset-p-pick-a-point-polar
+  (implies (syntaxp (acl2::want-to-weaken (tree-subset-p x y)))
+           (equal (tree-subset-p x y)
+                  (let ((elem (tree-subset-p-sk-witness x y)))
+                    (implies (tree-in elem x)
+                             (tree-in elem y)))))
+  :rule-classes :definition
+  :by tree-subset-p-pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

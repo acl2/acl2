@@ -467,24 +467,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; (defrule subset-of-tree-split.left
-;;   (implies (setp set)
-;;            (subset (mv-nth 1 (tree-split x set))
-;;                    set))
-;;   :enable (tree-split
-;;            pick-a-point
-;;            subset))
-;;
-;; (defrule subset-of-tree-split.right
-;;   (implies (setp set)
-;;            (subset (mv-nth 2 (tree-split x set))
-;;                    set))
-;;   :enable (tree-split
-;;            pick-a-point
-;;            subset))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrule acl2-count-of-tree-split.left-linear
   (implies (treep tree)
            (<= (acl2-count (mv-nth 1 (tree-split x tree)))
@@ -524,21 +506,6 @@
   :enable (tree-split
            tree-nodes-count
            data::<<-rules))
-
-;; Very awkward rule
-;; (defrule tree-nodes-count-becomes-tree-nodes-count-of-tree-split-forward-chaining
-;;   (implies (bstp tree)
-;;            (equal (tree-nodes-count tree)
-;;                   (if (tree-in x tree)
-;;                       (+ (tree-nodes-count (mv-nth 1 (tree-split x tree)))
-;;                          (tree-nodes-count (mv-nth 2 (tree-split x tree)))
-;;                          1)
-;;                     (+ (tree-nodes-count (mv-nth 1 (tree-split x tree)))
-;;                        (tree-nodes-count (mv-nth 2 (tree-split x tree)))))))
-;;   :rule-classes ((:forward-chaining :trigger-terms
-;;                   ((tree-nodes-count (mv-nth 1 (tree-split x tree)))
-;;                    (tree-nodes-count (mv-nth 2 (tree-split x tree))))))
-;;   :use tree-nodes-count-becomes-tree-nodes-count-of-tree-split)
 
 ;; Very awkward rule
 (defrule tree-nodes-count-becomes-tree-nodes-count-of-tree-split-linear

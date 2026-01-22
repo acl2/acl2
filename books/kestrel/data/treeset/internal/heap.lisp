@@ -133,7 +133,21 @@
                 (heap<-all-l tree y))
            (heap<-all-l tree x))
   :enable heap<-all-l-weaken
-  :use ((:instance heap<-trichotomy)))
+  :use heap<-trichotomy)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-heap<-all-l-weaken
+  (implies (and (heap< x y)
+                (not (heap<-all-l tree y)))
+           (not (heap<-all-l tree x)))
+  :by heap<-all-l-weaken)
+
+(defruled not-heap<-all-l-weaken2
+  (implies (and (not (heap< y x))
+                (not (heap<-all-l tree y)))
+           (not (heap<-all-l tree x)))
+  :by heap<-all-l-weaken2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,6 +405,8 @@
     heap<-all-l-of-tree->right-when-heap<-all-l
     heap<-all-l-weaken
     heap<-all-l-weaken2
+    not-heap<-all-l-weaken
+    not-heap<-all-l-weaken2
     heap<-of-tree->head-when-heap<-all-l))
 
 (defthy heapp-extra-rules

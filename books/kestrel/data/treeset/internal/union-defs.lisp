@@ -9,7 +9,7 @@
 (in-package "TREESET")
 
 (include-book "tree-defs")
-(include-book "heap-order-defs")
+(include-book "heap-defs")
 (include-book "split-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

@@ -16,6 +16,8 @@
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
+(include-book "kestrel/utilities/polarity" :dir :system)
+
 (include-book "../hash-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -134,7 +136,51 @@
            heap<-with-hashes
            data::<<-rules))
 
+(defruled not-heap<-transitive
+  (implies (and (not (heap< x y))
+                (not (heap< y z)))
+           (not (heap< x z)))
+  :cases ((equal y z))
+  :enable (heap<-transitive
+           heap<-trichotomy))
+
 ;;;;;;;;;;;;;;;;;;;;
+
+(defthy heap<-rules
+  '(heap<-irreflexive
+    heap<-asymmetric
+    heap<-transitive
+    heap<-trichotomy))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled heap<-becomes-cases
+  (equal (heap< x y)
+         (and (not (equal x y))
+              (not (heap< y x))))
+  :use (:instance heap<-trichotomy
+                  (x y)
+                  (y x))
+  :enable heap<-rules
+  :disable heap<-trichotomy)
+
+(defruled not-heap<-case-split
+  (implies (syntaxp (acl2::want-to-strengthen (heap< x y)))
+           ;; The LHS is misleading here. Using want-to-strengthen, we are
+           ;; limiting ourselves to rewriting the negation of the LHS.
+           (equal (heap< x y)
+                  (and (not (equal x y))
+                       (not (heap< y x)))))
+  :by heap<-becomes-cases)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defthy heap<-expensive-rules
+  '(heap<-rules
+    not-heap<-case-split
+    ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule heap<-with-hashes-becomes-heap<
   (equal (heap<-with-hashes x y hash-x hash-y)
@@ -144,11 +190,3 @@
 
 (theory-invariant (incompatible! (:definition heap<$inline)
                                  (:rewrite heap<-with-hashes-becomes-heap<)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthy heap<-rules
-  '(heap<-irreflexive
-    heap<-asymmetric
-    heap<-transitive
-    heap<-trichotomy))

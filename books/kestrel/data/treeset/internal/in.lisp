@@ -296,10 +296,7 @@
                   (tagged-element->elem (tree->head y))))
   :use ((:instance heap<-of-arg1-and-tree->head-when-tree-in-of-arg1
                    (x (tagged-element->elem (tree->head x)))
-                   (tree y))
-        (:instance heap<-of-arg1-and-tree->head-when-tree-in-of-arg1
-                   (x (tagged-element->elem (tree->head y)))
-                   (tree x)))
+                   (tree y)))
   :enable heap<-rules
   :disable heap<-of-arg1-and-tree->head-when-tree-in-of-arg1)
 
@@ -339,13 +336,49 @@
   :enable (tree-in
            tree-all-eqlablep))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled tree-in-right-when-disjoint-and-tree-in-left
+  (implies (and (<<-all-l left x)
+                (<<-all-r x right)
+                (tree-in y left))
+           (not (tree-in y right)))
+  :induct t
+  :enable (tree-in
+           data::<<-rules))
+
+(defrule tree-in-right-when-disjoint-and-tree-in-left-forward-chaining
+  (implies (and (<<-all-l left x)
+                (<<-all-r x right)
+                (tree-in y left))
+           (not (tree-in y right)))
+  :rule-classes :forward-chaining
+  :enable tree-in-right-when-disjoint-and-tree-in-left)
+
+(defruled tree-in-left-when-disjoint-and-tree-in-right
+  (implies (and (<<-all-l left x)
+                (<<-all-r x right)
+                (tree-in y right))
+           (not (tree-in y left)))
+  :induct t
+  :enable (tree-in
+           data::<<-rules))
+
+(defrule tree-in-left-when-disjoint-and-tree-in-right-forward-chaining
+  (implies (and (<<-all-l left x)
+                (<<-all-r x right)
+                (tree-in y right))
+           (not (tree-in y left)))
+  :rule-classes :forward-chaining
+  :enable tree-in-left-when-disjoint-and-tree-in-right)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: document
 (define tree-search-in
   (x
    (tree treep))
   (declare (xargs :type-prescription (booleanp (tree-search-in x tree))))
+  :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
       nil
     (let ((head-elem (tagged-element->elem (tree->head tree))))
@@ -466,9 +499,6 @@
     tree-in-when-tree-in-of-tree->right
     tree-in-when-<<-all-r
     tree-in-when-<<-all-l
-
-    ;; TODO: should these also be in <<-all rules? (would require defruleset)
     <<-when-<<-all-r-and-tree-in
     <<-when-<<-all-l-and-tree-in
-
     tree->head-when-heapp-and-tree-in-tree->head-syntaxp))

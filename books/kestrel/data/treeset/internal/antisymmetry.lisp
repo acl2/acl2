@@ -30,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: refactor to a less manual proof
+;; TODO: clean up this proof
 (defrulel tree->head-when-tree-subset-p-tree-subset-p
   (implies (and (tree-subset-p x y)
                 (syntaxp (<< y x))
@@ -39,27 +39,14 @@
                 (heapp y))
            (equal (tagged-element->elem (tree->head x))
                   (tagged-element->elem (tree->head y))))
-  :disable (heap<-of-tree->head-and-arg2-when-tree-in-of-arg2
-            tree-in-when-tree-in-and-tree-subset-p
-            ;; TODO: why does this rule sabotage the proof?
-            tree-subset-p-when-not-tree-in-of-tree->head-cheap)
+  :disable heap<-of-tree->head-and-arg2-when-tree-in-of-arg2
   :use ((:instance heap<-of-tree->head-and-arg2-when-tree-in-of-arg2
                    (x (tagged-element->elem (tree->head x)))
-                   (tree y))
-        (:instance heap<-of-tree->head-and-arg2-when-tree-in-of-arg2
-                   (x (tagged-element->elem (tree->head y)))
-                   (tree x))
-        (:instance tree-in-when-tree-in-and-tree-subset-p
-                   (a (tagged-element->elem (tree->head x))))
-        (:instance tree-in-when-tree-in-and-tree-subset-p
-                   (a (tagged-element->elem (tree->head y)))
-                   (x y)
-                   (y x)))
-  :cases ((tree-empty-p x)))
+                   (tree y)))
+  :cases ((tree-empty-p x)
+          (tree-empty-p y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Clean up this pair
 
 (defruledl equal-when-treep
   (implies (and (treep x)
@@ -80,32 +67,6 @@
            tree->left
            tree->right))
 
-;; (defruledl equal-when-setp
-;;   (implies (and (syntaxp (atom x))
-;;                 (setp x)
-;;                 (setp y)
-;;                 (syntaxp (atom y)))
-;;            (equal (equal x y)
-;;                   (if (emptyp x)
-;;                       (emptyp y)
-;;                     (and (not (emptyp y))
-;;                          (equal (head x)
-;;                                 (head y))
-;;                          (equal (left x)
-;;                                 (left y))
-;;                          (equal (right x)
-;;                                 (right y))))))
-;;   :enable (setp
-;;            emptyp
-;;            head
-;;            left
-;;            right
-;;            treep
-;;            tree-empty-p
-;;            tree->head
-;;            tree->left
-;;            tree->right))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-in-of-tree->left-when-tree-in-and-<<-all
@@ -116,23 +77,12 @@
                 (tree-in a (tree->left x))
                 (tree-in a y))
            (tree-in a (tree->left y)))
-  :enable (tree-in
-           data::<<-rules)
+  :enable data::<<-rules
   :disable <<-when-<<-all-l-and-tree-in-forward-chaining
   :use ((:instance <<-when-<<-all-l-and-tree-in
                    (x a)
                    (y (tagged-element->elem (tree->head y)))
                    (tree (tree->left x)))))
-
-(defrule tree-in-of-tree->left-when-tree-in-of-tree->left-of-tree-subset-p-and-<<-all-l
-  (implies (and (tree-subset-p x y)
-                (bstp y)
-                (<<-all-l (tree->left x)
-                          (tagged-element->elem (tree->head y)))
-                (tree-in a (tree->left x)))
-           (tree-in a (tree->left y)))
-  :use tree-in-when-tree-in-and-tree-subset-p
-  :disable tree-in-when-tree-in-and-tree-subset-p)
 
 (defrule tree-subset-p-of-tree->left-tree->left-when-tree-subset-p-and-<<-all-l
   (implies (and (tree-subset-p x y)
@@ -140,12 +90,7 @@
                 (<<-all-l (tree->left x)
                           (tagged-element->elem (tree->head y))))
            (tree-subset-p (tree->left x) (tree->left y)))
-  ;; TODO: polarity based rewriting from tree-subset-p to sk when using
-  ;; pick-a-point strategy?
-  :use (:instance tree-subset-p-becomes-tree-subset-p-sk
-                  (x (tree->left x))
-                  (y (tree->left y)))
-  :enable tree-subset-p-sk)
+  :enable tree-subset-p-pick-a-point-polar)
 
 (defrule tree-subset-p-of-tree->left-tree->left-when-tree-subset-p-and-equal-tree->head-tree->head
   (implies (and (tree-subset-p x y)
@@ -153,13 +98,9 @@
                 (bstp y)
                 (equal (tagged-element->elem (tree->head x))
                        (tagged-element->elem (tree->head y))))
-           (tree-subset-p (tree->left x) (tree->left y)))
-  :disable tree-subset-p-of-tree->left-tree->left-when-tree-subset-p-and-<<-all-l
-  :use tree-subset-p-of-tree->left-tree->left-when-tree-subset-p-and-<<-all-l)
+           (tree-subset-p (tree->left x) (tree->left y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO GJ: same as changes for left above
 
 (defrule tree-in-of-tree->right-when-tree-in-and-<<-all
   (implies (and (<<-all-l (tree->left y)
@@ -169,23 +110,12 @@
                 (tree-in a (tree->right x))
                 (tree-in a y))
            (tree-in a (tree->right y)))
-  :enable (tree-in
-           data::<<-rules)
+  :enable data::<<-rules
   :disable <<-when-<<-all-r-and-tree-in-forward-chaining
   :use ((:instance <<-when-<<-all-r-and-tree-in
                    (x (tagged-element->elem (tree->head y)))
                    (y a)
                    (tree (tree->right x)))))
-
-(defrule tree-in-of-right-when-tree-in-of-tree->right-of-tree-subset-p-and-<<-all-r
-  (implies (and (tree-subset-p x y)
-                (bstp y)
-                (<<-all-r (tagged-element->elem (tree->head y))
-                          (tree->right x))
-                (tree-in a (tree->right x)))
-           (tree-in a (tree->right y)))
-  :use tree-in-when-tree-in-and-tree-subset-p
-  :disable tree-in-when-tree-in-and-tree-subset-p)
 
 (defrule tree-subset-p-of-tree->right-tree->right-when-tree-subset-p-and-<<-all-r
   (implies (and (tree-subset-p x y)
@@ -193,10 +123,7 @@
                 (<<-all-r (tagged-element->elem (tree->head y))
                           (tree->right x)))
            (tree-subset-p (tree->right x) (tree->right y)))
-  :use (:instance tree-subset-p-becomes-tree-subset-p-sk
-                  (x (tree->right x))
-                  (y (tree->right y)))
-  :enable tree-subset-p-sk)
+  :enable tree-subset-p-pick-a-point-polar)
 
 (defrule tree-subset-p-of-tree->right-tree->right-when-tree-subset-p-and-equal-tree->head-tree->head
   (implies (and (tree-subset-p x y)
@@ -204,18 +131,10 @@
                 (bstp y)
                 (equal (tagged-element->elem (tree->head x))
                        (tagged-element->elem (tree->head y))))
-           (tree-subset-p (tree->right x) (tree->right y)))
-  :disable tree-subset-p-of-tree->right-tree->right-when-tree-subset-p-and-<<-all-r
-  :use tree-subset-p-of-tree->right-tree->right-when-tree-subset-p-and-<<-all-r)
+           (tree-subset-p (tree->right x) (tree->right y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; I think this is getting in a cycle of rewriting
-;;   (equal (tagged-element->elem x) (tagged-element->elem y))
-;; to
-;;   (equal x y)
-;; and back again.
-;; Actually, I'm not sure that is what is happening. IDK wtf is happening.
 (defrule tree-subset-p-antisymmetry-weak
   (implies (and (treep x)
                 (treep y)
@@ -228,12 +147,10 @@
            (equal x y))
   :rule-classes nil
   :induct (tree-bi-induct x y)
-  :hints ('(:use equal-when-treep))
-  ;; For some reason, I can't just enable this (enters a loop).
-  ;; :enable equal-when-treep
-  )
-
-;;;;;;;;;;;;;;;;;;;;
+  :restrict ((equal-when-treep
+               ((x x)
+                (y y))))
+  :enable equal-when-treep)
 
 (defruled tree-subset-p-antisymmetry
   (implies (and (treep x)

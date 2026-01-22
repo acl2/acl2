@@ -23,6 +23,7 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "../hash"))
@@ -35,6 +36,10 @@
 (local (include-book "insert"))
 (local (include-book "split"))
 (local (include-book "subset"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (disable acl2::equal-of-booleans-cheap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,12 +58,7 @@
          (tree-fix y))
         ((tree-empty-p y)
          (tree-fix x))
-        ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                            (tagged-element->elem (tree->head y)))
-              :exec (heap<-with-hashes (tagged-element->elem (tree->head x))
-                                       (tagged-element->elem (tree->head y))
-                                       (tagged-element->hash (tree->head x))
-                                       (tagged-element->hash (tree->head y))))
+        ((heap<-with-tagged-element (tree->head x) (tree->head y))
          (mv-let (in left right)
                  (tree-split (tagged-element->elem (tree->head y)) x)
            (declare (ignore in))
@@ -126,30 +126,19 @@
   (equal (<<-all-l (tree-union x y) z)
          (and (<<-all-l x z)
               (<<-all-l y z)))
-  ;; TODO: better proof?
-  :use lemma
-  :prep-lemmas
-  ((defruled lemma
-     (iff (<<-all-l (tree-union x y) z)
-          (and (<<-all-l x z)
-               (<<-all-l y z)))
-     :induct t
-     :enable (tree-union
-              tree-split-extra-rules))))
+  :induct t
+  :enable (tree-union
+           tree-split-extra-rules
+           acl2::equal-of-booleans-cheap))
 
-(defrule <<-all-r-of-arg1-and-tree-union
+(defrule <<-all-r-of-arg1-tree-union
   (equal (<<-all-r x (tree-union y z))
          (and (<<-all-r x y)
               (<<-all-r x z)))
-  :use lemma
-  :prep-lemmas
-  ((defruled lemma
-     (iff (<<-all-r x (tree-union y z))
-          (and (<<-all-r x y)
-               (<<-all-r x z)))
-     :induct t
-     :enable (tree-union
-              tree-split-extra-rules))))
+  :induct t
+  :enable (tree-union
+           tree-split-extra-rules
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -166,116 +155,24 @@
   (equal (heap<-all-l (tree-union x y) z)
          (and (heap<-all-l x z)
               (heap<-all-l y z)))
-  :use lemma
-  :prep-lemmas
-  ((defruled lemma
-     (iff (heap<-all-l (tree-union x y) z)
-          (and (heap<-all-l x z)
-               (heap<-all-l y z)))
-     :induct t
-     :enable (tree-union
-              tree-split-extra-rules))))
+  :induct t
+  :enable (tree-union
+           tree-split-extra-rules
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (defrulel lemma0
-    (implies (and (not (heap< (tagged-element->elem (tree->head x))
-                              (tagged-element->elem (tree->head y))))
-                  (heap<-all-l (tree->left y)
-                               (tagged-element->elem (tree->head y)))
-                  (heap<-all-l (tree->right y)
-                               (tagged-element->elem (tree->head y))))
-             (heap<-all-l (mv-nth 1 (tree-split (tagged-element->elem (tree->head x)) y))
-                          (tagged-element->elem (tree->head x))))
-    :enable (heap<-all-l-extra-rules
-             tree-split-extra-rules)
-    :disable heap<-trichotomy
-    :use ((:instance heap<-trichotomy
-                     (x (tagged-element->elem (tree->head y)))
-                     (y (tagged-element->elem (tree->head x))))))
-
-  (defrulel lemma1
-    (implies (and (not (heap< (tagged-element->elem (tree->head x))
-                              (tagged-element->elem (tree->head y))))
-                  (heap<-all-l (tree->left y)
-                               (tagged-element->elem (tree->head y)))
-                  (heap<-all-l (tree->right y)
-                               (tagged-element->elem (tree->head y))))
-             (heap<-all-l (mv-nth 2 (tree-split (tagged-element->elem (tree->head x)) y))
-                          (tagged-element->elem (tree->head x))))
-    :enable (heap<-all-l-extra-rules
-             tree-split-extra-rules)
-    :disable heap<-trichotomy
-    :use ((:instance heap<-trichotomy
-                     (x (tagged-element->elem (tree->head y)))
-                     (y (tagged-element->elem (tree->head x))))))
-
-  (defrulel lemma2
-    (implies (and (heap< (tagged-element->elem (tree->head x))
-                         (tagged-element->elem (tree->head y)))
-                  (heap<-all-l (tree->left x)
-                               (tagged-element->elem (tree->head x)))
-                  (heap<-all-l (tree->right x)
-                               (tagged-element->elem (tree->head x))))
-             (heap<-all-l (mv-nth 1 (tree-split (tagged-element->elem (tree->head y)) x))
-                          (tagged-element->elem (tree->head y))))
-    :enable (heap<-all-l-extra-rules
-             tree-split-extra-rules))
-
-  (defrulel lemma3
-    (implies (and (heap< (tagged-element->elem (tree->head x))
-                         (tagged-element->elem (tree->head y)))
-                  (heap<-all-l (tree->left x)
-                               (tagged-element->elem (tree->head x)))
-                  (heap<-all-l (tree->right x)
-                               (tagged-element->elem (tree->head x))))
-             (heap<-all-l (mv-nth 2 (tree-split (tagged-element->elem (tree->head y)) x))
-                          (tagged-element->elem (tree->head y))))
-    :enable (heap<-all-l-extra-rules
-             tree-split-extra-rules))
-
-  (defrule heapp-of-tree-union-when-heapp
-    (implies (and (heapp x)
-                  (heapp y))
-             (heapp (tree-union x y)))
-    :induct t
-    :enable tree-union))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: stronger rules like these
-;; (defrule tree-all-acl2-numberp-of-tree-union
-;;   (equal (tree-all-acl2-numberp (tree-union x y))
-;;          (and (tree-all-acl2-numberp x)
-;;               (tree-all-acl2-numberp y)))
-;;   :induct t
-;;   :enable (tree-union
-;;            tree-all-acl2-numberp))
-
-(defrule tree-all-acl2-numberp-of-tree-union
-  (implies (and (tree-all-acl2-numberp x)
-                (tree-all-acl2-numberp y))
-           (tree-all-acl2-numberp (tree-union x y)))
+(defrule heapp-of-tree-union-when-heapp
+  (implies (and (heapp x)
+                (heapp y))
+           (heapp (tree-union x y)))
   :induct t
+  :hints ('(:cases ((equal (tagged-element->elem (tree->head x))
+                           (tagged-element->elem (tree->head y))))))
   :enable (tree-union
-           tree-all-acl2-numberp))
-
-(defrule tree-all-symbolp-of-tree-union
-  (implies (and (tree-all-symbolp x)
-                (tree-all-symbolp y))
-           (tree-all-symbolp (tree-union x y)))
-  :induct t
-  :enable (tree-union
-           tree-all-symbolp))
-
-(defrule tree-all-eqlablep-of-tree-union
-  (implies (and (tree-all-eqlablep x)
-                (tree-all-eqlablep y))
-           (tree-all-eqlablep (tree-union x y)))
-  :induct t
-  :enable (tree-union
-           tree-all-eqlablep))
+           heap<-all-l-extra-rules
+           tree-split-extra-rules
+           heap<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,13 +185,7 @@
               y)
              ((tree-empty-p y)
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tagged-element->elem (tree->head y)) x)
@@ -326,13 +217,7 @@
               y)
              ((tree-empty-p y)
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (symbol-tree-split
                         (tagged-element->elem (tree->head y)) x)
@@ -364,13 +249,7 @@
               y)
              ((tree-empty-p y)
               x)
-             ((mbe :logic (heap< (tagged-element->elem (tree->head x))
-                                 (tagged-element->elem (tree->head y)))
-                   :exec (heap<-with-hashes
-                           (tagged-element->elem (tree->head x))
-                           (tagged-element->elem (tree->head y))
-                           (tagged-element->hash (tree->head x))
-                           (tagged-element->hash (tree->head y))))
+             ((heap<-with-tagged-element (tree->head x) (tree->head y))
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tagged-element->elem (tree->head y)) x)

@@ -43,8 +43,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tagged-element-p (x)
-  ;; TODO: short
   :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Recognizer for a hash-tagged element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This is a @(tsee cons) pair, where the @(tsee car) is the @(tsee hash) of
+      the @(tsee cdr)."))
   (and (consp x)
        (let ((hash (car x)))
          (and (unsigned-byte-p 32 hash)
@@ -194,6 +199,7 @@
               :exec (data::u32-equal (hash x) hash))
   :returns (elem tagged-element-p
                  :hints (("Goal" :in-theory (enable tagged-element-p))))
+  :short "Constructor for @(tsee tagged-element-p)s."
   (cons (mbe :logic (hash x)
              :exec hash)
         x)
@@ -823,8 +829,6 @@
          (and (treep x)
               (tree-listp y)))
   :enable tree-listp)
-
-;; TODO: other list theorems
 
 (defrule tree-listp-of-append
   (implies (tree-listp x)

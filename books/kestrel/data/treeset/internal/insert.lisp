@@ -213,78 +213,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruledl tree-insert-hmax-heap-invariants
-  (implies (and (heapp tree)
-                ;; In subsequent proofs, `a` will be the head of the parent node
-                (heap<-all-l tree a))
-           (if (or (tree-empty-p tree)
-                   (heap< (tagged-element->elem (tree->head tree)) x))
-               (and (equal (tagged-element->elem (tree->head (mv-nth 1 (tree-insert x hash tree))))
-                           x)
-                    (heap<-all-l (tree->left (mv-nth 1 (tree-insert x hash tree)))
-                                 a)
-                    (heap<-all-l (tree->right (mv-nth 1 (tree-insert x hash tree)))
-                                 a))
-             (heap<-all-l (mv-nth 1 (tree-insert x hash tree)) a)))
+;; TODO: improve proof
+(defrule heapp-of-tree-insert.tree$-when-heapp
+  (implies (heapp tree)
+           (heapp (mv-nth 1 (tree-insert x hash tree))))
   :induct t
   :enable (tree-insert
-           heapp
-           heap<-all-l-extra-rules))
-
-;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: break off some of these lemmas into standalone rules?
-(encapsulate ()
-  (defrulel lemma0
-    (implies (and (not (equal x (tagged-element->elem (tree->head tree))))
-                  (not (heap< (tagged-element->elem (tree->head tree))
-                              (tagged-element->elem
-                                (tree->head
-                                  (mv-nth 1 (tree-insert x hash (tree->right tree)))))))
-                  (heapp tree))
-             (heap< x (tagged-element->elem (tree->head tree))))
-    :enable heap<-rules
-    :use ((:instance tree-insert-hmax-heap-invariants
-                     (a (tagged-element->elem (tree->head tree)))
-                     (tree (tree->right tree)))))
-
-  (defrulel lemma1
-    (implies (and (not (equal x (tagged-element->elem (tree->head tree))))
-                  (not (heap< (tagged-element->elem (tree->head tree))
-                              (tagged-element->elem
-                                (tree->head
-                                  (mv-nth 1 (tree-insert x hash (tree->left tree)))))))
-                  (heapp tree))
-             (heap< x (tagged-element->elem (tree->head tree))))
-    :enable heap<-rules
-    :use ((:instance tree-insert-hmax-heap-invariants
-                     (a (tagged-element->elem (tree->head tree)))
-                     (tree (tree->left tree)))))
-
-  (defrulel lemma2
-    (implies (heapp tree)
-             (heap<-all-l (tree->left (mv-nth 1 (tree-insert x hash (tree->right tree))))
-                          (tagged-element->elem (tree->head tree))))
-    :enable heap<-all-l-extra-rules
-    :use ((:instance tree-insert-hmax-heap-invariants
-                     (a (tagged-element->elem (tree->head tree)))
-                     (tree (tree->right tree)))))
-
-  (defrulel lemma3
-    (implies (and (not (equal x (tagged-element->elem (tree->head tree))))
-                  (heapp tree))
-             (heap<-all-l (tree->right (mv-nth 1 (tree-insert x hash (tree->left tree))))
-                          (tagged-element->elem (tree->head tree))))
-    :enable heap<-all-l-extra-rules
-    :use ((:instance tree-insert-hmax-heap-invariants
-                     (a (tagged-element->elem (tree->head tree)))
-                     (tree (tree->left tree)))))
-
-  (defrule heapp-of-tree-insert.tree$-when-heapp
-    (implies (heapp tree)
-             (heapp (mv-nth 1 (tree-insert x hash tree))))
-    :induct t
-    :enable tree-insert))
+           heap<-rules
+           heap<-of-tree->head-when-heap<-all-l)
+  :hints ('(:use ((:instance tree-insert-hmax-heap-invariants
+                             (a (tagged-element->elem (tree->head tree)))
+                             (tree (tree->left tree)))
+                  (:instance tree-insert-hmax-heap-invariants
+                             (a (tagged-element->elem (tree->head tree)))
+                             (tree (tree->right tree))))))
+  :prep-lemmas
+  ((defruled tree-insert-hmax-heap-invariants
+     (implies (and (heapp tree)
+                   (heap<-all-l tree a))
+              (if (or (tree-empty-p tree)
+                      (heap< (tagged-element->elem (tree->head tree)) x))
+                  (and (equal (tagged-element->elem (tree->head (mv-nth 1 (tree-insert x hash tree))))
+                              x)
+                       (heap<-all-l (tree->left (mv-nth 1 (tree-insert x hash tree)))
+                                    a)
+                       (heap<-all-l (tree->right (mv-nth 1 (tree-insert x hash tree)))
+                                    a))
+                (heap<-all-l (mv-nth 1 (tree-insert x hash tree)) a)))
+     :induct t
+     :enable (tree-insert
+              heapp
+              heap<-all-l-extra-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -308,32 +267,6 @@
                   x))
   :induct t
   :enable tree-insert)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule tree-all-acl2-numberp-of-tree-insert.tree$
-  (implies (tree-all-acl2-numberp tree)
-           (equal (tree-all-acl2-numberp (mv-nth 1 (tree-insert x hash tree)))
-                  (acl2-numberp x)))
-  :induct t
-  :enable (tree-insert
-           tree-all-acl2-numberp))
-
-(defrule tree-all-symbolp-of-tree-insert.tree$
-  (implies (tree-all-symbolp tree)
-           (equal (tree-all-symbolp (mv-nth 1 (tree-insert x hash tree)))
-                  (symbolp x)))
-  :induct t
-  :enable (tree-insert
-           tree-all-symbolp))
-
-(defrule tree-all-eqlablep-of-tree-insert.tree$
-  (implies (tree-all-eqlablep tree)
-           (equal (tree-all-eqlablep (mv-nth 1 (tree-insert x hash tree)))
-                  (eqlablep x)))
-  :induct t
-  :enable (tree-insert
-           tree-all-eqlablep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -35,49 +35,6 @@
 
 ;; Rules about disjointness
 
-;; Need to know trees are disjoint so that
-;;   (not (heap< (tagged-element->elem (tree->head left))
-;;               (tagged-element->elem (tree->head right))))
-;; implies
-;;   (heap< (tagged-element->elem (tree->head right))
-;;          (tagged-element->elem (tree->head left)))
-
-(defruled tree-in-right-when-disjoint-and-tree-in-left
-  (implies (and (<<-all-l left x)
-                (<<-all-r x right)
-                (tree-in y left))
-           (not (tree-in y right)))
-  :induct t
-  :enable (tree-in
-           data::<<-rules))
-
-(defrule tree-in-right-when-disjoint-and-tree-in-left-forward-chaining
-  (implies (and (<<-all-l left x)
-                (<<-all-r x right)
-                (tree-in y left))
-           (not (tree-in y right)))
-  :rule-classes :forward-chaining
-  :enable tree-in-right-when-disjoint-and-tree-in-left)
-
-(defruled tree-in-left-when-disjoint-and-tree-in-right
-  (implies (and (<<-all-l left x)
-                (<<-all-r x right)
-                (tree-in y right))
-           (not (tree-in y left)))
-  :induct t
-  :enable (tree-in
-           data::<<-rules))
-
-(defrule tree-in-left-when-disjoint-and-tree-in-right-forward-chaining
-  (implies (and (<<-all-l left x)
-                (<<-all-r x right)
-                (tree-in y right))
-           (not (tree-in y left)))
-  :rule-classes :forward-chaining
-  :enable tree-in-left-when-disjoint-and-tree-in-right)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled equal-of-tree->heads-when-<<-all-l-and-<<-all-r
   (implies (and (<<-all-l left x)
                 (<<-all-r x right))
@@ -118,12 +75,7 @@
          (tree-fix right))
         ((tree-empty-p right)
          (tree-fix left))
-        ;; TODO: why can't I use heap<-with-tagged-element?
-        ;; It currently upsets some proof.
-        ((mbe :logic (heap< (tagged-element->elem (tree->head left))
-                            (tagged-element->elem (tree->head right)))
-              :exec (heap<-with-tagged-element (tree->head left)
-                                               (tree->head right)))
+        ((heap<-with-tagged-element (tree->head left) (tree->head right))
          (tree-node (tree->head right)
                     (tree-join left (tree->left right))
                     (tree->right right)))
@@ -377,24 +329,6 @@
     :use equal-of-tree->heads-when-<<-all-l-and-<<-all-r)
 
   (defrulel lemma1
-    (implies (and (not (heap< (tagged-element->elem (tree->head left))
-                              (tagged-element->elem (tree->head right))))
-                  (heapp (tree->right left))
-                  (heap<-all-l (tree->left right)
-                               (tagged-element->elem (tree->head right)))
-                  (<<-all-l left x)
-                  (<<-all-r x right)
-                  (not (heap<-all-l (tree->right left)
-                                    (tagged-element->elem (tree->head left)))))
-             (not (heap<-all-l (tree-join (tree->right left) right)
-                               (tagged-element->elem (tree->head left)))))
-    :enable (tree-join
-             heapp-extra-rules
-             heap<-all-l-extra-rules)
-    :disable equal-of-tree->heads-when-<<-all-l-and-<<-all-r-forward-chaining
-    :use equal-of-tree->heads-when-<<-all-l-and-<<-all-r)
-
-  (defrulel lemma2
     (implies (and (heapp (tree->left right))
                   (heap<-all-l (tree-join left (tree->left right))
                                (tagged-element->elem (tree->head right)))
@@ -411,7 +345,7 @@
                      (x (tagged-element->elem (tree->head (tree->left right))))
                      (y (tagged-element->elem (tree->head left))))))
 
-  (defrulel lemma3
+  (defrulel lemma2
     (implies (and (heap< (tagged-element->elem (tree->head left))
                          (tagged-element->elem (tree->head right)))
                   (heap<-all-l (tree->left left)
@@ -424,9 +358,8 @@
                                (tagged-element->elem (tree->head right))))
              (not (heap<-all-l (tree->right right)
                                (tagged-element->elem (tree->head right)))))
-    :enable heap<-all-l-extra-rules)
+    :enable heap<-all-l-weaken)
 
-  ;; rename "when disjoint"
   (defrule heapp-of-tree-join
     (implies (and (<<-all-l left x)
                   (<<-all-r x right))
@@ -434,7 +367,8 @@
                     (and (heapp left)
                          (heapp right))))
     :induct t
-    :enable tree-join))
+    :enable (tree-join
+             heap<-all-l-weaken)))
 
 (defrule heapp-of-tree-join-at
   (implies (and (<<-all-l left split)
@@ -478,14 +412,6 @@
                   (and (heapp (tree->left tree))
                        (heapp (tree->right tree)))))
   :enable tree-join-at)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO
-;; (subset left (tree-join left right))
-
-;; TODO
-;; (subset right (tree-join left right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
