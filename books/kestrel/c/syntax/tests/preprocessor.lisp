@@ -153,11 +153,20 @@ int z4 = (1, a, b);
 int z5 = (1, a, b);
 int z6 = (1, (a,b));
 
++;
 +3;
 +5.7e88;
 +x;
 ++uu; // needs a space
 +x+y;
+
+-;
+-3;
+-5.7e88;
+-x;
+-+uu;
+-x+y;
+-0;
 ")
 ; TODO: printer must add space where needed (see comment)
 
