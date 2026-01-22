@@ -335,11 +335,11 @@
       to handle the @('defined') operator [C17:6.10.1/1]
       and to replace identifiers with 0 [C17:6.10.1/4].")
     (xdoc::li
-     "The @(':arg-comma'), @(':arg-last'), and @(':arg-dots') modes
+     "The @(':arg-nonlast'), @(':arg-last'), and @(':arg-dots') modes
       are for arguments of function-like macros [C17:6.10.3/10],
       where macro replacement is the normal one,
       and the stopping criterion is
-      a comma for @(':arg-comma'),
+      a comma for @(':arg-nonlast'),
       and a right parenthesis for @(':arg-last') and @(':arg-dots').
       These apply to arguments whose corresponding formal parameter,
       in the replacement list of the macro definition,
@@ -349,12 +349,12 @@
       that also includes the argument(s) corresponding to @('__VA_ARGS__')
       [C17:6.10.3.1/2].
       For a macro without the ellipsis,
-      all the arguments except the last are handled in the @(':arg-comma') mode,
+      all the arguments except the last are handled in the @(':arg-nonlast') mode,
       while the last argument is handled in the @(':arg-last') mode;
       if the macro has no parameters, there are no arguments to handle.
       For a macro with the ellipsis,
       all the arguments corresponding to named parameters
-      are handled in the @(':arg-comma') mode,
+      are handled in the @(':arg-nonlast') mode,
       while the remaining argument/arguments (corresponding to the ellipsis)
       is/are handled in the @(':arg-dots') mode.
       The distinction between @(':arg-last') and @(':arg-dots') is that
@@ -374,7 +374,7 @@
      in a @('#define') directive."))
   (:line ())
   (:expr ())
-  (:arg-comma ())
+  (:arg-nonlast ())
   (:arg-last ())
   (:arg-dots ())
   :pred macrep-modep)
@@ -2136,7 +2136,7 @@
        it is always 0 in the @(':line') and @(':expr') modes.")
      (xdoc::p
       "The @('no-expandp') flag is @('t') exactly when
-       the mode is among @(':arg-comma'), @(':arg-last'), and @(':arg-dots')
+       the mode is among @(':arg-nonlast'), @(':arg-last'), and @(':arg-dots')
        and the macro parameter corresponding to the argument being preprocessed
        is preceded by @('#') or @('##') or followed by @('##').
        The flag inhibits macro expansion [C17:6.10.3.1/1].")
@@ -2170,7 +2170,7 @@
        it means that we have an error.")
      (xdoc::p
       "If the next lexmark is a comma,
-       it is the stopping criterion for the @(':arg-comma') mode,
+       it is the stopping criterion for the @(':arg-nonlast') mode,
        but only if the parenthesis level is 0;
        in this case, we do not add the comma to the reversed lexemes,
        because those are meant to contain the argument we are preprocessing,
@@ -2187,7 +2187,7 @@
        that correspond to the ellipsis parameter
        are considered all together and associated to @('__VA_ARGS__')
        [C17:6.10.3/12];
-       and it is also the case for the @(':arg-comma') and @(':arg-last') modes
+       and it is also the case for the @(':arg-nonlast') and @(':arg-last') modes
        when the parenthesis level is not 0.")
      (xdoc::p
       "If the next lexmark is an open parenthesis,
@@ -2206,10 +2206,10 @@
        (so we can uniformly cover function-like macros with 0 parameters).
        If the parenthesis level is not 0,
        we just decrement the level and continue.
-       In the @(':arg-comma') mode, if the parenthesis level is 0,
+       In the @(':arg-nonlast') mode, if the parenthesis level is 0,
        it it an error, because the macro call is ending prematurely:
        we are expecting a comma to end the current argument.
-       If the parenthesis level is not 0 in the @(':arg-comma') mode,
+       If the parenthesis level is not 0 in the @(':arg-nonlast') mode,
        we just decrement the level and continue.
        In the @(':line') and @(':expr') modes,
        a closed parenthesis has no special significance.")
@@ -2296,7 +2296,7 @@
             (case (macrep-mode-kind mode)
               ((:line :expr)
                (retok (cons lexeme (plexeme-list-fix rev-lexemes)) ppstate))
-              ((:arg-comma :arg-last :arg-dots)
+              ((:arg-nonlast :arg-last :arg-dots)
                (if directivep
                    (reterr-msg :where (position-to-msg (span->start span))
                                :expected "the completion of a macro call"
@@ -2311,7 +2311,7 @@
                                 (1- limit))))
               (t (prog2$ (impossible) (reterr :impossible)))))
            ((plexeme-punctuatorp lexeme ",") ; ,
-            (cond ((and (macrep-mode-case mode :arg-comma)
+            (cond ((and (macrep-mode-case mode :arg-nonlast)
                         (zp paren-level))
                    (retok (plexeme-list-fix rev-lexemes) ppstate))
                   ((and (macrep-mode-case mode :arg-last)
@@ -2331,7 +2331,7 @@
             (pproc-lexemes mode
                            (cons lexeme rev-lexemes)
                            (if (member-eq (macrep-mode-kind mode)
-                                          '(:arg-comma :arg-last :arg-dots))
+                                          '(:arg-nonlast :arg-last :arg-dots))
                                (1+ (lnfix paren-level))
                              paren-level)
                            no-expandp
@@ -2350,7 +2350,7 @@
                               directivep
                               ppstate
                               (1- limit)))
-              (:arg-comma
+              (:arg-nonlast
                (if (zp paren-level)
                    (reterr-msg :where (position-to-msg (span->start span))
                                :expected "a comma"
@@ -2573,7 +2573,7 @@
          (param (ident-fix (car params)))
          (mode (if (or (consp (cdr params))
                        ellipsis)
-                   (macrep-mode-arg-comma)
+                   (macrep-mode-arg-nonlast)
                  (macrep-mode-arg-dots)))
          (no-expandp (and (member-equal param (ident-list-fix hash-params)) t))
          ((erp rev-arg ppstate)
