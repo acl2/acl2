@@ -750,6 +750,84 @@
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable nfix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-token-handling-markers ((stop-at-newline-p booleanp)
+                                     (disabled ident-listp)
+                                     (ppstate ppstatep))
+  :returns (mv erp
+               (token plexemep)
+               (span spanp)
+               (new-disabled ident-listp)
+               (new-ppstate ppstatep))
+  :short "Read a token, handling any markers along the way."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We skip over comments and white space,
+     where white space excludes/includes new lines
+     according to whether @('stop-at-newline-p') is @('t')/@('nil').
+     We handle any markers encountered along the way,
+     as in @(tsee pproc-lexemes).
+     We must find a token, which we return;
+     otherwise this fails.")
+   (xdoc::p
+    "This is used only in @(tsee pproc-lexemes).
+     The multiset (modeled as a list) of disabled macro names
+     is taken as input and returned as output."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) (irr-plexeme) (irr-span) nil ppstate)
+       ((erp lexmark ppstate) (read-lexmark ppstate)))
+    (cond
+     ((not lexmark) ; EOF
+      (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                  :expected "a lexmark"
+                  :found "end of file"))
+     ((lexmark-case lexmark :start) ; start(M)
+      (b* ((name (lexmark-start->macro lexmark))
+           (disabled (cons name disabled)))
+        (read-token-handling-markers stop-at-newline-p disabled ppstate)))
+     ((lexmark-case lexmark :end) ; end(M)
+      (b* ((name (lexmark-end->macro lexmark))
+           (disabled (remove1-equal name (ident-list-fix disabled))))
+        (read-token-handling-markers stop-at-newline-p disabled ppstate)))
+     (t ; lexeme
+      (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
+           (span (lexmark-lexeme->span lexmark)))
+        (cond
+         ((and stop-at-newline-p
+               (plexeme-case lexeme :newline)) ; EOL
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "a comment or ~
+                                 non-new-line white space or ~
+                                 a token"
+                      :found (plexeme-to-msg lexeme)))
+         ((plexeme-tokenp lexeme) ; token
+          (retok lexeme span (ident-list-fix disabled) ppstate))
+         (t ; comment or white space
+          (read-token-handling-markers stop-at-newline-p disabled ppstate)))))))
+  :no-function nil
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-tokenp-of-read-token-handling-markers
+    (plexeme-tokenp token)
+    :hints (("Goal" :induct t :in-theory (enable irr-plexeme))))
+
+  (defret ppstate->size-of-read-punctuator-handling-markers-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-punctuator-handling-markers-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-ptoken ((ppstate ppstatep))
@@ -2255,7 +2333,7 @@
       (cond
        ((not lexmark) ; EOF
         (reterr-msg :where (position-to-msg (ppstate->position ppstate))
-                    :expected "a lexeme"
+                    :expected "a lexmark"
                     :found "end of file"))
        ((lexmark-case lexmark :start) ; start(M)
         (b* ((name (lexmark-start->macro lexmark))
@@ -2370,40 +2448,45 @@
             (b* ((ident (plexeme-ident->ident lexeme))
                  ((when (and (macrep-mode-case mode :expr)
                              (equal (ident->unwrap ident) "defined"))) ; defined
-                  (b* (((erp macro-name ppstate)
-                        (b* (((reterr) (irr-ident) ppstate)
-                             ((erp & toknl span2 ppstate)
-                              (read-token/newline ppstate)))
+                  (b* (((erp macro-name disabled ppstate)
+                        (b* (((reterr) (irr-ident) nil ppstate)
+                             ((erp token span2 disabled ppstate)
+                              (read-token-handling-markers directivep
+                                                           disabled
+                                                           ppstate)))
                           (cond
-                           ((and toknl ; defined ident
-                                 (plexeme-case toknl :ident))
-                            (retok (plexeme-ident->ident toknl) ppstate))
-                           ((and toknl ; defined (
-                                 (plexeme-punctuatorp toknl "("))
-                            (b* (((erp & toknl span3 ppstate)
-                                  (read-token/newline ppstate))
-                                 ((unless (and toknl ; defined ( ident
-                                               (plexeme-case toknl :ident)))
+                           ((plexeme-case token :ident) ; defined ident
+                            (b* ((macro-name (plexeme-ident->ident token)))
+                              (retok macro-name disabled ppstate)))
+                           ((plexeme-punctuatorp token "(") ; defined (
+                            (b* (((erp token span3 disabled ppstate)
+                                  (read-token-handling-markers directivep
+                                                               disabled
+                                                               ppstate))
+                                 ((unless (plexeme-case token :ident))
+                                  ;; defined ( ident
                                   (reterr-msg :where (position-to-msg
                                                       (span->start span3))
                                               :expected "an identifier"
-                                              :found (plexeme-to-msg toknl)))
-                                 (macro-name (plexeme-ident->ident toknl))
-                                 ((erp & toknl span4 ppstate)
-                                  (read-token/newline ppstate))
-                                 ((unless (and toknl ; defined ( ident )
-                                               (plexeme-punctuatorp toknl ")")))
+                                              :found (plexeme-to-msg token)))
+                                 (macro-name (plexeme-ident->ident token))
+                                 ((erp token span4 disabled ppstate)
+                                  (read-token-handling-markers directivep
+                                                               disabled
+                                                               ppstate))
+                                 ((unless (plexeme-punctuatorp token ")"))
+                                  ;; defined ( ident )
                                   (reterr-msg :where (position-to-msg
                                                       (span->start span4))
                                               :expected "a right parenthesis"
-                                              :found (plexeme-to-msg toknl))))
-                              (retok macro-name ppstate)))
+                                              :found (plexeme-to-msg token))))
+                              (retok macro-name disabled ppstate)))
                            (t ; defined EOF-or-not-ident-and-not-(
                             (reterr-msg :where (position-to-msg
                                                 (span->start span2))
                                         :expected "an identifier or ~
                                                    a left parenthesis"
-                                        :found (plexeme-to-msg toknl))))))
+                                        :found (plexeme-to-msg token))))))
                        ((mv info? & &)
                         (macro-lookup macro-name (ppstate->macros ppstate)))
                        (lexeme (if info?
@@ -2458,33 +2541,36 @@
                                 ppstate
                                 (1- limit)))
                :function
-               (b* (((erp & toknl span2 ppstate) (read-token/newline ppstate))
-                    ((unless (and toknl ; ident (
-                                  (plexeme-punctuatorp toknl "(")))
+               (b* (((erp token span2 disabled ppstate)
+                     (read-token-handling-markers directivep
+                                                  disabled
+                                                  ppstate))
+                    ((unless (plexeme-punctuatorp token "(")) ; ident (
                      (reterr-msg :where (position-to-msg (span->start span2))
                                  :expected "an open parenthesis"
-                                 :found (plexeme-to-msg toknl)))
-                    ((erp subst ppstate)
-                     (if (and (endp info.params)
-                              (not info.ellipsis))
-                         (b* (((reterr) nil ppstate)
-                              ((erp & token span2 ppstate)
-                               (if directivep
-                                   (read-token/newline ppstate)
-                                 (read-ptoken ppstate)))
-                              ((unless (and token
-                                            (plexeme-punctuatorp token ")")))
-                               (reterr-msg :where (position-to-msg
-                                                   (span->start span2))
-                                           :expected "a closed parenthesis"
-                                           :found (plexeme-to-msg token))))
-                           (retok nil ppstate))
-                       (pproc-macro-args info.params
-                                         info.ellipsis
-                                         info.hash-params
-                                         disabled
-                                         directivep
-                                         ppstate (1- limit))))
+                                 :found (plexeme-to-msg token)))
+                    ((erp subst disabled ppstate)
+                     (b* (((reterr) nil nil ppstate))
+                       (if (and (endp info.params)
+                                (not info.ellipsis))
+                           (b* (((erp token span2 disabled ppstate)
+                                 (read-token-handling-markers directivep
+                                                              disabled
+                                                              ppstate))
+                                ((unless (plexeme-punctuatorp token ")"))
+                                 (reterr-msg :where (position-to-msg
+                                                     (span->start span2))
+                                             :expected "a closed parenthesis"
+                                             :found (plexeme-to-msg token))))
+                             (retok nil disabled ppstate))
+                         (b* (((erp subst ppstate)
+                               (pproc-macro-args info.params
+                                                 info.ellipsis
+                                                 info.hash-params
+                                                 disabled
+                                                 directivep
+                                                 ppstate (1- limit))))
+                           (retok subst disabled ppstate)))))
                     (replist (replace-macro-args info.replist subst))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexemes replist ppstate))
