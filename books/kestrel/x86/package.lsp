@@ -1384,6 +1384,16 @@
     x86isa::cs.limit
     x86isa::*ip+delta))
 
+(defconst *axe-x86-implementation-functions*
+  '(ensure-x86
+    parse-executable
+    parsed-executable-type
+    parsed-elf-type
+    parsed-elf-program-header-table
+    ensure-target-exists-in-executable
+    simplify-dag-x86
+    ))
+
 (defpkg "X"
     (append *symbols-from-acl2-package*
             *axe-rule-lists*
@@ -1403,5 +1413,6 @@
             *common-x86isa-formals*
             *symbols-from-bitops*
             *symbols-from-rtl*
+            *axe-x86-implementation-functions*
 
             *acl2-exports*))

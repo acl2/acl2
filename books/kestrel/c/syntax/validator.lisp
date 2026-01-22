@@ -6121,7 +6121,12 @@
        :goto
        (retok (stmt-goto stmt.label) nil nil (valid-table-fix table))
        :gotoe
-       (retok (stmt-gotoe stmt.label) nil nil (valid-table-fix table))
+       (b* (((erp new-label type types table)
+             (valid-expr stmt.label table ienv)))
+         (retok (stmt-gotoe new-label)
+                (set::insert type types)
+                nil
+                table))
        :continue
        (retok (stmt-continue) nil nil (valid-table-fix table))
        :break

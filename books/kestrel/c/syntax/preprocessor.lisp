@@ -23,6 +23,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -33,14 +34,6 @@
 (acl2::controlled-configuration)
 
 ; cert_param: (non-acl2r)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel subsetp-equal-of-add-to-set-equal
-  (equal (subsetp-equal (add-to-set-equal a x) y)
-         (and (member-equal a y)
-              (subsetp-equal x y)))
-  :enable add-to-set-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,7 +323,7 @@
      We capture these different modes of operations via this fixtype:")
    (xdoc::ul
     (xdoc::li
-     "The @(':line') mode is for text lines (see ABNF grammar),
+     "The @(':text') mode is for text lines (see ABNF grammar),
       as well as for the rest of the lines of certain directives.
       The stopping criterion is the end of the line,
       and macro replacement is the normal one.")
@@ -342,26 +335,20 @@
       to handle the @('defined') operator [C17:6.10.1/1]
       and to replace identifiers with 0 [C17:6.10.1/4].")
     (xdoc::li
-     "The @(':arg-comma'), @(':arg-last'), and @(':arg-dots') modes
+     "The @(':arg-nonlast'), @(':arg-last'), and @(':arg-dots') modes
       are for arguments of function-like macros [C17:6.10.3/10],
       where macro replacement is the normal one,
       and the stopping criterion is
-      a comma for @(':arg-comma'),
+      a comma for @(':arg-nonlast'),
       and a right parenthesis for @(':arg-last') and @(':arg-dots').
-      These apply to arguments whose corresponding formal parameter,
-      in the replacement list of the macro definition,
-      is not immediately preceded by @('#') or @('##')
-      and not immediately followed by @('##'),
-      because such arguments are not macro-expanded [C17:6.10.3.1/1];
-      that also includes the argument(s) corresponding to @('__VA_ARGS__')
-      [C17:6.10.3.1/2].
       For a macro without the ellipsis,
-      all the arguments except the last are handled in the @(':arg-comma') mode,
+      all the arguments except the last one
+      are handled in the @(':arg-nonlast') mode,
       while the last argument is handled in the @(':arg-last') mode;
       if the macro has no parameters, there are no arguments to handle.
       For a macro with the ellipsis,
       all the arguments corresponding to named parameters
-      are handled in the @(':arg-comma') mode,
+      are handled in the @(':arg-nonlast') mode,
       while the remaining argument/arguments (corresponding to the ellipsis)
       is/are handled in the @(':arg-dots') mode.
       The distinction between @(':arg-last') and @(':arg-dots') is that
@@ -381,7 +368,7 @@
      in a @('#define') directive."))
   (:line ())
   (:expr ())
-  (:arg-comma ())
+  (:arg-nonlast ())
   (:arg-last ())
   (:arg-dots ())
   :pred macrep-modep)
@@ -648,8 +635,9 @@
   (xdoc::topstring
    (xdoc::p
     "If there are pending lexmarks,
-     we return the first one if it is a lexeme
-     (and throw an error if it is a marker, for now).
+     we return the first one if it is a lexeme;
+     we throw an error if it is a marker,
+     because that should never happen when this function is called.
      If there are no pending lexmarks,
      we call @(tsee plex-lexeme) to lex a lexeme from the input.")
    (xdoc::p
@@ -713,6 +701,104 @@
   (defret ppstate->size-of-unread-lexeme
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-lexmark ((ppstate ppstatep))
+  :returns (mv erp
+               (lexmark? lexmark-optionp)
+               (new-ppstate ppstatep))
+  :short "Read a lexmark during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are pending lexmarks, we return the first one.
+     If there are no pending lexmarks,
+     we call @(tsee plex-lexeme) to lex a lexeme from the input,
+     and we return the lexmark obtained by combining lexeme and span."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       (lexmarks (ppstate->lexmarks ppstate))
+       (size (ppstate->size ppstate))
+       ((when (consp lexmarks))
+        (b* ((lexmark (car lexmarks))
+             ((unless (> size 0))
+              (raise "Internal error: ~
+                      size is 0 but there are pending lexmarks.")
+              (reterr t))
+             (ppstate (update-ppstate->size (1- size) ppstate))
+             (ppstate (update-ppstate->lexmarks (cdr lexmarks) ppstate)))
+          (retok lexmark ppstate)))
+       ((erp lexeme? span ppstate) (plex-lexeme nil ppstate))
+       ((when (not lexeme?)) (retok nil ppstate)))
+    (retok (make-lexmark-lexeme :lexeme lexeme? :span span) ppstate))
+  :no-function nil
+
+  ///
+
+  (defret ppstate->size-of-read-lexmark-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret ppstate->size-of-read-lexmark-cond
+    (implies (and (not erp)
+                  lexmark?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-ptoken ((ppstate ppstatep))
+  :returns (mv erp
+               (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (token-span spanp)
+               (new-ppstate ppstatep))
+  :short "Read a token during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We lex zero or more non-tokens, until we find a token.
+     We return the list of non-tokens, and the token with its span.
+     If we reach the end of file, we return @('nil') as the token,
+     and a span consisting of just the current position."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontokens token token-span ppstate) (read-ptoken ppstate)))
+    (retok (cons lexeme nontokens) token token-span ppstate))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-list-not-tokenp-of-read-ptoken
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-tokenp-of-read-ptoken
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken-cond
+    (implies (and (not erp)
+                  token?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1439,6 +1525,1082 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defalist ident-plexeme-list-alist
+  :short "Fixtype of alists from identifiers to lists of preprocessing lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to model the mapping of macro parameters
+     to the corresponding macro arguments."))
+  :key-type ident
+  :val-type plexeme-list
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :pred ident-plexeme-list-alistp
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled plexeme-listp-of-cdr-of-assoc-equal-when-ident-plexeme-list-alistp
+    (implies (and (ident-plexeme-list-alistp alist)
+                  (assoc-equal key alist))
+             (plexeme-listp (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replist-next-token ((replist plexeme-listp))
+  :guard (and (plexeme-list-token/space-p replist)
+              (consp replist))
+  :returns (mv (spacep booleanp) (token plexemep) (replist-rest plexeme-listp))
+  :short "Obtain the next token from a replacement list,
+          indicating whether it was preceded by space or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the next lexeme in the replacement list is a token, we return it,
+     indicating that it has no preceding space.
+     Otherwise, the lexeme must be a space (because of the guard),
+     and so there must be another lexeme, which must be a token,
+     and we return it, indicating that it was preceded by a space.")
+   (xdoc::p
+    "We also return the rest of the replacement list."))
+  (b* (((cons lexeme replist) replist)
+       ((when (plexeme-tokenp lexeme))
+        (mv nil (plexeme-fix lexeme) (plexeme-list-fix replist)))
+       ((when (endp replist))
+        (raise "Internal error: replacement list ends with space.")
+        (mv nil (irr-plexeme) nil))
+       ((cons token replist) replist)
+       ((unless (plexeme-tokenp token))
+        (raise "Internal error: replacement list has two consecutive spaces.")
+        (mv nil (irr-plexeme) nil)))
+    (mv t (plexeme-fix token) (plexeme-list-fix replist)))
+  :no-function nil
+  :prepwork ((local (in-theory (enable cdr-of-plexeme-list-fix))))
+
+  ///
+
+  (defret plexeme-tokenp-of-replist-next-token
+    (plexeme-tokenp token)
+    :hints (("Goal" :in-theory (enable irr-plexeme))))
+
+  (defret plexeme-list-token/space-p-of-replist-next-token
+    (plexeme-list-token/space-p replist-rest)
+    :hyp (plexeme-list-token/space-p replist))
+
+  (defret len-of-replist-next-token-decreases
+    (< (len replist-rest)
+       (len replist))
+    :hyp (consp replist)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-lexemes ((lexemes plexeme-listp))
+  :returns (stringlit stringlitp)
+  :short "Stringize a list of lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This implements the semantics of the @('#') operator [C17:6.10.3.2/2].
+     The term `stringize' and `destringize' occur in [C17]."))
+  (declare (ignore lexemes))
+  (irr-stringlit)) ; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-tokens ((token1 plexemep) (token2 plexemep))
+  :guard (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))
+  :returns (token plexemep)
+  :short "Join two tokens into one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to implement the @('##') operator [C17:6.10.3.3]."))
+  (declare (ignore token1 token2))
+  (irr-plexeme) ; TODO
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-tokens
+    (plexeme-tokenp token)
+    :hyp (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-optional-tokens ((token1? plexeme-optionp)
+                              (token2? plexeme-optionp))
+  :guard (and (or (not token1?) (plexeme-tokenp token1?))
+              (or (not token2?) (plexeme-tokenp token2?)))
+  :returns (token? plexeme-optionp)
+  ;; TODO
+  (if (or token1? token2?)
+      (irr-plexeme)
+    nil)
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-optional-tokens
+    (implies token?
+             (plexeme-tokenp token?))
+    :hyp (and (implies token1? (plexeme-tokenp token1?))
+              (implies token2? (plexeme-tokenp token2?))))
+
+  (defret join-optional-tokens-iff-first-or-second
+    (iff token? (or token1? token2?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-first-token ((lexemes plexeme-listp))
+  :returns (mv (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (lexemes-rest plexeme-listp))
+  :short "Find the first token in a list of lexemes, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no token, we return @('nil').
+     We also return the non-tokens that precede the token;
+     if there is no token, these are all the lexemes passed as input.
+     We also return the remaining lexemes."))
+  (b* (((when (endp lexemes)) (mv nil nil nil))
+       (lexeme (plexeme-fix (car lexemes)))
+       ((when (plexeme-tokenp lexeme))
+        (mv nil lexeme (plexeme-list-fix (cdr lexemes))))
+       ((mv nontokens token? lexemes-rest) (find-first-token (cdr lexemes))))
+    (mv (cons lexeme nontokens) token? lexemes-rest))
+
+  ///
+
+  (defret plexeme-tokenp-of-find-first-token
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-list-not-tokenp-of-find-first-token
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret len-of-find-first-token
+    (implies token?
+             (< (len lexemes-rest)
+                (len lexemes)))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-macro-arg ((arg plexeme-listp))
+  :returns (norm-arg plexeme-listp)
+  :short "Normalize a macro argument,
+          turning comments and white space (including new lines)
+          into single spaces between tokens."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When we calculate the arguments of a macro call,
+     each argument is a list of zero or more lexemes;
+     the calculation involves macro expansion within the arguments themselves,
+     unless the corresponding parameters in the macro's replacement list
+     are preceded by @('#') or @('##') or followed by @('##')
+     [C17:6.10.3.1/1].
+     Each calculated argument needs to replace the correspoding parameter
+     in the replacement list in order to realize the macro call
+     [C17:6.10.3/10].
+     The list of lexemes that forms an argument
+     could include comments and white space,
+     including new lines [C17:6.10.3/10].
+     Since we generally try to preserve comments and white space,
+     there might be reasons to preserve comments and white space
+     in the arguments passed to a macro;
+     but for now, to keep things simple,
+     we normalize all those comments and white space
+     to single spaces between tokens.
+     That is, given the list of lexemes that forms an argument,
+     we remove all the white space and comments at the start and end,
+     and we join all the contiguous white space and comments
+     into single spaces.
+     Note that the evaluation of @('#') [C17:6.10.3.2/2]
+     requires to normalize comments and white space that separated token
+     to single spaces,
+     so our normalization is consistent with that.")
+   (xdoc::p
+    "The resulting of lexemes is a sequence of tokens
+     with single spaces between some of the tokens.
+     This happens to be the same form in which
+     we store replacement lists in the macro table
+     (see @(tsee macro-info)),
+     but there is no need for them to have the same form.")
+   (xdoc::p
+    "This function performs this normalization.
+     The result satisfies @(tsee plexeme-list-token/space-p),
+     which captures some but not all of the constraints on the list."))
+  (normalize-macro-arg-loop t arg)
+
+  :prepwork
+  ((define normalize-macro-arg-loop ((startp booleanp) (arg plexeme-listp))
+     :returns (norm-arg plexeme-listp)
+     :parents nil
+     (b* (((mv nontokens token arg-rest) (find-first-token arg))
+          ((when (not token)) nil)
+          (norm-arg-rest (normalize-macro-arg-loop nil arg-rest)))
+       (append (if (or startp
+                       (not nontokens))
+                   nil
+                 (list (plexeme-spaces 1)))
+               (cons token
+                     norm-arg-rest)))
+     :measure (len arg)
+     :verify-guards :after-returns
+
+     ///
+
+     (defret plexeme-list-token/space-p-of-normalize-macro-arg-loop
+       (plexeme-list-token/space-p norm-arg)
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable plexeme-list-token/space-p
+                                   plexeme-token/space-p))))))
+
+  ///
+
+  (defret plexeme-list-token/space-p-of-normalize-macro-arg
+    (plexeme-list-token/space-p norm-arg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replace-macro-args ((replist plexeme-listp)
+                            (subst ident-plexeme-list-alistp))
+  :guard (plexeme-list-token/space-p replist)
+  :returns (replaced-replist plexeme-listp)
+  :short "In the replacement list of a function-like macro,
+          replace all the parameters with the corresponding arguments,
+          and evaluate the @('#') and @('##') operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The alist @('subst') is calculated elsewhere.
+     It consists of the parameter names as keys,
+     including @('__VA_ARGS__') if the macro has ellipsis,
+     and the corresponding list of lexemes as values.
+     The list of lexemes associated to each parameter
+     is generally fully replaced [C17:6.10.3.1],
+     unless it is preceded by @('#') or @('##') or followed by @('##'),
+     in which case the argument lexemes are not replaced.
+     Either way, the alist has the appropriate lists of lexemes here.
+     Those are already normalized via @(tsee normalize-macro-arg).")
+   (xdoc::p
+    "We go through the replacement list.
+     When we encounter a parameter of the macro,
+     we replace it with the corresponding argument in @('subst')
+     [C17:6.10.3.1].
+     When we encounter @('#'),
+     which must be followed by a parameter,
+     we stringize the argument corresponding to the parameter
+     [C17:6.10.3.2].
+     When we encounter @('##'),
+     which must be followed and preceded by a token,
+     we combine those tokens into one [C17:6.10.3.3].")
+   (xdoc::p
+    "For @('##'), while the token that follows
+     is accessible in the rest of @('replist'),
+     the preceding token is tracked via
+     the @('last-token/placemarker') parameter of the loop function.
+     But instead of a token, this may indicate a placemarker [C17:6.10.3.3],
+     which we model as @('nil').
+     We also @('nil') at the beginning of the replacement list,
+     in this case to indicate no token or placemarker;
+     since @('##') cannot start the replacement list,
+     there is no ambiguity in the use of @('nil') for these two purposes.")
+   (xdoc::p
+    "When we encounter a token in @('replist'),
+     it could be followed by @('##') or not.
+     If there is a @('##'),
+     the recursive call of the loop function,
+     which is passed the token as @('last-token/placemarker'),
+     joins that token with the one after the @('##');
+     thus, after calling the recursive loop function,
+     we must not add the token to the output list.
+     To handle this uniformly,
+     we must always leave to the recursive call
+     the responsibility of adding @('last-token/placemarker') if appropriate,
+     namely if it is not followed by @('##').
+     This makes the code a bit ore complicated.")
+   (xdoc::p
+    "Another complication arises from the treatment of
+     parameters adjacent to @('##'),
+     which are replaced with the tokens of the corresponding arguments,
+     which may be zero or more.
+     If zero, they are treated like placemarkers.
+     If non-zero, we need to take the last one (if before @('##'))
+     or the first one (if after @('##')),
+     as the operands of @('##').
+     For argument tokens following @('##'),
+     @('last-token/placemarker') becomes its last token,
+     unless the argument is a singleton list,
+     in which case @('last-token/placemarker') is the combined token.")
+   (xdoc::p
+    "Note that only the @('##') operators that occur in @('replist'),
+     and not any coming from the arguments in @('subst'),
+     are evaluated [C17:6.10.3.3/3]."))
+  (replace-macro-args-loop nil
+                           (plexeme-list-fix replist)
+                           (ident-plexeme-list-alist-fix subst))
+
+  :prepwork
+  ((define replace-macro-args-loop ((last-token/placemarker plexeme-optionp)
+                                    (replist plexeme-listp)
+                                    (subst ident-plexeme-list-alistp))
+     :guard (and (plexeme-list-token/space-p replist)
+                 (or (not last-token/placemarker)
+                     (plexeme-tokenp last-token/placemarker)))
+     :returns (replaced-replist plexeme-listp)
+     :parents nil
+     (b* ((last-token/placemarker (plexeme-option-fix last-token/placemarker))
+          ((when (endp replist))
+           ;; If we reach the end of REPLIST and we have a previous token,
+           ;; we must add it to the output, because the caller does not.
+           (and last-token/placemarker
+                (list (plexeme-fix last-token/placemarker))))
+          ((mv spacep token replist) (replist-next-token replist)))
+       (cond
+        ((plexeme-hashp token) ; #
+         (b* (;; REPLIST cannot end with #.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with #."))
+              ((mv & param replist) (replist-next-token replist))
+              ;; The following token must be a parameter.
+              ((unless (plexeme-case param :ident)) ; # param
+               (raise "Internal error: # is followed by non-identifier ~x0."
+                      param))
+              (param (plexeme-ident->ident param))
+              (param+arg (assoc-equal param
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((unless param+arg)
+               (raise "Internal error: # is followed by a non-parameter ~x0."
+                      param))
+              (arg (cdr param+arg))
+              ;; Combine # and ARG into TOKEN.
+              (stringlit (stringize-lexemes arg))
+              (token (plexeme-string stringlit)))
+           ;; Do not add TOKEN to the output here,
+           ;; because it might be followed by ##;
+           ;; let the recursive call handle TOKEN.
+           ;; But add LAST-TOKEN/PLACEMARKER if non NIL,
+           ;; because it is not followed by ##.
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   (replace-macro-args-loop token replist subst))))
+        ((plexeme-hashhashp token) ; ##
+         (b* (;; REPLIST cannot end with ##.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with ##."))
+              ((mv & token2 replist) (replist-next-token replist)))
+           (if (and (plexeme-case token2 :ident) ; ## param
+                    (assoc-equal (plexeme-ident->ident token2)
+                                 (ident-plexeme-list-alist-fix subst)))
+               ;; If the token after ## is a parameter,
+               ;; consider its corresponding argument ARG from SUBST.
+               (b* ((arg
+                     (cdr (assoc-equal (plexeme-ident->ident token2)
+                                       (ident-plexeme-list-alist-fix subst))))
+                    ;; The right operand of ## is
+                    ;; a placemarker if ARG is empty,
+                    ;; otherwise it is its first token.
+                    ((mv next-token/placemarker rest-arg)
+                     (if (consp arg)
+                         (mv (car arg) (cdr arg))
+                       (mv nil nil)))
+                    ((unless (or (not next-token/placemarker)
+                                 (plexeme-tokenp next-token/placemarker)))
+                     (raise "Internal error: ~x0 is not token."
+                            next-token/placemarker))
+                    ;; The left operand of ## is always
+                    ;; the LAST-TOKEN/PLACEMARKER value,
+                    ;; either NIL (placemarker) or a token.
+                    (token? (join-optional-tokens last-token/placemarker
+                                                  next-token/placemarker))
+                    ;; The LAST-TOKEN/PLACEMARKER to pass to the recursive call
+                    ;; is calculated as follows.
+                    ;; If both the left and right operands of ##
+                    ;; are placemarkers (NIL),
+                    ;; the result TOKEN? of ## is a placemarker,
+                    ;; and that is the new LAST-TOKEN/PLACEMARKER.
+                    ;; If the left operand of ## is a token
+                    ;; and the right one is a placemarker,
+                    ;; the result TOKEN? is the left operand,
+                    ;; and since ARG (and REST-ARG) is empty,
+                    ;; LAST-TOKEN/PLACEMARKER is the left operand.
+                    ;; If the left operand is a placemarker
+                    ;; and the right operand is a token (the first of ARG),
+                    ;; the result is that token;
+                    ;; if ARG only consists of that token,
+                    ;; the token also becomes LAST-TOKEN/PLACEMARKER,
+                    ;; otherwise we take the last token of REST-ARG.
+                    ;; If both left and right operands are tokens,
+                    ;; TOKEN? is their combination,
+                    ;; and LAST-TOKEN/PLACEMARKER is as in the previous case.
+                    (last-token/placemarker
+                     (if token?
+                         (if (consp rest-arg)
+                             (car (last rest-arg))
+                           token?)
+                       nil))
+                    ((unless (or (not last-token/placemarker)
+                                 (plexeme-tokenp last-token/placemarker)))
+                     (raise "Internal error: ~x0 is not a token."
+                            last-token/placemarker)))
+                 ;; The recursive call takes care of LAST-TOKEN/PLACEMARKER,
+                 ;; but if ARG has two or more tokens
+                 ;; (which is the case exactly when REST-ARG is not NIL),
+                 ;; here we need to add to the output
+                 ;; all but the last token of ARG.
+                 (append (and spacep (list (plexeme-spaces 1)))
+                         (and (consp rest-arg) (butlast arg 1))
+                         (replace-macro-args-loop last-token/placemarker
+                                                  replist
+                                                  subst)))
+             ;; If the token after ## is not a parameter,
+             ;; we combine it with LAST-TOKEN/PLACEMARKER,
+             ;; which always gives us a token because TOKEN2 is a token,
+             ;; and that resulting token is passed to the recursive call.
+             (b* ((token (join-optional-tokens last-token/placemarker token2)))
+               (append (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst))))))
+        ((plexeme-case token :ident) ; ident (param or not)
+         (b* ((ident (plexeme-ident->ident token))
+              (ident+arg (assoc-equal ident
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((when (not ident+arg))
+               ;; If the token is an identifier but not a parameter,
+               ;; it becomes the next LAST-TOKEN/PLACEMARKER.
+               ;; We add the previous LAST-TOKEN/PLACEMARKER if not NIL,
+               ;; because it is not followed by ##.
+               (append (and last-token/placemarker
+                            (list (plexeme-fix last-token/placemarker)))
+                       (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst)))
+              ;; If the token is a parameter,
+              ;; consider its correspoding argument ARG.
+              ;; If it is NIL, it is a placemarker passed to the recursive call.
+              ;; Otherwise, we pass its last token as LAST-TOKEN/PLACEMARKER
+              ;; to the recursive call.
+              ;; But the previous LAST-TOKEN/PLACEMARKER, if not NIL,
+              ;; must be added to the output,
+              ;; because it is not followed by ##.
+              (arg (cdr ident+arg))
+              ((mv arg-but-last arg-last)
+               (if (consp arg)
+                   (mv (butlast arg 1) (car (last arg)))
+                 (mv nil nil)))
+              ((unless (or (not arg-last)
+                           (plexeme-tokenp arg-last)))
+               (raise "Internal error: ~x0 is not a token." arg-last)))
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   arg-but-last
+                   (replace-macro-args-loop arg-last replist subst))))
+        (t ; other token
+         ;; This case is the same as that above
+         ;; of an identifier that is not a parameter.
+         (append (and last-token/placemarker
+                      (list (plexeme-fix last-token/placemarker)))
+                 (and spacep (list (plexeme-spaces 1)))
+                 (replace-macro-args-loop token replist subst)))))
+     :no-function nil
+     :measure (len replist)
+     :guard-hints
+     (("Goal" :in-theory (enable
+                          alistp-when-ident-plexeme-list-alistp-rewrite
+                          plexeme-tokenp
+                          true-listp-when-plexeme-listp
+                          listp)))
+     :prepwork ((local (in-theory (disable acl2::member-of-cons))))
+     :hooks nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines pproc-lexemes-/-macro-args
+  :short "Preprocess lexemes and macro arguments, expanding macros."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the preprocessing that applies to
+     most of the lexemes in the files being preprocessed.")
+   (xdoc::p
+    "The main function is @(tsee pproc-lexemes),
+     which goes through the lexemes applying macro replacement,
+     returning the resulting lexemes.
+     The companion recursive function is used to preprocess the lexemes
+     that form arguments of function-like macros.
+     This companion function performs a recursion over the macro parameters,
+     but since arguments need to be preprocessed as well,
+     and may contain further macro calls,
+     the recursion is mutual.")
+   (xdoc::p
+    "Both functions take a list of identifiers
+     that consists of the names of the macros that are ``disabled'',
+     in the sense that they must not be expanded.
+     The order in the list is unimportant, but the repetitions are:
+     the list represents a multiset of macro names.
+     Every time we encounter a @(':start') marker (see @(tsee macrep-mode)),
+     we add the macro name to the multiset;
+     every time we encounter a @(':end') marker (see @(tsee macrep-mode)),
+     we remove the macro name from the multiset.
+     Each expansion of the macro is surrounded by
+     a @(':start') and @(':end') marker for that macro name:
+     this way, when the expansion is added in front of the input,
+     the macro will not be re-expanded until we go past its expansion
+     [C17:6.10.3.4].
+     The reason why we need a multiset is that, for instance,
+     the argument of a function-like macro @('F')
+     could contain a call of @('F') itself.
+     The argument is macro-expanded before the (outer) call is expanded,
+     which therefore involves expanding the inner call.
+     The expansion of the inner call is surrounded by the markers.
+     Then, when we expand the outer call,
+     that expansion is also surrounded by the markers.
+     This gives rise to nested markers for the same macro,
+     but reaching an inner closing marker should not re-enable the expansion,
+     which is re-enabled only after the outer closing marker.
+     Thus, we need to keep track of how many disablements and re-enablements
+     each macro goes through, i.e. we need a multiset.
+     Only if the multiset contains no occurrences at all of a macro,
+     that macro is enabled, otherwise it stays disabled.")
+   (xdoc::p
+    "Both functions take a flag saying whether
+     we are preprocessing a directive [C17:6.10/2] or not.
+     This affects the treatment of new lines within macro arguments.")
+   (xdoc::p
+    "As in @(tsee pproc),
+     we use an artificial limit to ensure termination.
+     There should be a termination argument,
+     but it is a bit more complicated than
+     decreasing the size of the preprocessing state,
+     because when macros get expanded,
+     their replacement lists are added in front of the input lexemes,
+     making the input larger.
+     The termination argument should rely on the fact that
+     macros are not recursively expanded,
+     and thus, when a macro is expanded,
+     it can contribute to decreasing a suitable measure."))
+
+  (define pproc-lexemes ((mode macrep-modep)
+                         (rev-lexemes plexeme-listp)
+                         (paren-level natp)
+                         (no-expandp booleanp)
+                         (disabled ident-listp)
+                         (directivep booleanp)
+                         (ppstate ppstatep)
+                         (limit natp))
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep))
+    :parents (preprocessor pproc-lexemes-/-macro-args)
+    :short "Preprocess lexemes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As explained in @(tsee macrep-mode),
+       there are different macro replacement modes in different situations.
+       This function takes the mode as an input.")
+     (xdoc::p
+      "This function takes and returns the lexemes generated so far,
+       in reverse order for efficiency.")
+     (xdoc::p
+      "This function takes a parenthesis level (@('paren-level')),
+       which indicates the nexting of parentheses.
+       Initially 0,
+       it is incremented by a left parenthesis
+       and decremented by a right parenthesis.
+       This is used to skip commas and right parenthesis
+       within inner parentheses [C17:6.10.3/10] [C17:6.10.3/11]:
+       only when the parenthesis level is 0,
+       a comma or right parenthesis counts as ending macro arguments.
+       This parenthesis level is only used in the @(':arg-...') modes;
+       it is always 0 in the @(':line') and @(':expr') modes.")
+     (xdoc::p
+      "The @('no-expandp') flag is @('t') exactly when
+       the mode is among @(':arg-nonlast'), @(':arg-last'), and @(':arg-dots')
+       and the macro parameter corresponding to the argument being preprocessed
+       is preceded by @('#') or @('##') or followed by @('##').
+       The flag inhibits macro expansion [C17:6.10.3.1/1].")
+     (xdoc::p
+      "This function starting by reading the next lexmark,
+       and then it dispatches based on it.")
+     (xdoc::p
+      "If there is no next lexmark, it is an error.
+       In every mode, the stopping criterion is never end of file;
+       see @(tsee macrep-mode).")
+     (xdoc::p
+      "If the next lexmark is a @(':start') marker,
+       we add the macro name to the multiset,
+       and continue preprocessing.
+       If the next lexmark is a @(':end') marker,
+       we remove the macro name (once) from the multiset
+       and continue preprocessing.
+       That multiset is discusssed in @(tsee pproc-lexemes-/-macro-args).")
+     (xdoc::p
+      "If tne next lexmark is a new line,
+       it is always added to the reversed lexemes.
+       In the @(':line') and @(':expr') modes,
+       the new line is the stopping criterion,
+       so we end the recursive preprocessing of lexemes.
+       In the other modes, which are all for macro arguments,
+       new line is treated like other white space [C17:6.10.3/10],
+       so we continue the recursive preprocessing of lexemes,
+       unless we are in a directive:
+       in the latter case, the new line ends with directive [C17:6.10/2],
+       but if we are in the middle of a macro argument,
+       it means that we have an error.")
+     (xdoc::p
+      "If the next lexmark is a comma,
+       it is the stopping criterion for the @(':arg-nonlast') mode,
+       but only if the parenthesis level is 0;
+       in this case, we do not add the comma to the reversed lexemes,
+       because those are meant to contain the argument we are preprocessing,
+       and the comma is not part of the argument.
+       However, if the mode is @(':arg-last') and the parenthesis level is 0,
+       it means that a comma was found where a right parenthesis was needed,
+       because there must be no other macro arguments;
+       so we return an error in this case.
+       In all other cases, the comma is treated like a normal lexeme,
+       i.e. it is added to the reversed list and preprocessing continues:
+       this is clearly the case for the @(':line') and @(':expr') modes;
+       it is also the case for the @(':arg-dots') mode,
+       where commas separating multiple arguments
+       that correspond to the ellipsis parameter
+       are considered all together and associated to @('__VA_ARGS__')
+       [C17:6.10.3/12];
+       and it is also the case for the @(':arg-nonlast') and @(':arg-last') modes
+       when the parenthesis level is not 0.")
+     (xdoc::p
+      "If the next lexmark is an open parenthesis,
+       we add it to the list of reversed lexemes and we continue preprocessing.
+       We increment the parenthesis level if we are in an @(':arg-...') mode.")
+     (xdoc::p
+      "If the next lexmark is a closed parenthesis,
+       it is the stopping criterion for
+       the @(':arg-last') and @(':arg-dots') modes,
+       but only if the parenthesis level is 0;
+       in this case, we do not add the parenthesis to the reversed lexemes,
+       because those are meant to contain the argument we are preprocessing,
+       and the parenthesis is not part of the argument.
+       If the parenthesis level is not 0,
+       we just decrement the level and continue.
+       In the @(':arg-nonlast') mode, if the parenthesis level is 0,
+       it it an error, because the macro call is ending prematurely:
+       we are expecting a comma to end the current argument.
+       If the parenthesis level is not 0 in the @(':arg-nonlast') mode,
+       we just decrement the level and continue.
+       In the @(':line') and @(':expr') modes,
+       a closed parenthesis has no special significance.")
+     (xdoc::p
+      "If the next lexmark is an identifier, there are several cases.
+       If we are in the @(':expr') mode and the identifier is @('defined'),
+       it is the operator described in [C17:6.10.1/1],
+       which must be followed by another identifier, possibly parenthesized.
+       If the macro is found in the macro table,
+       we add the lexeme @('1') to the reversed lexemes;
+       otherwise, we add the lexeme @('0') to the reversed lexemes.
+       That is, we evaluate the operator.
+       And we continue preprocessing.")
+     (xdoc::p
+      "If the next lexmark is an identifier different from @('defined'),
+       or if we are not in the @(':expr') mode,
+       then we look up the identifier in the macro table,
+       unless it is in the disabled multiset,
+       and unless macro expansion is inhibited.
+       If it is not found in the macro table,
+       it is just added to the reversed lexemes,
+       and we continue preprocessing.
+       If it is found but neither in the innermost nor in the predefined scope,
+       the file is not self-contained,
+       and we return an exception to that effect.
+       If we find an object-like macro,
+       we leave the reversed lexemes unchanged,
+       and push the replacement list of the macro onto the pending lexmarks,
+       surrounded by markers to disable that macro;
+       that is, we replace the macro with its expansion,
+       and we continue preprocessing the replacement,
+       realizing the rescanning and further replacement [C17:6.10.3.4].
+       If we find a function-like macro,
+       the next token after comments and non-new-line white space
+       must be a left parenthesis.
+       After that, we call the companion recursive function
+       to obtain the arguments of the macro call,
+       which are returned as the values of an alist
+       that maps the macro parameters to the arguments;
+       the companion function consumes the final right parenthesis.
+       We call a separate function to replace the parameters with the arguments
+       in the macro's replacement list,
+       and then we add the resulting lexemes to the pending lexmarks,
+       surrounded by the markers for the macro.")
+     (xdoc::p
+      "In all other cases, the lexeme is added to the reversed list,
+       and we continue the recursive preprocessing."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((erp lexmark ppstate) (read-lexmark ppstate)))
+      (cond
+       ((not lexmark) ; EOF
+        (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                    :expected "a lexeme"
+                    :found "end of file"))
+       ((lexmark-case lexmark :start) ; start(M)
+        (b* ((name (lexmark-start->macro lexmark))
+             (disabled (cons name (ident-list-fix disabled))))
+          (pproc-lexemes mode
+                         rev-lexemes
+                         paren-level
+                         no-expandp
+                         disabled
+                         directivep
+                         ppstate
+                         (1- limit))))
+       ((lexmark-case lexmark :end) ; end(M)
+        (b* ((name (lexmark-end->macro lexmark))
+             (disabled (remove1-equal name (ident-list-fix disabled))))
+          (pproc-lexemes mode
+                         rev-lexemes
+                         paren-level
+                         no-expandp
+                         disabled
+                         directivep
+                         ppstate
+                         (1- limit))))
+       (t ; lexeme
+        (b* ((lexeme (lexmark-lexeme->lexeme lexmark))
+             (span (lexmark-lexeme->span lexmark)))
+          (cond
+           ((plexeme-case lexeme :newline) ; EOL
+            (case (macrep-mode-kind mode)
+              ((:line :expr)
+               (retok (cons lexeme (plexeme-list-fix rev-lexemes)) ppstate))
+              ((:arg-nonlast :arg-last :arg-dots)
+               (if directivep
+                   (reterr-msg :where (position-to-msg (span->start span))
+                               :expected "the completion of a macro call"
+                               :found "new line (which ends the directive)")
+                 (pproc-lexemes mode
+                                (cons lexeme rev-lexemes)
+                                paren-level
+                                no-expandp
+                                disabled
+                                directivep
+                                ppstate
+                                (1- limit))))
+              (t (prog2$ (impossible) (reterr :impossible)))))
+           ((plexeme-punctuatorp lexeme ",") ; ,
+            (cond ((and (macrep-mode-case mode :arg-nonlast)
+                        (zp paren-level))
+                   (retok (plexeme-list-fix rev-lexemes) ppstate))
+                  ((and (macrep-mode-case mode :arg-last)
+                        (zp paren-level))
+                   (reterr-msg :where (position-to-msg (span->start span))
+                               :expected "a closed parenthesis"
+                               :found "a comma"))
+                  (t (pproc-lexemes mode
+                                    (cons lexeme rev-lexemes)
+                                    paren-level
+                                    no-expandp
+                                    disabled
+                                    directivep
+                                    ppstate
+                                    (1- limit)))))
+           ((plexeme-punctuatorp lexeme "(") ; (
+            (pproc-lexemes mode
+                           (cons lexeme rev-lexemes)
+                           (if (member-eq (macrep-mode-kind mode)
+                                          '(:arg-nonlast :arg-last :arg-dots))
+                               (1+ (lnfix paren-level))
+                             paren-level)
+                           no-expandp
+                           disabled
+                           directivep
+                           ppstate
+                           (1- limit)))
+           ((plexeme-punctuatorp lexeme ")") ; )
+            (case (macrep-mode-kind mode)
+              ((:line :expr)
+               (pproc-lexemes mode
+                              (cons lexeme rev-lexemes)
+                              paren-level
+                              no-expandp
+                              disabled
+                              directivep
+                              ppstate
+                              (1- limit)))
+              (:arg-nonlast
+               (if (zp paren-level)
+                   (reterr-msg :where (position-to-msg (span->start span))
+                               :expected "a comma"
+                               :found "a closed parenthesis")
+                 (pproc-lexemes mode
+                                (cons lexeme rev-lexemes)
+                                (1- paren-level)
+                                no-expandp
+                                disabled
+                                directivep
+                                ppstate
+                                (1- limit))))
+              ((:arg-last :arg-dots)
+               (if (zp paren-level)
+                   (retok (plexeme-list-fix rev-lexemes) ppstate)
+                 (pproc-lexemes mode
+                                (cons lexeme rev-lexemes)
+                                (1- paren-level)
+                                no-expandp
+                                disabled
+                                directivep
+                                ppstate
+                                (1- limit))))
+              (t (prog2$ (impossible) (reterr :impossible)))))
+           ((plexeme-case lexeme :ident) ; ident
+            (b* ((ident (plexeme-ident->ident lexeme))
+                 ((when (and (macrep-mode-case mode :expr)
+                             (equal (ident->unwrap ident) "defined"))) ; defined
+                  (b* (((erp macro-name ppstate)
+                        (b* (((reterr) (irr-ident) ppstate)
+                             ((erp & toknl span2 ppstate)
+                              (read-token/newline ppstate)))
+                          (cond
+                           ((and toknl ; defined ident
+                                 (plexeme-case toknl :ident))
+                            (retok (plexeme-ident->ident toknl) ppstate))
+                           ((and toknl ; defined (
+                                 (plexeme-punctuatorp toknl "("))
+                            (b* (((erp & toknl span3 ppstate)
+                                  (read-token/newline ppstate))
+                                 ((unless (and toknl ; defined ( ident
+                                               (plexeme-case toknl :ident)))
+                                  (reterr-msg :where (position-to-msg
+                                                      (span->start span3))
+                                              :expected "an identifier"
+                                              :found (plexeme-to-msg toknl)))
+                                 (macro-name (plexeme-ident->ident toknl))
+                                 ((erp & toknl span4 ppstate)
+                                  (read-token/newline ppstate))
+                                 ((unless (and toknl ; defined ( ident )
+                                               (plexeme-punctuatorp toknl ")")))
+                                  (reterr-msg :where (position-to-msg
+                                                      (span->start span4))
+                                              :expected "a right parenthesis"
+                                              :found (plexeme-to-msg toknl))))
+                              (retok macro-name ppstate)))
+                           (t ; defined EOF-or-not-ident-and-not-(
+                            (reterr-msg :where (position-to-msg
+                                                (span->start span2))
+                                        :expected "an identifier or ~
+                                                   a left parenthesis"
+                                        :found (plexeme-to-msg toknl))))))
+                       ((mv info? & &)
+                        (macro-lookup macro-name (ppstate->macros ppstate)))
+                       (lexeme (if info?
+                                   (plexeme-number (pnumber-digit #\1))
+                                 (plexeme-number (pnumber-digit #\0)))))
+                    (pproc-lexemes mode
+                                   (cons lexeme rev-lexemes)
+                                   paren-level
+                                   no-expandp
+                                   disabled
+                                   directivep
+                                   ppstate
+                                   (1- limit))))
+                 ((when (or no-expandp
+                            (member-equal ident (ident-list-fix disabled))))
+                  (pproc-lexemes mode
+                                 (cons lexeme rev-lexemes)
+                                 paren-level
+                                 no-expandp
+                                 disabled
+                                 directivep
+                                 ppstate
+                                 (1- limit)))
+                 ((mv info innermostp predefinedp)
+                  (macro-lookup ident (ppstate->macros ppstate)))
+                 ((unless info)
+                  (pproc-lexemes mode
+                                 (cons lexeme rev-lexemes)
+                                 paren-level
+                                 no-expandp
+                                 disabled
+                                 directivep
+                                 ppstate
+                                 (1- limit)))
+                 ((when (and (not innermostp)
+                             (not predefinedp)))
+                  (reterr :not-self-contained))
+                 ;; TODO: special treatment of some predefined macros
+                 )
+              (macro-info-case
+               info
+               :object
+               (b* ((ppstate (push-lexmark (lexmark-end ident) ppstate))
+                    (ppstate (push-lexemes info.replist ppstate))
+                    (ppstate (push-lexmark (lexmark-start ident) ppstate)))
+                 (pproc-lexemes mode
+                                rev-lexemes
+                                paren-level
+                                no-expandp
+                                disabled
+                                directivep
+                                ppstate
+                                (1- limit)))
+               :function
+               (b* (((erp & toknl span2 ppstate) (read-token/newline ppstate))
+                    ((unless (and toknl ; ident (
+                                  (plexeme-punctuatorp toknl "(")))
+                     (reterr-msg :where (position-to-msg (span->start span2))
+                                 :expected "an open parenthesis"
+                                 :found (plexeme-to-msg toknl)))
+                    ((erp subst ppstate)
+                     (if (and (endp info.params)
+                              (not info.ellipsis))
+                         (b* (((reterr) nil ppstate)
+                              ((erp & token span2 ppstate)
+                               (if directivep
+                                   (read-token/newline ppstate)
+                                 (read-ptoken ppstate)))
+                              ((unless (and token
+                                            (plexeme-punctuatorp token ")")))
+                               (reterr-msg :where (position-to-msg
+                                                   (span->start span2))
+                                           :expected "a closed parenthesis"
+                                           :found (plexeme-to-msg token))))
+                           (retok nil ppstate))
+                       (pproc-macro-args info.params
+                                         info.ellipsis
+                                         info.hash-params
+                                         disabled
+                                         directivep
+                                         ppstate (1- limit))))
+                    (replist (replace-macro-args info.replist subst))
+                    (ppstate (push-lexmark (lexmark-end ident) ppstate))
+                    (ppstate (push-lexemes replist ppstate))
+                    (ppstate (push-lexmark (lexmark-start ident) ppstate)))
+                 (pproc-lexemes mode
+                                rev-lexemes
+                                paren-level
+                                no-expandp
+                                disabled
+                                directivep
+                                ppstate
+                                (1- limit))))))
+           (t ; other lexeme
+            (pproc-lexemes mode
+                           (cons lexeme rev-lexemes)
+                           paren-level
+                           no-expandp
+                           disabled
+                           directivep
+                           ppstate
+                           (1- limit))))))))
+    :no-function nil
+    :measure (nfix limit))
+
+  (define pproc-macro-args ((params ident-listp)
+                            (ellipsis booleanp)
+                            (hash-params ident-listp)
+                            (disabled ident-listp)
+                            (directivep booleanp)
+                            (ppstate ppstatep)
+                            (limit natp))
+    :returns (mv erp
+                 (subst ident-plexeme-list-alistp)
+                 (new-ppstate ppstatep))
+    :parents (preprocessor pproc-lexemes-/-macro-args)
+    :short "Preprocess macro arguments."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This function takes as arguments
+       the parameters whose corresponding arguments
+       still need to be identified and preprocessed.
+       Initially @('params') consists of all the parameters,
+       and eventually it becomes @('nil').
+       The boolean @('ellipsis') indicates
+       whether the macro has an ellipsis parameter.")
+     (xdoc::p
+      "The @('hash-params') list comes from
+       the homonymous component of @(tsee macro-info).
+       It is used to decide which arguments are not macro-expanded.")
+     (xdoc::p
+      "The @(':arg-...') macro replacement mode is based on
+       the remaining parameters and whether there is an ellipsis."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((when (endp params))
+          (if ellipsis
+              (b* ((va-args (ident "__VA_ARGS__"))
+                   (mode (macrep-mode-arg-dots))
+                   (no-expandp (and (member-equal va-args
+                                                  (ident-list-fix hash-params))
+                                    t))
+                   ((erp rev-arg ppstate)
+                    (pproc-lexemes mode
+                                   nil ; rev-lexemes
+                                   0 ; paren-level
+                                   no-expandp
+                                   nil ; disabled
+                                   directivep
+                                   ppstate
+                                   (1- limit)))
+                   (arg (rev rev-arg))
+                   (arg (normalize-macro-arg arg))
+                   (subst (acons va-args arg nil)))
+                (retok subst ppstate))
+            (retok nil ppstate)))
+         (param (ident-fix (car params)))
+         (mode (if (or (consp (cdr params))
+                       ellipsis)
+                   (macrep-mode-arg-nonlast)
+                 (macrep-mode-arg-dots)))
+         (no-expandp (and (member-equal param (ident-list-fix hash-params)) t))
+         ((erp rev-arg ppstate)
+          (pproc-lexemes mode
+                         nil ; rev-lexemes
+                         0 ; paren-level
+                         no-expandp
+                         nil ; disabled
+                         directivep
+                         ppstate
+                         (1- limit)))
+         (arg (rev rev-arg))
+         (arg (normalize-macro-arg arg))
+         ((erp subst ppstate)
+          (pproc-macro-args (cdr params)
+                            ellipsis
+                            hash-params
+                            disabled
+                            directivep
+                            ppstate
+                            (1- limit))))
+      (retok (acons param arg subst) ppstate))
+    :no-function nil
+    :measure (nfix limit))
+
+  :prepwork ((local (in-theory (enable acons))))
+
+  :verify-guards :after-returns
+
+  :guard-hints
+  (("Goal" :in-theory (enable true-listp-when-ident-listp
+                              alistp-when-ident-plexeme-list-alistp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc
   :short "Preprocess files and entities therein."
   :long
@@ -1788,7 +2950,9 @@
       "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
        and we call a separate function to handle the rest of the line,
-       after putting the non-hash lexeme back.")
+       after putting the non-hash lexeme back.
+       In fact, this may preprocess several lines,
+       if the line breaks occur within macro arguments.")
      (xdoc::p
       "[C17:6.10.3/5] only allows space and horizontal tab in a directive
        (from just after the @('#') to just before the new line).
@@ -1933,17 +3097,20 @@
        (t ; non-# -- text line
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
              (ppstate (unread-lexeme toknl span ppstate))
-             ((erp rev-lexemes ppstate preprocessed state)
-              (pproc-line-rest file
-                               base-dir
-                               include-dirs
-                               preprocessed
-                               preprocessing
-                               rev-lexemes
-                               ppstate
-                               state
-                               (1- limit))))
-          (retok nil rev-lexemes ppstate preprocessed state)))))
+             ((erp rev-new-lexemes ppstate)
+              (pproc-lexemes (macrep-mode-line)
+                             nil ; rev-lexemes
+                             0 ; paren-level
+                             nil ; no-expandp
+                             nil ; disabled
+                             nil ; directivep
+                             ppstate
+                             limit))) ; unrelated to limit for this clique
+          (retok nil ; no group ending
+                 (append rev-new-lexemes rev-lexemes)
+                 ppstate
+                 (string-scfile-alist-fix preprocessed)
+                 state)))))
     :measure (nfix limit)
     :no-function nil)
 
@@ -2093,100 +3260,6 @@
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
-    :measure (nfix limit)
-    :no-function nil)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define pproc-line-rest ((file stringp)
-                           (base-dir stringp)
-                           (include-dirs string-listp)
-                           (preprocessed string-scfile-alistp)
-                           (preprocessing string-listp)
-                           (rev-lexemes plexeme-listp)
-                           (ppstate ppstatep)
-                           state
-                           (limit natp))
-    :returns (mv erp
-                 (new-rev-lexemes plexeme-listp)
-                 (new-ppstate ppstatep)
-                 (new-preprocessed string-scfile-alistp)
-                 state)
-    :parents (preprocessor pproc)
-    :short "Preprocess the rest of a line."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We read the next token or new line,
-       adding any preceding white space and comments to the growing list.")
-     (xdoc::p
-      "If we find no token or new line, it is an error,
-       because there must be a full line.")
-     (xdoc::p
-      "If we find a new line,
-       we add it to the growing list,
-       and we return, because we have finished preprocessing the line.")
-     (xdoc::p
-      "If we find an identifier, we look it up in the macro table.
-       If we find it in a scope that is not the innermost,
-       it means that the file is not self-contained,
-       and so we abort the preprocessing by returning @(':not-self-contained'),
-       as explained in @(tsee pproc).
-       If the macro is predefined or found in the innermost scope,
-       it should be expanded in place, which we plan to do soon.
-       If no macro is found,
-       it must be an identifier that passes through preprocessing:
-       it is added to the growing list,
-       we read the next token,
-       and we recursively call this function.")
-     (xdoc::p
-      "All the other kinds of tokens also pass through preprocessing,
-       in the same way as an identifier that is not a macro name."))
-    (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (read-token/newline ppstate))
-         (rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes))))
-      (cond
-       ((not toknl) ; EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or new line"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; # EOL
-        (retok (cons toknl rev-lexemes)
-               ppstate
-               (string-scfile-alist-fix preprocessed)
-               state))
-       ((plexeme-case toknl :ident) ; ident
-        (b* (((mv info? innermostp predefinedp)
-              (macro-lookup (plexeme-ident->ident toknl)
-                            (ppstate->macros ppstate)))
-             ((when (not info?)) ; regular identifier
-              (b* ((rev-lexemes (cons toknl rev-lexemes)))
-                (pproc-line-rest file
-                                 base-dir
-                                 include-dirs
-                                 preprocessed
-                                 preprocessing
-                                 rev-lexemes
-                                 ppstate
-                                 state
-                                 (1- limit))))
-             ((when (and (not innermostp)
-                         (not predefinedp)))
-              (reterr :not-self-contained)))
-          (reterr (msg "Macro expansion not yet supported.")))) ; TODO
-       (t ; non-ident-token
-        (b* ((rev-lexemes (cons toknl rev-lexemes)))
-          (pproc-line-rest file
-                           base-dir
-                           include-dirs
-                           preprocessed
-                           preprocessing
-                           rev-lexemes
-                           ppstate
-                           state
-                           (1- limit))))))
     :measure (nfix limit)
     :no-function nil)
 

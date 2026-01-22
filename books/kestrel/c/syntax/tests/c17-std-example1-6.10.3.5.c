@@ -1,3 +1,3 @@
 #define TABSIZE 100
 
-// int table[TABSIZE];
+int table[TABSIZE];
