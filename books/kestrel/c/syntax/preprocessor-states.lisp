@@ -122,6 +122,21 @@
   :elementp-of-nil nil
   :pred lexmark-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-list-to-lexmark-list ((lexemes plexeme-listp))
+  :returns (lexmarks lexmark-listp)
+  :short "Turn a list of lexemes into a list of lexmarks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We keep the ordering.
+     We put irrelevant spans, which suggest that
+     we should probably make the span optional in @(tsee lexmark)."))
+  (cond ((endp lexemes) nil)
+        (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
+                 (lexeme-list-to-lexmark-list (cdr lexemes))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection ppstate
@@ -780,6 +795,18 @@
   (defret ppstate->size-of-push-lexmark
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexemes onto the pending lexmark list."
+  (b* ((new-lexmarks (append (lexeme-list-to-lexmark-list lexemes)
+                             (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexemes) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
