@@ -104,9 +104,10 @@
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
            (er hard? 'insert "Arguments are ill-formed: ~x0" list))
-          ((or (not (consp rest))
-               (not (consp (rest rest))))
+          ((not (consp rest))
            (er hard? 'insert "Too few arguments: ~x0" list))
+          ((not (consp (rest rest)))
+           (list 'fix (first list)))
           (t (let ((test? (assoc-eq :test alist)))
                (if test?
                    (let ((test (cdr test?)))
@@ -433,6 +434,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc set
+  :parents (treeset)
+  :short "Build a @(see treeset)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "This is the analogue of @(tsee list) to @(see acl2::lists). It is a
+       macro which constructs a chain of @(tsee insert)s.")
+    (xdoc::section
+      "General form"
+      (xdoc::codeblock
+        "(set x-0 x-1 ... x-n :test test)")
+      (xdoc::desc
+        "@(':test') &mdash; optional"
+        (xdoc::p
+          "One of: @('equal'), @('='), @('eq'), or @('eql'). If no value is
+           provided, the default is @('equal'). Specifying an alternative test
+           allows for a more performant implementation, at the cost of a
+           stronger guard. The guard asserts that the set consists of elements
+           suitable for comparison with the specified equality variant.")))))
+
+(define set-macro-fn
+  ((list true-listp))
+  (mv-let (erp rest alist)
+          (partition-rest-and-keyword-args list '(:test))
+    (cond (erp
+           (er hard? 'insert "Arguments are ill-formed: ~x0" list))
+          ((not (consp rest))
+           '(empty))
+          (t (let ((test? (assoc-eq :test alist)))
+               `(insert ,@(rest list)
+                        (singleton ,(first list))
+                        ,@(and test? (list :test (cdr test?))))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
+
+(defmacro set (&rest forms)
+  (declare (xargs :guard t))
+  (set-macro-fn forms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define from-oset ((oset set::setp))
   :parents (insert)
   :short "Build a @(see treeset) from an oset."
@@ -541,7 +583,13 @@
 
 (add-to-ruleset to-oset-theory '(fix-becomes-from-oset))
 
-;; TODO: subset of from-oset becomes set::subset
+(defrule subset-of-from-oset
+  (equal (subset (from-oset x) (from-oset y))
+         (set::subset x y))
+  :enable to-oset-theory
+  :disable from-oset-theory)
+
+(add-to-ruleset to-oset-theory '(subset-of-from-oset))
 
 (defrule from-oset-of-oset-insert
   (equal (from-oset (set::insert x oset))
