@@ -2194,10 +2194,7 @@
        but only if the parenthesis level is 0;
        in this case, we do not add the parenthesis to the reversed lexemes,
        because those are meant to contain the argument we are preprocessing,
-       and the parenthesis is not part of the argument;
-       we also unread the parenthesis,
-       because @(tsee pproc-macro-args) expects to find and consume it
-       (so we can uniformly cover function-like macros with 0 parameters).
+       and the parenthesis is not part of the argument.
        If the parenthesis level is not 0,
        we just decrement the level and continue.
        In the @(':arg-nonlast') mode, if the parenthesis level is 0,
@@ -2359,8 +2356,7 @@
                                 (1- limit))))
               ((:arg-last :arg-dots)
                (if (zp paren-level)
-                   (b* ((ppstate (unread-lexeme lexeme span ppstate)))
-                     (retok (plexeme-list-fix rev-lexemes) ppstate))
+                   (retok (plexeme-list-fix rev-lexemes) ppstate)
                  (pproc-lexemes mode
                                 (cons lexeme rev-lexemes)
                                 (1- paren-level)
@@ -2469,12 +2465,26 @@
                                  :expected "an open parenthesis"
                                  :found (plexeme-to-msg toknl)))
                     ((erp subst ppstate)
-                     (pproc-macro-args info.params
-                                       info.ellipsis
-                                       info.hash-params
-                                       disabled
-                                       directivep
-                                       ppstate (1- limit)))
+                     (if (and (endp info.params)
+                              (not info.ellipsis))
+                         (b* (((reterr) nil ppstate)
+                              ((erp & token span2 ppstate)
+                               (if directivep
+                                   (read-token/newline ppstate)
+                                 (read-ptoken ppstate)))
+                              ((unless (and token
+                                            (plexeme-punctuatorp token ")")))
+                               (reterr-msg :where (position-to-msg
+                                                   (span->start span2))
+                                           :expected "a closed parenthesis"
+                                           :found (plexeme-to-msg token))))
+                           (retok nil ppstate))
+                       (pproc-macro-args info.params
+                                         info.ellipsis
+                                         info.hash-params
+                                         disabled
+                                         directivep
+                                         ppstate (1- limit))))
                     (replist (replace-macro-args info.replist subst))
                     (ppstate (push-lexmark (lexmark-end ident) ppstate))
                     (ppstate (push-lexemes replist ppstate))
@@ -2549,21 +2559,9 @@
                                    (1- limit)))
                    (arg (rev rev-arg))
                    (arg (normalize-macro-arg arg))
-                   (subst (acons va-args arg nil))
-                   ((erp & token span ppstate) (read-ptoken ppstate))
-                   ((unless (and token
-                                 (plexeme-punctuatorp token ")")))
-                    (reterr-msg :where (position-to-msg (span->start span))
-                                :expected "a closed parenthesis"
-                                :found (plexeme-to-msg token))))
+                   (subst (acons va-args arg nil)))
                 (retok subst ppstate))
-            (b* (((erp & token span ppstate) (read-ptoken ppstate))
-                 ((unless (and token
-                               (plexeme-punctuatorp token ")")))
-                  (reterr-msg :where (position-to-msg (span->start span))
-                              :expected "a closed parenthesis"
-                              :found (plexeme-to-msg token))))
-              (retok nil ppstate))))
+            (retok nil ppstate)))
          (param (ident-fix (car params)))
          (mode (if (or (consp (cdr params))
                        ellipsis)
