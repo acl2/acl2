@@ -2891,7 +2891,9 @@
       "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
        and we call a separate function to handle the rest of the line,
-       after putting the non-hash lexeme back.")
+       after putting the non-hash lexeme back.
+       In fact, this may preprocess several lines,
+       if the line breaks occur within macro arguments.")
      (xdoc::p
       "[C17:6.10.3/5] only allows space and horizontal tab in a directive
        (from just after the @('#') to just before the new line).
@@ -3036,17 +3038,20 @@
        (t ; non-# -- text line
         (b* ((rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes)))
              (ppstate (unread-lexeme toknl span ppstate))
-             ((erp rev-lexemes ppstate preprocessed state)
-              (pproc-line-rest file
-                               base-dir
-                               include-dirs
-                               preprocessed
-                               preprocessing
-                               rev-lexemes
-                               ppstate
-                               state
-                               (1- limit))))
-          (retok nil rev-lexemes ppstate preprocessed state)))))
+             ((erp rev-new-lexemes ppstate)
+              (pproc-lexemes (macrep-mode-line)
+                             nil ; rev-lexemes
+                             0 ; paren-level
+                             nil ; no-expandp
+                             nil ; disabled
+                             nil ; directivep
+                             ppstate
+                             limit))) ; unrelated to limit for this clique
+          (retok nil ; no group ending
+                 (append rev-new-lexemes rev-lexemes)
+                 ppstate
+                 (string-scfile-alist-fix preprocessed)
+                 state)))))
     :measure (nfix limit)
     :no-function nil)
 
@@ -3196,100 +3201,6 @@
           (retok rev-lexemes ppstate preprocessed state)))
        (t ; # include token
         (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
-    :measure (nfix limit)
-    :no-function nil)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define pproc-line-rest ((file stringp)
-                           (base-dir stringp)
-                           (include-dirs string-listp)
-                           (preprocessed string-scfile-alistp)
-                           (preprocessing string-listp)
-                           (rev-lexemes plexeme-listp)
-                           (ppstate ppstatep)
-                           state
-                           (limit natp))
-    :returns (mv erp
-                 (new-rev-lexemes plexeme-listp)
-                 (new-ppstate ppstatep)
-                 (new-preprocessed string-scfile-alistp)
-                 state)
-    :parents (preprocessor pproc)
-    :short "Preprocess the rest of a line."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We read the next token or new line,
-       adding any preceding white space and comments to the growing list.")
-     (xdoc::p
-      "If we find no token or new line, it is an error,
-       because there must be a full line.")
-     (xdoc::p
-      "If we find a new line,
-       we add it to the growing list,
-       and we return, because we have finished preprocessing the line.")
-     (xdoc::p
-      "If we find an identifier, we look it up in the macro table.
-       If we find it in a scope that is not the innermost,
-       it means that the file is not self-contained,
-       and so we abort the preprocessing by returning @(':not-self-contained'),
-       as explained in @(tsee pproc).
-       If the macro is predefined or found in the innermost scope,
-       it should be expanded in place, which we plan to do soon.
-       If no macro is found,
-       it must be an identifier that passes through preprocessing:
-       it is added to the growing list,
-       we read the next token,
-       and we recursively call this function.")
-     (xdoc::p
-      "All the other kinds of tokens also pass through preprocessing,
-       in the same way as an identifier that is not a macro name."))
-    (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls toknl span ppstate) (read-token/newline ppstate))
-         (rev-lexemes (revappend nontoknls (plexeme-list-fix rev-lexemes))))
-      (cond
-       ((not toknl) ; EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token or new line"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; # EOL
-        (retok (cons toknl rev-lexemes)
-               ppstate
-               (string-scfile-alist-fix preprocessed)
-               state))
-       ((plexeme-case toknl :ident) ; ident
-        (b* (((mv info? innermostp predefinedp)
-              (macro-lookup (plexeme-ident->ident toknl)
-                            (ppstate->macros ppstate)))
-             ((when (not info?)) ; regular identifier
-              (b* ((rev-lexemes (cons toknl rev-lexemes)))
-                (pproc-line-rest file
-                                 base-dir
-                                 include-dirs
-                                 preprocessed
-                                 preprocessing
-                                 rev-lexemes
-                                 ppstate
-                                 state
-                                 (1- limit))))
-             ((when (and (not innermostp)
-                         (not predefinedp)))
-              (reterr :not-self-contained)))
-          (reterr (msg "Macro expansion not yet supported.")))) ; TODO
-       (t ; non-ident-token
-        (b* ((rev-lexemes (cons toknl rev-lexemes)))
-          (pproc-line-rest file
-                           base-dir
-                           include-dirs
-                           preprocessed
-                           preprocessing
-                           rev-lexemes
-                           ppstate
-                           state
-                           (1- limit))))))
     :measure (nfix limit)
     :no-function nil)
 
