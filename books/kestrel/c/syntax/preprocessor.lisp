@@ -758,6 +758,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-ptoken ((ppstate ppstatep))
+  :returns (mv erp
+               (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (token-span spanp)
+               (new-ppstate ppstatep))
+  :short "Read a token during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We lex zero or more non-tokens, until we find a token.
+     We return the list of non-tokens, and the token with its span.
+     If we reach the end of file, we return @('nil') as the token,
+     and a span consisting of just the current position."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil nil (irr-span) ppstate)
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
+       ((when (not lexeme)) (retok nil nil span ppstate))
+       ((when (plexeme-tokenp lexeme)) (retok nil lexeme span ppstate))
+       ((erp nontokens token token-span ppstate) (read-ptoken ppstate)))
+    (retok (cons lexeme nontokens) token token-span ppstate))
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret plexeme-list-not-tokenp-of-read-ptoken
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-tokenp-of-read-ptoken
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-read-ptoken-cond
+    (implies (and (not erp)
+                  token?)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define read-token/newline-header? ((headerp booleanp) (ppstate ppstatep))
   :returns (mv erp
                (nontoknls plexeme-listp)
@@ -2150,7 +2200,10 @@
        but only if the parenthesis level is 0;
        in this case, we do not add the parenthesis to the reversed lexemes,
        because those are meant to contain the argument we are preprocessing,
-       and the parenthesis is not part of the argument.
+       and the parenthesis is not part of the argument;
+       we also unread the parenthesis,
+       because @(tsee pproc-macro-args) expects to find and consume it
+       (so we can uniformly cover function-like macros with 0 parameters).
        If the parenthesis level is not 0,
        we just decrement the level and continue.
        In the @(':arg-comma') mode, if the parenthesis level is 0,
@@ -2312,7 +2365,8 @@
                                 (1- limit))))
               ((:arg-last :arg-dots)
                (if (zp paren-level)
-                   (retok (plexeme-list-fix rev-lexemes) ppstate)
+                   (b* ((ppstate (unread-lexeme lexeme span ppstate)))
+                     (retok (plexeme-list-fix rev-lexemes) ppstate))
                  (pproc-lexemes mode
                                 (cons lexeme rev-lexemes)
                                 (1- paren-level)
@@ -2448,8 +2502,8 @@
                            directivep
                            ppstate
                            (1- limit))))))))
-    :measure (nfix limit)
-    :no-function nil)
+    :no-function nil
+    :measure (nfix limit))
 
   (define pproc-macro-args ((params ident-listp)
                             (ellipsis booleanp)
@@ -2501,9 +2555,21 @@
                                    (1- limit)))
                    (arg (rev rev-arg))
                    (arg (normalize-macro-arg arg))
-                   (subst (acons va-args arg nil)))
+                   (subst (acons va-args arg nil))
+                   ((erp & token span ppstate) (read-ptoken ppstate))
+                   ((unless (and token
+                                 (plexeme-punctuatorp token ")")))
+                    (reterr-msg :where (position-to-msg (span->start span))
+                                :expected "a closed parenthesis"
+                                :found (plexeme-to-msg token))))
                 (retok subst ppstate))
-            (retok nil ppstate)))
+            (b* (((erp & token span ppstate) (read-ptoken ppstate))
+                 ((unless (and token
+                               (plexeme-punctuatorp token ")")))
+                  (reterr-msg :where (position-to-msg (span->start span))
+                              :expected "a closed parenthesis"
+                              :found (plexeme-to-msg token))))
+              (retok nil ppstate))))
          (param (ident-fix (car params)))
          (mode (if (or (consp (cdr params))
                        ellipsis)
@@ -2530,6 +2596,7 @@
                             ppstate
                             (1- limit))))
       (retok (acons param arg subst) ppstate))
+    :no-function nil
     :measure (nfix limit))
 
   :prepwork ((local (in-theory (enable acons))))
