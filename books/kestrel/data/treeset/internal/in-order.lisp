@@ -58,7 +58,7 @@
    (acc true-listp))
   :returns (list true-listp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
-      (data::list-fix acc)
+      (llist-fix acc)
     (tree-in-order-acc (tree->left tree)
                        (cons (tagged-element->elem (tree->head tree))
                              (tree-in-order-acc (tree->right tree)

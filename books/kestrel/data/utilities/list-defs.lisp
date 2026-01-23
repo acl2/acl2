@@ -16,8 +16,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (acl2::list-fix
-          list-fix
+  :names (list-fix
+          llist-fix
           acl2::fast-list-equiv
           list-equiv
           list-equal

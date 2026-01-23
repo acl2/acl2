@@ -18,6 +18,4 @@
               int-equiv
               nat-equiv
               )
-            (set-difference-eq *std-pkg-symbols*
-                               '#!std(list-fix
-                                      ))))
+            *std-pkg-symbols*))

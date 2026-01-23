@@ -20,14 +20,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define list-fix ((list true-listp))
-  (mbe :logic (true-list-fix list)
-       :exec (the list list))
-  :enabled t
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::defredundant
   :names (list-equiv))
 
