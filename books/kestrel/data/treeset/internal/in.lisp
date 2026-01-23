@@ -378,6 +378,7 @@
   (x
    (tree treep))
   (declare (xargs :type-prescription (booleanp (tree-search-in x tree))))
+  :parents (tree-in)
   :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
       nil
