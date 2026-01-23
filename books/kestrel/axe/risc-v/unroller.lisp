@@ -256,7 +256,7 @@
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
-;; Returns (mv erp result-dag-or-quotep state).
+;; Returns (mv erp result-dag-or-quotep hits state).
 ;; WARNING: Keep in sync with the x86 version.
 (defun repeatedly-run (steps-done step-limit step-increment
                                   dag ; the state may be wrapped in an output-extractor
@@ -265,7 +265,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits print print-base max-printed-term-size
+                                  normalize-xors count-hits hits print print-base max-printed-term-size
                                   untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
@@ -286,6 +286,7 @@
                                   (natp prune-approx))
                               (normalize-xors-optionp normalize-xors)
                               (count-hits-argp count-hits)
+                              (hitsp hits)
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
@@ -298,13 +299,13 @@
   (if (or (not (mbt (and (natp steps-done)
                          (natp step-limit))))
           (<= step-limit steps-done))
-      (mv (erp-nil) dag state)
+      (mv (erp-nil) dag hits state)
     (b* (;; Decide how many steps to do this time:
          (this-step-increment (this-step-increment step-increment steps-done))
          (steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
          ((when (not (posp steps-for-this-iteration))) ; use mbt?
           (er hard? 'repeatedly-run "Temination problem.")
-          (mv :termination-problem nil state))
+          (mv :termination-problem nil nil state))
          (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
          (old-dag dag) ; so we can see if anything changed
@@ -317,9 +318,7 @@
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
          ;; Do the run:
-         ((mv erp dag-or-constant limits
-              state
-              )
+         ((mv erp dag-or-constant limits hits2 state)
           (acl2::simplify-dag-risc-v dag
                                      assumptions
                                      rule-alist
@@ -333,9 +332,9 @@
                                      rules-to-monitor
                                      nil ; *no-warn-ground-functions*
                                      '(program-at) ; fns-to-elide ; todo: this is old
-                                     state
-                                     ))
-         ((when erp) (mv erp nil state))
+                                     state))
+         ((when erp) (mv erp nil hits state))
+         (hits (combine-hits hits hits2))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
            (limit-for-rule step-opener-rule
@@ -348,7 +347,7 @@
          (- (cw ")~%")) ; matches "(Running"
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; TODO: Consider not pruning if this increment didn't create any new branches:
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
@@ -359,10 +358,10 @@
                                                                               print
                                                                               60000 ; todo: pass in
                                                                               state))
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
          ;;                       (cw "~X01" dag nil)
@@ -384,10 +383,10 @@
                                            nil ; no-warn-ground-functions
                                            print
                                            state))
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          (- (and print ;(print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
@@ -405,7 +404,7 @@
          ((mv erp nothing-changedp) (if run-completedp
                                         (mv nil nil) ; we know something changed since the run is now complete
                                       (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
 
          ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
          ;; ((when ..)
@@ -427,9 +426,8 @@
                       (cw " The run completed normally.~%")
                     (cw " The run completed abnormally (nothing changed).~%")))
                (- (cw "(Doing final simplification:~%"))
-               ((mv erp dag-or-constant state) ; todo: check if it is a constant?
-                (mv-let (erp result limits state)
-                  (acl2::simplify-dag-risc-v dag
+               ((mv erp dag-or-constant & hits2 state) ; todo: check if it is a constant?  ; todo: use the limits?
+                (acl2::simplify-dag-risc-v dag
                                              assumptions
                                              rule-alist
                                              nil ; interpreted-function-alist
@@ -443,10 +441,9 @@
                                              nil ; *no-warn-ground-functions*
                                              '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                              state
-                                             )
-                  (declare (ignore limits)) ; todo: use the limits?
-                  (mv erp result state)))
-               ((when erp) (mv erp nil state))
+                                             ))
+               ((when erp) (mv erp nil hits state))
+               (hits (combine-hits hits hits2))
                ;; todo: also prune here, if the simplfication does anything?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
@@ -457,14 +454,14 @@
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
-                (mv :unresolved-error-branches nil state))
+                (mv :unresolved-error-branches nil hits state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
-                (mv :incomplete-run nil state)))
-            (mv (erp-nil) dag-or-constant state))
+                (mv :incomplete-run nil hits state)))
+            (mv (erp-nil) dag-or-constant hits state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
@@ -474,7 +471,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
                           state))))))
 
 ;; Returns (mv erp result-dag-or-quotep
@@ -730,15 +727,16 @@
                     )
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
-       ((mv erp result-dag-or-quotep state)
+       ((mv erp result-dag-or-quotep hits state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
                         'step32-opener
                         ;; (if 64-bitp
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
+       (- (maybe-print-hits hits))
        (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Lifting took ")

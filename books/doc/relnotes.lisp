@@ -364,12 +364,13 @@
       of just one function.")
 
    (xdoc::p
-     "The utility, @(tsee with-supporters), has been improved to deal with the
-      case that support comes from a @(see local) event preceding the
-      @('with-supporters') call.  Thanks to Eric Smith for providing an example
-      to show the need for this improvement, and for suggesting that the
-      generated supporting events be elided (see discussion of @(tsee
-      elide-event) just below)")
+     "The utility, @(tsee with-supporters), has been improved in several ways,
+      including (but not limited to) the case that support comes from a @(see
+      local) event preceding the @('with-supporters') call, and by extending
+      the tracking of supporters to functions introduced by @(tsee defabsstobj)
+      events.  Thanks to Eric Smith for providing examples, and for suggesting
+      elision of generated supporting events (see discussion of @(tsee
+      elide-event) just below).")
 
    (xdoc::p
      "A new utility, @(tsee elide-event), maps an event to one that avoids

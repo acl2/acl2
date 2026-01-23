@@ -191,7 +191,13 @@
     (equal (ident-listp (add-to-set-equal ident idents))
            (and (identp ident)
                 (ident-listp idents)))
-    :enable add-to-set-equal))
+    :enable add-to-set-equal)
+
+  (defrule ident-listp-of-remove1-equal
+    (implies (ident-listp x)
+             (ident-listp (remove1-equal a x)))
+    :induct t
+    :enable remove1-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

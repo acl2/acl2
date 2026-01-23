@@ -91,16 +91,12 @@
      in order to inhibit its (direct or indirect) recursive expansion
      [C17:6.10.3.4/2].")
    (xdoc::p
-    "The @(':placemarker') summand is used as described in [C17:6.10.3.3],
-     to handle the @('##') operator.")
-   (xdoc::p
     "Only lexemes have spans associated with them.
      The markers are artifacts, not an actual part of the input files."))
   (:lexeme ((lexeme plexeme)
             (span span)))
   (:start ((macro ident)))
   (:end ((macro ident)))
-  (:placemarker ())
   :pred lexmarkp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -112,12 +108,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption lexmark-option
+  lexmark
+  :short "Fixtype of optional lexmarks."
+  :pred lexmark-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist lexmark-list
   :short "Fixtype of lists of lexmarks."
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
   :pred lexmark-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-list-to-lexmark-list ((lexemes plexeme-listp))
+  :returns (lexmarks lexmark-listp)
+  :short "Turn a list of lexemes into a list of lexmarks."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We keep the ordering.
+     We put irrelevant spans, which suggest that
+     we should probably make the span optional in @(tsee lexmark)."))
+  (cond ((endp lexemes) nil)
+        (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
+                 (lexeme-list-to-lexmark-list (cdr lexemes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,10 +225,7 @@
       The @(':start') and @(':end') markers are added around that expansion,
       to delimit that the expansion comes from a certain macro,
       so that we can prevent recursive expansion,
-      as explained in more detail elsewhere.
-      The pending list of lexmarks in the preprocessing state
-      actually never contains @(':placemarker') markers;
-      we should sharpen the type of this stobj component accordingly.")
+      as explained in more detail elsewhere.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
@@ -780,6 +795,18 @@
   (defret ppstate->size-of-push-lexmark
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexemes onto the pending lexmark list."
+  (b* ((new-lexmarks (append (lexeme-list-to-lexmark-list lexemes)
+                             (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexemes) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
