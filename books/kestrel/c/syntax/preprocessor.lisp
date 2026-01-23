@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "preprocessor-lexemes")
+(include-book "stringization")
 (include-book "macro-tables")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
@@ -120,6 +121,7 @@
    (xdoc::p
     "This preprocessor is still work in progress."))
   :order-subtopics (preprocessor-lexemes
+                    stringization
                     macro-tables
                     preprocessor-states
                     preprocessor-messages
@@ -1687,19 +1689,6 @@
        (len replist))
     :hyp (consp replist)
     :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-lexemes ((lexemes plexeme-listp))
-  :returns (stringlit stringlitp)
-  :short "Stringize a list of lexemes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This implements the semantics of the @('#') operator [C17:6.10.3.2/2].
-     The term `stringize' and `destringize' occur in [C17]."))
-  (declare (ignore lexemes))
-  (irr-stringlit)) ; TODO
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
