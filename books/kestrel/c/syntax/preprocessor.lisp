@@ -3456,8 +3456,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
-             (local
+  :prepwork ((local
               (in-theory
                (enable
                 acons
