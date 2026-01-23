@@ -120,7 +120,15 @@
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
-  :pred lexmark-listp)
+  :pred lexmark-listp
+
+  ///
+
+  (defruled true-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (true-listp x))
+    :induct t
+    :enable lexmark-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,6 +144,24 @@
   (cond ((endp lexemes) nil)
         (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
                  (lexeme-list-to-lexmark-list (cdr lexemes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist lexmark-list-case-lexeme-p (x)
+  :guard (lexmark-listp x)
+  :short "Check if all the lexmarks in a list are lexemes."
+  (lexmark-case x :lexeme))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexmark-list-to-lexeme-list ((lexmarks lexmark-listp))
+  :guard (lexmark-list-case-lexeme-p lexmarks)
+  :returns (lexemes plexeme-listp)
+  :short "Turn a list of lexmarks that are all lexemes
+          into the list of lexemes."
+  (cond ((endp lexmarks) nil)
+        (t (cons (lexmark-lexeme->lexeme (car lexmarks))
+                 (lexmark-list-to-lexeme-list (cdr lexmarks))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -795,6 +821,17 @@
   (defret ppstate->size-of-push-lexmark
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexmarks onto the pending lexmark list."
+  (b* ((new-lexmarks (append lexmarks (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexmarks) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
