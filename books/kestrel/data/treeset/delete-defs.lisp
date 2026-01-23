@@ -27,6 +27,3 @@
           delete-eql
           tail
           ))
-
-;; (add-macro-alias delete1 delete1$inline)
-;; (add-macro-fn delete delete1$inline t)

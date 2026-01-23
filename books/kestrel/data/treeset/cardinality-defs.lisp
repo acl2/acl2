@@ -18,5 +18,3 @@
 
 (std::defredundant
   :names (cardinality))
-
-;; (add-macro-alias cardinality cardinality$inline)

@@ -43,14 +43,5 @@
           eqlable-treep
           ))
 
-;; (add-macro-alias tree-fix tree-fix$inline)
-;; (add-macro-alias tree-equiv tree-equiv$inline)
-;; (add-macro-alias tree-empty-p tree-empty-p$inline)
-;; (add-macro-alias tree->hash tree->hash$inline)
-;; (add-macro-alias tree->head tree->head$inline)
-;; (add-macro-alias tree->left tree->left$inline)
-;; (add-macro-alias tree->right tree->right$inline)
-;; (add-macro-alias tree-node tree-node$inline)
-
 (defequiv tagged-element-equiv)
 (defequiv tree-equiv)

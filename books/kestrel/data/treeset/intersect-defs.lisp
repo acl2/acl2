@@ -25,6 +25,3 @@
           intersect-eq
           intersect-eql
           ))
-
-;; (add-macro-alias binary-intersect binary-intersect$inline)
-;; (add-macro-fn intersect binary-intersect$inline t)

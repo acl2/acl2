@@ -32,10 +32,4 @@
           eqlable-setp
           ))
 
-;; (add-macro-alias set-equiv set-equiv$inline)
-;; (add-macro-alias emptyp emptyp$inline)
-;; (add-macro-alias head head$inline)
-;; (add-macro-alias left left$inline)
-;; (add-macro-alias right right$inline)
-
 (defequiv equiv)

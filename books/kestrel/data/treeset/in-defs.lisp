@@ -24,5 +24,3 @@
           in-eq
           in-eql
           ))
-
-;; (add-macro-alias in in$inline)

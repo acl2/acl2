@@ -32,7 +32,3 @@
           insert-eq
           insert-eql
           ))
-
-;; (add-macro-alias insert1 insert1$inline)
-;; (add-macro-fn insert insert1$inline)
-;; (add-macro-alias from-list from-list$inline)

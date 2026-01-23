@@ -20,6 +20,3 @@
 (std::defredundant
   :names (heap<-with-hashes
           heap<))
-
-;; (add-macro-alias heap<-with-hashes heap<-with-hashes$inline)
-;; (add-macro-alias heap< heap<$inline)

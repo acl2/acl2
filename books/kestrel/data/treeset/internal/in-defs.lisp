@@ -24,5 +24,3 @@
           symbol-tree-search-in
           eqlable-tree-search-in
           ))
-
-;; (add-macro-alias in in$inline)

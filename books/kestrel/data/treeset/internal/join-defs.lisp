@@ -19,5 +19,3 @@
 (std::defredundant
   :names (tree-join
           tree-join-at))
-
-;; (add-macro-alias tree-join-at tree-join-at$inline)

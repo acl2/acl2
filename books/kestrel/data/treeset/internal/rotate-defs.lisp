@@ -18,6 +18,3 @@
 (std::defredundant
   :names (rotate-left
           rotate-right))
-
-;; (add-macro-alias rotate-left rotate-left$inline)
-;; (add-macro-alias rotate-right rotate-right$inline)

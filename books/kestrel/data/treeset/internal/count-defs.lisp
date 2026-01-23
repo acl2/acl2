@@ -21,5 +21,3 @@
   :names (tree-nodes-count-acc
           tree-nodes-count
           ))
-
-;; (add-macro-alias tree-nodes-count tree-nodes-count$inline)
