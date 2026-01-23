@@ -5548,10 +5548,8 @@
                 (fgl-interp-value ans)))
 
              (xobj (hons-copy xobj))
-             (look (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
-                              (look)
-                              (get-term->bvar xobj bvar-db)
-                              look))
+             (look (interp-st-get-term->bvar xobj interp-st))
+             
              ((when look)
               (b* ((bfr (stobj-let ((logicman (interp-st->logicman interp-st)))
                                    (bfr)
@@ -6172,7 +6170,9 @@
               (let ((flag (find-flag-is-hyp clause)))
                 (and flag
                      (prog2$ (cw "flag: ~x0~%" flag)
-                             '(:no-op t)))))
+                             '(:no-op t))))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable interp-st-get-term->bvar))))
       :mutual-recursion fgl-interp)))
 
 
@@ -6827,6 +6827,7 @@
                     (symbolp x))
            :hints(("Goal" :in-theory (enable pseudo-term-kind pseudo-termp)))))
 
+  (local (in-theory (enable interp-st-get-term->bvar)))
   (with-output
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
@@ -9327,6 +9328,15 @@
                   (n (interp-st-bvar-db-ok-witness new env)))))))
 
 
+(local
+ (defthm fgl-object-eval-of-normalize-equal-order
+   (equal (fgl-object-eval (normalize-equal-order x) env)
+          (fgl-object-eval x env))
+   :hints(("Goal" :in-theory (enable normalize-equal-order
+                                     fgl-apply)
+           :expand ((fgl-objectlist-eval (g-apply->args x) env)
+                    (fgl-objectlist-eval (cdr (g-apply->args x)) env))))))
+
 (defret interp-st-bvar-db-ok-of-add-term-bvar-implies
   (implies (and (interp-st-bvar-db-ok new-interp-st env)
                 (equal logicman (interp-st->logicman new-interp-st)))
@@ -9350,7 +9360,7 @@
                  (n (next-bvar (interp-st->bvar-db interp-st))))
                 (:instance interp-st-bvar-db-ok-necc
                  (interp-st new-interp-st)
-                 (n (get-term->bvar x (interp-st->bvar-db interp-st))))))))
+                 (n (get-term->bvar (normalize-equal-order x) (interp-st->bvar-db interp-st))))))))
 
 (defthm interp-st-bvar-db-ok-necc-reverse
   (implies (interp-st-bvar-db-ok interp-st env)
@@ -11128,7 +11138,7 @@
                               bfr-listp-when-logicman-extension
                               logicman->mode-of-interp-st-logicman-extension
                               logicman->aignet-of-interp-st->logicman)))
-   
+   (local (in-theory (enable interp-st-get-term->bvar)))
    (with-output
      :off (event)
      :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
