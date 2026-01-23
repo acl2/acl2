@@ -14,12 +14,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "TREESET"
-  (union-eq '(define-sk
+  (union-eq '(data::max-<<
+              data::min-<<
+              define-sk
               defmacro+
               defxdoc+
-              data::min-<<
-              data::max-<<
               enable*
+              lnfix
               )
             (set-difference-eq *std-pkg-symbols*
                                #!STD

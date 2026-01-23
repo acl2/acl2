@@ -12,14 +12,14 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/utilities/nat-defs" :dir :system)
+(include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
 (include-book "tree-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/utilities/nat" :dir :system))
+(local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -32,10 +32,10 @@
    (acc natp))
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
-      (data::nat-fix acc)
+      (lnfix acc)
     (tree-nodes-count-acc (tree->left tree)
                           (tree-nodes-count-acc (tree->right tree)
-                                                (+ 1 (data::nat-fix acc))))))
+                                                (+ 1 (lnfix acc))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -8,7 +8,7 @@
 
 (in-package "TREESET")
 
-(include-book "kestrel/data/utilities/nat-defs" :dir :system)
+(include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
 (include-book "tree-defs")
 

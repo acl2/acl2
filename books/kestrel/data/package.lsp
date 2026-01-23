@@ -16,6 +16,7 @@
   (union-eq '(*fixnum-bits*
               defxdoc+
               int-equiv
+              lnfix
               nat-equiv
               )
             *std-pkg-symbols*))
