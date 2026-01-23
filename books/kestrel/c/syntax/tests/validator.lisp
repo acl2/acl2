@@ -1254,4 +1254,4 @@ foo:
    return 0;
 }
 "
-  :extensions gcc)
+  :extensions :gcc)
