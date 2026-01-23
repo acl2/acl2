@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -130,7 +130,7 @@
 (input-files :files '("macro_test1.c" "macro_test2.c")
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
-             :ienv (ienv-default :gcc t)
+             :ienv (ienv-default :extensions :gcc)
              :const *macro-tests2*)
 
 (acl2::assert! (code-ensemblep *macro-tests2*))

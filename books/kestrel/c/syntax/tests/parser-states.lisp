@@ -92,7 +92,7 @@
                (equal (parstate->chars-unread parstate) 0)
                (equal (parstate->tokens-read parstate) 0)
                (equal (parstate->tokens-unread parstate) 0)
-               (equal (parstate->gcc parstate) ,gcc)
+               (equal (parstate->gcc/clang parstate) ,gcc)
                (equal (parstate->size parstate) (len ,list)))
           parstate))
     parstate))
