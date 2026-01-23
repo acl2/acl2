@@ -830,11 +830,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define peek-token/newline ((ppstate ppstatep))
+(define peek-token/newline ((stop-at-newline-p booleanp) (ppstate ppstatep))
   :returns (mv erp
                (toknl? plexeme-optionp)
                (new-ppstate ppstatep))
-  :short "Peek the next token or new line."
+  :short "Peek the next token, or optionally new line."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -848,9 +848,19 @@
      is that an occurrence of the macro not followed by an open parenthesis
      is not an error, but the name is simply treated as an identifier.")
    (xdoc::p
+    "If we are in a directive line,
+     a new line ends the directive [C17:6.10/2];
+     in this case, the @('stop-at-newline-p') flag is @('t').
+     If we are not in a directive line,
+     an invocation of a function-like macro may include new lines
+     [C17:6.10.3/10;
+     in this case, the @('stop-at-newline-p') flag is @('nil').
+     The flag determines whether we stop at (and return) a new line,
+     or whether we skip new lines and just find a token.")
+   (xdoc::p
     "We go through lexmarks until we reach the end of file,
      in which case we return @('nil'),
-     or a token or new line, which we return.
+     or until we reach a token or possibly a new line (depending on the flag).
      But none of the lexmarks are consumed:
      they are all pushed back onto the pending lexmarks."))
   (b* ((ppstate (ppstate-fix ppstate))
@@ -859,12 +869,14 @@
     (cond
      ((not lexmark) ; EOF
       (retok nil ppstate))
-     ((and (lexmark-case lexmark :lexeme) ; token/EOL
-           (plexeme-token/newline-p (lexmark-lexeme->lexeme lexmark)))
+     ((and (lexmark-case lexmark :lexeme) ; token(/EOL)
+           (or (plexeme-tokenp (lexmark-lexeme->lexeme lexmark))
+               (and stop-at-newline-p
+                    (plexeme-case (lexmark-lexeme->lexeme lexmark) :newline))))
       (b* ((ppstate (push-lexmark lexmark ppstate)))
         (retok (lexmark-lexeme->lexeme lexmark) ppstate)))
      (t ; comment or white space
-      (b* (((erp toknl? ppstate) (peek-token/newline ppstate))
+      (b* (((erp toknl? ppstate) (peek-token/newline stop-at-newline-p ppstate))
            (ppstate (push-lexmark lexmark ppstate)))
         (retok toknl? ppstate)))))
   :measure (ppstate->size ppstate)
@@ -2618,7 +2630,8 @@
                                 ppstate
                                 (1- limit)))
                :function
-               (b* (((erp toknl ppstate) (peek-token/newline ppstate))
+               (b* (((erp toknl ppstate)
+                     (peek-token/newline directivep ppstate))
                     ((unless (and toknl
                                   (plexeme-punctuatorp toknl "(")))
                      (pproc-lexemes mode
