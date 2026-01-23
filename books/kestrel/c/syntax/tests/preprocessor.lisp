@@ -214,8 +214,8 @@ int table[100];
 ; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
+f(2 * (y+1)) + f(2 * (f(2 * (z[0])))) % f(2 * (0)) + t(1);
 /*
-f(y+1) + f(f(z)) % t(t(g)(0) + t)(1);
 g(x+(3,4)-w) | h 5) & m
       (f)^m(m);
 p() i[q()] = { q(1), r(2,3), r(4,), r(,5), r(,) };
