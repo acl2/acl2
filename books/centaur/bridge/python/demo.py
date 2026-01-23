@@ -21,9 +21,9 @@
 
 import acl2_bridge
 from acl2_bridge import Client, Command
+import sys
 
-
-def repl():
+def repl(send_stop_on_eof=False):
     # create a client
     client = Client()
     # connect to the bridge server socket
@@ -53,7 +53,8 @@ def repl():
                 command = Command("LISP", input(f"\n{current_package}> "))
             except EOFError:
                 print()
-                client.send(Command("LISP", "(bridge::stop)"))
+                if send_stop_on_eof:
+                    client.send(Command("LISP", "(bridge::stop)"))
                 client.disconnect()
                 exit()
             client.send(command)
@@ -68,4 +69,4 @@ def repl():
 
 
 if __name__ == "__main__":
-    repl()
+    repl(send_stop_on_eof="--stop" in sys.argv)
