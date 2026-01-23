@@ -207,7 +207,7 @@
        ;; applying rules that don't expand the term size too much.
        ;; TODO: Skip this if the test is known to already be simplified, but if we are calling this we may be usig precise contexts for the first time (perhaps combine pruning and dag-to-term?).
        ;; TODO: Can we skip this if there are no rules (well, there may be assumptions mentioning subterms of the test).  We could add a rewritep option.
-       ((mv erp simplified-dag-or-quotep)
+       ((mv erp simplified-dag-or-quotep &) ; use the hits?
         (simplify-term-basic test
                              assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                              rule-alist
