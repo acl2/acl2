@@ -4040,7 +4040,7 @@
                                nil ; time-limit
                                state))
              ((when provedp) ; surprising!
-              (cw "WARNING: Tried the theorem again and it worked!")
+              (cw "WARNING: Theorem ~x0 did not fail as expected when we submitted it again to restore the saved checkpoints!" theorem-name)
               state)
              (new-raw-checkpoint-clauses-top (acl2::checkpoint-list
                                               t ; todo: consider non-top
