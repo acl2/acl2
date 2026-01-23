@@ -20,8 +20,7 @@
 (std::defredundant
   :names (jenkins-acc-byte
           jenkins-acc-character
-          jenkins-acc-string-fixnum-index
-          jenkins-acc-string-nonfixnum-index
+          jenkins-acc-string-index
           jenkins-acc-string
           jenkins-acc-nat
           jenkins-acc-integer

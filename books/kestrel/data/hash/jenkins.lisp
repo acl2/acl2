@@ -128,7 +128,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: use loop$
-(define jenkins-acc-string-fixnum-index
+(define jenkins-acc-string-index
   ((str stringp)
    (i (unsigned-byte-p data::*fixnum-bits* i))
    (len (unsigned-byte-p data::*fixnum-bits* len))
@@ -153,7 +153,7 @@
     (if (and (mbt (and (<= i len)
                        (<= len #.data::*u-fixnum-max*)))
              (< i len))
-        (jenkins-acc-string-fixnum-index
+        (jenkins-acc-string-index
           str
           (the #.data::*u-fixnum-type* (1+ i))
           len
@@ -165,54 +165,13 @@
   :measure (nfix (- len (nfix i)))
   :hints (("Goal" :in-theory (enable the-check))))
 
-(in-theory (disable (:t jenkins-acc-string-fixnum-index)))
+(in-theory (disable (:t jenkins-acc-string-index)))
 
-(defrule jenkins-acc-string-fixnum-index-type-prescription
-  (natp (jenkins-acc-string-fixnum-index str i len acc))
+(defrule jenkins-acc-string-index-type-prescription
+  (natp (jenkins-acc-string-index str i len acc))
   :rule-classes :type-prescription
   :induct t
-  :enable jenkins-acc-string-fixnum-index)
-
-(define jenkins-acc-string-nonfixnum-index
-  ((str stringp)
-   (i natp)
-   (len natp)
-   (acc (unsigned-byte-p 32 acc)))
-  :guard (mbe :logic (and (<= i len)
-                          (equal len (length str)))
-              :exec (and (<= (the unsigned-byte i) (the unsigned-byte len))
-                         (equal (the unsigned-byte len) (length str))))
-  (declare (xargs :split-types t)
-           (type string str)
-           (type unsigned-byte i)
-           (type unsigned-byte len)
-           (type (unsigned-byte 32) acc))
-  :returns (acc$ (unsigned-byte-p 32 acc$))
-  (let ((i (mbe :logic (nfix i)
-                :exec i))
-        (len (mbe :logic (nfix len)
-                  :exec len)))
-    ;; TODO: redundant?
-    (declare (type unsigned-byte i len))
-    (if (and (mbt (<= i len))
-             (< i len))
-        (jenkins-acc-string-nonfixnum-index
-          str
-          (the unsigned-byte (1+ i))
-          len
-          (jenkins-acc-character (the character (char str i)) acc))
-      (mbe :logic (if (unsigned-byte-p 32 acc)
-                      acc
-                    0)
-           :exec acc)))
-  :measure (nfix (- len (nfix i)))
-  :hints (("Goal" :in-theory (enable the-check))))
-
-(defrule jenkins-acc-string-nonfixnum-index-type-prescription
-  (natp (jenkins-acc-string-nonfixnum-index str i len acc))
-  :rule-classes :type-prescription
-  :induct t
-  :enable jenkins-acc-string-nonfixnum-index)
+  :enable jenkins-acc-string-index)
 
 (define jenkins-acc-string
   ((str stringp)
@@ -224,9 +183,16 @@
   (the (unsigned-byte 32)
     (let ((len (length str)))
       (declare (type unsigned-byte len))
-      (if (<= len #.data::*u-fixnum-max*)
-          (jenkins-acc-string-fixnum-index str 0 (data::the-u-fixnum len) acc)
-        (jenkins-acc-string-nonfixnum-index str 0 len acc))))
+      (mbe :logic
+           (jenkins-acc-string-index str 0 len acc)
+           :exec
+           ;; Note: this check may be optimized-away by some compilers,
+           ;; which may infer that the length must always be smaller than
+           ;; this upper bound
+           ;; (I believe based on COMMON-LISP:ARRAY-DIMENSION-LIMIT).
+           (if (<= len #.data::*u-fixnum-max*)
+               (jenkins-acc-string-index str 0 (data::the-u-fixnum len) acc)
+             (non-exec (jenkins-acc-string-index str 0 len acc))))))
   :inline t)
 
 (in-theory (disable (:t jenkins-acc-string)))
