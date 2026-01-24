@@ -8,8 +8,8 @@
 #define HIGHLOW     "hello"
 #define LOW         LOW ", world"
 
-/*
 debug(1, 2);
+/*
 fputs(str(strncmp("abc\0d", "abc", ’\4’) // this goes away
       == 0) str(: @\n), s);
 #include xstr(INCFILE(2).h)
