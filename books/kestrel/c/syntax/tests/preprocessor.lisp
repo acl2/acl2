@@ -242,9 +242,8 @@ char c[2][6] = { \"hello\", \"\" };
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
 printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
+fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
 /*
-fputs(str(strncmp(\"abc\\0d\", \"abc\", ’\\4’) // this goes away
-      == 0) str(: @\\n), s);
 #include xstr(INCFILE(2).h)
 glue(HIGH, LOW);
 xglue(HIGH, LOW)
