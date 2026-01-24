@@ -874,7 +874,9 @@
     (mv-let (names tables show with-output events)
       (with-supporters-args rest nil nil nil nil nil)
       (let* ((form
-              `(let ((min (max-absolute-event-number (w state)))
+              `(let ((min (cdr (assoc-eq :min
+                                         (table-alist 'with-supporters-table
+                                                      (w state)))))
                      (ctx 'with-supporters))
                  (er-progn
                   ,(cadr local-event)
@@ -905,8 +907,7 @@
                                 fns (ens state) wrld min nil))
                               (ev
                                (list*
-                                'encapsulate
-                                ()
+                                'progn
                                 ',local-event
                                 '(set-enforce-redundancy t)
                                 '(set-bogus-defun-hints-ok t)
@@ -938,8 +939,19 @@
                                            "Illegal value of :show, ~x0"
                                            show)))))))))))
         (if with-output
-            `(make-event (with-output! ,@with-output ,form))
-          `(make-event ,form)))))))
+            `(with-output ,@with-output
+               (encapsulate
+                 ()
+                 (local (table with-supporters-table :min
+                               (max-absolute-event-number world)))
+                 ,local-event
+                 (make-event ,form)))
+          `(encapsulate
+             ()
+             (local (table with-supporters-table :min
+                           (max-absolute-event-number world)))
+             ,local-event
+             (make-event ,form))))))))
 
 (defmacro with-supporters (local-event &rest rest)
   (with-supporters-fn local-event rest))
