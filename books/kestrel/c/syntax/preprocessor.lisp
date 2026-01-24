@@ -2041,11 +2041,11 @@
                                               subst
                                               version)))
                  (retok
-                  (append (and spacep
-                               (list (make-lexmark-lexeme
-                                      :lexeme (plexeme-spaces 1)
-                                      :span (irr-span))))
-                          (and (consp rest-arg)
+                  ;; We avoid the space here, even if SPACEP is T,
+                  ;; because it is the space that precedes ##,
+                  ;; and it must not be printed
+                  ;; because we are concatenating tokens.
+                  (append (and (consp rest-arg)
                                (butlast arg 1))
                           replaced-replist)))
              ;; If the token after ## is not a parameter,
