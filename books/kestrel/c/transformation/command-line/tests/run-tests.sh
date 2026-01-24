@@ -2,6 +2,8 @@ set -e # Stop on errors
 
 rm -f split-gso.output/*.*
 ../transform-c.sh split-gso.json
+rm -f split-gso-no-extensions.output/*.*
+../transform-c.sh split-gso-no-extensions.json
 rm -f simpadd0.output/*.*
 ../transform-c.sh simpadd0.json
 rm -f split-fn.output/*.*
@@ -19,6 +21,13 @@ rm -f wrap-fn.output/*.*
 cd split-gso.output
 gcc -O0 -c *.c
 echo "Results in split-gso.output:"
+ls -l *.c
+ls -l *.o
+cd ..
+
+cd split-gso-no-extensions.output
+gcc -O0 -c *.c
+echo "Results in split-gso-no-extensions.output:"
 ls -l *.c
 ls -l *.o
 cd ..

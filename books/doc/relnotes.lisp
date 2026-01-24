@@ -184,7 +184,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "treeset::set" "Treesets"))
+   (xdoc::h4 (xdoc::seetopic "treeset::treeset" "Treesets"))
 
    (xdoc::p
     "A tree-based implementation of finite sets. This library offers a similar

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -585,7 +585,7 @@
      ((utf8-= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos ppstate))
      ((and (utf8-= char (char-code #\%)) ; \ %
-           (ppstate->gcc ppstate))
+           (ppstate->gcc/clang ppstate))
       (retok (escape-simple (simple-escape-percent)) pos ppstate))
      ((and (utf8-<= (char-code #\0) char)
            (utf8-<= char (char-code #\7))) ; \ octdig

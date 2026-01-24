@@ -1,0 +1,11 @@
+; Copyright (C) 2026 by Kestrel Institute
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TREESET")
+
+(include-book "kestrel/data/hash/portcullis" :dir :system)
