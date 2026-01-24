@@ -238,7 +238,7 @@ char c[2][6] = { \"hello\", \"\" };
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
+; TODO: finish handling macro replacement
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
 printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
