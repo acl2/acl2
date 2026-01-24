@@ -1918,14 +1918,7 @@
                (reterr t))
               (arg (cdr param+arg))
               ;; Combine # and ARG into TOKEN.
-              ((unless (lexmark-list-case-lexeme-p arg))
-               (raise "Internal error: ~
-                       argument ~x0 of parameter ~x1 preceded by # ~
-                       contains markers."
-                      arg param)
-               (reterr t))
-              (arg (lexmark-list-to-lexeme-list arg))
-              (stringlit (stringize-lexemes arg))
+              ((mv stringlit markers) (stringize arg))
               (token (plexeme-string stringlit))
               (lexmark (make-lexmark-lexeme :lexeme token :span (irr-span)))
               ;; Do not add TOKEN to the output here,
@@ -1933,6 +1926,8 @@
               ;; let the recursive call handle TOKEN.
               ;; But add LAST-TOKEN/MARKER/PLACEMARKER if non NIL,
               ;; because it is not followed by ##.
+              ;; Also put the markers collected from the operand of #
+              ;; just before the string literal.
               ((erp replaced-replist)
                (replace-macro-args-loop lexmark replist subst version)))
            (retok
@@ -1942,6 +1937,7 @@
                          (list (make-lexmark-lexeme
                                 :lexeme (plexeme-spaces 1)
                                 :span (irr-span))))
+                    markers
                     replaced-replist))))
         ((plexeme-hashhashp token) ; ##
          (b* (;; REPLIST cannot end with ##.
@@ -2021,7 +2017,8 @@
                     ;; otherwise we take the last token of REST-ARG.
                     ;; If both left and right operands are tokens,
                     ;; TOKEN? is their combination,
-                    ;; and LAST-TOKEN/MARKER/PLACEMARKER is as in the previous case.
+                    ;; and LAST-TOKEN/MARKER/PLACEMARKER is
+                    ;; as in the previous case.
                     (last-token/marker/placemarker
                      (if token?
                          (if (consp rest-arg)

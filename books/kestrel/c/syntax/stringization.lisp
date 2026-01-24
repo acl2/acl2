@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "preprocessor-lexemes")
+(include-book "preprocessor-states")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
@@ -35,7 +35,12 @@
      Here we define a family of functions to perform this conversion.")
    (xdoc::p
     "The term `stringize' is used in [C17],
-     although not in [C17:6.10.3.2]."))
+     although not in [C17:6.10.3.2].")
+   (xdoc::p
+    "In general, stringization may be applied to lexmarks,
+     as they result from macro replacements.
+     The markers themselves are not stringized,
+     but we still need to handle them with respect to the disabled multiset."))
   :order-subtopics t
   :default-parent t)
 
@@ -366,31 +371,58 @@
    :form-feed (raise "Internal error: form feed."))
   :no-function nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringize-lexeme-list ((lexemes plexeme-listp))
-  :returns (schars s-char-listp)
-  :short "Stringize a list of lexemes."
-  (cond ((endp lexemes) nil)
-        (t (append (stringize-lexeme (car lexemes))
-                   (stringize-lexeme-list (cdr lexemes))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-lexemes ((lexemes plexeme-listp))
-  :returns (stringlit stringlitp)
-  :short "Stringize zero or more lexemes."
+(define stringize ((lexmarks lexmark-listp))
+  :returns (mv (stringlit stringlitp) (markers lexmark-listp))
+  :short "Stringize the lexemes in a list of lexmarks,
+          collecting the markers in a list."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level stringization function,
-     so it returns a string literal instead of
-     a list of string literal characters like the other functions.")
+    "In our preprocessor, the @('#') operator may be applied
+     to a macro argument that contains markers,
+     resulting from the expansion of other macros.
+     Although direct arguments of the macro that contains @('#')
+     do not get expanded [C17:6.10.3.1],
+     indirect arguments may be expanded, e.g. given")
+   (xdoc::codeblock
+    "#define F(x) # x"
+    "#define G(x) F(x)"
+    "#define M a b c")
    (xdoc::p
-    "We use no encoding prefix for the string literal,
+    "the macro call @('G(M)')
+     expands to @('F(start(M) a b c end(M))'),
+     where we are showing the markers @('start(M)') and @('end(M)'),
+     which then expands to @('\"a b c\"'),
+     but note that that the markers are passed,
+     along with the lexemes between them, to the @('#') operator.")
+   (xdoc::p
+    "The markers are not stringized, but must not lose them.
+     So we collect them as we go through the lexemes we stringize,
+     and return all the markers in a separate list.")
+   (xdoc::p
+    "The characters obtained by stringizing the lexemes
+     are concatenated all together,
+     and then wrapper into a string literal.
+     The string literal has no encoding prefix,
      because the term `character string literal' in [C17:6.10.3.2/2]
      denotes a string literal without prefix,
      as opposed to `UTF-8 string literals' and `wide string literals'
      [C17:6.4.5/3]."))
-  (make-stringlit :prefix? nil
-                  :schars (stringize-lexeme-list lexemes)))
+  (b* (((mv schars markers) (stringize-loop lexmarks)))
+    (mv (make-stringlit :prefix? nil :schars schars)
+        markers))
+
+  :prepwork
+  ((define stringize-loop ((lexmarks lexmark-listp))
+     :returns (mv (schars s-char-listp) (markers lexmark-listp))
+     :parents nil
+     (b* (((when (endp lexmarks)) (mv nil nil))
+          (lexmark (car lexmarks))
+          ((mv schars markers) (stringize-loop (cdr lexmarks))))
+       (if (lexmark-case lexmark :lexeme)
+           (mv (append (stringize-lexeme (lexmark-lexeme->lexeme lexmark))
+                       schars)
+               markers)
+         (mv schars (cons (lexmark-fix lexmark) markers)))))))
