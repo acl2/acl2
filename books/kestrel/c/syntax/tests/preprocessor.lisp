@@ -243,9 +243,9 @@ char c[2][6] = { \"hello\", \"\" };
                 "
 printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
 fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
+include \"vers2.h\" // omit # in #include to avoid access
+\"hello\";
 /*
-#include xstr(INCFILE(2).h)
-glue(HIGH, LOW);
 xglue(HIGH, LOW)
 */
 ")

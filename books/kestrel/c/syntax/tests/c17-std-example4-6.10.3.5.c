@@ -11,8 +11,8 @@
 debug(1, 2);
 fputs(str(strncmp("abc\0d", "abc", '\4') // this goes away
       == 0) str(: @\n), s);
-/*
-#include xstr(INCFILE(2).h)
+include xstr(INCFILE(2).h) // omit # in #include to avoid access
 glue(HIGH, LOW);
+/*
 xglue(HIGH, LOW)
 */
