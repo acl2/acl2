@@ -34,13 +34,13 @@
   ((x treep)
    (y treep))
   :parents (implementation)
-  :short "Check if one set is a tree-subset-p of the other."
+  :short "Check if one tree is a subset of the other."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(n\\log(m))$) (Note: the current implementation is
-      inefficient. This should eventually be @($O(n\\log(m/n))$), where
-      @($n < m$). This may be implemented similar to @(tsee diff).)"))
+     "Time complexity: @($O(m\\log(n))$) (Note: the current implementation is
+      inefficient. This should eventually be @($O(m\\log(n/m))$), where
+      @($m < n$). This may be implemented similar to @(tsee diff).)"))
   :guard (bstp y)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p x)
