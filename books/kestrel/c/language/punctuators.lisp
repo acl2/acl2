@@ -103,7 +103,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The only difference with @(tsee *punctuators-c17*
+    "The only difference with @(tsee *punctuators-c17*)
      is the addition of @('::')."))
   '("["
     "]"
