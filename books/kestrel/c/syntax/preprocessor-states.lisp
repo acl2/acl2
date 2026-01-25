@@ -132,6 +132,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist lexmark-option-list
+  :short "Fixtype of lists of optional lexmarks."
+  :elt-type lexmark-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred lexmark-option-listp
+
+  ///
+
+  (defrule lexmark-option-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (lexmark-option-listp x))
+    :induct t
+    :enable lexmark-option-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lexeme-list-to-lexmark-list ((lexemes plexeme-listp))
   :returns (lexmarks lexmark-listp)
   :short "Turn a list of lexemes into a list of lexmarks."
