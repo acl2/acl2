@@ -194,13 +194,13 @@
 
     (:mvn-immediate (cond 4) 0 0 _ 1 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (imm12 12))
     (:mvn-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (imm5 5) (type 2) 0 (rm 4))
-    (:mvn-shifted-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
+    (:mvn-register-shifted-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
     (:nop  (cond 4) 0 0 1 1 _ 0 0 1 0 _ 0 0 0 0 (1) (1) (1) (1) (0) (0) (0) (0) 0 0 0 0 0 0 0 0)
 
     (:orr-immediate  (cond 4) 0 0 1 1 1 0 0 s (rn 4) (rd 4) (imm12 12))
     (:orr-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
-    (:orr-shifted-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
+    (:orr-register-shifted-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
     ;; todo: pkh
     ;; todo: pld, pldw
