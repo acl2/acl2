@@ -416,7 +416,8 @@
     core-rules-bv
     amazing-rules-bv
     trim-rules
-    prune-dag-post-rewrite-rules))
+    prune-dag-post-rewrite-rules
+    pre-stp-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little
