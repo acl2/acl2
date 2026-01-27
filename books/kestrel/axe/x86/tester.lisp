@@ -39,9 +39,8 @@
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
-(ensure-rules-known (extra-tester-rules))
-(ensure-rules-known (extra-tester-lifting-rules))
-(ensure-rules-known (tester-proof-rules))
+;; TODO: What about ones included only locally?
+(ensure-rules-known (all-tester-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
