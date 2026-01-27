@@ -126,10 +126,11 @@
 ;;            (integer-listp x))
 ;;   :hints (("Goal" :in-theory (enable integer-listp))))
 
-(defthm nat-listp-forward-to-all-integerp
-  (implies (nat-listp x)
-           (all-integerp x))
-  :rule-classes :forward-chaining)
+(local
+  (defthm nat-listp-forward-to-all-integerp
+    (implies (nat-listp x)
+             (all-integerp x))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
