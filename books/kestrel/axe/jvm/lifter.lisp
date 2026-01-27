@@ -4751,7 +4751,8 @@
 ;; todo: call something from the unroller instead of this?
 (defun decompile-loop-by-unrolling (loop-pcs loop-top-state-dag hyps this-loop-number next-loop-number generated-rules-acc interpreted-function-alist-alist interpreted-function-alist print options generated-events-acc state)
   (declare (xargs :stobjs state
-                  :mode :program))
+                  :mode :program ;; because of simp-dag
+                  ))
   (b* ((- (cw "(Unrolling loop number ~x0:...~%" this-loop-number))
        ((mv erp dag-to-run)
         (wrap-term-around-dag
@@ -4821,7 +4822,7 @@
                     (hard-error 'decompile-loop
                                 "didn't finish the run. See the state just above." nil)
                     nil nil nil nil nil state))
-      (progn$ (- (cw "Done unrolling.)"))
+      (progn$ (cw "Done unrolling.)")
               (mv nil state-dag generated-events-acc generated-rules-acc next-loop-number interpreted-function-alist-alist interpreted-function-alist state)))))
 
 ;;
