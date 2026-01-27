@@ -10,12 +10,12 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-lexemes")
+(include-book "macro-tables")
 (include-book "parser-states")
 (include-book "implementation-environments")
 
 (include-book "kestrel/fty/byte-list-list" :dir :system)
-(include-book "std/strings/letter-uscore-chars" :dir :system)
-(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -74,290 +74,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum pnumber
-  :short "Fixtype of preprocessing numbers [C17:6.4.8] [C17:A.1.9]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is like an abstract syntax for preprocessing numbers,
-     corresponding to the rule for @('pp-number') in the ABNF grammar.
-     We need to capture their structure, in order to do preprocessing."))
-  (:digit ((digit character
-                  :reqfix (if (dec-digit-char-p digit)
-                              digit
-                            #\0)))
-   :require (dec-digit-char-p digit))
-  (:dot-digit ((digit character
-                      :reqfix (if (dec-digit-char-p digit)
-                                  digit
-                                #\0)))
-   :require (dec-digit-char-p digit))
-  (:number-digit ((number pnumber)
-                  (digit character
-                         :reqfix (if (dec-digit-char-p digit)
-                                     digit
-                                   #\0)))
-   :require (dec-digit-char-p digit))
-  (:number-nondigit ((number pnumber)
-                     (nondigit character
-                               :reqfix (if (str::letter/uscore-char-p nondigit)
-                                           nondigit
-                                         #\_)))
-   :require (str::letter/uscore-char-p nondigit))
-  (:number-locase-e-sign ((number pnumber)
-                          (sign sign)))
-  (:number-upcase-e-sign ((number pnumber)
-                          (sign sign)))
-  (:number-locase-p-sign ((number pnumber)
-                          (sign sign)))
-  (:number-upcase-p-sign ((number pnumber)
-                          (sign sign)))
-  (:number-dot ((number pnumber)))
-  :pred pnumberp
-  :prepwork ((set-induction-depth-limit 1)
-             (local (in-theory (enable fix (:e str::letter/uscore-char-p))))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-pnumber
-  :short "An irrelevant preprocessing number."
-  :type pnumberp
-  :body (pnumber-digit #\0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum newline
-  :short "Fixtype of new lines."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This corresponds to the rule @('new-line') in the ABNF grammar.
-     Our preprocessor does not collapse them into a single new-line
-     because it preserves white space, which includes new lines."))
-  (:lf ())
-  (:cr ())
-  (:crlf ())
-  :pred newlinep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-newline
-  :short "An irrelevant new line."
-  :type newlinep
-  :body (newline-lf))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum plexeme
-  :short "Fixtype of preprocessing lexemes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of preprocessing tokens [C17:6.4] [C17:A.1.1],
-     with the addition of comments and white space:
-     these are all the preprocessing lexemes,
-     although [C17] does not use the word `lexeme'.")
-   (xdoc::p
-    "We reuse some of the fixtypes for ASTs here.")
-   (xdoc::p
-    "The @(':other') summand corresponds to
-     the last alternative in the ABNF grammar rule for @('preprocessing-token'),
-     as well as the prose description of the rule in [C17].
-     It consists of the code of the character.")
-   (xdoc::p
-    "For (block and line) comments, we include the content,
-     consisting of the codes of the characters.
-     For block comments, these are all the characters
-     from just after the opening @('/*') to just before the closing @('*/').
-     For line comments, these are all the characters
-     from just after the opening @('//') to just before the closing new line;
-     recall that line comments exclude the ending new line [C17:6.4.9/2].")
-   (xdoc::p
-    "We keep the information about the three possible kinds of new-line,
-     and of all other white space characters,
-     according to the ABNF grammar rule for @('white-space').
-     Since spaces (code 32) often occur in consecutive chunks,
-     we represent them more efficiently as chunks, via positive counts."))
-  (:header ((name header-name)))
-  (:ident ((ident ident)))
-  (:number ((number pnumber)))
-  (:char ((const cconst)))
-  (:string ((literal stringlit)))
-  (:punctuator ((punctuator string)))
-  (:other ((char nat)))
-  (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list)))
-  (:newline ((chars newline)))
-  (:spaces ((count pos)))
-  (:horizontal-tab ())
-  (:vertical-tab ())
-  (:form-feed ())
-  :pred plexemep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-plexeme
-  :short "An irrelevant preprocessing lexeme."
-  :type plexemep
-  :body (plexeme-ident (ident :irrelevant)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption plexeme-option
-  plexeme
-  :short "Fixtype of optional preprocessing lexemes."
-  :pred plexeme-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist plexeme-list
-  :short "Fixtype of lists of preprocessing lexemes."
-  :elt-type plexeme
-  :true-listp t
-  :elementp-of-nil nil
-  :pred plexeme-listp
-
-  ///
-
-  (defruled true-listp-when-plexeme-listp
-    (implies (plexeme-listp x)
-             (true-listp x))
-    :induct t
-    :enable plexeme-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define plexeme-tokenp ((lexeme plexemep))
-  :returns (yes/no booleanp)
-  :short "Check if a preprocessing lexeme is a token."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the grammar rule for <i>preprocessing-token</i>
-     [C17:6.4] [C17:A.1.1]."))
-  (and (member-eq (plexeme-kind lexeme)
-                  '(:header
-                    :ident
-                    :number
-                    :char
-                    :string
-                    :punctuator
-                    :other))
-       t)
-
-  ///
-
-  (defruled plexeme-tokenp-alt-def
-    (equal (plexeme-tokenp lexeme)
-           (not (member-eq (plexeme-kind lexeme)
-                           '(:block-comment
-                             :line-comment
-                             :newline
-                             :spaces
-                             :horizontal-tab
-                             :vertical-tab
-                             :form-feed))))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist plexeme-list-tokenp (x)
-  :guard (plexeme-listp x)
-  :short "Check if every preprocessing lexeme in a list is a token."
-  (plexeme-tokenp x)
-  :elementp-of-nil t
-  ///
-  (fty::deffixequiv plexeme-list-tokenp))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist plexeme-list-not-tokenp (x)
-  :guard (plexeme-listp x)
-  :short "Check if no preprocessing lexeme in a list is a token."
-  (plexeme-tokenp x)
-  :negatedp t
-  :elementp-of-nil t
-  ///
-  (fty::deffixequiv plexeme-list-not-tokenp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define plexeme-token/newline-p ((lexeme plexemep))
-  :returns (yes/no booleanp)
-  :short "Check if a preprocessing lexeme is a token or a new line."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "During preprocessing, new-line characters are significant:
-     see grammar rules in [C17:6.10/1].
-     Preprocessing is largely line-oriented.
-     In our preprocessor, new-line characters are captured as new-line lexemes
-     (see @(tsee plexeme))."))
-  (or (plexeme-tokenp lexeme)
-      (plexeme-case lexeme :newline)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist plexeme-list-token/newline-p (x)
-  :guard (plexeme-listp x)
-  :short "Check if every preprocessing lexeme in a list is a token or new line."
-  (plexeme-token/newline-p x)
-  :elementp-of-nil t
-  ///
-  (fty::deffixequiv plexeme-list-token/newline-p))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist plexeme-list-not-token/newline-p (x)
-  :guard (plexeme-listp x)
-  :short "Check if no preprocessing lexeme in a list is a token or new line."
-  (plexeme-token/newline-p x)
-  :negatedp t
-  :elementp-of-nil t
-  ///
-  (fty::deffixequiv plexeme-list-not-token/newline-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define plexeme-token/space-p ((lexeme plexemep))
-  :returns (yes/no booleanp)
-  :short "Check if a preprocessing lexeme is a token or a (single) space."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to represent, and facilitate comparison of,
-     replacement lists of macros, as explained in more detail elsewhere."))
-  (or (plexeme-tokenp lexeme)
-      (and (plexeme-case lexeme :spaces)
-           (equal (plexeme-spaces->count lexeme) 1))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist plexeme-list-token/space-p (x)
-  :guard (plexeme-listp x)
-  :short "Check if every preprocessing lexeme in a list
-          is a token or (single) space."
-  (plexeme-token/space-p x)
-  :elementp-of-nil t
-  ///
-  (fty::deffixequiv plexeme-list-token/space-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define plexeme-hashp ((lexeme plexemep))
-  :returns (yes/no booleanp)
-  :short "Check if a lexeme is a hash @('#')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check if the lexeme is the punctuator @('#'),
-     or also if the lexeme is the digraph @('%:') [C17:6.4.6/3]."))
-  (and (plexeme-case lexeme :punctuator)
-       (b* ((string (plexeme-punctuator->punctuator lexeme)))
-         (or (equal string "#")
-             (equal string "%:")))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum lexmark
   :short "Fixtype of preprocessing lexemes and markers (`lexmarks')."
   :long
@@ -375,16 +91,12 @@
      in order to inhibit its (direct or indirect) recursive expansion
      [C17:6.10.3.4/2].")
    (xdoc::p
-    "The @(':placemarker') summand is used as described in [C17:6.10.3.3],
-     to handle the @('##') operator.")
-   (xdoc::p
     "Only lexemes have spans associated with them.
      The markers are artifacts, not an actual part of the input files."))
   (:lexeme ((lexeme plexeme)
             (span span)))
   (:start ((macro ident)))
   (:end ((macro ident)))
-  (:placemarker ())
   :pred lexmarkp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -396,345 +108,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption lexmark-option
+  lexmark
+  :short "Fixtype of optional lexmarks."
+  :pred lexmark-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist lexmark-list
   :short "Fixtype of lists of lexmarks."
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
-  :pred lexmark-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum macro-info
-  :short "Fixtype of information about a macro."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This does not include the name, which we represent separately.")
-   (xdoc::p
-    "Aside from the name, an object-like macro [C17:6.10.3/9]
-     consists of its replacement list,
-     which is a sequence of zero or more preprocessing tokens.
-     To facilitate comparisons with multiple definitions of the same macro
-     [C17:6.10.3/1] [C17:6.10.3/2],
-     we also keep track of white space separating tokens,
-     in the form of a single space between two tokens.
-     The invariant @(tsee plexeme-list-token/space-p) captures
-     the fact that we only have tokens and single spaces,
-     but does not capture the fact that the single spaces
-     only occur between two tokens,
-     which should be also an invariant.
-     The list of lexemes excludes
-     the (mandatory [C17:6.10.3/3]) white space
-     between the name and the replacement list,
-     as well as the white space after the replacement list,
-     excluding the closing new line as well
-     [C17:6.10.3/7].")
-   (xdoc::p
-    "For a function-like macro [C17:6.10.3/10],
-     besides the replacement list,
-     which we model as for object-like macros (see above),
-     we have zero or more parameters, which are identifiers,
-     and an optional ellipsis parameter,
-     whose presence or absence we model as a boolean.
-     The list of lexemes excludes any white space between
-     the closing parenthesis of the parameters and the replacement list,
-     as well as the white space after the replacement list,
-     exclusing the closing new line as well
-     [C17:6.10.3/7]."))
-  (:object ((replace plexeme-list
-                     :reqfix (if (plexeme-list-token/space-p replace)
-                                 replace
-                               nil)))
-   :require (plexeme-list-token/space-p replace))
-  (:function ((params ident-list)
-              (ellipsis bool)
-              (replace plexeme-list
-                       :reqfix (if (plexeme-list-token/space-p replace)
-                                   replace
-                                 nil)))
-   :require (plexeme-list-token/space-p replace))
-  :pred macro-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption macro-info-option
-  macro-info
-  :short "Fixtype of optional information about a macro."
-  :pred macro-info-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist macro-scope
-  :short "Fixtype of macro scopes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A file may define some macros, and then include another file.
-     When preprocessing the included file,
-     which may define its own macros,
-     the macros defined in the including file are also in scope.
-     If the included file includes a further file,
-     the latter sees the macros of
-     the two (directly and indirectly) including files.
-     This leads to a natural stack-like structure
-     for keeping track of the macros in scope,
-     where each scope corresponds to a file.
-     [C17] does not have a notion of macro scopes,
-     but our preprocessor uses this notion to determine
-     when included files are @(see self-contained),
-     in the precise sense that we define elsewhere.")
-   (xdoc::p
-    "The values of this fixtype represent a macro scope.
-     The keys represent the names of the macros,
-     with the values representing the associated information.
-     The names are identifiers [C17:6.10.3/9] [C17:6.10.3/10],
-     and should be unique according to [C17:6.10.3/2],
-     but in practice GCC allows redefinition within a file,
-     with the last definition overriding the previous one.
-     So we do not necessarily enforce the uniqueness of keys;
-     note that, by adding new associations with @(tsee acons)
-     and by looking up associations with @(tsee assoc-equal),
-     we automatically match GCC's behavior."))
-  :key-type ident
-  :val-type macro-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred macro-scopep
-  :prepwork ((set-induction-depth-limit 1))
+  :pred lexmark-listp
 
   ///
 
-  (defruled macro-infop-of-cdr-of-assoc-equal-when-macro-scopep
-    (implies (and (macro-scopep scope)
-                  (assoc-equal name scope))
-             (macro-infop (cdr (assoc-equal name scope))))
+  (defruled true-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (true-listp x))
     :induct t
-    :enable macro-scopep))
+    :enable lexmark-listp))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist macro-scope-list
-  :short "Fixtype of lists of macro scopes."
-  :elt-type macro-scope
+(fty::deflist lexmark-option-list
+  :short "Fixtype of lists of optional lexmarks."
+  :elt-type lexmark-option
   :true-listp t
   :elementp-of-nil t
-  :pred macro-scope-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod macro-table
-  :short "Fixtype of macro tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As explained in @(tsee macro-scope),
-     we organize macros in a stack of scopes,
-     i.e. a list of scopes corresponding to the files being preprocessed,
-     the @(tsee car) being the innermost scope,
-     and the list being empty only before any file is being preprocessed.
-     We also have a separate scope of predefined macros [C17:6.10.8].")
-   (xdoc::p
-    "Just like we do not necessarily enforce
-     the uniqueness of keys in each scope (see @(tsee macro-scope)),
-     we also do not necessarily enforce the disjointness of
-     the scopes in a macro table, including the predefined one.
-     GCC allows redefinition of predefined macros,
-     with the redefinition overriding the predefinition.")
-   (xdoc::p
-    "We do not actually support the predefined macros yet,
-     but we already have a placeholder in the macro table.
-     It is not yet clear whether the best way to represent them
-     is as a macro scope,
-     given that some of them have dynamic definitions
-     (e.g. @('__LINE__') [C17:6.10.8.1/1]).
-     We may revise this part of the data structure
-     when we actually add support for predefined macros."))
-  ((predefined macro-scope)
-   (scopes macro-scope-list))
-  :pred macro-tablep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-macro-table
-  :short "An irrelevant macro table."
-  :type macro-tablep
-  :body (macro-table nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-lookup ((name identp) (table macro-tablep))
-  :returns
-  (mv (info? macro-info-optionp)
-      (innermostp booleanp)
-      (predefinedp booleanp))
-  :short "Look up a macro in a macro table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We search from innermost to outermost scope,
-     and then the predefined scope if needed.
-     This lookup order matches GCC's behavior,
-     notes in @(tsee macro-scope) and @(tsee macro-table).")
-   (xdoc::p
-    "We also return two flags saying whether the macro was found
-     in the innermost scope or in the predefined scope.
-     At most one such flag can be @('t').
-     They are both @('nil') if the macro is not found."))
-  (b* (((mv info? innermostp)
-        (macro-lookup-in-scopes name t (macro-table->scopes table)))
-       ((when info?) (mv info? innermostp nil))
-       (name+info
-        (assoc-equal (ident-fix name) (macro-table->predefined table)))
-       ((when name+info) (mv (cdr name+info) nil t)))
-    (mv nil nil nil))
-
-  :prepwork
-  ((local (in-theory (enable macro-info-optionp
-                             macro-infop-of-cdr-of-assoc-equal-when-macro-scopep
-                             alistp-when-macro-scopep-rewrite)))
-   (define macro-lookup-in-scopes ((name identp)
-                                   (current-innermostp booleanp)
-                                   (scopes macro-scope-listp))
-     :returns (mv (info? macro-info-optionp)
-                  (final-innermostp booleanp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (macro-scope-fix (car scopes)))
-          (name+info (assoc-equal (ident-fix name) scope))
-          ((when name+info) (mv (cdr name+info) (bool-fix current-innermostp))))
-       (macro-lookup-in-scopes name nil (cdr scopes)))))
+  :pred lexmark-option-listp
 
   ///
 
-  (defret macro-lookup-not-innermostp-and-predefinedp
-    (not (and innermostp predefinedp)))
-
-  (in-theory (disable macro-lookup-not-innermostp-and-predefinedp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-table-init ()
-  :returns (table macro-tablep)
-  :short "Initial macro table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the table before we preprocess any file, so there are no scopes.
-     For now we do not add any predefined macros,
-     but we should do that at some point."))
-  (make-macro-table :predefined nil ; TODO
-                    :scopes nil))
+  (defrule lexmark-option-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (lexmark-option-listp x))
+    :induct t
+    :enable lexmark-option-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-push ((table macro-tablep))
-  :returns (new-table macro-tablep)
-  :short "Push a scope onto the macro table."
+(define lexeme-list-to-lexmark-list ((lexemes plexeme-listp))
+  :returns (lexmarks lexmark-listp)
+  :short "Turn a list of lexemes into a list of lexmarks."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used just before preprocessing a file.
-     We add a new empty scope for the new file."))
-  (change-macro-table table :scopes (cons nil (macro-table->scopes table)))
-
-  ///
-
-  (defret consp-of-scopes-of-macro-table-push
-    (consp (macro-table->scopes new-table))
-    :rule-classes :type-prescription))
+    "We keep the ordering.
+     We put irrelevant spans, which suggest that
+     we should probably make the span optional in @(tsee lexmark)."))
+  (cond ((endp lexemes) nil)
+        (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
+                 (lexeme-list-to-lexmark-list (cdr lexemes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-add ((name identp) (info macro-infop) (table macro-tablep))
-  :returns (mv erp (new-table macro-tablep))
-  :short "Add a macro to the macro table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is added to the innermost scope,
-     because it is the scope of the file being currently preprocessed.")
-   (xdoc::p
-    "If the table already contains a non-predefined macro with the given name,
-     the associated information must be the same:
-     this enforces the requirement in [C17:6.10.3/2],
-     namely that multiple definitions are allowed so long as
-     they are of the same kind (both object-like or both function-like),
-     they have the same parameters if both function-like,
-     and they have identical replacement list.
-     The latter notion [C17:6.10.3/1] amounts to equality for us,
-     because, as explained in @(tsee macro-info),
-     we normalize all white space to single spaces.
-     We may need to relax this check at some point,
-     based on the C version, because GCC allows redefinition.")
-   (xdoc::p
-    "If the table already contains a predefined macro with the given name,
-     we give an error outright,
-     because [C:6.10.8/2] prohibits redefinition of predefined macros.
-     We may need to relax this check at some point,
-     based on the C version,
-     because GCC allows redefinition of predefined macros.")
-   (xdoc::p
-    "If the above checks pass, we add the macro to the table.
-     Note that, even if we eliminate those checks for some C versions,
-     the added definition will shadow any existing definition,
-     in line with the behavior of GCC."))
-  (b* (((reterr) (irr-macro-table))
-       ((mv info? & predefinedp) (macro-lookup name table))
-       ((erp &)
-        (if info?
-            (if predefinedp
-                (reterr (msg "Redefinition of predefined macro ~x0."
-                             (ident-fix name)))
-              (if (equal info? (macro-info-fix info))
-                  (retok nil)
-                (reterr (msg "Duplicate macro ~x0 ~
-                              with incompatible definitions ~x1 and ~x2."
-                             (ident-fix name)
-                             (macro-info-fix info)
-                             info?))))
-          (retok nil)))
-       (scopes (macro-table->scopes table))
-       ((unless (consp scopes))
-        (raise "Internal error: no macro scopes.")
-        (reterr t))
-       (scope (car scopes))
-       (new-scope (acons (ident-fix name) (macro-info-fix info) scope))
-       (new-scopes (cons new-scope (cdr scopes)))
-       (new-table (change-macro-table table :scopes new-scopes)))
-    (retok new-table))
-  :guard-hints (("Goal" :in-theory (enable alistp-when-macro-scopep-rewrite
-                                           acons)))
-  :no-function nil)
+(std::deflist lexmark-list-case-lexeme-p (x)
+  :guard (lexmark-listp x)
+  :short "Check if all the lexmarks in a list are lexemes."
+  (lexmark-case x :lexeme))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-extend-top ((scope macro-scopep) (table macro-tablep))
-  :returns (new-table macro-tablep)
-  :short "Extend the top scope of a macro table with another scope."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to incorporate,
-     into the macro table of a file being preprocessed,
-     the macros contributed by a (@(see self-contained)) file
-     included by the former file.
-     When the included file is self-contained,
-     it is not expanded in place,
-     but we need to preprocess the rest of the including file
-     as if the included file were expanded in place,
-     in particular we must add the macro definitions that
-     the expanded included file would produce."))
-  (b* ((old-scopes (macro-table->scopes table))
-       ((unless (consp old-scopes))
-        (raise "Internal error: no scopes in macro table.")
-        (irr-macro-table))
-       (old-scope (car old-scopes))
-       (new-scope (append scope old-scope))
-       (new-scopes (cons new-scope (cdr old-scopes))))
-    (change-macro-table table :scopes new-scopes))
-  :no-function nil)
+(define lexmark-list-to-lexeme-list ((lexmarks lexmark-listp))
+  :guard (lexmark-list-case-lexeme-p lexmarks)
+  :returns (lexemes plexeme-listp)
+  :short "Turn a list of lexmarks that are all lexemes
+          into the list of lexemes."
+  (cond ((endp lexmarks) nil)
+        (t (cons (lexmark-lexeme->lexeme (car lexmarks))
+                 (lexmark-list-to-lexeme-list (cdr lexmarks))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -824,10 +268,7 @@
       The @(':start') and @(':end') markers are added around that expansion,
       to delimit that the expansion comes from a certain macro,
       so that we can prevent recursive expansion,
-      as explained in more detail elsewhere.
-      The pending list of lexmarks in the preprocessing state
-      actually never contains @(':placemarker') markers;
-      we should sharpen the type of this stobj component accordingly.")
+      as explained in more detail elsewhere.")
     (xdoc::li
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")))
@@ -857,12 +298,12 @@
                     :initially 0)
       (lexmarks :type (satisfies lexmark-listp)
                 :initially nil)
-      (ienv :type (satisfies ienvp)
-            :initially ,(irr-ienv))
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table-init))
+      (ienv :type (satisfies ienvp)
+            :initially ,(irr-ienv))
       :renaming (;; field recognizers:
                  (bytessp raw-ppstate->bytess-p)
                  (bytess-currentp raw-ppstate->bytess-current-p)
@@ -871,9 +312,9 @@
                  (chars-readp raw-ppstate->chars-read-p)
                  (chars-unreadp raw-ppstate->chars-unread-p)
                  (lexmarksp raw-ppstate->lexmarks-p)
-                 (ienvp raw-ppstate->ienvp)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytess-length raw-ppstate->bytess-length)
                  (bytessi raw-ppstate->bytes)
@@ -884,9 +325,9 @@
                  (chars-read raw-ppstate->chars-read)
                  (chars-unread raw-ppstate->chars-unread)
                  (lexmarks raw-ppstate->lexmarks)
-                 (ienv raw-ppstate->ienv)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (resize-bytess raw-update-ppstate->bytess-length)
                  (update-bytessi raw-update-ppstate->bytes)
@@ -897,9 +338,9 @@
                  (update-chars-read raw-update-ppstate->chars-read)
                  (update-chars-unread raw-update-ppstate->chars-unread)
                  (update-lexmarks raw-update-ppstate->lexmarks)
-                 (update-ienv raw-update-ppstate->ienv)
                  (update-size raw-update-ppstate->size)
-                 (update-macros raw-update-ppstate->macros))))
+                 (update-macros raw-update-ppstate->macros)
+                 (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
 
@@ -909,6 +350,7 @@
                     ppstate
                   (non-exec (create-ppstate)))
          :exec ppstate)
+    :inline t
     ///
     (defrule ppstate-fix-when-ppstatep
       (implies (ppstatep ppstate)
@@ -962,29 +404,34 @@
   (define ppstate->bytess-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->bytess-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-length ppstate)))
+         :exec (raw-ppstate->bytess-length ppstate))
+    :inline t)
 
   (define ppstate->bytes ((i natp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
     :returns (bytes byte-listp)
     (mbe :logic (non-exec (raw-ppstate->bytes (nfix i) (ppstate-fix ppstate)))
          :exec (raw-ppstate->bytes i ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->bytess-length)))))
 
   (define ppstate->bytess-current (ppstate)
     :returns (bytess-current natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->bytess-current (ppstate-fix ppstate)))
-         :exec (raw-ppstate->bytess-current ppstate)))
+         :exec (raw-ppstate->bytess-current ppstate))
+    :inline t)
 
   (define ppstate->position (ppstate)
     :returns (position positionp)
     (mbe :logic (non-exec (raw-ppstate->position (ppstate-fix ppstate)))
-         :exec (raw-ppstate->position ppstate)))
+         :exec (raw-ppstate->position ppstate))
+    :inline t)
 
   (define ppstate->chars-length (ppstate)
     :returns (length natp)
     (mbe :logic (non-exec (raw-ppstate->chars-length (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-length ppstate)))
+         :exec (raw-ppstate->chars-length ppstate))
+    :inline t)
 
   (define ppstate->char ((i natp) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -992,37 +439,44 @@
     (char+position-fix
      (mbe :logic (non-exec (raw-ppstate->char (nfix i) (ppstate-fix ppstate)))
           :exec (raw-ppstate->char i ppstate)))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define ppstate->chars-read (ppstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-read (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-read ppstate)))
+         :exec (raw-ppstate->chars-read ppstate))
+    :inline t)
 
   (define ppstate->chars-unread (ppstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->chars-unread (ppstate-fix ppstate)))
-         :exec (raw-ppstate->chars-unread ppstate)))
+         :exec (raw-ppstate->chars-unread ppstate))
+    :inline t)
 
   (define ppstate->lexmarks (ppstate)
     :returns (lexmarks lexmark-listp)
     (mbe :logic (non-exec (raw-ppstate->lexmarks (ppstate-fix ppstate)))
-         :exec (raw-ppstate->lexmarks ppstate)))
-
-  (define ppstate->ienv (ppstate)
-    :returns (ienv ienvp)
-    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ienv ppstate)))
+         :exec (raw-ppstate->lexmarks ppstate))
+    :inline t)
 
   (define ppstate->size (ppstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
     (mbe :logic (non-exec (raw-ppstate->size (ppstate-fix ppstate)))
-         :exec (raw-ppstate->size ppstate)))
+         :exec (raw-ppstate->size ppstate))
+    :inline t)
 
   (define ppstate->macros (ppstate)
     :returns (macros macro-tablep)
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
-         :exec (raw-ppstate->macros ppstate)))
+         :exec (raw-ppstate->macros ppstate))
+    :inline t)
+
+  (define ppstate->ienv (ppstate)
+    :returns (ienv ienvp)
+    (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ienv ppstate))
+    :inline t)
 
   ;; writers:
 
@@ -1031,7 +485,8 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-length (nfix length)
                                                     (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-length length ppstate)))
+         :exec (raw-update-ppstate->bytess-length length ppstate))
+    :inline t)
 
   (define update-ppstate->bytes ((i natp) (bytes byte-listp) ppstate)
     :guard (< i (ppstate->bytess-length ppstate))
@@ -1040,6 +495,7 @@
                                                      (byte-list-fix bytes)
                                                      (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->bytes i bytes ppstate))
+    :inline t
     :guard-hints (("Goal" :in-theory (enable ppstate->bytess-length))))
 
   (define update-ppstate->bytess-current ((bytess-current natp) ppstate)
@@ -1047,21 +503,24 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->bytess-current (nfix bytess-current)
                                                      (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->bytess-current bytess-current ppstate)))
+         :exec (raw-update-ppstate->bytess-current bytess-current ppstate))
+    :inline t)
 
   (define update-ppstate->position ((position positionp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->position (position-fix position)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->position position ppstate)))
+         :exec (raw-update-ppstate->position position ppstate))
+    :inline t)
 
   (define update-ppstate->chars-length ((length natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-length (nfix length)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-length length ppstate)))
+         :exec (raw-update-ppstate->chars-length length ppstate))
+    :inline t)
 
   (define update-ppstate->char ((i natp) (char+pos char+position-p) ppstate)
     :guard (< i (ppstate->chars-length ppstate))
@@ -1073,6 +532,7 @@
                                                (ppstate-fix ppstate))
                    (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->char i char+pos ppstate))
+    :inline t
     :prepwork ((local (in-theory (enable ppstate->chars-length)))))
 
   (define update-ppstate->chars-read ((chars-read natp) ppstate)
@@ -1080,41 +540,47 @@
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-read (nfix chars-read)
                                                  (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-read chars-read ppstate)))
+         :exec (raw-update-ppstate->chars-read chars-read ppstate))
+    :inline t)
 
   (define update-ppstate->chars-unread ((chars-unread natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->chars-unread (nfix chars-unread)
                                                    (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->chars-unread chars-unread ppstate)))
+         :exec (raw-update-ppstate->chars-unread chars-unread ppstate))
+    :inline t)
 
   (define update-ppstate->lexmarks ((lexmarks lexmark-listp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->lexmarks (lexmark-list-fix lexmarks)
                                                (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->lexmarks lexmarks ppstate)))
-
-  (define update-ppstate->ienv ((ienv ienvp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->ienv (ienv-fix ienv)
-                                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ienv ienv ppstate)))
+         :exec (raw-update-ppstate->lexmarks lexmarks ppstate))
+    :inline t)
 
   (define update-ppstate->size ((size natp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->size (nfix size) (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->size size ppstate)))
+         :exec (raw-update-ppstate->size size ppstate))
+    :inline t)
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
                  (raw-update-ppstate->macros (macro-table-fix macros)
                                              (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->macros macros ppstate)))
+         :exec (raw-update-ppstate->macros macros ppstate))
+    :inline t)
+
+  (define update-ppstate->ienv ((ienv ienvp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ienv (ienv-fix ienv)
+                                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ienv ienv ppstate))
+    :inline t)
 
   ;; readers over writers:
 
@@ -1299,10 +765,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppstate->gcc ((ppstate ppstatep))
+(define ppstate->gcc/clang ((ppstate ppstatep))
   :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ienv->version (ppstate->ienv ppstate))))
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  (c::version-gcc/clangp (ienv->version (ppstate->ienv ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1375,8 +841,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define push-lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexmarks onto the pending lexmark list."
+  (b* ((new-lexmarks (append lexmarks (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexmarks) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexemes onto the pending lexmark list."
+  (b* ((new-lexmarks (append (lexeme-list-to-lexmark-list lexemes)
+                             (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexemes) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ppstate-add-bytes ((bytes byte-listp) (ppstate ppstatep))
-  :returns (mv erp (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+  :returns (mv erp (new-ppstate ppstatep))
   :short "Add some input bytes to a preprocessing state."
   :long
   (xdoc::topstring

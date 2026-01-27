@@ -184,7 +184,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "treeset::set" "Treesets"))
+   (xdoc::h4 (xdoc::seetopic "treeset::treeset" "Treesets"))
 
    (xdoc::p
     "A tree-based implementation of finite sets. This library offers a similar
@@ -364,12 +364,14 @@
       of just one function.")
 
    (xdoc::p
-     "The utility, @(tsee with-supporters), has been improved to deal with the
-      case that support comes from a @(see local) event preceding the
-      @('with-supporters') call.  Thanks to Eric Smith for providing an example
-      to show the need for this improvement, and for suggesting that the
-      generated supporting events be elided (see discussion of @(tsee
-      elide-event) just below)")
+     "The utility, @(tsee with-supporters), has been improved in several ways,
+      including (but not limited to) the case that support comes from a @(see
+      local) event preceding the @('with-supporters') call; by extending the
+      tracking of supporters to functions introduced by @(tsee defabsstobj)
+      events; and improving efficiency by avoiding some duplicated compilation.
+      Thanks to Eric Smith for providing examples, and for suggesting elision
+      of generated supporting events (see discussion of @(tsee elide-event)
+      just below).")
 
    (xdoc::p
      "A new utility, @(tsee elide-event), maps an event to one that avoids
@@ -388,6 +390,10 @@
    (xdoc::p
     "XDOC support for a number of HTML @(see xdoc::entities) was added.
      In particular, many letter variants with diacritics.")
+
+   (xdoc::p
+    "Added utility @(tsee eval-events-from-file), to create an event that
+     evaluates events from a file.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

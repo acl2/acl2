@@ -12,6 +12,14 @@
 
 (in-package "ACL2")
 
+;; These functions are used in the various Axe evaluators, which need to be
+;; able to evaluate functions on all arguments, even those that fail to satisfy
+;; the functions' guards.
+
+;; For each function foo covered by this book, we provide a variant,
+;; foo-unguarded, with a guard of T.  We then prove equivalence of
+;; foo-unguarded and foo.
+
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)

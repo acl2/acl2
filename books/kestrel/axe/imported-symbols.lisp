@@ -381,6 +381,11 @@
 
     tacticp
     tacticsp
+
+    hitsp
+    combine-hits
+    maybe-print-hits
+    empty-hits
     ))
 
 (defconst *arithmetic-symbols*

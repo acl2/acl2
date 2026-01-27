@@ -1,7 +1,7 @@
 ; Formal Unit Tester for x86
 ;
 ; Copyright (C) 2021-2022 Kestrel Technology, LLC
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 ;; TODO: Re-enable support for 32-bit binaries.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/axe/tactic-prover" :dir :system)
+(include-book "../tactic-prover") ; todo: try prover-basic, but it would need the :stp tactic
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
@@ -29,7 +29,6 @@
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "unroller")
 (include-book "tester-rules-bv")
-(include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")

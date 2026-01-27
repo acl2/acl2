@@ -34,6 +34,7 @@
    (merge-io-pairs
     dm::primep
     (include-book "crypto/top"))
+   (include-book "data/doc")
    (include-book "error-checking/top")
    (include-book "event-macros/top")
    (include-book "hdwallet/top")
@@ -55,7 +56,6 @@
    (include-book "solidity/top")
    (include-book "strings-light/doc")
    (include-book "syntheto/top")
-   (include-book "treeset/top")
    (include-book "typed-lists-light/doc")
    (include-book "utilities/top")
    (include-book "utilities/doc")

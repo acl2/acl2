@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -73,7 +73,7 @@
      instead of just a list.
      So it is convenient to wrap the reading of a byte
      into an abstraction, namely @(tsee read-byte);
-     its name has no @('p') (unlike @(tsee pread-char) and others,
+     its name has no @('p') (unlike @(tsee read-pchar) and others,
      because there is no counterpart in the parser.")
    (xdoc::p
     "Instead of reading characters from bytes on the fly,
@@ -90,7 +90,7 @@
 (define read-byte ((ppstate ppstatep))
   :returns (mv erp
                (byte? byte-optionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Read the next data byte from the preprocessing state."
   :long
   (xdoc::topstring
@@ -108,8 +108,8 @@
    (xdoc::p
     "If we find a byte to return,
      we also decrement the preprocessing state size by one."))
-  (b* (((reterr) nil ppstate)
-       (ppstate (ppstate-fix ppstate))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
        (current (ppstate->bytess-current ppstate))
        ((unless (< current (ppstate->bytess-length ppstate)))
         (raise "Internal error: index ~x0 not below length ~x1."
@@ -195,7 +195,6 @@
         (raise "Internal error: index ~x0 not below length ~x1."
                current (ppstate->bytess-length ppstate))))
     (peek-byte-loop current ppstate))
-  :hooks nil
   :no-function nil
 
   :prepwork
@@ -206,8 +205,7 @@
      (b* ((bytes (ppstate->bytes current ppstate))
           ((when (consp bytes)) (car bytes))
           ((when (zp current)) nil))
-       (peek-byte-loop (1- current) ppstate))
-     :hooks nil))
+       (peek-byte-loop (1- current) ppstate))))
 
   ///
 
@@ -240,7 +238,6 @@
         (raise "Internal error: index ~x0 not below length ~x1."
                current (ppstate->bytess-length ppstate))))
     (peek2-byte-loop current t ppstate))
-  :hooks nil
   :no-function nil
   :prepwork
   ((define peek2-byte-loop ((current natp) (skip booleanp) (ppstate ppstatep))
@@ -256,8 +253,7 @@
                  (peek2-byte-loop (1- current) nil ppstate))
              (car bytes))
          (b* (((when (zp current)) nil))
-           (peek2-byte-loop (1- current) skip ppstate))))
-     :hooks nil))
+           (peek2-byte-loop (1- current) skip ppstate))))))
 
   ///
 
@@ -277,12 +273,12 @@
                                  (ppstate ppstatep))
   :guard (< (ppstate->chars-read ppstate)
             (ppstate->chars-length ppstate))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+  :returns (new-ppstate ppstatep)
   :short "Update the preprocessor state for a character."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used when @(tsee pread-char)
+    "This is used when @(tsee read-pchar)
      reads a character from the data bytes (not from the unread characters).
      The @('new-position') input consists of the next position,
      which is normally one column more than the current one,
@@ -294,7 +290,6 @@
        (ppstate (update-ppstate->chars-read (1+ chars-read) ppstate))
        (ppstate (update-ppstate->position new-position ppstate)))
     ppstate)
-  :hooks nil
 
   ///
 
@@ -308,12 +303,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pread-char ((ppstate ppstatep))
+(define read-pchar ((ppstate ppstatep))
   :returns (mv erp
                (char? nat-optionp
                       :hints (("Goal" :induct t :in-theory (enable natp))))
                (pos positionp)
-               (new-ppstate ppstatep :hyp (ppstatep ppstate)))
+               (new-ppstate ppstatep))
   :short "Read a character during preprocessing."
   :long
   (xdoc::topstring
@@ -363,7 +358,8 @@
      and we recursively try to read another character.
      We also ensure that the backslash-new-line being deleted
      is not at the end of the file [C17:5.1.1.2/2]."))
-  (b* (((reterr) nil (irr-position) ppstate)
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil (irr-position) ppstate)
        (ppstate.position (ppstate->position ppstate))
        (ppstate.chars-read (ppstate->chars-read ppstate))
        (ppstate.chars-unread (ppstate->chars-unread ppstate))
@@ -459,7 +455,7 @@
                    ;; \ LF other
                    (new-position (position-inc-line 1 ppstate.position))
                    (ppstate (update-ppstate->position new-position ppstate)))
-                (pread-char ppstate)))
+                (read-pchar ppstate)))
              ((when (utf8-= byte2 13)) ; \ CR
               (b* (((erp & ppstate) (read-byte ppstate)) ; consume CR
                    (byte3 (peek-byte ppstate))
@@ -474,11 +470,11 @@
                          (new-position (position-inc-line 1 ppstate.position))
                          (ppstate
                           (update-ppstate->position new-position ppstate)))
-                      (pread-char ppstate)))
+                      (read-pchar ppstate)))
                    ;; \ CR other
                    (new-position (position-inc-line 1 ppstate.position))
                    (ppstate (update-ppstate->position new-position ppstate)))
-                (pread-char ppstate)))
+                (read-pchar ppstate)))
              ;; \ other
              (new-position (position-inc-column 1 ppstate.position))
              (ppstate (update-ppstate-for-char byte new-position ppstate)))
@@ -699,7 +695,6 @@
                                        rationalp-when-bytep
                                        integerp-when-bytep))))
   :no-function nil
-  :hooks nil
 
   ///
 
@@ -707,14 +702,14 @@
    (char? (or (equal char? nil)
               (natp char?))
           :rule-classes :type-prescription
-          :name pread-char.char?-type-prescription))
+          :name read-pchar.char?-type-prescription))
 
-  (defret ppstate->lexmarks-of-pread-char
+  (defret ppstate->lexmarks-of-read-pchar
     (equal (ppstate->lexmarks new-ppstate)
            (ppstate->lexmarks ppstate))
     :hints (("Goal" :induct t)))
 
-  (defret ppstate->size-of-pread-char-uncond
+  (defret ppstate->size-of-read-pchar-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
     :rule-classes :linear
@@ -722,7 +717,7 @@
              :induct t
              :in-theory (enable nfix))))
 
-  (defret ppstate->size-of-pread-char-cond
+  (defret ppstate->size-of-read-pchar-cond
     (implies (and (not erp)
                   char?)
              (<= (ppstate->size new-ppstate)
@@ -734,8 +729,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-char ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+(define unread-pchar ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
   :short "Unread a character during preprocessing."
   :long
   (xdoc::topstring
@@ -770,19 +765,19 @@
 
   ///
 
-  (defret ppstate->lexmarks-of-punread-char
+  (defret ppstate->lexmarks-of-unread-pchar
     (equal (ppstate->lexmarks new-ppstate)
            (ppstate->lexmarks ppstate)))
 
-  (defret ppstate->size-of-punread-char
+  (defret ppstate->size-of-unread-pchar
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))
     :hints (("Goal" :in-theory (enable len nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define punread-chars ((n natp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+(define unread-pchars ((n natp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
   :short "Unread a specified number of characters during preprocessing."
   :long
   (xdoc::topstring
@@ -825,15 +820,15 @@
 
   ///
 
-  (defret ppstate->size-of-punread-chars
+  (defret ppstate->size-of-unread-pchars
     (equal (ppstate->size new-ppstate)
            (+ (ppstate->size ppstate) (nfix n)))
     :hints (("Goal" :in-theory (enable nfix fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unread-char-to-bytes ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep :hyp (ppstatep ppstate))
+(define unread-pchar-to-bytes ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
   :short "Put the unread character, if any,
           back into the current list of bytes."
   :long
@@ -852,7 +847,8 @@
      back into the current list of input bytes,
      performing UTF-8 encoding of them.
      We also change the current position back to the one of the character."))
-  (b* ((chars-unread (ppstate->chars-unread ppstate))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (chars-unread (ppstate->chars-unread ppstate))
        ((when (= chars-unread 0)) ppstate)
        ((unless (= chars-unread 1))
         (raise "Internal error: ~x0 unread characters." chars-unread)
@@ -912,5 +908,4 @@
                                            bytep
                                            unsigned-byte-p
                                            integer-range-p)))
-  :no-function nil
-  :hooks nil)
+  :no-function nil)

@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -165,7 +165,7 @@
             )
            (< (max-key alist val)
               max-so-far))
-  :hints (("Goal" :in-theory (enable max-key))))
+  :hints (("Goal" :in-theory (enable max-key max))))
 
 (defthm <-of-max-key-when-all-<-of-STRIP-CARS
   (implies (and (ALL-< (STRIP-CARS alist) bound)

@@ -30,7 +30,8 @@
                                               (monitored-symbols 'nil)
                                               (no-warn-ground-functions 'nil)
                                               (fns-to-elide 'nil))
-  `(acl2::simplify-term-to-term-x86 ,term
+  `(b* (((mv erp term & state)
+         (acl2::simplify-term-to-term-x86 ,term
                                     ,assumptions
                                     ,rule-alist
                                     ,interpreted-function-alist
@@ -43,7 +44,8 @@
                                     ,monitored-symbols
                                     ,no-warn-ground-functions
                                     ,fns-to-elide
-                                    state))
+                                    state)))
+     (mv erp term state)))
 
 (acl2::assert-equal-with-stobjs2
   (simplify-term-to-term-x86-wrapper

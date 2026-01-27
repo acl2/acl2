@@ -453,20 +453,21 @@
        ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules) ; todo: don't do this over and over!
                                              (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp result-dag-or-quotep &) (simplify-dag-basic dag
-                                                          nil ; assumptions
-                                                          rule-alist
-                                                          nil ; interpreted-function-alist
-                                                          (known-booleans (w state))
-                                                          nil ; normalize-xors
-                                                          nil ; limits
-                                                          nil ; memoize
-                                                          nil ; count-hits
-                                                          nil ; print
-                                                          nil ; monitored-symbols
-                                                          no-warn-ground-functions
-                                                          nil ; fns-to-elide
-                                                          ))
+       ((mv erp result-dag-or-quotep & &) ; use the hits?
+        (simplify-dag-basic dag
+                            nil ; assumptions
+                            rule-alist
+                            nil ; interpreted-function-alist
+                            (known-booleans (w state))
+                            nil                               ; normalize-xors
+                            nil                               ; limits
+                            nil                               ; memoize
+                            nil                               ; count-hits
+                            nil                               ; print
+                            nil ; monitored-symbols
+                            no-warn-ground-functions
+                            nil ; fns-to-elide
+                            ))
        ((when erp) (mv erp nil state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Pruning took ") ; todo: print for early exits above?

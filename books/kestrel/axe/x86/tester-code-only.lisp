@@ -1,6 +1,6 @@
 ; Using with-supporters to just get the code of the x86 Formal Unit Tester
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,6 @@
 ;; TODO: This needs to have all the relevant rules built in to it.
 
 (include-book "centaur/misc/tshell" :dir :system) ; needs to be non-local since it has Raw Lisp code
-(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; todo: Raw Lisp code
-(include-book "projects/x86isa/machine/other-non-det" :dir :system) ; todo: Raw Lisp code
-(include-book "coi/lists/portcullis" :dir :system) ; for the LIST package
 ;(include-book "kestrel/jvm/portcullis" :dir :system) ; for things like JVM::*FLOAT-NAN*
 (include-book "tools/with-supporters" :dir :system)
 

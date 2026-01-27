@@ -215,7 +215,7 @@
            (symbol-listp (set-difference-eq-fast l1 l2)))
   :hints (("Goal" :in-theory (enable set-difference-eq-fast))))
 
-;; Returns (mv erp assumptions assumption-rules state)
+;; Returns (mv erp assumptions assumption-rules hits state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
@@ -233,9 +233,9 @@
        (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (make-rule-alist assumption-rules (w state)))
-       ((when erp) (mv erp nil nil state))
+       ((when erp) (mv erp nil nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp assumptions)
+       ((mv erp assumptions hits)
         (simplify-conjunction-basic assumptions
                                     assumption-rule-alist
                                     (known-booleans (w state))
@@ -245,14 +245,14 @@
                                     count-hits
                                     t   ; todo: warn just once
                                     ))
-       ((when erp) (mv erp nil nil state))
+       ((when erp) (mv erp nil nil hits state))
        (assumptions (get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
        ((mv assumption-simp-elapsed state) (real-time-since assumption-simp-start-real-time state))
        (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
           (print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%")))
-    (mv nil assumptions assumption-rules state)))
+    (mv nil assumptions assumption-rules hits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +270,7 @@
     (equal (rbp-high x86) '0)))
 
 ;; This simplifies the assumptions (if there are any extra-assumptions).
-;; Returns (mv erp assumptions assumption-rules input-assumption-vars state).
+;; Returns (mv erp assumptions assumption-rules input-assumption-vars hits state).
 (defun assumptions-new (target
                         parsed-executable
                         extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
@@ -302,7 +302,7 @@
                               (symbol-listp remove-assumption-rules)
                               (count-hits-argp count-hits)
                               (print-levelp print)
-                              (equal executable-type (acl2::parsed-executable-type parsed-executable))
+                              (equal executable-type (parsed-executable-type parsed-executable))
                               (booleanp position-independentp))
                   :stobjs state))
   (if (eq :elf-64 executable-type)
@@ -320,16 +320,16 @@
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                      assume-bytes
                                      parsed-executable)))
-           ((when erp) (mv erp nil nil nil state))
+           ((when erp) (mv erp nil nil nil nil state))
            (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
            ;; Maybe simplify the assumptions:
-           ((mv erp assumptions assumption-rules state)
+           ((mv erp assumptions assumption-rules hits state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                 (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-              (mv nil assumptions nil state)))
-           ((when erp) (mv erp nil nil nil state)))
-        (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
+              (mv nil assumptions nil (empty-hits) state)))
+           ((when erp) (mv erp nil nil nil nil state)))
+        (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
     (if (eq :mach-o-64 executable-type) ; todo: combine with the case above?
         ;; New assumption generation behavior for MACHO64:
         (b* (((mv erp automatic-assumptions input-assumption-vars)
@@ -345,16 +345,16 @@
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                          assume-bytes
                                          parsed-executable)))
-             ((when erp) (mv erp nil nil nil state))
+             ((when erp) (mv erp nil nil nil nil state))
              (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
              ;; Maybe simplify the assumptions:
-             ((mv erp assumptions assumption-rules state)
+             ((mv erp assumptions assumption-rules hits state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                   (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-                (mv nil assumptions nil state)))
-             ((when erp) (mv erp nil nil nil state)))
-          (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
+                (mv nil assumptions nil (empty-hits) state)))
+             ((when erp) (mv erp nil nil nil nil state)))
+          (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
       (if (eq :pe-64 executable-type) ; todo: combine with the cases above?
           ;; New assumption generation behavior for PE64:
           (b* (((mv erp automatic-assumptions input-assumption-vars)
@@ -370,16 +370,16 @@
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                         assume-bytes
                                         parsed-executable)))
-               ((when erp) (mv erp nil nil nil state))
+               ((when erp) (mv erp nil nil nil nil state))
                (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                ;; Maybe simplify the assumptions:
-               ((mv erp assumptions assumption-rules state)
+               ((mv erp assumptions assumption-rules hits state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                     (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-                  (mv nil assumptions nil state)))
-               ((when erp) (mv erp nil nil nil state)))
-            (mv (erp-nil) assumptions assumption-rules input-assumption-vars state))
+                  (mv nil assumptions nil (empty-hits) state)))
+               ((when erp) (mv erp nil nil nil nil state)))
+            (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
 
         ;; (b* (((when (eq :entry-point target)) ; todo
         ;;       (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
@@ -551,11 +551,11 @@
              ((when (and (eq :entry-point target)
                          (not (eq :pe-32 executable-type))))
               (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
-              (mv :bad-entry-point nil nil nil state))
+              (mv :bad-entry-point nil nil nil nil state))
              ((when (and (natp target)
                          (not (eq :pe-32 executable-type))))
               (er hard? 'assumptions-new "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
-              (mv :bad-entry-point nil nil nil state))
+              (mv :bad-entry-point nil nil nil nil state))
              ;; (text-offset
              ;;   (and 64-bitp ; todo
              ;;        (if (eq :pe-64 executable-type)
@@ -634,10 +634,10 @@
              ;; attempted.  We need to assume some assumptions when simplifying the
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
-             ((mv erp assumptions assumption-rules state)
+             ((mv erp assumptions assumption-rules hits state)
               (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
-             ((when erp) (mv erp nil nil nil state)))
-          (mv nil assumptions assumption-rules input-assumption-vars state))))))
+             ((when erp) (mv erp nil nil nil nil state)))
+          (mv nil assumptions assumption-rules input-assumption-vars hits state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,7 +675,7 @@
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
-;; Returns (mv erp result-dag-or-quotep state).
+;; Returns (mv erp result-dag-or-quotep hits state).
 ;; WARNING: Keep in sync with the risc-v version.
 (defun repeatedly-run (steps-done step-limit step-increment
                                   dag ; the state may be wrapped in an output-extractor
@@ -684,7 +684,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
+                                  normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
   (declare (xargs :guard (and (natp steps-done)
@@ -704,6 +704,7 @@
                                   (natp prune-approx))
                               (normalize-xors-optionp normalize-xors)
                               (count-hits-argp count-hits)
+                              (hitsp hits)
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
@@ -716,13 +717,13 @@
   (if (or (not (mbt (and (natp steps-done)
                          (natp step-limit))))
           (<= step-limit steps-done))
-      (mv (erp-nil) dag state)
+      (mv (erp-nil) dag hits state)
     (b* (;; Decide how many steps to do this time:
          (this-step-increment (this-step-increment step-increment steps-done))
          (steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
          ((when (not (posp steps-for-this-iteration))) ; use mbt?
           (er hard? 'repeatedly-run "Temination problem.")
-          (mv :termination-problem nil state))
+          (mv :termination-problem nil nil state))
          (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
          (old-dag dag) ; so we can see if anything changed
@@ -735,8 +736,9 @@
                                       steps-for-this-iteration
                                       limits)) ; don't recompute for each small run?
          ;; Do the run:
-         ((mv erp dag-or-constant limits state)
-          (acl2::simplify-dag-x86 dag
+
+         ((mv erp dag-or-constant limits hits-this-time state)
+          (simplify-dag-x86 dag
                                   assumptions
                                   rule-alist
                                   nil ; interpreted-function-alist
@@ -750,7 +752,8 @@
                                   *no-warn-ground-functions*
                                   '(program-at) ; fns-to-elide ; todo: this is old
                                   state))
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
+         (hits (combine-hits hits hits-this-time))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
            (limit-for-rule step-opener-rule
@@ -763,7 +766,7 @@
          (- (cw ")~%")) ; matches "(Running"
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; TODO: Consider not pruning if this increment didn't create any new branches:
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
@@ -774,10 +777,10 @@
                                                                         print
                                                                         60000 ; todo: pass in
                                                                         state))
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
          ;;                       (cw "~X01" dag nil)
@@ -799,10 +802,10 @@
                                      *no-warn-ground-functions*
                                      print
                                      state))
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
+          (mv (erp-nil) dag-or-constant hits state))
          (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
          (- (and print ;(print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
@@ -820,7 +823,7 @@
          ((mv erp nothing-changedp) (if run-completedp
                                         (mv nil nil) ; we know something changed since the run is now complete
                                       (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
-         ((when erp) (mv erp nil state))
+         ((when erp) (mv erp nil hits state))
 
          ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
          ;; ((when ..)
@@ -842,9 +845,9 @@
                       (cw " The run completed normally.~%")
                     (cw " The run completed abnormally (nothing changed).~%")))
                (- (cw "(Doing final simplification:~%"))
-               ((mv erp dag-or-constant state) ; todo: check if it is a constant?
-                (mv-let (erp result limits state)
-                  (acl2::simplify-dag-x86 dag
+               ((mv erp dag-or-constant hits2 state) ; todo: check if it is a constant?
+                (mv-let (erp result limits hits2 state)
+                  (simplify-dag-x86 dag
                                           assumptions
                                           rule-alist
                                           nil ; interpreted-function-alist
@@ -859,8 +862,9 @@
                                           '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                           state)
                   (declare (ignore limits)) ; todo: use the limits?
-                  (mv erp result state)))
-               ((when erp) (mv erp nil state))
+                  (mv erp result hits2 state)))
+               ((when erp) (mv erp nil hits state))
+               (hits (combine-hits hits hits2))
                ;; todo: also prune here, if the simplfication does anything?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
@@ -871,14 +875,14 @@
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
-                (mv :unresolved-error-branches nil state))
+                (mv :unresolved-error-branches nil hits state))
                ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
                ((when incomplete-run-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
                 (er hard? 'repeatedly-run " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
-                (mv :incomplete-run nil state)))
-            (mv (erp-nil) dag-or-constant state))
+                (mv :incomplete-run nil hits state)))
+            (mv (erp-nil) dag-or-constant hits state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
@@ -888,7 +892,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -968,19 +972,19 @@
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (widen-margins state))
        ;; Get and check the executable-type:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Make sure it's an x86 executable:
-       (- (acl2::ensure-x86 parsed-executable))
+       (- (ensure-x86 parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
                                     (if (eq executable-type :elf-64)
-                                        (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
+                                        (let ((elf-type (parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
-                                                  (if (acl2::parsed-elf-program-header-table parsed-executable)
+                                                  (if (parsed-elf-program-header-table parsed-executable)
                                                       ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
                                                       (if (member-eq elf-type '(:rel :dyn)) t nil)
                                                     ;; TODO: Get this to work:
@@ -996,7 +1000,7 @@
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-       ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+       ;;                                  ;(parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
        ;;                                  ))
        ;; (new-canonicalp (or (eq :elf-64 executable-type)
        ;;                     (eq :mach-o-64 executable-type)
@@ -1004,7 +1008,7 @@
        ;;                     ))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
-               (acl2::ensure-target-exists-in-executable target parsed-executable)))
+               (ensure-target-exists-in-executable target parsed-executable)))
 
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
@@ -1016,6 +1020,7 @@
        ((mv erp assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             input-assumption-vars
+            hits
             state)
         (assumptions-new target
                          parsed-executable
@@ -1106,18 +1111,20 @@
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
-       ((mv erp result-dag-or-quotep state)
+       ((mv erp result-dag-or-quotep hits2 state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
                         (if 64-bitp
                             (first (step-opener-rules64))
                           (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base max-printed-term-size untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
+       (hits (combine-hits hits hits2))
        (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Lifting took ")
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
+       (- (maybe-print-hits hits))
        ;; Print the result (todo: allow suppressing this):
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
@@ -1226,7 +1233,7 @@
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
@@ -1289,7 +1296,7 @@
        ;; Possibly produce a defun:
 
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Build the defun that will contain the result of lifting:
        ;; Create the list of formals for the function:

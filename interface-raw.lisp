@@ -5040,7 +5040,7 @@
 ; hash tables from the book's compiled file for use when evaluating events from
 ; the book.  Here are some basic design considerations.
 
-; * We don't want to reinvent the wheel, especially giving the subtleties
+; * We don't want to reinvent the wheel, especially given the subtleties
 ;   involved with reclassifying, inlining, and extended generics ("ext-gen")
 ;   considerations.
 
@@ -5628,6 +5628,17 @@
 ;     reclassifying value in *hcomp-fn-ht* upon evaluating D_L, so
 ;     *hcomp-fn-ht* does not contain the program-mode *1* symbol-function when
 ;     D_L is encountered in pass 2, a contradiction of our assumption.
+
+; - In late January 2026, we improved efficiency in two ways.  For one, we
+;   changed the structure so as to take advantage of the new encapsulate
+;   feature, that symbol-functions are saved in pass 1 so that they need not be
+;   recompiled in pass 2.  It probably would be easy to do the same thing for
+;   macros and constants, but we didn't (this could be future work).  The other
+;   change was to add function update-hcomp-fn-ht-redundant-in-encapsulate, to
+;   store in hash tables for non-local redundant defuns in pass 1 of
+;   encapsulate, which can make a significant difference when a defun is
+;   redundant with one that came from a local include-book (which thus wasn't
+;   stored).
 
 ; End of Essay on Hash Table Support for Compilation
 
@@ -6894,6 +6905,7 @@
                                    "[~s] (eval ~s)~%"
                                    'idfat-5 form))
                      (let ((skip-reason
+; Warning: Keep this in sync with update-hcomp-fn-ht-redundant-in-encapsulate.
                             (and (eq hcomp-build-p 'encapsulate-pass-1)
                                  (let ((state *the-live-state*))
                                    (and (f-get-global 'in-local-flg state)
@@ -6907,16 +6919,20 @@
                          (cond
                           ((eq skip-reason 'logic)
                            (assert *hcomp-fn-ht*) ; as hcomp-build-p is non-nil
-                           (with-debug (eval (car tail))
+                           (when evalp
+                             (with-debug (eval (car tail))
+                                         "[~s] Eval def for ~s.~%"
+                                         'idfat-6 (cadr (car tail))))
+                           (with-debug (setf (gethash (*1*-symbol name)
+                                                      *hcomp-fn-ht*)
+                                             *hcomp-fake-value*)
                                        "[~s] Storing *hcomp-fake-value* for ~
                                         ~s.~%"
-                                       'idfat-6 (*1*-symbol name))
-                           (setf (gethash (*1*-symbol name) *hcomp-fn-ht*)
-                                 *hcomp-fake-value*))
+                                       'idfat-7 (*1*-symbol name)))
                           (evalp
                            (with-debug (eval (car tail))
                                        "[~s] Eval def for ~s.~%"
-                                       'idfat-7 (cadr (car tail)))))
+                                       'idfat-8 (cadr (car tail)))))
                          (setf (car tail) nil))))))))
   (cond ((eq *hcomp-status* 'include-book)
          (assert evalp)

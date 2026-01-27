@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -120,13 +120,13 @@
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       contains non-all-ASCII identifiers."
                      code desc)))
-       ((unless (or (ienv->gcc (code-ensemble->ienv code))
+       ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
                     (transunit-ensemble-standardp
                      (code-ensemble->transunits code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
-                      uses non-standard syntax (i.e. GCC extensions), ~
+                      uses non-standard syntax (i.e. GCC/Clang extensions), ~
                       but the implementation environment indicates that ~
-                      GCC extensions are not enabled."
+                      GCC/Clang extensions are not enabled."
                      code desc))))
     (retok code))
 
@@ -344,7 +344,7 @@
        (tunits (code-ensemble->transunits code))
        (files (print-fileset tunits
                              options
-                             (ienv->gcc (code-ensemble->ienv code))))
+                             (ienv->version (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
         (output-files-gen-files-loop (fileset->unwrap files) path state)))
