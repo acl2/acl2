@@ -44,10 +44,10 @@
 
 (defun undef-flg$notinline (x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-flg ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::undef-flg$notinline
       (X86ISA::undef-flg-logic x86)))
@@ -78,9 +78,9 @@
 
 ;; (defun safe-!undef$notinline (v x86)
 ;;   (declare (xargs :mode :program :stobjs x86))
-;;   (when (or (equal (f-get-global 'in-prove-flg ACL2::*the-live-state*)
+;;   (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
 ;;                    t)
-;;             (equal (f-get-global 'in-verify-flg
+;;             (equal (f-get-global 'acl2::in-verify-flg
 ;;                                  ACL2::*the-live-state*)
 ;;                    t))
 ;;     (return-from X86ISA::safe-!undef$notinline
