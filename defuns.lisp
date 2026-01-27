@@ -4973,6 +4973,16 @@
                     new-wrld)))
              (maybe-remove-invariant-risk (cdr names) wrld new-wrld)))))
 
+(defun chk-otf-flg (otf-flg ctx state)
+  (declare (xargs :stobjs state
+                  :guard (error1-state-p state)))
+  (cond ((booleanp otf-flg)
+         (value otf-flg))
+        (t (er soft ctx
+               "The value of :OTF-FLG must be ~x0 or ~x1.  The value ~x2 is ~
+                thus illegal."
+               t nil otf-flg))))
+
 (defun verify-guards-fn1 (names hints otf-flg guard-debug
                                 guard-simplify ctx state)
 
@@ -5204,7 +5214,8 @@
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let*
-     ((pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
+     ((otf-flg (chk-otf-flg otf-flg ctx state))
+      (pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
                                  ctx ens wrld state)))
 
 ; Pair is of the form (col . ttree)
@@ -10531,6 +10542,7 @@
                       (value nil)
                     (get-unambiguous-xargs-flg :OTF-FLG
                                                fives t ctx state)))
+         (otf-flg (chk-otf-flg otf-flg ctx state))
          (guard-debug (get-unambiguous-xargs-flg :GUARD-DEBUG
                                                  fives
 
