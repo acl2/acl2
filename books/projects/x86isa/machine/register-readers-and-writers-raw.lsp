@@ -60,10 +60,10 @@
 
 (defun undef-read$notinline (x86)
   (declare (xargs :mode :program :stobjs x86))
-  (when (or (equal (f-get-global 'in-prove-read ACL2::*the-live-state*)
+  (when (or (equal (f-get-global 'acl2::in-prove-flg ACL2::*the-live-state*)
                    t)
             (equal (f-get-global
-                    'in-verify-read ACL2::*the-live-state*)
+                    'acl2::in-verify-flg ACL2::*the-live-state*)
                    t))
     (return-from X86ISA::undef-read$notinline
       (X86ISA::undef-read-logic x86)))
