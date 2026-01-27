@@ -6424,6 +6424,7 @@
 (defund all-tester-rules ()
   (declare (xargs :guard t))
   (append (all-unroller-rules)
+          (pre-stp-rules) ; since we call the tactic-prover
           (additional-rules-for-tester)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
