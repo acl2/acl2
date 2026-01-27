@@ -5533,10 +5533,11 @@
                (equiv-contexts '(iff)))
               ((fgl-interp-recursive-call successp ans)
                (fgl-rewrite-fncall xobj.fn xobj.args
-                                  (or** already-rewrittenp
-                                        fn-mode.dont-rewrite-under-if-test)
-                                  interp-st state)))
-
+                                   (or** already-rewrittenp
+                                         fn-mode.dont-rewrite-under-if-test
+                                         (interp-flags->hide (interp-st->flags interp-st)))
+                                   interp-st state)))
+             
              ((mv xobj interp-st) (interp-st-pop-scratch-fgl-obj interp-st))
              ;; ((when err)
              ;;  (mv nil interp-st state))
