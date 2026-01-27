@@ -911,7 +911,15 @@
   :elt-type s-char
   :true-listp t
   :elementp-of-nil nil
-  :pred s-char-listp)
+  :pred s-char-listp
+
+  ///
+
+  (defruled true-listp-when-s-char-listp
+    (implies (s-char-listp x)
+             (true-listp x))
+    :induct t
+    :enable s-char-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

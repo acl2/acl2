@@ -228,30 +228,23 @@ int table[100];
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
 f(2 * (y+1)) + f(2 * (f(2 * (z[0])))) % f(2 * (0)) + t(1);
 f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
-/*
-p() i[q()] = { q(1), r(2,3), r(4,), r(,5), r(,) };
-char c[2][6] = { str(hello), str() };
-*/
+int i[] = { 1, 23, 4, 5,  };
+char c[2][6] = { \"hello\", \"\" };
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
-/*
-debug(1, 2);
-fputs(str(strncmp(\"abc\\0d\", \"abc\", ’\\4’) // this goes away
-      == 0) str(: @\\n), s);
-#include xstr(INCFILE(2).h)
-glue(HIGH, LOW);
-xglue(HIGH, LOW)
-*/
+printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
+fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
+include \"vers2.h\" // omit # in #include to avoid access
+\"hello\";
+\"hello\" \", world\"
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -260,7 +253,7 @@ xglue(HIGH, LOW)
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
                 "/*
 int j[] = { t(1,2,3), t(,4,5), t(6,,7), t(8,9,),
-t(10,,), t(,11,), t(,,12), t(,,) };
+           t(10,,), t(,11,), t(,,12), t(,,) };
 */
 ")
 
@@ -270,12 +263,10 @@ t(10,,), t(,11,), t(,,12), t(,,) };
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example7-6.10.3.5.c"
-                "/*
-debug(\"Flag\");
-debug(\"X = %d\\n\", x);
-showlist(The first, second, and third items.);
-report(x>y, \"x is %d but y is %d\", x, y);
-*/
+                "
+fprintf(stderr, \"Flag\");
+fprintf(stderr, \"X = %d\\n\", x);
+puts(\"The first, second, and third items.\");
+((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 ")
