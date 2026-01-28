@@ -35,13 +35,11 @@
 ;; it works if we quote the keyword body:
 (defrule keyword2 ':key :rule-classes nil)
 
-;; TODO: Uncomment and update these 2 if/when :otf-flg is restricted to booleans.
+;; This tries putting the body between a keyword arg and its associated value, which
+;; is not supported by defrule.
+;; This is interpreted as having T for the body and (equal (car (cons x y)) x) as the :otf-flg.
+(must-fail (defrule body-between-arg-and-val :otf-flg (equal (car (cons x y)) x) t))
 
-;; ;; Try putting the body between a keyword arg and its associated value:
-;; ;wow!  this works.
-;; ; This uses t as the body and (equal (car (cons x y)) x) as the :of-flg !
-;; ;; TODO: This may soon be an error
-;; (defrule body-between-arg-and-val :otf-flg (equal (car (cons x y)) x) t :rule-classes nil)
-
-;; ;; fails but only due to rule-classes
-;; (must-fail (defrule body-between-arg-and-val2 :otf-flg (equal (car (cons x y)) x) t))
+;; Variant of the above that ensures the failure is not just due to T being
+;; illegal for the body of a rewrite rule.
+(must-fail (defrule body-between-arg-and-val2 :otf-flg (equal (car (cons x y)) x) t :rule-classes nil))
