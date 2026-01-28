@@ -220,7 +220,9 @@ interpreted normally and returned.</p>"
   (defcong unequiv equal (fgl-prog2 x y) 1))
 
 (defmacro fgl-progn (&rest args)
-  (xxxjoin 'fgl-prog2 args))
+  (cond ((null args) nil)
+        ((null (cdr args)) (car args))
+        (t (xxxjoin 'fgl-prog2 args))))
 
 (define fgl-interp-obj (term)
   :ignore-ok t
