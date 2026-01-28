@@ -120,9 +120,10 @@
    (list* "b" (sgr-prefix "31;1") *sgr-suffix*)
    (list* "i" (sgr-prefix "3") *sgr-suffix*)
    (list* "u" (sgr-prefix "4") *sgr-suffix*)
-   (list* "tt" (sgr-prefix "47") *sgr-suffix*)
-   (list* "v" (sgr-prefix "47") *sgr-suffix*)
-   (list* "em" (sgr-prefix "3") *sgr-suffix*)
+   ; inverse foreground and background colors
+   (list* "tt" (sgr-prefix "7") *sgr-suffix*)
+   (list* "v" (sgr-prefix "7") *sgr-suffix*)
+   (list* "em" (sgr-prefix "3") *sgr-suffix*) ; italic
    '(("color")
      ("sf")
      ("box")
