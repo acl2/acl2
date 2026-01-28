@@ -1774,7 +1774,14 @@
      "Both operands have compatible pointer types.")
     (xdoc::li
      "One operand is a pointer to an object type
-      and the other is a pointer to the @('void') type.")
+      and the other is a pointer to the @('void') type.
+      As a GCC/Clang extension,
+      we also allow one operand to be a pointer to the @('void') type,
+      and the other is a pointer to <i>any</i> type
+      (either object or function).
+      We do not aware of explicit GCC documentation of this feature,
+      but a related feature is listed by the standard
+      as a common extension [C17:J.5.7].")
     (xdoc::li
      "The left operand is a pointer type
       and the right operand is a null pointer constant
@@ -1813,7 +1820,7 @@
                   (type-case type-arg2 :unknown)))
         (retok (type-unknown)))
        (msg (msg$ "In the binary expression ~x0, ~
-                   the sub-expressiona have types ~x1 and ~x2."
+                   the sub-expressions have types ~x1 and ~x2."
                   (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
     (case (binop-kind op)
       ((:mul :div) (b* (((unless (and (type-arithmeticp type-arg1)
@@ -1912,29 +1919,31 @@
       (:asg
        (b* ((type1 type-arg1)
             (type2 (type-fpconvert (type-apconvert type-arg2)))
-            ((unless (or (and (type-arithmeticp type1)
-                              (type-arithmeticp type2))
-                         (and (or (type-case type1 :struct)
-                                  (type-case type1 :union))
-                              (type-compatible-p type1 type2 completions ienv))
-                         (and (type-case type1 :pointer)
-                              (or (and (type-case type2 :pointer)
-                                       (let ((type-to1 (type-pointer->to type1))
-                                             (type-to2 (type-pointer->to type2)))
-                                         (or (type-compatible-p
-                                               type-to1 type-to2 completions ienv)
-                                             (and (type-case type-to1 :void)
+            ((unless
+                 (or (and (type-arithmeticp type1)
+                          (type-arithmeticp type2))
+                     (and (or (type-case type1 :struct)
+                              (type-case type1 :union))
+                          (type-compatible-p type1 type2 completions ienv))
+                     (and (type-case type1 :pointer)
+                          (or (and (type-case type2 :pointer)
+                                   (let ((type-to1 (type-pointer->to type1))
+                                         (type-to2 (type-pointer->to type2)))
+                                     (or (type-compatible-p
+                                           type-to1 type-to2 completions ienv)
+                                         (and (type-case type-to1 :void)
+                                              (or (ienv->gcc/clang ienv)
+                                                  (not (type-case type-to2
+                                                                  :function))))
+                                         (and (type-case type-to2 :void)
+                                              (or (ienv->gcc/clang ienv)
                                                   (not
-                                                   (type-case type-to2
-                                                              :function)))
-                                             (and (type-case type-to2 :void)
-                                                  (not
-                                                   (type-case type-to1
-                                                              :function))))))
-                                  (expr-null-pointer-constp
-                                   (expr-binary->arg2 expr) type2)))
-                         (and (type-case type1 :bool)
-                              (type-case type2 :pointer))))
+                                                    (type-case type-to1
+                                                               :function)))))))
+                              (expr-null-pointer-constp
+                                (expr-binary->arg2 expr) type2)))
+                     (and (type-case type1 :bool)
+                          (type-case type2 :pointer))))
              (reterr msg)))
          (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
