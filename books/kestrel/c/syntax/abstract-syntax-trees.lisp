@@ -166,6 +166,23 @@
   :pred identp
   :layout :list)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define ident-equal ((x identp) (y identp))
+  (mbe :logic (ident-equiv x y)
+       :exec (equal (ident->unwrap x)
+                    (ident->unwrap y)))
+  :enabled t
+  :inline t
+  ;; TODO: improve proof to avoid these explicit expansions.
+  :guard-hints (("Goal" :in-theory (enable ident->unwrap
+                                           identp
+                                           identity)
+                        :expand ((len x)
+                                 (len y)
+                                 (len (cdr x))
+                                 (len (cdr y))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist ident-list

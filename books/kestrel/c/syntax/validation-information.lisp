@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "types")
+(include-book "uid")
 (include-book "unambiguity")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -78,62 +79,6 @@
     "See @(tsee expr-null-pointer-constp)."))
   (b* (((const-expr const-expr) const-expr))
     (expr-null-pointer-constp const-expr.expr type)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod uid
-  :short "Fixtype of unique identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are numerical identifiers which are intended
-     to be unique to a given variable, function, type name, etc.
-     E.g., there may be many variables throughout a program
-     with the name @('x'), but all such distinct variables
-     will have distinct unique identifiers.")
-   (xdoc::p
-    "Unique identifiers are assigned during validation
-     to aid subsequent analysis.
-     By annotating identifiers with their unique alias,
-     disambiguation of variables becomes trivial."))
-  ((uid nat))
-  :pred uidp
-  :layout :fulltree)
-
-(defirrelevant irr-uid
-  :short "An irrelevant unique identifier."
-  :type uidp
-  :body (uid 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption uid-option
-  uid
-  :short "Fixtype of optional unique identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unique identifiers are defined in @(tsee uid)."))
-  :pred uid-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uid-equal ((x uidp) (y uidp))
-  (mbe :logic (uid-equiv x y)
-       :exec (= (the unsigned-byte (uid->uid x))
-                (the unsigned-byte (uid->uid y))))
-  :guard-hints (("Goal" :in-theory (enable uidp uid->uid)))
-  :inline t)
-
-(define uid-increment ((uid uidp))
-  :returns (new-uid uidp)
-  :short "Create a fresh unique identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This simply increments the numerical value of the unique identifier."))
-  (b* (((uid uid) uid))
-    (uid (1+ uid.uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,6 +243,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum tag-kind
+  :short "Fixtype of the different kinds of tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now, we include cases for just @(':struct') and @(':union').
+     We omit @(':enum'), whose tags are not yet being tracked."))
+  (:struct ())
+  (:union ())
+  :pred tag-kind)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod valid-tag-info
+  :short "Fixtype of validation information about tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Tags [C17:6.2.3/1] identify a structure, union, or enumeration type.
+     Tags form their own name space,
+     disambiguated by the @('struct'), @('union'), or @('enum') keywords.")
+   (xdoc::p
+    "We store just the @(see UID) associated with the tag
+     in the current scope.
+     The @(see UID) can be used to lookup the completion
+     under a separate @(type-completions) map."))
+  ((kind tag-kind)
+   (uid uid))
+  :pred valid-tag-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-tag-info-option
+  valid-tag-info
+  :short "Fixtype of optional validation information about tags."
+  :pred valid-tag-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist valid-tag-scope
+  :short "Fixtype of validation scopes of tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The same tag may refer to different types in different scopes.
+     Therefore, we use an alist from identifiers
+     to the validation information for tags
+     to track the meaning of tags in each scope."))
+  :key-type ident
+  :val-type valid-tag-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred valid-tag-scopep
+  :prepwork ((set-induction-depth-limit 1))
+  ///
+
+  (defrule valid-tag-infop-of-cdr-assoc-when-valid-tag-scopep
+    (implies (and (valid-tag-scopep scope)
+                  (assoc-equal ident scope))
+             (valid-tag-infop (cdr (assoc-equal ident scope))))
+    :induct t
+    :enable (valid-tag-scopep assoc-equal)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod valid-scope
   :short "Fixtype of validation scopes."
   :long
@@ -305,16 +316,20 @@
    (xdoc::p
     "Identifiers have scopes [C17:6.2.1], which the validator tracks.
      This fixtype contains all the information about a scope,
-     which currently only considers the name space of ordinary identifiers.
-     We will extend this fixtype to contain additional information,
-     particularly about tag of structure, union, and enumeration types."))
-  ((ord valid-ord-scope))
+     which considers the name space of ordinary identifiers
+     and the name space of tags."))
+  ((ord valid-ord-scope)
+   (tag valid-tag-scope))
   :pred valid-scopep
   ///
 
   (defrule alistp-of-valid-scope->ord
     (alistp (valid-scope->ord x))
-    :enable alistp-when-valid-ord-scopep-rewrite))
+    :enable alistp-when-valid-ord-scopep-rewrite)
+
+  (defrule alistp-of-valid-scope->tag
+    (alistp (valid-scope->tag x))
+    :enable alistp-when-valid-tag-scopep-rewrite))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -427,6 +442,7 @@
   ((filepath filepath)
    (scopes valid-scope-list)
    (externals valid-externals)
+   (completions type-completions)
    (next-uid uidp))
   :pred valid-tablep)
 
@@ -435,7 +451,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil (irr-uid)))
+  :body (valid-table (irr-filepath) nil nil nil (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,6 +459,30 @@
   valid-table
   :short "Fixtype of optional validation tables."
   :pred valid-table-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-composite-with-table ((x typep)
+                                   (y typep)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+  :returns (mv (composite typep)
+               (new-table valid-tablep))
+  :short "Construct a composite @(see type) with a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This wraps @(tsee type-composite),
+     extracting the @('completions') @('next-uid') from the validation table,
+     and updating the values accordingly."))
+  (b* (((valid-table table) table)
+       ((mv composite completions next-uid)
+        (type-composite x y table.completions table.next-uid ienv)))
+    (mv composite
+        (change-valid-table
+          table
+          :completions completions
+          :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
