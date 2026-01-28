@@ -377,6 +377,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-struct->tag? ((type typep))
+  :guard (type-case type :struct)
+  :returns (tag? ident-optionp)
+  (let ((tag/members (type-struct->tag/members type)))
+    (type-struni-tag/members-case
+      tag/members
+      :tagged tag/members.tag
+      :untagged nil)))
+
+(define type-union->tag? ((type typep))
+  :guard (type-case type :union)
+  :returns (tag? ident-optionp)
+  (let ((tag/members (type-union->tag/members type)))
+    (type-struni-tag/members-case
+      tag/members
+      :tagged tag/members.tag
+      :untagged nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-struni-member-list-lookup ((ident identp)
                                         (members type-struni-member-listp))
   :returns (type? type-optionp)
