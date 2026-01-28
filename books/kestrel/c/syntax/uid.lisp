@@ -22,6 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod uid
+  :parents (validation-information)
   :short "Fixtype of unique identifiers."
   :long
   (xdoc::topstring
@@ -42,6 +43,7 @@
   :layout :fulltree)
 
 (defirrelevant irr-uid
+  :parents (uid)
   :short "An irrelevant unique identifier."
   :type uidp
   :body (uid 0))
@@ -50,6 +52,7 @@
 
 (fty::defoption uid-option
   uid
+  :parents (uid)
   :short "Fixtype of optional unique identifiers."
   :long
   (xdoc::topstring
@@ -60,6 +63,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap uid-uid-map
+  :parents (uid)
   :key-type uid
   :val-type uid
   :pred uid-uid-mapp
@@ -77,6 +81,7 @@
 
 (define uid-increment ((uid uidp))
   :returns (new-uid uidp)
+  :parents (uid)
   :short "Create a fresh unique identifier."
   :long
   (xdoc::topstring
@@ -88,6 +93,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset uid-set
+  :parents (uid)
   :short "Fixtype of sets of UIDs."
   :long
   (xdoc::topstring
