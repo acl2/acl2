@@ -198,20 +198,12 @@ struct S {
   int x;
 };
 
-struct S_0;
-
-struct S_1 {
-  int x;
-};
-
-struct S_0 s_0;
-
-struct S_1 s_1;
+extern struct S s;
 
 int foo(void) {
   int x = my_2.a + (-my_0.b);
   struct myStruct my;
-  if (s_1.x) {
+  if (s.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -232,9 +224,9 @@ struct S_1 {
   unsigned int x;
 };
 
-struct S_0 s_0;
+static struct S_0 s_0;
 
-struct S_1 s_1 = {.x = 0};
+static struct S_1 s_1 = {.x = 0};
 ")
 
   :with-output-off nil)
