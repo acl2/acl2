@@ -1,6 +1,6 @@
 ; Functions appearing in the pseudocode used to describe ARM instructions
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,12 @@
 (in-package "ARM")
 
 (include-book "state")
+(include-book "memory")
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
+(include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
@@ -40,6 +42,7 @@
 
 ;; See "Zero-extension and sign-extension of bitstrings"
 ;; We add the "xsize" parameter here because we can't ask x for its size.
+;todo: reorder args?
 (defun SignExtend (x xsize i)
   (declare (xargs :guard (and (unsigned-byte-p xsize x)
                               (< 0 xsize) ; so there is a sign bit to copy
@@ -67,6 +70,21 @@
                          x)))
   :hints (("Goal" :in-theory (enable bvsx ;todo
                                      ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: could pass the old size too?
+(defund ZeroExtend (x n)
+  (declare (xargs :guard (and (posp n)
+                              (unsigned-byte-p n x) ; could require n-1
+                              )))
+  (mbe :logic (bvchop n x)
+       :exec x))
+
+(defthm unsigned-byte-p-of-ZeroExtend
+  (implies (natp n)
+           (unsigned-byte-p n (ZeroExtend x n)))
+  :hints (("Goal" :in-theory (enable ZeroExtend))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +218,7 @@
   (member-eq ty *SRTypes*))
 
 ;; Returns (mv SRType integer).
-(defun DecodeImmShift (type imm5)
+(defund DecodeImmShift (type imm5)
   (declare (xargs :guard (and (unsigned-byte-p 2 type)
                               (unsigned-byte-p 5 imm5))))
   (mv-let (shift_t shift_n) ; this mv-let is not really needed, but we try to follow the spec
@@ -219,8 +237,18 @@
   (implies (and (unsigned-byte-p 2 type)
                 (unsigned-byte-p 5 imm5))
            (and (SRTypep (mv-nth 0 (DecodeImmShift type imm5)))
-                (integerp (mv-nth 1 (DecodeImmShift type imm5)))))
+                (integerp (mv-nth 1 (DecodeImmShift type imm5)))
+                (<= 0 (mv-nth 1 (DecodeImmShift type imm5)))))
   :hints (("Goal" :in-theory (enable DecodeImmShift))))
+
+(defthm mv-nth-1-of-decodeimmshift-when-rrx
+  (implies (equal (mv-nth 0 (decodeimmshift type imm5)) :srtype_rrx)
+           (equal (mv-nth 1 (decodeimmshift type imm5))
+                  1))
+  :hints (("Goal" :in-theory (enable decodeimmshift))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 (defund DecodeRegShift (type)
   (declare (xargs :guard (unsigned-byte-p 2 type)))
@@ -272,7 +300,7 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 ;; Returns (mv bits bit)
-(defun ror_c (n x shift)
+(defun ROR_C (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n) ; todo: require this elsewhere
 
@@ -284,14 +312,34 @@
          (carry_out (getbit (- n 1) result)))
     (mv result carry_out)))
 
+(defun ROR (n x shift)
+  (declare (xargs :guard (and (unsigned-byte-p n x)
+                              (< 0 n) ; todo: require this elsewhere
+                              (integerp shift))))
+  (if (== shift 0)
+      x
+    (mv-let (result bit)
+        (ROR_C n x shift)
+      (declare (ignore bit))
+      result)))
+
 ;; Returns (mv bits bit)
-(defun rrx_c (n x carry_in)
+(defun RRX_C (n x carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n)
                               (bitp carry_in))))
   (let ((result (bvcat 1 carry_in (- n 1) (slice (- n 1) 1 x)))
         (carry_out (getbit 0 x)))
     (mv result carry_out)))
+
+(defun RRX (n x carry_in)
+  (declare (xargs :guard (and (unsigned-byte-p n x)
+                              (< 0 n)
+                              (bitp carry_in))))
+  (mv-let (result bit)
+      (RRX_C n x carry_in)
+    (declare (ignore bit))
+    result))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,9 +375,7 @@
                 (integerp amount) ; restrict?
                 (<= 0 amount) ; for the guard of lsl_c
                 (bitp carry_in)
-                ;; the assert:
-                (not (and (eq type :SRType_RRX)
-                          (not (equal amount 1)))))
+        )
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
   :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
@@ -340,9 +386,7 @@
                 (integerp amount)           ; restrict?
                 (<= 0 amount)               ; for the guard of lsl_c
                 (bitp carry_in)
-                ;; the assert:
-                (not (and (eq type :SRType_RRX)
-                          (not (equal amount 1)))))
+)
            (unsigned-byte-p 1 (mv-nth 1 (shift_c n value type amount carry_in))))
   :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
@@ -413,6 +457,10 @@
                 (bitp carry_in))
            (unsigned-byte-p 1 (mv-nth 2 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
+
+(defund BitCount (n x)
+  (declare (xargs :guard (unsigned-byte-p n x)))
+  (bvcount n x))
 
 (defun IsZero (n x)
   (declare (xargs :guard (unsigned-byte-p n x))
@@ -490,6 +538,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+;; Returns arm.
 (defun BranchTo (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
@@ -497,6 +546,7 @@
   (set-reg #b1111 address arm))
 
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+;; Returns arm.
 (defun BranchWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
@@ -507,6 +557,7 @@
         (BranchTo (bvcat 30 (slice 31 2 address) 2 #b00) arm))
     (update-error *unsupported* arm)))
 
+;; Returns arm.
 (defun BXWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
@@ -519,11 +570,24 @@
           (BranchTo address arm)
         (update-error :unpredictable arm)))))
 
-;; (defun ALUWritePC (address arm)
-;;   (declare (xargs :guard (unsigned-byte-p 32 address)
-;;                   :stobjs arm))
-;;   ;; todo: more cases
-;;   (BXWritePC address arm))
+;; Returns arm.
+(defun ALUWritePC (address arm)
+  (declare (xargs :guard (addressp address)
+                  :stobjs arm))
+  (if (and (>= (ArchVersion) 7)
+           (== (CurrentInstrSet) *InstrSet_ARM*))
+      (BXWritePC address arm)
+    (BranchWritePC address arm)))
+
+;; Returns arm.
+(defun LoadWritePC (address arm)
+  (declare (xargs :guard (addressp address)
+                  :stobjs arm))
+  (if (>= (ArchVersion) 5)
+      (BXWritePC address arm)
+    (BranchWritePC address arm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund sint (n x)
   (declare (xargs :guard (and (posp n)
@@ -565,3 +629,107 @@
 ;;  :hints (("Goal" :in-theory (enable align bvand))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: think about this
+;; Val should contain enough informaion to distinguish different unknown bits (e.g., opcode, flag, etc.)
+(encapsulate (((unknown-bits * * arm) => *))
+    (local (defun unknown-bits (n val arm)
+             (declare (xargs :guard (posp n) :stobjs arm)
+                      (ignore n val arm))
+             0))
+  (defthm unsigned-byte-p-of-unknown-bits
+    (equal (unsigned-byte-p n (unknown-bits n val arm))
+           (natp n))))
+
+(defund unknown-bit (val arm)
+  (declare (xargs :stobjs arm))
+  (unknown-bits 1 val arm))
+
+(defthm bitp-of-unknown-bits
+  (bitp (unknown-bit val arm))
+  :hints (("Goal" :in-theory (enable unknown-bit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun UnalignedSupport ()
+  (declare (xargs :guard t))
+  t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: How should we handle this?
+(defun HaveLPAE ()
+  (declare (xargs :guard t))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun BigEndian ()
+  (declare (xargs :guard t))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move
+;; See A4.2.2 (Use of labels in UAL instruction syntax)
+;; todo: add a case for Thumb
+(defun pcvalue (inst-address)
+  (declare (xargs :guard (addressp inst-address)))
+  (+ 8 inst-address) ; todo: wrap?
+  )
+
+;; TODO: Can return PC+4 on versions before ARMv7?
+(defund PCStoreValue (inst-address)
+  (declare (xargs :guard (addressp inst-address)))
+  (bvplus 32 8 inst-address))
+
+(defthm unsigned-byte-p-of-PCStoreValue
+  (unsigned-byte-p 32 (PCStoreValue inst-address))
+  :hints (("Goal" :in-theory (enable PCStoreValue))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun Zeros (n)
+  (declare (xargs :guard (posp n))
+           (ignore n))
+  0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun LowestSetBit-aux (n size x)
+  (declare (xargs :guard (and (natp n)
+                              (unsigned-byte-p size x)
+                              (<= n (+ 1 size)))
+                  :measure (nfix (+ 1 (- size n)))))
+  (if (or (not (mbt (natp n)))
+          (not (mbt (natp size)))
+          (<= size n))
+      size
+    (if (= 1 (getbit n x))
+        n
+      (LowestSetBit-aux (+ 1 n) size x))))
+
+(defund LowestSetBit (size x)
+  (declare (xargs :guard (unsigned-byte-p size x)))
+  (LowestSetBit-aux 0 size x))
+
+;; (assert-equal (LowestSetBit 32 1) 0)
+;; (assert-equal (LowestSetBit 32 8) 3)
+;; (assert-equal (LowestSetBit 32 0) 32)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *true* t)
+(defconst *false* nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: flesh out
+;; Returns arm.
+(defun NullCheckIfThumbEE (n arm)
+  (declare (xargs :guard (register-numberp n)
+                  :stobjs arm)
+           (ignore n))
+  arm ; for now, since we don't yet support Thumb
+  )

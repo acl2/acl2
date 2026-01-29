@@ -48,6 +48,8 @@
 ;; TODO: Add more
 ;; TODO: Add _ in consistently where it separates two 0/1 values in different fields
 ;; todo: check for mnemonic variants in the assembly representations of each instruction (as for BL/BLX).
+
+;; NOTE: Entries preceded by 3 semicolons are ready to be uncommented once we have semantic functions for them.
 (defconst *patterns*
   '((:adc-immediate                  (cond 4) 0 0 _ 1 _ 0 1 0 1 s (rn 4) (rd 4) (imm12 12))
     (:adc-register                   (cond 4) 0 0 _ 0 _ 0 1 0 1 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
@@ -83,8 +85,8 @@
 
     (:bl-immediate  (cond 4) 1 0 1 1 (imm24 24)) ;; Encoding A1 of BL/BLX (immediate)
 
-    (:blx-immediate  1 1 1 1 1 0 1 h (imm24 24)) ;; Encoding A2 of BL/BLX (immediate)
-    (:blx-register  (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 1 1 (rm 4))
+;;;    (:blx-immediate  1 1 1 1 1 0 1 h (imm24 24)) ;; Encoding A2 of BL/BLX (immediate)
+;;;    (:blx-register  (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 1 1 (rm 4))
 
     (:bx (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 0 1 (rm 4))
 
@@ -114,8 +116,8 @@
     ;; todo: ldc/ldc2
 
     (:ldm/ldmia/ldmfd (cond 4) 1 0 0 0 1 0 w 1 (rn 4) (register_list 16))
-    (:ldmda/ldmfa     (cond 4) 1 0 0 0 0 0 w 1 (rn 4) (register_list 16))
-    (:ldmdb/ldmea     (cond 4) 1 0 0 1 0 0 w 1 (rn 4) (register_list 16))
+;;;    (:ldmda/ldmfa     (cond 4) 1 0 0 0 0 0 w 1 (rn 4) (register_list 16))
+;;;    (:ldmdb/ldmea     (cond 4) 1 0 0 1 0 0 w 1 (rn 4) (register_list 16))
     (:ldmib/ldmed     (cond 4) 1 0 0 1 1 0 w 1 (rn 4) (register_list 16))
 
     (:ldr-immediate  (cond 4) 0 1 0 p u 0 w 1 (rn 4) (rt 4) (imm12 12))
@@ -133,30 +135,30 @@
     (:ldrd-literal    (cond 4) 0 0 0 (1) u 1 (0) 0 1 1 1 1 (rt 4) (imm4h 4) 1 1 0 1 (imm4l 4))
     (:ldrd-register   (cond 4) 0 0 0 p u 0 w 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 1 0 1 (rm 4))
 
-    (:ldrex    (cond 4) 0 0 0 1 1 0 0 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
-    (:ldrexb   (cond 4) 0 0 0 1 1 1 0 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
-    (:ldrexd   (cond 4) 0 0 0 1 1 0 1 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
-    (:ldrexh   (cond 4) 0 0 0 1 1 1 1 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
+;;;    (:ldrex    (cond 4) 0 0 0 1 1 0 0 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
+;;;    (:ldrexb   (cond 4) 0 0 0 1 1 1 0 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
+;;;    (:ldrexd   (cond 4) 0 0 0 1 1 0 1 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
+;;;    (:ldrexh   (cond 4) 0 0 0 1 1 1 1 1 (rn 4) (rt 4) (1) (1) (1) (1) 1 0 0 1 (1) (1) (1) (1))
 
     (:ldrh-immediate  (cond 4) 0 0 0 p u 1 w 1 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:ldrh-literal    (cond 4) 0 0 0 p u 1 w 1 1 1 1 1 (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:ldrh-register   (cond 4) 0 0 0 p u 0 w 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
-    (:ldrht-encoding-a1  (cond 4) 0 0 0 0 u 1 1 1 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
+    (:ldrht-encoding-a1  (cond 4) 0 0 0   0 u 1   1   1 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:ldrht-encoding-a2  (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
     (:ldrsb-immediate  (cond 4) 0 0 0 p u 1 w 1 (rn 4) (rt 4) (imm4h 4) 1 1 0 1 (imm4l 4))
     (:ldrsb-literal    (cond 4) 0 0 0 p u 1 w 1 1 1 1 1 (rt 4) (imm4h 4) 1 1 0 1 (imm4l 4))
     (:ldrsb-register   (cond 4) 0 0 0 p u 0 w 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 1 0 1 (rm 4))
 
-    (:ldrsbt-encoding-a1  (cond 4) 0 0 0 0 u 1 1 1 (rn 4) (rt 4) (imm4h 4) 1 1 0 1 (imm4l 4))
+    (:ldrsbt-encoding-a1  (cond 4) 0 0 0   0 u 1 1 1 (rn 4) (rt 4) (imm4h 4) 1 1 0 1 (imm4l 4))
     (:ldrsbt-encoding-a2  (cond 4) 0 0 0 _ 0 u 0 1 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 1 0 1 (rm 4))
 
     (:ldrsh-immediate  (cond 4) 0 0 0 p u 1 w 1 (rn 4) (rt 4) (imm4h 4) 1 1 1 1 (imm4l 4))
     (:ldrsh-literal    (cond 4) 0 0 0 p u 1 w 1 1 1 1 1 (rt 4) (imm4h 4) 1 1 1 1 (imm4l 4))
     (:ldrsh-register   (cond 4) 0 0 0 p u 0 w 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 1 1 1 (rm 4))
 
-    (:ldrsht-encoding-a1  (cond 4) 0 0 0 0 u 1 1 1 (rn 4) (rt 4) (imm4h 4) 1 1 1 1 (imm4l 4))
+    (:ldrsht-encoding-a1  (cond 4) 0 0 0   0 u 1   1   1 (rn 4) (rt 4) (imm4h 4) 1 1 1 1 (imm4l 4))
     (:ldrsht-encoding-a2  (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 1 (rn 4) (rt 4) (0) (0) (0) (0) 1 1 1 1 (rm 4))
 
     (:ldrt-encoding-a1  (cond 4) 0 1 0 0 u 0 1 1 (rn 4) (rt 4) (imm12 12))
@@ -168,8 +170,8 @@
     (:lsr-immediate  (cond 4) 0 0 0 1 1 0 1 s 0 0 0 0 (rd 4) (imm5 5) 0 1 0 (rm 4))
     (:lsr-register  (cond 4) 0 0 0 1 1 0 1 s 0 0 0 0 (rd 4) (rm 4) 0 0 1 1 (rn 4))
 
-    (:mcr  (cond 4) 1 1 1 0 (opc1 3) 0 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4))
-    (:mcr2 1 1 1 1 _ 1 1 1 0 (opc1 3) 0 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4))
+;;;    (:mcr  (cond 4) 1 1 1 0 (opc1 3) 0 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4))
+;;;    (:mcr2 1 1 1 1 _ 1 1 1 0 (opc1 3) 0 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4))
 
     ;; todo: mcrr/mcrr2
 
@@ -181,10 +183,10 @@
     (:movw-immediate  (cond 4) 0 0 1 1 _ 0 0 0 0 (imm4 4) (rd 4) (imm12 12)) ; encoding a2 is movw
     (:mov-register  (cond 4) 0 0 _ 0 1 1 0 1 s (0) (0) (0) (0) (rd 4) 0 0 0 0 0 0 0 0 (rm 4))
 
-    (:movt  (cond 4) 0 0 1 1 0 1 0 0 (imm4 4) (rd 4) (imm12 12))
+;;;    (:movt  (cond 4) 0 0 1 1 0 1 0 0 (imm4 4) (rd 4) (imm12 12))
 
-    (:mrc (cond 4) 1 1 1 0 (opc1 3) 1 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4)) ; encoding a1 is mrc
-    (:mrc2 1 1 1 1 _ 1 1 1 0 (opc1 3) 1 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4)) ; encoding a2 is mrc2
+;;;    (:mrc (cond 4) 1 1 1 0 (opc1 3) 1 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4)) ; encoding a1 is mrc
+;;;    (:mrc2 1 1 1 1 _ 1 1 1 0 (opc1 3) 1 (crn 4) (rt 4) (coproc 4) (opc2 3) 1 (crm 4)) ; encoding a2 is mrc2
 
     ;; todo: mrrc/mrrc2
     ;; todo: mrs
@@ -194,13 +196,13 @@
 
     (:mvn-immediate (cond 4) 0 0 _ 1 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (imm12 12))
     (:mvn-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (imm5 5) (type 2) 0 (rm 4))
-    (:mvn-shifted-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
+    (:mvn-register-shifted-register  (cond 4) 0 0 _ 0 _ 1 1 1 1 s (0) (0) (0) (0) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
     (:nop  (cond 4) 0 0 1 1 _ 0 0 1 0 _ 0 0 0 0 (1) (1) (1) (1) (0) (0) (0) (0) 0 0 0 0 0 0 0 0)
 
     (:orr-immediate  (cond 4) 0 0 1 1 1 0 0 s (rn 4) (rd 4) (imm12 12))
     (:orr-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
-    (:orr-shifted-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
+    (:orr-register-shifted-register   (cond 4) 0 0 0 1 1 0 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
     ;; todo: pkh
     ;; todo: pld, pldw
@@ -287,7 +289,9 @@
     (:stm/stmia/stmea (cond 4) 1 0 0 0 1 0 w 0 (rn 4) (register_list 16))
 
     ;; todo: stmda
-    ;; todo: stmdb
+
+    (:stmdb/stmfd (cond 4) 1 0 0 1 0 0 w 0 (rn 4) (register_list 16))
+
     ;; todo: stmib
 
     (:str-immediate   (cond 4) 0 1 0 p u 0 w 0 (rn 4) (rt 4) (imm12 12))
@@ -310,15 +314,18 @@
     (:strh-immediate  (cond 4) 0 0 0 p u 1 w 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strh-register   (cond 4) 0 0 0 p u 0 w 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
-    ;; todo: strht
-    ;; todo: strt
+    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4H 4) 1 0 1 1 (imm4L 4))
+    (:strht-encoding-a2 (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
+
+    (:strt-encoding-a1 (cond 4) 0 1 _ 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (imm12 12))
+    (:strt-encoding-a2 (cond 4) 0 1 _ 1 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (imm5 5) (type 2) 0 (rm 4))
 
     (:sub-immediate                   (cond 4) 0 0 1 0 0 1 0 s (rn 4) (rd 4) (imm12 12))
     (:sub-register                    (cond 4) 0 0 0 0 0 1 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
     (:sub-register-shifted-register   (cond 4) 0 0 0 0 0 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
     ;; "sub SP minus immediate" and "sub SP minus register" seem to be just special cases of the above
 
-    (:svc (cond 4) 1 1 1 1 (imm24 24))
+;;;    (:svc (cond 4) 1 1 1 1 (imm24 24))
 
     ;; todo: swp, swpb
     ;; todo: sxtab
@@ -487,6 +494,10 @@
   '((:add-immediate :adr-encoding-a1)
     (:sub-immediate :adr-encoding-a2)
     (:str-immediate :push-encoding-a2)
+    (:str-immediate :strt-encoding-a1)
+    (:str-register :strt-encoding-a2)
+    (:strh-immediate :strht-encoding-a1)
+    (:strh-register :strht-encoding-a2)
     (:ldr-immediate :ldr-literal)
     (:ldrb-immediate :ldrb-literal)
     (:ldrb-immediate :ldrbt-encoding-a1)
@@ -517,6 +528,7 @@
     (:ldr-immediate :pop-encoding-a2)
     (:strb-immediate :strbt-encoding-a1) ; check me
     (:strb-register :strbt-encoding-a2) ; check me
+    (:push-encoding-a1 :stmdb/stmfd)
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

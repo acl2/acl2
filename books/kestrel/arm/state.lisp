@@ -21,6 +21,8 @@
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 (include-book "kestrel/bv/getbit" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
+(local (include-book "kestrel/bv/bvplus" :dir :system))
 ;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 ;(include-book "std/util/bstar" :dir :system)
@@ -60,6 +62,13 @@
 (in-theory (enable registers-length ; always 16
                    memory-length ; always 4294967296
                    ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: use more
+(defun register-numberp (n)
+  (declare (xargs :guard t))
+  (unsigned-byte-p 4 n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,9 +145,3 @@
 (defun set-apsr.c (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 29 bit (apsr arm)) arm))
 (defun set-apsr.v (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 28 bit (apsr arm)) arm))
 (defun set-apsr.q (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 27 bit (apsr arm)) arm))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun addressp (ad)
-  (declare (xargs :guard t))
-  (unsigned-byte-p 32 ad))
