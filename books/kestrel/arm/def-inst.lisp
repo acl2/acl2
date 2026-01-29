@@ -27,10 +27,11 @@
           (cons `(,var (lookup-eq-safe ',var args))
                 (let-bindings-for-encoding-fields (rest pat))))))))
 
-(defun def-inst-fn (mnemonic body check-condition check-condition-all-ones)
+(defun def-inst-fn (mnemonic body check-condition check-condition-all-ones guard-hints guard-debug)
   (declare (xargs :guard (and (symbolp mnemonic)
                               (member-eq check-condition '(t nil :auto))
-                              (member-eq check-condition-all-ones '(t nil :auto)))))
+                              (member-eq check-condition-all-ones '(t nil :auto))
+                              (booleanp guard-debug))))
   (b* ((encoding-patten (lookup-eq-safe mnemonic *desugared-patterns*))
        ((when (not (encoding-patternp encoding-patten)))
         (er hard? 'def-inst-fn "Bad pattern for ~x0: ~x1." mnemonic encoding-patten))
@@ -56,19 +57,26 @@
                    body))
            ;; todo: can we automate any more of the body?
            )
-      `(defund ,(pack-in-package "ARM" 'execute- mnemonic-name) (args inst-address arm)
-         (declare (xargs :guard (and (symbol-alistp args)
-                                     (addressp inst-address)
-                                     (,args-predicate args))
-                         :guard-hints (("Goal" :in-theory (enable ,args-predicate)))
-                         :stobjs arm)
-                  (ignorable inst-address))
-         (let ,(let-bindings-for-encoding-fields encoding-patten)
-           ,body)))))
+      `(encapsulate ()
+           ;; This is separate so as not to interfere with any guard-hints supplied
+           (local (in-theory (enable ,args-predicate)))
+         (defund ,(pack-in-package "ARM" 'execute- mnemonic-name) (args inst-address arm)
+           (declare (xargs :guard (and (symbol-alistp args)
+                                       (addressp inst-address)
+                                       (,args-predicate args))
+                           ,@(and (not (eq :auto guard-hints))
+                                  `(:guard-hints ,guard-hints))
+                           ,@(and guard-debug `(:guard-debug ,guard-debug))
+                           :stobjs arm)
+                    (ignorable inst-address))
+           (let ,(let-bindings-for-encoding-fields encoding-patten)
+             ,body))))))
 
 ;; The body can refer to all the field names in the encoding of the instruction.
 (defmacro def-inst (mnemonic body &key
                                     (check-condition ':auto) ; whether we put in the ConditionPassed check
                                     (check-condition-all-ones ':auto) ; whether we put in the check for condition=1111, which indicates an unconditional instruction
+                                    (guard-hints ':auto)
+                                    (guard-debug 'nil)
                                     )
-  (def-inst-fn mnemonic body check-condition check-condition-all-ones))
+  (def-inst-fn mnemonic body check-condition check-condition-all-ones guard-hints guard-debug))
