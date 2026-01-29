@@ -15,16 +15,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund execute-inst (mnemonic args inst-address arm)
+(defun make-execute-cases (mnemonics)
+  (declare (xargs :guard (keyword-listp mnemonics)))
+  (if (endp mnemonics)
+      nil
+    (let* ((mnemonic (first mnemonics))
+           (execute-function (acl2::pack-in-package-of-first-symbol 'execute- (symbol-name mnemonic))))
+      (cons `(,mnemonic (,execute-function args inst-address arm))
+            (make-execute-cases (rest mnemonics))))))
+
+(make-event
+ `(defund execute-inst (mnemonic args inst-address arm)
   (declare (xargs :guard (and (good-instp mnemonic args)
                               (addressp inst-address))
                   :guard-hints (("Goal" :in-theory (enable good-instp)))
                   :stobjs arm))
   (case mnemonic
-    (:add-immediate (execute-add-immediate args inst-address arm))
-    (:add-register (execute-add-register args inst-address arm))
-    ;; todo: more
-    (otherwise (update-error :unsupported-mnemonic-error arm))))
+    ,@(make-execute-cases (strip-cars *patterns*))
+    (otherwise (update-error :unsupported-mnemonic-error arm)))))
 
 ;; Returns a new state, which might have the error flag set
 (defun step (arm)
