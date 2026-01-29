@@ -22,6 +22,8 @@
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "../../syntax/validator")
 
+(include-book "qualified-ident")
+
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -91,86 +93,6 @@
        @(tsee uncertain-call-pathp)."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod qualified-ident
-  :short "Fixtype for fully qualified identifiers"
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This type tags an identifiers with an optional filepath for the
-       translation unit in which it was defined. This tagged identifier is
-       unique across a translation unit ensemble.")
-    (xdoc::p
-      "Only identifiers with internal linkage are tagged with a
-       filepath. External identifiers do not need qualification, as they are
-       already unique across the translation unit ensemble."))
-  ((filepath? c$::filepath-option)
-   (ident ident))
-  :pred qualified-identp)
-
-(fty::defoption qualified-ident-option
-  qualified-ident
-  :pred qualified-ident-optionp)
-
-(fty::defset qualified-ident-option-set
-  :elt-type qualified-ident-option
-  :elementp-of-nil t
-  :pred qualified-ident-option-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define qualified-ident-externalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-externalp ident))))
-  :parents (qualified-ident)
-  (not (qualified-ident->filepath? ident)))
-
-(define qualified-ident-internalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-internalp ident))))
-  :parents (qualified-ident)
-  (and (qualified-ident->filepath? ident) t))
-
-(defrule qualified-ident-internalp-becomes-not-qualified-ident-externalp
-  (equal (qualified-ident-internalp ident)
-         (not (qualified-ident-externalp ident)))
-  :enable (qualified-ident-internalp
-           qualified-ident-externalp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define external-ident
-  ((ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :ident ident))
-
-(defrule qualified-ident-externalp-of-external-ident
-  (qualified-ident-externalp (external-ident ident))
-  :enable (qualified-ident-externalp
-           external-ident))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define internal-ident
-  ((filepath filepathp)
-   (ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :filepath? (c$::filepath-fix filepath)
-   :ident ident))
-
-(defrule qualified-ident-internalp-of-internal-ident
-  (qualified-ident-internalp (internal-ident filepath ident))
-  :enable (qualified-ident-internalp
-           internal-ident)
-  :disable qualified-ident-internalp-becomes-not-qualified-ident-externalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
