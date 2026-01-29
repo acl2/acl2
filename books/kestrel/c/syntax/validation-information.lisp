@@ -268,7 +268,7 @@
     "We store just the @(see UID) associated with the tag
      in the current scope.
      The @(see UID) can be used to lookup the completion
-     under a separate @(type-completions) map."))
+     under a separate @(tsee type-completions) map."))
   ((kind tag-kind)
    (uid uid))
   :pred valid-tag-infop)
