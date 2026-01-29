@@ -100,19 +100,8 @@
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(ensure-rules-known (unroller-rules32))
-(ensure-rules-known (unroller-rules64))
-(ensure-rules-known (read-and-write-rules-bv))
-;; (ensure-rules-known (read-and-write-rules-non-bv))
-(ensure-rules-known (assumption-simplification-rules32))
-(ensure-rules-known (assumption-simplification-rules64))
-(ensure-rules-known (step-opener-rules32))
-(ensure-rules-known (step-opener-rules64))
-(ensure-rules-known (new-normal-form-rules-common))
-(ensure-rules-known (canonical-rules-bv))
-(ensure-rules-known (new-normal-form-rules64))
-(ensure-rules-known (unsigned-canonical-rules))
-;; todo: more?
+;; TODO: What about ones included only locally?
+(ensure-rules-known (all-unroller-rules))
 
 (local (defthm symbol-listp-of-unroller-rules32 (symbol-listp (unroller-rules32))))
 (local (defthm symbol-listp-of-unroller-rules64 (symbol-listp (unroller-rules64))))

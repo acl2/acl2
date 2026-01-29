@@ -120,7 +120,32 @@
   :elt-type lexmark
   :true-listp t
   :elementp-of-nil nil
-  :pred lexmark-listp)
+  :pred lexmark-listp
+
+  ///
+
+  (defruled true-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (true-listp x))
+    :induct t
+    :enable lexmark-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist lexmark-option-list
+  :short "Fixtype of lists of optional lexmarks."
+  :elt-type lexmark-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred lexmark-option-listp
+
+  ///
+
+  (defrule lexmark-option-listp-when-lexmark-listp
+    (implies (lexmark-listp x)
+             (lexmark-option-listp x))
+    :induct t
+    :enable lexmark-option-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,6 +161,24 @@
   (cond ((endp lexemes) nil)
         (t (cons (make-lexmark-lexeme :lexeme (car lexemes) :span (irr-span))
                  (lexeme-list-to-lexmark-list (cdr lexemes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist lexmark-list-case-lexeme-p (x)
+  :guard (lexmark-listp x)
+  :short "Check if all the lexmarks in a list are lexemes."
+  (lexmark-case x :lexeme))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexmark-list-to-lexeme-list ((lexmarks lexmark-listp))
+  :guard (lexmark-list-case-lexeme-p lexmarks)
+  :returns (lexemes plexeme-listp)
+  :short "Turn a list of lexmarks that are all lexemes
+          into the list of lexemes."
+  (cond ((endp lexmarks) nil)
+        (t (cons (lexmark-lexeme->lexeme (car lexmarks))
+                 (lexmark-list-to-lexeme-list (cdr lexmarks))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -722,10 +765,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ppstate->gcc ((ppstate ppstatep))
+(define ppstate->gcc/clang ((ppstate ppstatep))
   :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (ienv->version (ppstate->ienv ppstate))))
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  (c::version-gcc/clangp (ienv->version (ppstate->ienv ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -795,6 +838,17 @@
   (defret ppstate->size-of-push-lexmark
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-lexmarks ((lexmarks lexmark-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Push a list of lexmarks onto the pending lexmark list."
+  (b* ((new-lexmarks (append lexmarks (ppstate->lexmarks ppstate)))
+       (new-size (+ (len lexmarks) (ppstate->size ppstate)))
+       (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
+       (ppstate (update-ppstate->size new-size ppstate)))
+    ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

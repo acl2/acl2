@@ -14443,6 +14443,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     include-book-raw-error
     add-global-stobj remove-global-stobj
     translate-stobj-type-to-guard
+    chk-acceptable-defuns-redundancy
     ))
 
 (defconst *initial-logic-fns-with-raw-code*

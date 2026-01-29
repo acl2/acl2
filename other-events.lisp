@@ -30352,7 +30352,7 @@
                   (:INSTRUCTIONS
                    (translate-instructions val ctx state))
                   (:OTF-FLG
-                   (value val))
+                   (chk-otf-flg val ctx state))
                   (:ATTACH
                    (cond ((member-eq val '(t nil))
                           (value val))
