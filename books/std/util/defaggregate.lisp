@@ -1307,19 +1307,25 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 ;;        t)
                 ;;   :hints(("Goal" :in-theory (enable ,make-foo))))
 
-                (defthm ,(intern-in-package-of-symbol
-                          ;; This seems like a stronger replacement for the above?
-                          (str::cat "CONSP-OF-" (symbol-name make-foo))
-                          name)
-                  ,(if (and (not tag)
-                            (eq layout :tree))
-                       ;; A tagless :tree aggregate will be nil if all of its fields
-                       ;; are nil:
-                       `(implies (or ,@field-names)
-                                 (consp (,make-foo ,@field-names)))
-                     `(consp (,make-foo ,@field-names)))
-                  :rule-classes :type-prescription
-                  :hints(("Goal" :in-theory (enable ,make-foo))))
+                ,(if (and (not tag)
+                          (eq layout :tree))
+                     ;; A tagless :tree aggregate will be nil if all of its fields
+                     ;; are nil, so we avoid making a consp rule for it:
+                     `(defthm ,(intern-in-package-of-symbol
+                                 (str::cat "TYPE-OF-" (symbol-name make-foo))
+                                 name)
+                        (or (consp (,make-foo ,@field-names))
+                            (null (,make-foo ,@field-names)))
+                        :rule-classes :type-prescription
+                        :hints(("Goal" :in-theory (enable ,make-foo))))
+                   ;; Usual case:
+                   `(defthm ,(intern-in-package-of-symbol
+                               ;; This seems like a stronger replacement for the above?
+                               (str::cat "CONSP-OF-" (symbol-name make-foo))
+                               name)
+                      (consp (,make-foo ,@field-names))
+                      :rule-classes :type-prescription
+                      :hints(("Goal" :in-theory (enable ,make-foo)))))
 
                 (defthm ,booleanp-of-foop
                   (booleanp (,foop ,x))
