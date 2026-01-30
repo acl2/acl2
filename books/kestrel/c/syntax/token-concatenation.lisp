@@ -376,4 +376,16 @@
              (plexeme-tokenp token?))
     :hyp (and (or (not token1?) (plexeme-tokenp token1?))
               (or (not token2?) (plexeme-tokenp token2?)))
-    :hints (("Goal" :in-theory (enable plexeme-option-some->val)))))
+    :hints (("Goal" :in-theory (enable plexeme-option-some->val))))
+
+  (defret plexemep-of-concatenate-tokens/placemarkers-when-not-nil-arg
+    (plexemep token?)
+    :hyp (or token1? token2?)
+    :hints (("Goal" :in-theory (enable concatenate-tokens/placemarkers))))
+
+  (defret plexeme-tokenp-of-concatenate-tokens/placemarkers-when-not-nil-arg
+    (plexeme-tokenp token?)
+    :hyp (and (or token1? token2?)
+              (or (not token1?) (plexeme-tokenp token1?))
+              (or (not token2?) (plexeme-tokenp token2?)))
+    :hints (("Goal" :in-theory (enable concatenate-tokens/placemarkers)))))

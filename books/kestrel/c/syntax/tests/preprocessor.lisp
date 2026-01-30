@@ -157,9 +157,9 @@ int z6 = (1, (a,b));
 +3;
 +5.7e88;
 +x;
-++uu; // needs a space: + +uu
++ +uu;
 +x+y;
-++7; // needs a space: + +7
++ +7;
 
 -;
 -3;
@@ -185,7 +185,6 @@ int z6 = (1, (a,b));
 ((1)*(2),3);
 ((1)*(2),3, 4);
 ")
-; TODO: printer must add space where needed (see comments)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,12 +248,10 @@ include \"vers2.h\" // omit # in #include to avoid access
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
-                "/*
-int j[] = { t(1,2,3), t(,4,5), t(6,,7), t(8,9,),
-           t(10,,), t(,11,), t(,,12), t(,,) };
-*/
+                "
+int j[] = { 123, 45, 67, 89,
+           10, 11, 12,  };
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

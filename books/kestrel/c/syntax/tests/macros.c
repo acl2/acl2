@@ -26,9 +26,9 @@ H();
 H(3);
 H(5.7e88);
 H(x);
-H(+uu); // needs a space: + +uu
+H(+uu);
 H(x+y);
-H(H(7)); // needs a space: + +7
+H(H(7));
 
 I(,);
 I(3,);
