@@ -1315,7 +1315,7 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                                  (str::cat "TYPE-OF-" (symbol-name make-foo))
                                  name)
                         (or (consp (,make-foo ,@field-names))
-                            (null (,make-foo ,@field-names)))
+                            (equal nil (,make-foo ,@field-names)))
                         :rule-classes :type-prescription
                         :hints(("Goal" :in-theory (enable ,make-foo))))
                    ;; Usual case:
