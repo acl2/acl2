@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,7 +63,7 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
-(include-book "../evaluator") ; todo: this book has skip-proofs, for *axe-evaluator-functions* and to support making defuns
+(include-book "../evaluator-support") ; for *axe-evaluator-functions* and to support making defuns
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -1244,9 +1244,9 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
-          inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
+                              extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                              inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+                              step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
        (result-dag-size (dag-or-quotep-size result-dag))
@@ -1312,7 +1312,7 @@
        (expected-formals (intersection-eq common-formals result-dag-vars))
        (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
-       ((mv erp defuns) ; defuns is nil or a singleton list
+       ((mv erp events-for-defun)
         (if (not produce-function)
             (mv (erp-nil) nil)
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
@@ -1348,7 +1348,13 @@
                                       (and ignored-vars
                                            `((ignore ,@ignored-vars)))))
                          ,function-body-untranslated)))
-            (mv (erp-nil) (list defun)))))
+            (mv (erp-nil)
+                (append (if termp
+                            nil
+                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
+                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
+                          )
+                        (list defun))))))
        ((when erp) (mv erp nil state))
        (produce-theorem (and produce-theorem
                              (if (not produce-function)
@@ -1375,7 +1381,7 @@
                                  defthm
                                `(skip-proofs ,defthm))))
                 (list defthm))))
-       (events (cons defconst-form (append defuns defthms)))
+       (events (cons defconst-form (append events-for-defun defthms)))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
        (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
