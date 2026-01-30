@@ -2031,13 +2031,26 @@
      in this case, the token or placemarker
      is the left operand of token concatenation,
      so we must find the token or placemarker after the @('###').
-     We concatenate the two tokens/placemarkers,
-     and we add the resulting token to the output;
-     any markers found within the concatenation are put just after the result.
-     If instead we encounter a token or placemarker not followed by @('###'),
-     we discard it if it a placemarker, and we pass it on if it is a token.
+     We concatenate the two tokens/placemarkers.
+     However, there may be another @('###') following,
+     meaning that the result of the first concatenation
+     is in fact the left operand of another concatenation.
+     Thus, we use a recursive auxiliary function
+     to find all the @('###') operators,
+     so that we can concatenate all the operands together.
+     Any markers found within the concatenation(s)
+     are put just after the result.
+     [C17:6.10.3.2/2] says that the order of evaluation of @('##')
+     (here represented as @('###')), as well as of @('#') is unspecified;
+     our implementation associates @('###') to the left.
+     The companion recursive function just returns the token
+     if it is not followed by @('###').
+     In any case, the result of the companion recursive function
+     is a token or placemarker:
+     we discard it if it is a placemarker,
+     otherwise (i.e. if it is a token) we pass it on.
      We treat @('##') like any other token,
-     because it must come from some macro argument,
+     because this must come from some macro argument,
      and thus it is not treated as the concatenation operator:
      this is why @(tsee replace-macro-args) uses @('###')
      to distinguish the original @('##') in the macro's replacement list,
@@ -2046,54 +2059,107 @@
        ((when (endp lexmarks/placemarkers)) (retok nil))
        (lexmark/placemarker (car lexmarks/placemarkers))
        (lexmarks/placemarkers (cdr lexmarks/placemarkers))
+       ;; If the next lexmark or placemarker is a marker or a space,
+       ;; pass it on, i.e. continue processing and add it to the output.
        ((when (and lexmark/placemarker
                    (or (lexmark-case lexmark/placemarker :start)
                        (lexmark-case lexmark/placemarker :end)
                        (not (plexeme-tokenp ; i.e. space
                              (lexmark-lexeme->lexeme lexmark/placemarker))))))
-        (b* (((erp lexmarks)
-              (evaluate-triple-hash lexmarks/placemarkers version)))
+        (b* (((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers
+                                                   version)))
           (retok (cons (lexmark-fix lexmark/placemarker) lexmarks))))
-       ((mv foundp token/placemarker markers1 lexmarks/placemarkers-rest)
-        (find-first-token/placemarker lexmarks/placemarkers))
-       ((unless (and foundp
-                     token/placemarker
-                     (plexeme-punctuatorp token/placemarker "###")))
-        (b* (((erp lexmarks)
-              (evaluate-triple-hash lexmarks/placemarkers version)))
-          (retok (if lexmark/placemarker
-                     (cons (lexmark-fix lexmark/placemarker) lexmarks)
-                   lexmarks))))
-       ((mv foundp token/placemarker2 markers2 lexmarks/placemarkers)
-        (find-first-token/placemarker lexmarks/placemarkers-rest))
-       ((unless foundp)
-        (raise "Internal error: ~
-                concatenation operator ## found ~
-                at the end of a macro replacement list.")
-        (reterr t))
-       (token/placemarker1 (and lexmark/placemarker
-                                (lexmark-lexeme->lexeme lexmark/placemarker)))
-       ((erp token/placemarker)
-        (concatenate-tokens/placemarkers token/placemarker1
-                                         token/placemarker2
-                                         version))
+       ;; Otherwise, the next lexmark or placemarker
+       ;; is either a token or a placemarker.
+       ;; Call the recursive companion function to concatenate it
+       ;; with any subsequent token with ### in between.
+       ((erp token/placemarker markers lexmarks/placemarkers)
+        (evaluate-triple-hash-aux (and lexmark/placemarker
+                                       (lexmark-lexeme->lexeme
+                                        lexmark/placemarker))
+                                  nil
+                                  lexmarks/placemarkers
+                                  version))
+       ;; Process the rest of the lexmarks and placemarkers.
        ((erp lexmarks) (evaluate-triple-hash lexmarks/placemarkers version)))
-    (retok
-     (append (and token/placemarker
-                  (list (make-lexmark-lexeme :lexeme token/placemarker
-                                             :span (irr-span))))
-             markers1
-             markers2
-             lexmarks)))
-  :no-function nil
+    ;; Add the token from the recursive companion function to the output,
+    ;; or otherwise discard the placemarker.
+    ;; Also add any markers in between any ### operations.
+    (retok (append (and token/placemarker
+                        (list (make-lexmark-lexeme :lexeme token/placemarker
+                                                   :span (irr-span))))
+                   markers
+                   lexmarks)))
   :measure (len lexmarks/placemarkers)
   :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
-  :prepwork ((local (in-theory (enable lexmark-option-fix)))))
+  :hooks nil
+
+  :prepwork
+  ((define evaluate-triple-hash-aux
+     ((token/placemarker plexeme-optionp)
+      (markers lexmark-listp)
+      (lexmarks/placemarkers lexmark-option-listp)
+      (version c::versionp))
+     :guard (or (not token/placemarker)
+                (plexeme-tokenp token/placemarker))
+     :returns (mv erp
+                  (new-token/placemarker plexeme-optionp)
+                  (new-markers lexmark-listp)
+                  (new-lexmarks/placemarkers lexmark-option-listp))
+     :parents nil
+     (b* (((reterr) nil nil nil)
+          ;; Find the next token or placemarker, if any.
+          ((mv foundp triplehash? markers1 lexmarks/placemarkers-rest)
+           (find-first-token/placemarker lexmarks/placemarkers))
+          ;; If there is no next token or placemarker,
+          ;; or it is not a ### token,
+          ;; then return the input token or placemarker unchanged,
+          ;; and also the list of lexmarks and placemarker unchanged;
+          ;; and also the markers found so far unchanged.
+          ((unless (and foundp
+                        triplehash?
+                        (plexeme-punctuatorp triplehash? "###")))
+           (retok (plexeme-option-fix token/placemarker)
+                  (lexmark-list-fix markers)
+                  (lexmark-option-list-fix lexmarks/placemarkers)))
+          ;; Otherwise, there is a ###,
+          ;; so we must find another token or placemarker.
+          (lexmarks/placemarkers lexmarks/placemarkers-rest)
+          ((mv foundp next-token/placemarker markers2 lexmarks/placemarkers)
+           (find-first-token/placemarker lexmarks/placemarkers))
+          ((unless foundp)
+           (raise "Internal error: ~
+                   concatenation operator ## found ~
+                   at the end of a macro replacement list.")
+           (reterr t))
+          ;; Combine the next token or placemarker with the input one.
+          ((erp token/placemarker)
+           (concatenate-tokens/placemarkers token/placemarker
+                                            next-token/placemarker
+                                            version))
+          ;; Join all the markers.
+          (markers (append markers markers1 markers2)))
+       ;; Recursively combine the new token or placemarker
+       ;; with any subsequent ones if there are more ### operators.
+       (evaluate-triple-hash-aux token/placemarker
+                                 markers
+                                 lexmarks/placemarkers
+                                 version))
+     :no-function nil
+     :measure (len lexmarks/placemarkers)
+     :guard-hints (("Goal" :in-theory (enable true-listp-when-lexmark-listp)))
+
+     ///
+
+     (defret len-of-evaluate-triple-hash-aux
+       (<= (len new-lexmarks/placemarkers)
+           (len lexmarks/placemarkers))
+       :rule-classes :linear
+       :hints (("Goal" :induct t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evaluate-double-hash ((lexemes plexeme-listp) (version c::versionp))
-  :guard (plexeme-list-token/space-p lexemes)
   :returns (mv erp (new-lexemes plexeme-listp))
   :short "Evaluate the @('##') operator in
           the replacement list of an object-like macro."
@@ -2116,47 +2182,82 @@
        ((when (endp lexemes)) (retok nil))
        (lexeme (car lexemes))
        (lexemes (cdr lexemes))
-       ((mv foundp lexemes-rest) ; find if followed by ##
-        (if (endp lexemes)
-            (mv nil nil)
-          (if (plexeme-punctuatorp (car lexemes) "##")
-              (mv t (cdr lexemes))
-            (if (and (plexeme-case (car lexemes) :spaces)
-                     (consp (cdr lexemes))
-                     (plexeme-punctuatorp (cadr lexemes) "##"))
-                (mv t (cddr lexemes))
-              (mv nil nil)))))
-       ((when (not foundp))
-        (b* (((erp new-lexemes) (evaluate-double-hash lexemes version)))
-          (retok (cons (plexeme-fix lexeme) new-lexemes))))
-       ((unless (plexeme-tokenp lexeme))
-        (raise "Internal error: ## not preceded by token.")
-        (reterr t))
-       (token1 lexeme)
-       (lexemes lexemes-rest)
-       ((mv foundp token2 lexemes) ; must find token after ##
-        (if (endp lexemes)
-            (mv nil (irr-plexeme) nil)
-          (if (plexeme-tokenp (car lexemes))
-              (mv t (car lexemes) (cdr lexemes))
-            (if (and (plexeme-case (car lexemes) :spaces)
-                     (consp (cdr lexemes))
-                     (plexeme-tokenp (cadr lexemes)))
-                (mv t (cadr lexemes) (cddr lexemes))
-              (mv nil (irr-plexeme) nil)))))
-       ((unless foundp)
-        (raise "Internal error: ~
-                concatenation operator ## found ~
-                at the end of a macro replacement list.")
-        (reterr t))
-       ((erp token) (concatenate-tokens/placemarkers token1 token2 version))
-       ((erp new-lexemes) (evaluate-double-hash lexemes version)))
-    (retok
-     (append (and token ; <-- should be always non-NIL
-                  (list token))
-             new-lexemes)))
-  :no-function nil
-  :hooks nil)
+       ;; If the next lexeme is a space,
+       ;; pass it on, i.e. continue processing and add it to the output.
+       ((when (not (plexeme-tokenp lexeme))) ; i.e. space
+        (b* (((erp lexemes) (evaluate-double-hash lexemes version)))
+          (retok (cons (plexeme-fix lexeme) lexemes))))
+       ;; Otherwise, the next lexeme is a token.
+       ;; Call the recursive companion function to concatenate it
+       ;; with any subsequent token with ## in between.
+       ((erp token lexemes) (evaluate-double-hash-aux lexeme lexemes version))
+       ;; Process the rest of the lexemes.
+       ((erp lexemes) (evaluate-double-hash lexemes version)))
+    ;; Add the token from the recursive companion function to the output.
+    (retok (cons token lexemes)))
+  :measure (len lexemes)
+  :hooks nil
+
+  :prepwork
+  ((define evaluate-double-hash-aux ((token plexemep)
+                                     (lexemes plexeme-listp)
+                                     (version c::versionp))
+     :guard (plexeme-tokenp token)
+     :returns (mv erp
+                  (new-token plexemep)
+                  (new-lexemes plexeme-listp))
+     :parents nil
+     (b* (((reterr) (irr-plexeme) nil)
+          ;; Find the next token, if any.
+          ((mv foundp lexemes-rest)
+           (if (endp lexemes)
+               (mv nil nil)
+             (if (plexeme-punctuatorp (car lexemes) "##")
+                 (mv t (cdr lexemes))
+               (if (and (plexeme-case (car lexemes) :spaces)
+                        (consp (cdr lexemes))
+                        (plexeme-punctuatorp (cadr lexemes) "##"))
+                   (mv t (cddr lexemes))
+                 (mv nil nil)))))
+          ;; If there is no next token, or it is not ##,
+          ;; return the token unchanged,
+          ;; and also the list of lexemes unchanged.
+          ((when (not foundp))
+           (retok (plexeme-fix token) (plexeme-list-fix lexemes)))
+          ;; Otherwise, there is a ##, so we must find another token.
+          (lexemes lexemes-rest)
+          ((mv foundp next-token lexemes)
+           (if (endp lexemes)
+               (mv nil (irr-plexeme) nil)
+             (if (plexeme-tokenp (car lexemes))
+                 (mv t (car lexemes) (cdr lexemes))
+               (if (and (plexeme-case (car lexemes) :spaces)
+                        (consp (cdr lexemes))
+                        (plexeme-tokenp (cadr lexemes)))
+                   (mv t (cadr lexemes) (cddr lexemes))
+                 (mv nil (irr-plexeme) nil)))))
+          ((unless foundp)
+           (raise "Internal error: ~
+                   concatenation operator ## found ~
+                   at the end of a macro replacement list.")
+           (reterr t))
+          ;; Combine the next token with the input one.
+          ((erp token)
+           (concatenate-tokens/placemarkers token next-token version)))
+       ;; Recursively combine the new token
+       ;; with any subsequent ones if there are more ## operators.
+       (evaluate-double-hash-aux token lexemes version))
+     :no-function nil
+     :measure (len lexemes)
+     :hooks nil
+
+     ///
+
+     (defret len-of-evaluate-double-hash-aux
+       (<= (len new-lexemes)
+           (len lexemes))
+       :rule-classes :linear
+       :hints (("Goal" :induct t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
