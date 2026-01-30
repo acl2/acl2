@@ -539,7 +539,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-inst :bl-immediate
+(def-inst :bl
     (b* (;; EncodingSpecificOperations:
          (imm32 (signextend (bvcat 24 imm24 2 0) 26 32))
          (targetInstrSet *InstrSet_ARM*)
