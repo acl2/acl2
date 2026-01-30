@@ -3369,15 +3369,16 @@
                          state)))
                ((equal directive "ifdef") ; # ifdef
                 (b* (((erp rev-lexemes ppstate preprocessed state)
-                      (pproc-ifdef file
-                                   base-dir
-                                   include-dirs
-                                   preprocessed
-                                   preprocessing
-                                   rev-lexemes
-                                   ppstate
-                                   state
-                                   (1- limit))))
+                      (pproc-ifdef/ifndef t
+                                          file
+                                          base-dir
+                                          include-dirs
+                                          preprocessed
+                                          preprocessing
+                                          rev-lexemes
+                                          ppstate
+                                          state
+                                          (1- limit))))
                   (retok nil ; no group ending
                          rev-lexemes
                          ppstate
@@ -3385,15 +3386,16 @@
                          state)))
                ((equal directive "ifndef") ; # ifndef
                 (b* (((erp rev-lexemes ppstate preprocessed state)
-                      (pproc-ifndef file
-                                    base-dir
-                                    include-dirs
-                                    preprocessed
-                                    preprocessing
-                                    rev-lexemes
-                                    ppstate
-                                    state
-                                    (1- limit))))
+                      (pproc-ifdef/ifndef nil
+                                          file
+                                          base-dir
+                                          include-dirs
+                                          preprocessed
+                                          preprocessing
+                                          rev-lexemes
+                                          ppstate
+                                          state
+                                          (1- limit))))
                   (retok nil ; no group ending
                          rev-lexemes
                          ppstate
@@ -3655,73 +3657,158 @@
       "This is for an @('if-section') (see ABNF grammar)
        that starts with @('#if').")
      (xdoc::p
-      "This function is called after consuming the @('if') identifier.
+      "This function is called after consuming
+       the @('if') identifier of the @('#if').
        Thus, it remains to consume and evaluate the constant expression,
-       which we do via @(tsee pproc-const-expr)."))
-    (declare (ignore file base-dir include-dirs
-                     preprocessed preprocessing rev-lexemes))
+       which we do via @(tsee pproc-const-expr).
+       The result of the evaluation, a boolean,
+       is passed to @(tsee pproc-if/ifdef/ifndef-rest),
+       which preprocesses the rest of the @('if-section')."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp condp ppstate) (pproc-const-expr ppstate)))
-      (reterr (list :todo condp)))
+      (pproc-if/ifdef/ifndef-rest condp
+                                  nil ; donep
+                                  file
+                                  base-dir
+                                  include-dirs
+                                  preprocessed
+                                  preprocessing
+                                  rev-lexemes
+                                  ppstate
+                                  state
+                                  (1- limit)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-ifdef ((file stringp)
-                       (base-dir stringp)
-                       (include-dirs string-listp)
-                       (preprocessed string-scfile-alistp)
-                       (preprocessing string-listp)
-                       (rev-lexemes plexeme-listp)
-                       (ppstate ppstatep)
-                       state
-                       (limit natp))
+  (define pproc-ifdef/ifndef ((ifdefp booleanp)
+                              (file stringp)
+                              (base-dir stringp)
+                              (include-dirs string-listp)
+                              (preprocessed string-scfile-alistp)
+                              (preprocessing string-listp)
+                              (rev-lexemes plexeme-listp)
+                              (ppstate ppstatep)
+                              state
+                              (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep)
                  (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
-    :short "Preprocess a @('#ifdef') section."
+    :short "Preprocess a @('#ifdef') or @('#ifndef') section."
     :long
     (xdoc::topstring
      (xdoc::p
       "This is an @('if-section') (see ABNF grammar)
-       that starts with @('#ifdef')."))
-    (declare (ignore file base-dir include-dirs
-                     preprocessed preprocessing rev-lexemes))
+       that starts with @('#ifdef') or @('#ifndef').
+       The @('ifdefp') flag passed to this function
+       distinguishes @('#ifdef') (if @('t'))
+       from @('#ifndef') (if @('nil')).")
+     (xdoc::p
+      "This function is called after consuming
+       the @('ifdef') or @('ifndef') identifier
+       of the @('#ifdef') or @('#ifndef').")
+     (xdoc::p
+      "Thus, it remains to consume the identifier that follows,
+       which must form the whole of the rest of the line.
+       We look up the identifier in the macro table:
+       if it is defined or not defined
+       (i.e. we find information for it in the table),
+       then the condition evaluates to true or false;
+       otherwise, the condition evaluates to false or true.
+       We pass the result of the condition
+       to @(tsee pproc-if/ifdef/ifndef-rest),
+       which preprocesses the rest of the @('if-section').
+       However, if the macro is defined
+       not in the innermost and is not predefined,
+       then the file is not considered @(see self-contained)."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
-      (reterr :todo))
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((erp & ident? span ppstate) (read-token/newline ppstate))
+         ((unless (and ident? ; #ifdef/#ifndef ident
+                       (plexeme-case ident? :ident)))
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "an identifier"
+                      :found (plexeme-to-msg ident?)))
+         (ident (plexeme-ident->ident ident?))
+         ((erp & newline? span ppstate) (read-token/newline ppstate))
+         ((unless (and newline? ; #ifdef/#ifndef ident EOL
+                       (plexeme-case newline? :newline)))
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "a new line"
+                      :found (plexeme-to-msg ident?)))
+         ((mv info? innermostp predefinedp)
+          (macro-lookup ident (ppstate->macros ppstate)))
+         ((when (and info?
+                     (not innermostp)
+                     (not predefinedp)))
+          (reterr :not-self-contained))
+         (condp (if ifdefp
+                    (and info? t)
+                  (not info?))))
+      (pproc-if/ifdef/ifndef-rest condp
+                                  nil ; donep
+                                  file
+                                  base-dir
+                                  include-dirs
+                                  preprocessed
+                                  preprocessing
+                                  rev-lexemes
+                                  ppstate
+                                  state
+                                  (1- limit)))
+    :no-function nil
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define pproc-ifndef ((file stringp)
-                        (base-dir stringp)
-                        (include-dirs string-listp)
-                        (preprocessed string-scfile-alistp)
-                        (preprocessing string-listp)
-                        (rev-lexemes plexeme-listp)
-                        (ppstate ppstatep)
-                        state
-                        (limit natp))
+  (define pproc-if/ifdef/ifndef-rest ((condp booleanp)
+                                      (donep booleanp)
+                                      (file stringp)
+                                      (base-dir stringp)
+                                      (include-dirs string-listp)
+                                      (preprocessed string-scfile-alistp)
+                                      (preprocessing string-listp)
+                                      (rev-lexemes plexeme-listp)
+                                      (ppstate ppstatep)
+                                      state
+                                      (limit natp))
     :returns (mv erp
                  (new-rev-lexemes plexeme-listp)
                  (new-ppstate ppstatep)
                  (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
-    :short "Preprocess a @('#ifndef') section."
+    :short "Preprocess the rest of
+            a @('#if'), @('#ifdef'), or @('#ifndef') section."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is an @('if-section') (see ABNF grammar)
-       that starts with @('#ifndef')."))
-    (declare (ignore file base-dir include-dirs
+      "This is called after preprocessing
+       the first line of an @('if-section'), as defined by the grammar,
+       i.e. after preprocessing the directive line with
+       the @('#if'), @('#ifdef'), or @('#ifndef').
+       That directive is preprocessed by
+       @(tsee pproc-if), @(tsee pproc-ifdef), or @(tsee pprof-ifndef),
+       which evaluate the condition to a boolean,
+       which is passed to this function as the @('condp') input,
+       i.e. the value of the latest condition.
+       This function also takes an input @('donep') which says whether
+       we are done preprocessing the part of the @('if-section')
+       corresponding to a true condition;
+       this is initially @('nil'),
+       but it may become @('t') in recursive calls of this function.")
+     (xdoc::p
+      "The recursive structure of this function
+       matches the recursive structure of
+       the @('elif-group')s in the @('if-section')."))
+    (declare (ignore condp donep
+                     file base-dir include-dirs
                      preprocessed preprocessing rev-lexemes))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
