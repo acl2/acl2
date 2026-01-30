@@ -1397,9 +1397,19 @@ would have had to call @('(student->fullname x)').  For instance:</p>
                 ,@(if (and (not tag)
                            (eq layout :tree))
                       ;; A tagless :tree aggregate will be nil when all of its
-                      ;; fields are nil.  So is not clear how to make a
-                      ;; CONSP-WHEN :compound-recognizer rule:
-                      nil
+                      ;; fields are nil.  So the rule must allow for nil:
+                    `((defthm ,(intern-in-package-of-symbol
+                                 (str::cat "TYPE-WHEN-" (symbol-name foop))
+                                 name)
+                        (implies (,foop ,x)
+                                 (or (consp ,x)
+                                     (equal nil ,x)))
+                        :rule-classes :compound-recognizer
+                        :hints(("Goal"
+                                :in-theory
+                                (union-theories '(,foop)
+                                                (theory 'defaggregate-basic-theory))))))
+                    ;; Usual case:
                     `((defthm ,(intern-in-package-of-symbol
                                  (str::cat "CONSP-WHEN-" (symbol-name foop))
                                  name)
