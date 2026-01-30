@@ -628,11 +628,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define pprint-separation? ((lexeme plexemep)
+                            (lexeme? plexeme-optionp)
+                            (bytes byte-listp))
+  :returns (new-bytes byte-listp)
+  :short "Print, if needed, a separation between two lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called, in @(tsee pprint-lexeme-list),
+     just after printing each lexeme, which is passed as the @('lexeme') input.
+     The @('lexeme?') input is the lexeme that just follows, if any;
+     it is @('nil') if no lexeme follows.")
+   (xdoc::p
+    "The separation consists of a single space.
+     This is necessary, for instance, to separate a @('+') and a @('+'),
+     which otherwise would be erroneously joined into a @('++').
+     Other pairs of punctuators need a space as well.
+     Also identifiers and preprocessing numbers need a space in between.")
+   (xdoc::p
+    "Some of these might be actually unnecessary because of
+     some possible post-conditions ensured by our preprocessor,
+     but those need to be investigated and fleshed out.")
+   (xdoc::p
+    "The case of two contiguous dots does not necessarily need a space:
+     we would need a third following dot for confusing them with @('...');
+     but we keep the code simpler by looking just at the next lexeme."))
+  (b* (((unless lexeme?) (byte-list-fix bytes)))
+    (if (or (and (member-eq (plexeme-kind lexeme) '(:ident :number))
+                 (member-eq (plexeme-kind lexeme?) '(:ident :number)))
+            (and (plexeme-case lexeme :punctuator)
+                 (plexeme-case lexeme? :punctuator)
+                 (b* ((punc1 (plexeme-punctuator->punctuator lexeme))
+                      (punc2 (plexeme-punctuator->punctuator lexeme?)))
+                   (or (and (equal punc2 "=")
+                            (member-equal punc1 '("=" "!" "<" ">"
+                                                  "+" "-" "*" "/" "%"
+                                                  "&" "|" "^" "<<" ">>")))
+                       (and (equal punc1 "+")
+                            (equal punc2 "+"))
+                       (and (equal punc1 "-")
+                            (member-equal punc2 '("-" ">")))
+                       (and (equal punc1 "&")
+                            (equal punc2 "&"))
+                       (and (equal punc1 "|")
+                            (equal punc2 "|"))
+                       (and (equal punc1 "<")
+                            (member-equal punc2 '("<" "<=" ":" "%")))
+                       (and (equal punc1 ">")
+                            (member-equal punc2 '(">" ">=")))
+                       (and (equal punc1 ".")
+                            (equal punc2 "."))
+                       (and (equal punc1 "%")
+                            (member-equal punc2 '(">" ":")))
+                       (and (equal punc1 ":")
+                            (equal punc2 ">"))))))
+        (cons 32 (byte-list-fix bytes))
+      (byte-list-fix bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pprint-lexeme-list ((lexemes plexeme-listp) (bytes byte-listp))
   :returns (new-bytes byte-listp)
   :short "Print a list of lexemes after preprocessing."
   (b* (((when (endp lexemes)) (byte-list-fix bytes))
-       (bytes (pprint-lexeme (car lexemes) bytes)))
+       (lexeme (car lexemes))
+       (bytes (pprint-lexeme lexeme bytes))
+       (bytes (pprint-separation? lexeme (cadr lexemes) bytes)))
     (pprint-lexeme-list (cdr lexemes) bytes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
