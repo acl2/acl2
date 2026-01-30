@@ -2371,7 +2371,7 @@
        is preceded by @('#') or @('##') or followed by @('##').
        The flag inhibits macro expansion [C17:6.10.3.1/1].")
      (xdoc::p
-      "This function starting by reading the next lexmark,
+      "This function starts by reading the next lexmark,
        and then it dispatches based on it.")
      (xdoc::p
       "If there is no next lexmark, it is an error.
@@ -2873,6 +2873,53 @@
   :guard-hints
   (("Goal" :in-theory (enable true-listp-when-ident-listp
                               alistp-when-ident-lexmark-list-alistp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-const-expr ((ppstate ppstatep))
+  :returns (mv erp
+               (result booleanp)
+               (new-ppstate ppstatep))
+  :short "Preprocess a constant expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after reading a @('#if'),
+     which, according to the grammar,
+     must be followed by a constant expression [C17:6.10/1],
+     which takes the rest of the line of the directive.")
+   (xdoc::p
+    "We use @(tsee pproc-lexemes), in the @(':expr') mode,
+     to read the lexemes that form the constant expression;
+     that function consumes (and returns) the final new line.
+     The resulting lexmarks are all lexemes;
+     since currently we do not have that fact statically available,
+     we double-check it here and throw a hard error in case the check fails.
+     The lexemes are reversed back to their order of occurrence.")
+   (xdoc::p
+    "Then we must parse and evaluate those lexemes, obtaining a boolean,
+     which this function returns as the value of the expression.
+     Note that @(tsee pproc-lexemes) already handles
+     the @('defined') operator [C17:6.10.1/1],
+     replacing its uses with the preprocessing number @('0') or @('1')."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       ((erp rev-lexmarks ppstate)
+        (pproc-lexemes (macrep-mode-expr)
+                       nil ; rev-lexemes
+                       0 ; paren-level
+                       nil ; no-expandp
+                       nil ; disabled
+                       t ; directivep
+                       ppstate
+                       1000000000)) ; limit
+       ((unless (lexmark-list-case-lexeme-p rev-lexmarks))
+        (raise "Internal error: ~x0 contains markers.")
+        (reterr t))
+       (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
+       (lexemes (rev rev-lexemes)))
+    (reterr (list :todo lexemes)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3605,14 +3652,19 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is an @('if-section') (see ABNF grammar)
-       that starts with @('#if')."))
+      "This is for an @('if-section') (see ABNF grammar)
+       that starts with @('#if').")
+     (xdoc::p
+      "This function is called after consuming the @('if') identifier.
+       Thus, it remains to consume and evaluate the constant expression,
+       which we do via @(tsee pproc-const-expr)."))
     (declare (ignore file base-dir include-dirs
                      preprocessed preprocessing rev-lexemes))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
-      (reterr :todo))
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((erp condp ppstate) (pproc-const-expr ppstate)))
+      (reterr (list :todo condp)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
