@@ -3305,11 +3305,53 @@
                        (string-scfile-alist-fix preprocessed)
                        state))
                ((equal directive "if") ; # if
-                (reterr (msg "#if directive not yet supported."))) ; TODO
+                (b* (((erp rev-lexemes ppstate preprocessed state)
+                      (pproc-if file
+                                base-dir
+                                include-dirs
+                                preprocessed
+                                preprocessing
+                                rev-lexemes
+                                ppstate
+                                state
+                                (1- limit))))
+                  (retok nil ; no group ending
+                         rev-lexemes
+                         ppstate
+                         preprocessed
+                         state)))
                ((equal directive "ifdef") ; # ifdef
-                (reterr (msg "#ifdef directive not yet supported."))) ; TODO
+                (b* (((erp rev-lexemes ppstate preprocessed state)
+                      (pproc-ifdef file
+                                   base-dir
+                                   include-dirs
+                                   preprocessed
+                                   preprocessing
+                                   rev-lexemes
+                                   ppstate
+                                   state
+                                   (1- limit))))
+                  (retok nil ; no group ending
+                         rev-lexemes
+                         ppstate
+                         preprocessed
+                         state)))
                ((equal directive "ifndef") ; # ifndef
-                (reterr (msg "#ifndef directive not yet supported."))) ; TODO
+                (b* (((erp rev-lexemes ppstate preprocessed state)
+                      (pproc-ifndef file
+                                    base-dir
+                                    include-dirs
+                                    preprocessed
+                                    preprocessing
+                                    rev-lexemes
+                                    ppstate
+                                    state
+                                    (1- limit))))
+                  (retok nil ; no group ending
+                         rev-lexemes
+                         ppstate
+                         preprocessed
+                         state)))
                ((equal directive "include") ; # include
                 (b* (((erp rev-lexemes ppstate preprocessed state)
                       (pproc-include nontoknls-before-hash
@@ -3544,7 +3586,101 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local
+  (define pproc-if ((file stringp)
+                    (base-dir stringp)
+                    (include-dirs string-listp)
+                    (preprocessed string-scfile-alistp)
+                    (preprocessing string-listp)
+                    (rev-lexemes plexeme-listp)
+                    (ppstate ppstatep)
+                    state
+                    (limit natp))
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep)
+                 (new-preprocessed string-scfile-alistp)
+                 state)
+    :parents (preprocessor pproc-files/groups/etc)
+    :short "Preprocess a @('#if') section."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is an @('if-section') (see ABNF grammar)
+       that starts with @('#if')."))
+    (declare (ignore file base-dir include-dirs
+                     preprocessed preprocessing rev-lexemes))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
+      (reterr :todo))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-ifdef ((file stringp)
+                       (base-dir stringp)
+                       (include-dirs string-listp)
+                       (preprocessed string-scfile-alistp)
+                       (preprocessing string-listp)
+                       (rev-lexemes plexeme-listp)
+                       (ppstate ppstatep)
+                       state
+                       (limit natp))
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep)
+                 (new-preprocessed string-scfile-alistp)
+                 state)
+    :parents (preprocessor pproc-files/groups/etc)
+    :short "Preprocess a @('#ifdef') section."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is an @('if-section') (see ABNF grammar)
+       that starts with @('#ifdef')."))
+    (declare (ignore file base-dir include-dirs
+                     preprocessed preprocessing rev-lexemes))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
+      (reterr :todo))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-ifndef ((file stringp)
+                        (base-dir stringp)
+                        (include-dirs string-listp)
+                        (preprocessed string-scfile-alistp)
+                        (preprocessing string-listp)
+                        (rev-lexemes plexeme-listp)
+                        (ppstate ppstatep)
+                        state
+                        (limit natp))
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep)
+                 (new-preprocessed string-scfile-alistp)
+                 state)
+    :parents (preprocessor pproc-files/groups/etc)
+    :short "Preprocess a @('#ifndef') section."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is an @('if-section') (see ABNF grammar)
+       that starts with @('#ifndef')."))
+    (declare (ignore file base-dir include-dirs
+                     preprocessed preprocessing rev-lexemes))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
+      (reterr :todo))
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
+             (local
               (in-theory
                (enable
                 acons
