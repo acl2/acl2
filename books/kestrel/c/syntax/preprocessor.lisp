@@ -14,6 +14,7 @@
 (include-book "stringization")
 (include-book "token-concatenation")
 (include-book "macro-tables")
+(include-book "preprocessor-evaluator")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 (include-book "preprocessor-reader")
@@ -137,6 +138,7 @@
                     stringization
                     token-concatenation
                     macro-tables
+                    preprocessor-evaluator
                     preprocessor-states
                     preprocessor-messages
                     preprocessor-reader
