@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,10 +60,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the version of C,
-     including whether GCC extensions are enabled or not;
-     see @(tsee c::version).
-     Currently we mainly support C17, with and without GCC extensions,
+    "We include an indication of the version of C; see @(tsee c::version).
+     Currently we mainly support C17,
+     with and without GCC and Clang extensions,
      but we are starting to adding some support for C23 as well.")
    (xdoc::p
     "We assume that bytes are 8 bits,
@@ -70,7 +70,7 @@
      and that there are no padding bits or trap representations
      (except for @('_Bool')s, which are padded to at least one byte).
      Therefore, the characteristics of the integer types
-     are defined by four numbers,
+     are defined by five numbers,
      i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
      constraints on those number are derived from
@@ -78,7 +78,7 @@
      and [C17:6.2.5/8] (for the increasing sizes).")
    (xdoc::p
     "The floating types are characterized by their sizes.
-     We make no assumptions about their respective sizes.")
+     We make no assumptions about their respective sizes for now.")
    (xdoc::p
     "We include a field for the size of pointers.
      We assume that all pointers are the same size.
@@ -95,7 +95,8 @@
      This may include details about standard library types
      (such as @('size_t'), @('ptrdiff_t'), etc.),
      alignment and padding policies,
-     endianness, and so on."))
+     endianness,
+     and so on."))
   ((version c::version)
    (bool-bytes pos)
    (short-bytes pos
