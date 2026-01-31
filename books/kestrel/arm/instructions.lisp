@@ -29,6 +29,7 @@
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
+(include-book "kestrel/bv/bvmult-def" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -40,6 +41,8 @@
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvmult" :dir :system))
+(local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -1973,7 +1976,43 @@
                     arm)
                 arm))
          (arm (advance-pc arm)))
-      arm))
+      arm)
+  :alt-body ;; this uses bvmult
+  (b* (;; EncodingSpecificOperations:
+       (d (uint 4 rd))
+       (n (uint 4 rn))
+       (m (uint 4 rm))
+       (setflags (== s #b1))
+       ((when (or (== d 15)
+                  (== n 15)
+                  (== m 15)))
+        (update-error *unpredictable* arm))
+       ((when (and (< (ArchVersion) 6)
+                   (== d n)))
+        (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
+       (my-result (bvmult 32 (reg n arm) (reg m arm)))
+       (arm (set-reg rd my-result arm))
+       (arm (if setflags
+                (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
+                       (arm (set-apsr.z (IsZeroBit 32 my-result) arm))
+                       (arm (if (== (ArchVersion) 4)
+                                (set-apsr.c (unknown-bit :mul arm) arm)
+                              arm ; APSR.C unchanged
+                              ))
+                       ;; APSR.V is unchanged
+                       )
+                  arm)
+              arm))
+       (arm (advance-pc arm)))
+    arm)
+  :alt-body-hints (("Goal" :in-theory (enable sint acl2::bvchop-of-*-becomes-bvmult
+                                              acl2::bvmult-convert-arg2-to-bv
+                                              acl2::bvmult-convert-arg3-to-bv
+                                              acl2::getbit-convert-arg2-to-bv
+                                              acl2::trim-of-*-becomes-bvmult ; todo: enable whenever the conversion rules are enabled
+                                              ))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
