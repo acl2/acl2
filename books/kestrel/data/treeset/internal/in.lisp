@@ -473,25 +473,6 @@
                                            eqlable-tree-search-in
                                            tree-all-eqlablep))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled tree-search-in-becomes-eqlable-tree-search-in-exec
-  (equal (tree-search-in x tree)
-         (if (tree-empty-p tree)
-             nil
-           (let ((head-elem (tagged-element->elem (tree->head tree))))
-             (or (equal x head-elem)
-                 (if (<< x head-elem)
-                     (eqlable-tree-search-in x (tree->left tree))
-                   (eqlable-tree-search-in x (tree->right tree)))))))
-  :induct t
-  :enable tree-search-in)
-
-(verify-guards eqlable-tree-search-in
-  :hints
-  (("Goal" :use tree-search-in-becomes-eqlable-tree-search-in-exec
-           :in-theory (enable tree-all-eqlablep))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy tree-in-extra-rules

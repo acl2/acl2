@@ -132,8 +132,8 @@
   (implies (and (not (heap< x y))
                 (heap<-all-l tree y))
            (heap<-all-l tree x))
-  :enable heap<-all-l-weaken
-  :use heap<-trichotomy)
+  :enable (heap<-all-l-weaken
+           heap<-expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 

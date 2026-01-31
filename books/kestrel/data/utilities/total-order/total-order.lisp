@@ -1,4 +1,4 @@
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,13 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
 (include-book "misc/total-order" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (disable acl2::equal-of-booleans-cheap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,7 +30,6 @@
   (implies (equal x y)
            (not (<< x y))))
 
-;; TODO: is this any better than acl2::<<-irreflexive ?
 (defruled <<-irreflexive-backchain-cheap
   (implies (equal x y)
            (not (<< x y)))
@@ -53,28 +58,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled <<-becomes-cases
+(defruled <<-case-split
   (equal (<< x y)
          (and (not (equal x y))
               (not (<< y x))))
-  :use (:instance acl2::<<-trichotomy
-                  (x y)
-                  (y x))
-  :enable <<-rules
-  :disable acl2::<<-trichotomy)
+  :enable (<<-rules
+           acl2::equal-of-booleans-cheap))
 
-(defruled not-<<-case-split
+(defruled <<-case-split-clause
   (implies (syntaxp (acl2::want-to-strengthen (<< x y)))
            ;; The LHS is misleading here. Using want-to-strengthen, we are
            ;; limiting ourselves to rewriting the negation of the LHS.
            (equal (<< x y)
                   (and (not (equal x y))
                        (not (<< y x)))))
-  :by <<-becomes-cases)
+  :by <<-case-split)
+
+;; This will loop with not-<<-case-split-clause.
+;; Perhaps what we want is to only fire this when stable-under-simplificationp.
+;; But that requires a computed hint.
+;; Or perhaps we can do something with mfcs.
+(defruled not-<<-case-split
+  (equal (not (<< x y))
+         (or (equal x y)
+             (<< y x)))
+  :enable (<<-rules
+           acl2::equal-of-booleans-cheap))
+
+(defruled not-<<-case-split-clause
+  (implies (syntaxp (acl2::want-to-weaken (<< x y)))
+           ;; The LHS is misleading here. Using want-to-strengthen, we are
+           ;; limiting ourselves to rewriting the negation of the LHS.
+           (equal (<< x y)
+                  (and (not (equal x y))
+                       (not (<< y x)))))
+  :by <<-case-split)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defthy <<-to-not-<<
+  '(;; <<-case-split
+    <<-case-split-clause
+    ))
+
+(defthy not-<<-to-<<
+  '(;; not-<<-case-split
+    not-<<-case-split-clause
+    ))
 
 (defthy <<-expensive-rules
   '(<<-rules
-    not-<<-case-split
+    not-<<-to-<<
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,8 +136,7 @@
   ((x symbolp)
    (y symbolp))
   (mbe :logic (<< x y)
-       :exec (and (not (eq x y))
-                  (symbol< x y)
+       :exec (and (symbol< x y)
                   t))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable << lexorder alphorder))))
