@@ -4097,7 +4097,7 @@
        i.e. after preprocessing the directive line with
        the @('#if'), @('#ifdef'), or @('#ifndef').
        That directive is preprocessed by
-       @(tsee pproc-if), @(tsee pproc-ifdef), or @(tsee pprof-ifndef),
+       @(tsee pproc-if) or @(tsee pproc-ifdef/ifndef),
        which evaluate the condition to a boolean,
        which is passed to this function as the @('condp') input,
        i.e. the value of the latest condition.
