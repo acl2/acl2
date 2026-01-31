@@ -1747,15 +1747,23 @@
   (b* (((gin gin) gin)
        (expr (make-expr-cond :test test :then then :else else))
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
+       ((unless (iff then then-new))
+        (raise "Internal error: ~
+                conditional expression with 'then' branch ~x0 ~
+                is transformed into ~
+                conditional expression with 'then' branch ~x1."
+               (expr-option-fix then) (expr-option-fix then-new))
+        (mv expr-new (irr-gout)))
        ((unless (and test-thm-name
                      then-thm-name
-                     else-thm-name))
+                     else-thm-name
+                     then)) ; IFF then-new
         (mv expr-new (gout-no-thm gin)))
        ((mv & old-test) (ldm-expr test)) ; ERP must be NIL
-       ((mv & old-then) (ldm-expr-option then)) ; ERP must be NIL
+       ((mv & old-then) (ldm-expr then)) ; ERP must be NIL
        ((mv & old-else) (ldm-expr else)) ; ERP must be NIL
        ((mv & new-test) (ldm-expr test-new)) ; ERP must be NIL
-       ((mv & new-then) (ldm-expr-option then-new)) ; ERP must be NIL
+       ((mv & new-then) (ldm-expr then-new)) ; ERP must be NIL
        ((mv & new-else) (ldm-expr else-new)) ; ERP must be NIL
        (hints `(("Goal"
                  :do-not '(preprocess) ; for speed
@@ -1852,7 +1860,9 @@
                         (and (expr-formalp test)
                              (expr-formalp test-new)))
                     (or (not then-thm-name)
-                        (and (expr-formalp then)
+                        (and then
+                             then-new
+                             (expr-formalp then)
                              (expr-formalp then-new)))
                     (or (not else-thm-name)
                         (and (expr-formalp else)
@@ -1863,7 +1873,8 @@
                     (expr-formalp else)
                     (expr-formalp expr))))
     :expand (expr-formalp (expr-cond test-new then-new else-new))
-    :enable (gout-no-thm
+    :enable (irr-gout
+             gout-no-thm
              expr-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
