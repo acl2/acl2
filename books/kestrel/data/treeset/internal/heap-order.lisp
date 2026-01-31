@@ -164,8 +164,8 @@
   :enable heap<-rules
   :disable heap<-trichotomy)
 
-(defruled not-heap<-case-split
-  (implies (syntaxp (acl2::want-to-strengthen (heap< x y)))
+(defruled not-heap<-case-split-clause
+  (implies (syntaxp (acl2::want-to-weaken (heap< x y)))
            ;; The LHS is misleading here. Using want-to-strengthen, we are
            ;; limiting ourselves to rewriting the negation of the LHS.
            (equal (heap< x y)
@@ -177,7 +177,7 @@
 
 (defthy heap<-expensive-rules
   '(heap<-rules
-    not-heap<-case-split
+    not-heap<-case-split-clause
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -434,12 +434,8 @@
                    (bstp tree)
                    (<< y x))
               (<<-all-l tree x))
-     :enable (data::<<-rules
-              <<-all-extra-rules)
-     :disable acl2::<<-trichotomy
-     :use ((:instance acl2::<<-trichotomy
-                      (acl2::x (tagged-element->elem (tree->head tree)))
-                      (acl2::y y))))))
+     :enable (data::<<-expensive-rules
+              <<-all-extra-rules))))
 
 ;; TODO: is this a reasonable rule?
 (defrule <<-all-l-when-tree-empty-p-of-tree-split.right-forward-chaining

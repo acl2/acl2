@@ -14,7 +14,6 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/oset-defs" :dir :system)
-(include-book "kestrel/utilities/polarity" :dir :system)
 
 (include-book "internal/tree-defs")
 (include-book "internal/in-defs")
