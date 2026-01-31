@@ -17,6 +17,7 @@
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
 (include-book "kestrel/bv/bvcount" :dir :system)
+(include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
@@ -468,9 +469,16 @@
   (equal 0 x) ; todo: phrase using bitcount
   )
 
-(defun IsZeroBit (n x)
+(defund IsZeroBit (n x)
   (declare (xargs :guard (unsigned-byte-p n x)))
   (if (IsZero n x) 1 0))
+
+;; can avoid a case split
+(defthm IsZeroBit-alt-def
+  (equal (IsZeroBit n x)
+         (bool-to-bit (equal x 0)))
+  :rule-classes :definition
+  :hints (("Goal" :in-theory (enable IsZeroBit))))
 
 ;; (local
 ;;   (defthm integerp-when-unsigned-byte-p-32
