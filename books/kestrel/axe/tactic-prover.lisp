@@ -27,7 +27,7 @@
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly, brings in skip-proofs ; todo: try rewriter-basic but we might need support for embedded dags
 ;(include-book "dag-size")
-(include-book "dagify") ; for dag-or-term-to-term
+(include-book "dagify") ; for dag-or-term-to-term ; todo: skip-proofs
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
