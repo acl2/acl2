@@ -2923,6 +2923,307 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define skip-to-end-of-line ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Skip lexemes up to (including) the next new line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when preprocessing
+     code in @('if-section')s that is skipped.")
+   (xdoc::p
+    "We read lexemes until we read a new line.
+     All the lexemes are discarded.
+     It is an error if we reach end of file.")
+   (xdoc::p
+    "We set the @('headerp') flag to @('nil') when reading the next lexeme.
+     This is only called on lexemes
+     that do not immediately follow a @('#include');
+     lexemes immediately following a @('#include') are handled elsewhere."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
+       ((unless lexeme)
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a lexeme"
+                    :found "end of file"))
+       ((when (plexeme-case lexeme :newline)) (retok ppstate)))
+    (skip-to-end-of-line ppstate))
+  :no-function nil
+  :measure (ppstate->size ppstate)
+
+  ///
+
+  (defret ppstate->size-of-skip-to-end-of-line-uncond
+    (<= (ppstate->size new-ppstate)
+        (ppstate->size ppstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret ppstate->size-of-skip-to-end-of-line-cond
+    (implies (not erp)
+             (<= (ppstate->size new-ppstate)
+                 (1- (ppstate->size ppstate))))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines pproc-groups-skipped
+  :short "Preprocess skipped groups."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In an @('if-section') [C17:6.10.1],
+     at most one optional group (i.e. zero or more group parts)
+     becomes, after preprocessing, part of the code.
+     The other optional groups are skipped,
+     but we still need to go through them to find where they end,
+     without being confused by possible nested @('if-section')s
+     [C17:6.10.1/6].")
+   (xdoc::p
+    "The functions in this clique are similar in structure to
+     (some of) the ones in the @(tsee pproc-files/groups/etc) clique,
+     but they discard all the lexemes,
+     they do not perform macro replacement,
+     and they do not execute the directives.
+     See the documentation of @(tsee pproc-files/groups/etc)."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-*-group-part-skipped ((ppstate ppstatep))
+    :returns (mv erp
+                 (groupend groupendp)
+                 (new-ppstate ppstatep))
+    :parents (preprocessor pproc-groups-skipped)
+    :short "Preprocess zero or more group parts to be skipped."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is similar to @(tsee pproc-*-group-part) in structure:
+       see that function's documentation."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) (irr-groupend) ppstate)
+         (psize (ppstate->size ppstate))
+         ((erp groupend? ppstate) (pproc-?-group-part-skipped ppstate))
+         ((when groupend?) (retok groupend? ppstate))
+         ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
+          (reterr :impossible)))
+      (pproc-*-group-part-skipped ppstate))
+    :measure (two-nats-measure (ppstate->size ppstate)
+                               1)) ; > pproc-?-group-part-skipped
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-?-group-part-skipped ((ppstate ppstatep))
+    :returns (mv erp
+                 (groupend? groupend-optionp)
+                 (new-ppstate ppstatep))
+    :parents (preprocessor pproc-groups-skipped)
+    :short "Preprocess a group part to be skipped, if present."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is similar to @(tsee pproc-?-group-part) in structure:
+       see that function's documentation.")
+     (xdoc::p
+      "We treat @('#if'), @('#ifdef'), and @('#ifndef') identically,
+       since we are not actually executing the directives.
+       After going through the first line,
+       we call a separate function in the clique to handle the rest.
+       Note that these are nested inside the outer conditional
+       part of whose code we are preprocessing/skipping;
+       we need to follow the structure of the nested conditionals
+       to see where they end, without confusing their ending
+       with the ending of the outer conditional.")
+     (xdoc::p
+      "Just after a @('#include'),
+       we read the next token or new line trying to recognize header names;
+       after that, we skip the rest of the line,
+       regardless of whether we found a header name or anything else.
+       We also accept @('#include') followed by no tokens,
+       since this is skipped code anyhow.")
+     (xdoc::p
+      "We treat
+       @('#define'), @('#undef'), @('#line'), @('#error') and @('#pragma')
+       identically, by skipping through the next end of line."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate)
+         ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
+      (cond
+       ((not toknl) ; EOF
+        (if nontoknls
+            (reterr-msg :where (position-to-msg (span->start span))
+                        :expected "new line"
+                        :found (plexeme-to-msg toknl))
+          (retok (groupend-eof) ppstate)))
+       ((plexeme-hashp toknl) ; #
+        (b* (((erp & toknl2 span2 ppstate) (read-token/newline ppstate)))
+          (cond
+           ((not toknl2) ; # EOF
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a token or new line"
+                        :found (plexeme-to-msg toknl2)))
+           ((plexeme-case toknl2 :newline) ; # EOF -- null directive
+            (retok nil ppstate))
+           ((plexeme-case toknl2 :ident) ; # ident
+            (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
+              (cond
+               ((equal directive "elif") ; # elif
+                (retok (groupend-elif) ppstate))
+               ((equal directive "else") ; # else
+                (retok (groupend-else) ppstate))
+               ((equal directive "endif") ; # endif
+                (retok (groupend-endif) ppstate))
+               ((or (equal directive "if") ; # if
+                    (equal directive "ifdef") ; # ifdef
+                    (equal directive "ifndef")) ; # ifndef
+                (b* (((erp ppstate) ; # if/ifdef/ifndef ... EOL
+                      (skip-to-end-of-line ppstate))
+                     (psize (ppstate->size ppstate))
+                     ((erp ppstate)
+                      (pproc-if/ifdef/ifndef-rest-skipped ppstate))
+                     ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
+                      (reterr :impossible)))
+                  (retok nil ppstate)))
+               ((equal directive "include") ; # include
+                (b* (((erp & toknl3 span3 ppstate)
+                      (read-token/newline-after-include ppstate))
+                     ((unless toknl3) ; # include EOF
+                      (reterr-msg :where (position-to-msg (span->start span3))
+                                  :expected "a token or new line"
+                                  :found (plexeme-to-msg toknl3)))
+                     ((when (plexeme-case toknl3 :newline)) ; # include EOL
+                      (retok nil ppstate))
+                     ((erp ppstate) ; # include ... EOL
+                      (skip-to-end-of-line ppstate)))
+                  (retok nil ppstate)))
+               ((or (equal directive "define") ; # define
+                    (equal directive "undef") ; # undef
+                    (equal directive "line") ; # line
+                    (equal directive "error") ; # error
+                    (equal directive "pragma")) ; # pragma
+                (b* (((erp ppstate) ; # ... EOL
+                      (skip-to-end-of-line ppstate)))
+                  (retok nil ppstate)))
+               (t ; # other -- non-directive
+                (b* (((erp ppstate) ; # ... EOL
+                      (skip-to-end-of-line ppstate)))
+                  (retok nil ppstate))))))
+           (t ; # non-ident -- non-directive
+            (b* (((erp ppstate) ; # ... EOL
+                  (skip-to-end-of-line ppstate)))
+              (retok nil ppstate))))))
+       (t ; non-# -- text line
+        (b* (((erp ppstate) ; ... EOL
+              (skip-to-end-of-line ppstate)))
+          (retok nil ppstate)))))
+    :no-function nil
+    :measure (two-nats-measure (ppstate->size ppstate)
+                               0)) ; < pproc-*-group-part-skipped
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-if/ifdef/ifndef-rest-skipped ((ppstate ppstatep))
+    :returns (mv erp (new-ppstate ppstatep))
+    :parents (preprocessor pproc-groups-skipped)
+    :short "Preprocess the rest of
+            a @('#if'), @('#ifdef'), or @('#ifndef') section to be skipped."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is similar to @(tsee pproc-if/ifdef/ifndef-rest) in structure;
+       see that function's documentation."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) ppstate)
+         (psize (ppstate->size ppstate))
+         ((erp groupend ppstate) (pproc-*-group-part-skipped ppstate))
+         ((when (groupend-case groupend :eof))
+          (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                      :expected "a #elif or ~
+                                 a #else or ~
+                                 a #endif"
+                      :found "end of file"))
+         ((unless (mbt (<= (ppstate->size ppstate) (1- psize))))
+          (reterr :impossible))
+         ((erp ppstate) ; #elif/else/endif ... EOL
+          (skip-to-end-of-line ppstate))
+         ((when (groupend-case groupend :else))
+          (b* (((erp groupend ppstate) (pproc-*-group-part-skipped ppstate))
+               ((unless (groupend-case groupend :endif))
+                (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                            :expected "a #endif"
+                            :found (case (groupend-kind groupend)
+                                     (:eof "end of file")
+                                     (:elif "a #elif")
+                                     (:else "a #else")))))
+            (skip-to-end-of-line ppstate)))
+         ((when (groupend-case groupend :endif))
+          (retok ppstate)))
+      ;; (groupend-case groupend :elif)
+      (pproc-if/ifdef/ifndef-rest-skipped ppstate))
+    :no-function nil
+    :measure (two-nats-measure (ppstate->size ppstate)
+                               2)) ; > pproc-*-group-part-skipped
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual ppstate->size-of-pproc-groups-skipped-uncond
+    (defret ppstate->size-of-pproc-*-group-part-skipped-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-*-group-part-skipped
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-?-group-part-skipped-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-?-group-part-skipped
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-if/ifdef/ifndef-rest-skipped-uncond
+      (<= (ppstate->size new-ppstate)
+          (ppstate->size ppstate))
+      :fn pproc-if/ifdef/ifndef-rest-skipped
+      :rule-classes :linear))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual ppstate->size-of-pproc-groups-skipped-cond
+    (defret ppstate->size-of-pproc-*-group-part-skipped-cond
+      (implies (and (not erp)
+                    (not (groupend-case groupend :eof)))
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-*-group-part-skipped
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-?-group-part-skipped-cond
+      (implies (and (not erp)
+                    (or (not groupend?)
+                        (not (groupend-case groupend? :eof))))
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-?-group-part-skipped
+      :rule-classes :linear)
+    (defret ppstate->size-of-pproc-if/ifdef/ifndef-rest-skipped-cond
+      (implies (not erp)
+               (<= (ppstate->size new-ppstate)
+                   (1- (ppstate->size ppstate))))
+      :fn pproc-if/ifdef/ifndef-rest-skipped
+      :rule-classes :linear))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards pproc-*-group-part-skipped))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc-files/groups/etc
   :short "Preprocess files, groups, and some related entities."
   :long
