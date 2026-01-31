@@ -603,6 +603,59 @@
              c::integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              ldm-ienv-wfp-lemma)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->uinteger-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('UINTMAX_MAX') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->ullong-max),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->ullong-max ienv)
+
+  ///
+
+  (defret ienv->uinteger-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sinteger-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('INTMAX_MAX') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->sllong-max),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->sllong-max ienv)
+
+  ///
+
+  (defret ienv->sinteger-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sinteger-min ((ienv ienvp))
+  :returns (min integerp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of @('INTMAX_MIN') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->sllong-min),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->sllong-min ienv))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
@@ -795,6 +848,24 @@
     :enable (c::ienv-sllong-rangep
              ienv->sllong-max-correct
              ienv->sllong-min-correct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uinteger-max-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 integer is
+          in the range of (i.e. representable in) type @('uintmax_t')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uinteger-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sinteger-max-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 integer is
+          in the range of (i.e. representable in) type @('intmax_t')."
+  (and (<= (ienv->sinteger-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sinteger-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
