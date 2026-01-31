@@ -13,6 +13,16 @@
 (include-book "encodings")
 (include-book "std/util/bstar" :dir :system)
 
+;; This wrapper for lookup-eq has a guard requiring the key to be bound in the alist
+;; TODO: better name?
+;; We leave this enabled to expose lookup-eq.
+(defun lookup-eq2 (key alist)
+  (declare (xargs :guard (and (if (symbolp key)
+                                  (alistp alist)
+                                (symbol-alistp alist))
+                              (assoc-eq key alist))))
+  (lookup-eq key alist))
+
 (defun let-bindings-for-encoding-fields (pat)
   (declare (xargs :guard (encoding-patternp pat)))
   (if (endp pat)
@@ -24,7 +34,7 @@
           (let-bindings-for-encoding-fields (rest pat))
         ;; item must be (<var> <numbits>):
         (let ((var (first item)))
-          (cons `(,var (lookup-eq-safe ',var args))
+          (cons `(,var (lookup-eq2 ',var args))
                 (let-bindings-for-encoding-fields (rest pat))))))))
 
 (defun def-inst-fn (mnemonic body check-condition check-condition-all-ones guard-hints guard-debug)

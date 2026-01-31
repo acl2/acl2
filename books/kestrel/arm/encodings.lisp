@@ -889,7 +889,7 @@
           (make-instruction-arg-conjuncts (rest pattern))
         (let ((var (first item))
               (bits (second item)))
-          (cons `(unsigned-byte-p ,bits (lookup-eq ',var args))
+          (cons `(unsigned-byte-p ,bits (lookup-eq ',var args)) ;; implies that the var is bound in the args
                 (make-instruction-arg-conjuncts (rest pattern))))))))
 
 (defun make-instruction-arg-predicates (alist)
