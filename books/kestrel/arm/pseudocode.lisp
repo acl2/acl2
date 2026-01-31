@@ -538,24 +538,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+
 ;; Returns arm.
+;; todo: compare this to what the manual has
 (defun BranchTo (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
   ;; todo: do we need to deal with the 8-byte offset?:
-  (set-reg #b1111 address arm))
+  (set-reg *pc* address arm))
 
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
+
 ;; Returns arm.
 (defun BranchWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
-  (if (eql (CurrentInstrSet) *InstrSet_ARM*)
+  (if (== (CurrentInstrSet) *InstrSet_ARM*)
       (if (and (< (ArchVersion) 6)
-               (= (slice 1 0 address) #b00))
+               (!= (slice 1 0 address) #b00))
           (update-error *unpredictable* arm)
         (BranchTo (bvcat 30 (slice 31 2 address) 2 #b00) arm))
-    (update-error *unsupported* arm)))
+    (if (== (CurrentInstrSet) *InstrSet_Jazelle*)
+        (update-error *unsupported* arm) ; todo
+      (BranchTo (bvcat 31 (slice 31 1 address) 1 #b0) arm))))
 
 ;; Returns arm.
 (defun BXWritePC (address arm)
@@ -586,6 +591,21 @@
   (if (>= (ArchVersion) 5)
       (BXWritePC address arm)
     (BranchWritePC address arm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This represents a normal increment of the PC by 4 to advance to the next
+;; instruction.
+;; TODO: Do we need to do any of the checking that BranchWritePC or ALUWritePC does?
+(defund advance-pc (arm)
+  (declare (xargs :stobjs arm))
+  (let ((arm (set-reg *pc* (add-to-address 4 (reg *pc* arm)) arm)))
+    arm))
+
+(defthm armp-of-advance-pc
+  (implies (armp arm)
+           (armp (advance-pc arm)))
+  :hints (("Goal" :in-theory (enable advance-pc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -60,6 +60,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: use this more
+(defund add-to-address (offset address)
+  (declare (xargs :guard (and (unsigned-byte-p 32 offset)
+                              (addressp address))))
+  (bvplus 32 offset address))
+
+(defthm addressp-of-add-to-address
+  (addressp (add-to-address offset address))
+  :hints (("Goal" :in-theory (enable add-to-address))))
+
+(defthm unsigned-byte-p-of-add-to-address
+  (unsigned-byte-p 32 (add-to-address offset address))
+  :hints (("Goal" :in-theory (enable add-to-address))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reads the byte at address ADDR.
 (defund read-byte (addr arm)
   (declare (xargs :guard (unsigned-byte-p 32 addr)
