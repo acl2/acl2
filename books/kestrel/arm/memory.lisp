@@ -60,6 +60,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: use this more
+(defund add-to-address (offset address)
+  (declare (xargs :guard (and (unsigned-byte-p 32 offset)
+                              (addressp address))))
+  (bvplus 32 offset address))
+
+(defthm addressp-of-add-to-address
+  (addressp (add-to-address offset address))
+  :hints (("Goal" :in-theory (enable add-to-address))))
+
+(defthm unsigned-byte-p-of-add-to-address
+  (unsigned-byte-p 32 (add-to-address offset address))
+  :hints (("Goal" :in-theory (enable add-to-address))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reads the byte at address ADDR.
 (defund read-byte (addr arm)
   (declare (xargs :guard (unsigned-byte-p 32 addr)
@@ -276,3 +292,27 @@
                   :stobjs arm))
   ;; for now:
   (write size address val arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-byte-of-set-reg
+  (equal (read-byte addr (set-reg n val arm))
+         (read-byte addr arm))
+  :hints (("Goal" :in-theory (enable set-reg read-byte))))
+
+(defthm read-of-set-reg
+  (equal (read n addr (set-reg n2 val arm))
+         (read n addr arm))
+  :hints (("Goal" :in-theory (enable read))))
+
+(defthm read-byte-of-set-apsr.n (equal (read-byte addr (set-apsr.n bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.n read-byte))))
+(defthm read-byte-of-set-apsr.z (equal (read-byte addr (set-apsr.z bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.z read-byte))))
+(defthm read-byte-of-set-apsr.c (equal (read-byte addr (set-apsr.c bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.c read-byte))))
+(defthm read-byte-of-set-apsr.v (equal (read-byte addr (set-apsr.v bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.v read-byte))))
+(defthm read-byte-of-set-apsr.q (equal (read-byte addr (set-apsr.q bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.q read-byte))))
+
+(defthm read-of-set-apsr.n (equal (read n addr (set-apsr.n bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+(defthm read-of-set-apsr.z (equal (read n addr (set-apsr.z bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+(defthm read-of-set-apsr.c (equal (read n addr (set-apsr.c bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+(defthm read-of-set-apsr.v (equal (read n addr (set-apsr.v bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+(defthm read-of-set-apsr.q (equal (read n addr (set-apsr.q bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))

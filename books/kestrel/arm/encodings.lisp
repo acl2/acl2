@@ -83,7 +83,7 @@
 
     ;; todo: bkpt
 
-    (:bl-immediate  (cond 4) 1 0 1 1 (imm24 24)) ;; Encoding A1 of BL/BLX (immediate)
+    (:bl  (cond 4) 1 0 1 1 (imm24 24)) ;; Encoding A1 of BL/BLX (immediate)
 
 ;;;    (:blx-immediate  1 1 1 1 1 0 1 h (imm24 24)) ;; Encoding A2 of BL/BLX (immediate)
 ;;;    (:blx-register  (cond 4) 0 0 0 1 0 0 1 0 _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ (1) (1) (1) (1) _ 0 0 1 1 (rm 4))
@@ -889,7 +889,7 @@
           (make-instruction-arg-conjuncts (rest pattern))
         (let ((var (first item))
               (bits (second item)))
-          (cons `(unsigned-byte-p ,bits (lookup-eq ',var args))
+          (cons `(unsigned-byte-p ,bits (lookup-eq ',var args)) ;; implies that the var is bound in the args
                 (make-instruction-arg-conjuncts (rest pattern))))))))
 
 (defun make-instruction-arg-predicates (alist)
