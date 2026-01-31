@@ -37,10 +37,11 @@
           (cons `(,var (lookup-eq2 ',var args))
                 (let-bindings-for-encoding-fields (rest pat))))))))
 
-(defun def-inst-fn (mnemonic body check-condition check-condition-all-ones guard-hints guard-debug)
+(defun def-inst-fn (mnemonic body check-condition check-condition-all-ones alt-body alt-body-hints guard-hints guard-debug)
   (declare (xargs :guard (and (symbolp mnemonic)
                               (member-eq check-condition '(t nil :auto))
                               (member-eq check-condition-all-ones '(t nil :auto))
+                              ;; alt-body is an (untranslated) term, or :none to indicate no alternate def
                               (booleanp guard-debug))))
   (b* ((encoding-patten (lookup-eq-safe mnemonic *desugared-patterns*))
        ((when (not (encoding-patternp encoding-patten)))
@@ -66,11 +67,13 @@
                         ,body)
                    body))
            ;; todo: can we automate any more of the body?
+           (fn (pack-in-package "ARM" 'execute- mnemonic-name))
            )
       `(encapsulate ()
            ;; This is separate so as not to interfere with any guard-hints supplied
            (local (in-theory (enable ,args-predicate)))
-         (defund ,(pack-in-package "ARM" 'execute- mnemonic-name) (args inst-address arm)
+
+         (defund ,fn (args inst-address arm)
            (declare (xargs :guard (and (symbol-alistp args)
                                        (addressp inst-address)
                                        (,args-predicate args))
@@ -80,13 +83,39 @@
                            :stobjs arm)
                     (ignorable inst-address))
            (let ,(let-bindings-for-encoding-fields encoding-patten)
-             ,body))))))
+             ,body))
+
+         ,@(and (not (eq :none alt-body))
+                (let* ((alt-body (if check-condition-all-ones
+                                     `(if (= cond #b1111)
+                                          (execute-unconditional-instruction arm)
+                                        ,alt-body)
+                                   alt-body))
+                       (alt-body (if check-condition
+                                     `(if (not (ConditionPassed cond arm)) ; this can be outside the check for 1111 because the 1111 condition always passes
+                                          arm
+                                        ,alt-body)
+                                   alt-body)))
+                  `((encapsulate ()
+                        ;; We do this separately so as not to interfere with the alt-body-hints below:
+                        (local (in-theory (enable ,fn)))
+
+                      ;; todo: add either this name or fn to a ruleset
+                      (defthmd ,(pack-in-package "ARM" fn '-alt)
+                        (equal (,fn args inst-address arm)
+                               (let ,(let-bindings-for-encoding-fields encoding-patten)
+                                 ,alt-body))
+                        :rule-classes :definition
+                        ,@(and alt-body-hints `(:hints ,alt-body-hints)))))))))))
 
 ;; The body can refer to all the field names in the encoding of the instruction.
+;; The :alt-body can be an alternate body that is better for rewriting (e.g., one that uses BV functions or avoids case splits).
+;; The :algt-body-hints should suffice to show that the body and alt body are equivalent (in context).
 (defmacro def-inst (mnemonic body &key
                                     (check-condition ':auto) ; whether we put in the ConditionPassed check
                                     (check-condition-all-ones ':auto) ; whether we put in the check for condition=1111, which indicates an unconditional instruction
+                                    (alt-body ':none)
+                                    (alt-body-hints 'nil)
                                     (guard-hints ':auto)
-                                    (guard-debug 'nil)
-                                    )
-  (def-inst-fn mnemonic body check-condition check-condition-all-ones guard-hints guard-debug))
+                                    (guard-debug 'nil))
+  (def-inst-fn mnemonic body check-condition check-condition-all-ones alt-body alt-body-hints guard-hints guard-debug))
