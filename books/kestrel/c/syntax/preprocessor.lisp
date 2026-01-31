@@ -4107,20 +4107,129 @@
      (xdoc::p
       "The recursive structure of this function
        matches the recursive structure of
-       the @('elif-group')s in the @('if-section')."))
-    (declare (ignore condp donep
-                     file base-dir include-dirs
-                     preprocessed preprocessing rev-lexemes))
+       the @('elif-group')s in the @('if-section').")
+     (xdoc::p
+      "We preprocess zero or more group parts,
+       via @(tsee pproc-*-group-part) or @(tsee pproc-*-group-part-skipped)
+       based on whether this is the code to include or not:
+       if the condition is true,
+       and we have not already included the code,
+       then we use @(tsee pproc-*-group-part);
+       otherwise we use @(tsee pproc-*-group-part-skipped).
+       Note that multiple conditions in an @('if-section') may be true,
+       but only the first one counts:
+       this is why we need the @('donep') flag,
+       which becomes @('t') after the first true condition.")
+     (xdoc::p
+      "After preprocessing the optional group (with either function),
+       we look at how the group ended.
+       If it ended with end of file, it is an error.
+       If it ended with @('#elif'),
+       we preprocess the constant expression that follows,
+       and then we recursively call this function,
+       with the possibly updated @('donep').
+       If it ended with @('#else'),
+       we ensure that it is immediately followed by a new line
+       (except for possibly some comments and white space),
+       we preprocess another optional group,
+       and then we ensure that we find a @('#endif') after that;
+       for the optional group after the @('#else'),
+       we use the skipping function unless
+       @('donep') is still false.
+       Finally, if the group instead with @('#endif'),
+       we ensure there is just a new line after that."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
-         ((when (zp limit)) (reterr (msg "Exhausted recursion limit."))))
-      (reterr :todo))
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((erp groupend rev-lexemes ppstate preprocessed state)
+          (b* (((reterr) (irr-groupend) nil ppstate nil state))
+            (if (and condp
+                     (not donep))
+                (pproc-*-group-part file
+                                    base-dir
+                                    include-dirs
+                                    preprocessed
+                                    preprocessing
+                                    rev-lexemes
+                                    ppstate
+                                    state
+                                    (1- limit))
+              (b* (((erp groupend ppstate)
+                    (pproc-*-group-part-skipped ppstate)))
+                (retok groupend
+                       (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state)))))
+         (donep (and condp (not donep))))
+      (groupend-case
+       groupend
+       :eof (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                        :expected "a #elif or a #else or a #endif"
+                        :found "end of file")
+       :elif (b* (((erp condp ppstate) ; #elif constexpr EOL
+                   (pproc-const-expr ppstate)))
+               (pproc-if/ifdef/ifndef-rest condp
+                                           donep
+                                           file
+                                           base-dir
+                                           include-dirs
+                                           preprocessed
+                                           preprocessing
+                                           rev-lexemes
+                                           ppstate
+                                           state
+                                           (1- limit)))
+       :else (b* (((erp & toknl span ppstate) (read-token/newline ppstate))
+                  ((unless (and toknl ; #else EOL
+                                (plexeme-case toknl :newline)))
+                   (reterr-msg :where (position-to-msg (span->start span))
+                               :expected "a new line"
+                               :found (plexeme-to-msg toknl)))
+                  ((erp groupend rev-lexemes ppstate preprocessed state)
+                   (b* (((reterr) (irr-groupend) nil ppstate nil state))
+                     (if (not donep)
+                         (pproc-*-group-part file
+                                             base-dir
+                                             include-dirs
+                                             preprocessed
+                                             preprocessing
+                                             rev-lexemes
+                                             ppstate
+                                             state
+                                             (1- limit))
+                       (b* (((erp groupend ppstate)
+                             (pproc-*-group-part-skipped ppstate)))
+                         (retok
+                          groupend rev-lexemes ppstate preprocessed state)))))
+                  ((unless (groupend-case groupend :endif)) ; #endif
+                   (reterr-msg :where (position-to-msg
+                                       (ppstate->position ppstate))
+                               :expected "a #endif"
+                               :found (case (groupend-kind groupend)
+                                        (:eof "end of file")
+                                        (:elif "a #elif")
+                                        (:else "a #else"))))
+                  ((erp & toknl span ppstate) (read-token/newline ppstate))
+                  ((unless (and toknl ; #endif EOL
+                                (plexeme-case toknl :newline)))
+                   (reterr-msg :where (position-to-msg (span->start span))
+                               :expected "a new line"
+                               :found (plexeme-to-msg toknl))))
+               (retok rev-lexemes ppstate preprocessed state))
+       :endif (b* (((erp & toknl span ppstate) (read-token/newline ppstate))
+                   ((unless (and toknl ; #endif EOL
+                                 (plexeme-case toknl :newline)))
+                    (reterr-msg :where (position-to-msg (span->start span))
+                                :expected "a new line"
+                                :found (plexeme-to-msg toknl))))
+                (retok rev-lexemes ppstate preprocessed state))))
+    :no-function nil
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
-             (local
+  :prepwork ((local
               (in-theory
                (enable
                 acons
