@@ -254,6 +254,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ienv->integer-max-bytes ((ienv ienvp))
+  :returns (bytes posp :rule-classes (:rewrite :type-prescription))
+  :short "Number of bytes of the largest integer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of bytes of
+     the @('intmax_t') and @('uintmax_t') types [C17:7.20.1.5].
+     Currently this is the same number of bytes as
+     the @('long long') and @('unsigned long long') types,
+     which are the largest integer types that we support."))
+  (ienv->llong-bytes ienv))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->uchar-max ((ienv ienvp))
   :returns (max posp)
   :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
