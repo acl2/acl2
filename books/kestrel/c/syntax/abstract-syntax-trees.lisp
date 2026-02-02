@@ -1886,8 +1886,8 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    (:stmt ((stmt comp-stmt)))
     ;; GCC extensions:
+    (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)
