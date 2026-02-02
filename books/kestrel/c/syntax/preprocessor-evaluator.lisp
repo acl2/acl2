@@ -11,7 +11,7 @@
 (in-package "C$")
 
 (include-book "implementation-environments")
-(include-book "preprocessor-lexemes")
+(include-book "preprocessor-messages")
 (include-book "abstract-syntax-irrelevants")
 
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -180,6 +180,13 @@
   (:cond ((test pexpr) (then pexpr) (else pexpr)))
   :pred pexprp
   :prepwork ((set-induction-depth-limit 1)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-pexpr
+  :short "An irrelevant preprocessor expression."
+  :type pexprp
+  :body (pexpr-number (irr-pnumber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1201,10 +1208,821 @@
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: pparse-expression, pparse-conditional-expression, ...
+(defines pparse-expressions
+  :short "Parse expressions during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The structure of these functions is similar to
+     the ones in our @(see parser),
+     but here they are simpler because the expressions are more limited.
+     Refer to the grammar and to the documentation of those parser functions.")
+   (xdoc::p
+    "These functions parse a list of lexemes,
+     returning the parsed expression and the rest of the lexemes,
+     unless there is some error.")
+   (xdoc::p
+    "Since a constant expression is a conditional expression
+     in the grammar [C17:6.6/1],
+     and since we exclude assignment and comma expressions for now
+     (see @(see preprocessor-evaluator)),
+     the top-level function of this parser clique
+     is the one for conditional expressions.")
+   (xdoc::p
+    "Since there are no cast and postfix expressions here,
+     in the grammatical hierarchy of expressions,
+     we skip them when they appear as sub-expressions in grammar rules,
+     going directly to the ones below them in the hierarchy.")
+   (xdoc::p
+    "The only primary expressions that we parse are
+     preprocessing numbers, character constants, identifiers,
+     and parenthesized expressions.
+     Identifiers are not in @(tsee pexpr),
+     because as soon as we parse them,
+     we turn them into the preprocessing number @('0') [C17:6.10.1/4]."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse an expression during preprocessing."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since a constant expression is a conditional expression
+       in the grammar [C17:6.6/1],
+       and since we exclude assignment and comma expressions for now
+       (see @(see preprocessor-evaluator)),
+       this function amounts to parsing a conditional expression.
+       We introduce it for clarity and future extensibility."))
+    (pparse-conditional-expression lexemes)
+    :measure (two-nats-measure (len lexemes) 13))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-conditional-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a conditional expression during preproecessing."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we do not support GCC/Clang conditional expressions
+       without a `then' sub-expression."))
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-logical-or-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok expr lexemes))
+         ((when (not (plexeme-punctuatorp token "?"))) ; expr ?
+          (retok expr (cons token lexemes))) ; expr
+         (llen (len lexemes))
+         ((erp expr2 lexemes) (pparse-expression lexemes)) ; expr ? expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         ((mv token lexemes) (find-first-token lexemes))
+         ((unless (and token
+                       (plexeme-punctuatorp token ":"))) ; expr ? expr :
+          (reterr (msg "Expected colon, found ~@0."
+                       (if token
+                           (plexeme-to-msg token)
+                         "no token"))))
+         ((erp expr3 lexemes) ; expr ? expr : expr
+          (pparse-conditional-expression lexemes)))
+      (retok (make-pexpr-cond :test expr :then expr2 :else expr3) lexemes))
+    :measure (two-nats-measure (len lexemes) 12))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-logical-or-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a logical disjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-logical-and-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-logical-or-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 11))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-logical-or-expression-rest ((prev-expr pexprp)
+                                             (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a logical disjunction expression
+            during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (plexeme-punctuatorp token "||")) ; prev-expr ||
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr || expr
+          (pparse-logical-and-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (make-pexpr-logor :arg1 prev-expr :arg2 expr)))
+      (pparse-logical-or-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-logical-and-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a logical conjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-inclusive-or-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-logical-and-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 10))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-logical-and-expression-rest ((prev-expr pexprp)
+                                              (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a logical conjunction expression
+            during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (plexeme-punctuatorp token "&&")) ; prev-expr &&
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr || expr
+          (pparse-inclusive-or-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (make-pexpr-logand :arg1 prev-expr :arg2 expr)))
+      (pparse-logical-and-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-inclusive-or-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse an inclusive disjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-exclusive-or-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-inclusive-or-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 9))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-inclusive-or-expression-rest ((prev-expr pexprp)
+                                               (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of an inclusive disjunction expression
+            during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (plexeme-punctuatorp token "|")) ; prev-expr |
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr | expr
+          (pparse-exclusive-or-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (make-pexpr-bitior :arg1 prev-expr :arg2 expr)))
+      (pparse-inclusive-or-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-exclusive-or-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse an exclusive disjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-and-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-exclusive-or-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 8))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-exclusive-or-expression-rest ((prev-expr pexprp)
+                                               (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of an exclusive disjunction expression
+            during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (plexeme-punctuatorp token "^")) ; prev-expr ^
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr | expr
+          (pparse-and-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (make-pexpr-bitxor :arg1 prev-expr :arg2 expr)))
+      (pparse-exclusive-or-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-and-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a conjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-equality-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-and-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 7))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-and-expression-rest ((prev-expr pexprp)
+                                      (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a conjunction expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (plexeme-punctuatorp token "&")) ; prev-expr &
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr | expr
+          (pparse-equality-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (make-pexpr-bitand :arg1 prev-expr :arg2 expr)))
+      (pparse-and-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-equality-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse an equality expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-relational-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-equality-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 6))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-equality-expression-rest ((prev-expr pexprp)
+                                           (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of an equality expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (or (plexeme-punctuatorp token "==") ; prev-expr ==
+                      (plexeme-punctuatorp token "!="))) ; prev-expr !=
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr OP expr
+          (pparse-relational-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (cond ((plexeme-punctuatorp token "==")
+                           (make-pexpr-eq :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token "!=")
+                           (make-pexpr-ne :arg1 prev-expr :arg2 expr))
+                          (t (prog2$ (impossible) (irr-pexpr))))))
+      (pparse-equality-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-relational-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a relational expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-shift-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-relational-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 5))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-relational-expression-rest ((prev-expr pexprp)
+                                             (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a relational expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (or (plexeme-punctuatorp token "<") ; prev-expr <
+                      (plexeme-punctuatorp token ">") ; prev-expr >
+                      (plexeme-punctuatorp token "<=") ; prev-expr <=
+                      (plexeme-punctuatorp token ">="))) ; prev-expr >=
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr OP expr
+          (pparse-shift-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (cond ((plexeme-punctuatorp token "<")
+                           (make-pexpr-lt :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token ">")
+                           (make-pexpr-gt :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token "<=")
+                           (make-pexpr-le :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token ">=")
+                           (make-pexpr-ge :arg1 prev-expr :arg2 expr))
+                          (t (prog2$ (impossible) (irr-pexpr))))))
+      (pparse-relational-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-shift-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a shift expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-additive-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-shift-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 4))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-shift-expression-rest ((prev-expr pexprp)
+                                        (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a shift expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (or (plexeme-punctuatorp token "<<") ; prev-expr <<
+                      (plexeme-punctuatorp token ">>"))) ; prev-expr >>
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr OP expr
+          (pparse-additive-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (cond ((plexeme-punctuatorp token "<<")
+                           (make-pexpr-shl :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token ">>")
+                           (make-pexpr-shr :arg1 prev-expr :arg2 expr))
+                          (t (prog2$ (impossible) (irr-pexpr))))))
+      (pparse-shift-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-additive-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse an additive expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-multiplicative-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-additive-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-additive-expression-rest ((prev-expr pexprp)
+                                           (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of an additive expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (or (plexeme-punctuatorp token "+") ; prev-expr +
+                      (plexeme-punctuatorp token "-"))) ; prev-expr -
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr OP expr
+          (pparse-multiplicative-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (cond ((plexeme-punctuatorp token "+")
+                           (make-pexpr-add :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token "-")
+                           (make-pexpr-sub :arg1 prev-expr :arg2 expr))
+                          (t (prog2$ (impossible) (irr-pexpr))))))
+      (pparse-additive-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-multiplicative-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a multiplicative expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         (llen (len lexemes))
+         ((erp expr lexemes) (pparse-unary-expression lexemes)) ; expr
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible)))
+      (pparse-multiplicative-expression-rest expr lexemes))
+    :measure (two-nats-measure (len lexemes) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-multiplicative-expression-rest ((prev-expr pexprp)
+                                                 (lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse the rest of a multiplicative expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil) ; prev-expr
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (retok (pexpr-fix prev-expr) lexemes))
+         ((unless (or (plexeme-punctuatorp token "*") ; prev-expr *
+                      (plexeme-punctuatorp token "/") ; prev-expr /
+                      (plexeme-punctuatorp token "%"))) ; prev-expr %
+          (retok (pexpr-fix prev-expr) (cons token lexemes))) ; prev-expr
+         (llen (len lexemes))
+         ((erp expr lexemes) ; prev-expr OP expr
+          (pparse-unary-expression lexemes))
+         ((unless (mbt (<= (len lexemes) (1- llen))))
+          (reterr :impossible))
+         (curr-expr (cond ((plexeme-punctuatorp token "*")
+                           (make-pexpr-add :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token "/")
+                           (make-pexpr-sub :arg1 prev-expr :arg2 expr))
+                          ((plexeme-punctuatorp token "%")
+                           (make-pexpr-sub :arg1 prev-expr :arg2 expr))
+                          (t (prog2$ (impossible) (irr-pexpr))))))
+      (pparse-multiplicative-expression-rest curr-expr lexemes))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-unary-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a unary expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (reterr (msg "Expected a unary operator ~
+                        or a number ~
+                        or a character constant ~
+                        or an identifier ~
+                        or an open parenthesis; ~
+                        found nothing instead.")))
+         ((when (or (plexeme-punctuatorp token "+") ; +
+                    (plexeme-punctuatorp token "-") ; -
+                    (plexeme-punctuatorp token "~") ; ~
+                    (plexeme-punctuatorp token "!"))) ; !
+          (b* (((erp expr lexemes) (pparse-unary-expression lexemes)) ; OP expr
+               (expr (cond ((plexeme-punctuatorp token "+") (pexpr-plus expr))
+                           ((plexeme-punctuatorp token "-") (pexpr-minus expr))
+                           ((plexeme-punctuatorp token "~") (pexpr-bitnot expr))
+                           ((plexeme-punctuatorp token "!") (pexpr-lognot expr))
+                           (t (prog2$ (impossible) (irr-pexpr))))))
+            (retok expr lexemes))))
+      (pparse-primary-expression lexemes))
+    :measure (two-nats-measure (len lexemes) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pparse-primary-expression ((lexemes plexeme-listp))
+    :returns (mv erp (expr pexprp) (lexemes-rest plexeme-listp))
+    :parents (preprocessor-evaluator pparse-expressions)
+    :short "Parse a primary expression during preprocessing."
+    (b* (((reterr) (irr-pexpr) nil)
+         ((mv token lexemes) (find-first-token lexemes))
+         ((when (not token))
+          (reterr (msg "Expected a number ~
+                        or a character constant ~
+                        or an identifier ~
+                        or an open parenthesis; ~
+                        found nothing instead."))))
+      (cond
+       ((plexeme-case token :number) ; number
+        (retok (pexpr-number (plexeme-number->number token)) lexemes))
+       ((plexeme-case token :char) ; char
+        (retok (pexpr-char (plexeme-char->const token)) lexemes))
+       ((plexeme-case token :ident) ; ident
+        (retok (pexpr-number (pnumber-digit #\0)) lexemes))
+       ((plexeme-punctuatorp token "(") ; (
+        (b* (((erp expr lexemes) (pparse-expression lexemes)) ; ( expr
+             ((mv token lexemes) (find-first-token lexemes))
+             ((when (not token))
+              (reterr (msg "Expected a closed parenthesis; ~
+                            found nothing instead.")))
+             ((unless (plexeme-punctuatorp token ")")) ; ( expr )
+              (reterr (msg "Expected a closed parenthesis; ~
+                            found ~@0 instead."
+                           (plexeme-to-msg token)))))
+          (retok expr lexemes)))
+       (t ; OTHER
+        (reterr (msg "Expected a number ~
+                      or a character constant ~
+                      or an identifier ~
+                      or an open parenthesis; ~
+                      found ~@0 instead."
+                     (plexeme-to-msg token))))))
+    :measure (two-nats-measure (len lexemes) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual len-of-pparse-expressions-uncond
+    (defret len-of-pparse-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-conditional-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-conditional-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-conditional-expression lexemes))))
+    (defret len-of-pparse-logical-or-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-logical-or-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-logical-or-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-logical-or-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-logical-and-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-logical-and-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-logical-and-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-logical-and-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-inclusive-or-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-inclusive-or-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-inclusive-or-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-inclusive-or-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-exclusive-or-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-exclusive-or-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-exclusive-or-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-exclusive-or-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-and-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-and-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-and-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-and-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-equality-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-equality-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-equality-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-equality-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-relational-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-relational-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-relational-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-relational-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-shift-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-shift-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-shift-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-shift-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-additive-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-additive-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-additive-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-additive-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-multiplicative-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-multiplicative-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-multiplicative-expression-rest-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-multiplicative-expression-rest
+      :rule-classes :linear)
+    (defret len-of-pparse-unary-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-unary-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-primary-expression-uncond
+      (<= (len lexemes-rest)
+          (len lexemes))
+      :fn pparse-primary-expression
+      :rule-classes :linear))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual len-of-pparse-expressions-cond
+    (defret len-of-pparse-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-conditional-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-conditional-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-conditional-expression lexemes))))
+    (defret len-of-pparse-logical-or-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-logical-or-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-logical-or-expression lexemes))))
+    (defret len-of-pparse-logical-and-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-logical-and-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-logical-and-expression lexemes))))
+    (defret len-of-pparse-inclusive-or-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-inclusive-or-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-inclusive-or-expression lexemes))))
+    (defret len-of-pparse-exclusive-or-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-exclusive-or-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-exclusive-or-expression lexemes))))
+    (defret len-of-pparse-and-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-and-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-and-expression lexemes))))
+    (defret len-of-pparse-equality-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-equality-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-equality-expression lexemes))))
+    (defret len-of-pparse-relational-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-relational-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-relational-expression lexemes))))
+    (defret len-of-pparse-shift-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-shift-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-shift-expression lexemes))))
+    (defret len-of-pparse-additive-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-additive-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-additive-expression lexemes))))
+    (defret len-of-pparse-multiplicative-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-multiplicative-expression
+      :rule-classes :linear
+      :hints ('(:expand (pparse-multiplicative-expression lexemes))))
+    (defret len-of-pparse-unary-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-unary-expression
+      :rule-classes :linear)
+    (defret len-of-pparse-primary-expression-cond
+      (implies (not erp)
+               (<= (len lexemes-rest)
+                   (1- (len lexemes))))
+      :fn pparse-primary-expression
+      :rule-classes :linear)
+    :skip-others t)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards pparse-conditional-expression)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual pparse-expressions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: pparseval-const-expr
+(define pparseval-const-expr ((lexemes plexeme-listp) (ienv ienvp))
+  :returns (mv erp (pval pvaluep))
+  :short "Parse and evaluate a constant expression during preprocessing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for the expressions in @('#if') and @('#elif') directives.
+     We parse the expression, obtaining an AST,
+     and ensuring that there are no tokens left after the expression.
+     Then we evaluate the AST, obtaining a preprocessor value."))
+  (b* (((reterr) (irr-pvalue))
+       ((erp expr lexemes) (pparse-expression lexemes))
+       ((mv token lexemes) (find-first-token lexemes))
+       ((when token)
+        (reterr (msg "Found extra lexemes with tokens ~x0."
+                     (cons token lexemes)))))
+    (peval-expr expr ienv)))
