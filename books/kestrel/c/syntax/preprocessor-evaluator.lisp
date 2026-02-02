@@ -60,7 +60,7 @@
      no integer promotions [C17:6.3.1.1/2] are performed.
      The usual arithmetic conversions [C17:6.3.1.8]
      are performed in a limited way:
-     see @(tse uaconvert-pvalues)."))
+     see @(tsee uaconvert-pvalues)."))
   :order-subtopics t
   :default-parent t)
 
