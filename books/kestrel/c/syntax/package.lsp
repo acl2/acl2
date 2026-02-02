@@ -51,6 +51,7 @@
                 er-soft+
                 erp
                 impossible
+                int
                 keyword-listp
                 keyword-value-list-to-alist
                 lnfix
