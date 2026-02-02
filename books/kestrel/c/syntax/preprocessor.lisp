@@ -2886,7 +2886,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called just after reading a @('#if'),
+    "This is called just after reading a @('#if') or @('#elif'),
      which, according to the grammar,
      must be followed by a constant expression [C17:6.10/1],
      which takes the rest of the line of the directive.")
@@ -2919,8 +2919,10 @@
         (raise "Internal error: ~x0 contains markers.")
         (reterr t))
        (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
-       (lexemes (rev rev-lexemes)))
-    (reterr (list :todo lexemes)))
+       (lexemes (rev rev-lexemes))
+       ((erp pval) (pparseval-const-expr lexemes (ppstate->ienv ppstate)))
+       (result (not (= (pvalue->integer pval) 0))))
+    (retok result ppstate))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
