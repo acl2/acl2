@@ -1722,7 +1722,7 @@
                            ((plexeme-punctuatorp token "!") (pexpr-lognot expr))
                            (t (prog2$ (impossible) (irr-pexpr))))))
             (retok expr lexemes))))
-      (pparse-primary-expression lexemes))
+      (pparse-primary-expression (cons token lexemes))) ; put back token
     :measure (two-nats-measure (len lexemes) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
