@@ -1223,11 +1223,14 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
-       ;; Start timing:
-       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Record the start time:
+       ((mv start-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Check inputs:
        ((when (eq :none executable))
         (er hard? 'def-unrolled-fn "No :executable supplied.  This should usually be a string (file name/path).") ; todo: mention the parsed-executable option?
+        (mv (erp-t) nil state))
+       ((when (and produce-theorem (not produce-function)))
+        (er hard? 'def-unrolled-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
        ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
@@ -1242,20 +1245,20 @@
        ;; We do this here, outside unroll-x86-code-core so that function can be in :logic mode:
        (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
+       ((mv erp result-dag-or-quotep assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
                               extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
                               inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
                               step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
-       (result-dag-size (dag-or-quotep-size result-dag))
+       (result-dag-size (dag-or-quotep-size result-dag-or-quotep))
        (- (cw "Result DAG size: ~x0.~%" result-dag-size))
-       (result-dag-fns (dag-or-quotep-fns result-dag))
+       (result-dag-fns (dag-or-quotep-fns result-dag-or-quotep))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (dag-or-quotep-vars result-dag))
+       (result-dag-vars (dag-or-quotep-vars result-dag-or-quotep))
        ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
@@ -1267,31 +1270,31 @@
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag-or-quotep)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))
                         nil)
                     (cw ")~%"))
           (progn$ (cw "(DAG:~%")
-                  (cw "~X01" result-dag nil)
+                  (cw "~X01" result-dag-or-quotep nil)
                   (cw ")~%")))
         (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.")
         (mv :incomplete-run nil state))
-       (termp (<= result-dag-size max-result-term-size)) ; todo: make customizable
+       (termp (<= result-dag-size max-result-term-size))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (dag-to-term result-dag)))
+                               (dag-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (and print
                (if termp
                    (cw "(Result: ~x0)~%" maybe-result-term)
                  (progn$ (cw "(Result:~%")
-                         (cw "~X01" result-dag nil)
+                         (cw "~X01" result-dag-or-quotep nil)
                          (cw ")~%")))))
 
        ;; Build the defconst that will contain the result DAG:
-       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
        ;; Possibly produce a defun:
 
@@ -1318,7 +1321,7 @@
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
                (function-body (if termp
                                   maybe-result-term
-                                `(dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < max-result-term-size)
+                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant (the size would be < max-result-term-size)
                                                              ,(make-acons-nest result-dag-vars)
                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-dag-fns *axe-evaluator-functions* (w state)) (w state))
                                                              '0 ;array depth (not very important)
@@ -1386,7 +1389,7 @@
        (event `(progn ,@events))
        (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
-       ((mv elapsed state) (real-time-since start-real-time state))
+       ((mv elapsed state) (real-time-since start-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)
           (print-to-hundredths elapsed)
           (cw "s, not including event submission.)~%")))
