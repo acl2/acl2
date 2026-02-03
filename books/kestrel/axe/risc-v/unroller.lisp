@@ -265,7 +265,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide
+                                  normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide
                                   untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
@@ -290,6 +290,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
+                              (symbol-listp no-warn-ground-functions)
                               (symbol-listp fns-to-elide)
                               (booleanp untranslatep)
                               (booleanp memoizep))
@@ -331,7 +332,7 @@
                                      count-hits
                                      print
                                      rules-to-monitor
-                                     nil ; *no-warn-ground-functions*
+                                     no-warn-ground-functions
                                      fns-to-elide
                                      state))
          ((when erp) (mv erp nil hits state))
@@ -355,7 +356,7 @@
          ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
                                                                               dag
                                                                               (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                              nil ; *no-warn-ground-functions*
+                                                                              no-warn-ground-functions
                                                                               print
                                                                               60000 ; todo: pass in
                                                                               state))
@@ -381,7 +382,7 @@
                                            nil ; interpreted-function-alist
                                            rules-to-monitor
                                            t ;call-stp
-                                           nil ; no-warn-ground-functions
+                                           no-warn-ground-functions
                                            print
                                            state))
          ((when erp) (mv erp nil hits state))
@@ -439,7 +440,7 @@
                                              count-hits
                                              print
                                              rules-to-monitor
-                                             nil ; *no-warn-ground-functions*
+                                             no-warn-ground-functions
                                              fns-to-elide
                                              state
                                              ))
@@ -472,7 +473,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide untranslatep memoizep
                           state))))))
 
 ;; Returns (mv erp result-dag-or-quotep
@@ -735,6 +736,7 @@
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
+                        nil ; no-warn-ground-functions
                         nil ; fns-to-elide
                         untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
