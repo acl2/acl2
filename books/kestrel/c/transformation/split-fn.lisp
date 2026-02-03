@@ -559,7 +559,7 @@
                                          new-fn-name
                                          tunits.units
                                          split-point)))
-    (mv er (transunit-ensemble map))))
+    (mv er (c$::make-transunit-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +593,7 @@
    split-point
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (code-ensemblep code))
+               (code code-ensemblep)
                (const-new$ symbolp)
                (target$ identp)
                (new-fn$ identp)

@@ -23,15 +23,16 @@
 ; Change paths, to avoid overwriting files.
 (defconst *renamed-disamb-simple/stdbool*
   (code-ensemble
-   (transunit-ensemble
-    (list (cons (filepath "simple-renamed-renamed.c")
-                (transunit-at-path (filepath "simple.c")
-                                   (code-ensemble->transunits
-                                    *disamb-simple/stdbool*)))
-          (cons (filepath "stdbool-renamed-renamed.c")
-                (transunit-at-path (filepath "stdbool.c")
-                                   (code-ensemble->transunits
-                                    *disamb-simple/stdbool*)))))
+   (c$::make-transunit-ensemble
+     :units
+     (list (cons (filepath "simple-renamed-renamed.c")
+                 (transunit-at-path (filepath "simple.c")
+                                    (code-ensemble->transunits
+                                      *disamb-simple/stdbool*)))
+           (cons (filepath "stdbool-renamed-renamed.c")
+                 (transunit-at-path (filepath "stdbool.c")
+                                    (code-ensemble->transunits
+                                      *disamb-simple/stdbool*)))))
    (code-ensemble->ienv *disamb-simple/stdbool*)))
 
 (output-files :const *renamed-disamb-simple/stdbool*)
