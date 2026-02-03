@@ -803,6 +803,8 @@
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
+     equal-of-bvplus-constant-and-constant
+     equal-of-bvplus-constant-and-constant-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward

@@ -65,13 +65,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro subset (x set &key (test 'equal))
+(defmacro subset (x y &key (test 'equal))
   (declare (xargs :guard (member-eq test '(equal = eq eql))))
   (case test
-    (equal `(subset$inline ,x ,set))
-    (=     `(subset-=      ,x ,set))
-    (eq    `(subset-eq     ,x ,set))
-    (eql   `(subset-eql    ,x ,set))))
+    (equal `(subset$inline ,x ,y))
+    (=     `(subset-=      ,x ,y))
+    (eq    `(subset-eq     ,x ,y))
+    (eql   `(subset-eql    ,x ,y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

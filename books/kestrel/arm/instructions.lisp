@@ -29,6 +29,7 @@
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
+(include-book "kestrel/bv/bvmult-def" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -40,6 +41,8 @@
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvmult" :dir :system))
+(local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -98,7 +101,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :adc-register
@@ -124,7 +128,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :adc-register-shifted-register
@@ -151,7 +156,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,7 +176,8 @@
                  (bvminus 32 (align pc 4) imm32))))
     (if (== d 15)
         (ALUWritePC result arm)
-      (let ((arm (set-reg d result arm)))
+      (let* ((arm (set-reg d result arm))
+             (arm (advance-pc arm)))
         arm))))
 
 (defun adr-encoding-a1-core (rd imm12 inst-address arm)
@@ -255,7 +262,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :add-register
@@ -282,7 +290,8 @@
                                        (arm (set-apsr.c carry arm))
                                        (arm (set-apsr.v overflow arm)))
                                   arm)
-                              arm)))
+                              arm))
+                       (arm (advance-pc arm)))
                   arm))))
       arm))
 
@@ -310,7 +319,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,10 +343,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :and-register
@@ -359,10 +370,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :and-register-shifted-register
@@ -387,10 +399,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -414,10 +427,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 
@@ -443,10 +457,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -477,10 +492,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :bic-register
@@ -503,10 +519,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :bic-register-shifted-register
@@ -531,15 +548,16 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-inst :bl-immediate
+(def-inst :bl
     (b* (;; EncodingSpecificOperations:
          (imm32 (signextend (bvcat 24 imm24 2 0) 26 32))
          (targetInstrSet *InstrSet_ARM*)
@@ -572,7 +590,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :cmn-register
@@ -586,7 +605,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :cmn-register-shifted-register
@@ -606,7 +626,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -620,7 +641,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :cmp-register
@@ -634,7 +656,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :cmp-register-shifted-register
@@ -654,7 +677,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         (arm (set-apsr.v overflow arm)))
+         (arm (set-apsr.v overflow arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -677,10 +701,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :eor-register
@@ -703,10 +728,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :eor-register-shifted-register
@@ -731,10 +757,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -784,7 +811,7 @@
        ((mv address arm) (ldm-loop 0 registers address arm))
        (arm (if (== (getbit 15 registers) 1)
                 (LoadWritePC (MemA address 4 arm) arm)
-              arm))
+              (advance-pc arm)))
        (arm (if (and wback (== (getbit n registers) 0))
                 (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
               arm))
@@ -833,7 +860,7 @@
                         (LoadWritePC (MemU address 4 arm) arm)
                       (update-error *unpredictable* arm))
                   (LoadWritePC (MemA address 4 arm) arm))
-              arm))
+              (advance-pc arm)))
        (arm (if (== (getbit 13 registers) 0)
                 (set-reg *sp* (bvplus 32 (reg *sp* arm) (* 4 (bitcount 16 registers))) arm)
               arm))
@@ -880,7 +907,7 @@
          ((mv address arm) (ldm-loop 0 registers address arm))
          (arm (if (== (getbit 15 registers) 1)
                   (LoadWritePC (MemA address 4 arm) arm)
-                arm))
+                (advance-pc arm)))
          (arm (if (and wback (== (getbit n registers) 0))
                   (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
                 arm))
@@ -897,14 +924,16 @@
 
 (defun ldrt-common (n tval postindex add register_form imm32 m shift_t shift_n arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*)) ; justifies advancing the PC at the very end
                               (register-numberp tval)
+                              (not (== tval *pc*))
                               (register-numberp m)
                               (booleanp postindex)
                               (booleanp add)
                               (booleanp register_form)
                               (unsigned-byte-p 32 imm32)
                               (SRTypep shift_t)
-                              (not (and (eq shift_t *SRType_RRX*)
+                              (not (and (eq shift_t *SRType_RRX*) ; todo: check this (here and elsewhere)
                                         (not (equal shift_n 1))))
                               (natp shift_n))
                   :stobjs arm))
@@ -921,7 +950,8 @@
                 (set-reg tval data arm)
               (if (== (CurrentInstrSet) *InstrSet_ARM*)
                   (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)
-                (set-reg tval (unknown-bits 32 :ldrt-common arm) arm)))))
+                (set-reg tval (unknown-bits 32 :ldrt-common arm) arm))))
+       (arm (advance-pc arm)))
     arm))
 
 ;; Also called by ldr-literal and ldr-immediate.
@@ -1015,11 +1045,13 @@
                 (if (== (slice 1 0 address) #b00)
                     (LoadWritePC data arm)
                   (update-error *unpredictable* arm))
-              (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
-                  (set-reg tval data arm)
-                (if (== (CurrentInstrSet) *InstrSet_ARM*)
-                    (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)
-                  (set-reg tval (unknown-bits 32 :ldrt-literal-core arm) arm))))))
+              (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+                              (set-reg tval data arm)
+                            (if (== (CurrentInstrSet) *InstrSet_ARM*)
+                                (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)
+                              (set-reg tval (unknown-bits 32 :ldrt-literal-core arm) arm))))
+                     (arm (advance-pc arm)))
+                arm))))
     arm))
 
 ;; Also called by ldr-immediate.
@@ -1070,13 +1102,16 @@
                   (if (== (slice 1 0 address) #b00)
                       (LoadWritePC data arm)
                     (update-error *unpredictable* arm))
-                (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
-                    (set-reg tval data arm)
-                  (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))))
+                (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+                                (set-reg tval data arm)
+                              (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))
+                       (arm (advance-pc arm)))
+                  arm))))
       arm))
 
 (def-inst :ldr-literal
     (ldr-literal-core p u w rt imm12 inst-address arm))
+
 
 (def-inst :ldr-register
     (b* (;; EncodingSpecificOperations:
@@ -1113,9 +1148,11 @@
                   (if (== (slice 1 0 address) #b00)
                       (LoadWritePC data arm)
                     (update-error *unpredictable* arm))
-                (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
-                    (set-reg tval data arm)
-                  (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))))
+                (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+                                (set-reg tval data arm)
+                              (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))
+                       (arm (advance-pc arm)))
+                  arm))))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1125,7 +1162,9 @@
 
 (defun ldrbt-common (n tval postindex add register_form imm32 m shift_t shift_n arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
+                              (not (== tval *pc*))
                               (register-numberp m)
                               (booleanp postindex)
                               (booleanp add)
@@ -1143,7 +1182,8 @@
        (arm (set-reg tval (ZeroExtend (MemU_unpriv address 1 arm) 32) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 ;; Also called by ldr-literal and ldr-immediate.
@@ -1210,7 +1250,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Also called by ldrb-immediate
+;; Also called by ldrb-immediate.
 (defun ldrb-literal-core (p u w rt imm12 inst-address arm)
   (declare (xargs :guard (and (bitp p)
                               (bitp u)
@@ -1235,7 +1275,8 @@
        (arm (NullCheckIfThumbEE 15 arm))
        (base (align (pcvalue inst-address) 4))
        (address (if add (bvplus 32 base imm32) (bvminus 32 base imm32)))
-       (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm)))
+       (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :ldrb-literal
@@ -1271,7 +1312,8 @@
          (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :ldrb-register
@@ -1306,7 +1348,8 @@
          (arm (set-reg tval (ZeroExtend (MemU address 1 arm) 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1348,7 +1391,8 @@
                       arm)))
               (let* ((arm (set-reg tval (MemA address 4 arm) arm))
                      (arm (set-reg t2 (MemA (bvplus 32 address 4) 4 arm) arm)))
-                arm))))
+                arm)))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :ldrd-immediate
@@ -1395,7 +1439,8 @@
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm)
   :guard-hints (("Goal" :in-theory (enable uint))))
 
@@ -1451,7 +1496,8 @@
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm)
   :guard-hints (("Goal" :in-theory (enable uint))))
 
@@ -1462,7 +1508,9 @@
 
 (defun ldrht-common (n tval postindex add register_form imm32 m arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
+                              (not (== tval *pc*))
                               (register-numberp m)
                               (booleanp postindex)
                               (booleanp add)
@@ -1539,7 +1587,6 @@
 (def-inst :ldrht-encoding-a2
     (ldrht-encoding-a2-core u rn rt rm arm))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Also called by ldrh-immediate
@@ -1573,7 +1620,8 @@
        (arm (if (or (UnalignedSupport)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (ZeroExtend data 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrh-literal-core arm) arm))))
+              (set-reg tval (unknown-bits 32 :ldrh-literal-core arm) arm)))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :ldrh-literal
@@ -1604,8 +1652,9 @@
          (arm (if wback (set-reg n offset_addr arm) arm))
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
-                (set-reg tval (ZeroExtend data 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrh-immediate arm) arm))))
+                  (set-reg tval (ZeroExtend data 32) arm)
+                (set-reg tval (unknown-bits 32 :ldrh-immediate arm) arm)))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :ldrh-register
@@ -1644,7 +1693,8 @@
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
                   (set-reg tval (ZeroExtend data 32) arm)
-                (set-reg tval (unknown-bits 32 :ldrh-register arm) arm))))
+                (set-reg tval (unknown-bits 32 :ldrh-register arm) arm)))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1671,10 +1721,11 @@
                     (let* ((arm (set-apsr.n (getbit 31 result) arm))
                            (arm (set-apsr.z (IsZeroBit 32 result) arm))
                            ;; C is unchanged
-                           ;; V is unchanged
+                           ;; APSR.V is unchanged
                            )
                       arm)
-                  arm)))
+                  arm))
+           (arm (advance-pc arm)))
         arm))))
 
 (def-inst :lsl-immediate
@@ -1698,10 +1749,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :lsl-register
@@ -1722,10 +1774,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1749,10 +1802,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :lsr-register
@@ -1773,10 +1827,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1801,7 +1856,7 @@
          (operand2 (sint 32 (reg m arm)))
          (addend (sint 32 (reg a arm)))
          (result (+ (* operand1 operand2) addend))
-         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (set-reg d (slice 31 0 result) arm))
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
@@ -1809,10 +1864,11 @@
                                               (unknown-bit :mla arm)
                                             (apsr.c arm))
                                           arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1833,7 +1889,8 @@
          (operand2 (sint 32 (reg m arm)))
          (addend (sint 32 (reg a arm)))
          (result (- addend (* operand1 operand2)))
-         (arm (set-reg rd (slice 31 0 result) arm)))
+         (arm (set-reg rd (slice 31 0 result) arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1852,10 +1909,11 @@
                     (let* ((arm (set-apsr.n (getbit 31 result) arm))
                            (arm (set-apsr.z (IsZeroBit 32 result) arm))
                            (arm (set-apsr.c carry arm))
-                           ;; V is unchanged
+                           ;; APSR.V is unchanged
                            )
                       arm)
-                  arm)))
+                  arm))
+           (arm (advance-pc arm)))
         arm))))
 
 (def-inst :mov-immediate ; encoding A1 is mov
@@ -1883,8 +1941,6 @@
       (mov-common d setflags imm32 carry arm))
   :guard-debug t)
 
-
-
 (def-inst :mov-register
     (mov-register-core s rd rm arm))
 
@@ -1911,15 +1967,52 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
-                                              (unknown-bit :mul arm)
-                                            (apsr.c arm))
-                                          arm))
-                         ;; V is unchanged
+                         (arm (if (== (ArchVersion) 4)
+                                  (set-apsr.c (unknown-bit :mul arm) arm)
+                                arm ; APSR.C unchanged
+                                ))
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
-      arm))
+                arm))
+         (arm (advance-pc arm)))
+      arm)
+  :alt-body ;; this uses bvmult
+  (b* (;; EncodingSpecificOperations:
+       (d (uint 4 rd))
+       (n (uint 4 rn))
+       (m (uint 4 rm))
+       (setflags (== s #b1))
+       ((when (or (== d 15)
+                  (== n 15)
+                  (== m 15)))
+        (update-error *unpredictable* arm))
+       ((when (and (< (ArchVersion) 6)
+                   (== d n)))
+        (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
+       (my-result (bvmult 32 (reg n arm) (reg m arm)))
+       (arm (set-reg rd my-result arm))
+       (arm (if setflags
+                (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
+                       (arm (set-apsr.z (IsZeroBit 32 my-result) arm))
+                       (arm (if (== (ArchVersion) 4)
+                                (set-apsr.c (unknown-bit :mul arm) arm)
+                              arm ; APSR.C unchanged
+                              ))
+                       ;; APSR.V is unchanged
+                       )
+                  arm)
+              arm))
+       (arm (advance-pc arm)))
+    arm)
+  :alt-body-hints (("Goal" :in-theory (enable sint acl2::bvchop-of-*-becomes-bvmult
+                                              acl2::bvmult-convert-arg2-to-bv
+                                              acl2::bvmult-convert-arg3-to-bv
+                                              acl2::getbit-convert-arg2-to-bv
+                                              acl2::trim-of-*-becomes-bvmult ; todo: enable whenever the conversion rules are enabled
+                                              ))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1940,10 +2033,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :mvn-register
@@ -1965,10 +2059,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :mvn-register-shifted-register
@@ -1991,10 +2086,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2003,7 +2099,7 @@
     (b* (;; EncodingSpecificOperations:
          ;; (none)
          ;; end EncodingSpecificOperations
-         ;; (nothing to do)
+         (arm (advance-pc arm))
          )
       arm))
 
@@ -2027,10 +2123,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :orr-register
@@ -2053,10 +2150,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :orr-register-shifted-register
@@ -2081,10 +2179,11 @@
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 result) arm))
                          (arm (set-apsr.c carry arm))
-                         ;; V is unchanged
+                         ;; APSR.V is unchanged
                          )
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2116,10 +2215,11 @@
                       (let* ((arm (set-apsr.n (getbit 31 result) arm))
                              (arm (set-apsr.z (IsZeroBit 32 result) arm))
                              (arm (set-apsr.c carry arm))
-                             ;; V is unchanged
+                             ;; APSR.V is unchanged
                              )
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2145,7 +2245,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :rsb-register
@@ -2172,7 +2273,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :rsb-register-shifted-register
@@ -2199,7 +2301,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2225,7 +2328,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :rsc-register
@@ -2252,7 +2356,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :rsc-register-shifted-register
@@ -2279,7 +2384,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2305,7 +2411,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :sbc-register
@@ -2332,7 +2439,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :sbc-register-shifted-register
@@ -2359,7 +2467,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2400,7 +2509,8 @@
                                             (apsr.v arm))
                                           arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2440,7 +2550,8 @@
                                             (apsr.v arm))
                                           arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2471,7 +2582,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :sub-register
@@ -2498,7 +2610,8 @@
                              (arm (set-apsr.c carry arm))
                              (arm (set-apsr.v overflow arm)))
                         arm)
-                    arm)))
+                    arm))
+             (arm (advance-pc arm)))
           arm))))
 
 (def-inst :sub-register-shifted-register
@@ -2525,7 +2638,8 @@
                          (arm (set-apsr.c carry arm))
                          (arm (set-apsr.v overflow arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2539,8 +2653,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         ;; V is unchanged
-         )
+         ;; APSR.V is unchanged
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :teq-register
@@ -2554,8 +2668,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         ;; V is unchanged
-         )
+         ;; APSR.V is unchanged
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :teq-register-shifted-register
@@ -2575,8 +2689,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         ;; V is unchanged
-         )
+         ;; APSR.V is unchanged
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2593,8 +2707,8 @@
        (arm (set-apsr.n (getbit 31 result) arm))
        (arm (set-apsr.z (IsZeroBit 32 result) arm))
        (arm (set-apsr.c carry arm))
-       ;; V is unchanged
-       )
+       ;; APSR.V is unchanged
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :tst-immediate
@@ -2611,8 +2725,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         ;; V is unchanged
-         )
+         ;; APSR.V is unchanged
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :tst-register-shifted-register
@@ -2632,8 +2746,8 @@
          (arm (set-apsr.n (getbit 31 result) arm))
          (arm (set-apsr.z (IsZeroBit 32 result) arm))
          (arm (set-apsr.c carry arm))
-         ;; V is unchanged
-         )
+         ;; APSR.V is unchanged
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2674,7 +2788,8 @@
                                             (apsr.v arm))
                                           arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :umull
@@ -2712,7 +2827,8 @@
                                             (apsr.v arm))
                                           arm)))
                     arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2723,7 +2839,9 @@
 
 (defun ldrsbt-common (n tval postindex add register_form imm32 m arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
+                              (not (== tval *pc*))
                               (register-numberp m)
                               (booleanp postindex)
                               (booleanp add)
@@ -2737,7 +2855,8 @@
        (arm (set-reg tval (SignExtend (MemU_unpriv address 1 arm) 8 32) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 ;; Also called by ldr-literal and ldr-immediate.
@@ -2824,7 +2943,8 @@
        (arm (NullCheckIfThumbEE 15 arm))
        (base (align (pcvalue inst-address) 4))
        (address (if add (bvplus 32 base imm32) (bvminus 32 base imm32)))
-       (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm)))
+       (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :ldrsb-literal
@@ -2855,7 +2975,8 @@
          (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :ldrsb-register
@@ -2890,7 +3011,8 @@
          (arm (set-reg tval (SignExtend (MemU address 1 arm) 8 32) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2900,7 +3022,9 @@
 
 (defun ldrsht-common (n tval postindex add register_form imm32 m arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
+                              (not (== tval *pc*))
                               (register-numberp m)
                               (booleanp postindex)
                               (booleanp add)
@@ -2918,7 +3042,8 @@
        (arm (if (or (UnalignedSupport)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrsht-common arm) arm))))
+              (set-reg tval (unknown-bits 32 :ldrsht-common arm) arm)))
+       (arm (advance-pc arm)))
     arm))
 
 ;; Also called by ldr-literal and ldr-immediate.
@@ -3009,7 +3134,8 @@
        (arm (if (or (UnalignedSupport)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrsh-literal-core arm) arm))))
+              (set-reg tval (unknown-bits 32 :ldrsh-literal-core arm) arm)))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :ldrsh-literal
@@ -3042,7 +3168,8 @@
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
-              (set-reg tval (unknown-bits 32 :ldrsh-immediate arm) arm))))
+                (set-reg tval (unknown-bits 32 :ldrsh-immediate arm) arm)))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :ldrsh-register
@@ -3081,13 +3208,15 @@
          (arm (if (or (UnalignedSupport)
                       (== (getbit 0 address) #b0))
                   (set-reg tval (SignExtend data 16 32) arm)
-                (set-reg tval (unknown-bits 32 :ldrsh-register arm) arm))))
+                (set-reg tval (unknown-bits 32 :ldrsh-register arm) arm)))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun strt-common (n tval postindex add register_form imm32 m shift_t shift_n inst-address arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
                               (register-numberp m)
                               (booleanp postindex)
@@ -3114,7 +3243,8 @@
               (write_MemU_unpriv address 4 (unknown-bits 32 :strt-common arm) arm)))
        (arm (if postindex
                 (set-reg n offset_addr arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 ;; todo; add all "also called by" comments, everywhere
@@ -3230,7 +3360,8 @@
        (arm (set-reg *sp*
                      (bvminus 32 (reg *sp* arm) ; todo: any offset to SP like for PC?
                               (* 4 (BitCount 16 registers)))
-                     arm)))
+                     arm))
+       (arm (advance-pc arm)))
     arm))
 
 (defun push-encoding-a2-core (rt inst-address arm)
@@ -3310,7 +3441,8 @@
               arm))
        (arm (if wback
                 (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 (def-inst :push-encoding-a1
@@ -3350,7 +3482,8 @@
          (arm (write_MemU address 4 (if (== tval 15) (PCStoreValue inst-address) (reg tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :str-register
@@ -3391,13 +3524,15 @@
                 (write_MemU address 4 (unknown-bits 32 :str-register arm) arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun strbt-common (n tval postindex add register_form imm32 m shift_t shift_n arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
                               (register-numberp m)
                               (booleanp postindex)
@@ -3416,7 +3551,8 @@
        (arm (write_MemU_unpriv address 1 (slice 7 0 (reg tval arm)) arm))
        (arm (if postindex
                 (set-reg n offset_addr arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 (defun strbt-encoding-a1-core (u rn rt imm12 arm)
@@ -3505,7 +3641,8 @@
          (arm (write_MemU address 1 (slice 7 0 (reg tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :strb-register
@@ -3540,14 +3677,15 @@
          (arm (write_MemU address 1 (slice 7 0 (reg tval arm)) arm))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun strht-common (n tval postindex add register_form imm32 m arm)
   (declare (xargs :guard (and (register-numberp n)
+                              (not (== n *pc*))
                               (register-numberp tval)
                               (register-numberp m)
                               (booleanp postindex)
@@ -3565,7 +3703,8 @@
               (write_MemU_unpriv address 2 (unknown-bits 16 :strht-common arm) arm)))
        (arm (if postindex
                 (set-reg n offset_addr arm)
-              arm)))
+              arm))
+       (arm (advance-pc arm)))
     arm))
 
 (defun strht-encoding-a1-core (u rn rt imm4H imm4L arm)
@@ -3651,7 +3790,8 @@
                 (write_MemU address 2 (unknown-bits 16 :strh-immediate arm) arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 (def-inst :strh-register
@@ -3689,7 +3829,8 @@
                 (write_MemU address 2 (unknown-bits 16 :strh-register arm) arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3734,7 +3875,8 @@
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm)
   :guard-hints (("Goal" :in-theory (enable uint))))
 
@@ -3782,7 +3924,8 @@
                   arm)))
          (arm (if wback
                   (set-reg n offset_addr arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm)
   :guard-hints (("Goal" :in-theory (enable uint))))
 
@@ -3805,7 +3948,8 @@
                 arm))
          (arm (if wback
                   (set-reg n (bvplus 32 (reg n arm) (* 4 (bitcount 16 registers))) arm)
-                arm)))
+                arm))
+         (arm (advance-pc arm)))
       arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

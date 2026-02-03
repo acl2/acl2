@@ -260,11 +260,7 @@
                 (<<-all-l tree y))
            (<<-all-l tree x))
   :enable (<<-all-l-weaken
-           data::<<-rules)
-  :disable acl2::<<-trichotomy
-  :use ((:instance acl2::<<-trichotomy
-                   (x y)
-                   (y x))))
+           data::<<-expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -281,11 +277,7 @@
                 (<<-all-r x tree))
            (<<-all-r y tree))
   :enable (<<-all-r-weaken
-           data::<<-rules)
-  :disable acl2::<<-trichotomy
-  :use ((:instance acl2::<<-trichotomy
-                   (x y)
-                   (y x))))
+           data::<<-expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +376,9 @@
                     (mv-nth 1 (fast-bstp-nonempty tree)))))
   :induct t
   :enable (fast-bstp-nonempty
-           data::<<-expensive-rules))
+           data::<<-rules
+           ;; TODO: why is this necessary?
+           data::<<-to-not-<<))
 
 (defrulel <<-of-fast-bstp-nonempty.max
   (implies (and (mv-nth 0 (fast-bstp-nonempty tree))

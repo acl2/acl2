@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,10 +60,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the version of C,
-     including whether GCC extensions are enabled or not;
-     see @(tsee c::version).
-     Currently we mainly support C17, with and without GCC extensions,
+    "We include an indication of the version of C; see @(tsee c::version).
+     Currently we mainly support C17,
+     with and without GCC and Clang extensions,
      but we are starting to adding some support for C23 as well.")
    (xdoc::p
     "We assume that bytes are 8 bits,
@@ -70,7 +70,7 @@
      and that there are no padding bits or trap representations
      (except for @('_Bool')s, which are padded to at least one byte).
      Therefore, the characteristics of the integer types
-     are defined by four numbers,
+     are defined by five numbers,
      i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
      constraints on those number are derived from
@@ -78,7 +78,7 @@
      and [C17:6.2.5/8] (for the increasing sizes).")
    (xdoc::p
     "The floating types are characterized by their sizes.
-     We make no assumptions about their respective sizes.")
+     We make no assumptions about their respective sizes for now.")
    (xdoc::p
     "We include a field for the size of pointers.
      We assume that all pointers are the same size.
@@ -95,7 +95,8 @@
      This may include details about standard library types
      (such as @('size_t'), @('ptrdiff_t'), etc.),
      alignment and padding policies,
-     endianness, and so on."))
+     endianness,
+     and so on."))
   ((version c::version)
    (bool-bytes pos)
    (short-bytes pos
@@ -250,6 +251,21 @@
               c::bool-format-wfp
               fix)
      :disable ienv-requirements)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->integer-max-bytes ((ienv ienvp))
+  :returns (bytes posp :rule-classes (:rewrite :type-prescription))
+  :short "Number of bytes of the largest integer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of bytes of
+     the @('intmax_t') and @('uintmax_t') types [C17:7.20.1.5].
+     Currently this is the same number of bytes as
+     the @('long long') and @('unsigned long long') types,
+     which are the largest integer types that we support."))
+  (ienv->llong-bytes ienv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,6 +618,59 @@
              c::integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              ldm-ienv-wfp-lemma)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->uinteger-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('UINTMAX_MAX') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->ullong-max),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->ullong-max ienv)
+
+  ///
+
+  (defret ienv->uinteger-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sinteger-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('INTMAX_MAX') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->sllong-max),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->sllong-max ienv)
+
+  ///
+
+  (defret ienv->sinteger-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sinteger-min ((ienv ienvp))
+  :returns (min integerp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of @('INTMAX_MIN') [C17:7.20.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently the same as @(tsee ienv->sllong-min),
+     but this may change in the future,
+     if we add support for extended integer types."))
+  (ienv->sllong-min ienv))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
@@ -794,6 +863,24 @@
     :enable (c::ienv-sllong-rangep
              ienv->sllong-max-correct
              ienv->sllong-min-correct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uinteger-max-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 integer is
+          in the range of (i.e. representable in) type @('uintmax_t')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uinteger-max ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sinteger-max-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 integer is
+          in the range of (i.e. representable in) type @('intmax_t')."
+  (and (<= (ienv->sinteger-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sinteger-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

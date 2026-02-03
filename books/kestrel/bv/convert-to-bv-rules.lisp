@@ -271,3 +271,12 @@
            (equal (bvsx new-size old-size x)
                   (bvsx new-size old-size (trim old-size x))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd getbit-convert-arg2-to-bv
+  (implies (and (syntaxp (convertible-to-bvp x))
+                (natp n))
+           (equal (getbit n x)
+                  (getbit n (trim (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable trim))))

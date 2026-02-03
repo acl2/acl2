@@ -35,7 +35,7 @@
     (otherwise (update-error :unsupported-mnemonic-error arm)))))
 
 ;; Returns a new state, which might have the error flag set
-(defun step (arm)
+(defund step (arm)
   (declare (xargs :stobjs arm))
   (if (error arm)
       arm
@@ -46,3 +46,20 @@
          ((when erp)
           (update-error :decoding-error arm)))
       (execute-inst mnemonic args inst-address arm))))
+
+(defun run (steps arm)
+  (declare (xargs :guard (natp steps)
+                  :stobjs arm))
+  (if (zp steps)
+      arm
+    (let ((arm (step arm)))
+      (run (+ -1 steps) arm))))
+
+(defthm run-opener
+  (implies (syntaxp (quotep steps)) ; todo: require us to know the current instruction
+           (equal (run steps arm)
+                  (if (zp steps)
+                      arm
+                    (let ((arm (step arm)))
+                      (run (+ -1 steps) arm)))))
+  :hints (("Goal" :in-theory (enable run))))

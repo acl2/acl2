@@ -31,4 +31,5 @@
           insert-=
           insert-eq
           insert-eql
+          insert-with-hash
           ))
