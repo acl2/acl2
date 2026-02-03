@@ -2024,8 +2024,8 @@
   :returns (new-tunits transunit-ensemblep)
   :short "Transform a translation unit ensemble."
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (const-prop-filepath-transunit-map tunits.units))))
+    (c$::make-transunit-ensemble
+      :units (const-prop-filepath-transunit-map tunits.units))))
 
 (define const-prop-code-ensemble
   ((code code-ensemblep))

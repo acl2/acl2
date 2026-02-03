@@ -3906,7 +3906,8 @@
                   (cw "Disambiguated ~x0/~x1 translation units.~%"
                       len-new-tumap len-tumap)))
             nil)))
-    (retok (transunit-ensemble new-tumap)))
+    (retok (make-transunit-ensemble :units new-tumap
+                                    :info nil)))
   :hooks (:fix)
 
   :prepwork
