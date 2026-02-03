@@ -595,16 +595,19 @@
     "// base-dir = base (absolute or relative)"
     ""
     "/absolute/including.c:  // dir-of-including-file = /absolute/"
-    "#include \"file.h\"     // included-file-path = /absolute/file.h"
-    "#include \"sub/file.h\" // included-file-path = /absolute/sub/file.h"
+    "#include \"file.h\"       // included-file-path = /absolute/file.h"
+    "#include \"sub/file.h\"   // included-file-path = /absolute/sub/file.h"
     ""
     "relative/including.c:   // dir-of-including-file = base/relative/"
-    "#include \"file.h\"     // included-file-path = base/relative/file.h"
-    "#include \"sub/file.h\" // included-file-path = base/relative/sub/file.h"
+    "#include \"file.h\"       // included-file-path = base/relative/file.h"
+    "#include \"sub/file.h\"   // included-file-path = base/relative/sub/file.h"
     ""
     "including.c:            // dir-of-including-file = base/"
-    "#include \"file.h\"     // included-file-path = base/file.h"
-    "#include \"sub/file.h\" // included-file-path = base/sub/file.h"))
+    "#include \"file.h\"       // included-file-path = base/file.h"
+    "#include \"sub/file.h\"   // included-file-path = base/sub/file.h"))
+  ;; In each group of three lines above,
+  ;; the extra indentation of // in the 2nd and 3rd lines
+  ;; compensate for the two \ in the two \" in those lines.
   (declare (ignore include-dirs))
   (b* (((reterr) "" nil state)
        ((when (header-name-case included-file :angles))
