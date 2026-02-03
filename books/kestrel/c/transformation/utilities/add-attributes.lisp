@@ -38,7 +38,7 @@
   (xdoc::topstring
     (xdoc::p
       "Attributes may either be associated to @(see qualified-ident)s, or to
-       @(see UID)s directly
+       @(see c$::UID)s directly
        (see @(tsee transunit-ensemble-add-attributes-with-qualified-idents)
        and @(tsee transunit-ensemble-add-attributes), respectively).")
     (xdoc::p
