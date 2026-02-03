@@ -3791,7 +3791,7 @@
                                        'pragma'"
                             :found (msg "the directive name '~s0'"
                                         directive))))))
-           (t ;  # non-ident -- non-directive
+           (t ; # non-ident -- non-directive
             (reterr-msg :where (span->start span2)
                         :expected "an identifier"
                         :found (plexeme-to-msg toknl2))))))
