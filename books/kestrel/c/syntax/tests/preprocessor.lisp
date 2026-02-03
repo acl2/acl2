@@ -213,3 +213,12 @@ fprintf(stderr, \"X = %d\\n\", x);
 puts(\"The first, second, and third items.\");
 ((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "conditional.c"
+                "M_is_not_defined
+
+
+M_is_defined
+")
