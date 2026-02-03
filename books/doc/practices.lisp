@@ -660,7 +660,7 @@ whose effect may be more easy to guess.</p>")
     (xdoc::p "In Emacs, you open the book for editing and you also start a shell
     buffer (within Emacs, via a command like @('M-x shell')).  You start ACL2 in
     the shell buffer, which starts up its REPL (Read-Eval-Print Loop).  Now you
-    can submit commands to ACL2 REPL via the shell buffer.")
+    can submit commands to the ACL2 REPL via the shell buffer.")
 
     (xdoc::p "As you develop the book, you submit the events it contains to
     ACL2, one by one.  If ACL2 rejects an event, you fix it and try
@@ -708,9 +708,16 @@ whose effect may be more easy to guess.</p>")
 
     (xdoc::ol
 
-      (xdoc::li "ACL2 provides custom emacs commands to easily submit events
-      and sequences of events to the shell buffer.  See @(see emacs), which
-      describes how to make those commands available.")
+      (xdoc::li "Manually copying events from your book to the ACL2 shell
+      buffer can be tedious.  So ACL2 provides custom Emacs commands to
+      automate the process.  See @(see emacs), which describes how to make
+      those commands available.")
+
+      (xdoc::li "Many other helpful ACL2-related Emacs commands and settings
+      are available.  Again, see @(see emacs).  We recommend following the
+      instructions there to make them available in your Emacs session and
+      looking through the @('emacs-acl2.el') file described there to see what
+      commands are available.")
 
       (xdoc::li "Instead of submitting events one-by-one, you can use @(see
       ld) (load) to have the ACL2 REPL process as much of your book as it
