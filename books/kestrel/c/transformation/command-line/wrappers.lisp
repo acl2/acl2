@@ -194,7 +194,7 @@
                         :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::split-fn *old-const*
                       *new-const*
-                      ;; Pass through all other args (currently, none):
+                      ;; Pass through all other args:
                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
                          :path ,new-dir))))
