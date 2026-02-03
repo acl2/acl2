@@ -504,6 +504,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define resolve-in-include-dirs ((included-file stringp)
+                                 (include-dirs string-listp)
+                                 state)
+  :returns (mv erp
+               (resolved-included-file stringp)
+               (file-bytes byte-listp)
+               state)
+  :short "Resolve a header name (in string form) to a file,
+          looking in a list of absolute paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee resolve-included-file),
+     when the file must be looked up in a list of absolute paths:
+     this is the case for angle-bracket header names,
+     as well as for double-quote header names
+     that cannot be resolved relative to the including file.")
+   (xdoc::p
+    "We go through each absolute path in the @('include-dirs') list,
+     and we try to read the file there.
+     We stop as soon as we find a file.
+     We return an error if we cannot find the file."))
+  (b* (((reterr) "" nil state)
+       ((when (endp include-dirs))
+        (reterr (msg "Cannot resolve the file ~s0 in any of ~x1."
+                     (str-fix included-file) (string-list-fix include-dirs))))
+       (path-to-try (str::cat (car include-dirs) "/" included-file))
+       ((mv erp bytes state)
+        (acl2::read-file-into-byte-list path-to-try state))
+       ((when (not erp)) (retok path-to-try bytes state)))
+    (resolve-in-include-dirs included-file (cdr include-dirs) state))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define resolve-included-file ((including-file stringp)
                                (included-file header-namep)
                                (base-dir stringp)
@@ -536,7 +571,8 @@
      "If @('included-file') has angle brackets,
       the header name is converted to an ASCII path
       relative to one of the directories in @('include-dirs'),
-      which are tried in order until a file can be read.
+      which are tried in order until a file can be read,
+      via a separate function.
       If a file can be read,
       its absolute path is returned as the @('resolved-included-file') result,
       along with the bytes that form the file.
@@ -608,10 +644,11 @@
   ;; In each group of three lines above,
   ;; the extra indentation of // in the 2nd and 3rd lines
   ;; compensate for the two \ in the two \" in those lines.
-  (declare (ignore include-dirs))
   (b* (((reterr) "" nil state)
        ((when (header-name-case included-file :angles))
-        (reterr (msg "Angle-bracket #include not yet supported."))) ; TODO
+        (b* (((erp include-file-ascii)
+              (h-char-list-to-string (header-name-angles->chars included-file))))
+          (resolve-in-include-dirs include-file-ascii include-dirs state)))
        ((erp included-file-ascii)
         (q-char-list-to-string (header-name-quotes->chars included-file)))
        (base-dir/ (str::cat base-dir "/"))
@@ -636,9 +673,8 @@
             (subseq included-file-path (length base-dir/) nil))))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list included-file-path state))
-       ;; TODO: search INCLUDE-DIRS if ERP
        ((when erp)
-        (reterr (msg "Cannot read file ~x0." included-file-path))))
+        (resolve-in-include-dirs included-file-ascii include-dirs state)))
     (retok resolved-included-file bytes state))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable length string-append)))
