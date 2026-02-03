@@ -3267,9 +3267,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define s-char-list-to-q-char-list ((schars s-char-listp))
+  :returns (mv erp (qchars q-char-listp))
+  :short "Convert a list of @(tsee s-char)s to a list of @(tsee q-char)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when attempting to convert a string literal
+     to a double-quote header name, in @(tsee indirect-header-name).
+     We ensure that there are no escapes.
+     For now there are no restrictions on the ASTs,
+     so every @(tsee s-char) code can be used as a @(tsee q-char) code."))
+  (b* (((reterr) nil)
+       ((when (endp schars)) (retok nil))
+       (schar (car schars))
+       ((when (s-char-case schar :escape))
+        (reterr (msg "Cannot have escape ~x0 in header name."
+                     (s-char-escape->escape schar))))
+       (qchar (q-char (s-char-char->code schar)))
+       ((erp qchars) (s-char-list-to-q-char-list (cdr schars))))
+    (retok (cons qchar qchars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define s-char-list-to-h-char-list ((schars s-char-listp))
+  :returns (mv erp (hchars h-char-listp))
+  :short "Convert a list of @(tsee s-char)s to a list of @(tsee h-char)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when attempting to convert a stringization
+     to an angle-bracket header name, in @(tsee indirect-header-name).
+     We ensure that there are no escapes.
+     For now there are no restrictions on the ASTs,
+     so every @(tsee s-char) code can be used as a @(tsee h-char) code."))
+  (b* (((reterr) nil)
+       ((when (endp schars)) (retok nil))
+       (schar (car schars))
+       ((when (s-char-case schar :escape))
+        (reterr (msg "Cannot have escape ~x0 in header name."
+                     (s-char-escape->escape schar))))
+       (hchar (h-char (s-char-char->code schar)))
+       ((erp hchars) (s-char-list-to-h-char-list (cdr schars))))
+    (retok (cons hchar hchars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-closing-angle-bracket ((lexemes plexeme-listp))
+  :returns (mv erp
+               (lexemes-before plexeme-listp)
+               (lexemes-after plexeme-listp))
+  :short "Find the first closing angle bracket in a list of lexemes,
+          returning the lexemes before and after it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the bracket is not found."))
+  (b* (((reterr) nil nil)
+       ((when (endp lexemes))
+        (reterr (msg "No closing angle bracket found.")))
+       (lexeme (car lexemes))
+       ((when (plexeme-punctuatorp lexeme ">"))
+        (retok nil (plexeme-list-fix (cdr lexemes))))
+       ((erp lexemes-before lexemes-after)
+        (find-closing-angle-bracket (cdr lexemes))))
+    (retok (cons (plexeme-fix lexeme) lexemes-before)
+           lexemes-after)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define indirect-header-name ((lexemes plexeme-listp))
   :returns (mv erp
-               (hader header-namep)
+               (header header-namep)
                (wsc-after plexeme-listp)
                (newline plexemep))
   :short "Obtain a header name from a list of lexemes, if possible."
@@ -3290,10 +3359,87 @@
      because the macro replacement that results in
      the lexemes passed as input to this function
      is performed starting with a token,
-     after it has been recognized not to be a header name."))
-  (declare (ignore lexemes))
-  (b* (((reterr) (irr-header-name) nil (irr-plexeme)))
-    (reterr :todo)))
+     after it has been recognized not to be a header name.")
+   (xdoc::p
+    "[C17:6.10.2/4] says that the details of how the resulting lexemes
+     are combined into a header name are implementation-defined.
+     Our approach is the following.")
+   (xdoc::p
+    "If the lexemes start with a string literal,
+     we attempt to build a double-quote header name;
+     note that this is the only option,
+     as an angle-bracket header name would have to start with @('<').
+     We ensure that the string literal has no prefix,
+     and that its characters can be converted.
+     We also ensure that no other token follows.
+     We build and return a double-quote header name.")
+   (xdoc::p
+    "If instead the lexemes start with an open angle bracket @('<'),
+     we try to find the closing one @('>'), returning an error if not found.
+     We stringize all the lexemes before the @('>'),
+     obtaining a list of @(tsee s-char)s,
+     which we convert to @(tsee q-char)s
+     via @(tsee s-char-list-to-q-char-list).
+     We form an angle-bracket header, which we return.
+     We also ensure that there are no other tokens after the @('>').")
+   (xdoc::p
+    "In all other cases, we return an error.
+     We will extend our approach, if needed."))
+  (b* (((reterr) (irr-header-name) nil (irr-plexeme))
+       ((when (endp lexemes))
+        (raise "Internal error: no lexemes.")
+        (reterr t))
+       (lexeme (car lexemes))
+       ((when (plexeme-case lexeme :string))
+        (b* (((stringlit stringlit) (plexeme-string->literal lexeme))
+             ((when stringlit.prefix?)
+              (reterr (msg "Cannot convert string with prefix ~x0 ~
+                            to a header name."
+                           stringlit)))
+             ((erp qchars) (s-char-list-to-q-char-list stringlit.schars))
+             (header (header-name-quotes qchars))
+             (lexemes-rest (cdr lexemes))
+             ((unless (plexeme-list-not-tokenp lexemes-rest))
+              (reterr (msg "Extra tokens in ~x0 after header name."
+                           lexemes-rest)))
+             ((unless (consp lexemes-rest))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t))
+             (lexemes-rest (plexeme-list-fix lexemes-rest))
+             (wsc-after (butlast lexemes-rest 1))
+             (newline (car (last lexemes-rest)))
+             ((unless (plexeme-case newline :newline))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t)))
+          (retok header wsc-after newline)))
+       ((when (plexeme-punctuatorp lexeme "<"))
+        (b* (((erp lexemes-before lexemes-after)
+              (find-closing-angle-bracket (cdr lexemes)))
+             (schars (stringize-lexeme-list lexemes-before))
+             ((erp hchars) (s-char-list-to-h-char-list schars))
+             (header (header-name-angles hchars))
+             ((unless (plexeme-list-not-tokenp lexemes-after))
+              (reterr (msg "Extra tokens in ~x0 after header name."
+                           lexemes-after)))
+             ((unless (consp lexemes-after))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t))
+             (lexemes-after (plexeme-list-fix lexemes-after))
+             (wsc-after (butlast lexemes-after 1))
+             (newline (car (last lexemes-after)))
+             ((unless (plexeme-case newline :newline))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t)))
+          (retok header wsc-after newline))))
+    (reterr (msg "Cannot convert ~x0 to a header name."
+                 (plexeme-list-fix lexemes))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
