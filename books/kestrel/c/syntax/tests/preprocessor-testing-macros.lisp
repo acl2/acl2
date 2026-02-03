@@ -75,3 +75,29 @@
   `(test-preproc '(,file)
                  :include-dirs ,include-dirs
                  :expected (fileset-of ,file ,expected)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Show result of preprocessing.
+
+(defmacro show-preproc (files &key include-dirs)
+  `(assert!-stobj
+    (b* ((files ,files)
+         (base-dir ".")
+         (include-dirs ,include-dirs)
+         (ienv (ienv-default))
+         ((mv erp fileset state)
+          (pproc-files files base-dir include-dirs ienv state 1000000000))
+         (- (if erp
+                (cw "~@0" erp)
+              (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
+      (mv t state))
+    state))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Specialization to one file.
+
+(defmacro show-preproc-1 (file &key include-dirs)
+  `(show-preproc '(,file)
+                 :include-dirs ,include-dirs))
