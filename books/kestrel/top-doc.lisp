@@ -22,6 +22,7 @@
    (include-book "abstract-domains/top")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
+   (include-book "arm/doc")
    (include-book "axe/doc")
    (include-book "arithmetic-light/doc")
    (include-book "built-ins/top")
