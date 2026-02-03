@@ -2886,7 +2886,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called just after reading a @('#if'),
+    "This is called just after reading a @('#if') or @('#elif'),
      which, according to the grammar,
      must be followed by a constant expression [C17:6.10/1],
      which takes the rest of the line of the directive.")
@@ -2919,8 +2919,10 @@
         (raise "Internal error: ~x0 contains markers.")
         (reterr t))
        (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
-       (lexemes (rev rev-lexemes)))
-    (reterr (list :todo lexemes)))
+       (lexemes (rev rev-lexemes))
+       ((erp pval) (pparseval-const-expr lexemes (ppstate->ienv ppstate)))
+       (result (not (= (pvalue->integer pval) 0))))
+    (retok result ppstate))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3223,6 +3225,36 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards pproc-*-group-part-skipped))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define indirect-header-name ((lexemes plexeme-listp))
+  :returns (mv erp
+               (hader header-namep)
+               (wsc-after plexeme-listp)
+               (newline plexemep))
+  :short "Obtain a header name from a list of lexemes, if possible."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for ``indirect'' file inclusions,
+     i.e. ones where the @('#include') directive
+     has the form in [C17:6.10.2/4],
+     i.e. not as explicit as [C17:6.10.2/2] and [C17:6.10.2/3],
+     but they should be reducible to one of those two forms.
+     The lexemes passed as input to this function
+     are obtained by performing macro replacement just after the @('#include').
+     This function attempts to extract the header name,
+     and also returns any white space and comments after it,
+     and separately the final new line.
+     There cannot be any white space and comments before the header name,
+     because the macro replacement that results in
+     the lexemes passed as input to this function
+     is performed starting with a token,
+     after it has been recognized not to be a header name."))
+  (declare (ignore lexemes))
+  (b* (((reterr) (irr-header-name) nil (irr-plexeme)))
+    (reterr :todo)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3759,7 +3791,7 @@
                                        'pragma'"
                             :found (msg "the directive name '~s0'"
                                         directive))))))
-           (t ;  # non-ident -- non-directive
+           (t ; # non-ident -- non-directive
             (reterr-msg :where (span->start span2)
                         :expected "an identifier"
                         :found (plexeme-to-msg toknl2))))))
@@ -3833,7 +3865,115 @@
       "If we find a header name,
        we ensure that we find a new line without intervening tokens,
        i.e. that there is nothing (of significance) after the directive
-       in the line (see grammar).")
+       in the line (see grammar).
+       Then we call a separate function to handle the header name.")
+     (xdoc::p
+      "If we find some other token, we put it back,
+       and we perform macro replacement on the rest of the line.
+       The resulting lexmarks are all lexemes,
+       but since we do not have that fact statically available,
+       we double-check that and throw a hard error if the check fails.
+       We try to turn those lexemes into a header name,
+       and then we use a separate function to preprocess it."))
+    (b* ((ppstate (ppstate-fix ppstate))
+         ((reterr) nil ppstate nil state)
+         ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
+         ((erp nontoknls-before-header toknl span ppstate)
+          (read-token/newline-after-include ppstate)))
+      (cond
+       ((not toknl) ; # include EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :newline) ; # include EOL
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a token"
+                    :found (plexeme-to-msg toknl)))
+       ((plexeme-case toknl :header) ; # include headername
+        (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
+              (read-token/newline ppstate))
+             ((unless (and toknl2 ; # include headername EOL
+                           (plexeme-case toknl2 :newline)))
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a new line"
+                          :found (plexeme-to-msg toknl2))))
+          (pproc-header-name nontoknls-before-hash
+                             nontoknls-after-hash
+                             nontoknls-before-header
+                             (plexeme-header->name toknl)
+                             nontoknls-after-header
+                             toknl2 ; new line
+                             file
+                             base-dir
+                             include-dirs
+                             preprocessed
+                             preprocessing
+                             rev-lexemes
+                             ppstate
+                             state
+                             (1- limit))))
+       (t ; # include not-headername
+        (b* ((ppstate (unread-lexeme toknl span ppstate))
+             ((erp rev-lexmarks ppstate)
+              (pproc-lexemes (macrep-mode-line)
+                             nil ; rev-lexemes
+                             0 ; paren-level
+                             nil ; no-expandp
+                             nil ; disabled
+                             t ; directivep
+                             ppstate
+                             limit)) ; unrelated to limit for this clique
+             (lexmarks (rev rev-lexmarks))
+             ((unless (lexmark-list-case-lexeme-p lexmarks))
+              (raise "Internal error: ~x0 contains markers." lexmarks)
+              (reterr t))
+             (header-name-lexemes (lexmark-list-to-lexeme-list lexmarks))
+             ((erp header nontoknls-after-header newline)
+              (indirect-header-name header-name-lexemes)))
+          (pproc-header-name nontoknls-before-hash
+                             nontoknls-after-hash
+                             nontoknls-before-header
+                             header
+                             nontoknls-after-header
+                             newline
+                             file
+                             base-dir
+                             include-dirs
+                             preprocessed
+                             preprocessing
+                             rev-lexemes
+                             ppstate
+                             state
+                             (1- limit))))))
+    :measure (nfix limit)
+    :no-function nil)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define pproc-header-name ((nontoknls-before-hash plexeme-listp)
+                             (nontoknls-after-hash plexeme-listp)
+                             (nontoknls-before-header plexeme-listp)
+                             (header header-namep)
+                             (nontoknls-after-header plexeme-listp)
+                             (newline-at-end plexemep)
+                             (file stringp)
+                             (base-dir stringp)
+                             (include-dirs string-listp)
+                             (preprocessed string-scfile-alistp)
+                             (preprocessing string-listp)
+                             (rev-lexemes plexeme-listp)
+                             (ppstate ppstatep)
+                             state
+                             (limit natp))
+    :returns (mv erp
+                 (new-rev-lexemes plexeme-listp)
+                 (new-ppstate ppstatep)
+                 (new-preprocessed string-scfile-alistp)
+                 state)
+    :parents (preprocessor pproc-files/groups/etc)
+    :short "Preprocess a @('#include') directive."
+    :long
+    (xdoc::topstring
      (xdoc::p
       "We resolve the header name to a file,
        and we call @(tsee pproc-file) to preprocess it.
@@ -3859,80 +3999,50 @@
       "Note that @(tsee resolve-included-file)
        always reads the whole file and returns its bytes,
        which is wasteful when the file is found in @('preprocessed').
-       We may improve this aspect at some point.")
-     (xdoc::p
-      "If, after the @('#') and @('include') tokens,
-       we find a token that is not a header name,
-       for now we return an error,
-       but we should preprocess that token and any subsequent tokens,
-       and see if they result in a header name."))
+       We may improve this aspect at some point."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp nontoknls-before-header toknl span ppstate)
-          (read-token/newline-after-include ppstate)))
-      (cond
-       ((not toknl) ; # include EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; # include EOL
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :header) ; # include headername
-        (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
-              (read-token/newline ppstate))
-             ((unless (and toknl2 ; # include headername EOL
-                           (plexeme-case toknl2 :newline)))
-              (reterr-msg :where (position-to-msg (span->start span2))
-                          :expected "a new line"
-                          :found (plexeme-to-msg toknl2)))
-             ((erp resolved-file bytes state)
-              (resolve-included-file file
-                                     (plexeme-header->name toknl)
-                                     base-dir
-                                     include-dirs
-                                     state))
-             ((mv erp scfile preprocessed state)
-              (pproc-file bytes
-                          resolved-file
-                          base-dir
-                          include-dirs
-                          preprocessed
-                          preprocessing
-                          (ppstate->macros ppstate)
-                          (ppstate->ienv ppstate)
-                          state
-                          (1- limit)))
-             ((when (eq erp :not-self-contained))
-              (b* ((ppstate (unread-pchar-to-bytes ppstate))
-                   ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
-                (retok (plexeme-list-fix rev-lexemes)
-                       ppstate
-                       (string-scfile-alist-fix preprocessed)
-                       state)))
-             ((when erp) (reterr erp))
-             (ppstate (update-ppstate->macros
-                       (macro-table-extend-top
-                        (scfile->macros scfile)
-                        (ppstate->macros ppstate))
-                       ppstate))
-             (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
-             (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
-             (rev-lexemes (plexeme-list-fix rev-lexemes))
-             (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
-             (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-             (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
-             (rev-lexemes (cons (plexeme-ident (ident "include")) rev-lexemes))
-             (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
-             (rev-lexemes (cons toknl rev-lexemes)) ; toknl is header name
-             (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
-             (rev-lexemes (cons toknl2 ; toknl2 is new line
-                                rev-lexemes)))
-          (retok rev-lexemes ppstate preprocessed state)))
-       (t ; # include token
-        (reterr (msg "Non-direct #include not yet supported."))))) ; TODO
+         ((erp resolved-file bytes state)
+          (resolve-included-file file header base-dir include-dirs state))
+         ((mv erp scfile preprocessed state)
+          (pproc-file bytes
+                      resolved-file
+                      base-dir
+                      include-dirs
+                      preprocessed
+                      preprocessing
+                      (ppstate->macros ppstate)
+                      (ppstate->ienv ppstate)
+                      state
+                      (1- limit)))
+         ((when (eq erp :not-self-contained))
+          (b* ((ppstate (unread-pchar-to-bytes ppstate))
+               ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
+            (retok (plexeme-list-fix rev-lexemes)
+                   ppstate
+                   (string-scfile-alist-fix preprocessed)
+                   state)))
+         ((when erp) (reterr erp))
+         (ppstate (update-ppstate->macros
+                   (macro-table-extend-top
+                    (scfile->macros scfile)
+                    (ppstate->macros ppstate))
+                   ppstate))
+         (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
+         (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
+         (nontoknls-before-header (plexeme-list-fix nontoknls-before-header))
+         (nontoknls-after-header (plexeme-list-fix nontoknls-after-header))
+         (rev-lexemes (plexeme-list-fix rev-lexemes))
+         (rev-lexemes (revappend nontoknls-before-hash rev-lexemes))
+         (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+         (rev-lexemes (revappend nontoknls-after-hash rev-lexemes))
+         (rev-lexemes (cons (plexeme-ident (ident "include")) rev-lexemes))
+         (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
+         (rev-lexemes (cons (plexeme-header header) rev-lexemes))
+         (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
+         (rev-lexemes (cons (plexeme-fix newline-at-end) rev-lexemes)))
+      (retok rev-lexemes ppstate preprocessed state))
     :measure (nfix limit)
     :no-function nil)
 

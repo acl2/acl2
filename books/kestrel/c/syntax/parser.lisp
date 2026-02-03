@@ -1930,7 +1930,6 @@
           (b* ((parstate (if token (unread-token parstate) parstate))) ; expr
             (retok expr span parstate)))
          ;; expr ?
-
          ((erp token2 & parstate) (read-token parstate)))
       (cond
        ;; If token2 is a colon and GCC/Clang extensions are enabled,

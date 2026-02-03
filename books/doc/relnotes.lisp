@@ -395,6 +395,9 @@
     "Added utility @(tsee eval-events-from-file), to create an event that
      evaluates events from a file.")
 
+   (xdoc::p
+    "Display of typewriter font has been improved for dark backgrounds.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Documentation")
