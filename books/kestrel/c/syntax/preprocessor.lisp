@@ -3474,14 +3474,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called just after the @('error') identifier has been parsed..")
+    "This is called just after the @('error') identifier has been parsed.")
    (xdoc::p
-    "We just return an error message that contains the rest of the line.
+    "We return an error message that contains the rest of the line,
+     in printer form (using the preprocessor printer).
      This could be refined in the future."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
-       ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
-    (reterr (msg "#error: ~x0" lexemes))))
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate))
+       (bytes (plexemes-to-bytes lexemes))
+       (string (acl2::nats=>string bytes)))
+    (reterr (msg "#error: ~s0" string)))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
