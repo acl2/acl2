@@ -701,8 +701,8 @@ whose effect may be more easy to guess.</p>")
     to re-certify the book and any books that depend on it.")
 
     (xdoc::p "Once you are done developing your main book (meaning ACL2 accepts all the
-    forms in it), you can exit ACL2 and call @(tsee build::cert.pl) to certify
-    the book.")
+    forms in it), you can exit ACL2 and call <see topic=\"@(url
+    build::cert.pl)\"><tt>cert.pl</tt></see> to certify the book.")
 
     (xdoc::p "Various shortcuts are available:")
 
@@ -719,13 +719,13 @@ whose effect may be more easy to guess.</p>")
       need to work.  One way to ensure you know how much material was loaded is
       to use @('i-am-here').")
 
-      (xdoc::li "If you are confident that a change to a book will be
-      accepted by ACL2, you can avoid the ACL2 REPL entirely and try just using
-      @(tsee build::cert.pl) to certify the book (and any books that depend on
-      it).  However, most ACL2 work should be done within the ACL2 REPL, where
-      you can iterate quickly and where you have access to ACL2's @(see
-      history) commands to inspect the contents of its @(see world) (e.g., to
-      show existing definitions and rules).")
+      (xdoc::li "If you are confident that a change to a book will be accepted
+      by ACL2, you can avoid the ACL2 REPL entirely and try just using <see
+      topic=\"@(url build::cert.pl)\"><tt>cert.pl</tt></see> to certify the
+      book (and any books that depend on it).  However, most ACL2 work should
+      be done within the ACL2 REPL, where you can iterate quickly and where you
+      have access to ACL2's @(see history) commands to inspect the contents of
+      its @(see world) (e.g., to show existing definitions and rules).")
 
       (xdoc::li "If you ever get confused about which events are in ACL2's
       REPL, you can just restart ACL2 and call @('ld') to sync things up.  Or
