@@ -11,6 +11,8 @@
 ;; We can rename this if someone else is using the ARM package.  Perhaps we
 ;; should rename this to ARM32 anyway.
 
+(include-book "std/portcullis" :dir :system) ; for xdoc package
+
 (defpkg "ARM"
   (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvmult bvcat bvsx bvcount repeatbit putbit
             bool-to-bit bit-to-bool
@@ -25,7 +27,9 @@
             pack-in-package
             must-be-redundant
             keyword-listp
-            )
+            ;; xdoc stuff:
+            defxdoc
+            xdoc::topparas)
           (set-difference-eq *acl2-exports*
                              '(pc ; needed for the ARM program counter
                                read ; needed for our memory read function
