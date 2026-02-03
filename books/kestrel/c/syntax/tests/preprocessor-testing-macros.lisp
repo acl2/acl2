@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "../input-files") ; for IENV-DEFAULT
 (include-book "../preprocessor")
 
 (include-book "std/testing/assert-bang-stobj" :dir :system)
