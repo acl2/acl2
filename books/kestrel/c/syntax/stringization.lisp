@@ -365,6 +365,23 @@
    :form-feed (raise "Internal error: form feed."))
   :no-function nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-lexeme-list ((lexemes plexeme-listp))
+  :returns (schars s-char-listp)
+  :short "Stringize a list of lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We concatenate all the stringizations.")
+   (xdoc::p
+    "This is not actually used in @(tsee stringize),
+     which operates on lexmarks,
+     but it is useful to have for other purposes."))
+  (cond ((endp lexemes) nil)
+        (t (append (stringize-lexeme (car lexemes))
+                   (stringize-lexeme-list (cdr lexemes))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stringize ((lexmarks lexmark-listp))

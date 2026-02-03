@@ -504,6 +504,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define resolve-in-include-dirs ((included-file stringp)
+                                 (include-dirs string-listp)
+                                 state)
+  :returns (mv erp
+               (resolved-included-file stringp)
+               (file-bytes byte-listp)
+               state)
+  :short "Resolve a header name (in string form) to a file,
+          looking in a list of absolute paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee resolve-included-file),
+     when the file must be looked up in a list of absolute paths:
+     this is the case for angle-bracket header names,
+     as well as for double-quote header names
+     that cannot be resolved relative to the including file.")
+   (xdoc::p
+    "We go through each absolute path in the @('include-dirs') list,
+     and we try to read the file there.
+     We stop as soon as we find a file.
+     We return an error if we cannot find the file."))
+  (b* (((reterr) "" nil state)
+       ((when (endp include-dirs))
+        (reterr (msg "Cannot resolve the file ~s0 in any of ~x1."
+                     (str-fix included-file) (string-list-fix include-dirs))))
+       (path-to-try (str::cat (car include-dirs) "/" included-file))
+       ((mv erp bytes state)
+        (acl2::read-file-into-byte-list path-to-try state))
+       ((when (not erp)) (retok path-to-try bytes state)))
+    (resolve-in-include-dirs included-file (cdr include-dirs) state))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define resolve-included-file ((including-file stringp)
                                (included-file header-namep)
                                (base-dir stringp)
@@ -536,7 +571,8 @@
      "If @('included-file') has angle brackets,
       the header name is converted to an ASCII path
       relative to one of the directories in @('include-dirs'),
-      which are tried in order until a file can be read.
+      which are tried in order until a file can be read,
+      via a separate function.
       If a file can be read,
       its absolute path is returned as the @('resolved-included-file') result,
       along with the bytes that form the file.
@@ -595,20 +631,24 @@
     "// base-dir = base (absolute or relative)"
     ""
     "/absolute/including.c:  // dir-of-including-file = /absolute/"
-    "#include \"file.h\"     // included-file-path = /absolute/file.h"
-    "#include \"sub/file.h\" // included-file-path = /absolute/sub/file.h"
+    "#include \"file.h\"       // included-file-path = /absolute/file.h"
+    "#include \"sub/file.h\"   // included-file-path = /absolute/sub/file.h"
     ""
     "relative/including.c:   // dir-of-including-file = base/relative/"
-    "#include \"file.h\"     // included-file-path = base/relative/file.h"
-    "#include \"sub/file.h\" // included-file-path = base/relative/sub/file.h"
+    "#include \"file.h\"       // included-file-path = base/relative/file.h"
+    "#include \"sub/file.h\"   // included-file-path = base/relative/sub/file.h"
     ""
     "including.c:            // dir-of-including-file = base/"
-    "#include \"file.h\"     // included-file-path = base/file.h"
-    "#include \"sub/file.h\" // included-file-path = base/sub/file.h"))
-  (declare (ignore include-dirs))
+    "#include \"file.h\"       // included-file-path = base/file.h"
+    "#include \"sub/file.h\"   // included-file-path = base/sub/file.h"))
+  ;; In each group of three lines above,
+  ;; the extra indentation of // in the 2nd and 3rd lines
+  ;; compensate for the two \ in the two \" in those lines.
   (b* (((reterr) "" nil state)
        ((when (header-name-case included-file :angles))
-        (reterr (msg "Angle-bracket #include not yet supported."))) ; TODO
+        (b* (((erp include-file-ascii)
+              (h-char-list-to-string (header-name-angles->chars included-file))))
+          (resolve-in-include-dirs include-file-ascii include-dirs state)))
        ((erp included-file-ascii)
         (q-char-list-to-string (header-name-quotes->chars included-file)))
        (base-dir/ (str::cat base-dir "/"))
@@ -633,9 +673,8 @@
             (subseq included-file-path (length base-dir/) nil))))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list included-file-path state))
-       ;; TODO: search INCLUDE-DIRS if ERP
        ((when erp)
-        (reterr (msg "Cannot read file ~x0." included-file-path))))
+        (resolve-in-include-dirs included-file-ascii include-dirs state)))
     (retok resolved-included-file bytes state))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable length string-append)))
@@ -3228,9 +3267,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define s-char-list-to-q-char-list ((schars s-char-listp))
+  :returns (mv erp (qchars q-char-listp))
+  :short "Convert a list of @(tsee s-char)s to a list of @(tsee q-char)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when attempting to convert a string literal
+     to a double-quote header name, in @(tsee indirect-header-name).
+     We ensure that there are no escapes.
+     For now there are no restrictions on the ASTs,
+     so every @(tsee s-char) code can be used as a @(tsee q-char) code."))
+  (b* (((reterr) nil)
+       ((when (endp schars)) (retok nil))
+       (schar (car schars))
+       ((when (s-char-case schar :escape))
+        (reterr (msg "Cannot have escape ~x0 in header name."
+                     (s-char-escape->escape schar))))
+       (qchar (q-char (s-char-char->code schar)))
+       ((erp qchars) (s-char-list-to-q-char-list (cdr schars))))
+    (retok (cons qchar qchars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define s-char-list-to-h-char-list ((schars s-char-listp))
+  :returns (mv erp (hchars h-char-listp))
+  :short "Convert a list of @(tsee s-char)s to a list of @(tsee h-char)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when attempting to convert a stringization
+     to an angle-bracket header name, in @(tsee indirect-header-name).
+     We ensure that there are no escapes.
+     For now there are no restrictions on the ASTs,
+     so every @(tsee s-char) code can be used as a @(tsee h-char) code."))
+  (b* (((reterr) nil)
+       ((when (endp schars)) (retok nil))
+       (schar (car schars))
+       ((when (s-char-case schar :escape))
+        (reterr (msg "Cannot have escape ~x0 in header name."
+                     (s-char-escape->escape schar))))
+       (hchar (h-char (s-char-char->code schar)))
+       ((erp hchars) (s-char-list-to-h-char-list (cdr schars))))
+    (retok (cons hchar hchars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-closing-angle-bracket ((lexemes plexeme-listp))
+  :returns (mv erp
+               (lexemes-before plexeme-listp)
+               (lexemes-after plexeme-listp))
+  :short "Find the first closing angle bracket in a list of lexemes,
+          returning the lexemes before and after it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error is returned if the bracket is not found."))
+  (b* (((reterr) nil nil)
+       ((when (endp lexemes))
+        (reterr (msg "No closing angle bracket found.")))
+       (lexeme (car lexemes))
+       ((when (plexeme-punctuatorp lexeme ">"))
+        (retok nil (plexeme-list-fix (cdr lexemes))))
+       ((erp lexemes-before lexemes-after)
+        (find-closing-angle-bracket (cdr lexemes))))
+    (retok (cons (plexeme-fix lexeme) lexemes-before)
+           lexemes-after)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define indirect-header-name ((lexemes plexeme-listp))
   :returns (mv erp
-               (hader header-namep)
+               (header header-namep)
                (wsc-after plexeme-listp)
                (newline plexemep))
   :short "Obtain a header name from a list of lexemes, if possible."
@@ -3251,10 +3359,87 @@
      because the macro replacement that results in
      the lexemes passed as input to this function
      is performed starting with a token,
-     after it has been recognized not to be a header name."))
-  (declare (ignore lexemes))
-  (b* (((reterr) (irr-header-name) nil (irr-plexeme)))
-    (reterr :todo)))
+     after it has been recognized not to be a header name.")
+   (xdoc::p
+    "[C17:6.10.2/4] says that the details of how the resulting lexemes
+     are combined into a header name are implementation-defined.
+     Our approach is the following.")
+   (xdoc::p
+    "If the lexemes start with a string literal,
+     we attempt to build a double-quote header name;
+     note that this is the only option,
+     as an angle-bracket header name would have to start with @('<').
+     We ensure that the string literal has no prefix,
+     and that its characters can be converted.
+     We also ensure that no other token follows.
+     We build and return a double-quote header name.")
+   (xdoc::p
+    "If instead the lexemes start with an open angle bracket @('<'),
+     we try to find the closing one @('>'), returning an error if not found.
+     We stringize all the lexemes before the @('>'),
+     obtaining a list of @(tsee s-char)s,
+     which we convert to @(tsee q-char)s
+     via @(tsee s-char-list-to-q-char-list).
+     We form an angle-bracket header, which we return.
+     We also ensure that there are no other tokens after the @('>').")
+   (xdoc::p
+    "In all other cases, we return an error.
+     We will extend our approach, if needed."))
+  (b* (((reterr) (irr-header-name) nil (irr-plexeme))
+       ((when (endp lexemes))
+        (raise "Internal error: no lexemes.")
+        (reterr t))
+       (lexeme (car lexemes))
+       ((when (plexeme-case lexeme :string))
+        (b* (((stringlit stringlit) (plexeme-string->literal lexeme))
+             ((when stringlit.prefix?)
+              (reterr (msg "Cannot convert string with prefix ~x0 ~
+                            to a header name."
+                           stringlit)))
+             ((erp qchars) (s-char-list-to-q-char-list stringlit.schars))
+             (header (header-name-quotes qchars))
+             (lexemes-rest (cdr lexemes))
+             ((unless (plexeme-list-not-tokenp lexemes-rest))
+              (reterr (msg "Extra tokens in ~x0 after header name."
+                           lexemes-rest)))
+             ((unless (consp lexemes-rest))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t))
+             (lexemes-rest (plexeme-list-fix lexemes-rest))
+             (wsc-after (butlast lexemes-rest 1))
+             (newline (car (last lexemes-rest)))
+             ((unless (plexeme-case newline :newline))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t)))
+          (retok header wsc-after newline)))
+       ((when (plexeme-punctuatorp lexeme "<"))
+        (b* (((erp lexemes-before lexemes-after)
+              (find-closing-angle-bracket (cdr lexemes)))
+             (schars (stringize-lexeme-list lexemes-before))
+             ((erp hchars) (s-char-list-to-h-char-list schars))
+             (header (header-name-angles hchars))
+             ((unless (plexeme-list-not-tokenp lexemes-after))
+              (reterr (msg "Extra tokens in ~x0 after header name."
+                           lexemes-after)))
+             ((unless (consp lexemes-after))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t))
+             (lexemes-after (plexeme-list-fix lexemes-after))
+             (wsc-after (butlast lexemes-after 1))
+             (newline (car (last lexemes-after)))
+             ((unless (plexeme-case newline :newline))
+              (raise "Internal error: ~
+                      indirect #include line does not end with new line.")
+              (reterr t)))
+          (retok header wsc-after newline))))
+    (reterr (msg "Cannot convert ~x0 to a header name."
+                 (plexeme-list-fix lexemes))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
