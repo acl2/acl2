@@ -71,6 +71,7 @@
 
 ; Specialization to one file.
 
-(defmacro test-preproc-1 (file expected)
+(defmacro test-preproc-1 (file expected &key include-dirs)
   `(test-preproc '(,file)
+                 :include-dirs ,include-dirs
                  :expected (fileset-of ,file ,expected)))
