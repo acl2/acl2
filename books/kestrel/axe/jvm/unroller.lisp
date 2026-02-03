@@ -34,7 +34,8 @@
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag
-(include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator, has skip-proofs
+(include-book "../evaluator-support")
+(include-book "../evaluator") ; for dag-val-with-axe-evaluator, has skip-proofs
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -880,8 +881,11 @@
                   :stobjs state
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, and TRANSLATE-TERMS
                   ))
-  (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+  (b* ((;; Check whether this call to the lifter is redundant:
+        (when (command-is-redundantp whole-form state))
+        (mv nil '(value-triple :redundant) state))
+       ;; Record the start time:
+       ((mv start-time state) (acl2::get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; check the name that will be defined:
        ((mv erp & state) (chk-fresh-namep defconst-name 'const 'unroll-java-code (w state) state))
        ((when erp) (mv erp nil state))
@@ -890,43 +894,41 @@
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
-       ;; Record the start time:
-       ((mv start-time state) (acl2::get-real-time state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor parameter-names state)
         (unroll-java-code-core method-designator-string
-                                 nice-output-indicator
-                                 array-length-alist
-                                 extra-rules ;to add to default set
-                                 remove-rules ;to remove from default set
-                                 extra-assumption-rules
-                                 rule-alists
-                                 monitored-rules
-                                 user-assumptions
-                                 normalize-xors
-                                 classes-to-assume-initialized
-                                 ignore-exceptions
-                                 ignore-errors
-                                 count-hits
-                                 print
-                                 print-interval
-                                 memoizep
-                                 vars-for-array-elements
-                                 prune-precise
-                                 prune-approx
-                                 call-stp ;t, nil, or a max-conflicts
-                                 steps
-                                 branches
-                                 param-names
-                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
-                                 t ;error on incomplete runs
-                                 state))
+                               nice-output-indicator
+                               array-length-alist
+                               extra-rules ;to add to default set
+                               remove-rules ;to remove from default set
+                               extra-assumption-rules
+                               rule-alists
+                               monitored-rules
+                               user-assumptions
+                               normalize-xors
+                               classes-to-assume-initialized
+                               ignore-exceptions
+                               ignore-errors
+                               count-hits
+                               print
+                               print-interval
+                               memoizep
+                               vars-for-array-elements
+                               prune-precise
+                               prune-approx
+                               call-stp ;t, nil, or a max-conflicts
+                               steps
+                               branches
+                               param-names
+                               chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
+                               t ;error on incomplete runs
+                               state))
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
-               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep)))
+               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep))) ; may be common for the tester?
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
