@@ -3198,7 +3198,9 @@
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
-    (mv (transunit-ensemble new-map)
+    (mv (c$::change-transunit-ensemble
+          tunits
+          :units new-map)
         (gout-no-thm gin)))
   :hooks (:fix)
 
