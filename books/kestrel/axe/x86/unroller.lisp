@@ -684,7 +684,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
+                                  normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
   (declare (xargs :guard (and (natp steps-done)
@@ -708,6 +708,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
+                              (symbol-listp fns-to-elide)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -736,22 +737,20 @@
                                       steps-for-this-iteration
                                       limits)) ; don't recompute for each small run?
          ;; Do the run:
-
          ((mv erp dag-or-constant limits hits-this-time state)
-          (simplify-dag-x86 dag
-                                  assumptions
-                                  rule-alist
-                                  nil ; interpreted-function-alist
-                                  (known-booleans (w state))
-                                  normalize-xors
-                                  limits
-                                  memoizep
-                                  count-hits
-                                  print
-                                  rules-to-monitor
-                                  *no-warn-ground-functions*
-                                  '(program-at) ; fns-to-elide ; todo: this is old
-                                  state))
+          (simplify-dag-x86 dag assumptions
+                            rule-alist
+                            nil ; interpreted-function-alist
+                            (known-booleans (w state))
+                            normalize-xors
+                            limits
+                            memoizep
+                            count-hits
+                            print
+                            rules-to-monitor
+                            *no-warn-ground-functions*
+                            fns-to-elide
+                            state))
          ((when erp) (mv erp nil hits state))
          (hits (combine-hits hits hits-this-time))
          ;; usually 0, unless we are done (can this ever be negative?):
@@ -845,24 +844,21 @@
                       (cw " The run completed normally.~%")
                     (cw " The run completed abnormally (nothing changed).~%")))
                (- (cw "(Doing final simplification:~%"))
-               ((mv erp dag-or-constant hits2 state) ; todo: check if it is a constant?
-                (mv-let (erp result limits hits2 state)
-                  (simplify-dag-x86 dag
-                                          assumptions
-                                          rule-alist
-                                          nil ; interpreted-function-alist
-                                          (known-booleans (w state))
-                                          normalize-xors
-                                          limits
-                                          memoizep
-                                          count-hits
-                                          print
-                                          rules-to-monitor
-                                          *no-warn-ground-functions*
-                                          '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                          state)
-                  (declare (ignore limits)) ; todo: use the limits?
-                  (mv erp result hits2 state)))
+               ((mv erp dag-or-constant & hits2 state) ; todo: check if it is a constant? ; todo: use the limits?
+                (simplify-dag-x86 dag
+                                  assumptions
+                                  rule-alist
+                                  nil ; interpreted-function-alist
+                                  (known-booleans (w state))
+                                  normalize-xors
+                                  limits
+                                  memoizep
+                                  count-hits
+                                  print
+                                  rules-to-monitor
+                                  *no-warn-ground-functions*
+                                  fns-to-elide
+                                  state))
                ((when erp) (mv erp nil hits state))
                (hits (combine-hits hits hits2))
                ;; todo: also prune here, if the simplfication does anything?
@@ -892,7 +888,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide untranslatep memoizep
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1116,7 +1112,9 @@
                         (if 64-bitp
                             (first (step-opener-rules64))
                           (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
+                        '(program-at code-segment-assumptions32-for-code) ; fns-to-elide, todo: program-at is no longer used.  todo: make these into whole patterns.
+                        untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (hits (combine-hits hits hits2))
        (state (unwiden-margins state))

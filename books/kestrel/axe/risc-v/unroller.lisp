@@ -265,7 +265,7 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits hits print print-base max-printed-term-size
+                                  normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide
                                   untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
@@ -290,6 +290,7 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
+                              (symbol-listp fns-to-elide)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -318,7 +319,7 @@
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
          ;; Do the run:
-         ((mv erp dag-or-constant limits hits2 state)
+         ((mv erp dag-or-constant limits hits-this-time state)
           (acl2::simplify-dag-risc-v dag
                                      assumptions
                                      rule-alist
@@ -331,10 +332,10 @@
                                      print
                                      rules-to-monitor
                                      nil ; *no-warn-ground-functions*
-                                     '(program-at) ; fns-to-elide ; todo: this is old
+                                     fns-to-elide
                                      state))
          ((when erp) (mv erp nil hits state))
-         (hits (combine-hits hits hits2))
+         (hits (combine-hits hits hits-this-time))
          ;; usually 0, unless we are done (can this ever be negative?):
          (remaining-limit ;; todo: clean this up: there is only a single rule:
            (limit-for-rule step-opener-rule
@@ -439,7 +440,7 @@
                                              print
                                              rules-to-monitor
                                              nil ; *no-warn-ground-functions*
-                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
+                                             fns-to-elide
                                              state
                                              ))
                ((when erp) (mv erp nil hits state))
@@ -459,7 +460,7 @@
                ((when incomplete-run-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
-                (er hard? 'repeatedly-run " Incomplete run (see calls of ~%0 the DAG above: ~&0 in the term or DAG above)." incomplete-run-functions)
+                (er hard? 'repeatedly-run " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
                 (mv :incomplete-run nil hits state)))
             (mv (erp-nil) dag-or-constant hits state))
         ;; Continue the symbolic execution:
@@ -471,7 +472,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide untranslatep memoizep
                           state))))))
 
 ;; Returns (mv erp result-dag-or-quotep
@@ -733,7 +734,9 @@
                         ;; (if 64-bitp
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
+                        nil ; fns-to-elide
+                        untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
        (- (maybe-print-hits hits))
