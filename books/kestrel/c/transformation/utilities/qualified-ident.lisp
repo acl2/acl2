@@ -31,7 +31,7 @@
 
 (fty::defprod qualified-ident
   :parents (utilities)
-  :short "Fixtype for fully qualified identifiers."
+  :short "Fixtype for qualified identifiers."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -45,7 +45,9 @@
        other possible objects/functions of the same name defined in different
        translation units. Identifiers with external linkage do not require a
        filepath since they must be unique across the translation unit ensemble.
-       However, a filepath may be provided nonetheless."))
+       However, a filepath may be provided nonetheless. If a filepath is
+       provided, it must identify a translation unit in which the external
+       identifier is declared."))
   ((filepath? c$::filepath-option)
    (ident ident))
   :pred qualified-identp)
@@ -61,27 +63,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define qualified-ident-externalp
+(define qualified-ident-unqualifiedp
   ((ident qualified-identp))
   (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-externalp ident))))
+                  (booleanp (qualified-ident-unqualifiedp ident))))
   :parents (qualified-ident)
   (not (qualified-ident->filepath? ident)))
 
-;; TODO: rename. A qualified identifier with an explicit filepath may still
-;; have external linkage.
-(define qualified-ident-internalp
+(define qualified-ident-qualifiedp
   ((ident qualified-identp))
   (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-internalp ident))))
+                  (booleanp (qualified-ident-qualifiedp ident))))
   :parents (qualified-ident)
   (and (qualified-ident->filepath? ident) t))
 
-(defrule qualified-ident-internalp-becomes-not-qualified-ident-externalp
-  (equal (qualified-ident-internalp ident)
-         (not (qualified-ident-externalp ident)))
-  :enable (qualified-ident-internalp
-           qualified-ident-externalp))
+(defrule qualified-ident-unqualifiedp-becomes-not-qualified-ident-qualifiedp
+  (equal (qualified-ident-unqualifiedp ident)
+         (not (qualified-ident-qualifiedp ident)))
+  :rule-classes :definition
+  :enable (qualified-ident-unqualifiedp
+           qualified-ident-qualifiedp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,27 +93,10 @@
   (make-qualified-ident
    :ident ident))
 
-(defrule qualified-ident-externalp-of-external-ident
-  (qualified-ident-externalp (external-ident ident))
-  :enable (qualified-ident-externalp
+(defrule qualified-ident-qualifiedp-of-external-ident
+  (not (qualified-ident-qualifiedp (external-ident ident)))
+  :enable (qualified-ident-qualifiedp
            external-ident))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define internal-ident
-  ((filepath filepathp)
-   (ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :filepath? (c$::filepath-fix filepath)
-   :ident ident))
-
-(defrule qualified-ident-internalp-of-internal-ident
-  (qualified-ident-internalp (internal-ident filepath ident))
-  :enable (qualified-ident-internalp
-           internal-ident)
-  :disable qualified-ident-internalp-becomes-not-qualified-ident-externalp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,6 +171,8 @@
                                              (rest declons)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
+;; TODO: this should look at the translation validation table instead of going
+;; over declarations.
 (define transunit-resolve-qualified-ident
   ((qual-ident qualified-identp)
    (transunit transunitp))
@@ -197,16 +183,6 @@
                                            (transunit->declons transunit))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-;; MOVE
-(defrule transunit-annop-of-cdr-assoc
-  (implies (and (filepath-transunit-map-annop map)
-                (filepath-transunit-mapp map)
-                (omap::assoc filepath map))
-           (transunit-annop (cdr (omap::assoc filepath map))))
-  :induct t
-  :enable (omap::assoc
-           filepath-transunit-map-annop))
-
 (define resolve-qualified-ident
   ((qual-ident qualified-identp)
    (ensemble transunit-ensemblep))
@@ -215,18 +191,16 @@
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
-       ((c$::valid-table valid-table)
-        (c$::transunit-ensemble-info->table-end
-          (c$::transunit-ensemble->info ensemble)))
-       (info? (omap::assoc qual-ident.ident valid-table.externals))
-       ((when info?)
-        (b* (((c$::valid-ext-info info) (cdr info?))
-             ((when (and qual-ident.filepath?
-                         (not (in qual-ident.filepath? info.declared-in))))
-              (retmsg$ "~x0 is an object or function with external linkage, ~
-                        but it is not declared in the translation unit ~x1."
-                       qual-ident.ident
-                       qual-ident.filepath?)))
+       ((unless qual-ident.filepath?)
+        (b* (((c$::valid-table valid-table)
+              (c$::transunit-ensemble-info->table-end
+                (c$::transunit-ensemble->info ensemble)))
+             (info? (omap::assoc qual-ident.ident valid-table.externals))
+             ((unless info?)
+              (retmsg$ "~x0 is not an object or function ~
+                        with external linkage."
+                       qual-ident.ident))
+             ((c$::valid-ext-info info) (cdr info?)))
           (retok info.uid)))
        ((unless qual-ident.filepath?)
         (retmsg$ "~x0 is not an object or function ~
@@ -238,6 +212,4 @@
         (retmsg$ "~x0 is not a translation unit in the ensemble."
                  qual-ident.filepath?)))
     (transunit-resolve-qualified-ident qual-ident (cdr transunit?)))
-  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules
-                                            ;; TODO: why is this enable necessary?
-                                            transunit-ensemble-annop))))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))

@@ -5599,7 +5599,10 @@
                                             (stor-spec-list-fix storspecs))
                               (valid-defstatus-undefined)
                             (valid-defstatus-tentative))))))
-         ((mv uid table) (valid-get-fresh-uid ident linkage table))
+         ((mv uid table)
+          (if (and info? currentp (valid-ord-info-case info? :objfun))
+              (mv (valid-ord-info-objfun->uid info?) table)
+            (valid-get-fresh-uid ident linkage table)))
          (new-info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage

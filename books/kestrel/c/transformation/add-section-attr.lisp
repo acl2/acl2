@@ -41,21 +41,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap qualified-ident-string-map
+(fty::defalist qualified-ident-string-alist
   :key-type qualified-ident
   :val-type string
-  :fix qualified-ident-string-mfix
-  :pred qualified-ident-string-mapp)
+  :fix qualified-ident-string-alist-fix
+  :pred qualified-ident-string-alistp
+  :true-listp t
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define elaborate-qualified-ident-string-map
-  ((map qualified-ident-string-mapp))
-  :returns (map$ qualified-ident-attrib-spec-list-mapp)
-  (b* ((map (qualified-ident-string-mfix map))
-       ((when (omap::emptyp map))
+(define elaborate-qualified-ident-string-alist
+  ((alist qualified-ident-string-alistp))
+  :returns (map qualified-ident-attrib-spec-list-mapp)
+  (b* ((alist (qualified-ident-string-alist-fix alist))
+       ((when (endp alist))
         nil)
-       ((mv key val) (omap::head map))
+       (key (car (first alist)))
+       (val (cdr (first alist)))
        (attrib-name (c$::attrib-name-ident (ident "section")))
        (attrib-param
          (make-expr-string
@@ -70,22 +73,22 @@
                             :params (list attrib-param))))))
     (omap::update key
                   (list attrib-spec)
-                  (elaborate-qualified-ident-string-map (omap::tail map))))
-  :measure (acl2-count (qualified-ident-string-mfix map))
+                  (elaborate-qualified-ident-string-alist (rest alist))))
+  :measure (acl2-count (qualified-ident-string-alist-fix alist))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define code-ensemble-add-section-attr
   ((code code-ensemblep)
-   (attrs qualified-ident-string-mapp))
+   (attrs qualified-ident-string-alistp))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (new-code code-ensemblep))
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((reterr) (irr-code-ensemble))
-       (attrs (elaborate-qualified-ident-string-map attrs))
+       (attrs (elaborate-qualified-ident-string-alist attrs))
        ((transunit-ensemble transunits) code.transunits)
        ((erp transunits)
         (transunit-ensemble-add-attributes-with-qualified-idents
@@ -109,7 +112,7 @@
   :returns (mv (er? maybe-msgp)
                (code (code-ensemblep code))
                (const-new$ symbolp)
-               (attrs$ qualified-ident-string-mapp))
+               (attrs$ qualified-ident-string-alistp))
   :short "Process the inputs."
   (b* (((reterr) (irr-code-ensemble) nil nil)
        ((unless (symbolp const-old))
@@ -122,8 +125,8 @@
                  const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol." const-new))
-       ((unless (qualified-ident-string-mapp attrs))
-        (retmsg$ "~x0 must be a map from qualified identifiers to strings."
+       ((unless (qualified-ident-string-alistp attrs))
+        (retmsg$ "~x0 must be an alist from qualified identifiers to strings."
                  attrs)))
     (retok code const-new attrs))
   ///
@@ -141,7 +144,7 @@
 (define add-section-attr-gen-everything
   ((code code-ensemblep)
    (const-new symbolp)
-   (attrs qualified-ident-string-mapp))
+   (attrs qualified-ident-string-alistp))
   :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))

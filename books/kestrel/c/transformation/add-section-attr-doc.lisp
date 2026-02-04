@@ -61,9 +61,9 @@
      (xdoc::desc
        "@(':attr')"
        (xdoc::p
-         "An omap from @(see qualified-ident)s to strings.
+         "An alist from @(see qualified-ident)s to strings.
           Each @(see qualified-ident) denotes a file-scope identifier.
-          The string associated to the @(see qualified-ident) under the map
+          The string associated to the @(see qualified-ident) under the alist
           is the name of the section for the section attribute
           which is to be added."))))
   :order-subtopics t)
