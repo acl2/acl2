@@ -1230,8 +1230,7 @@
                   :mode :program ; todo
                   ))
   (b* (;; Check whether this call to the lifter is redundant:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Record the start time:
        ((mv start-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -1397,7 +1396,7 @@
        (events (cons defconst-form (append events-for-defun defthms)))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
        ((mv elapsed state) (real-time-since start-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)

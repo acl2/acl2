@@ -233,24 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-risc-v-lifter-table (state)
-  (declare (xargs :stobjs state))
-  (table-alist 'risc-v-lifter-table (w state)))
-
-;TODO: Use the generic utility for redundancy checking
-;WHOLE-FORM is a call to the lifter
-(defun previous-lifter-result (whole-form state)
-  (declare (xargs :stobjs state))
-  (let* ((table-alist (get-risc-v-lifter-table state)))
-    (if (not (alistp table-alist))
-        (hard-error 'previous-lifter-result "Invalid table alist for risc-v-lifter-table: ~x0."
-                    (acons #\0 table-alist nil))
-      (let ((previous-result (lookup-equal whole-form table-alist)))
-        (if previous-result
-            (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
-                    previous-result)
-          nil)))))
-
 ;; TODO: Make use of this (see what we do for x86)
 (defconst *non-stp-assumption-functions* nil)
 
@@ -847,8 +829,7 @@
                   :mode :program ; todo
                   ))
   (b* (;; Check whether this call to the lifter is redundant:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -1013,7 +994,7 @@
                      ))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (extend-progn event `(table risc-v-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)

@@ -976,7 +976,7 @@
                   ))
        (- (cw ")~%~%")))
     (mv (erp-nil)
-        (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
+        (extend-progn (extend-progn event (redundancy-table-event whole-form event))
                       ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                       '(value-triple :invisible)
                       )

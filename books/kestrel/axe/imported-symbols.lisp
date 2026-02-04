@@ -385,7 +385,9 @@
     combine-hits
     maybe-print-hits
     empty-hits
-    ))
+
+    command-is-redundantp
+    redundancy-table-event))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
