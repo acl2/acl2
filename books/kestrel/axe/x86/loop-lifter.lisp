@@ -40,6 +40,8 @@
 
 ;; TODO: Continue adding and verifying guards
 
+;; TODO: Can we unify this with the unrolling lifter?
+
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
@@ -2565,8 +2567,7 @@
                    non-executable ; todo
                    ))
   (b* ( ;; Check whether this call to the lifter has already been made:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check the lifted-name argument:
        ((when (not (symbolp lifted-name)))
@@ -2789,7 +2790,7 @@
                  ,output-term))
        (event `(progn ,@events
                       ,defun))
-       (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (- (cw "Done Lifting subroutine ~x0)~%" target))
        )
     (mv erp event state)))

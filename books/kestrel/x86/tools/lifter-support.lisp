@@ -165,26 +165,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-x86-lifter-table (state)
-  (declare (xargs :stobjs state))
-  (table-alist 'x86-lifter-table (w state)))
-
-;TODO: Use the generic utility for redundancy checking
-;WHOLE-FORM is a call to the lifter
-(defun previous-lifter-result (whole-form state)
-  (declare (xargs :stobjs state))
-  (let* ((table-alist (get-x86-lifter-table state)))
-    (if (not (alistp table-alist))
-        (hard-error 'previous-lifter-result "Invalid table alist for x86-lifter-table: ~x0."
-                    (acons #\0 table-alist nil))
-      (let ((previous-result (acl2::lookup-equal whole-form table-alist)))
-        (if previous-result
-            (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
-                    previous-result)
-          nil)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defconst *executable-types32* '(:pe-32 :mach-o-32 :elf-32))
 (defconst *executable-types64* '(:pe-64 :mach-o-64 :elf-64))
 (defconst *executable-types* (append *executable-types32* *executable-types64*))
