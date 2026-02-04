@@ -6955,7 +6955,7 @@
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        (map (transunit-ensemble->units tunits))
-       ((erp new-map)
+       ((erp new-map table)
         (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
@@ -6966,7 +6966,9 @@
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-map len-map)))
             nil)))
-    (retok (transunit-ensemble new-map)))
+    (retok (make-transunit-ensemble
+             :units new-map
+             :info (transunit-ensemble-info table))))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
@@ -6977,10 +6979,11 @@
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
-                           :hyp (filepath-transunit-mapp map)))
+                           :hyp (filepath-transunit-mapp map))
+                  (table valid-tablep))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (omap::emptyp map)) (retok nil))
+     (b* (((reterr) nil (irr-valid-table))
+          ((when (omap::emptyp map)) (retok nil (irr-valid-table)))
           (path (omap::head-key map))
           ((mv erp new-tunit table)
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
@@ -6998,12 +7001,13 @@
                       (filepath->unwrap path)
                       erp)))
           ((valid-table table) table)
-          ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
-                                                        table.externals
-                                                        table.next-uid
-                                                        ienv
-                                                        keep-going)))
-       (retok (omap::update path new-tunit new-map)))
+          ((erp new-map -) (valid-transunit-ensemble-loop (omap::tail map)
+                                                          table.externals
+                                                          table.next-uid
+                                                          ienv
+                                                          keep-going)))
+       (retok (omap::update path new-tunit new-map)
+              table))
      :verify-guards :after-returns
      :hooks ()
 

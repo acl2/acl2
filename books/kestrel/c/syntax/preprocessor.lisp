@@ -3089,7 +3089,10 @@
      (xdoc::p
       "We treat
        @('#define'), @('#undef'), @('#line'), @('#error') and @('#pragma')
-       identically, by skipping through the next end of line."))
+       identically, by skipping through the next end of line.
+       We also treat @('#warning') in the same way
+       if the C standard version is C23 [C23:6.10.1]
+       or if GCC or Clang extensions are enabled."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate)
          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
@@ -3145,6 +3148,10 @@
                     (equal directive "undef") ; # undef
                     (equal directive "line") ; # line
                     (equal directive "error") ; # error
+                    (and (equal directive "warning") ; # warning
+                         (b* ((ienv (ppstate->ienv ppstate)))
+                           (or (= (ienv->std ienv) 23)
+                               (ienv->gcc/clang ienv))))
                     (equal directive "pragma")) ; # pragma
                 (b* (((erp ppstate) ; # ... EOL
                       (skip-to-end-of-line ppstate)))
@@ -3158,9 +3165,11 @@
                   (skip-to-end-of-line ppstate)))
               (retok nil ppstate))))))
        (t ; non-# -- text line
-        (b* (((erp ppstate) ; ... EOL
-              (skip-to-end-of-line ppstate)))
-          (retok nil ppstate)))))
+        (if (plexeme-case toknl :newline) ; EOL
+            (retok nil ppstate)
+          (b* (((erp ppstate) ; ... EOL
+                (skip-to-end-of-line ppstate)))
+            (retok nil ppstate))))))
     :no-function nil
     :measure (two-nats-measure (ppstate->size ppstate)
                                0)) ; < pproc-*-group-part-skipped
@@ -3440,6 +3449,98 @@
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
   :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-to-end-of-line ((ppstate ppstatep))
+  :returns (mv erp
+               (lexemes plexeme-listp)
+               (new-ppstate ppstatep))
+  :short "Read lexemes up to (including) the next new line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the lexemes, in the order they appear."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
+       ((when (not lexeme)) ; EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a lexeme"
+                    :found "end of file"))
+       ((when (plexeme-case lexeme :newline)) ; EOL
+        (retok (list lexeme) ppstate))
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
+    (retok (cons lexeme lexemes) ppstate))
+  :no-function nil
+  :measure (ppstate->size ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-error ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#error') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('error') identifier has been parsed.")
+   (xdoc::p
+    "We return an error message that contains the rest of the line,
+     in printed form (using the preprocessor printer).
+     This could be refined in the future.")
+   (xdoc::p
+    "Although neither [C17:6.10.5] nor [C23:6.10.7]
+     explicitly say that preprocessing must stop,
+     [CPPM:5] does, and that seems indeed the intention."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate))
+       (bytes (plexemes-to-bytes lexemes))
+       (string (acl2::nats=>string bytes)))
+    (reterr (msg "#error: ~s0" string)))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-warning ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#warning') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('warning') identifier has been parsed.")
+   (xdoc::p
+    "This is allowed only if the C version is C23,
+     or the GCC or Clang extensions are enabled;
+     otherwise we return an error.")
+   (xdoc::p
+    "We use the printer to turn the lexemes in the rest of the line
+     into an ACL2 string, which we print as comment output.
+     Unlike @(tsee pproc-error), we do not return an error,
+     so preprocessing can continue.
+     The choice of printing the warning as comment output
+     could be revisited in the future;
+     perhaps some new options to the preprocessor
+     could indicate different ways to handle the warning messages.")
+   (xdoc::p
+    "Although [C23:6.10.7] does not explicitly say that
+     preprocessing must continue,
+     [CPPM:5] does, and that seems indeed the intention."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       (ienv (ppstate->ienv ppstate))
+       ((unless (or (= (ienv->std ienv) 23)
+                    (ienv->gcc/clang ienv)))
+        (reterr (msg "#warning directive disallowed in ~
+                      C17 without GCC or Clang extensions.")))
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate))
+       (bytes (plexemes-to-bytes lexemes))
+       (string (acl2::nats=>string bytes))
+       (- (cw "#warning: ~s0" string)))
+    (retok ppstate))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3783,11 +3884,15 @@
        we return the corresponding group ending;
        for other directives, we call separate functions.
        If the identifier is not a directive name,
-       or if we do find an identifier,
+       or if we do not find an identifier,
        we have a non-directive
        (which is a directive, despite the name,
        see footnote 175 in [C17:6.10.3/11]):
-       we return an error for now, which is consistent with [C17:6.10/9].")
+       we return an error for now, which is consistent with [C17:6.10/9].
+       We allow the @('#warning') directive
+       if the C standard is C23 [C23:6.10.1]
+       or the GCC or Clang extensions are enabled;
+       this is handled in a separate function.")
      (xdoc::p
       "If we do not find a hash, we have a text line.
        We add any preceding white space and comments to the growing lexemes,
@@ -3956,7 +4061,18 @@
                ((equal directive "line") ; # line
                 (reterr (msg "#line directive not yet supported."))) ; TODO
                ((equal directive "error") ; # error
-                (reterr (msg "#error directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-error ppstate)))
+                  (prog2$ (raise "Internal error: ~
+                                  preprocessing of #error ~
+                                  does not return an error.")
+                          (reterr t))))
+               ((equal directive "warning") ; # warning
+                (b* (((erp ppstate) (pproc-warning ppstate)))
+                  (retok nil ; no group ending
+                         (plexeme-list-fix rev-lexemes)
+                         ppstate
+                         (string-scfile-alist-fix preprocessed)
+                         state)))
                ((equal directive "pragma") ; # pragma
                 (reterr (msg "#pragma directive not yet supported."))) ; TODO
                (t ;  # other -- non-directive
@@ -4616,16 +4732,17 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((mv erp & preprocessed state) (pproc-file bytes
-                                                     (car files)
-                                                     base-dir
-                                                     include-dirs
-                                                     preprocessed
-                                                     preprocessing
-                                                     (macro-table-init)
-                                                     ienv
-                                                     state
-                                                     recursion-limit))
+          ((mv erp & preprocessed state)
+           (pproc-file bytes
+                       (car files)
+                       base-dir
+                       include-dirs
+                       preprocessed
+                       preprocessing
+                       (macro-table-init (ienv->version ienv))
+                       ienv
+                       state
+                       recursion-limit))
           ((when (eq erp :not-self-contained))
            (raise "Internal error: non-self-contained top-level file ~x0." file)
            (reterr t))

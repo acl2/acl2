@@ -124,7 +124,10 @@
      "@(':override') &mdash; default @('nil')"
      (xdoc::p
       "Specifies which boilerplate results should be overridden.
-       It is used as described in the Section `Generated Events' below.")
+       It is used as described in the Section `Generated Events' below.
+       Currently, only @(tsee defprod), @(tsee deftagsum), and @(tsee deflist)
+       types are supported,
+       but we may eventually extend the tool to cover more types.")
      (xdoc::p
       "This must be a parenthesized list @('(ovrd1 ... ovrd<n>)'),
        with @('<n> >= 0'),
@@ -132,7 +135,8 @@
      (xdoc::ul
       (xdoc::li
        "A pair @('(<type> <term>)'),
-        where @('<type>') is a @(tsee defprod) or @(tsee deftagsum),
+        where @('<type>') is a @(tsee defprod), @(tsee deftagsum),
+        or @(tsee deflist),
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
         and the formals specified in @(':extra-args').")
@@ -243,13 +247,20 @@
        "If @('<type>') is a @(tsee deflist):"
        (xdoc::ul
         (xdoc::li
-         "If the list is empty,
-          the function is defined to return @('nil').")
+         "If the @(':override') input includes
+          an element @('(<type> <term>')),
+          the function is defined to return @('<term>').")
         (xdoc::li
-         "If the list is not empty,
-          the function is defined to return
-          the @(tsee cons) of the mapped @(tsee car)
-          to the recursively mapped @(tsee cdr).")))
+         "Otherwise, the function is defined by the following cases.")
+        (xdoc::ul
+         (xdoc::li
+          "If the list is empty,
+           the function is defined to return @('nil').")
+         (xdoc::li
+          "If the list is not empty,
+           the function is defined to return
+           the @(tsee cons) of the mapped @(tsee car)
+           to the recursively mapped @(tsee cdr)."))))
       (xdoc::li
        "If @('<type>') is a @(tsee defoption):"
        (xdoc::ul
@@ -276,7 +287,8 @@
     (xdoc::desc
      "Accompanying list theorems."
      (xdoc::p
-      "For each @(tsee deflist) type specified by the @(':types') input,
+      "For each @(tsee deflist) type specified by the @(':types') input
+       which has not been overridden,
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul

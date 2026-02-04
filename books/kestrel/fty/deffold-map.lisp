@@ -157,7 +157,7 @@
     (deffold-map-process-override-loop override fty-table))
   :prepwork
   ((define deffold-map-process-override-loop ((override true-listp)
-                                          (fty-table alistp))
+                                              (fty-table alistp))
      :returns (mv erp (overrides alistp))
      :parents nil
      (b* (((reterr) nil)
@@ -184,42 +184,41 @@
                          must be the name of a type, ~
                          but ~x0 is not."
                         type)))
-          ((unless (flexsum-p info))
-           (reterr (msg "The first element of ~
-                         every element of the :OVERRIDE list ~
-                         must be the name of a product or sum type, ~
-                         but ~x0 is not."
-                        type)))
-          (typemacro (flexsum->typemacro info))
-          ((unless (member-eq typemacro (list 'defprod 'deftagsum)))
-           (reterr (msg "The first element of ~
-                         every element of the :OVERRIDE list ~
-                         must be the name of a product or sum type, ~
-                         but ~x0 is not."
-                        type)))
           ((erp key val)
-           (if (= (len ovrd) 2)
-               (mv nil type term)
-             (b* (((reterr) nil nil)
-                  (kind (cadr ovrd))
-                  ((unless (keywordp kind))
-                   (reterr (msg "The second element of ~
-                                 every element of the :OVERRIDE list ~
-                                 that is a 3-tuple ~
-                                 must be a keyword, ~
-                                 but ~x0 is not."
-                                kind)))
-                  (prods (flexsum->prods info))
-                  ((unless (flexprod-listp prods))
-                   (raise "Internal error: malformed summands ~x0." prods)
-                   (reterr t))
-                  ((unless (member-eq kind
-                                      (flexprod-list->kind-list prods)))
-                   (reterr (msg "The kind ~x0 that accompanies ~
-                                 the type ~x1 in the :OVERRIDE list ~
-                                 is not one of the kinds of that sum type."
-                                kind type))))
-               (retok (cons type kind) term))))
+           (b* (((reterr) nil nil))
+             (cond ((and (flexsum-p info)
+                         (member-eq (flexsum->typemacro info)
+                                    (list 'defprod 'deftagsum)))
+                    (if (= (len ovrd) 2)
+                        (retok type term)
+                      (b* ((kind (cadr ovrd))
+                           ((unless (keywordp kind))
+                            (reterr (msg "The second element of ~
+                                          every element of the :OVERRIDE list ~
+                                          that is a 3-tuple ~
+                                          must be a keyword, ~
+                                          but ~x0 is not."
+                                         kind)))
+                           (prods (flexsum->prods info))
+                           ((unless (flexprod-listp prods))
+                            (raise "Internal error: malformed summands ~x0." prods)
+                            (reterr t))
+                           ((unless (member-eq kind
+                                               (flexprod-list->kind-list prods)))
+                            (reterr (msg "The kind ~x0 that accompanies ~
+                                          the type ~x1 in the :OVERRIDE list ~
+                                          is not one of the kinds of that sum type."
+                                         kind type))))
+                        (retok (cons type kind) term))))
+                   ((flexlist-p info)
+                    (if (= (len ovrd) 2)
+                        (retok type term)
+                      (reterr (msg "TODO"))))
+                   (t (reterr (msg "The first element of ~
+                                    every element of the :OVERRIDE list ~
+                                    must be the name of a type, ~
+                                    but ~x0 is not."
+                                   type))))))
           ((erp alist)
            (deffold-map-process-override-loop (cdr override) fty-table)))
        (retok (acons key val alist)))
@@ -718,6 +717,7 @@
    (mutrecp booleanp)
    (suffix symbolp)
    (extra-args true-listp)
+   (overrides alistp)
    (fty-table alistp))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate the map function for a list type,
@@ -748,11 +748,14 @@
         '(_))
        (elt-type-suffix (deffold-map-gen-map-name elt-type suffix))
        (extra-args-names (deffold-map-extra-args-to-names extra-args))
+       (term-assoc (assoc-equal type overrides))
        (body
-        `(if (,(if (flexlist->true-listp list) 'endp 'atom) ,type)
-             nil
-           (cons (,elt-type-suffix (car ,type) ,@extra-args-names)
-                 (,type-suffix (cdr ,type) ,@extra-args-names))))
+         (if term-assoc
+             (cdr term-assoc)
+           `(if (,(if (flexlist->true-listp list) 'endp 'atom) ,type)
+                nil
+              (cons (,elt-type-suffix (car ,type) ,@extra-args-names)
+                    (,type-suffix (cdr ,type) ,@extra-args-names)))))
        (type-suffix-type-prescription
          (acl2::packn-pos (list type-suffix '-type-prescription) suffix))
        (type-suffix-when-atom
@@ -772,74 +775,78 @@
        (type-suffix-of-reverse
          (acl2::packn-pos (list type-suffix '-of-reverse) suffix))
        (thm-events
-        `((defruled ,type-suffix-type-prescription
-            (true-listp (,type-suffix ,type ,@extra-args-names))
-            :rule-classes :type-prescription
-            :hints (("Goal" :in-theory '(true-listp)
-                            :expand ((,type-suffix ,type ,@extra-args-names))
-                            :induct (true-listp ,type))))
-          (defruled ,type-suffix-when-atom
-            (implies (atom ,type)
-                     (equal (,type-suffix ,type ,@extra-args-names)
-                            nil))
-            :hints (("Goal" :in-theory '(,type-suffix))))
-          (defruled ,type-suffix-of-cons
-            (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
-                   (cons (,elt-type-suffix ,elt-type ,@extra-args-names)
-                         (,type-suffix ,type ,@extra-args-names)))
-            :hints (("Goal" :in-theory '(,type-suffix car-cons cdr-cons))))
-          (defruled ,type-suffix-of-append
-            (equal (,type-suffix (append x y) ,@extra-args-names)
-                   (append (,type-suffix x ,@extra-args-names)
-                           (,type-suffix y ,@extra-args-names)))
-            :hints (("Goal" :in-theory '(append ,type-suffix car-cons cdr-cons)
-                            :induct (append x y))))
-          (defruled ,consp-of-type-suffix
-            (equal (consp (,type-suffix ,type ,@extra-args-names))
-                   (consp ,type))
-            :hints (("Goal" :in-theory nil
-                            :expand ((,type-suffix ,type ,@extra-args-names)))))
-          (defruled ,len-of-type-suffix
-            (equal (len (,type-suffix ,type ,@extra-args-names))
-                   (len ,type))
-            :hints (("Goal" :in-theory '(len cdr-cons)
-                            :expand ((,type-suffix ,type ,@extra-args-names))
-                            :induct (len ,type))))
-          (defruled ,nth-of-type-suffix
-            (equal (nth n (,type-suffix ,type ,@extra-args-names))
-                   (if (< (nfix n) (len ,type))
-                       (,elt-type-suffix (nth n ,type) ,@extra-args-names)
-                     nil))
-            :hints (("Goal" :in-theory '(nth ,type-suffix
-                                         len (:t len)
-                                         nfix zp car-cons cdr-cons)
-                            :expand ((,type-suffix ,type ,@extra-args-names)
-                                     (len ,type))
-                            :induct (nth n ,type))))
-          (defruled ,type-suffix-of-revappend
-            (equal (,type-suffix (revappend x y) ,@extra-args-names)
-                   (revappend (,type-suffix x ,@extra-args-names)
+         (if term-assoc
+             nil
+           `((defruled ,type-suffix-type-prescription
+               (true-listp (,type-suffix ,type ,@extra-args-names))
+               :rule-classes :type-prescription
+               :hints (("Goal" :in-theory '(true-listp)
+                               :expand ((,type-suffix ,type ,@extra-args-names))
+                               :induct (true-listp ,type))))
+             (defruled ,type-suffix-when-atom
+               (implies (atom ,type)
+                        (equal (,type-suffix ,type ,@extra-args-names)
+                               nil))
+               :hints (("Goal" :in-theory '(,type-suffix))))
+             (defruled ,type-suffix-of-cons
+               (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
+                      (cons (,elt-type-suffix ,elt-type ,@extra-args-names)
+                            (,type-suffix ,type ,@extra-args-names)))
+               :hints (("Goal" :in-theory '(,type-suffix car-cons cdr-cons))))
+             (defruled ,type-suffix-of-append
+               (equal (,type-suffix (append x y) ,@extra-args-names)
+                      (append (,type-suffix x ,@extra-args-names)
                               (,type-suffix y ,@extra-args-names)))
-            :hints (("Goal" :in-theory '(revappend ,type-suffix car-cons cdr-cons)
-                            :induct (revappend x y))))
-          (defruled ,type-suffix-of-reverse
-            (equal (,type-suffix (reverse ,type) ,@extra-args-names)
-                   (reverse (,type-suffix ,type ,@extra-args-names)))
-            :hints (("Goal" :in-theory '(reverse revappend
-                                         ,type-suffix-type-prescription
-                                         ,type-suffix-when-atom
-                                         ,type-suffix-of-revappend))))))
+               :hints (("Goal" :in-theory '(append ,type-suffix car-cons cdr-cons)
+                               :induct (append x y))))
+             (defruled ,consp-of-type-suffix
+               (equal (consp (,type-suffix ,type ,@extra-args-names))
+                      (consp ,type))
+               :hints (("Goal" :in-theory nil
+                               :expand ((,type-suffix ,type ,@extra-args-names)))))
+             (defruled ,len-of-type-suffix
+               (equal (len (,type-suffix ,type ,@extra-args-names))
+                      (len ,type))
+               :hints (("Goal" :in-theory '(len cdr-cons)
+                               :expand ((,type-suffix ,type ,@extra-args-names))
+                               :induct (len ,type))))
+             (defruled ,nth-of-type-suffix
+               (equal (nth n (,type-suffix ,type ,@extra-args-names))
+                      (if (< (nfix n) (len ,type))
+                          (,elt-type-suffix (nth n ,type) ,@extra-args-names)
+                        nil))
+               :hints (("Goal" :in-theory '(nth ,type-suffix
+                                            len (:t len)
+                                            nfix zp car-cons cdr-cons)
+                               :expand ((,type-suffix ,type ,@extra-args-names)
+                                        (len ,type))
+                               :induct (nth n ,type))))
+             (defruled ,type-suffix-of-revappend
+               (equal (,type-suffix (revappend x y) ,@extra-args-names)
+                      (revappend (,type-suffix x ,@extra-args-names)
+                                 (,type-suffix y ,@extra-args-names)))
+               :hints (("Goal" :in-theory '(revappend ,type-suffix car-cons cdr-cons)
+                               :induct (revappend x y))))
+             (defruled ,type-suffix-of-reverse
+               (equal (,type-suffix (reverse ,type) ,@extra-args-names)
+                      (reverse (,type-suffix ,type ,@extra-args-names)))
+               :hints (("Goal" :in-theory '(reverse revappend
+                                            ,type-suffix-type-prescription
+                                            ,type-suffix-when-atom
+                                            ,type-suffix-of-revappend)))))))
        (ruleset-event
-        `(add-to-ruleset ,(deffold-map-gen-ruleset-name suffix)
-                         '(,type-suffix-type-prescription
-                           ,type-suffix-when-atom
-                           ,type-suffix-of-cons
-                           ,type-suffix-of-append
-                           ,consp-of-type-suffix
-                           ,len-of-type-suffix
-                           ,nth-of-type-suffix
-                           ,type-suffix-of-revappend
-                           ,type-suffix-of-reverse))))
+         (if term-assoc
+             nil
+           `((add-to-ruleset ,(deffold-map-gen-ruleset-name suffix)
+                             '(,type-suffix-type-prescription
+                               ,type-suffix-when-atom
+                               ,type-suffix-of-cons
+                               ,type-suffix-of-append
+                               ,consp-of-type-suffix
+                               ,len-of-type-suffix
+                               ,nth-of-type-suffix
+                               ,type-suffix-of-revappend
+                               ,type-suffix-of-reverse))))))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
@@ -849,7 +856,7 @@
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
-       ,ruleset-event)))
+       ,@ruleset-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -985,7 +992,8 @@
          (deffold-map-gen-prod/sum/option-map
            flex mutrecp suffix targets extra-args overrides fty-table))
         ((flexlist-p flex)
-         (deffold-map-gen-list-map flex mutrecp suffix extra-args fty-table))
+         (deffold-map-gen-list-map
+           flex mutrecp suffix extra-args overrides fty-table))
         ((flexomap-p flex)
          (deffold-map-gen-omap-map flex mutrecp suffix extra-args fty-table))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)

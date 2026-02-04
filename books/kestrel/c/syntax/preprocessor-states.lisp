@@ -301,7 +301,7 @@
       (size :type (integer 0 *)
             :initially 0)
       (macros :type (satisfies macro-tablep)
-              :initially ,(macro-table-init))
+              :initially ,(macro-table nil nil))
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:

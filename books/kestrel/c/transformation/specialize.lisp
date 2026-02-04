@@ -234,11 +234,11 @@
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (specialize-filepath-transunit-map tunits.units
-                                         target-fn
-                                         target-param
-                                         const))))
+    (c$::make-transunit-ensemble
+      :units (specialize-filepath-transunit-map tunits.units
+                                                target-fn
+                                                target-param
+                                                const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

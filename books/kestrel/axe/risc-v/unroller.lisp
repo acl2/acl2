@@ -11,6 +11,8 @@
 
 (in-package "R")
 
+;; TODO: Add support for 64-bit code
+
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -65,30 +67,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The presence of any of these function in the DAG indicates that the symbolic
-;; execution is incomplete:
+;; The presence of any of these function in the term/DAG indicates that the
+;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
                                  ;run-until-sp-is-above
                                  step32))
 
-;; The presence of any of these function in the DAG indicates an error state
+;; The presence of any of these functions in the term/DAG indicates an error state
 ;; arising during lifting (perhaps only on one branch of the execution, and
 ;; perhaps we can prune away that branch later):
 (defconst *error-fns* '(error32))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable myquotep ; todo: loop involving acl2::simplify-dag-basic-return-type-corollary-2
-                           intersection-equal
-                           acl2::myquotep-when-axe-treep
-                           state-p
-                           mv-nth
-                           natp
-                           string-append
-                           string-append-lst)))
-
-(local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
-                          acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
+(local (in-theory (e/d (acl2::weak-dagp-when-pseudo-dagp
+                        acl2::true-listp-when-symbol-listp-rewrite-unlimited)
+                       (myquotep ; todo: loop involving acl2::simplify-dag-basic-return-type-corollary-2
+                        intersection-equal
+                        acl2::myquotep-when-axe-treep
+                        state-p
+                        mv-nth
+                        natp
+                        string-append
+                        string-append-lst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,10 +101,10 @@
     (declare (xargs :guard (and ;; see above comment on output-indicator
                              (plist-worldp wrld))
                     :mode :program ; because of translate-term ; todo: do that outside this function, while also checking the output-indicator?
-                     ))
+                    ))
     (if (symbolp output-indicator)
         (case output-indicator
-          ;; Extract a 64-bit register:
+          ;; Extract a register:
           (:x0 `(x0 ,term)) ; odd, since this always gives 0
           (:x1 `(x1 ,term))
           ;; todo: more
@@ -111,7 +112,6 @@
           (:a1 `(a1 ,term)) ; return value 1
           ;; todo: more
 
-          ;; ;; (:eax (rax ,term))
           ;; (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
           ;; (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
           ;; (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
@@ -149,7 +149,7 @@
           ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
 
-          ;; (:read <N> <ADDR-TERM>)
+          ;; (:read <N> <ADDR-TERM>) ; returns a chunk (a BV)
           (:read (if (= 2 (len (fargs output-indicator)))
                      (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
@@ -159,8 +159,8 @@
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
                            `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ,term))
+                                                            ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                            ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
 
           ;; ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
@@ -194,9 +194,7 @@
 
   (defun wrap-in-normal-output-extractors (output-indicators term wrld)
     (declare (xargs :guard (and (true-listp output-indicators)
-                                (plist-worldp wrld))
-;;                    :mode :program ; because of translate-term
-                    ))
+                                (plist-worldp wrld))))
     (if (endp output-indicators)
         nil
       (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
@@ -235,23 +233,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-risc-v-lifter-table (state)
-  (declare (xargs :stobjs state))
-  (table-alist 'risc-v-lifter-table (w state)))
-
-;TODO: Use the generic utility for redundancy checking
-;WHOLE-FORM is a call to the lifter
-(defun previous-lifter-result (whole-form state)
-  (declare (xargs :stobjs state))
-  (let* ((table-alist (get-risc-v-lifter-table state)))
-    (if (not (alistp table-alist))
-        (hard-error 'previous-lifter-result "Invalid table alist for risc-v-lifter-table: ~x0."
-                    (acons #\0 table-alist nil))
-      (let ((previous-result (lookup-equal whole-form table-alist)))
-        (if previous-result
-            (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
-                    previous-result)
-          nil)))))
+;; TODO: Make use of this (see what we do for x86)
+(defconst *non-stp-assumption-functions* nil)
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -265,7 +248,8 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide
+                                  normalize-xors count-hits hits print print-base max-printed-term-size
+                                  no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
                                   untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
@@ -290,7 +274,11 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
+                              (symbol-listp no-warn-ground-functions)
                               (symbol-listp fns-to-elide)
+                              (symbol-listp non-stp-assumption-functions)
+                              (symbol-listp incomplete-run-fns)
+                              (symbol-listp error-fns)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -331,7 +319,7 @@
                                      count-hits
                                      print
                                      rules-to-monitor
-                                     nil ; *no-warn-ground-functions*
+                                     no-warn-ground-functions
                                      fns-to-elide
                                      state))
          ((when erp) (mv erp nil hits state))
@@ -354,8 +342,8 @@
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
                                                                               dag
-                                                                              (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                              nil ; *no-warn-ground-functions*
+                                                                              (remove-assumptions-about non-stp-assumption-functions assumptions)
+                                                                              no-warn-ground-functions
                                                                               print
                                                                               60000 ; todo: pass in
                                                                               state))
@@ -381,7 +369,7 @@
                                            nil ; interpreted-function-alist
                                            rules-to-monitor
                                            t ;call-stp
-                                           nil ; no-warn-ground-functions
+                                           no-warn-ground-functions
                                            print
                                            state))
          ((when erp) (mv erp nil hits state))
@@ -401,7 +389,9 @@
          (dag-fns (dag-fns dag))
 
          ;; TODO: Maybe don't prune if the run completed and there are no error branches?
-         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))) ; todo: call contains-anyp-eq
+         (run-completedp (not (intersection-eq
+                                incomplete-run-fns
+                                dag-fns))) ; todo: call contains-anyp-eq
          ((mv erp nothing-changedp) (if run-completedp
                                         (mv nil nil) ; we know something changed since the run is now complete
                                       (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
@@ -414,7 +404,7 @@
          ;;          (mv :unimplemented-instruction dag state)))
 
          ;; ((when nothing-changedp)
-         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the *incomplete-run-fns* remains (but what if we hit one of the stop-pcs?)
+         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the incomplete-run-fns remains (but what if we hit one of the stop-pcs?)
          ;;  ;; check how many steps used?
          ;;  ;; todo: check for the error-fns here
          ;;  (mv (erp-nil) dag state))
@@ -429,28 +419,27 @@
                (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant & hits2 state) ; todo: check if it is a constant?  ; todo: use the limits?
                 (acl2::simplify-dag-risc-v dag
-                                             assumptions
-                                             rule-alist
-                                             nil ; interpreted-function-alist
-                                             (known-booleans (w state))
-                                             normalize-xors
-                                             limits
-                                             memoizep
-                                             count-hits
-                                             print
-                                             rules-to-monitor
-                                             nil ; *no-warn-ground-functions*
-                                             fns-to-elide
-                                             state
-                                             ))
+                                           assumptions
+                                           rule-alist
+                                           nil ; interpreted-function-alist
+                                           (known-booleans (w state))
+                                           normalize-xors
+                                           limits
+                                           memoizep
+                                           count-hits
+                                           print
+                                           rules-to-monitor
+                                           no-warn-ground-functions
+                                           fns-to-elide
+                                           state))
                ((when erp) (mv erp nil hits state))
                (hits (combine-hits hits hits2))
                ;; todo: also prune here, if the simplfication does anything?
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
-               (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
+               (error-branch-functions (intersection-eq error-fns dag-fns))
+               (incomplete-run-functions (intersection-eq incomplete-run-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -472,7 +461,7 @@
                  state)))
           (repeatedly-run steps-done step-limit
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size fns-to-elide untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
                           state))))))
 
 ;; Returns (mv erp result-dag-or-quotep
@@ -554,7 +543,7 @@
        ;; (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ((when (not (eq :elf-32 executable-type)))
-        (er hard? 'unroll-risc-v-code-core "The executable type must be :pe-32, but it is ~x0." executable-type)
+        (er hard? 'unroll-risc-v-code-core "The executable type must be :elf-32, but it is ~x0." executable-type)
         (mv :bad-executable-type nil state))
        ;; Make sure it's a RISC-V executable:
        (- (ensure-risc-v parsed-executable))
@@ -674,9 +663,7 @@
        ;;                         '(run-until-return3 x86)
        ;;                       '(run-until-return4 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
-       ((when (not ; (pseudo-termp term-to-simulate)
-                   (termp term-to-simulate (w state))
-                   ))
+       ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-risc-v-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
         (mv :error-wrapping-in-output-extractor nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
@@ -735,7 +722,11 @@
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
+                        nil ; no-warn-ground-functions
                         nil ; fns-to-elide
+                        *non-stp-assumption-functions*
+                        *incomplete-run-fns*
+                        *error-fns*
                         untranslatep memoizep state))
        ((when erp) (mv erp nil ;nil nil nil nil nil
                        state))
@@ -838,8 +829,7 @@
                   :mode :program ; todo
                   ))
   (b* (;; Check whether this call to the lifter is redundant:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -1004,7 +994,7 @@
                      ))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (extend-progn event `(table risc-v-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)

@@ -189,10 +189,10 @@
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (copy-fn-filepath-transunit-map tunits.units
-                                      target-fn
-                                      new-fn))))
+    (c$::make-transunit-ensemble
+      :units (copy-fn-filepath-transunit-map tunits.units
+                                             target-fn
+                                             new-fn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
