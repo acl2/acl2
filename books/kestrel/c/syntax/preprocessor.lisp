@@ -3165,9 +3165,11 @@
                   (skip-to-end-of-line ppstate)))
               (retok nil ppstate))))))
        (t ; non-# -- text line
-        (b* (((erp ppstate) ; ... EOL
-              (skip-to-end-of-line ppstate)))
-          (retok nil ppstate)))))
+        (if (plexeme-case toknl :newline) ; EOL
+            (retok nil ppstate)
+          (b* (((erp ppstate) ; ... EOL
+                (skip-to-end-of-line ppstate)))
+            (retok nil ppstate))))))
     :no-function nil
     :measure (two-nats-measure (ppstate->size ppstate)
                                0)) ; < pproc-*-group-part-skipped
