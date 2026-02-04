@@ -102,7 +102,7 @@
                   :mode :program))
   (b* ( ;; Check whether an identical call to the lifter has already been done:
        ((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check inputs (TODO: What other checks should we do here?):
        ;; ((when (not (input-source-alistp input-source-alist)))
        ;;  (mv t (er hard 'lift-java-code2 "ERROR: Ill-formed input-source-alist!") state))
@@ -389,7 +389,8 @@
                   :all-lifted-methods
                   ',new-all-lifted-methods)
            (cw-event "~x0~%" '(,program-name ,theorem-name))
-           (value-triple :invisible)))
+           (value-triple :invisible) ; todo: print the names
+           ))
        (event (extend-progn event (redundancy-table-event whole-form event))))
     (mv (erp-nil) event state)))
 

@@ -67,7 +67,7 @@
                               (booleanp produce-theorem))
                   :verify-guards nil))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ((when (and (not produce-function)
                    (not (eq :auto function-params))))
         (er hard? 'unroll-spec-fn ":function-params should not be given if :produce-function is nil.")
@@ -166,9 +166,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(progn (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
-                (with-output :off :all (table unroll-spec-table ',whole-form ':fake))
-                (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',items-created))
         state)))
 
 ;; TODO: update

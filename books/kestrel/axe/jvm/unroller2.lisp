@@ -414,7 +414,7 @@
                               (or (natp steps)
                                   (eq :auto steps)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Adds the descriptor if omitted and unambiguous:
        (class-alist (jvm::global-class-alist state))
        (method-designator-string (jvm::elaborate-method-indicator method-indicator class-alist))
@@ -710,9 +710,7 @@
                         :all-lifted-methods
                         ',new-all-lifted-methods)))
        (event (extend-progn event (redundancy-table-event whole-form event)))
-       (event (extend-progn event
-                            `(value-triple ',fn) ;todo: use cw-event and then return invisible here?
-                            ))
+       (event (extend-progn event `(value-triple ',fn)))
        (- (cw "Done unrolling.)~%")))
     (mv (erp-nil) event state)))
 
