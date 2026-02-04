@@ -2179,7 +2179,14 @@
                               (string-treep translated-query-core)
                               (constant-array-infop constant-array-info))
                   :stobjs state))
-  (b* (((mv temp-dir-name state)
+  (b* (;; This check ensures that we never call this code with any other array
+       ;; name.  A step toward converting this code to use stobjs would be to
+       ;; ;; reduce the set of names to a single one:
+       ;; ((when (not (or (eq 'dag-array dag-array-name)
+       ;;                 (eq 'miter-array-0 dag-array-name))))
+       ;;  (er hard? 'prove-query-with-stp "Unexpected dag-array-name: ~x0." dag-array-name)
+       ;;  (mv :error state))
+       ((mv temp-dir-name state)
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
        (base-filename (maybe-shorten-filename base-filename))

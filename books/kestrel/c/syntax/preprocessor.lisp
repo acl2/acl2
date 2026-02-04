@@ -3443,6 +3443,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-to-end-of-line ((ppstate ppstatep))
+  :returns (mv erp
+               (lexemes plexeme-listp)
+               (new-ppstate ppstatep))
+  :short "Read lexemes up to (including) the next new line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the lexemes, in the order they appear."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
+       ((when (not lexeme)) ; EOF
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a lexeme"
+                    :found "end of file"))
+       ((when (plexeme-case lexeme :newline)) ; EOL
+        (retok (list lexeme) ppstate))
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
+    (retok (cons lexeme lexemes) ppstate))
+  :no-function nil
+  :measure (ppstate->size ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-error ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#error') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('error') identifier has been parsed..")
+   (xdoc::p
+    "We just return an error message that contains the rest of the line.
+     This could be refined in the future."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) ppstate)
+       ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
+    (reterr (msg "#error: ~x0" lexemes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc-files/groups/etc
   :short "Preprocess files, groups, and some related entities."
   :long
@@ -3956,7 +3998,11 @@
                ((equal directive "line") ; # line
                 (reterr (msg "#line directive not yet supported."))) ; TODO
                ((equal directive "error") ; # error
-                (reterr (msg "#error directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-error ppstate)))
+                  (prog2$ (raise "Internal error: ~
+                                  preprocessing of #error ~
+                                  does not return an error.")
+                          (reterr t))))
                ((equal directive "pragma") ; # pragma
                 (reterr (msg "#pragma directive not yet supported."))) ; TODO
                (t ;  # other -- non-directive

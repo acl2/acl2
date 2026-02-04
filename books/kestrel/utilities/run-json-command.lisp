@@ -1,6 +1,6 @@
 ; Support for running ACL2 from the command line on JSON arguments
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -62,6 +62,19 @@
          (len vals))
   :hints (("Goal" :expand (parsed-json-values-to-lisp-values vals)
            :induct (len vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp lisp-value).  Useful for testing.
+(defund lisp-value-from-json-string (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (erp parsed-value)
+    (parse-string-as-json str)
+    (if erp
+        (mv erp nil)
+      (mv nil (parsed-json-value-to-lisp-value parsed-value)))))
+
+;; example: (lisp-value-from-json-string "[{\"foo\": 1, \"bar\": true}]")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
