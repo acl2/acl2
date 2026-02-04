@@ -320,7 +320,10 @@
   (append (predefined-macros-c17)
           (list (cons (ident "__GNUC__")
                       (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4))))))))
+                       (list (plexeme-number (pnumber-digit #\4)))))
+                (cons (ident "__GNUC_MINOR__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\2))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,7 +339,10 @@
   (append (predefined-macros-c23)
           (list (cons (ident "__GNUC__")
                       (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4))))))))
+                       (list (plexeme-number (pnumber-digit #\4)))))
+                (cons (ident "__GNUC_MINOR__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\2))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
