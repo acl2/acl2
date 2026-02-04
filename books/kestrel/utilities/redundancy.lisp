@@ -33,7 +33,12 @@
             table-alist)
       ;; the match must be exact (no attempt to detect equivalent commands):
       (if (assoc-equal whole-form table-alist)
-          (prog2$ (cw "NOTE: The command (~x0 ...) is redundant.~%" command-name)
+          (prog2$ (let ((args (fargs whole-form)))
+                    (if (and (consp args)
+                             (atom (first args)))
+                        ;; prints the first arg too if it is an atom:
+                        (cw "NOTE: The command (~x0 ~x1 ...) is redundant.~%" command-name (first args))
+                      (cw "NOTE: The command (~x0 ...) is redundant.~%" command-name)))
                   t)
         nil))))
 
