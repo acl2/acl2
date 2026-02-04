@@ -171,6 +171,8 @@
                                              (rest declons)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
+;; TODO: this should look at the translation validation table instead of going
+;; over declarations.
 (define transunit-resolve-qualified-ident
   ((qual-ident qualified-identp)
    (transunit transunitp))
@@ -180,16 +182,6 @@
   (ext-declon-list-resolve-qualified-ident qual-ident
                                            (transunit->declons transunit))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
-
-;; MOVE
-(defrulel transunit-annop-of-cdr-assoc
-  (implies (and (filepath-transunit-map-annop map)
-                (filepath-transunit-mapp map)
-                (omap::assoc filepath map))
-           (transunit-annop (cdr (omap::assoc filepath map))))
-  :induct t
-  :enable (omap::assoc
-           filepath-transunit-map-annop))
 
 (define resolve-qualified-ident
   ((qual-ident qualified-identp)
