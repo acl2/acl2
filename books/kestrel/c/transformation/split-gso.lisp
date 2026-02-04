@@ -1113,7 +1113,7 @@
           split-members
           map)))
     (retok
-      (transunit-ensemble (split-gso-rename-filepaths map)))))
+      (c$::make-transunit-ensemble :units (split-gso-rename-filepaths map)))))
 
 (define split-gso-code-ensemble
   ((filepath? c$::filepath-optionp)
@@ -1124,20 +1124,21 @@
    (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (code code-ensemblep))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (code$ code-ensemblep))
   (b* (((reterr) (irr-code-ensemble))
        ((code-ensemble code) code)
        ((erp tunits) (split-gso-transunit-ensemble filepath?
-                                                  orig-struct
-                                                  new-struct1
-                                                  new-struct2
-                                                  new-struct-tag1
-                                                  new-struct-tag2
-                                                  split-members
-                                                  code.transunits)))
-    (retok (change-code-ensemble code :transunits tunits))))
+                                                   orig-struct
+                                                   new-struct1
+                                                   new-struct2
+                                                   new-struct-tag1
+                                                   new-struct-tag2
+                                                   split-members
+                                                   code.transunits)))
+    (retok (change-code-ensemble code :transunits tunits)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,12 +1155,6 @@
           (ident-map (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
-(defrulel transunit-ensemble-annop-of-irr-code-ensemble
-  (c$::transunit-ensemble-annop
-   (code-ensemble->transunits (c$::irr-code-ensemble)))
-  :enable ((:e c$::transunit-ensemble-annop)
-           (:e c$::irr-code-ensemble)))
-
 (define split-gso-process-inputs (const-old
                                   const-new
                                   object-name
@@ -1171,9 +1166,7 @@
                                   split-members
                                   (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::transunit-ensemble-annop
-                           (code-ensemble->transunits code))))
+               (code code-ensemblep)
                (object-ident identp)
                (filepath? c$::filepath-optionp)
                (new-object1 ident-optionp)
@@ -1198,8 +1191,7 @@
        (code (acl2::constant-value const-old wrld))
        ((unless (code-ensemblep code))
         (retmsg$ "~x0 must be a code ensemble." const-old))
-       (tunits (code-ensemble->transunits code))
-       ((unless (c$::transunit-ensemble-annop tunits))
+       ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be an annotated with validation information."
                  const-old))
        ((unless (or (not object-filepath)
@@ -1240,7 +1232,12 @@
            new-type1
            new-type2
            split-members
-           const-new)))
+           const-new))
+  ///
+
+  (defret code-ensemble-annop-of-split-gso-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1258,7 +1255,7 @@
    (new-type2 ident-optionp)
    (split-members ident-listp)
    (const-new symbolp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."

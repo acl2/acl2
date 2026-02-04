@@ -652,7 +652,7 @@
   ((transunits transunit-ensemblep)
    (target-name identp)
    (wrapper-name? ident-optionp))
-  :guard (c$::transunit-ensemble-annop transunits)
+  :guard (transunit-ensemble-annop transunits)
   :returns (mv (er? maybe-msgp)
                (transunits$ transunit-ensemblep))
   :short "Transform a translation unit ensemble."
@@ -780,9 +780,7 @@
                                 targets
                                 (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::code-ensemble-annop code))
-                     :hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
+               (code code-ensemblep)
                (const-new$ symbolp)
                (targets ident-ident-option-mapp))
   :parents (wrap-fn-input-processing)
@@ -810,7 +808,12 @@
                             targets))))))
     (retok code
            const-new
-           targets)))
+           targets))
+  ///
+
+  (defret code-ensemble-annop-of-wrap-fn-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

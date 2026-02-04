@@ -11965,7 +11965,8 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (transunit-ensemble tunitmap)))
+    (retok (make-transunit-ensemble :units tunitmap
+                                    :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
