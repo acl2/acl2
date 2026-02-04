@@ -17,6 +17,7 @@
 (include-book "abstract-domains/top")
 (include-book "acl2pl/top")
 (include-book "algorithm-theories/top")
+(include-book "arm/top")
 (include-book "apt/top")
 (include-book "axe/top")
 (include-book "arithmetic-light/top")
