@@ -10,8 +10,12 @@
 
 (in-package "C")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "fty-pseudo-terms")
+
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
+
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -62,10 +66,9 @@
      a limit term is the sum of
      a positive integer constant
      and zero or more non-constant terms;
-     we organize the latter in a list.
-     Since we use untranslated terms, the list has a generic type."))
+     we organize the latter in a list."))
   ((const pos)
-   (nonconsts true-listp))
+   (nonconsts pseudo-term-list))
   :pred limit-termp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -77,12 +80,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define limit-term-to-term ((limterm limit-termp))
+(define limit-term-to-term ((limterm limit-termp) state)
   :returns (term "An untranslated term.")
   :short "Turn a limit term into an ACL2 (untranslated) term."
   (b* (((limit-term limterm) limterm))
     (if limterm.nonconsts
-        `(+ ,limterm.const ,@limterm.nonconsts)
+        `(+ ,limterm.const
+            ,@(acl2::untranslate$-list limterm.nonconsts nil state))
       limterm.const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,3 +120,15 @@
   (b* (((limit-term limterm) limterm))
     (make-limit-term :const (+ limterm.const (pos-fix const))
                      :nonconsts limterm.nonconsts)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define limit-term-subst ((limterm limit-termp)
+                          (var-term-alist symbol-pseudoterm-alistp))
+  :returns (limterm1 limit-termp)
+  :short "Substitute variables with terms in a limit term."
+  (b* (((limit-term limterm) limterm)
+       (var-term-alist (symbol-pseudoterm-alist-fix var-term-alist)))
+    (make-limit-term
+     :const limterm.const
+     :nonconsts (fty-fsublis-var-lst var-term-alist limterm.nonconsts))))
