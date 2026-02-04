@@ -32,7 +32,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -61,7 +61,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos

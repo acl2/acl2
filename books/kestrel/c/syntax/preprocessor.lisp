@@ -4730,16 +4730,17 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((mv erp & preprocessed state) (pproc-file bytes
-                                                     (car files)
-                                                     base-dir
-                                                     include-dirs
-                                                     preprocessed
-                                                     preprocessing
-                                                     (macro-table-init)
-                                                     ienv
-                                                     state
-                                                     recursion-limit))
+          ((mv erp & preprocessed state)
+           (pproc-file bytes
+                       (car files)
+                       base-dir
+                       include-dirs
+                       preprocessed
+                       preprocessing
+                       (macro-table-init (ienv->version ienv))
+                       ienv
+                       state
+                       recursion-limit))
           ((when (eq erp :not-self-contained))
            (raise "Internal error: non-self-contained top-level file ~x0." file)
            (reterr t))
