@@ -53,7 +53,7 @@
      with the (preprocessed) contents of the referenced files,
      but it otherwise performs the rest of the preprocessing.
      This is only done under certain conditions;
-     in general, the C preprocessor operates at a low lexical level,
+     in general, the C preprocessor operates at the low level of characters,
      making it difficult to preserve code structure in general
      (in those cases, our preprocessor expands the included files in place,
      like typical preprocessors).")
@@ -70,10 +70,10 @@
     "The input to our preprocessor is similar to @(tsee input-files),
      in the sense that the files to preprocess are specified by
      (1) a base directory path and (2) a list of file paths.
-     The base directory path may be absolute,
+     The base directory path (1) may be absolute,
      or relative to the "
     (xdoc::seetopic "cbd" "connected book directory")
-    ". The file paths in the list are relative to the base directory.")
+    ". The file paths in the list (2) are relative to the base directory.")
    (xdoc::p
     "The file set output of our preprocessor has keys
      that are either absolute or relative paths.
@@ -90,11 +90,15 @@
      the directory of the including file;
      in the output file set,
      the keys for these additional files are
-     the paths of the files relative to the base directory.
+     the paths of the files relative to the base directory (1).
      In contrast, absolute path keys in the output file set are for
      files included via @('#include') directives with angle brackets,
      which our preprocessor searches in certain directories,
-     unrelated to the base directory.
+     unrelated to the base directory;
+     some of these files may actually be included via double quotes,
+     so long as they are not found relative to the including file,
+     because in that case, according to [C17:6.10.2/3],
+     an attempt is made to locate the file as if it had angle brackets.
      [C17:6.10.2] gives leeway in how included file are resolved;
      our preprocessor uses an approch similar to GCC [CPPM:2.3].
      The directories where to search files included with angle brackets
@@ -104,14 +108,14 @@
      reads characters from files,
      lexes them into lexemes,
      and parses the lexemes while executing the preprocessing directives.
-     The resulting sequences of lexemes is then turned into characters
+     The resulting sequences of lexemes are then turned into characters
      that are written (printed) to files.
      The resulting file set is amenable to our parser
      (more precisely, it will be, once we have extended our parser
      to accept @('#include') directives in certain places).
      Our preprocessor preserves white space and comments when possible,
      but some layout (i.e. white space) changes are inherent to preprocessing,
-     some comments may be impossible to preserve
+     some comments may be difficult or impossible to preserve
      (e.g. if they occur within macro parameters),
      and some preserved comments may no longer apply to preprocessed code
      (e.g. comments talking about macros).")
@@ -126,14 +130,11 @@
      should work in most cases, but it may not be fully general.
      In some contrived cases, which seem nonetheless legal according to [C17],
      the approach may generate non-balanced start/end markers.
-     Some quick experiments show the Clang fails in those cases as well.
+     Some quick experiments show that Clang fails in those cases as well.
      This needs further investigation,
      but we are planning to implement a more general that should always work,
      by avoiding markers altogether,
-     instead attaching ``provenance'' information to certain tokens.")
-   (xdoc::p
-    "This preprocessor is still work in progress.
-     Unimplemented features are marked as `TODO' in this source file."))
+     instead attaching ``provenance'' information to certain tokens."))
   :order-subtopics (preprocessor-lexemes
                     stringization
                     token-concatenation
@@ -156,7 +157,7 @@
    (xdoc::p
     "In our preprocessor, a self-contained file is one that,
      when included by another file, is not expanded in place;
-     that is, it is left as an @('#include').
+     that is, it is left referenced as an @('#include').
      This is not always possible,
      because the semantics of @('#include')
      is to replace the directive with the file and continue preprocessing:
@@ -183,21 +184,22 @@
      depends on where that directive occurs;
      different occurrences may result in
      possibly very different replacements,
-     e.g. if @('M') affects conditional inclusion [C17:6.10.1].")
+     e.g. if @('M') affects conditional inclusion [C17:6.10.1],
+     or more simply if @('M') is used anywhere in the included file.")
    (xdoc::p
     "However, the situation above is not a common case.
      In particular, if @('FILE') is part of a library,
      it would not even know about @('M').
      Thus, the result of preprocessing @('FILE')
-     is often independent from where it occurs,
-     and it always results in the same replacement
+     should be normally independent from where it occurs,
+     and should always result in the same replacement
      (but we discuss include guards below).
      That is, @('FILE') is ``self-contained''.")
    (xdoc::p
     "In such common cases,
      our preprocessor avoids expanding the inclusion in place,
      and instead adds the result of preprocessing @('FILE')
-     to the file set returned as result of preprocessing a list of files
+     to the file set returned as result of preprocessing a given list of files
      (see @(see preprocessor)).
      This is why, in addition to one element for each specified file,
      our preprocessor also returns zero or more additional elements,
@@ -208,8 +210,31 @@
      because they are preprocessed from the top level of our preprocessor,
      not via a direct or indirect @('#include').")
    (xdoc::p
-    "The notion of self-contained file described above
-     has to be relaxed slightly for include guards,
+    "When we encounter a @('#include') directive,
+     we find the file and we attempt to preprocess it as self-contained.
+     If all the macros it references are
+     either predefined or defined in the file itself,
+     then the file is considered self-contained.
+     If we later encounter another @('#include') of the same file
+     (likely in a different including file),
+     we cannot just assume that it is self-contained,
+     because essentially any identifier that occurs in the included file
+     could refer to a macro.
+     That is, if the included file has an identifier @('I') somewhere,
+     and the first time that we preprocess the file
+     we see that @('I') is not a macro name,
+     the second time that we preprocess the file
+     the same identifier @('I') may happen to be now defined as a macro.
+     Thus, we must always re-preprocess the file the second time,
+     to confirm that it is still self-contained
+     with respect to this other @('#include');
+     if we confirm that it is still self-contained,
+     we double-check that we obtain the same exact result (i.e. lexemes),
+     and then we leave the second @('#include') as such,
+     referring to the self-contained file.
+     Otherwise, we must expand the file in place.")
+   (xdoc::p
+    "This approach works well with header guards,
      i.e. when @('FILE') has a form like")
    (xdoc::codeblock
     "#ifndef FILE_H"
@@ -219,15 +244,14 @@
    (xdoc::p
     "This is a well-known pattern to avoid
      including the same file multiple times.
-     In this case, strictly speaking @('FILE') depends on
-     a macro that may be externally defined, i.e. @('FILE_H'),
-     but in a way that makes @('FILE') nonetheless self-contained.")
-   (xdoc::p
-    "The precise notion of self-contained file,
-     and how our preprocessor checks it,
-     particularly in the face of include guards,
-     is still work in progress.
-     It will be described more precisely as we advance the implementation.")))
+     In this case, when @('FILE') is preprocessed the first time,
+     it would be recognized as self-contained,
+     because @('FILE_H') is not defined at that moment.
+     If later @('FILE') is re-preprocessed when @('FILE_H') is now defined,
+     the file would not be considered self-contained this time,
+     and so it would be expanded in place,
+     but the expansion would be empty,
+     because the @('#ifndef') would be false.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3551,7 +3575,7 @@
    (xdoc::p
     "The top-level function of the clique is @(tsee pproc-file),
      which is called by @(tsee pproc-files) outside the clique.
-     But it is also called when encoutering files to be included,
+     But it is also called when encountering files to be included,
      which is why it is mutually recursive with the other functions.")
    (xdoc::p
     "The functions in the clique have certain common inputs and outputs:")
@@ -3560,15 +3584,20 @@
      "All the functions take
       the path @('file') of the file being preprocessed,
       along with the base directory @('base-dir')
-      and the inclusion directory @('include-dirs').
-      The latter two come from @(tsee pproc-files) and never change.
+      and the inclusion directories @('include-dirs').
+      The base and inclusion directories
+      come from @(tsee pproc-files) and never change.
       The @('file') path comes from the list @('files') in @(tsee pproc-files),
       as well as from the resolution of @('#include') directives.")
     (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
       the (self-contained) files preprocessed so far.
-      This starts empty and eventually contains all the preprocessed files.")
+      This starts empty and eventually contains
+      all the self-contained preprocessed files,
+      including the files listed in the list @('files')
+      passed to @(tsee pproc-files)
+      (if there are no errors).")
     (xdoc::li
      "All the functions take
       the list @('preprocessing') of the files being preprocessed.
@@ -3576,7 +3605,7 @@
     (xdoc::li
      "All the functions except @(tsee pproc-file) take and return
       the list of lexemes generated so far by the preprocessing.
-      These are in reverse order, to make extension efficient.
+      These are in reverse order, to make the extension of the list efficient.
       The function @(tsee pproc-file) does not take a list of lexemes
       because it initiates the preprocessing of a file;
       instead of a list of lexemes, it returns a @(tsee scfile),
@@ -3606,7 +3635,7 @@
      the GCC preprocessor imposes an @('#include') nesting limit,
      according to "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Implementation-limits.html"
-                 "Section 12.2 of the GNU C Preprocessor Manual")
+                 "[CPPM:12.2]")
     ". But fleshing out the termination argument takes a bit of extra work:
      we cannot just use a lexicographic measure consisting of
      the number of recursive files remaining
@@ -3614,8 +3643,8 @@
      because the latter increases
      when included files are not self-contained and must be expanded in place
      as well as when macros are expanded.
-     There should still be a way in which things got suitably smaller.
-     In particular, to handle the expansion in place of included file,
+     There should still be a way in which things get suitably smaller.
+     In particular, to handle the expansion in place of included files,
      we could probably make a lexicographic measure consisting of
      the number of recursive files remaining
      followed by the list of sizes of the byte lists
@@ -3635,7 +3664,7 @@
      and may require explicating invariants about the preprocessing state
      and perhaps other inputs of the functions in the clique.
      So for now we use a simpler approach,
-     i.e. a limit on the number of recursive calls in the clique:
+     i.e. an artificial limit on the number of recursive calls in the clique:
      each function first checks whether 0 is reached,
      and if not it calls other functions with the limit reduced by one;
      the limit is then just the measure.
@@ -3689,11 +3718,6 @@
        Otherwise, before preprocessing the file,
        we add it to the list of files under preprocessing.")
      (xdoc::p
-      "If the file is in the @('preprocessed') alist,
-       we avoid re-preprocessing it:
-       we leave @('preprocessed') unchanged,
-       and we return the @(tsee scfile) from the alist.")
-     (xdoc::p
       "The macro table passed as input to this function
        is empty when this function is called by @(tsee pproc-files).
        Otherwise, it is the table for
@@ -3719,12 +3743,18 @@
        because we are at the top level,
        not inside a conditional directive.
        If there is no error (and no @(':not-self-contained')),
-       a @(tsee scfile) is built and added to @('preprocessed').
-       The @(tsee scfile) contains
-       the lexemes obtained from the file
-       and the macros contributed by the file,
-       which are the macros in the innermost scope of the final table.
-       The @(tsee scfile) is returned,
+       a @(tsee scfile) is built.
+       We check whether @('preprocessed')
+       already has an entry for the same file;
+       in this case, we expect the new @(tsee scfile) to be the same
+       (but we need to investigate this in more detail),
+       and so for now we throw a hard error if they differ.
+       If the check passes, we leave @('preprocessed') unchanged;
+       the reason for re-preocessing the file,
+       as opposed to looking it up in @('preprocessed') right away,
+       is explained in @(see self-contained).
+       If the file was not already in @('preprocessed'), it is added.
+       In any case, the @(tsee scfile) is returned,
        so the caller can use its macros."))
     (b* (((reterr) (irr-scfile) nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -3735,8 +3765,6 @@
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         (name+scfile (assoc-equal file preprocessed))
-         ((when name+scfile) (retok (cdr name+scfile) preprocessed state))
          ((erp lexemes macros preprocessed state)
           (with-local-stobj
             ppstate
@@ -3775,8 +3803,15 @@
                   state))))
          (scfile (make-scfile :lexemes lexemes
                               :macros macros))
-         (preprocessed (acons file scfile preprocessed)))
-      (retok scfile preprocessed state))
+         (name+scfile (assoc-equal file preprocessed)))
+      (if name+scfile
+          (if (equal scfile (cdr name+scfile))
+              (retok scfile preprocessed state)
+            (prog2$ (raise "Internal error: ~x0 and ~x1 differ."
+                           scfile (cdr name+scfile))
+                    (reterr t)))
+        (retok scfile (acons file scfile preprocessed) state)))
+    :no-function nil
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
