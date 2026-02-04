@@ -67,30 +67,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The presence of any of these function in the DAG indicates that the symbolic
-;; execution is incomplete:
+;; The presence of any of these function in the term/DAG indicates that the
+;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
                                  ;run-until-sp-is-above
                                  step32))
 
-;; The presence of any of these function in the DAG indicates an error state
+;; The presence of any of these functions in the term/DAG indicates an error state
 ;; arising during lifting (perhaps only on one branch of the execution, and
 ;; perhaps we can prune away that branch later):
 (defconst *error-fns* '(error32))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable myquotep ; todo: loop involving acl2::simplify-dag-basic-return-type-corollary-2
-                           intersection-equal
-                           acl2::myquotep-when-axe-treep
-                           state-p
-                           mv-nth
-                           natp
-                           string-append
-                           string-append-lst)))
-
-(local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
-                          acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
+(local (in-theory (e/d (acl2::weak-dagp-when-pseudo-dagp
+                        acl2::true-listp-when-symbol-listp-rewrite-unlimited)
+                       (myquotep ; todo: loop involving acl2::simplify-dag-basic-return-type-corollary-2
+                        intersection-equal
+                        acl2::myquotep-when-axe-treep
+                        state-p
+                        mv-nth
+                        natp
+                        string-append
+                        string-append-lst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +101,7 @@
     (declare (xargs :guard (and ;; see above comment on output-indicator
                              (plist-worldp wrld))
                     :mode :program ; because of translate-term ; todo: do that outside this function, while also checking the output-indicator?
-                     ))
+                    ))
     (if (symbolp output-indicator)
         (case output-indicator
           ;; Extract a register:
@@ -113,7 +112,6 @@
           (:a1 `(a1 ,term)) ; return value 1
           ;; todo: more
 
-          ;; ;; (:eax (rax ,term))
           ;; (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
           ;; (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
           ;; (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
@@ -151,7 +149,7 @@
           ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
 
-          ;; (:read <N> <ADDR-TERM>)
+          ;; (:read <N> <ADDR-TERM>) ; returns a chunk (a BV)
           (:read (if (= 2 (len (fargs output-indicator)))
                      (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
@@ -161,8 +159,8 @@
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
                            `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                                  ,term))
+                                                            ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                            ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
 
           ;; ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
@@ -196,9 +194,7 @@
 
   (defun wrap-in-normal-output-extractors (output-indicators term wrld)
     (declare (xargs :guard (and (true-listp output-indicators)
-                                (plist-worldp wrld))
-;;                    :mode :program ; because of translate-term
-                    ))
+                                (plist-worldp wrld))))
     (if (endp output-indicators)
         nil
       (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
@@ -685,9 +681,7 @@
        ;;                         '(run-until-return3 x86)
        ;;                       '(run-until-return4 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
-       ((when (not ; (pseudo-termp term-to-simulate)
-                   (termp term-to-simulate (w state))
-                   ))
+       ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-risc-v-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
         (mv :error-wrapping-in-output-extractor nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
