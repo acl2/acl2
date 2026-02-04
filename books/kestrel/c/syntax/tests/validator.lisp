@@ -928,6 +928,42 @@ void bar(void) {
                (equal bar-expr-uid bar-init-uid))))
 
 (test-valid
+  "static int foo = 0;
+
+int internal_foo(void) {
+  return foo;
+}
+
+extern int foo;
+"
+  "int foo;
+
+int internal_foo(void);
+
+int main(void) {
+  foo = 42;
+  return internal_foo();
+}
+"
+  ;; Looking up "foo" in the first translation unit validation table should
+  ;; show a UID value of "0".
+  :cond (b* ((transunit-test0
+               (cdr (omap::assoc (filepath "test0")
+                                 (transunit-ensemble->units ast))))
+             (info? (transunit->info transunit-test0))
+             ((unless (transunit-infop info?))
+              nil)
+             (table (transunit-info->table-end info?))
+             ((mv ord-info? currentp)
+              (valid-lookup-ord (ident "foo") table)))
+          (and ord-info?
+               currentp
+               (valid-ord-info-case
+                 ord-info?
+                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :otherwise nil))))
+
+(test-valid
   "void * x = &x;
 "
 )
