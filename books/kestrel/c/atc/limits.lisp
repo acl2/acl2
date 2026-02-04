@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -66,6 +67,13 @@
   ((const pos)
    (nonconsts true-listp))
   :pred limit-termp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-limit-term
+  :short "An irrelevant limit term."
+  :type limit-termp
+  :body (make-limit-term :const 1 :nonconsts nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
