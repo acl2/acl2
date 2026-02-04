@@ -201,6 +201,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This is fast when the second argument is empty.
 ;; todo: use this more
 (defund set-difference-eq-fast (l1 l2)
   (declare (xargs :guard (and (true-listp l1)
@@ -215,6 +216,14 @@
   (implies (symbol-listp l1)
            (symbol-listp (set-difference-eq-fast l1 l2)))
   :hints (("Goal" :in-theory (enable set-difference-eq-fast))))
+
+(defthmd set-difference-eq-fast-becomes-set-difference-eq
+  (implies (true-listp l1)
+           (equal (set-difference-eq-fast l1 l2)
+                  (set-difference-eq l1 l2)))
+  :hints (("Goal" :in-theory (enable set-difference-eq-fast set-difference-eq))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions assumption-rules hits state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
