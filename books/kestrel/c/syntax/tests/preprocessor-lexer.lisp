@@ -11,7 +11,6 @@
 (in-package "C$")
 
 (include-book "../preprocessor-lexer")
-(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
