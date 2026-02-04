@@ -51,12 +51,20 @@
 
 ; Check result of preprocessing against expectation.
 
-(defmacro test-preproc (files &key include-dirs expected)
+(defmacro test-preproc (files &key std gcc clang include-dirs expected)
   `(assert!-stobj
-    (b* ((files ,files)
+    (b* ((version (if (or (not ,std)
+                          (= ,std 17))
+                      (cond (,gcc (c::version-c17+gcc))
+                            (,clang (c::version-c17+clang))
+                            (t (c::version-c17)))
+                    (cond (,gcc (c::version-c23+gcc))
+                          (,clang (c::version-c23+clang))
+                          (t (c::version-c23)))))
+         (files ,files)
          (base-dir ".")
          (include-dirs ,include-dirs)
-         (ienv (ienv-default))
+         (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state)
           (pproc-files files base-dir include-dirs ienv state 1000000000)))
       (mv (if erp
@@ -71,8 +79,11 @@
 
 ; Specialization to one file.
 
-(defmacro test-preproc-1 (file expected &key include-dirs)
+(defmacro test-preproc-1 (file expected &key std gcc clang include-dirs)
   `(test-preproc '(,file)
+                 :std ,std
+                 :gcc ,gcc
+                 :clang ,clang
                  :include-dirs ,include-dirs
                  :expected (fileset-of ,file ,expected)))
 
@@ -80,12 +91,19 @@
 
 ; Show result of preprocessing.
 
-(defmacro show-preproc (files &key include-dirs)
+(defmacro show-preproc (files &key std gcc clang include-dirs)
   `(assert!-stobj
-    (b* ((files ,files)
+    (b* ((version (if (or (not ,std)
+                          (= ,std 17))
+                      (cond (,gcc (c::version-c17+gcc))
+                            (,clang (c::version-c17+clang))
+                            (t (c::version-c17)))
+                    (cond (,gcc (c::version-c23+gcc))
+                          (,clang (c::version-c23+clang))
+                          (t (c::version-c23)))))(files ,files)
          (base-dir ".")
          (include-dirs ,include-dirs)
-         (ienv (ienv-default))
+         (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state)
           (pproc-files files base-dir include-dirs ienv state 1000000000))
          (- (if erp
@@ -98,6 +116,9 @@
 
 ; Specialization to one file.
 
-(defmacro show-preproc-1 (file &key include-dirs)
+(defmacro show-preproc-1 (file &key std gcc clang include-dirs)
   `(show-preproc '(,file)
+                 :std ,std
+                 :gcc ,gcc
+                 :clang ,clang
                  :include-dirs ,include-dirs))
