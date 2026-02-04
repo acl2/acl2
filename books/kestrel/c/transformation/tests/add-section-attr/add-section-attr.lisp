@@ -27,9 +27,8 @@
 
   (add-section-attr *old*
                     *new*
-                    :attrs (omap::update (external-ident (ident "foo"))
-                                         "my_section"
-                                         nil))
+                    :attrs (list (cons (external-ident (ident "foo"))
+                                       "my_section")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -55,9 +54,8 @@
 
   (add-section-attr *old*
                     *new*
-                    :attrs (omap::update (external-ident (ident "foo"))
-                                         "my_section"
-                                         nil))
+                    :attrs (list (cons (external-ident (ident "foo"))
+                                       "my_section")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -83,9 +81,8 @@ __attribute__ ((section(\"my_section\"))) __attribute__ ((noinline)) int foo(int
 
   (add-section-attr *old*
                     *new*
-                    :attrs (omap::update (external-ident (ident "bar"))
-                                         "my_section"
-                                         nil))
+                    :attrs (list (cons (external-ident (ident "bar"))
+                                       "my_section")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -117,14 +114,12 @@ __attribute__ ((section(\"my_section\"))) int bar(int y, int z) {
 
   (add-section-attr *old*
                     *new*
-                    :attrs (omap::update
-                             (internal-ident (filepath "internal-foo.c")
-                                             (ident "foo"))
-                             "internal_foo_section"
-                             (omap::update
-                               (external-ident (ident "foo"))
-                               "external_foo_section"
-                               nil)))
+                    :attrs (list
+                             (cons (internal-ident (filepath "internal-foo.c")
+                                                   (ident "foo"))
+                                   "internal_foo_section")
+                             (cons (external-ident (ident "foo"))
+                                   "external_foo_section")))
 
   (c$::output-files :const *new*
                     :path "new")
@@ -163,15 +158,13 @@ int main(void) {
 
   (add-section-attr *old*
                     *new*
-                    :attrs (omap::update
-                             (internal-ident (filepath "internal-foo.c")
-                                             (ident "foo"))
-                             "internal_foo_section"
-                             (omap::update
-                               (internal-ident (filepath "external-foo.c")
-                                               (ident "foo"))
-                               "external_foo_section"
-                               nil)))
+                    :attrs (list
+                             (cons (internal-ident (filepath "internal-foo.c")
+                                                   (ident "foo"))
+                                   "internal_foo_section")
+                             (cons (internal-ident (filepath "external-foo.c")
+                                                   (ident "foo"))
+                                   "external_foo_section")))
 
   (c$::output-files :const *new*
                     :path "new")
