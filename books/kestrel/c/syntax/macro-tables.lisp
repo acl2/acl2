@@ -316,9 +316,16 @@
    (xdoc::p
     "This is work in progress:
      we start with a few macros,
-     but we need to systematically add more."))
+     but we need to systematically add more.")
+   (xdoc::p
+    "The @('__arm64__') is more specific than Clang,
+     so we may want to introduce and use further parameterization;
+     but this should work fine on (relatively) new Mac machines."))
   (append (predefined-macros-c17)
-          (list (cons (ident "__GNUC__")
+          (list (cons (ident "__arm64__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\1)))))
+                (cons (ident "__GNUC__")
                       (macro-info-object
                        (list (plexeme-number (pnumber-digit #\4)))))
                 (cons (ident "__GNUC_MINOR__")
@@ -335,9 +342,16 @@
    (xdoc::p
     "This is work in progress:
      we start with a few macros,
-     but we need to systematically add more."))
+     but we need to systematically add more.")
+   (xdoc::p
+    "The @('__arm64__') is more specific than Clang,
+     so we may want to introduce and use further parameterization;
+     but this should work fine on (relatively) new Mac machines."))
   (append (predefined-macros-c23)
-          (list (cons (ident "__GNUC__")
+          (list (cons (ident "__arm64__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\1)))))
+                (cons (ident "__GNUC__")
                       (macro-info-object
                        (list (plexeme-number (pnumber-digit #\4)))))
                 (cons (ident "__GNUC_MINOR__")
