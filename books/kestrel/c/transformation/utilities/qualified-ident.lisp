@@ -215,18 +215,16 @@
                (uid c$::uidp))
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
-       ((c$::valid-table valid-table)
-        (c$::transunit-ensemble-info->table-end
-          (c$::transunit-ensemble->info ensemble)))
-       (info? (omap::assoc qual-ident.ident valid-table.externals))
-       ((when info?)
-        (b* (((c$::valid-ext-info info) (cdr info?))
-             ((when (and qual-ident.filepath?
-                         (not (in qual-ident.filepath? info.declared-in))))
-              (retmsg$ "~x0 is an object or function with external linkage, ~
-                        but it is not declared in the translation unit ~x1."
-                       qual-ident.ident
-                       qual-ident.filepath?)))
+       ((unless qual-ident.filepath?)
+        (b* (((c$::valid-table valid-table)
+              (c$::transunit-ensemble-info->table-end
+                (c$::transunit-ensemble->info ensemble)))
+             (info? (omap::assoc qual-ident.ident valid-table.externals))
+             ((unless info?)
+              (retmsg$ "~x0 is not an object or function ~
+                        with external linkage."
+                       qual-ident.ident))
+             ((c$::valid-ext-info info) (cdr info?)))
           (retok info.uid)))
        ((unless qual-ident.filepath?)
         (retmsg$ "~x0 is not an object or function ~
@@ -238,6 +236,4 @@
         (retmsg$ "~x0 is not a translation unit in the ensemble."
                  qual-ident.filepath?)))
     (transunit-resolve-qualified-ident qual-ident (cdr transunit?)))
-  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules
-                                            ;; TODO: why is this enable necessary?
-                                            transunit-ensemble-annop))))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
