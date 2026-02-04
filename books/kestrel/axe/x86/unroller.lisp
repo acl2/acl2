@@ -65,6 +65,7 @@
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator-support") ; for *axe-evaluator-functions* and to support making defuns
 (include-book "rewriter-x86")
+(include-book "lifter-support")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
@@ -684,7 +685,9 @@
                                   step-opener-rule ; the rule that gets limited
                                   rules-to-monitor
                                   prune-precise prune-approx
-                                  normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide untranslatep memoizep
+                                  normalize-xors count-hits hits print print-base max-printed-term-size
+                                  no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
+                                  untranslatep memoizep
                                   ;; could pass in the stop-pcs, if any
                                   state)
   (declare (xargs :guard (and (natp steps-done)
@@ -708,8 +711,11 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (symbol-listp fns-to-elide)
                               (symbol-listp no-warn-ground-functions)
+                              (symbol-listp fns-to-elide)
+                              (symbol-listp non-stp-assumption-functions)
+                              (symbol-listp incomplete-run-fns)
+                              (symbol-listp error-fns)
                               (booleanp untranslatep)
                               (booleanp memoizep))
                   :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
@@ -772,7 +778,7 @@
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
                                                                         dag
-                                                                        (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                        (remove-assumptions-about non-stp-assumption-functions assumptions)
                                                                         no-warn-ground-functions
                                                                         print
                                                                         60000 ; todo: pass in
@@ -819,7 +825,7 @@
          (dag-fns (dag-fns dag))
 
          ;; TODO: Maybe don't prune if the run completed and there are no error branches?
-         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))) ; todo: call contains-anyp-eq
+         (run-completedp (not (intersection-eq incomplete-run-fns dag-fns))) ; todo: call contains-anyp-eq
          ((mv erp nothing-changedp) (if run-completedp
                                         (mv nil nil) ; we know something changed since the run is now complete
                                       (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
@@ -832,7 +838,7 @@
          ;;          (mv :unimplemented-instruction dag state)))
 
          ;; ((when nothing-changedp)
-         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the *incomplete-run-fns* remains (but what if we hit one of the stop-pcs?)
+         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the incomplete-run-fns remains (but what if we hit one of the stop-pcs?)
          ;;  ;; check how many steps used?
          ;;  ;; todo: check for the error-fns here
          ;;  (mv (erp-nil) dag state))
@@ -866,8 +872,8 @@
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                ;; Check for error branches (TODO: What if we could prune them away with more work?):
                (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
-               (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns))
+               (error-branch-functions (intersection-eq error-fns dag-fns))
+               (incomplete-run-functions (intersection-eq incomplete-run-fns dag-fns))
                ((when error-branch-functions)
                 (cw "~%")
                 (print-dag-nicely dag max-printed-term-size) ; use the print-base?
@@ -890,7 +896,7 @@
           (repeatedly-run steps-done step-limit
                           step-increment
                           dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size
-                          no-warn-ground-functions fns-to-elide untranslatep memoizep
+                          no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
                           state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1044,7 +1050,7 @@
                              (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
                                (if (print-level-at-least-tp print)
                                    (print-list assumptions)
-                                 (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
+                                 (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge ; todo: program-at is deprecated
                                                                    (equal t nil)))))
                              (cw ")~%"))))
        ((when (not (term-listp assumptions (w state))))
@@ -1117,6 +1123,9 @@
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
                         *no-warn-ground-functions*
                         '(program-at code-segment-assumptions32-for-code) ; fns-to-elide, todo: program-at is no longer used.  todo: make these into whole patterns.
+                        *non-stp-assumption-functions*
+                        *incomplete-run-fns*
+                        *error-fns*
                         untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (hits (combine-hits hits hits2))

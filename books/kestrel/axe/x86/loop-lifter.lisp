@@ -40,6 +40,8 @@
 
 ;; TODO: Continue adding and verifying guards
 
+;; TODO: Can we unify this with the unrolling lifter?
+
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
