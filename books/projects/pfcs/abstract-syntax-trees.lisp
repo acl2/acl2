@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: See the LICENSE file distributed with this library.
@@ -75,7 +75,14 @@
   :elt-type name
   :true-listp t
   :elementp-of-nil nil
-  :pred name-listp)
+  :pred name-listp
+
+  ///
+
+  (defruled cdr-of-name-list-fix
+    (equal (cdr (name-list-fix x))
+           (name-list-fix (cdr x)))
+    :enable name-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
