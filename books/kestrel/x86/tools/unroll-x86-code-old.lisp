@@ -33,11 +33,11 @@
 (include-book "symsim")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
+(include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
-
 
 ;; Check that the x86 state has TEXT-SECTION-BYTES loaded starting at
 ;; TEXT-OFFSET and has the program counter set to TEXT-OFFSET plus
@@ -182,9 +182,8 @@
                               ;; (output-indicatorp output)
                               (booleanp non-executable))
                   :mode :program))
-  (b* ( ;; Check whether this call to the lifter has already been made:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+  (b* (;; Check whether this call to the lifter is redundant:
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Parse the executable, if needed:
        ((mv erp parsed-executable state)
@@ -273,7 +272,7 @@
                                              `(("Goal" :in-theory '(,lifted-name ,@runes)))
                                            `(("Goal" :in-theory (enable ,@enables))))
                                  :otf-flg t)))))
-       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event))))
+       (event (acl2::extend-progn event (redundancy-table-event whole-form event))))
     (mv nil event state)))
 
 ;TODO: Add show variant

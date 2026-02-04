@@ -266,7 +266,7 @@
     dag-or-quotep-vars
 
     remove-assumptions-about
-    *non-stp-assumption-functions*
+;;    *non-stp-assumption-functions*
     equivalent-dagsp2
     print-to-hundredths
     print-dag-nicely
@@ -312,7 +312,6 @@
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest ; move?
     make-rule-alist
@@ -386,7 +385,9 @@
     combine-hits
     maybe-print-hits
     empty-hits
-    ))
+
+    command-is-redundantp
+    redundancy-table-event))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
