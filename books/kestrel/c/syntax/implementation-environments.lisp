@@ -914,6 +914,7 @@
 
 (define ienv->std ((ienv ienvp))
   :returns (number posp
+                   :rule-classes (:rewrite :type-prescription)
                    :hints (("Goal" :in-theory (enable c::version-std-c17p
                                                       c::version-std-c23p))))
   :short "Numeric version of the C standard (regardless of GCC extensions)."
