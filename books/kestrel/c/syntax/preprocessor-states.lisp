@@ -797,14 +797,19 @@
      There are no read or unread characters,
      and no lexmarks pending.
      The macro table is obtained by pushing a new scope for the file.
-     We also resize the arrays of characters to the number of data bytes,
-     which is sufficient because each character takes at least one byte."))
+     We also resize the arrays of characters to 1,000,000:
+     in general we need more than the data bytes,
+     because some included files may be expanded in line,
+     resulting in longer character arryays here;
+     the current value is just a heuristic,
+     but we plan to restructure the stobj in a way
+     that will obviate the need to estimate this."))
   (b* ((ppstate (update-ppstate->bytess-length (pos-fix file-recursion-limit)
                                                ppstate))
        (ppstate (update-ppstate->bytes 0 (byte-list-fix data) ppstate))
        (ppstate (update-ppstate->bytess-current 0 ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
-       (ppstate (update-ppstate->chars-length (len data) ppstate))
+       (ppstate (update-ppstate->chars-length 1000000 ppstate))
        (ppstate (update-ppstate->chars-read 0 ppstate))
        (ppstate (update-ppstate->chars-unread 0 ppstate))
        (ppstate (update-ppstate->lexmarks nil ppstate))
