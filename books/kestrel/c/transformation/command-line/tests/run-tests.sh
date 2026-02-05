@@ -16,6 +16,7 @@ rm -f wrap-fn.output/*.*
 ../transform-c.sh wrap-fn.json
 rm -f add-section-attr.output/*.*
 ../transform-c.sh add-section-attr.json
+../transform-c.sh add-section-attr2.json
 
 # cd input-files
 # gcc -O0 -c *.c
