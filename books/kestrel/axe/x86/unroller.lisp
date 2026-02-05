@@ -971,14 +971,20 @@
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
-                                    (if (eq executable-type :elf-64)
+                                    (if (eq executable-type :elf-64) ; todo: allow ELF32 as well?
                                         (let ((elf-type (parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
                                                   (if (parsed-elf-program-header-table parsed-executable)
                                                       ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-                                                      (if (member-eq elf-type '(:rel :dyn)) t nil)
+                                                      (if (member-eq elf-type '(:rel :dyn))
+                                                          t
+                                                        (if (eq elf-type :exec)
+                                                            nil
+                                                          (er hard? 'unroll-x86-code-core "Unexpected ELF executable type: ~x0." elf-type)))
                                                     ;; TODO: Get this to work:
-                                                    nil)))
+                                                    (er hard? 'unroll-x86-code-core "No program header table in ELF file.")
+                                                    ;;nil
+                                                    )))
                                       ;; TODO: Think about the other cases:
                                       t))
                                 ;; position-independent is t or nil, not :auto:
@@ -999,7 +1005,7 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (ensure-target-exists-in-executable target parsed-executable)))
-
+       ;; Handle an existing-stack-slots of :auto:
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
                                      5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)
