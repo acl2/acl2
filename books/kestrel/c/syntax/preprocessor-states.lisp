@@ -32,15 +32,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl assoc-equal-iff-member-equal-of-strip-cars
-  (implies (alistp alist)
-           (iff (assoc-equal key alist)
-                (member-equal key (strip-cars alist))))
-  :induct t
-  :enable (assoc-equal))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruledl byte-list-listp-of-resize-list
   (implies (and (byte-list-listp bytess)
                 (byte-listp default))
