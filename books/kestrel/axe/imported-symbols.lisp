@@ -344,6 +344,7 @@
     subset-eq
     submit-event
     strip-cadrs
+    set-difference-eq-fast
 
     ;; formal unit tester common stuff:
     print-test-summary

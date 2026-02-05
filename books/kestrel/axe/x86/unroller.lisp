@@ -47,7 +47,8 @@
 (include-book "rule-lists")
 ;(include-book "kestrel/x86/run-until-return" :dir :system)
 ;(include-book "kestrel/x86/run-until-return4" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system) ; why?
+(include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../equivalent-dags")
@@ -198,30 +199,6 @@
 ;; If these break, consider how to update the uses of these step-opener functions below:
 (thm (equal (len (step-opener-rules32)) 1) :hints (("Goal" :in-theory (enable step-opener-rules32))))
 (thm (equal (len (step-opener-rules64)) 1) :hints (("Goal" :in-theory (enable step-opener-rules64))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; This is fast when the second argument is empty.
-;; todo: use this more
-(defund set-difference-eq-fast (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (symbol-listp l1)
-                                  (symbol-listp l2)))))
-  (if (endp l2)
-      l1 ; special case where there is nothing to remove
-    (set-difference-eq l1 l2)))
-
-(defthm acl2::symbol-listp-of-set-difference-eq-fast
-  (implies (symbol-listp l1)
-           (symbol-listp (set-difference-eq-fast l1 l2)))
-  :hints (("Goal" :in-theory (enable set-difference-eq-fast))))
-
-(defthmd set-difference-eq-fast-becomes-set-difference-eq
-  (implies (true-listp l1)
-           (equal (set-difference-eq-fast l1 l2)
-                  (set-difference-eq l1 l2)))
-  :hints (("Goal" :in-theory (enable set-difference-eq-fast set-difference-eq))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

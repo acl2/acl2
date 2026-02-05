@@ -114,3 +114,5 @@
 (include-book "every-nth")
 
 (include-book "contains-anyp-eq")
+
+(include-book "set-difference-equal-fast")
