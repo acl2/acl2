@@ -4,22 +4,20 @@
 
 (in-package "ZF")
 
-; Let's say that a "HOL value" is the value component of some HOL value pair
-; (hpp) with respect to some suitable HOL type-alist.  This book defines that
-; notion with recognizer hol-value-p and also defines a set, (hol-values), that
-; is intended to be the set of all HOL values.  The final theorem,
-; hol-values-correctness, proves that (hol-values) is indeed exactly the set of
-; all HOL values.
+; This book defines a set, (hpp-set) = {x \in V_{\omega*2}: (hpp-p x)}, which
+; is intended to be the set of all HOL value pairs.  The final theorem,
+; hol-values-correctness, proves that (hpp-set) is indeed exactly that set.
 
 ; A key enabler is the set, V_{omega*2}, which we define to be the result of
 ; iterating powerset omega*2 times.  We then prove a key lemma,
-; hol-valuep-implies-in-v-omega*2, that leads to the final theorem.
+; hol-valuep-implies-in-v-omega*2.
 
 ; As of this writing, we don't need this book because the HOL props generated
 ; by translating theories implicitly create HOL values (including functions) as
 ; sets.  But down the road there could be a need to have a "bounding set" on
-; which to use separation to show that a given HOL value is a set, and this
-; book provides that set as (v-omega*2) and, more tightly, as (hol-values).
+; which to use separation to show that a given HOL value or HOL value pair is a
+; set, and this book provides that bounding set as (v-omega*2) and, more
+; tightly, as (hpp-set) for the set of HOL value pairs.
 
 ; First we define V_{omega*2} by defining the cumulative hierarchy for omega
 ; steps beyond V_{omega}.  At some point we may implement ordinal recursion to
@@ -559,32 +557,31 @@
               inverse$prop prod2$prop domain$prop fun-space$prop
               finseqs$prop))
 
-; We are nearly done.  All that's left is to define the set of HOL values and
-; prove that it is indeed the set of HOL values.
+; We are nearly done.  All that's left is to define the set of HOL value pairs
+; and prove that it is indeed the set of HOL value pairs.
 
-(defun cdrs-in-set (alist s)
+(defun cdrs-in-set (alist s) ; s is a set
   (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) t)
         ((in (cdr (car alist)) s)
          (cdrs-in-set (cdr alist) s))
         (t nil)))
 
-(defun hta-p (hta s)
+(defun hta-p (hta s) ; s is a set
   (declare (xargs :guard t))
   (and (alistp hta)
        (acl2::keyword-listp (strip-cars hta))
        (cdrs-in-set hta s)))
 
-(defun-sk hol-value-p (x)
-  (exists (hta hol-pair)
+(defun-sk hpp-p (x)
+  (exists (hta)
     (and (hta-p hta (v-omega*2)) ; types map to values in (v-omega*2)
-         (hpp hol-pair hta)
-         (equal x (car hol-pair)))))
+         (hpp x hta))))
 
-(zsub hol-values ()
+(zsub hpp-set () ; {x \in V_{\omega*2}: (hpp-p x)}
       x
       (v-omega*2)
-      (hol-value-p x))
+      (hpp-p x))
 
 (defthmz cdrs-in-v-omega*2-implies-in-v-omega*2
   (implies (and (alistp alist)
@@ -600,20 +597,20 @@
            (in typ (v-omega*2)))
   :props (zfc v-omega+$prop v$prop inverse$prop prod2$prop domain$prop))
 
-(defthmz hol-values-correctness-lemma
-  (implies (hol-value-p x)
-           (in x (hol-values)))
+(defthmz hpp-set-correctness-lemma
+  (implies (hpp-p x)
+           (in x (hpp-set)))
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
               finseqs$prop
-              hol-values$prop)
+              hpp-set$prop)
   :rule-classes nil)
 
-(defthmz hol-values-correctness
-  (equal (in x (hol-values))
-         (hol-value-p x))
-  :hints (("Goal" :use hol-values-correctness-lemma))
+(defthmz hpp-set-correctness
+  (equal (in x (hpp-set))
+         (hpp-p x))
+  :hints (("Goal" :use hpp-set-correctness-lemma))
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
               finseqs$prop
-              hol-values$prop))
+              hpp-set$prop))

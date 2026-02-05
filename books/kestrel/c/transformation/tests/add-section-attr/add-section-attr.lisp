@@ -193,3 +193,51 @@ int main(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("internal-foo.c" "external-foo.c")
+                   :const *old*
+                   :ienv (c$::ienv-default :extensions :gcc))
+
+  (add-section-attr *old*
+                    *new*
+                    :attrs (list
+                             (cons (qualified-ident (filepath "external-foo.c")
+                                                    (ident "main"))
+                                   "sec0")
+                             (cons (qualified-ident (filepath "external-foo.c")
+                                                    (ident "internal_foo"))
+                                   "sec1")
+                             (cons (qualified-ident (filepath "internal-foo.c")
+                                                    (ident "foo"))
+                                   "sec2")))
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/internal-foo.c"
+    :content "__attribute__ ((section(\"sec2\"))) static int foo = 0;
+
+__attribute__ ((section(\"sec1\"))) int internal_foo(void) {
+  return foo;
+}
+
+__attribute__ ((section(\"sec2\"))) extern int foo;
+")
+
+(assert-file-contents
+    :file "new/external-foo.c"
+    :content "int foo;
+
+__attribute__ ((section(\"sec1\"))) int internal_foo(void);
+
+__attribute__ ((section(\"sec0\"))) int main(void) {
+  foo = 42;
+  return internal_foo();
+}
+")
+
+  :with-output-off nil)
