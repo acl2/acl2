@@ -540,4 +540,5 @@
 (defirrelevant irr-transunit-ensemble
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
-  :body (transunit-ensemble nil))
+  :body (make-transunit-ensemble :units nil
+                                 :info nil))

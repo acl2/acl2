@@ -684,6 +684,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod transunit-ensemble-info
+  :short "Fixtype of validation information for translation unit ensembles."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to translation unit ensembles.
+     The information consists of
+     the final validation table for the translation unit ensemble."))
+  ((table-end valid-table))
+  :pred transunit-ensemble-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate
   ()
   (std::make-define-config :no-function nil)
@@ -812,7 +826,11 @@
                   (comp-stmt-annop (fundef->body fundef))
                   (fundef-infop (fundef->info fundef))))
      (transunit (and (ext-declon-list-annop (transunit->declons transunit))
-                     (transunit-infop (transunit->info transunit)))))))
+                     (transunit-infop (transunit->info transunit))))
+     (transunit-ensemble (and (filepath-transunit-map-annop
+                                (transunit-ensemble->units transunit-ensemble))
+                              (transunit-ensemble-infop
+                                (transunit-ensemble->info transunit-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -925,6 +943,13 @@
            (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
     :expand (transunit-annop (transunit comment declons info))
+    :enable identity)
+
+  (defruled transunit-ensemble-annop-of-transunit-ensemble
+    (equal (transunit-ensemble-annop (transunit-ensemble units info))
+           (and (filepath-transunit-map-annop units)
+                (transunit-ensemble-infop info)))
+    :expand (transunit-ensemble-annop (transunit-ensemble units info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -1097,22 +1122,29 @@
              (ext-declon-list-annop (transunit->declons transunit)))
     :enable transunit-annop)
 
+  (defruled transunit-annop-of-cdr-assoc
+    (implies (and (filepath-transunit-map-annop map)
+                  (filepath-transunit-mapp map)
+                  (omap::assoc filepath map))
+             (transunit-annop (cdr (omap::assoc filepath map))))
+    :induct t
+    :enable (omap::assoc
+             filepath-transunit-map-annop))
+
   (defruled transunit-infop-of-transunit->info
     (implies (transunit-annop transunit)
              (transunit-infop (transunit->info transunit)))
     :enable transunit-annop)
 
-  ;; theorems about irrelevants:
+  (defruled filepath-transunit-map-annop-of-transunit-ensemble->units
+    (implies (transunit-ensemble-annop ensemble)
+             (filepath-transunit-map-annop (transunit-ensemble->units ensemble)))
+    :enable transunit-ensemble-annop)
 
-  (defruled transunit-ensemble-annop-of-irr-transunit-ensemble
-    (transunit-ensemble-annop (irr-transunit-ensemble))
-    :enable ((:e transunit-ensemble-annop)
-             (:e irr-transunit-ensemble)))
-
-  (defruled code-ensemble-annop-of-irr-code-ensemble
-    (code-ensemble-annop (irr-code-ensemble))
-    :enable ((:e code-ensemble-annop)
-             (:e irr-code-ensemble)))
+  (defruled transunit-ensemble-infop-of-transunit-ensemble->info
+    (implies (transunit-ensemble-annop ensemble)
+             (transunit-ensemble-infop (transunit-ensemble->info ensemble)))
+    :enable transunit-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
 
@@ -1132,6 +1164,7 @@
      init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
+     transunit-ensemble-annop-of-transunit-ensemble
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
      const-annop-of-expr-const->const
@@ -1161,9 +1194,10 @@
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      ext-declon-list-annop-of-transunit->declons
+     transunit-annop-of-cdr-assoc
      transunit-infop-of-transunit->info
-     transunit-ensemble-annop-of-irr-transunit-ensemble
-     code-ensemble-annop-of-irr-code-ensemble)))
+     filepath-transunit-map-annop-of-transunit-ensemble->units
+     transunit-ensemble-infop-of-transunit-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1278,6 +1312,7 @@
      :labeled (stmt-types stmt.stmt)
      :compound (comp-stmt-types stmt.stmt)
      :expr (set::insert nil nil)
+     :null-attrib (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
                          (stmt-types stmt.else))
@@ -1295,6 +1330,7 @@
               stmt.expr?
               :some (set::insert (expr-type stmt.expr?.val) nil)
               :none (set::insert (type-void) nil))
+     :return-attrib (set::insert (expr-type stmt.expr) nil)
      :asm nil)
     :measure (stmt-count stmt))
 

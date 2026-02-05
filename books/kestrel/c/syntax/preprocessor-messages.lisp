@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,8 +53,7 @@
 
 (define pchar-to-msg ((char nat-optionp))
   :returns (msg msgp
-                :hints (("Goal" :in-theory (enable msgp
-                                                   character-alistp))))
+                :hints (("Goal" :in-theory (enable msgp character-alistp))))
   :short "Represent an optional character as a message,
           in the preprocessor."
   :long
@@ -63,21 +62,21 @@
     "This is almost identical to @(tsee char-to-msg)
      (see its documentation first)
      with the difference that we consider LF and CR separately.
-     This matches the fact that @(tsee pread-char), unlike @(tsee read-char),
+     This matches the fact that @(tsee read-pchar), unlike @(tsee read-char),
      does not normalize the three possible kinds of new lines to LF."))
-  (cond ((not char) "end of file")
-        ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
-                          (nth char *pchar-to-msg-ascii-control-char-names*)
-                          char))
-        ((utf8-= char 32) "the SP (space) character (ASCII code 32)")
-        ((and (utf8-<= 33 char) (utf8-<= char 126))
-         (msg "the ~s0 character (ASCII code ~x1)"
-              (str::implode (list (code-char char))) char))
-        ((utf8-= char 127) "the DEL (delete) character (ASCII code 127)")
-        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
+  (b* ((char (nat-option-fix char)))
+    (cond ((not char) "end of file")
+          ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
+                            (nth char *pchar-to-msg-ascii-control-char-names*)
+                            char))
+          ((utf8-= char 32) "the SP (space) character (ASCII code 32)")
+          ((and (utf8-<= 33 char) (utf8-<= char 126))
+           (msg "the ~s0 character (ASCII code ~x1)"
+                (str::implode (list (code-char char))) char))
+          ((utf8-= char 127) "the DEL (delete) character (ASCII code 127)")
+          (t (msg "the non-ASCII Unicode character with code ~x0" char))))
   :guard-hints (("Goal" :in-theory (enable character-listp
                                            nat-optionp)))
-  :hooks nil
 
   :prepwork
   ((defconst *pchar-to-msg-ascii-control-char-names*

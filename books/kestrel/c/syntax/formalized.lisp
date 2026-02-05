@@ -392,7 +392,66 @@
   (std::deflist expr-list-formalp (x)
     :guard (expr-listp x)
     (expr-formalp x)
-    :elementp-of-nil nil))
+    :elementp-of-nil nil)
+
+  (defruled expr-formalp-when-ident
+    (implies (expr-case expr :ident)
+             (equal (expr-formalp expr)
+                    (ident-formalp (expr-ident->ident expr)))))
+
+  (defruled expr-formalp-when-const
+    (implies (expr-case expr :const)
+             (equal (expr-formalp expr)
+                    (const-formalp (expr-const->const expr)))))
+
+  (defruled expr-formalp-when-paren
+    (implies (expr-case expr :paren)
+             (equal (expr-formalp expr)
+                    (expr-formalp (expr-paren->inner expr)))))
+
+  (defruled expr-formalp-when-unary
+    (implies (expr-case expr :unary)
+             (equal (expr-formalp expr)
+                    (and (member-equal (unop-kind (expr-unary->op expr))
+                                       '(:address :indir
+                                         :plus :minus
+                                         :bitnot :lognot))
+                         (expr-formalp (expr-unary->arg expr))))))
+
+  (defruled expr-formalp-when-cast
+    (implies (expr-case expr :cast)
+             (equal (expr-formalp expr)
+                    (and (tyname-formalp (expr-cast->type expr))
+                         (expr-formalp (expr-cast->arg expr))))))
+
+  (defruled expr-formalp-when-binary
+    (implies (expr-case expr :binary)
+             (equal (expr-formalp expr)
+                    (or (and (binop-strictp (expr-binary->op expr))
+                             (binop-purep (expr-binary->op expr))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (expr-purep (expr-binary->arg1 expr))
+                             (expr-purep (expr-binary->arg2 expr)))
+                        (and (member-equal (binop-kind (expr-binary->op expr))
+                                           '(:logand :logor))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr)))
+                        (and (equal (binop-kind (expr-binary->op expr)) :asg)
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (or (expr-case (expr-binary->arg1 expr) :ident)
+                                 (expr-purep (expr-binary->arg2 expr)))))))
+    :enable (binop-strictp binop-purep))
+
+  (defruled expr-formalp-when-cond
+    (implies (expr-case expr :cond)
+             (equal (expr-formalp expr)
+                    (and (expr-formalp (expr-cond->test expr))
+                         (expr-cond->then expr)
+                         (expr-formalp (expr-cond->then expr))
+                         (expr-formalp (expr-cond->else expr)))))
+    :enable expr-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,6 +602,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-declor-list-block-formalp ((ideclors init-declor-listp))
+  :guard (init-declor-list-unambp ideclors)
+  :returns (yes/no booleanp)
+  :short "Check if a list of initializer declarators
+          has formal dynamic semantics,
+          as part of a block item declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list must be a singleton,
+     and its element must have formal semantics."))
+  (and (consp ideclors)
+       (endp (cdr ideclors))
+       (init-declor-block-formalp (car ideclors)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define declon-block-formalp ((declon declonp))
   :guard (declon-unambp declon)
   :returns (yes/no booleanp)
@@ -558,7 +635,7 @@
      because @(tsee c::exec-block-item)
      does not support storage class specifiers;
      the type specifier sequence must be a supported one.
-     There must be exactly one supported initializer declarator."))
+     The list of initializer declarators must be supported."))
   (declon-case
    declon
    :declon (and (not declon.extension)
@@ -566,9 +643,7 @@
                       (check-decl-spec-list-all-typespec declon.specs)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp declon.declors)
-                (endp (cdr declon.declors))
-                (init-declor-block-formalp (car declon.declors)))
+                (init-declor-list-block-formalp declon.declors))
    :statassert nil)
   :hooks (:fix))
 
@@ -598,6 +673,7 @@
      :compound (comp-stmt-formalp stmt.stmt)
      :expr (or (not stmt.expr?)
                (expr-formalp stmt.expr?))
+     :null-attrib nil
      :if (and (expr-formalp stmt.test)
               (stmt-formalp stmt.then))
      :ifelse (and (expr-formalp stmt.test)
@@ -617,6 +693,7 @@
      :break nil
      :return (or (not stmt.expr?)
                  (expr-formalp stmt.expr?))
+     :return-attrib nil
      :asm nil)
     :measure (stmt-count stmt))
 
@@ -742,6 +819,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-declor-list-obj-formalp ((ideclors init-declor-listp))
+  :guard (init-declor-list-unambp ideclors)
+  :returns (yes/no booleanp)
+  :short "Check if a list of initializer declarators
+          has formal dynamic semantics,
+          as part of an object declaration (not in a block)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list must be a singleton,
+     and its element must have formal semantics."))
+  (and (consp ideclors)
+       (endp (cdr ideclors))
+       (init-declor-obj-formalp (car ideclors)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define declon-obj-formalp ((declon declonp))
   :guard (declon-unambp declon)
   :returns (yes/no booleanp)
@@ -767,9 +862,7 @@
                   (and okp
                        (type-spec-list-formalp tyspecs)
                        (stor-spec-list-formalp storspecs)))
-                (consp declon.declors)
-                (endp (cdr declon.declors))
-                (init-declor-obj-formalp (car declon.declors)))
+                (init-declor-list-obj-formalp declon.declors))
    :statassert nil)
   :hooks (:fix))
 
@@ -998,6 +1091,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-declor-list-fun-formalp ((ideclors init-declor-listp))
+  :guard (init-declor-list-unambp ideclors)
+  :returns (yes/no booleanp)
+  :short "Check if a list of initializer declarators
+          has formal dynamic semantics,
+          as part of a function declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list must be a singleton,
+     and its element must have formal semantics."))
+  (and (consp ideclors)
+       (endp (cdr ideclors))
+       (init-declor-fun-formalp (car ideclors)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define declon-fun-formalp ((declon declonp))
   :guard (declon-unambp declon)
   :returns (yes/no booleanp)
@@ -1009,7 +1120,8 @@
     "It must not be a static assertion declaration,
      and there must be no GCC extensions.
      There may be only type specifiers, for a supported type.
-     There must a single supported initializer declarator."))
+     There must a single supported initializer declarator.
+     The list of initializer declarators must be supported."))
   (declon-case
    declon
    :declon (and (not declon.extension)
@@ -1017,9 +1129,7 @@
                       (check-decl-spec-list-all-typespec declon.specs)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
-                (consp declon.declors)
-                (endp (cdr declon.declors))
-                (init-declor-fun-formalp (car declon.declors)))
+                (init-declor-list-fun-formalp declon.declors))
    :statassert nil)
   :hooks (:fix))
 

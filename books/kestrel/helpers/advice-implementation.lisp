@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -126,6 +126,204 @@
 ;; (defun disabled-runes (name ens wrld)
 ;;   (declare (xargs :mode :program))
 ;;   (disabledp-fn name ens wrld))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Factor all this stuff out:
+
+;; EVENT is a defthm or a defthmd, etc.
+;; (<defthm-variant> <name> <body> ...args...)
+;; Returns 'defthm or 'defthmd, etc.
+(defund defthm-event-type (event)
+  (declare (xargs :guard (true-listp event)))
+  (first event))
+
+;; EVENT is a defthm or a defthmd, etc.
+(defund defthm-event-name (event)
+  (declare (xargs :guard (true-listp event)))
+  (second event))
+
+;; EVENT is a defthm or a defthmd, etc.
+(defund defthm-event-body (event)
+  (declare (xargs :guard (true-listp event)))
+  (third event))
+
+;; EVENT is a defthm or a defthmd, etc.
+;; Returns (mv suppliedp val), where if suppliedp is nil, val is irrelevant.
+;; (Returning nil if arg is not present would not be appropriate for rule-classes.)
+(defund defthm-event-arg (arg event)
+  (declare (xargs :guard (and (keywordp arg)
+                              (true-listp event))))
+  (let ((args (cdddr event)))
+    (if (not (keyword-value-listp args))
+        (prog2$ (er hard? 'defthm-event-arg "Bad defthm form (doesn't end in a keyword-value-list): ~x0." event)
+                (mv nil nil))
+      (let ((res (assoc-keyword arg args)))
+        (if (not res)
+            (mv nil nil)
+          (mv t (cadr res)))))))
+
+(defund defthm-event-otf-flg (event)
+  (declare (xargs :guard (true-listp event)))
+  (mv-let (suppliedp val)
+    (defthm-event-arg :otf-flg event)
+    (if (not suppliedp)
+        nil ; the default
+      val)))
+
+(defund defthm-event-hints (event)
+  (declare (xargs :guard (true-listp event)))
+  (mv-let (suppliedp val)
+    (defthm-event-arg :hints event)
+    (if (not suppliedp)
+        nil ; the default
+      val)))
+
+(defund defthm-event-instructions (event)
+  (declare (xargs :guard (true-listp event)))
+  (mv-let (suppliedp val)
+    (defthm-event-arg :instructions event)
+    (if (not suppliedp)
+        nil ; the default
+      val)))
+
+;; We could define defthm-event-rule-classes, but it might be deceptive, as no
+;; rule classes supplied is NOT the same as :rule-classes nil.  We could return
+;; '(:rewrite) in that case, but that is also a bit deceptive.  So it may be
+;; better to just call defthm-event-arg and get both suppliedp and val.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Event is a call of THM or similar.
+;; (thm <body> ...args...)
+(defund thm-event-body (event)
+  (declare (xargs :guard (true-listp event)))
+  (second event))
+
+;; Event is a call of THM or similar.
+;; Returns nil if ARG is not present (which is an appropriate value for all arguments to thm).
+;; (thm <body> ...args...)
+(defund thm-event-arg (arg event)
+  (declare (xargs :guard (and (keywordp arg)
+                              (true-listp event))))
+  (let ((args (cddr event)))
+    (if (not (keyword-value-listp args))
+        (er hard? 'thm-event-arg "Bad thm form (doesn't end in a keyword-value list): ~x0." event)
+    (cadr (assoc-keyword arg args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; EVENT is a call of defrule or defruled, etc.
+;; (defrule <name> ...args...)
+(defund defrule-event-type (event)
+  (declare (xargs :guard (true-listp event)))
+  (first event))
+
+;; EVENT is a call of defrule or defruled, etc.
+(defund defrule-event-name (event)
+  (declare (xargs :guard (true-listp event)))
+  (second event))
+
+;; Gets the body argument of a rule/defrule.  The ARGS are alternating
+;; keywords/values, except the body appears somewhere (but not between a keyword
+;; and its corresponding arg).  So we have:
+;;
+;; :arg1 :val1 ... body ... :argn :valn
+;;
+;; The ARGS do not include the name.
+(defun rule/defrule-body-from-args (args name)
+  (declare (xargs :guard (true-listp args)))
+  (if (endp args)
+      (er hard? 'rule/defrule-body-from-args "No body found for ~x0." name)
+    (let ((first-arg (first args)))
+      (if (keywordp first-arg)
+          ;; Note that the body of a defrule can't be an (unquoted) keyword
+          (if (endp (rest args))
+              (er hard? 'rule/defrule-body-from-args "Missing value after keyword arg ~x0 in ~x1." first-arg name)
+            ;; Skip the keyword arg and its value:
+            (rule/defrule-body-from-args (rest (rest args)) name))
+        first-arg ; we've found a non-keyword arg, so it must be the body
+        ))))
+
+;; EVENT is a call of defrule or defruled, etc.
+(defund defrule-event-body (event)
+  (declare (xargs :guard (true-listp event)))
+  (let ((name (defrule-event-name event))
+        (args (rest (rest event))))
+    (rule/defrule-body-from-args args name)))
+
+;; Returns (mv suppliedp val).
+;; See comment on rule/defrule-body-from-args.
+(defun rule/defrule-arg (arg args name)
+  (declare (xargs :guard (and (keywordp arg)
+                              (true-listp args))))
+  (if (endp args)
+      (mv nil nil)
+    (let ((first-arg (first args)))
+      (if (keywordp first-arg)
+          ;; Note that the body of a defrule can't be an (unquoted) keyword
+          (if (endp (rest args))
+              (prog2$ (er hard? 'rule/defrule-arg "Missing value after keyword arg ~x0 in ~x1." first-arg name)
+                      (mv nil nil))
+            (if (eq first-arg arg)
+                (mv t (second args))
+              ;; Skip this keyword arg and its value:
+              (rule/defrule-arg arg (rest (rest args)) name)))
+         ; we've found a non-keyword arg, so it must be the body, so skip it:
+        (rule/defrule-arg arg (rest args) name)))))
+
+;; EVENT is a call of defrule or defruled, etc.
+;; Extracts the ARG argument from EVENT.
+;; Returns (mv suppliedp val) where val is meaningless if suppliedp is nil.
+(defund defrule-event-arg (arg event)
+  (declare (xargs :guard (and (keywordp arg)
+                              (true-listp event))))
+  (let ((name (defrule-event-name event))
+        (args (rest (rest event))))
+    (rule/defrule-arg arg args name)))
+
+;; Returns nil if :otf-flg is not supplied, or if it is nil.
+(defund defrule-event-otf-flg (event)
+  (declare (xargs :guard (true-listp event)))
+  (mv-let (suppliedp val)
+    (defrule-event-arg :otf-flg event)
+    (if (not suppliedp)
+        nil ; the default
+      val)))
+
+;; We would like to definee defrule-event-hints, but we also have to handle
+;; :enable, :disable, and :e/d arguments somehow.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; EVENT is a call of rule.
+;; (rule ...args...)
+(defund rule-event-body (event)
+  (declare (xargs :guard (true-listp event)))
+  (let ((name "the rule")
+        (args (rest event)))
+    (rule/defrule-body-from-args args name)))
+
+;; EVENT is a call of rule.
+;; Extracts the ARG argument from EVENT.
+;; Returns (mv suppliedp val) where val is meaningless if suppliedp is nil.
+(defund rule-event-arg (arg event)
+  (declare (xargs :guard (and (keywordp arg)
+                              (true-listp event))))
+  (let ((name "the rule")
+        (args (rest event)))
+    (rule/defrule-arg arg args name)))
+
+;; Returns nil if :otf-flg is not supplied, or if it is nil.
+(defund rule-event-otf-flg (event)
+  (declare (xargs :guard (true-listp event)))
+  (mv-let (suppliedp val)
+    (rule-event-arg :otf-flg event)
+    (if (not suppliedp)
+        nil ; the default
+      val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *step-limit* 100000)
 (defconst *time-limit* 5)
@@ -3432,7 +3630,7 @@
                                  theorem-body
                                  theorem-hints
                                  theorem-otf-flg
-                                 broken-theorem
+                                 broken-theorem ; call this failing-event?
                                  num-recs-per-model
                                  current-book-absolute-path
                                  avoid-current-bookp
@@ -3455,7 +3653,7 @@
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
-                              ;; broken-theorem is a thm or defthm form
+                              ;; broken-theorem is a thm or defthm form (or maybe a rule, defrule, etc.)
                               (natp num-recs-per-model)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
@@ -3965,17 +4163,33 @@
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        ;; Get most recent failed theorem:
        (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
-       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg) ; todo: hints won't be right for rule/defrule
-        (if (member-eq (car most-recent-failed-theorem) '(thm acl2::rule))
-            (mv :thm ; no name
-                (cadr most-recent-failed-theorem)
-                (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
-                (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
-          ;; Must be a defthm, defrule, etc:
-          (mv (cadr most-recent-failed-theorem)
-              (caddr most-recent-failed-theorem)
-              (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
-              (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
+       (event-type (car most-recent-failed-theorem))
+       (- (and (not (member-eq event-type '(thm defthm defthmd)))
+               (cw "Warning: Advice tool support for ~x0 events may be incomplete.~%" event-type)))
+       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
+        (case event-type
+          ((defthm defthmd) ; (defthm <name> <body> ...args...)
+           (mv (defthm-event-name most-recent-failed-theorem)
+               (defthm-event-body most-recent-failed-theorem)
+               (defthm-event-hints most-recent-failed-theorem)
+               (defthm-event-otf-flg most-recent-failed-theorem)))
+          (thm (mv :thm ; no name ; (thm <body> ...args...)
+                   (thm-event-body most-recent-failed-theorem)
+                   (thm-event-arg :hints most-recent-failed-theorem)
+                   (thm-event-arg :otf-flg most-recent-failed-theorem)))
+          ((defrule defruled defrulel defruledl)
+           (mv (defrule-event-name most-recent-failed-theorem)
+               (defrule-event-body most-recent-failed-theorem)
+               ;; todo: also get theory changes like :enable (but note that defrule puts them into a form that precedes the defthm -- how to handle that?):
+               (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
+               (defrule-event-otf-flg most-recent-failed-theorem)))
+          (rule (mv :thm ; no name ; should we indicate :rule instead?
+                    (rule-event-body most-recent-failed-theorem)
+                    (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem))) ; todo (see above)
+                    (rule-event-otf-flg most-recent-failed-theorem)))
+          (otherwise
+            (prog2$ (er hard 'advice-fn "Unknown event type: ~x0." event-type)
+                    (mv nil nil nil nil)))))
        (- (and print (cw "~%Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
@@ -4040,7 +4254,7 @@
                                nil ; time-limit
                                state))
              ((when provedp) ; surprising!
-              (cw "WARNING: Tried the theorem again and it worked!")
+              (cw "WARNING: Theorem ~x0 did not fail as expected when we submitted it again to restore the saved checkpoints!" theorem-name)
               state)
              (new-raw-checkpoint-clauses-top (acl2::checkpoint-list
                                               t ; todo: consider non-top

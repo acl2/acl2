@@ -17,10 +17,15 @@ int main(void) {
 
   printf("%ld\n", stdc);                 // version -> c standard
   printf("%d\n", gcc_extensions);        // version -> gcc extensions
+  printf("%d\n", sizeof(_Bool));         // bool-bytes
   printf("%d\n", sizeof(short));         // short-bytes
   printf("%d\n", sizeof(int));           // int-bytes
   printf("%d\n", sizeof(long));          // long-bytes
   printf("%d\n", sizeof(long long));     // llong-bytes
+  printf("%d\n", sizeof(float));         // float-bytes
+  printf("%d\n", sizeof(double));        // double-bytes
+  printf("%d\n", sizeof(long double));   // ldouble-bytes
+  printf("%d\n", sizeof(void *));        // pointer-bytes
   // See [C17:5.2.4.2.1/2]
   printf("%d\n", CHAR_MIN != SCHAR_MIN); // plain-char-signedp
 

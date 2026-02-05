@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -9020,7 +9020,7 @@
                                           (cadr alist) ctx state))))
                        (value instrs)))))
                   (:OTF-FLG
-                   (value (cadr alist)))
+                   (chk-otf-flg (cadr alist) ctx state))
                   (:TRIGGER-FNS
                    (cond
                     ((eq token :FORWARD-CHAINING)
@@ -10390,12 +10390,14 @@
                                (cadr (assoc-keyword
                                       :COROLLARY
                                       (cdr (car rule-classes))))))
-            (otf-flg (cadr (assoc-keyword :OTF-FLG (cdr (car rule-classes)))))
             (hints (cadr (assoc-keyword :HINTS (cdr (car rule-classes)))))
             (instructions (cadr (assoc-keyword :INSTRUCTIONS
                                                (cdr (car rule-classes))))))
         (er-let*
-         ((hints (if hints
+         ((otf-flg (chk-otf-flg
+                    (cadr (assoc-keyword :OTF-FLG (cdr (car rule-classes))))
+                    ctx state))
+          (hints (if hints
                      (value hints) ; already translated, with default-hints
                    (let ((default-hints (default-hints wrld)))
                      (if default-hints ; not yet translated; no explicit hints
@@ -12113,7 +12115,8 @@
        (with-waterfall-parallelism-timings
         name
         (er-let*
-            ((ignore (chk-all-but-new-name name ctx nil wrld state))
+            ((otf-flg (chk-otf-flg otf-flg ctx state))
+             (ignore (chk-all-but-new-name name ctx nil wrld state))
              (cert-data-flg/tterm0
               (translate-for-defthm name term ctx wrld state))
              (cert-data-flg (value (car cert-data-flg/tterm0)))
@@ -12279,7 +12282,8 @@
        (t
         (let ((wrld (w state))
               (ens (ens state)))
-          (er-let* ((instructions (translate-instructions instructions ctx
+          (er-let* ((otf-flg (chk-otf-flg otf-flg ctx state))
+                    (instructions (translate-instructions instructions ctx
                                                           state))
                     (thints (translate-hints+ 'thm
                                               hints

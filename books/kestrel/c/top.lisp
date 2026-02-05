@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,10 +64,32 @@
      "The "
      (xdoc::ahref "https://www.gnu.org/software/c-intro-and-ref/manual"
                   "GNU C Language Intro and Reference Manual")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/"
+                  "GNU C Preprocessor Manual")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cppinternals/"
+                  "GNU C Preprocessor Internals")
+     ".")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html"
+                  "Clang Language Extensions")
      "."))
    (xdoc::p
     "In the documentation of this library,
-     these source are referenced as `[C23]', `[C17]', `[GCCM]', and `[GCCL]';
+     these source are referenced as
+     `[C23]',
+     `[C17]',
+     `[GCCM]',
+     `[GCCL]',
+     `[CPPM]',
+     `[CPPI]', and
+     `[CLE]';
      sections are referenced
      by appending their designations separated by colon,
      e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
@@ -76,10 +98,10 @@
      e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
      as nouns or parenthetically.
-     In the case of [GCCM] and [GCCL], we also give URL links,
+     In the case of the GNU sources, we also give URL links,
      which, given the characters that form them, may be useful to locate
      documentation that has moved or otherwise changed,
-     given that [GCCM] and [GCCL] are live documents;
+     given that those are live documents;
      an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
                  "[GCCM:6]")
@@ -94,6 +116,14 @@
      But in the documentation of this ACL2 library,
      we always clearly distinguish between
      standard C and GCC extensions.")
+   (xdoc::p
+    "Likewise, we provide support for Clang extensions.
+     Clang attempts to support a broad range of GCC extensions,
+     while also providing a few of its own.
+     Since Clang mostly follows GCC, we frequently refer to ``GCC extensions''
+     in the documentation to refer to extensions supported by both systems,
+     and only mention Clang specifically
+     when a particular extension is unsupported by Clang.")
    (xdoc::p
     "When referencing concepts that are the same in [C23] and [C17],
      we prefer to just reference [C23].

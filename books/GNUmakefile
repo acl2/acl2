@@ -969,14 +969,16 @@ critpath.txt: $(OK_CERTS)
 # Targets for building whole directories of books.
 
 # basic is the default set of books to build, in the sense that "make"
-# is equivalent to "make basic".  Note that instructions on the
-# installation page recommend "make basic".  The quicklisp books are
+# is equivalent to "make basic".  Note that :doc installation-instructions
+# and :doc books-certification recommend "make basic".  The quicklisp books are
 # avoided here, since otherwise the first impression of ACL2 could be
 # frustration over issues with installing OpenSSL, as may be necessary
 # when certifying Quicklisp books.  Thus we include only subsets of
 # the xdoc and tools targets.
+# WARNING: If you change the basic target, consider updating the list
+# of its contents in :doc books-certification.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std-without-some-tests xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1101,6 +1103,12 @@ tools: $(TOOLS_BOOKS)
 
 .PHONY: tools-without-quicklisp
 tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
+
+# Because std/util/add-io-pairs-tests.lisp brings in some slow number theory
+# stuff that we don't want included in the basic target:
+.PHONY: std-without-some-tests
+STD_BOOKS := $(filter std/%, $(OK_CERTS))
+std-without-some-tests: $(filter-out std/util/add-io-pairs-tests%, $(STD_BOOKS))
 
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))

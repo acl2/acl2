@@ -271,7 +271,7 @@
         (retok (and internal (omap::head-key map)) gso field-name)))
     (filepath-transunit-map-find-gso-candidate (omap::tail map) blacklist))
   :guard-hints
-  (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
+  (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define transunit-ensemble-find-gso-candidate
   ((tunits transunit-ensemblep)
@@ -392,7 +392,7 @@
 (define code-ensemble-split-all-gso
   ((code code-ensemblep)
    (blacklist ident-setp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (code$ code-ensemblep))
@@ -402,7 +402,8 @@
         (transunit-ensemble-split-all-gso code.transunits
                                           blacklist
                                           code.ienv)))
-    (retok blacklist (change-code-ensemble code :transunits tunits))))
+    (retok blacklist (change-code-ensemble code :transunits tunits)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,11 +416,7 @@
    const-new
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::transunit-ensemble-annop
-                           (code-ensemble->transunits code)))
-                     :hints (("Goal" :in-theory (enable irr-code-ensemble
-                                                        irr-transunit-ensemble))))
+               (code code-ensemblep)
                (const-new$ symbolp :rule-classes :type-prescription))
   :short "Process the inputs."
   (b* (((reterr) (irr-code-ensemble) nil)
@@ -428,11 +425,16 @@
        (code (acl2::constant-value const-old wrld))
        ((unless (code-ensemblep code))
         (retmsg$ "~x0 must be a code ensemble." const-old))
-       ((unless (c$::transunit-ensemble-annop (code-ensemble->transunits code)))
+       ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new)))
-    (retok code const-new)))
+    (retok code const-new))
+  ///
+
+  (defret code-ensemble-annop-of-split-all-gso-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,7 +445,7 @@
 (define split-all-gso-gen-everything
   ((code code-ensemblep)
    (const-new symbolp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."

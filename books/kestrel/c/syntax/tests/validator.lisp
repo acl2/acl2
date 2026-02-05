@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
-  '(:gcc
+  '(:extensions
     :short-bytes
     :int-bytes
     :long-bytes
@@ -36,7 +36,7 @@
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
-  '(:gcc
+  '(:extensions
     :short-bytes
     :int-bytes
     :long-bytes
@@ -80,19 +80,32 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (gcc (cdr (assoc-eq :gcc options)))
+       (extensions (cdr (assoc-eq :extensions options)))
        (cond (cdr (assoc-eq :cond options)))
-       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (bool-bytes 1)
+       (float-bytes 4)
+       (double-bytes 8)
+       (ldouble-bytes 16)
+       (pointer-bytes 8)
+       (version (cond ((eq extensions nil) (c::version-c17))
+                      ((eq extensions :gcc) (c::version-c17+gcc))
+                      (t (c::version-c17+clang))))
        (ienv (make-ienv :version version
+                        :bool-bytes bool-bytes
                         :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
+                        :float-bytes float-bytes
+                        :double-bytes double-bytes
+                        :ldouble-bytes ldouble-bytes
+                        :pointer-bytes pointer-bytes
                         :plain-char-signedp plain-char-signedp))
+       (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
        (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
@@ -113,18 +126,31 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (gcc (cdr (assoc-eq :gcc options)))
-       (version (if gcc (c::version-c17+gcc) (c::version-c17)))
+       (extensions (cdr (assoc-eq :extensions options)))
+       (bool-bytes 1)
+       (float-bytes 4)
+       (double-bytes 8)
+       (ldouble-bytes 16)
+       (pointer-bytes 8)
+       (version (cond ((eq extensions nil) (c::version-c17))
+                      ((eq extensions :gcc) (c::version-c17+gcc))
+                      (t (c::version-c17+clang))))
        (ienv (make-ienv :version version
+                        :bool-bytes bool-bytes
                         :short-bytes short-bytes
                         :int-bytes int-bytes
                         :long-bytes long-bytes
                         :llong-bytes llong-bytes
+                        :float-bytes float-bytes
+                        :double-bytes double-bytes
+                        :ldouble-bytes ldouble-bytes
+                        :pointer-bytes pointer-bytes
                         :plain-char-signedp plain-char-signedp))
+       (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
        (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc nil))
+            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
@@ -198,7 +224,7 @@ void f() {
   if (0 < &a) {}
 }
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "int * x;
@@ -585,7 +611,7 @@ __bswap_16 (__uint16_t __bsx)
   return 0;
 }
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "typedef unsigned char uint8_t;
@@ -595,41 +621,41 @@ static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
 (test-valid
  "__int128 x;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "unsigned __int128 x;
 __int128 unsigned y;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "__int128 x;
 signed __int128 y;
 __int128 signed z;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "__int128 x;
 __signed __int128 y;
 __int128 __signed z;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "__int128 x;
 __signed__ __int128 y;
 __int128 __signed__ z;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "__int128_t x;
 __int128 y;
 unsigned __int128_t z;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "void main(void) {
@@ -637,21 +663,21 @@ unsigned __int128_t z;
   int y = ({ int a = 1; a; });
 }
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "_Thread_local int x;
@@ -660,7 +686,7 @@ int bar (void);
 (test-valid
  "_Thread_local int x;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid-fail
  "__thread int x;
@@ -669,7 +695,7 @@ int bar (void);
 (test-valid
  "__thread int x;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid-fail
   "int foo(void) {
@@ -902,6 +928,42 @@ void bar(void) {
                (equal bar-expr-uid bar-init-uid))))
 
 (test-valid
+  "static int foo = 0;
+
+int internal_foo(void) {
+  return foo;
+}
+
+extern int foo;
+"
+  "int foo;
+
+int internal_foo(void);
+
+int main(void) {
+  foo = 42;
+  return internal_foo();
+}
+"
+  ;; Looking up "foo" in the first translation unit validation table should
+  ;; show a UID value of "0".
+  :cond (b* ((transunit-test0
+               (cdr (omap::assoc (filepath "test0")
+                                 (transunit-ensemble->units ast))))
+             (info? (transunit->info transunit-test0))
+             ((unless (transunit-infop info?))
+              nil)
+             (table (transunit-info->table-end info?))
+             ((mv ord-info? currentp)
+              (valid-lookup-ord (ident "foo") table)))
+          (and ord-info?
+               currentp
+               (valid-ord-info-case
+                 ord-info?
+                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :otherwise nil))))
+
+(test-valid
   "void * x = &x;
 "
 )
@@ -1079,12 +1141,12 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
 (test-valid
  "_Complex _Float128 x;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "_Float128 x;
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid
  "void (*f(float x, double y))(int z) {
@@ -1177,7 +1239,7 @@ void bar() {
   foo(y);
 }
 "
- :gcc t)
+ :extensions :gcc)
 
 (test-valid-fail
  "typedef union __attribute__((transparent_union))
@@ -1185,3 +1247,47 @@ void bar() {
   int *x;
 } my_union_t;
 ")
+
+;; Example taken from [GCCM:6.11.6.1]
+;; https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html
+(test-valid-fail
+ "register int *foo asm (\"r12\");
+")
+
+(test-valid
+ "register int *foo asm (\"r12\");
+"
+ :extensions :gcc)
+
+(test-valid
+  "typedef float _Float32;
+")
+
+(test-valid-fail
+  "typedef float _Float32;
+"
+  :extensions :gcc)
+
+(test-valid
+  "typedef float _Float32;
+"
+  :extensions :clang)
+
+(test-valid-fail
+  "typedef float _Float16;
+"
+  :extensions :clang)
+
+(test-valid
+  "int f(void) {
+   void * foo;
+   for (;;) {}
+}
+
+int g(void) {
+   goto foo;
+foo:
+   return 0;
+}
+"
+  :extensions :gcc)

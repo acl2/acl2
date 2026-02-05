@@ -250,11 +250,13 @@
     add-limit-for-rules
     limit-for-rule
     simplify-dag-basic
+    simplify-term-to-term-basic
     known-booleans
     real-time-since
     maybe-prune-dag-approximately
     maybe-prune-dag-precisely
 
+    wrap-term-around-dag
     make-term-into-dag-basic
     dag-to-term
     dag-node-to-term
@@ -264,7 +266,7 @@
     dag-or-quotep-vars
 
     remove-assumptions-about
-    *non-stp-assumption-functions*
+;;    *non-stp-assumption-functions*
     equivalent-dagsp2
     print-to-hundredths
     print-dag-nicely
@@ -310,7 +312,6 @@
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest ; move?
     make-rule-alist
@@ -331,6 +332,7 @@
     myif
     extend-progn
     get-vars-from-term
+    get-vars-from-terms
     doublets-to-alist
     translate-term
     translate-terms
@@ -375,7 +377,17 @@
     ensure-target-exists-in-executable
     make-flag
     with-supporters
-    ))
+
+    tacticp
+    tacticsp
+
+    hitsp
+    combine-hits
+    maybe-print-hits
+    empty-hits
+
+    command-is-redundantp
+    redundancy-table-event))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -409,7 +421,9 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
-    trim-rules))
+    trim-rules
+    prune-dag-post-rewrite-rules
+    pre-stp-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little

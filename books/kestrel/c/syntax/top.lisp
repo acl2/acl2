@@ -57,15 +57,15 @@
      We may even add some information about file layout,
      if that turns out to be useful.")
    (xdoc::p
-    "We include some constructs for GCC extensions,
+    "We include some constructs for GCC/Clang extensions,
      which, as mentioned in "
     (xdoc::seetopic "c::c" "the top-level topic of our library for C")
     ", are prevalent and important extensions
      needed for a practical tool.
-     Ideally, eventually we should support all the GCC extensions,
+     Ideally, eventually we should support all the GCC/Clang extensions,
      but we are adding them piece-wise, as needed.
      Our documentation always distinguishes
-     between the C standard and the GCC extensions.")
+     between the C standard and the GCC/Clang extensions.")
    (xdoc::p
     "The idea of this tool-oriented abstract syntax is also discussed in
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
@@ -144,7 +144,7 @@
     "We provide a collection of predicates that characterize "
     (xdoc::seetopic "standard"
                     "abstract syntax for standard C")
-    ", i.e. that does not use any GCC extensions.")
+    ", i.e. that does not use any GCC/Clang extensions.")
    (xdoc::p
     "We provide a collection of predicates that characterize "
     (xdoc::seetopic "purity" "pure abstract syntax")

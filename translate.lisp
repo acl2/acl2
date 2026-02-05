@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -14886,28 +14886,44 @@
                    (temp (cdr (assoc-eq binder *acceptable-dcls-alist*))))
                (cond
                 ((not (member-eq dcl temp))
-                 (er-cmp ctx
-                         "The only acceptable declaration~#0~[~/s~] at the ~
-                          top-level of ~#1~[an FLET binding~/a MACROLET ~
-                          binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
-                          declaration ~x4 is thus unacceptable here.  ~#5~[~/ ~
-                          It is never necessary to make IGNORE or IGNORABLE ~
-                          declarations in lambda$ expressions because lambda$ ~
-                          automatically adds an IGNORABLE declaration for all ~
-                          of the formals.~]  See :DOC declare."
-                         temp
-                         (cond ((eq binder 'flet) 0)
-                               ((eq binder 'macrolet) 1)
-                               (t 2))
-                         binder
-                         (tilde-*-conjunction-phrase temp
-                                                     *dcl-explanation-alist*)
-                         entry
-                         (cond ((and (eq binder 'lambda$)
-                                     (or (eq dcl 'ignore)
-                                         (eq dcl 'ignorable)))
-                                1)
-                               (t 0))))
+                 (let ((matching-sym
+                        (and (symbolp dcl)
+                             (car (member-symbol-name (symbol-name dcl)
+                                                      temp)))))
+
+; Note that "ACL2::~s8" below is always correct since the CDRs of elements of
+; *acceptable-dcls-alist* are always in the ACL2 package (either directly or by
+; being imported from the "COMMON-LISP" package).
+
+                   (er-cmp ctx
+                           "The only acceptable declaration~#0~[~/s~] at the ~
+                            top-level of ~#1~[an FLET binding~/a MACROLET ~
+                            binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
+                            declaration ~x4 is thus unacceptable here.~#5~[~/ ~
+                            It is never necessary to make IGNORE or IGNORABLE ~
+                            declarations in lambda$ expressions because ~
+                            lambda$ automatically adds an IGNORABLE ~
+                            declaration for all of the formals.~]~#6~[~/  ~
+                            Note: You used the symbol ~x7 in your declaration ~
+                            but you probably intended to use the symbol ~
+                            ACL2::~s8.~]  See :DOC declare."
+                           temp
+                           (cond ((eq binder 'flet) 0)
+                                 ((eq binder 'macrolet) 1)
+                                 (t 2))
+                           binder
+                           (tilde-*-conjunction-phrase temp
+                                                       *dcl-explanation-alist*)
+                           entry
+                           (cond ((and (eq binder 'lambda$)
+                                       (or (eq dcl 'ignore)
+                                           (eq dcl 'ignorable)))
+                                  1)
+                                 (t 0))
+                           (if matching-sym 1 0)
+                           dcl
+                           (and matching-sym
+                                (symbol-name matching-sym)))))
                 ((not (true-listp entry))
                  (er-cmp ctx
                          "Each element of a declaration must end in NIL but ~

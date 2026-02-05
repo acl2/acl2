@@ -5093,28 +5093,6 @@
                                   (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
-;move
-(defthmd bvmod-of-power-of-2-helper
-  (implies (and (equal k (expt 2 m))
-                (< m n)
-                (natp n)
-                (natp m))
-           (equal (bvmod n x k)
-                  (bvchop m x)))
-  :hints (("Goal" :in-theory (enable bvmod bvchop))))
-
-;move
-(defthm bvmod-of-power-of-2
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 (+ -1 (integer-length k))))
-                (< (+ -1 (integer-length k)) n) ;gen?
-                (natp n)
-                (natp k))
-           (equal (bvmod n x k)
-                  (bvchop (+ -1 (integer-length k)) x)))
-  :hints (("Goal" :use (:instance bvmod-of-power-of-2-helper
-                                  (m (+ -1 (integer-length k)))))))
-
 ;rename
 ;do we really want to introduce bool-to-bit?
 ;shouldn't the bitxor with 1 become bitnot?

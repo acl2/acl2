@@ -375,6 +375,7 @@
     declon-fix
     declon-count
     declon-case
+    declon-declon
     make-declon-declon
     declon-declon->extension
     declon-declon->specs
@@ -400,22 +401,34 @@
     stmt-compound->stmt
     make-stmt-compound
     stmt-compound->items
+    stmt-expr
     make-stmt-expr
+    stmt-null-attrib
+    make-stmt-null-attrib
+    stmt-if
     make-stmt-if
+    stmt-ifelse
     make-stmt-ifelse
     make-stmt-switch
+    stmt-while
     make-stmt-while
+    stmt-dowhile
     make-stmt-dowhile
     make-stmt-for-expr
     make-stmt-for-declon
+    stmt-return
     make-stmt-return
+    stmt-return-attrib
+    make-stmt-return-attrib
     stmt-gotoe
 
     block-itemp
     block-item-fix
     block-item-count
     block-item-case
+    block-item-declon
     make-block-item-declon
+    block-item-stmt
     make-block-item-stmt
 
     block-item-listp
@@ -632,14 +645,20 @@
 
     ident-formalp
     const-formalp
+    type-spec-list-formalp
+    stor-spec-list-formalp
     tyname-formalp
     expr-formalp
+    expr-option-formalp
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
+    declor-fun-formalp
     init-declor-block-formalp
+    init-declor-list-block-formalp
     declon-block-formalp
     stmt-formalp
+    comp-stmt-formalp
     block-item-formalp
     block-item-list-formalp
     fundef-formalp

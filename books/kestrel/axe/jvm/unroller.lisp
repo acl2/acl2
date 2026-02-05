@@ -34,7 +34,8 @@
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag
-(include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator, has skip-proofs
+(include-book "../evaluator-support")
+(include-book "../evaluator") ; for dag-val-with-axe-evaluator, has skip-proofs
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -224,7 +225,7 @@
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag-or-quotep state).
+;; erp result-dag-or-quotep hits state).
 ;; See also the similar function in books/kestrel/axe/x86/unroll-x86-code.
 (defund repeatedly-run (dag
                         steps-left
@@ -235,6 +236,7 @@
                         rules-to-monitor
                         ;;use-internal-contextsp
                         count-hits
+                        hits
                         print
                         print-interval
                         memoizep
@@ -250,6 +252,7 @@
                               (booleanp normalize-xors)
                               (symbol-listp rules-to-monitor)
                               (count-hits-argp count-hits)
+                              (hitsp hits)
 ;                              (booleanp use-internal-contextsp)
                               (print-levelp print)
                               (booleanp memoizep)
@@ -268,7 +271,7 @@
   (if (or (zp steps-left)
           (not (mbt (and (step-incrementp step-increment)
                          (natp total-steps)))))
-      (mv (erp-nil) dag state)
+      (mv (erp-nil) dag hits state)
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
@@ -290,7 +293,7 @@
          ;;            :check-inputs nil))
          ((mv erp dag-or-quotep
               & ;limits
-              )
+              hits-this-time)
           (acl2::simplify-dag-with-rule-alists-jvm dag
                                                    assumptions
                                                    rule-alists
@@ -298,6 +301,7 @@
                                                    (acl2::known-booleans (w state))
                                                    normalize-xors
                                                    limits
+                                                   (empty-hits) ; todo: put this after count-hits?
                                                    memoizep
                                                    count-hits
                                                    (reduce-print-level print)
@@ -305,20 +309,21 @@
                                                    *no-warn-ground-functions-jvm*
                                                    '(program-at) ; fns-to-elide
                                                    ))
-         ((when erp) (mv erp dag state))
+         ((when erp) (mv erp dag hits state))
+         (hits (combine-hits hits hits-this-time))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
-          (mv (erp-nil) dag-or-quotep state))
+          (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
           (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
                                          60000 ; todo: pass in
                                          state))
-         ((when erp) (mv erp dag state))
+         ((when erp) (mv erp dag hits state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
-          (mv (erp-nil) dag-or-quotep state))
+          (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ((mv erp dag-or-quotep state) (maybe-prune-dag-precisely prune-precise
                                                                   dag
@@ -331,28 +336,28 @@
                                                                   *no-warn-ground-functions-jvm*
                                                                   print
                                                                   state))
-         ((when erp) (mv erp dag state))
+         ((when erp) (mv erp dag hits state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
-          (mv (erp-nil) dag-or-quotep state))
+          (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          (dag-fns (dag-fns dag)) ; optimize to not create the whole list
          (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
           (prog2$ (cw "Note: The run has completed.~%")
-                  (mv (erp-nil) dag state))
+                  (mv (erp-nil) dag hits state))
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (todo: update this for JVM)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
-                    (mv (erp-nil) dag state))
+                    (mv (erp-nil) dag hits state))
           (b* (((mv erp equivalentp)
                 (equivalent-dagsp2 dag old-dag))
-               ((when erp) (mv erp dag state))
+               ((when erp) (mv erp dag hits state))
                ((when equivalentp)
                 (cw "Note: Stopping the run because nothing changed.~%")
                 (and print
                      (prog2$ (cw "(DAG:~%")
                              (cw "~X01)" dag nil)))
-                (mv (erp-nil) dag state))
+                (mv (erp-nil) dag hits state))
                (total-steps (+ steps-for-this-iteration total-steps))
                (- (and print
                        (if (eq :brief print)
@@ -369,6 +374,7 @@
                             (- steps-left steps-for-this-iteration)
                             step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
                             count-hits
+                            hits
                             print
                             print-interval
                             memoizep
@@ -391,18 +397,38 @@
                 ;; (prune-precise-optionp prune-precise)
                 ;; (prune-approx-optionp prune-approx)
                 (natp total-steps))
-           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state)))
-                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
+           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
   :hints (("Goal" :induct t
            :in-theory (e/d (repeatedly-run)
                            (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
                             quotep
                             min)))))
 
-(defthm w-of-mv-nth-2-of-repeatedly-run
-  (equal (w (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+(defthm w-of-mv-nth-3-of-repeatedly-run
+  (equal (w (mv-nth 3 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
          (w state))
   :hints (("Goal" :in-theory (enable repeatedly-run))))
+
+(defthm hitsp-of-mv-nth-2-of-repeatedly-run
+  (implies (and (pseudo-dagp dag)
+                (natp steps-left)
+                (step-incrementp step-increment)
+                (rule-alistsp rule-alists)
+                (pseudo-term-listp assumptions)
+                (booleanp normalize-xors)
+                (symbol-listp rules-to-monitor)
+                (count-hits-argp count-hits)
+                (hitsp hits)
+;                              (booleanp use-internal-contextsp)
+                (print-levelp print)
+                (booleanp memoizep)
+                (prune-precise-optionp prune-precise)
+                (prune-approx-optionp prune-approx)
+                (natp total-steps))
+           (hitsp (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))
+  :hints (("Goal" :in-theory (e/d (repeatedly-run) (simplify-dag-with-rule-alists-jvm-return-type-corollary-2 ; todo: loop
+                                                    )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,7 +752,7 @@
        ((mv erp assumption-rule-alists)
         (add-to-rule-alists extra-assumption-rules assumption-rule-alists (w state)))
        ((when erp) (mv erp nil nil nil nil state))
-       ((mv erp all-assumptions)
+       ((mv erp all-assumptions &)
         (acl2::simplify-conjunction-with-rule-alists-basic ;simplify-terms-repeatedly
           all-assumptions
           assumption-rule-alists
@@ -735,6 +761,7 @@
           nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           count-hits
+          (empty-hits)
           t   ; todo: warn just once
           ))
        ((when erp) (mv erp nil nil nil nil state))
@@ -747,7 +774,7 @@
         (mv :unexpected-quotep nil nil nil nil state))
        (step-limit 1000000)
        (step-increment (if chunkedp 100 1000000)) ; todo: let the chunk size be configurable
-       ((mv erp dag state)
+       ((mv erp dag hits state)
         (repeatedly-run dag-to-simulate
                         step-limit
                         step-increment
@@ -756,6 +783,7 @@
                         normalize-xors
                         monitored-rules
                         count-hits
+                        (empty-hits)
                         print
                         print-interval
                         memoizep
@@ -766,6 +794,7 @@
        ((when erp)
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil nil nil nil state))
+       (- (maybe-print-hits hits))
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
@@ -852,8 +881,11 @@
                   :stobjs state
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, and TRANSLATE-TERMS
                   ))
-  (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+  (b* ((;; Check whether this call to the lifter is redundant:
+        (when (command-is-redundantp whole-form state))
+        (mv nil '(value-triple :redundant) state))
+       ;; Record the start time:
+       ((mv start-time state) (acl2::get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; check the name that will be defined:
        ((mv erp & state) (chk-fresh-namep defconst-name 'const 'unroll-java-code (w state) state))
        ((when erp) (mv erp nil state))
@@ -862,43 +894,41 @@
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
        (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
-       ;; Record the start time:
-       ((mv start-time state) (acl2::get-real-time state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor parameter-names state)
         (unroll-java-code-core method-designator-string
-                                 nice-output-indicator
-                                 array-length-alist
-                                 extra-rules ;to add to default set
-                                 remove-rules ;to remove from default set
-                                 extra-assumption-rules
-                                 rule-alists
-                                 monitored-rules
-                                 user-assumptions
-                                 normalize-xors
-                                 classes-to-assume-initialized
-                                 ignore-exceptions
-                                 ignore-errors
-                                 count-hits
-                                 print
-                                 print-interval
-                                 memoizep
-                                 vars-for-array-elements
-                                 prune-precise
-                                 prune-approx
-                                 call-stp ;t, nil, or a max-conflicts
-                                 steps
-                                 branches
-                                 param-names
-                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
-                                 t ;error on incomplete runs
-                                 state))
+                               nice-output-indicator
+                               array-length-alist
+                               extra-rules ;to add to default set
+                               remove-rules ;to remove from default set
+                               extra-assumption-rules
+                               rule-alists
+                               monitored-rules
+                               user-assumptions
+                               normalize-xors
+                               classes-to-assume-initialized
+                               ignore-exceptions
+                               ignore-errors
+                               count-hits
+                               print
+                               print-interval
+                               memoizep
+                               vars-for-array-elements
+                               prune-precise
+                               prune-approx
+                               call-stp ;t, nil, or a max-conflicts
+                               steps
+                               branches
+                               param-names
+                               chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
+                               t ;error on incomplete runs
+                               state))
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
-               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep)))
+               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep))) ; may be common for the tester?
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
@@ -946,7 +976,7 @@
                   ))
        (- (cw ")~%~%")))
     (mv (erp-nil)
-        (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
+        (extend-progn (extend-progn event (redundancy-table-event whole-form event))
                       ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                       '(value-triple :invisible)
                       )

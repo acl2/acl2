@@ -2,6 +2,8 @@
 ; Written by Matt Kaufmann and Konrad Slind
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; For background, see file README.txt.
+
 ; This book provides a nice presentation of the result proved in
 ; eval-poly-proof.lisp.  See that book for comments.  Here we include
 ; non-locally only the translated HOL development from eval-poly-thy.lisp,
@@ -22,7 +24,17 @@
 
 (local (include-book "eval-poly-proof"))
 
-(DEFTHM HOL{EVAL_SUM_POLY_DISTRIB}
+; The call below can be generated as follows.
+;   (include-book "projects/hol-in-acl2/examples/eval-poly-thy" :dir :system)
+;   (in-package "HOL")
+;   (find-goal eval_sum_poly_distrib)
+; Although the call below of defgoal expands to a corresponding defthm call
+; with name HOL{EVAL_SUM_POLY_DISTRIB}, it first checks that its formula is the
+; translation of the defhol form with the given name (in this case,
+; EVAL_SUM_POLY_DISTRIB) from the corresponding defhol form (in this case, at
+; the end of file eval_poly.defhol).
+(DEFGOAL
+ EVAL_SUM_POLY_DISTRIB
  (IMPLIES
   (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
        (HPP X HTA)

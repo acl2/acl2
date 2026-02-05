@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,11 +17,9 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration
+  :no-function nil
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,10 +408,12 @@
    (xdoc::p
     "We also compare the token against the GCC variants
      @('__signed') and @('__signed__') of @('signed').
-     Note that these variants are keywords only if GCC extensions are supported:
-     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     Note that these variants are keywords
+     only if GCC/Clang extensions are supported:
+     @(tsee lex-identifier/keyword) checks
+     the GCC/Clang flag of the parser state.
      So the comparison here with those variant keywords
-     will always fail if GCC extensions are not supported,
+     will always fail if GCC/Clang extensions are not supported,
      because in that case both @('__signed') and @('__signed__')
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
@@ -433,7 +433,8 @@
    (xdoc::p
     "We also temporarily include @('bool') as a synonym of @('_Bool').
      We plan to parameterize this and other functions
-     over the specific version of C, including choice of GCC extensions."))
+     over the specific version of C,
+     including choice of GCC/Clang extensions."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -520,10 +521,11 @@
    (xdoc::p
     "We also compare the token against the GCC variants
      @('__restrict') and @('__restrict__') of @('restrict').
-     Note that these variants are keywords only if GCC extensions are supported:
+     Note that these variants are keywords only if
+     GCC/Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
      So the comparison here with those variant keywords
-     will always fail if GCC extensions are not supported,
+     will always fail if GCC/Clang extensions are not supported,
      because in that case both @('__restrict') and @('__restrict__')
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
@@ -584,10 +586,12 @@
    (xdoc::p
     "We also compare the token against the GCC variants
      @('__inline') and @('__inline__') of @('inline').
-     Note that these variants are keywords only if GCC extensions are supported:
-     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     Note that these variants are keywords only if
+     GCC/Clang extensions are supported:
+     @(tsee lex-identifier/keyword) checks
+     the GCC/Clang flag of the parser state.
      So the comparison here with those variant keywords
-     will always fail if GCC extensions are not supported,
+     will always fail if GCC/Clang extensions are not supported,
      because in that case both @('__inline') and @('__inline__')
      would be identifier tokens, not keyword tokens."))
   (or (token-keywordp token? "inline")
@@ -726,7 +730,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define token-unary-expression-start-p ((token? token-optionp)
-                                        (gcc booleanp))
+                                        (gcc/clang booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a unary expression."
   :long
@@ -747,18 +751,20 @@
     "We also compare the token against
      the GCC extension variants
      @('__alignof') and @('__alignof__') of @('_Alignof').
-     Note that this variant is a keywords only if GCC extensions are supported:
-     @(tsee lex-identifier/keyword) checks the GCC flag of the parser state.
+     Note that this variant is a keywords only if
+     GCC/Clang extensions are supported:
+     @(tsee lex-identifier/keyword) checks
+     the GCC/Clang flag of the parser state.
      So the comparison here with that variant keyword
-     will always fail if GCC extensions are not supported,
+     will always fail if GCC/Clang extensions are not supported,
      because in that case both @('__alignof__')
      would be an identifier token, not a keyword token.")
    (xdoc::p
     "We also include, in the comparison,
      the @('__real__') and @('__imag__') operators,
-     which are keyword tokens only if GCC extensions are enabled.")
+     which are keyword tokens only if GCC/Clang extensions are enabled.")
    (xdoc::p
-    "If GCC extensions are enabled,
+    "If GCC/Clang extensions are enabled,
      we also include the unary operator @('&&') in the comparison."))
   (or (token-primary-expression-start-p token?)
       (token-punctuatorp token? "++")
@@ -775,17 +781,17 @@
       (token-keywordp token? "__alignof__")
       (token-keywordp token? "__real__")
       (token-keywordp token? "__imag__")
-      (and gcc (token-punctuatorp token? "&&")))
+      (and gcc/clang (token-punctuatorp token? "&&")))
   ///
 
   (defrule non-nil-when-token-unary-expression-start-p
-    (implies (token-unary-expression-start-p token? gcc)
+    (implies (token-unary-expression-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-expression-start-p ((token? token-optionp) (gcc booleanp))
+(define token-expression-start-p ((token? token-optionp) (gcc/clang booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start an expression."
   :long
@@ -804,11 +810,11 @@
      a synonym of @(tsee token-unary-expression-start-p),
      to make it clearer that we are talking about
      all expressions and not just unary expressions."))
-  (token-unary-expression-start-p token? gcc)
+  (token-unary-expression-start-p token? gcc/clang)
   ///
 
   (defrule non-nil-when-token-expression-start-p
-    (implies (token-expression-start-p token? gcc)
+    (implies (token-expression-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
 
@@ -867,11 +873,11 @@
      the starts specifiers or qualifiers.")
    (xdoc::p
     "We also include @('__attribute__'), for attribute specifiers.
-     This is a keyword only if GCC extensions are supported."))
+     This is a keyword only if GCC/Clang extensions are supported."))
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-keywordp token? "_Alignas")
-      (token-keywordp token? "__attribute")
+      (token-keywordp token? "__attribut")
       (token-keywordp token? "__attribute__"))
   ///
 
@@ -1039,7 +1045,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define token-struct-declaration-start-p ((token? token-optionp)
-                                          (gcc booleanp))
+                                          (gcc/clang booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start a structure declaration."
   :long
@@ -1047,26 +1053,26 @@
    (xdoc::p
     "A structure declaration may start with a specifier or qualifier,
      or with the @('_Static_assert') keyword.
-     If GCC extensions are supported,
+     If GCC/Clang extensions are supported,
      it may also start with the @('__extensions__') keyword;
      note that this is generated by the lexer
-     only if GCC extensions are supported,
+     only if GCC/Clang extensions are supported,
      so this predicate will fail
-     if GCC extensions are not supported
+     if GCC/Clang extensions are not supported
      and the token is @('__extension__'),
-     which must be an identifier if GCC extensions are not supported.")
+     which must be an identifier if GCC/Clang extensions are not supported.")
    (xdoc::p
-    "If GCC extensions are supported,
+    "If GCC/Clang extensions are supported,
      which is indicated by the boolean flag passed as input,
      we also include semicolons, for empty structure declarations."))
   (or (token-specifier/qualifier-start-p token?)
       (token-keywordp token? "_Static_assert")
       (token-keywordp token? "__extension__")
-      (and gcc (token-punctuatorp token? ";")))
+      (and gcc/clang (token-punctuatorp token? ";")))
   ///
 
   (defrule non-nil-when-token-strut-declaration-start-p
-    (implies (token-struct-declaration-start-p token? gcc)
+    (implies (token-struct-declaration-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
 
@@ -1107,7 +1113,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define token-initializer-start-p ((token? token-optionp) (gcc booleanp))
+(define token-initializer-start-p ((token? token-optionp) (gcc/clang booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start an initializer."
   :long
@@ -1115,19 +1121,19 @@
    (xdoc::p
     "An initializer is either an expression
      or something between curly braces."))
-  (or (token-expression-start-p token? gcc)
+  (or (token-expression-start-p token? gcc/clang)
       (token-punctuatorp token? "{"))
   ///
 
   (defrule non-nil-when-token-initializer-start-p
-    (implies (token-initializer-start-p token? gcc)
+    (implies (token-initializer-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define token-designation?-initializer-start-p ((token? token-optionp)
-                                                (gcc booleanp))
+                                                (gcc/clang booleanp))
   :returns (yes/no booleanp)
   :short "Check if an optional token may start
           an initializer optionally preceded by a designation."
@@ -1137,11 +1143,11 @@
     "Since the designation is optional,
      we put together the starts of initializers and designations."))
   (or (token-designation-start-p token?)
-      (token-initializer-start-p token? gcc))
+      (token-initializer-start-p token? gcc/clang))
   ///
 
   (defrule non-nil-when-token-designation?-initializer-start-p
-    (implies (token-designation?-initializer-start-p token? gcc)
+    (implies (token-designation?-initializer-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
 
@@ -1288,7 +1294,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used only if GCC extensions are supported.")
+    "This is used only if GCC/Clang extensions are supported.")
    (xdoc::p
     "This is called after parsing the initial @('asm') or @('__asm__').
      We pass to this function a flag distinguishing the two keywords
@@ -1672,7 +1678,7 @@
     "That is, we parse a @('*label-declaration'), in ABNF notation.")
    (xdoc::p
     "If the next token is not the @('__label__') keyword
-     (which is a keyword only when GCC extensions are enabled),
+     (which is a keyword only when GCC/Clang extensions are enabled),
      we return the empty list of lists of identifiers and an irrelevant span.
      Otherwise, we parse the rest of the label declaration,
      and then we recursively parse
@@ -1910,7 +1916,7 @@
        if there is, it must be a conditional expression proper;
        if there is not, it must be a logical disjunction expression.")
      (xdoc::p
-      "If GCC extensions are enabled,
+      "If GCC/Clang extensions are enabled,
        we also allow the omission of the `then' sub-expression;
        see the ABNF grammar."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
@@ -1924,19 +1930,18 @@
           (b* ((parstate (if token (unread-token parstate) parstate))) ; expr
             (retok expr span parstate)))
          ;; expr ?
-
          ((erp token2 & parstate) (read-token parstate)))
       (cond
-       ;; If token2 is a colon and GCC extensions are enabled,
+       ;; If token2 is a colon and GCC/Clang extensions are enabled,
        ;; we have a conditional with omitted operand.
        ((and (token-punctuatorp token2 ":") ; expr ? :
-             (parstate->gcc parstate))
+             (parstate->gcc/clang parstate))
         (b* (((erp expr3 span3 parstate) ; expr ? : expr3
               (parse-conditional-expression parstate)))
           (retok (make-expr-cond :test expr :then nil :else expr3)
                  (span-join span span3)
                  parstate)))
-       ;; If token2 is not a colon or GCC extensions are not enabled,
+       ;; If token2 is not a colon or GCC/Clang extensions are not enabled,
        ;; we put back token2 and parse the two remaining expressions,
        ;; separated by a colon.
        (t ; expr ? other
@@ -2732,7 +2737,7 @@
        ;; and we may also have the ambiguities discussed in :DOC EXPR.
        ;; We try parsing a possibly ambiguous expression or type name,
        ;; after recording a checkpoint for possible backtracking.
-       ;; If GCC extensions are supported,
+       ;; If GCC/Clang extensions are supported,
        ;; we also need to check whether there is an open curly brace,
        ;; in which case we have a statement expressions.
        ;; In the latter case,
@@ -2740,10 +2745,11 @@
        ;; and so we must parse the rest of it, if any.
        ((token-punctuatorp token "(") ; (
         (b* (;; We read the next token to see if it is an open curly brace,
-             ;; but we also need to check that GCC extensions are supported.
+             ;; but we also need to check
+             ;; that GCC/Clang extensions are supported.
              ((erp token2 span2 parstate) (read-token parstate))
              ((when (and (token-punctuatorp token2 "{") ; ( {
-                         (parstate->gcc parstate)))
+                         (parstate->gcc/clang parstate)))
               (b* ((psize (parsize parstate))
                    ((erp cstmt & parstate) ; ( { [labels] [items] }
                     (parse-compound-statement span2 parstate))
@@ -2757,7 +2763,7 @@
                                                prev-span
                                                parstate)))
              ;; If we do not have an open curly brace,
-             ;; or if GCC extensions are not supported,
+             ;; or if GCC/Clang extensions are not supported,
              ;; we need to parse a possibly ambiguous expression or type name.
              ;; We first need to put back token2, if not NIL.
              (parstate (if token2 (unread-token parstate) parstate)) ; (
@@ -2979,9 +2985,9 @@
                         (span-join span last-span)
                         parstate)))
               ;; If token2 is a double ampersand,
-              ;; and GCC extensions are enabled,
+              ;; and GCC/Clang extensions are enabled,
               ;; we have an ambiguity if an identifier follows the '&&'.
-              ;; With GCC extensions, '&&' is a unary operator
+              ;; With GCC/Clang extensions, '&&' is a unary operator
               ;; only if followed by an identifier,
               ;; and not other kinds of expressions.
               ;; If the '&&' is not followed by an identifier,
@@ -2995,7 +3001,7 @@
               ;; because it could be the right operand of
               ;; a conditional `and' expression.
               ((and (token-punctuatorp token2 "&&") ; ( expr/tyname) [ops] &&
-                    (parstate->gcc parstate))
+                    (parstate->gcc/clang parstate))
                (b* (((erp token3 & parstate) (read-token parstate)))
                  (cond
                   ((and token3 (token-case token3 :ident))
@@ -3043,7 +3049,8 @@
               ;; we parse a unary expression,
               ;; we apply any increment and decrement operators to it,
               ;; and we form and return the cast expression.
-              ((token-unary-expression-start-p token2 (parstate->gcc parstate))
+              ((token-unary-expression-start-p token2
+                                               (parstate->gcc/clang parstate))
                ;; ( expr/tyname ) [ops] unaryexpr...
                (b* ((parstate (unread-token parstate)) ; ( expr/tyname ) [ops]
                     ((erp expr last-span parstate) ; ( expr/tyname ) [ops] expr
@@ -3119,7 +3126,7 @@
        except for the potential ambiguity between
        parenthesized expressions or type names
        after @('sizeof') or @('_Alignof'),
-       the latter only if GCC extensions are enabled.")
+       the latter only if GCC/Clang extensions are enabled.")
      (xdoc::p
       "If we encounter a @('sizeof') or @('_Alignof')
        not followed by an open parenthesis,
@@ -3160,10 +3167,10 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is '&&' and GCC extensions are enabled,
+       ;; If token is '&&' and GCC/Clang extensions are enabled,
        ;; there must be an identifier after that.
        ((and (token-punctuatorp token "&&") ; &&
-             (parstate->gcc parstate))
+             (parstate->gcc/clang parstate))
         (b* (((erp token2 last-span parstate) (read-token parstate)))
           (cond
            ((and token2 (token-case token2 :ident)) ; && ident
@@ -3213,18 +3220,19 @@
                      (span-join span last-span)
                      parstate))))))
        ;; If token is '_Alignof' (or keywords variants),
-       ;; there are two cases, based on whether GCC extensions are enabled.
+       ;; there are two cases,
+       ;; based on whether GCC/Clang extensions are enabled.
        ((or (token-keywordp token "_Alignof") ; _Alignof
             (token-keywordp token "__alignof") ; __alignof
             (token-keywordp token "__alignof__")) ; __alignof__
         (cond
-         ;; If GCC extensions are not enabled,
+         ;; If GCC/Clang extensions are not enabled,
          ;; we parse an open parenthesis,
          ;; a type name,
          ;; and a closed parenthesis.
          ;; Note that in this case
          ;; the only allowed keyword is '_Alignof'.
-         ((not (parstate->gcc parstate))
+         ((not (parstate->gcc/clang parstate))
           (b* (((erp & parstate) ; _Alignof (
                 (read-punctuator "(" parstate))
                ((erp tyname & parstate) ; _Alignof ( typename
@@ -3236,9 +3244,9 @@
                     :uscores (keyword-uscores-none))
                    (span-join span last-span)
                    parstate)))
-         ;; If GCC extensions are enabled,
+         ;; If GCC/Clang extensions are enabled,
          ;; we need to read another token.
-         (t ; (parstate->gcc parstate)
+         (t ; (parstate->gcc/clang parstate)
           (b* (((erp token2 & parstate) (read-token parstate))
                (uscores (cond ((token-keywordp token "_Alignof")
                                (keyword-uscores-none))
@@ -3284,7 +3292,8 @@
                                         :info nil)
                        (span-join span last-span)
                        parstate))))))))
-       ;; If token is '__real__', which can only happen with GCC extensions,
+       ;; If token is '__real__',
+       ;; which can only happen with GCC/Clang extensions,
        ;; we recursively parse a cast expression as operand.
        ((token-keywordp token "__real__") ; __real__
         (b* (((erp expr last-span parstate) ; __real__ expr
@@ -3293,7 +3302,8 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
-       ;; If token is '__imag__', which can only happen with GCC extensions,
+       ;; If token is '__imag__',
+       ;; which can only happen with GCC/Clang extensions,
        ;; we recursively parse a cast expression as operand.
        ((token-keywordp token "__imag__") ; __imag__
         (b* (((erp expr last-span parstate) ; __imag__ expr
@@ -3431,17 +3441,18 @@
        ;; If token is an open parenthesis,
        ;; it may start a compound literal
        ;; or a (parenthesized) primary expresssion
-       ;; or a statement expression (if GCC extensions are enabled).
+       ;; or a statement expression (if GCC/Clang extensions are enabled).
        ;; We read another token to handle the case of a statement expression
        ;; separately from the other cases.
        ((token-punctuatorp token "(") ; (
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
-           ;; If token2 is an open curly brace, and GCC extensions are enabled,
+           ;; If token2 is an open curly brace,
+           ;; and GCC/Clang extensions are enabled,
            ;; we must have a statement expression, which we parse,
            ;; and then we parse the rest of the postfix expression if any.
            ((and (token-punctuatorp token2 "{") ; ( {
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             (b* ((psize (parsize parstate))
                  ((erp cstmt & parstate) ; ( { [labels] [items] }
                   (parse-compound-statement span2 parstate))
@@ -3455,7 +3466,7 @@
                                              prev-span
                                              parstate)))
            ;; If token2 is not an open curly brace,
-           ;; or if GCC extensions are not supported,
+           ;; or if GCC/Clang extensions are not supported,
            ;; the opening parenthesis may start
            ;; a compound literal or a (parenthesized) primary expression.
            ;; So we put back the token (if any),
@@ -3666,7 +3677,7 @@
        That part of the grammar is left-recursive,
        which we handle as in other left-recursive parts of the grammar.")
      (xdoc::p
-      "If GCC extensions are supported,
+      "If GCC/Clang extensions are supported,
        this parsing function is also called
        to parse attribute parameters:
        see @(tsee parse-attribute-parameters).")
@@ -3679,7 +3690,8 @@
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token & parstate) (read-token parstate)))
       (cond
-       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
+       ((token-expression-start-p token
+                                  (parstate->gcc/clang parstate)) ; expr...
         (b* ((parstate (unread-token parstate))
              (psize (parsize parstate))
              ((erp expr span parstate) ; expr
@@ -3768,7 +3780,7 @@
        we read another token to see whether it is an open curly brace.
        If it is, we have a statement expression (a GCC extension);
        otherwise, we have a parenthesized expression.
-       We only allow this if GCC extensions are supported.")
+       We only allow this if GCC/Clang extensions are supported.")
      (xdoc::p
       "If the token is the keyword @('_Generic'),
        we parse an open parenthesis and an assignment expression,
@@ -3800,7 +3812,8 @@
       "We temporarily allow @('true') and @('false')
        as synonyms of the expressions (constants) @('1') and @('0').
        We plan to parameterize this and other functions
-       over the specific C version, including choice of GCC extensions."))
+       over the specific C version,
+       including choice of GCC/Clang extensions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -3841,10 +3854,11 @@
        ((token-punctuatorp token "(") ; (
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
-           ;; If token2 is an open curly brace, and GCC extensions are enabled,
+           ;; If token2 is an open curly brace,
+           ;; and GCC/Clang extensions are enabled,
            ;; we have a statement expression.
            ((and (token-punctuatorp token2 "{") ; ( {
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             (b* ((psize (parsize parstate))
                  ((erp cstmt & parstate) ; ( { [labels] [items] }
                   (parse-compound-statement span2 parstate))
@@ -3856,7 +3870,7 @@
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not an open curly brace,
-           ;; or if GCC extensions are not enabled,
+           ;; or if GCC/Clang extensions are not enabled,
            ;; we must have a parenthesized expression.
            ;; We put back token2 and we parse the expression.
            (t ; ( other
@@ -3992,24 +4006,25 @@
        a list of initializers,
        and a closed curly brace.")
      (xdoc::p
-      "If GCC extensions are enabled,
+      "If GCC/Clang extensions are enabled,
        we also allow an empty list of initializers;
        see the ABNF grammar."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp & parstate) (read-punctuator "{" parstate)) ; {
          ((erp token span parstate) (read-token parstate)))
       (cond
-       ;; If token is a closed curly brace and GCC extensions are enabled,
+       ;; If token is a closed curly brace
+       ;; and GCC/Clang extensions are enabled,
        ;; we have an empty compound literal.
        ((and (token-punctuatorp token "}") ; { }
-             (parstate->gcc parstate))
+             (parstate->gcc/clang parstate))
         (retok (make-expr-complit :type tyname
                                   :elems nil
                                   :final-comma nil)
                (span-join first-span span)
                parstate))
        ;; If token is not a closed curly brace
-       ;; or GCC extensions are not enabled,
+       ;; or GCC/Clang extensions are not enabled,
        ;; we put back token (if any),
        ;; and we parse one or more initializers,
        ;; followed by a closed curly braces.
@@ -4278,7 +4293,8 @@
       "There are two kinds of designators,
        easily distinguished by their first token.")
      (xdoc::p
-      "If GCC extensions are enabled, we also allow for range designators.
+      "If GCC/Clang extensions are enabled,
+       we also allow for range designators.
        See the ABNF grammar."))
     (b* (((reterr) (irr-designor) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -4296,7 +4312,7 @@
                    (span-join span next-span)
                    parstate))
            ((and (token-punctuatorp token2 "...") ; [ cexpr ...
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             (b* (((erp cexpr2 & parstate) ; [ cexpr ... cexpr
                   (parse-constant-expression parstate))
                  ((erp last-span parstate) ; [ cexpr ... cexpr ]
@@ -4306,7 +4322,7 @@
                      parstate)))
            (t ; [ cexpr other
             (reterr-msg :where (position-to-msg (span->start next-span))
-                        :expected (if (parstate->gcc parstate)
+                        :expected (if (parstate->gcc/clang parstate)
                                       "an ellipsis ~
                                        or a closing square bracket"
                                     "a closing square bracket")
@@ -4384,12 +4400,13 @@
        we must have an aggregate initializer.
        There is no overlap between these two cases.")
      (xdoc::p
-      "If GCC extensions are enabled,
+      "If GCC/Clang extensions are enabled,
        a closing brace could immediately follow the open one."))
     (b* (((reterr) (irr-initer) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
-       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
+       ((token-expression-start-p token
+                                  (parstate->gcc/clang parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) ; expr
               (parse-assignment-expression parstate)))
@@ -4398,7 +4415,7 @@
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
            ((and (token-punctuatorp token2 "}") ; { }
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             (retok (make-initer-list :elems nil :final-comma nil)
                    (span-join span span2)
                    parstate))
@@ -4472,7 +4489,7 @@
           (retok (make-desiniter :designors designors :initer initer)
                  (span-join span last-span)
                  parstate)))
-       ((token-initializer-start-p token (parstate->gcc parstate))
+       ((token-initializer-start-p token (parstate->gcc/clang parstate))
         ;; initializer...
         (b* ((parstate (unread-token parstate))
              ((erp initer span parstate) ; initializer
@@ -4554,8 +4571,9 @@
                      t ; final-comma
                      (span-join span span2)
                      parstate)))
-           ((token-designation?-initializer-start-p token2
-                                                    (parstate->gcc parstate))
+           ((token-designation?-initializer-start-p
+              token2
+              (parstate->gcc/clang parstate))
             ;; initializer , initializer...
             (b* ((parstate (unread-token parstate)) ; initializer ,
                  ((erp desiniters final-comma last-span parstate)
@@ -4761,7 +4779,7 @@
        the grammar does not have a rule name for that.
        But this is like an alternation of
        a type specifier, a type qualifier, or an alignment specifier;
-       if GCC extensions are enabled,
+       if GCC/Clang extensions are enabled,
        the alternation also includes attribute specifiers.")
      (xdoc::p
       "This function is called when we expect a specifier or qualifier,
@@ -4777,7 +4795,7 @@
        So we cannot simply look at the next token
        and call separate functions to parse
        a type specifier or a type qualifier or an alignment specifier
-       (or an attribute specifier, if GCC extensions are enabled).
+       (or an attribute specifier, if GCC/Clang extensions are enabled).
        We need to read more tokens if we see @('_Atomic').
        [C17:6.7.2.4/4] says that
        an @('_Atomic') immediately followed by a left parentheses
@@ -4901,7 +4919,7 @@
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword '__attribute' or '__attribute__',
-       ;; which can only happen if GCC extensions are enabled,
+       ;; which can only happen if GCC/Clang extensions are enabled,
        ;; we must have an attribute specifier.
        ((or (token-keywordp token "__attribute") ; __attribute
             (token-keywordp token "__attribute__")) ; __attribute__
@@ -5192,7 +5210,7 @@
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword '__attribute' or '__attribute__',
-       ;; which can only happen if GCC extensions are enabled,
+       ;; which can only happen if GCC/Clang extensions are enabled,
        ;; we must have an attribute specifier.
        ((or (token-keywordp token "__attribute") ; __attribute
             (token-keywordp token "__attribute__")) ; __attribute__
@@ -5203,12 +5221,12 @@
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword '__stdcall',
-       ;; which can only happen if GCC extensions are enabled,
-       ;; we must have that special GCC construct.
+       ;; which can only happen if GCC/Clang extensions are enabled,
+       ;; we must have that special GCC/Clang construct.
        ((token-keywordp token "__stdcall")
         (retok (decl-spec-stdcall) span parstate))
        ;; If token is the keyword '__declspec',
-       ;; which can only happen if GCC extensions are enabled,
+       ;; which can only happen if GCC/Clang extensions are enabled,
        ;; we must have an attribute with that syntax.
        ((token-keywordp token "__declspec")
         (b* (((erp & parstate) (read-punctuator "(" parstate))
@@ -5527,7 +5545,8 @@
        so that we can return a span for the whole type specifier."))
     (b* (((reterr) (irr-type-spec) (irr-span) parstate)
          ;; We read zero or more attribute specifiers.
-         ;; These are recognized as such only if GCC extensions are enabled.
+         ;; These are recognized as such
+         ;; only if GCC/Clang extensions are enabled.
          (psize (parsize parstate))
          ((erp attrspecs attrspecs-span parstate) ; struct/union [attrs]
           (parse-*-attribute-specifier parstate))
@@ -5535,7 +5554,7 @@
           (reterr :impossible))
          ;; There must be at least one token
          ;; (identifier or open curly brace,
-         ;; or attribute if GCC extensions are enabled),
+         ;; or attribute if GCC/Clang extensions are enabled),
          ;; so we read a token.
          ((erp token span parstate) (read-token parstate))
          (span (if attrspecs (span-join attrspecs-span span) span)))
@@ -5550,9 +5569,9 @@
            ;; If token2 is an open curly brace, there are two cases.
            ((token-punctuatorp token2 "{") ; struct/union [attrs] ident {
             (if (and structp ; struct [attrs] ident {
-                     (parstate->gcc parstate))
+                     (parstate->gcc/clang parstate))
                 ;; If we are parsing a structure type specifier
-                ;; and GCC extensions are enabled,
+                ;; and GCC/Clang extensions are enabled,
                 ;; we read another token to see whether
                 ;; we have a structure type with no members or not.
                 (b* (((erp token3 span3 parstate) (read-token parstate)))
@@ -5586,7 +5605,7 @@
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
-              ;; or GCC extensions are not enabled,
+              ;; or GCC/Clang extensions are not enabled,
               ;; we need to parse one of more structure declarations,
               ;; followed by a closed curly brace.
               (b* (((erp structdeclons & parstate)
@@ -5627,9 +5646,9 @@
        ;; we must have a structure or union specifier without name.
        ((token-punctuatorp token "{") ; struct/union {
         (if (and structp ; struct [attrs] {
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             ;; If we are parsing a structure type specifier
-            ;; and GCC extensions are enabled,
+            ;; and GCC/Clang extensions are enabled,
             ;; we read another token to see whether
             ;; we have a structure type with no members or not.
             (b* (((erp token3 span3 parstate) (read-token parstate)))
@@ -5663,7 +5682,7 @@
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
-          ;; or GCC extensions are not enabled,
+          ;; or GCC/Clang extensions are not enabled,
           ;; we must have one or more structure declarations.
           (b* (((erp structdeclons & parstate)
                 ;; struct/union [attrs] { structdeclons
@@ -6343,7 +6362,8 @@
                ;; we parse it, and we have determined the array variant.
                ;; We have already considered the case of a star above,
                ;; so this can only be an expression at this point.
-               ((token-expression-start-p token3 (parstate->gcc parstate))
+               ((token-expression-start-p token3
+                                          (parstate->gcc/clang parstate))
                 ;; [ qualspecs expr...
                 (b* ((parstate (unread-token parstate)) ; [ qualspecs
                      ((erp expr & parstate) ; [ qualspecs expr
@@ -6415,7 +6435,7 @@
            ;; If token2 may start an assignment expression,
            ;; we have determined the variant.
            ;; Note that we have already considered the case of a star above.
-           ((token-expression-start-p token2 (parstate->gcc parstate))
+           ((token-expression-start-p token2 (parstate->gcc/clang parstate))
             ;; [ expr...
             (b* ((parstate (unread-token parstate)) ; [
                  ((erp expr & parstate) ; [ expr
@@ -6790,7 +6810,7 @@
        which is easily recognized by the starting @('_Static_assert') keyword,
        or a list of one or more specifiers and qualifiers
        optionally followed by a list of one or more structure declarators.
-       If GCC extensions are supported,
+       If GCC/Clang extensions are supported,
        a non-assert structure declaration
        may start with the @('__extension__') keyword,
        and may end (before the semicolon) with attribute specifiers."))
@@ -6805,17 +6825,17 @@
           (retok (struct-declon-statassert statassert)
                  span
                  parstate)))
-       ;; If token is a semicolon, and GCC extensions are enabled,
+       ;; If token is a semicolon, and GCC/Clang extensions are enabled,
        ;; we have an empty structure declaration.
        ((token-punctuatorp token ";") ; ;
         (retok (struct-declon-empty) span parstate))
        ;; Otherwise, we must have a specifier and qualifier list,
        ;; optionally preceded by the '__extension__' keyword
-       ;; if GCC extensions are supported.
+       ;; if GCC/Clang extensions are supported.
        (t ; other
         (b* (((mv extension parstate)
               (if (and (token-keywordp token "__extension__")
-                       (parstate->gcc parstate))
+                       (parstate->gcc/clang parstate))
                   (mv t parstate)
                 (b* ((parstate (if token (unread-token parstate) parstate)))
                   (mv nil parstate))))
@@ -6831,7 +6851,7 @@
            ;; we must have a list of one or more structure declarators,
            ;; which we parse, and then we parse the final semicolon,
            ;; preceded by zero or more attribute specifiers
-           ;; if GCC extensions are supported.
+           ;; if GCC/Clang extensions are supported.
            ((token-struct-declarator-start-p token2)
             ;; [__extension__] specquals structdeclor...
             (b* ((parstate (unread-token parstate))
@@ -6855,7 +6875,7 @@
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is the keyword '__attribute__',
-           ;; GCC extensions must be supported
+           ;; GCC/Clang extensions must be supported
            ;; (otherwise '__attribute__' would not be a keyword).
            ;; We parse one or more attribute specifiers,
            ;; and then the final semicolon.
@@ -6917,7 +6937,7 @@
        ;; If token may start another structure declaration,
        ;; recursively call this function.
        ((token-struct-declaration-start-p
-         token (parstate->gcc parstate)) ; structdeclon structdeclon...
+         token (parstate->gcc/clang parstate)) ; structdeclon structdeclon...
         (b* ((parstate (unread-token parstate))
              ((erp structdeclons last-span parstate)
               ;; structdeclon structdeclons
@@ -6956,7 +6976,7 @@
        which we recognize by the presence of
        a comma
        or closed parenthesis
-       or (if GCC extensions are enabled) an attribute keyword,
+       or (if GCC/Clang extensions are enabled) an attribute keyword,
        we parse a possibly ambiguous declarator or abstract declarator,
        and generate a parameter declarator accordingly,
        and then a parameter declaration with the declaration specifiers."))
@@ -6970,7 +6990,7 @@
       (cond
        ;; If token is a comma or a closed parenthesis,
        ;; or an attribute keyword
-       ;; (which can only happen when GCC extensions are enabled),
+       ;; (which can only happen when GCC/Clang extensions are enabled),
        ;; there is no parameter declarator.
        ((or (token-punctuatorp token ")") ; declspecs )
             (token-punctuatorp token ",") ; declspecs ,
@@ -6990,7 +7010,7 @@
        ;; a possibly ambiguous declarator or abstract declarator,
        ;; and return a parameter declaration in accordance.
        ;; We also parse zero or more attribute specifiers
-       ;; (which can only occur if GCC extensions are enabled),
+       ;; (which can only occur if GCC/Clang extensions are enabled),
        ;; after the possibly ambiguous declarator or abstract declarator.
        (t ; declspecs other
         (b* ((parstate (if token (unread-token parstate) parstate)) ; declspecs
@@ -7449,7 +7469,8 @@
        ;; If token may start an expression, we must have an expression,
        ;; because we have already handled the case of an identifier above.
        ;; We parenthesize the expression if ADD-PARENS-P is T.
-       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
+       ((token-expression-start-p token
+                                  (parstate->gcc/clang parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) (parse-expression parstate)) ; expr
              (expr (if add-parens-p
@@ -7733,7 +7754,7 @@
        exploiting the fact that an ambiguous declarator or abstract declarator
        only occurs in a parameter declaration,
        which is always followed by a comma or closed parenthesis,
-       or by an attribute if GCC extensions are enabled.
+       or by an attribute if GCC/Clang extensions are enabled.
        So, if we successfully parse an abstract declarator,
        we also ensure that the next token is
        a comma or closed parenthesis or attribute keyword,
@@ -7831,7 +7852,7 @@
             ;; If the parsing of an abstract declarator succeeds,
             ;; we still need to check whether
             ;; it is followed by a comma or closed parenthesis
-            ;; (or an attribute, if GCC extensions are enabled),
+            ;; (or an attribute, if GCC/Clang extensions are enabled),
             ;; as explained in the documentation of the function above.
             ;; So we read a token.
             (b* (((erp token & parstate) (read-token parstate)))
@@ -7904,7 +7925,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used if GCC extensions are supported.
+      "This is only used if GCC/Clang extensions are supported.
        See the ABNF grammar rule for @('attribute-parameters').")
      (xdoc::p
       "If parsing is successful, we return a list of zero or more expressions,
@@ -7931,7 +7952,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used if GCC extensions are supported.
+      "This is only used if GCC/Clang extensions are supported.
        See the ABNF grammar rule for @('attribute')."))
     (b* (((reterr) (irr-attrib) (irr-span) parstate)
          ((erp name name-span parstate) (parse-attribute-name parstate)) ; name
@@ -7963,7 +7984,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used if GCC extensions are supported.
+      "This is only used if GCC/Clang extensions are supported.
        See the ABNF grammar rule for @('attribute-list')."))
     (b* (((reterr) nil (irr-span) parstate)
          (psize (parsize parstate))
@@ -8000,7 +8021,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is only used if GCC extensions are supported.
+      "This is only used if GCC/Clang extensions are supported.
        See the ABNF grammar rule for @('attribute-specifier').")
      (xdoc::p
       "This is called after parsing the initial @('__attribute__'),
@@ -8049,10 +8070,10 @@
        if there are zero, the span of the first attribute specifier
        is also the span of the whole sequence.")
      (xdoc::p
-      "If GCC extensions are not supported,
+      "If GCC/Clang extensions are not supported,
        this parsing function always returns the empty list,
        because @('__attribute__') is a keyword
-       only if GCC extensions are supported."))
+       only if GCC/Clang extensions are supported."))
     (b* (((reterr) nil (irr-span) parstate)
          ((erp token first-span parstate) (read-token parstate))
          ((unless (or (token-keywordp token "__attribute")
@@ -8186,7 +8207,7 @@
        optionally followed by a list of one or more initializer declarators
        and mandatorily followed by a semicolon.")
      (xdoc::p
-      "If GCC extensions are supported,
+      "If GCC/Clang extensions are supported,
        we must allow for an @('__extension__') keyword at the beginning.
        See the ABNF grammar rule for @('declaration')."))
     (b* (((reterr) (irr-declon) (irr-span) parstate)
@@ -8195,15 +8216,15 @@
        ;; If token may start a declaration specifier, we put it back and
        ;; we parse a list or one or more declaration specifiers.
        ;; Then we read more tokens to see if we have initializer declarators.
-       ;; But if GCC extensions are supported,
+       ;; But if GCC/Clang extensions are supported,
        ;; and if token is the '__extension__' keyword,
        ;; we need to take that into account as well.
        ((or (token-declaration-specifier-start-p token) ; declspec...
             (and (token-keywordp token "__extension__") ; __extension__
-                 (parstate->gcc parstate)))
+                 (parstate->gcc/clang parstate)))
         (b* (((mv extension parstate)
               (if (and (token-keywordp token "__extension__")
-                       (parstate->gcc parstate))
+                       (parstate->gcc/clang parstate))
                   (mv t parstate)
                 (b* ((parstate (unread-token parstate)))
                   (mv nil parstate))))
@@ -8237,7 +8258,7 @@
                      parstate)))
            ;; If token2 is a semicolon,
            ;; we have no initializer declarators.
-           ;; If GCC extensions are supported,
+           ;; If GCC/Clang extensions are supported,
            ;; this also means that we have no attribute specifiers.
            ((token-punctuatorp token2 ";") ; [__extension__] declspecs ;
             (retok (make-declon-declon :extension extension
@@ -8921,8 +8942,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Most statements start with distinct keywords or punctuators
-       (one punctuator, the open curly brace),
+      "Most statements start with distinct keywords or punctuators,
        but both labeled statements and expression statements
        may start with an identifier.
        However, for a labeled statement,
@@ -9005,10 +9025,10 @@
               (reterr :impossible))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
-           ;; If token2 is '...', and GCC extensions are supported,
+           ;; If token2 is '...', and GCC/Clang extensions are supported,
            ;; we have a range 'case' label.
            ((and (token-punctuatorp token2 "...") ; case cexpr ...
-                 (parstate->gcc parstate))
+                 (parstate->gcc/clang parstate))
             (b* ((psize (parsize parstate))
                  ((erp cexpr2 & parstate) ; case cexpr ... cexpr2
                   (parse-constant-expression parstate))
@@ -9049,19 +9069,19 @@
                  parstate)))
        ;; If token is the 'goto' keyword, we have a jump statement.
        ((token-keywordp token "goto") ; goto
-        ;; If GCC extensions are enabled,
+        ;; If GCC/Clang extensions are enabled,
         ;; we parse an expression, which syntactically includes identifiers,
         ;; so that we also parse labels.
         ;; The disambiguator will disambiguate this into a label,
         ;; if applicable.
-        (if (parstate->gcc parstate)
+        (if (parstate->gcc/clang parstate)
             (b* (((erp expr & parstate) (parse-expression parstate)) ; goto expr
                  ((erp last-span parstate) ; goto expr ;
                   (read-punctuator ";" parstate)))
               (retok (stmt-gotoe expr)
                      (span-join span last-span)
                      parstate))
-          ;; If GCC extensions are not enabled,
+          ;; If GCC/Clang extensions are not enabled,
           ;; we can only accept an identifier after 'goto'.
           (b* (((erp ident & parstate) (read-identifier parstate)) ; goto ident
                ((erp last-span parstate) ; goto ident ;
@@ -9089,7 +9109,7 @@
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
            ;; If token2 may start an expression, we must have an expression.
-           ((token-expression-start-p token2 (parstate->gcc parstate))
+           ((token-expression-start-p token2 (parstate->gcc/clang parstate))
             ;; return expr...
             (b* ((parstate (unread-token parstate)) ; return
                  ((erp expr & parstate)
@@ -9206,7 +9226,7 @@
               (cond
                ;; If token3 may start an expression,
                ;; we must have a test expression.
-               ((token-expression-start-p token3 (parstate->gcc parstate))
+               ((token-expression-start-p token3 (parstate->gcc/clang parstate))
                 ;; for ( ; expr...
                 (b* ((parstate (unread-token parstate)) ; for ( ;
                      (psize (parsize parstate))
@@ -9220,7 +9240,8 @@
                   (cond
                    ;; If token4 may start an expression,
                    ;; we must have an update expression.
-                   ((token-expression-start-p token4 (parstate->gcc parstate))
+                   ((token-expression-start-p token4
+                                              (parstate->gcc/clang parstate))
                     ;; for ( ; expr ; expr...
                     (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                          (psize (parsize parstate))
@@ -9262,7 +9283,8 @@
                   (cond
                    ;; If token4 may start an expression,
                    ;; we must have an update expression.
-                   ((token-expression-start-p token4 (parstate->gcc parstate))
+                   ((token-expression-start-p token4
+                                              (parstate->gcc/clang parstate))
                     ;; for ( ; ; expr...
                     (b* ((parstate (unread-token parstate)) ; for ( ; ;
                          (psize (parsize parstate))
@@ -9326,7 +9348,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                  ((token-expression-start-p token3
+                                             (parstate->gcc/clang parstate))
                    ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
@@ -9341,7 +9364,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9385,7 +9408,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
@@ -9435,7 +9458,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                  ((token-expression-start-p token3
+                                             (parstate->gcc/clang parstate))
                    ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
@@ -9450,7 +9474,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9494,7 +9518,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
@@ -9544,7 +9568,8 @@
                  (cond
                   ;; If token3 may start an expression,
                   ;; we must have a test expression.
-                  ((token-expression-start-p token3 (parstate->gcc parstate))
+                  ((token-expression-start-p token3
+                                             (parstate->gcc/clang parstate))
                    ;; for ( ; expr...
                    (b* ((parstate (unread-token parstate)) ; for ( ;
                         (psize (parsize parstate))
@@ -9559,7 +9584,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; expr ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; expr ;
                             (psize (parsize parstate))
@@ -9603,7 +9628,7 @@
                       ;; If token4 may start an expression,
                       ;; we must have an update expression.
                       ((token-expression-start-p token4
-                                                 (parstate->gcc parstate))
+                                                 (parstate->gcc/clang parstate))
                        ;; for ( ; ; expr...
                        (b* ((parstate (unread-token parstate)) ; for ( ; ;
                             (psize (parsize parstate))
@@ -9637,7 +9662,7 @@
                       (t ; for ( ; ; other
                        (reterr-msg :where (position-to-msg (span->start span4))
                                    :expected "an expression ~
-                                           or a closed parenthesis"
+                                              or a closed parenthesis"
                                    :found (token-to-msg token4))))))
                   ;; If token3 is anything else, it is an error.
                   (t ; for ( ; other
@@ -9647,15 +9672,46 @@
                                :found (token-to-msg token3)))))))))))
        ;; If token may start an expression,
        ;; we must have an expression statement.
-       ((token-expression-start-p token (parstate->gcc parstate)) ; expr...
+       ((token-expression-start-p token
+                                  (parstate->gcc/clang parstate)) ; expr...
         (b* ((parstate (unread-token parstate)) ;
              ((erp expr span parstate) (parse-expression parstate)) ; expr
              ((erp last-span parstate) (read-punctuator ";" parstate))) ; expr ;
           (retok (make-stmt-expr :expr? expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is the '__attribute__' or '__attribute' keyword,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attributed null or return statement.
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((psize (parsize parstate))
+             (uscores (token-keywordp token "__attribute__"))
+             ((erp attrib & parstate) ; attrib
+              (parse-attribute-specifier uscores span parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token2 ";") ; attrib ;
+            (retok (make-stmt-null-attrib :attrib attrib)
+                   (span-join span span2)
+                   parstate))
+           ((token-keywordp token2 "return") ; attrib return
+            (b* (((erp expr & parstate) ; attrib return expr
+                  (parse-expression parstate))
+                 ((erp last-span parstate) ; attrib return expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-stmt-return-attrib :attrib attrib
+                                              :expr expr)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; attrib other
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a semicolon or an expression"
+                        :found (token-to-msg token2))))))
        ;; If token is the 'asm' (or variant) keyword,
-       ;; which can only happen if GCC extensions are supported,
+       ;; which can only happen if GCC/Clang extensions are supported,
        ;; we parse an assembler statement.
        ((or (token-keywordp token "asm") ; asm
             (token-keywordp token "__asm") ; __asm
@@ -9728,7 +9784,7 @@
       "Note that label declarations are accepted
        only if @('__label__') is recognized as a keyword
        (see @(tsee parse-*-label-declaration)),
-       which can only happen when GCC extensions are enabled."))
+       which can only happen when GCC/Clang extensions are enabled."))
     (b* (((reterr) (irr-comp-stmt) (irr-span) parstate) ; {
          ((erp labels & parstate) ;; { [labels]
           (parse-*-label-declaration parstate))
@@ -9769,7 +9825,7 @@
        Thus, under the appropriate conditions,
        we parse a possibly ambiguous declaration or statement."))
     (b* (((reterr) (irr-block-item) (irr-span) parstate)
-         ((erp token & parstate) (read-token parstate)))
+         ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier, we need to read another token.
        ((and token (token-case token :ident)) ; ident
@@ -9815,6 +9871,68 @@
                (retok (block-item-ambig declon/stmt.declon/stmt)
                       span
                       parstate)))))))
+       ;; If token is the '__attribute__' or '__attribute' keyword,
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we need to check whether we have an attributed statement.
+       ;; This must be handled before checking for
+       ;; the start of a declaration specifier below,
+       ;; because '__attribute__' or '__attribute' may be such a start.
+       ;; We parse an attribute specifier,
+       ;; and then we see whether it is followed by semicolon or 'return',
+       ;; in which cases we have an attributed (null or return) statement.
+       ;; If that is not the case, we put back the tokens
+       ;; and we proceed to parse a declaration,
+       ;; because it means that the '__attribute__' or '__attribute' keyword
+       ;; must be the start of a declaration (specifier).
+       ((or (token-keywordp token "__attribute") ; __attribute
+            (token-keywordp token "__attribute__")) ; __attribute__
+        (b* ((checkpoint (parstate->tokens-read parstate))
+             (psize (parsize parstate))
+             (uscores (token-keywordp token "__attribute__"))
+             ((erp attrib & parstate) ; attrib
+              (parse-attribute-specifier uscores span parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp token2 span2 parstate) (read-token parstate)))
+          (cond
+           ((token-punctuatorp token2 ";") ; attrib ;
+            (retok (make-block-item-stmt
+                    :stmt (make-stmt-null-attrib :attrib attrib)
+                    :info nil)
+                   (span-join span span2)
+                   parstate))
+           ((token-keywordp token2 "return") ; attrib return
+            (b* (((erp expr & parstate) ; attrib return expr
+                  (parse-expression parstate))
+                 ((erp last-span parstate) ; attrib return expr ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-block-item-stmt
+                      :stmt (make-stmt-return-attrib :attrib attrib
+                                                     :expr expr)
+                      :info nil)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; attrib other
+            (b* ((parstate ; __attribute(__)
+                  (unread-to-token checkpoint parstate))
+                 ((unless (<= (parsize parstate) psize))
+                  (raise "Internal error: ~
+                          size ~x0 after backtracking exceeds ~
+                          size ~x1 before backtracking."
+                         (parsize parstate) psize)
+                  ;; Here we have (> (parsize parstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the initial parser state.
+                  ;; This is just logical: execution stops at the RAISE above.
+                  (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                    (reterr t)))
+                 (parstate (unread-token parstate)) ;
+                 ((erp declon span parstate) ; declon
+                  (parse-declaration parstate)))
+              (retok (make-block-item-declon :declon declon :info nil)
+                     span
+                     parstate))))))
        ;; If token may start a declaration specifier,
        ;; or token is the '_Static_assert' keyword,
        ;; we must have a declaration,
@@ -11443,7 +11561,7 @@
    (xdoc::p
     "The case of an empty external declaration is easy,
      because it starts (and ends) with a semicolon.
-     This is only allowed if GCC extensions are supported.")
+     This is only allowed if GCC/Clang extensions are supported.")
    (xdoc::p
     "No declaration specifier starts with the keyword @('_Static_assert'),
      so this keyword tells us that we must have a static assert declaration.
@@ -11455,11 +11573,11 @@
      but based on what follows it,
      we can decide whether we have a declarator or a function definition.")
    (xdoc::p
-    "If GCC extensions are supported, we must also take into account
+    "If GCC/Clang extensions are supported, we must also take into account
      the possible presence of attributes and assembler name specifiers,
      as well as of an @('__external__') keyword.")
    (xdoc::p
-    "We also handle the GCC extension of allowing assembler statements
+    "We also handle the GCC/Clang extension of allowing assembler statements
      as external declarations, which are easy to recognize."))
   (b* (((reterr) (irr-ext-declon) (irr-span) parstate)
        ((erp token span parstate) (read-token parstate)))
@@ -11467,7 +11585,7 @@
      ;; If token is a semicolon,
      ;; we have an empty external declaration.
      ((and (token-punctuatorp token ";") ; ;
-           (parstate->gcc parstate))
+           (parstate->gcc/clang parstate))
       (retok (ext-declon-empty) span parstate))
      ;; If token is the keyword '_Static_assert',
      ;; we have a static assertion declaration.
@@ -11476,7 +11594,7 @@
             (parse-static-assert-declaration span parstate)))
         (retok (ext-declon-declon (declon-statassert statassert)) span parstate)))
      ;; If token is the 'asm' or variant keyword
-     ;; (which can only happen if GCC extensions are enabled),
+     ;; (which can only happen if GCC/Clang extensions are enabled),
      ;; we have an assembler statement.
      ((or (token-keywordp token "asm") ; asm
           (token-keywordp token "__asm") ; __asm
@@ -11490,7 +11608,7 @@
         (retok (ext-declon-asm asm) span parstate)))
      ;; Otherwise, we must have a list of one or more declaration specifiers,
      ;; possibly preceded by an '__extension__' keyword
-     ;; if GCC extensions are supported.
+     ;; if GCC/Clang extensions are supported.
      (t
       (b* (((mv extension parstate)
             (if (token-keywordp token "__extension__")
@@ -11746,7 +11864,7 @@
      which contains all the file data bytes.
      We parse zero or more external declarations,
      consistently with the grammar.
-     But unless GCC extensions are enabled,
+     But unless GCC/Clang extensions are enabled,
      we reject input with zero external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
@@ -11761,9 +11879,10 @@
        ((erp extdecls & eof-pos parstate)
         (parse-*-external-declaration parstate))
        ((when (and (endp extdecls)
-                   (not (parstate->gcc parstate))))
+                   (not (parstate->gcc/clang parstate))))
         (reterr (msg "The translation unit has no external declarations, ~
-                      but GCC extensions (which allow that) are not enabled.")))
+                      but GCC/Clang extensions (which allow that) ~
+                      are not enabled.")))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
     (retok (make-transunit :comment nil :declons extdecls :info nil) parstate))
@@ -11846,7 +11965,8 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (transunit-ensemble tunitmap)))
+    (retok (make-transunit-ensemble :units tunitmap
+                                    :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)

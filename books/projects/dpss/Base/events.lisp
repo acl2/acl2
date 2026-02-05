@@ -1311,7 +1311,7 @@
            :induct (smallest-impending-dt i ens))))
 
 (def::und smallest-impending-dt-index (ens)
-  (delare (xargs :fty ((uav-list) uav-id)))
+  (declare (xargs :fty ((uav-list) uav-id)))
   (let ((i (largest-impending-event-index (+ -1 (N)) ens)))
     (smallest-impending-dt i ens)))
 

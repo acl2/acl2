@@ -224,7 +224,7 @@
           ;; The user supplied one, so use it:
           interpreted-function-alist))
        ;; Call the rewriter:
-       ((mv erp dag)
+       ((mv erp dag &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist

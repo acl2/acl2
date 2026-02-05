@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1204,11 +1204,11 @@
      "For each parameter/argument pair,
       the same restrictions apply as in the case of simple assignment.
       See @(tsee valid-binary) for details on these restrictions.
-      When validating with GCC extensions enabled,
+      When validating with GCC/Clang extensions enabled,
       these restrictions are slightly weakened.
       See the following section."))
    (xdoc::section
-    "GCC Extensions"
+    "GCC/Clang Extensions"
     (xdoc::p
      "GCC has a type attribute @('transparent_union')
       which affects type-checking of arguments against
@@ -1221,11 +1221,11 @@
       and a null pointer expression or void pointer type is allowed
       if any of the union members are a pointer.
       For now, we approximate this by allowing any argument type
-      when the parameter type is a union and GCC extensions are enabled.
+      when the parameter type is a union and GCC/Clang extensions are enabled.
       See "
      (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html"
-       "the GCC manual")
+       "[GCCM:6.4.3.1]")
      " for more information on the @('transparent_union') attribute.")))
   (b* (((reterr))
        (types-param (type-list-fix types-param))
@@ -1240,9 +1240,9 @@
        (type-param (first types-param))
        (arg (first args))
        (type-arg (type-fpconvert (type-apconvert (first types-arg))))
-       (gcc (ienv->gcc ienv)))
+       (gcc/clang (ienv->gcc/clang ienv)))
     (if (or (type-case type-param :unknown)
-            (and gcc (type-case type-param :union))
+            (and gcc/clang (type-case type-param :union))
             (type-case type-arg :unknown)
             (and (type-arithmeticp type-param)
                  (type-arithmeticp type-arg))
@@ -1609,9 +1609,9 @@
      to be used as an operand while the other operand has pointer type.
      But we found it accepted by practical compilers,
      so it is probably a GCC extension.
-     We therefore accept this when the GCC flag of the "
+     We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " is enabled.
+    " version indicates GCC/Clang extensions.
      Since we do not have code yet to recognize null pointer constants,
      we accept any integer expression;
      that is, we allow one pointer operand and one integer operand.")
@@ -1751,7 +1751,7 @@
                                          (not (type-case type-to2 :function))
                                          (type-compatiblep
                                            type-to1 type-to2 ienv))))
-                           (and (ienv->gcc ienv)
+                           (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
@@ -2150,7 +2150,8 @@
                               (ident identp)
                               (type typep)
                               (fundefp booleanp)
-                              (table valid-tablep))
+                              (table valid-tablep)
+                              (ienv ienvp))
   :returns (mv (erp maybe-msgp)
                (typedefp booleanp)
                (linkage linkagep)
@@ -2265,6 +2266,15 @@
      The type must not be one of a function.
      Thus, it has no linkage [C17:6.2.2/6].
      The lifetime is automatic [C17:6.2.4/5].")
+   (xdoc::p
+    "As a GCC extension, we allow the @('register') storage class specifier
+     for file-scope declarations when GCC/Clang extensions are enabled
+     by the implementation environment.
+     This allows for the ``global register variables'' extension "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html"
+                 "[GCCM:6.11.6.1]")
+    ". In this case, the linkage and lifetime are
+     the same as if we had no storage class specifiers.")
    (xdoc::p
     "If there are no storage class specifiers (i.e. the sequence is empty),
      things differ based on
@@ -2383,7 +2393,8 @@
                          "auto"
                        "register")
                      (ident-fix ident)))
-           ((unless (and (> (valid-table-num-scopes table) 1)
+           ((unless (and (or (> (valid-table-num-scopes table) 1)
+                             (ienv->gcc/clang ienv))
                          (not fundefp)))
             (retmsg$ "The storage class specifier '~s0' ~
                       cannot be used in the file scope, for identifier ~x1."
@@ -2391,7 +2402,9 @@
                          "auto"
                        "register")
                      (ident-fix ident))))
-        (retok nil (linkage-none) (lifetime-auto))))
+        (if (> (valid-table-num-scopes table) 1)
+            (retok nil (linkage-none) (lifetime-auto))
+          (retok nil (linkage-external) (lifetime-static)))))
      ((endp storspecs)
       (if (type-case type :function)
           (b* (((mv info? &) (valid-lookup-ord ident table))
@@ -5537,7 +5550,7 @@
          ((erp new-declor type ident types table)
           (valid-declor initdeclor.declor nil type table ienv))
          ((erp typedefp linkage lifetime?)
-          (valid-stor-spec-list storspecs ident type nil table))
+          (valid-stor-spec-list storspecs ident type nil table ienv))
          ((when typedefp)
           (b* (((when initdeclor.initer?)
                 (retmsg$ "The typedef name ~x0 ~
@@ -5586,7 +5599,10 @@
                                             (stor-spec-list-fix storspecs))
                               (valid-defstatus-undefined)
                             (valid-defstatus-tentative))))))
-         ((mv uid table) (valid-get-fresh-uid ident linkage table))
+         ((mv uid table)
+          (if (and info? currentp (valid-ord-info-case info? :objfun))
+              (mv (valid-ord-info-objfun->uid info?) table)
+            (valid-get-fresh-uid ident linkage table)))
          (new-info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage
@@ -5882,9 +5898,9 @@
        (including the case in which the compound statement has no block items),
        the second piece of information is @('nil').
        The reason for having this second piece of information
-       is to support the validation of "
+       is to support the validation of GCC statement expressions"
       (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
-                   "GCC statement expressions")
+                   "[GCCM:6.12.1]")
       ".")
      (xdoc::p
       "To validate a labeled statement,
@@ -5957,6 +5973,8 @@
                 types
                 type?
                 table))
+       :null-attrib
+       (retok (stmt-null-attrib stmt.attrib) nil nil (valid-table-fix table))
        :if
        (b* ((table (valid-push-scope table))
             ((erp new-test test-type test-types table)
@@ -6106,7 +6124,12 @@
        :goto
        (retok (stmt-goto stmt.label) nil nil (valid-table-fix table))
        :gotoe
-       (retok (stmt-gotoe stmt.label) nil nil (valid-table-fix table))
+       (b* (((erp new-label type types table)
+             (valid-expr stmt.label table ienv)))
+         (retok (stmt-gotoe new-label)
+                (set::insert type types)
+                nil
+                table))
        :continue
        (retok (stmt-continue) nil nil (valid-table-fix table))
        :break
@@ -6117,6 +6140,14 @@
             (return-type (or type? (type-void))))
          (retok (make-stmt-return :expr? new-expr? :info nil)
                 (set::insert return-type types)
+                nil
+                table))
+       :return-attrib
+       (b* (((erp new-expr type types table)
+             (valid-expr stmt.expr table ienv)))
+         (retok (make-stmt-return-attrib :attrib stmt.attrib
+                                         :expr new-expr)
+                (set::insert type types)
                 nil
                 table))
        :asm
@@ -6592,12 +6623,12 @@
      [C17:6.4.2.2].
      In our currently approximate type system, this has @('char') array type
      (the @('const') type qualifier is ignored).
-     If the GCC flag is enabled (i.e. GCC extensions are allowed),
+     If the GCC/Clang flag is enabled (i.e. GCC/Clang extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
-     @('__PRETTY_FUNCTION__') (GCC manual, "
+     @('__PRETTY_FUNCTION__') "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
-                 "``Function Names''")
-    ").")
+                 "[GCCM:6.12.24]")
+    ".")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -6627,7 +6658,7 @@
                   contains return statements."
                  (fundef-fix fundef)))
        ((erp typedefp linkage &)
-        (valid-stor-spec-list storspecs ident type t table))
+        (valid-stor-spec-list storspecs ident type t table ienv))
        ((when typedefp)
         (retmsg$ "The function definition ~x0 ~
                   declares a 'typedef' name instead of a function."
@@ -6725,7 +6756,7 @@
                               :uid uid)
                              table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
-       (table (if (ienv->gcc ienv)
+       (table (if (ienv->gcc/clang ienv)
                   (valid-add-ord (ident "__FUNCTION__")
                                  (make-valid-ord-info-objfun
                                   :type (make-type-array :of (type-char))
@@ -6735,7 +6766,7 @@
                                  table)
                 table))
        ((mv uid table) (valid-get-fresh-uid ident (linkage-none) table))
-       (table (if (ienv->gcc ienv)
+       (table (if (ienv->gcc/clang ienv)
                   (valid-add-ord (ident "__PRETTY_FUNCTION__")
                                  (make-valid-ord-info-objfun
                                   :type (make-type-array :of (type-char))
@@ -6843,10 +6874,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If GCC extensions are not enabled,
+    "If GCC/Clang extensions are not enabled,
      the initial validation table is the one
      returned by @(tsee valid-init-table).
-     If GCC extensions are enabled,
+     If GCC/Clang extensions are enabled,
      we add a number of objects and functions
      that we have encountered in practical code;
      we should eventually have a comprehensive list here.")
@@ -6871,10 +6902,10 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
-       (gcc (ienv->gcc ienv))
+       (gcc/clang (ienv->gcc/clang ienv))
        (table (valid-init-table filepath externals next-uid))
        (table
-         (if gcc
+         (if gcc/clang
              (b* ((table
                     (valid-add-ord-objfuns-file-scope
                      *gcc-builtin-functions*
@@ -6927,7 +6958,7 @@
      different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        (map (transunit-ensemble->units tunits))
-       ((erp new-map)
+       ((erp new-map table)
         (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
@@ -6938,7 +6969,9 @@
                   (cw "Validated ~x0/~x1 translation units.~%"
                       len-new-map len-map)))
             nil)))
-    (retok (transunit-ensemble new-map)))
+    (retok (make-transunit-ensemble
+             :units new-map
+             :info (transunit-ensemble-info table))))
 
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
@@ -6949,10 +6982,11 @@
      :guard (filepath-transunit-map-unambp map)
      :returns (mv (erp maybe-msgp)
                   (new-map filepath-transunit-mapp
-                           :hyp (filepath-transunit-mapp map)))
+                           :hyp (filepath-transunit-mapp map))
+                  (table valid-tablep))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (omap::emptyp map)) (retok nil))
+     (b* (((reterr) nil (irr-valid-table))
+          ((when (omap::emptyp map)) (retok nil (irr-valid-table)))
           (path (omap::head-key map))
           ((mv erp new-tunit table)
            (valid-transunit path (omap::head-val map) externals next-uid ienv))
@@ -6970,12 +7004,13 @@
                       (filepath->unwrap path)
                       erp)))
           ((valid-table table) table)
-          ((erp new-map) (valid-transunit-ensemble-loop (omap::tail map)
-                                                        table.externals
-                                                        table.next-uid
-                                                        ienv
-                                                        keep-going)))
-       (retok (omap::update path new-tunit new-map)))
+          ((erp new-map -) (valid-transunit-ensemble-loop (omap::tail map)
+                                                          table.externals
+                                                          table.next-uid
+                                                          ienv
+                                                          keep-going)))
+       (retok (omap::update path new-tunit new-map)
+              table))
      :verify-guards :after-returns
      :hooks ()
 
