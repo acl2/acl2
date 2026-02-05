@@ -166,13 +166,7 @@
 
 ; Reading Commands ------------------------------------------------------------
 
-#+sbcl
-(defconstant eof
-  ;; Special constant to denote end of file.
-  ;; Guard against SBCL's strict constant redefinition check on reload.
-  (if (boundp 'eof) (symbol-value 'eof) (cons :eof :eof)))
-#-sbcl
-(defconstant eof
+(defparameter eof
   ;; Special constant to denote end of file
   (cons :eof :eof))
 
