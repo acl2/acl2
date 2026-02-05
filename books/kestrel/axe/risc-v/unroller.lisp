@@ -1,7 +1,7 @@
 ; An unrolling lifter for RISC-V code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -568,15 +568,6 @@
        ;;                          position-independent))
 
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
-       ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
-       ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-       ;;                                  ;(parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
-       ;;                                  ))
-       ;; (new-canonicalp (or (eq :elf-64 executable-type)
-       ;;                     (eq :mach-o-64 executable-type)
-       ;;                     (eq :pe-64 executable-type) ; todo, also need to change the assumptions
-       ;;                     ))
-
 
        ;; todo: update this for risc-v:
        (existing-stack-slots (if (eq :auto existing-stack-slots)
