@@ -18,8 +18,8 @@
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
+(include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "kestrel/bv/intro" :dir :system) ; reduce?
 (include-book "kestrel/bv/std" :dir :system) ; reduce?
 (include-book "kestrel/bv/rules3" :dir :system) ;for bvor-of-bvshl-and-bvshr-becomes-leftrotate, in core-rules-bv
@@ -58,7 +58,7 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
-(include-book "kestrel/x86/parsers/elf-tools" :dir :system) ; for the user's convenience
+(include-book "kestrel/executable-parsers/elf-tools" :dir :system) ; for the user's convenience
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))

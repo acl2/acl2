@@ -36,6 +36,7 @@
 (include-book "error-checking/top")
 (include-book "evaluators/top")
 (include-book "event-macros/top")
+(include-book "executable-parsers/top")
 (include-book "hdwallet/top")
 ;; (include-book "helpers/top") ;; TODO: Uncomment when stable
 (include-book "ethereum/top")

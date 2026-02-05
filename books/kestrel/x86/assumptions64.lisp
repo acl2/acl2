@@ -16,7 +16,7 @@
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
 (include-book "kestrel/memory/memory48" :dir :system)
-(include-book "parsers/parsed-executable-tools")
+(include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (defund bytes-loaded-at-address-64 (bytes addr bvp x86)

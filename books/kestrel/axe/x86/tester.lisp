@@ -15,7 +15,7 @@
 
 ;; TODO: Re-enable support for 32-bit binaries.
 
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "../tactic-prover") ; todo: try prover-basic, but it would need the :stp tactic
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)

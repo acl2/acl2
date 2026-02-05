@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "portcullis")
-(include-book "parsers/top")
 (include-book "tools/top")
 
 ;; These could be added to books/projects/x86isa:
