@@ -1,6 +1,6 @@
 ; Top-level book for the lightweight-lists library.
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
