@@ -12,6 +12,8 @@
 
 (include-book "preprocessor-lexemes")
 
+(include-book "../language/implementation-environments/versions")
+
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -204,7 +206,7 @@
     "The predefined macros can be viewed as being in an outermost scope.
      Their names and definitions depend on the C version,
      and should be initialized accordingly.
-     Many predefined macros should be adequately modeled
+     Many predefined macros are adequately modeled
      with the same @(tsee macro-info) data as non-predefined ones.
      A few predefined macros are special,
      such as @('__LINE__') and @('__FILE__') [C17:6.10.10],
@@ -223,6 +225,158 @@
   :short "An irrelevant macro table."
   :type macro-tablep
   :body (macro-table nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c17 ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C17 (without GCC or Clang extensions)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more."))
+  (list (cons (ident "__STDC__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\1)))))
+        (cons (ident "__STDC_VERSION__")
+              (macro-info-object
+               (list (plexeme-number
+                      (pnumber-number-nondigit
+                       (pnumber-number-digit
+                        (pnumber-number-digit
+                         (pnumber-number-digit
+                          (pnumber-number-digit
+                           (pnumber-number-digit
+                            (pnumber-digit
+                             #\2) #\0) #\1) #\7) #\1) #\0) #\L))))))
+  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c23 ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C17 (without GCC or Clang extensions)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more."))
+  (list (cons (ident "__STDC__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\1)))))
+        (cons (ident "__STDC_VERSION__")
+              (macro-info-object
+               (list (plexeme-number
+                      (pnumber-number-nondigit
+                       (pnumber-number-digit
+                        (pnumber-number-digit
+                         (pnumber-number-digit
+                          (pnumber-number-digit
+                           (pnumber-number-digit
+                            (pnumber-digit
+                             #\2) #\0) #\2) #\3) #\1) #\1) #\L))))))
+  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c17+gcc ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C17 with GCC extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more."))
+  (predefined-macros-c17))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c23+gcc ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C23 with GCC extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more."))
+  (predefined-macros-c23))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c17+clang ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C17 with Clang extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more.")
+   (xdoc::p
+    "The @('__arm64__') is more specific than Clang,
+     so we may want to introduce and use further parameterization;
+     but this should work fine on (relatively) new Mac machines."))
+  (append (predefined-macros-c17)
+          (list (cons (ident "__arm64__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\1)))))
+                (cons (ident "__GNUC__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\4)))))
+                (cons (ident "__GNUC_MINOR__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\2))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros-c23+clang ()
+  :returns (macros macro-scopep)
+  :short "Predefined macros for C23 with Clang extensions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress:
+     we start with a few macros,
+     but we need to systematically add more.")
+   (xdoc::p
+    "The @('__arm64__') is more specific than Clang,
+     so we may want to introduce and use further parameterization;
+     but this should work fine on (relatively) new Mac machines."))
+  (append (predefined-macros-c23)
+          (list (cons (ident "__arm64__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\1)))))
+                (cons (ident "__GNUC__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\4)))))
+                (cons (ident "__GNUC_MINOR__")
+                      (macro-info-object
+                       (list (plexeme-number (pnumber-digit #\2))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predefined-macros ((version c::versionp))
+  :returns (macros macro-scopep)
+  :short "Predefined macros for the given C version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress.
+     We start with some initial macros,
+     but we need to systematically add more."))
+  (c::version-case
+   version
+   :c17 (predefined-macros-c17)
+   :c23 (predefined-macros-c23)
+   :c17+gcc (predefined-macros-c17+gcc)
+   :c23+gcc (predefined-macros-c23+gcc)
+   :c17+clang (predefined-macros-c17+clang)
+   :c23+clang (predefined-macros-c23+clang)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,16 +431,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-init ()
+(define macro-table-init ((version c::versionp))
   :returns (table macro-tablep)
   :short "Initial macro table."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the table before we preprocess any file, so there are no scopes.
-     For now we do not add any predefined macros,
-     but we should do that at some point."))
-  (make-macro-table :predefined nil ; TODO
+     But we have the predefined macros."))
+  (make-macro-table :predefined (predefined-macros version)
                     :scopes nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

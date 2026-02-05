@@ -11,7 +11,6 @@
 (in-package "C$")
 
 (include-book "../preprocessor-lexer")
-(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
@@ -32,7 +31,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -61,7 +60,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
