@@ -5476,7 +5476,7 @@
     (xdoc::topstring
      (xdoc::p
       "We recursively validate the members
-       and return the @(tsee type-struni-members),
+       and return the @(tsee type-struni-member-list),
        which represents the name and types of the members.")
      (xdoc::p
       "We do not extend the validation table
