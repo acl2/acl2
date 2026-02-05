@@ -1122,6 +1122,15 @@
              (ext-declon-list-annop (transunit->declons transunit)))
     :enable transunit-annop)
 
+  (defruled transunit-annop-of-cdr-assoc
+    (implies (and (filepath-transunit-map-annop map)
+                  (filepath-transunit-mapp map)
+                  (omap::assoc filepath map))
+             (transunit-annop (cdr (omap::assoc filepath map))))
+    :induct t
+    :enable (omap::assoc
+             filepath-transunit-map-annop))
+
   (defruled transunit-infop-of-transunit->info
     (implies (transunit-annop transunit)
              (transunit-infop (transunit->info transunit)))
@@ -1185,6 +1194,7 @@
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
      ext-declon-list-annop-of-transunit->declons
+     transunit-annop-of-cdr-assoc
      transunit-infop-of-transunit->info
      filepath-transunit-map-annop-of-transunit-ensemble->units
      transunit-ensemble-infop-of-transunit-ensemble->info)))
