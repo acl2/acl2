@@ -42,6 +42,13 @@ displayed without disrupting the REPL.
 5. Use ~^D~ to exit
 6. The Bridge server will continue for other clients.  Stop with ~^C~ or run ~python demo.py --stop~ (or ~python async_demo.py --stop~) to have the client send a (BRIDGE::STOP) command to stop the server.
 
+** Manual Stop
+You can also stop the bridge server (or send any s-expression) from the CLI:
+```bash
+sudo apt install netcat-openbsd
+echo -e 'LISP 14\n(bridge::stop)' | nc -U demo-bridge
+```
+
 * Notes
 - See the demo(s) and docstrings for usage.
 - Only the Unix socket interface is implemented.  Adding security to the bridge
