@@ -278,7 +278,7 @@
          (m (uint 4 rm))
          (setflags (== s #b1))
          ((mv shift_t shift_n) (decodeImmShift type imm5))
-         ;; end Encoding-specific operations
+         ;; end EncodingSpecificOperations
          (shifted (shift 32 (reg m arm) shift_t shift_n (apsr.c arm)))
          ((mv result carry overflow) (AddWithCarry 32 (reg n arm) shifted 0))
          (arm (if (== d 15)
@@ -469,6 +469,7 @@
 (def-inst :b
     (b* (;; EncodingSpecificOperations:
          (imm32 (signextend (bvcat 24 imm24 2 0) 26 32))
+         ;; end EncodingSpecificOperations
          (pc (pcvalue inst-address)))
       (BranchWritePC (bvplus 32 pc imm32) arm)))
 
@@ -576,7 +577,9 @@
 
 (def-inst :bx
     (b* (;; EncodingSpecificOperations:
-         (m (uint 4 rm)))
+         (m (uint 4 rm))
+         ;; end EncodingSpecificOperations
+         )
       (BXWritePC (reg m arm) arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -806,6 +809,7 @@
                    (== (getbit n registers) 1)
                    (>= (ArchVersion) 7)))
         (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
        (arm (NullCheckIfThumbEE n arm))
        (address (reg n arm))
        ((mv address arm) (ldm-loop 0 registers address arm))
@@ -878,7 +882,9 @@
        (UnalignedAllowed *false*)
        ((when (and (== (getbit 13 registers) 1)
                    (>= (ArchVersion) 7)))
-        (update-error *unpredictable* arm)))
+        (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
+       )
     (pop-common registers UnalignedAllowed arm)))
 
 (def-inst :ldm/ldmia/ldmfd
@@ -1037,6 +1043,7 @@
        (tval (uint 4 rt)) ; can't use "t" since it means true in Lisp
        (imm32 (ZeroExtend imm12 32))
        (add (== u 1))
+       ;; end EncodingSpecificOperations
        (arm (NullCheckIfThumbEE 15 arm))
        (base (align (pcvalue inst-address) 4))
        (address (if add (bvplus 32 base imm32) (bvminus 32 base imm32)))
@@ -3374,7 +3381,9 @@
        (registers (putbit 16 tval 1 registers))
        (UnalignedAllowed *true*)
        ((when (== tval 13))
-        (update-error *unpredictable* arm)))
+        (update-error *unpredictable* arm))
+       ;; end EncodingSpecificOperations
+       )
     (push-common registers UnalignedAllowed inst-address arm)))
 
 (def-inst :push-encoding-a2
@@ -3386,7 +3395,9 @@
                   :stobjs arm))
   (b* (;; EncodingSpecificOperations (continued):
        (registers register_list)
-       (UnalignedAllowed *false*))
+       (UnalignedAllowed *false*)
+       ;; end EncodingSpecificOperations
+       )
     (push-common registers UnalignedAllowed inst-address arm)))
 
 ;; Returns (mv address arm).
