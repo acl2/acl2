@@ -2737,11 +2737,9 @@
                                         :expected "an identifier or ~
                                                    a left parenthesis"
                                         :found (plexeme-to-msg token))))))
-                       ((mv info? innermostp predefinedp)
+                       ((mv info? reach)
                         (macro-lookup macro-name (ppstate->macros ppstate)))
-                       ((when (and info?
-                                   (not innermostp)
-                                   (not predefinedp)))
+                       ((when (> reach 0))
                         (retok t ; not-self-contained-p
                                nil ; new-rev-lexmarks -- irrelevant
                                ppstate))
@@ -2768,11 +2766,9 @@
                                  directivep
                                  ppstate
                                  (1- limit)))
-                 ((mv info innermostp predefinedp)
+                 ((mv info reach)
                   (macro-lookup ident (ppstate->macros ppstate)))
-                 ((when (and info
-                             (not innermostp)
-                             (not predefinedp)))
+                 ((when (> reach 0))
                   (retok t ; not-self-contained-p
                          nil ; new-rev-lexmarks -- irrelevant
                          ppstate))
@@ -4627,11 +4623,9 @@
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "a new line"
                       :found (plexeme-to-msg ident?)))
-         ((mv info? innermostp predefinedp)
+         ((mv info? reach)
           (macro-lookup ident (ppstate->macros ppstate)))
-         ((when (and info?
-                     (not innermostp)
-                     (not predefinedp)))
+         ((when (> reach 0))
           (retok t ; not-self-contained-p
                  nil ; new-rev-lexemes -- irrelevant
                  ppstate
