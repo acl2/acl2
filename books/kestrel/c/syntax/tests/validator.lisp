@@ -1312,8 +1312,6 @@ foo:
 "
   :extensions :gcc)
 
-;;;;;;;;;;
-
 (test-valid
   "struct s {
   int x;

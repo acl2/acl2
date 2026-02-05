@@ -265,7 +265,8 @@
      Tags form their own name space,
      disambiguated by the @('struct'), @('union'), or @('enum') keywords.")
    (xdoc::p
-    "We store just the @(see UID) associated with the tag
+    "We store the @(tsee tag-kind)
+     and the @(see UID) associated with the tag
      in the current scope.
      The @(see UID) can be used to lookup the completion
      under a separate @(tsee type-completions) map."))
