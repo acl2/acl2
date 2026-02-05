@@ -3426,8 +3426,8 @@
                           ((unless (and info? currentp))
                            (mv nil nil))
                           (uid (valid-tag-info->uid info?))
-                          (members? (omap::assoc (valid-tag-info->uid info?)
-                                                 (valid-table->completions table))))
+                          (members? (hons-get (valid-tag-info->uid info?)
+                                              (valid-table->completions table))))
                        (mv uid (consp members?))))
                     ((when current+completep)
                      (retmsg$ "A type is already defined in this scope ~
@@ -3463,7 +3463,7 @@
                                              type-struni-members))))
                     (table (change-valid-table
                              table
-                             :completions (omap::update
+                             :completions (hons-acons
                                             uid
                                             type-struni-members
                                             table.completions))))
@@ -3527,8 +3527,8 @@
                          ((unless (and info? currentp))
                           (mv nil nil))
                          (uid (valid-tag-info->uid info?))
-                         (members? (omap::assoc (valid-tag-info->uid info?)
-                                                (valid-table->completions table))))
+                         (members? (hons-get (valid-tag-info->uid info?)
+                                             (valid-table->completions table))))
                       (mv uid (consp members?))))
                    ((when current+completep)
                     (retmsg$ "A type is already defined in this scope ~
@@ -3564,7 +3564,7 @@
                                             type-struni-members))))
                    (table (change-valid-table
                             table
-                            :completions (omap::update
+                            :completions (hons-acons
                                            uid
                                            type-struni-members
                                            table.completions))))
@@ -3627,8 +3627,8 @@
                                 ((unless (and info? currentp))
                                  (mv nil nil))
                                 (uid (valid-tag-info->uid info?))
-                                (members? (omap::assoc (valid-tag-info->uid info?)
-                                                       (valid-table->completions table))))
+                                (members? (hons-get (valid-tag-info->uid info?)
+                                                    (valid-table->completions table))))
                              (mv uid (consp members?))))
                           ((when current+completep)
                            (retmsg$ "A type is already defined in this scope ~
@@ -3662,7 +3662,7 @@
                                                    nil))))
                           (table (change-valid-table
                                    table
-                                   :completions (omap::update
+                                   :completions (hons-acons
                                                   uid
                                                   nil
                                                   table.completions))))

@@ -147,13 +147,13 @@
                       :tunit? (filepath "bar.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (omap::update
+    (hons-acons
       (uid 42)
       (list (make-type-struni-member :name? (ident "x")
                                      :type (type-char))
             (make-type-struni-member :name? (ident "y")
                                      :type (type-ulong)))
-      (omap::update
+      (hons-acons
         (uid 43)
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
@@ -173,13 +173,13 @@
                         :tunit? (filepath "foo.c")
                         :tag/members (type-struni-tag/members-tagged
                                        (ident "my_struct")))
-      (omap::update
+      (hons-acons
         (uid 42)
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
               (make-type-struni-member :name? (ident "y")
                                        :type (type-ulong)))
-        (omap::update
+        (hons-acons
           (uid 43)
           (list (make-type-struni-member :name? (ident "x")
                                          :type (type-char))
@@ -198,13 +198,13 @@
                       :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (omap::update
+    (hons-acons
       (uid 42)
       (list (make-type-struni-member :name? (ident "x")
                                      :type (type-char))
             (make-type-struni-member :name? (ident "y")
                                      :type (type-ulong)))
-      (omap::update
+      (hons-acons
         (uid 43)
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
@@ -228,13 +228,13 @@
                               :tunit? (filepath "bar.c")
                               :tag/members (type-struni-tag/members-tagged
                                              (ident "my_struct")))
-            (omap::update
+            (hons-acons
               (uid 42)
               (list (make-type-struni-member :name? (ident "x")
                                              :type (type-char))
                     (make-type-struni-member :name? (ident "y")
                                              :type (type-ulong)))
-              (omap::update
+              (hons-acons
                 (uid 43)
                 (list (make-type-struni-member :name? (ident "x")
                                                :type (type-char))
@@ -248,7 +248,7 @@
                                   :tunit? nil
                                   :tag/members (type-struni-tag/members-tagged
                                                  (ident "my_struct"))))
-         (equal (cdr (omap::assoc (uid 44) completions))
+         (equal (cdr (hons-get (uid 44) completions))
                 (list (make-type-struni-member :name? (ident "x")
                                                :type (type-char))
                       (make-type-struni-member :name? (ident "y")
@@ -267,13 +267,13 @@
                               :tunit? (filepath "foo.c")
                               :tag/members (type-struni-tag/members-tagged
                                              (ident "my_struct")))
-            (omap::update
+            (hons-acons
               (uid 42)
               (list (make-type-struni-member :name? (ident "x")
                                              :type (type-char))
                     (make-type-struni-member :name? (ident "y")
                                              :type (type-ulong)))
-              (omap::update
+              (hons-acons
                 (uid 43)
                 (list (make-type-struni-member :name? (ident "x")
                                                :type (type-char))

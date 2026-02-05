@@ -30,9 +30,16 @@
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
 
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable hons-equal hons-get hons-acons)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,10 +52,61 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable sfix)
 
+(defrulel cardinality-when-emptyp-cheap
+  (implies (emptyp x)
+           (equal (cardinality x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defruledl equal-cardinality-becomes-equal-sfix-when-subset
+  (implies (subset x y)
+           (equal (equal (cardinality x) (cardinality y))
+                  (equal (sfix x) (sfix y))))
+  :enable (sfix
+           set::equal-cardinality-subset-is-equality))
+
+(defrulel equal-cardinality-when-subset
+  (implies (subset x y)
+           (equal (equal (cardinality x) (cardinality y))
+                  (subset y x)))
+  :enable (equal-cardinality-becomes-equal-sfix-when-subset
+           set::double-containment))
+
+(defrulel subset-of-delete-when-subset
+  (implies (subset set0 set1)
+           (subset (delete x set0)
+                   set1))
+  :enable set::subset-transitive)
+
+(defrulel in-when-subset-of-difference-and-in-not-in
+  (implies (and (subset (difference x y) set)
+                (in a x)
+                (not (in a set)))
+           (in a y))
+  :enable set::expensive-rules)
+
+(defruledl proper-subset-cardinality-case-split
+  (implies (case-split (and (subset x y)
+                            (not (subset y x))))
+           (< (cardinality x)
+              (cardinality y))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defrulel equal-of-nfix-and-0
   (equal (equal (nfix x) 0)
          (not (posp x)))
   :enable nfix)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrulel hons-assoc-equal-when-assoc-equal
+  (implies (alistp alist)
+           (equal (hons-assoc-equal x alist)
+                  (assoc-equal x alist)))
+  :induct t
+  :enable (hons-assoc-equal
+           alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -526,7 +584,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap type-completions
+(fty::defalist type-completions
   :short "A map from @(see UID)s to struct/union members."
   :long
   (xdoc::topstring
@@ -539,15 +597,31 @@
      to its @(tsee type-struni-member-list)."))
   :key-type uid
   :val-type type-struni-member-list
-  :pred type-completions-p)
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :pred type-completions-p
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule type-struni-member-listp-of-cdr-of-omap-assoc
-  (implies (type-completions-p completions)
-           (type-struni-member-listp (cdr (omap::assoc key completions))))
+(defrule alistp-when-type-completions-p-forward-chaining
+  (implies (type-completions-p x)
+           (alistp x))
+  :rule-classes :forward-chaining
+  :by alistp-when-type-completions-p-rewrite)
+
+(defrule alistp-of-type-completions-fix
+  (alistp (type-completions-fix x))
   :induct t
-  :enable omap::assoc)
+  :enable (type-completions-fix
+           alistp))
+
+(defrule type-struni-member-listp-of-cdr-of-assoc-equal
+  (implies (type-completions-p completions)
+           (type-struni-member-listp (cdr (assoc-equal key completions))))
+  :induct t
+  :enable assoc-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -568,7 +642,7 @@
     tag/members
     :tagged (b* ((uid (uid-fix uid))
                  (completions (type-completions-fix completions))
-                 (members? (omap::assoc uid completions)))
+                 (members? (hons-get uid completions)))
               (if members?
                   (mv nil (cdr members?))
                 (mv t nil)))
@@ -1266,139 +1340,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines type/type-list-compatible-p
-  (define type-compatible-p ((x typep)
-                             (y typep)
-                             (completions type-completions-p)
-                             (ienv ienvp))
+(defines type/type-list-compatible-p-aux
+  (define type-compatible-p-aux ((x typep)
+                                 (y typep)
+                                 (completions type-completions-p)
+                                 (incomplete uid-setp)
+                                 (ienv ienvp))
     :returns (yes/no booleanp)
-    :short "Check that two @(see type)s are compatible [C17:6.2.7]."
+    :short "Auxiliary function for check that two @(see type)s are compatible
+            [C17:6.2.7]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Type compatibility is a check that two types are
-       in some sense ``consistent''.
-       Compatibility affects whether a redeclaration is permissible,
-       whether one type may be used when another is expected,
-       and whether two declarations referring to
-       the same object or function are well-defined.")
-     (xdoc::p
-      "Because we currently only model an approximation of C types,
-       our notion of compatibility is also approximate.
-       Specifically, this relation overapproximates true type compatibility.
-       Compatible types should always be recognized as such,
-       but incompatible types may also be recognized.")
-     (xdoc::p
-      "Furthermore, we deliberately weaken our notion of compatibility
-       when comparing certain types across translation units.
-       Specifically, the compatibility rules for @('struct') types
-       require knowing whether a type is completed <i>anywhere</i>
-       in a translation unit [C17:6.2.7/1].
-       To avoid having to delay our compatibility checks,
-       we weaken our definition to instead only require that two types
-       <i>might</i> be compatible under a future extension
-       of the current completions environment.
-       This is consistent with our aforementioned goal
-       of overapproximating true type compatibility.")
-     (xdoc::p
-      "Our approximate notion of type compatibility
-       is established by the following cases:")
-     (xdoc::ul
-      (xdoc::li
-       "If either type is unknown, the types are compatible.")
-      (xdoc::li
-       "Structure type compatibility depends on
-        whether they are declared in the same translation unit.
-        If they are, the only requirement is
-        that the UIDs and tags are the same.
-        The UID establishes that the structs correspond to
-        the same declaration in the same scope [C17:6.7.2.3/4-5].
-        Note that it is expected that two struct types
-        produced by the validator should always have the same tag
-        when they share a UID.
-        If the struct types are declared in different translation units,
-        the restrictions are weaker.
-        We check that the tags are the same and,
-        if both types are complete
-        with respect to the type completion environment,
-        then there is a one-to-one correspondence between struct members.
-        For a member of one struct to correspond with a member of the other,
-        the names must agree and their types must be compatible.
-        We do not yet check member alignment specifiers agree.
-        Furthermore, the members of one struct type
-        must appear in the same order as
-        the corresponding members of the other struct [C17:6.2.7/1].
-        Note that, for the purpose compatibility, anonymous structs/unions
-        are considered regular members of their containing type.
-        (This is not so explicit in C17, but is clarified in [C23:6.2.7/1].)")
-      (xdoc::li
-       "Union type compatibility mirrors struct compatibility,
-        with the exception that
-        corresponding members do not need to appear in the same order
-        when comparing unions across translation units [C17:6.2.7/1].
-        For now, we do not check union members
-        when comparing across translation unit,
-        and instead conservatively accept any two unions with the same tag.")
-      (xdoc::li
-       "Due to their approximate representations,
-        all enumeration types are considered compatible [C17:6.7.2.2/4].")
-      (xdoc::li
-       "Pointer types are compatible if they are derived from compatible types;
-        we do not currently consider whether the types are qualified
-        [C17:6.7.6.1/2].")
-      (xdoc::li
-       "Array types are considered compatible
-        if their element types are compatible;
-        their size is not currently considered [C17:6.7.6.2/6].")
-      (xdoc::li
-       "Enumeration types are considered compatible
-        with <i>all</i> integer types.
-        This is an approximation because the standard says each enumeration type
-        must be compatible with <i>some</i> integer type.
-        However, the particular type is implementation-defined,
-        may vary for different enumeration types [C17:6.7.2.2/4].")
-      (xdoc::li
-       "Function types are considered compatible if
-        their return types are compatible [C17:6.7.6.3/15]
-        and their @(tsee type-params) are compatible
-        (see @(tsee type-params-compatible-p)).")
-      (xdoc::li
-       "For any other case, the types are compatible only if they are equal."))
-     (xdoc::p
-      "Eventually, we shall refine the notion of compatibility,
-       alongside our representation of types,
-       in order to reflect true type compatibility.")
-     (xdoc::p
-      "Finally, we note the perhaps surprising fact
-       type compatibility is intransitive and therefore
-       not an equivalence relation.
-       For instance, consider the following functions.")
-     (xdoc::codeblock
-      "int foo();"
-      ""
-      "int bar(int x);"
-      ""
-      "int baz(double x);")
-     (xdoc::p
-      "In this example, the types of @('bar') and @('baz')
-       are both compatible with the type of @('foo').
-       However, the types of @('bar') and @('baz')
-       are not compatible with each other.")
-     (xdoc::section
-      "C23 Standard"
-      (xdoc::p
-       "The C23 standard makes various changes to type compatibility,
-        of which we only implement some subset.
-        When the implementation environment specifies the C23 standard,
-        we make the following changes to the C17 type compatibility
-        outlined above.")
-     (xdoc::ul
-      (xdoc::li
-       "Two struct types are compared as if
-        they were declared in separate translation units [C23:6.2.7/1].")
-      (xdoc::li
-       "Two union types are compared as if
-        they were declared in separate translation units [C23:6.2.7/1]."))))
+      "See @(tsee type-compatible-p) for a description
+       of what type compatibility means and how we check it."))
     (or (type-case y :unknown)
         (type-case
           x
@@ -1416,18 +1371,22 @@
                         y.tag/members
                         :tagged
                         (b* ((completions (type-completions-fix completions))
-                             (x-members? (omap::assoc x.uid completions))
-                             (y-members? (omap::assoc y.uid completions))
+                             (incomplete (uid-set-fix incomplete))
+                             ((when (or (in x.uid incomplete)
+                                        (in y.uid incomplete)))
+                              t)
+                             (x-members? (hons-get x.uid completions))
+                             (y-members? (hons-get y.uid completions))
                              ((unless (and (consp x-members?)
                                            (consp y-members?)))
                               t)
-                             (completions$
-                               (omap::delete x.uid
-                                             (omap::delete y.uid completions))))
-                          (type-struni-member-list-compatible-p
+                             (incomplete
+                               (insert x.uid (insert y.uid incomplete))))
+                          (type-struni-member-list-compatible-p-aux
                             (cdr x-members?)
                             (cdr y-members?)
-                            completions$
+                            completions
+                            incomplete
                             ienv))
                         :untagged nil)
                       :untagged (type-struni-tag/members-case
@@ -1442,28 +1401,32 @@
                   y.tag/members
                   :tagged
                   (b* ((completions (type-completions-fix completions))
-                       (x-members? (omap::assoc x.uid completions))
-                       (y-members? (omap::assoc y.uid completions))
+                       (incomplete (uid-set-fix incomplete))
+                       ((when (or (in x.uid incomplete)
+                                  (in y.uid incomplete)))
+                        t)
+                       (x-members? (hons-get x.uid completions))
+                       (y-members? (hons-get y.uid completions))
                        ((unless (and (consp x-members?)
                                      (consp y-members?)))
                         t)
-                       (completions$
-                         (omap::delete x.uid
-                                       (omap::delete y.uid completions))))
-                    (type-struni-member-list-compatible-p
+                       (incomplete (insert x.uid (insert y.uid incomplete))))
+                    (type-struni-member-list-compatible-p-aux
                       (cdr x-members?)
                       (cdr y-members?)
-                      completions$
+                      completions
+                      incomplete
                       ienv))
                   :untagged nil)
                 :untagged
                 (type-struni-tag/members-case
                   y.tag/members
                   :tagged nil
-                  :untagged (type-struni-member-list-compatible-p
+                  :untagged (type-struni-member-list-compatible-p-aux
                               x.tag/members.members
                               y.tag/members.members
                               completions
+                              incomplete
                               ienv))))
             :otherwise nil)
           :union
@@ -1496,30 +1459,38 @@
             :otherwise nil)
           :array (type-case
                    y
-                   :array (type-compatible-p x.of y.of completions ienv)
+                   :array (type-compatible-p-aux
+                            x.of y.of completions incomplete ienv)
                    :otherwise nil)
           :pointer (type-case
                      y
-                     :pointer (type-compatible-p x.to y.to completions ienv)
+                     :pointer (type-compatible-p-aux
+                                x.to y.to completions incomplete ienv)
                      :otherwise nil)
           :function
           (type-case
             y
             :function
-            (and (type-compatible-p x.ret y.ret completions ienv)
-                 (type-params-compatible-p x.params y.params completions ienv))
+            (and (type-compatible-p-aux
+                   x.ret y.ret completions incomplete ienv)
+                 (type-params-compatible-p-aux
+                   x.params y.params completions incomplete ienv))
             :otherwise nil)
           :otherwise (or (equal (type-fix x) (type-fix y))
                          (and (type-integerp x) (type-case y :enum))
                          (and (type-case x :enum) (type-integerp y)))))
-    :measure (acl2::two-nats-measure
-              (omap::size (type-completions-fix completions))
+    :measure (two-nats-measure
+              (cardinality
+                (difference
+                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (uid-set-fix incomplete)))
               (max (type-count x) (type-count y))))
 
-  (define type-struni-member-list-compatible-p
+  (define type-struni-member-list-compatible-p-aux
     ((x type-struni-member-listp)
      (y type-struni-member-listp)
      (completions type-completions-p)
+     (incomplete uid-setp)
      (ienv ienvp))
     :returns (yes/no booleanp)
     :short "Check that a list of struct/union members are compatible
@@ -1528,7 +1499,7 @@
     (xdoc::topstring
      (xdoc::p
       "This implements the ``correspondence'' check
-       described in @(tsee type-compatible-p)."))
+       described in @(tsee type-compatible-p-aux)."))
     (b* (((when (endp x))
           (endp y))
          ((when (endp y))
@@ -1536,18 +1507,23 @@
          ((type-struni-member member-x) (first x))
          ((type-struni-member member-y) (first y)))
       (and (equal member-x.name? member-y.name?)
-           (type-compatible-p member-x.type member-y.type completions ienv)
-           (type-struni-member-list-compatible-p
-             (rest x) (rest y) completions ienv)))
-    :measure (acl2::two-nats-measure
-              (omap::size (type-completions-fix completions))
+           (type-compatible-p-aux
+             member-x.type member-y.type completions incomplete ienv)
+           (type-struni-member-list-compatible-p-aux
+             (rest x) (rest y) completions incomplete ienv)))
+    :measure (two-nats-measure
+              (cardinality
+                (difference
+                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (uid-set-fix incomplete)))
               (max (type-struni-member-list-count x)
                    (type-struni-member-list-count y))))
 
-  (define type-params-compatible-p ((x type-params-p)
-                                    (y type-params-p)
-                                    (completions type-completions-p)
-                                    (ienv ienvp))
+  (define type-params-compatible-p-aux ((x type-params-p)
+                                        (y type-params-p)
+                                        (completions type-completions-p)
+                                        (incomplete uid-setp)
+                                        (ienv ienvp))
     :returns (yes/no booleanp)
     :short "Check that the parameter portions of two function @(see type)s are
             compatible [C17:6.2.7]."
@@ -1594,50 +1570,58 @@
       :prototype
       (type-params-case
         y
-        :prototype (and (type-list-compatible-p
-                          x.params y.params completions ienv)
+        :prototype (and (type-list-compatible-p-aux
+                          x.params y.params completions incomplete ienv)
                         (equal x.ellipsis y.ellipsis))
         :old-style (and (not x.ellipsis)
-                        (type-list-compatible-p
+                        (type-list-compatible-p-aux
                           x.params
                           (type-list-default-arg-promote y.params ienv)
                           completions
+                          incomplete
                           ienv))
         :unspecified (and (not x.ellipsis)
-                          (type-list-compatible-p
+                          (type-list-compatible-p-aux
                             x.params
                             (type-list-default-arg-promote x.params ienv)
                             completions
+                            incomplete
                             ienv)))
       :old-style
       (type-params-case
         y
         :prototype (and (not y.ellipsis)
-                        (type-list-compatible-p
+                        (type-list-compatible-p-aux
                           (type-list-default-arg-promote x.params ienv)
                           y.params
                           completions
+                          incomplete
                           ienv))
         :otherwise t)
       :unspecified
       (type-params-case
         y
         :prototype (and (not y.ellipsis)
-                        (type-list-compatible-p
+                        (type-list-compatible-p-aux
                           y.params
                           (type-list-default-arg-promote y.params ienv)
                           completions
+                          incomplete
                           ienv))
         :otherwise t))
-    :measure (acl2::two-nats-measure
-              (omap::size (type-completions-fix completions))
+    :measure (two-nats-measure
+              (cardinality
+                (difference
+                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (uid-set-fix incomplete)))
               (max (type-params-count x)
                    (type-params-count y))))
 
-  (define type-list-compatible-p ((x type-listp)
-                                  (y type-listp)
-                                  (completions type-completions-p)
-                                  (ienv ienvp))
+  (define type-list-compatible-p-aux ((x type-listp)
+                                      (y type-listp)
+                                      (completions type-completions-p)
+                                      (incomplete uid-setp)
+                                      (ienv ienvp))
     :returns (yes/no booleanp)
     :short "Check that two @(see type-list)s are compatible [C17:6.2.7]."
     :long
@@ -1649,82 +1633,243 @@
     (if (endp x)
         (endp y)
       (and (not (endp y))
-           (type-compatible-p (first x) (first y) completions ienv)
-           (type-list-compatible-p (rest x) (rest y) completions ienv)))
-    :measure (acl2::two-nats-measure
-              (omap::size (type-completions-fix completions))
+           (type-compatible-p-aux
+             (first x) (first y) completions incomplete ienv)
+           (type-list-compatible-p-aux
+             (rest x) (rest y) completions incomplete ienv)))
+    :measure (two-nats-measure
+              (cardinality
+                (difference
+                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (uid-set-fix incomplete)))
               (max (type-list-count x)
                    (type-list-count y))))
 
-  :hints (("Goal" :in-theory (enable max)))
+  :hints (("Goal" :in-theory (e/d (max
+                                   acl2::member-equal-of-strip-cars-iff
+                                   proper-subset-cardinality-case-split)
+                                  (set::expand-cardinality-of-difference
+                                   set::delete-cardinality
+                                   set::proper-subset-cardinality))))
   ///
 
-  (fty::deffixequiv-mutual type/type-list-compatible-p)
+  (fty::deffixequiv-mutual type/type-list-compatible-p-aux)
 
   (encapsulate ()
     (local
-      (defthm-type/type-list-compatible-p-flag
-        (defthm type-compatible-p-reflexive-lemma
+      (defthm-type/type-list-compatible-p-aux-flag
+        (defthm type-compatible-p-aux-reflexive-lemma
           (implies (equal x y)
-                   (type-compatible-p x y completions ienv))
-          :flag type-compatible-p)
-        (defthm type-struni-member-list-compatible-p-reflexive-lemma
+                   (type-compatible-p-aux x y completions incomplete ienv))
+          :flag type-compatible-p-aux)
+        (defthm type-struni-member-list-compatible-p-aux-reflexive-lemma
           (implies (equal x y)
-                   (type-struni-member-list-compatible-p x y completions ienv))
-          :flag type-struni-member-list-compatible-p)
-        (defthm type-params-compatible-p-reflexive-lemma
+                   (type-struni-member-list-compatible-p-aux
+                     x y completions incomplete ienv))
+          :flag type-struni-member-list-compatible-p-aux)
+        (defthm type-params-compatible-p-aux-reflexive-lemma
           (implies (equal x y)
-                   (type-params-compatible-p x y completions ienv))
-          :flag type-params-compatible-p)
-        (defthm type-list-compatible-p-reflexive-lemma
+                   (type-params-compatible-p-aux
+                     x y completions incomplete ienv))
+          :flag type-params-compatible-p-aux)
+        (defthm type-list-compatible-p-aux-reflexive-lemma
           (implies (equal x y)
-                   (type-list-compatible-p x y completions ienv))
-          :flag type-list-compatible-p)))
+                   (type-list-compatible-p-aux
+                     x y completions incomplete ienv))
+          :flag type-list-compatible-p-aux)))
 
-    (defrule type-compatible-p-reflexive
-      (type-compatible-p x x completions ienv))
+    (defrule type-compatible-p-aux-reflexive
+      (type-compatible-p-aux x x completions incomplete ienv))
 
-    (defrule type-struni-member-list-compatible-p-reflexive
-      (type-struni-member-list-compatible-p x x completions ienv))
+    (defrule type-struni-member-list-compatible-p-aux-reflexive
+      (type-struni-member-list-compatible-p-aux
+        x x completions incomplete ienv))
 
-    (defrule type-params-compatible-p-reflexive
-      (type-params-compatible-p x x completions ienv))
+    (defrule type-params-compatible-p-aux-reflexive
+      (type-params-compatible-p-aux x x completions incomplete ienv))
 
-    (defrule type-list-compatible-p-reflexive
-      (type-list-compatible-p x x completions ienv)))
+    (defrule type-list-compatible-p-aux-reflexive
+      (type-list-compatible-p-aux x x completions incomplete ienv)))
 
-  (defthm-type/type-list-compatible-p-flag
-    (defthm type-compatible-p-symmetric
-      (equal (type-compatible-p y x completions ienv)
-             (type-compatible-p x y completions ienv))
-      :flag type-compatible-p
-      :hints ('(:expand (type-compatible-p y x completions ienv))))
-    (defthm type-struni-member-list-compatible-p-symmetric
-      (equal (type-struni-member-list-compatible-p y x completions ienv)
-             (type-struni-member-list-compatible-p x y completions ienv))
-      :flag type-struni-member-list-compatible-p)
-    (defthm type-params-compatible-p-symmetric
-      (equal (type-params-compatible-p y x completions ienv)
-             (type-params-compatible-p x y completions ienv))
-      :flag type-params-compatible-p)
-    (defthm type-list-compatible-p-symmetric
-      (equal (type-list-compatible-p y x completions ienv)
-             (type-list-compatible-p x y completions ienv))
-      :flag type-list-compatible-p)))
+  (defthm-type/type-list-compatible-p-aux-flag
+    (defthm type-compatible-p-aux-symmetric
+      (equal (type-compatible-p-aux y x completions incomplete ienv)
+             (type-compatible-p-aux x y completions incomplete ienv))
+      :flag type-compatible-p-aux
+      :hints ('(:expand (type-compatible-p-aux y x completions incomplete ienv))))
+    (defthm type-struni-member-list-compatible-p-aux-symmetric
+      (equal (type-struni-member-list-compatible-p-aux
+               y x completions incomplete ienv)
+             (type-struni-member-list-compatible-p-aux
+               x y completions incomplete ienv))
+      :flag type-struni-member-list-compatible-p-aux)
+    (defthm type-params-compatible-p-aux-symmetric
+      (equal (type-params-compatible-p-aux y x completions incomplete ienv)
+             (type-params-compatible-p-aux x y completions incomplete ienv))
+      :flag type-params-compatible-p-aux)
+    (defthm type-list-compatible-p-aux-symmetric
+      (equal (type-list-compatible-p-aux y x completions incomplete ienv)
+             (type-list-compatible-p-aux x y completions incomplete ienv))
+      :flag type-list-compatible-p-aux)))
 
-(defruled len-when-type-list-compatible-p
-  (implies (type-list-compatible-p x y completions ienv)
+(defruled len-when-type-list-compatible-p-aux
+  (implies (type-list-compatible-p-aux x y completions incomplete ienv)
            (equal (len y)
                   (len x)))
   :induct (acl2::cdr-cdr-induct x y)
-  :enable (type-list-compatible-p
+  :enable (type-list-compatible-p-aux
            len))
 
-(defruled consp-when-type-list-compatible-p
-  (implies (type-list-compatible-p x y completions ienv)
+(defruled consp-when-type-list-compatible-p-aux
+  (implies (type-list-compatible-p-aux x y completions incomplete ienv)
            (equal (consp y)
                   (consp x)))
-  :expand (type-list-compatible-p x y completions ienv))
+  :expand (type-list-compatible-p-aux x y completions incomplete ienv))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-compatible-p ((x typep)
+                           (y typep)
+                           (completions type-completions-p)
+                           (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check that two @(see type)s are compatible [C17:6.2.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type compatibility is a check that two types are
+     in some sense ``consistent''.
+     Compatibility affects whether a redeclaration is permissible,
+     whether one type may be used when another is expected,
+     and whether two declarations referring to
+     the same object or function are well-defined.")
+   (xdoc::p
+    "Because we currently only model an approximation of C types,
+     our notion of compatibility is also approximate.
+     Specifically, this relation overapproximates true type compatibility.
+     Compatible types should always be recognized as such,
+     but incompatible types may also be recognized.")
+   (xdoc::p
+    "Furthermore, we deliberately weaken our notion of compatibility
+     when comparing certain types across translation units.
+     Specifically, the compatibility rules for @('struct') types
+     require knowing whether a type is completed <i>anywhere</i>
+     in a translation unit [C17:6.2.7/1].
+     To avoid having to delay our compatibility checks,
+     we weaken our definition to instead only require that two types
+     <i>might</i> be compatible under a future extension
+     of the current completions environment.
+     This is consistent with our aforementioned goal
+     of overapproximating true type compatibility.")
+   (xdoc::p
+    "Our approximate notion of type compatibility
+     is established by the following cases:")
+   (xdoc::ul
+    (xdoc::li
+     "If either type is unknown, the types are compatible.")
+    (xdoc::li
+     "Structure type compatibility depends on
+      whether they are declared in the same translation unit.
+      If they are, the only requirement is
+      that the UIDs and tags are the same.
+      The UID establishes that the structs correspond to
+      the same declaration in the same scope [C17:6.7.2.3/4-5].
+      Note that it is expected that two struct types
+      produced by the validator should always have the same tag
+      when they share a UID.
+      If the struct types are declared in different translation units,
+      the restrictions are weaker.
+      We check that the tags are the same and,
+      if both types are complete
+      with respect to the type completion environment,
+      then there is a one-to-one correspondence between struct members.
+      For a member of one struct to correspond with a member of the other,
+      the names must agree and their types must be compatible.
+      We do not yet check member alignment specifiers agree.
+      Furthermore, the members of one struct type
+      must appear in the same order as
+      the corresponding members of the other struct [C17:6.2.7/1].
+      Note that, for the purpose compatibility, anonymous structs/unions
+      are considered regular members of their containing type.
+      (This is not so explicit in C17, but is clarified in [C23:6.2.7/1].)")
+    (xdoc::li
+     "Union type compatibility mirrors struct compatibility,
+      with the exception that
+      corresponding members do not need to appear in the same order
+      when comparing unions across translation units [C17:6.2.7/1].
+      For now, we do not check union members
+      when comparing across translation unit,
+      and instead conservatively accept any two unions with the same tag.")
+    (xdoc::li
+     "Due to their approximate representations,
+      all enumeration types are considered compatible [C17:6.7.2.2/4].")
+    (xdoc::li
+     "Pointer types are compatible if they are derived from compatible types;
+      we do not currently consider whether the types are qualified
+      [C17:6.7.6.1/2].")
+    (xdoc::li
+     "Array types are considered compatible
+      if their element types are compatible;
+      their size is not currently considered [C17:6.7.6.2/6].")
+    (xdoc::li
+     "Enumeration types are considered compatible
+      with <i>all</i> integer types.
+      This is an approximation because the standard says each enumeration type
+      must be compatible with <i>some</i> integer type.
+      However, the particular type is implementation-defined,
+      may vary for different enumeration types [C17:6.7.2.2/4].")
+    (xdoc::li
+     "Function types are considered compatible if
+      their return types are compatible [C17:6.7.6.3/15]
+      and their @(tsee type-params) are compatible
+      (see @(tsee type-params-compatible-p-aux)).")
+    (xdoc::li
+     "For any other case, the types are compatible only if they are equal."))
+   (xdoc::p
+    "Eventually, we shall refine the notion of compatibility,
+     alongside our representation of types,
+     in order to reflect true type compatibility.")
+   (xdoc::p
+    "Finally, we note the perhaps surprising fact
+     type compatibility is intransitive and therefore
+     not an equivalence relation.
+     For instance, consider the following functions.")
+   (xdoc::codeblock
+    "int foo();"
+    ""
+    "int bar(int x);"
+    ""
+    "int baz(double x);")
+   (xdoc::p
+    "In this example, the types of @('bar') and @('baz')
+     are both compatible with the type of @('foo').
+     However, the types of @('bar') and @('baz')
+     are not compatible with each other.")
+   (xdoc::section
+    "C23 Standard"
+    (xdoc::p
+     "The C23 standard makes various changes to type compatibility,
+      of which we only implement some subset.
+      When the implementation environment specifies the C23 standard,
+      we make the following changes to the C17 type compatibility
+      outlined above.")
+   (xdoc::ul
+    (xdoc::li
+     "Two struct types are compared as if
+      they were declared in separate translation units [C23:6.2.7/1].")
+    (xdoc::li
+     "Two union types are compared as if
+      they were declared in separate translation units [C23:6.2.7/1]."))))
+  (type-compatible-p-aux x y completions nil ienv))
+
+(defrule type-compatible-p-reflexive
+  (type-compatible-p x x completions ienv)
+  :enable type-compatible-p)
+
+(defrule type-compatible-p-symmetric
+  (equal (type-compatible-p y x completions ienv)
+         (type-compatible-p x y completions ienv))
+  :enable type-compatible-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1784,8 +1929,8 @@
                             :tag/members x.tag/members)
                           completions
                           (uid-fix next-uid)))
-                     (x-members? (omap::assoc x.uid completions))
-                     (y-members? (omap::assoc y.uid completions))
+                     (x-members? (hons-get x.uid completions))
+                     (y-members? (hons-get y.uid completions))
                      ((unless (consp x-members?))
                       (mv (type-fix y)
                           completions
@@ -1811,9 +1956,9 @@
                         next-uid
                         ienv
                         (- (the unsigned-byte count) 1)))
-                     (completions (omap::update composite-uid
-                                                members-composite
-                                                completions)))
+                     (completions (hons-acons composite-uid
+                                              members-composite
+                                              completions)))
                   (mv (make-type-struct
                         :uid composite-uid
                         :tunit? nil
@@ -2083,7 +2228,7 @@
 
   (fty::deffixequiv-mutual type/type-list-composite-aux))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define type-composite ((x typep)
                         (y typep)
