@@ -27,6 +27,7 @@
             pack-in-package
             must-be-redundant
             keyword-listp
+            pack-in-package-of-first-symbol
             ;; xdoc stuff:
             defxdoc
             xdoc::topparas)
