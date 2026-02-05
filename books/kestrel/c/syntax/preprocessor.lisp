@@ -3808,6 +3808,7 @@
     :returns (mv erp
                  (not-self-contained-p booleanp)
                  (scfile scfilep)
+                 (max-reach integerp)
                  (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -3858,7 +3859,7 @@
        If the file was not already in @('preprocessed'), it is added.
        In any case, the @(tsee scfile) is returned,
        so the caller can use its macros."))
-    (b* (((reterr) nil (irr-scfile) nil state)
+    (b* (((reterr) nil (irr-scfile) 0 nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -3871,7 +3872,7 @@
                groupend
                lexemes
                macros
-               & ; max-reach
+               max-reach
                preprocessed
                state)
           (with-local-stobj
@@ -3922,7 +3923,7 @@
                   preprocessed
                   state))))
          ((when not-self-contained-p)
-          (retok t (irr-scfile) preprocessed state))
+          (retok t (irr-scfile) 0 preprocessed state))
          ((unless (groupend-case groupend :eof))
           (reterr (msg "Found directive ~s0 ~
                         without a preceding #if, #ifdef, or #ifndef."
@@ -3937,11 +3938,11 @@
          (name+scfile (assoc-equal file preprocessed)))
       (if name+scfile
           (if (equal scfile (cdr name+scfile))
-              (retok nil scfile preprocessed state)
+              (retok nil scfile max-reach preprocessed state)
             (prog2$ (raise "Internal error: ~x0 and ~x1 differ."
                            scfile (cdr name+scfile))
                     (reterr t)))
-        (retok nil scfile (acons file scfile preprocessed) state)))
+        (retok nil scfile max-reach (acons file scfile preprocessed) state)))
     :no-function nil
     :measure (nfix limit))
 
@@ -4585,7 +4586,7 @@
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
-         ((erp not-self-contained-p scfile preprocessed state)
+         ((erp not-self-contained-p scfile & preprocessed state)
           (pproc-file bytes
                       resolved-file
                       base-dir
@@ -5089,7 +5090,7 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp not-self-contained-p & preprocessed state)
+          ((erp not-self-contained-p & & preprocessed state)
            (pproc-file bytes
                        (car files)
                        base-dir
