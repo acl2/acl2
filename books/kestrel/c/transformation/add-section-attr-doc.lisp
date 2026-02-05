@@ -36,7 +36,7 @@
       (xdoc::codeblock
         "(add-section-attr const-old"
         "                  const-new"
-        "                  :attr ... ; required"
+        "                  :attrs ... ; required"
         "  )"
         ))
     (xdoc::evmac-section-inputs
@@ -59,7 +59,7 @@
        (xdoc::p
          "This must be a symbol that is valid name for a new ACL2 constant."))
      (xdoc::desc
-       "@(':attr')"
+       "@(':attrs')"
        (xdoc::p
          "An alist from @(see qualified-ident)s to strings.
           Each @(see qualified-ident) denotes a file-scope identifier.
