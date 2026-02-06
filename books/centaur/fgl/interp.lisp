@@ -146,12 +146,6 @@
     :fncall (eq x.fn 'fgl-hide)
     :otherwise nil))
 
-(define fgl-function-mode-fix! (x)
-  :guard-hints(("Goal" :in-theory (enable fgl-function-mode-fix)))
-  :enabled t
-  (mbe :logic (fgl-function-mode-fix x)
-       :exec (loghead 6 (ifix x))))
-
 (define g-concretelist-p ((x fgl-objectlist-p))
   (if (atom x)
       t
@@ -4269,6 +4263,22 @@
                 ((fgl-interp-value) (fgl-interp-add-constraints val interp-st state)))
              (fgl-interp-value nil)))))
 
+      (define fgl-interp-binder-special ((fn pseudo-fnsym-p)
+                                         (args pseudo-term-listp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-list-binding-count args) 100)
+        :returns (mv successp
+                     (ans fgl-object-p)
+                     new-interp-st new-state)
+        (fgl-interp-fncall-special-case
+          (pseudo-fnsym-fix fn)
+          ((conditionalize 2)
+           (fgl-interp-assume! (first args)
+                               (second args)
+                               interp-st state))))
+
       (define fgl-interp-arglist ((args pseudo-term-listp)
                                   (argcontexts equiv-argcontexts-p)
                                   (interp-st interp-st-bfrs-ok)
@@ -4854,6 +4864,18 @@
                                                   (msg "was ~x0" (car form.args))
                                                 (msg "the function call was 0-ary.")))))
              (varname (pseudo-term-var->name (car form.args)))
+             
+             ((fgl-interp-recursive-call successp var-val)
+              (fgl-interp-binder-special form.fn (cdr form.args) interp-st state))
+             ((when successp)
+              (b* (((when (or (assoc-eq varname (interp-st-bindings interp-st))
+                              (assoc-eq varname (interp-st-minor-bindings interp-st))))
+                    (fgl-interp-error
+                     :msg (fgl-msg "Binder error: ~x0 was supposed to be bound in ~
+                             a binder form but was already bound."
+                                   varname)))
+                   (interp-st (interp-st-add-binding varname var-val interp-st)))
+                (fgl-interp-value var-val)))
 
              ;; increment term index for function and first arg
              (interp-st (interp-st-incr-term-index 2 interp-st))
@@ -5203,8 +5225,22 @@
                   new-interp-st new-state)
         (b* (((unless (member-eq 'unequiv (interp-st->equiv-contexts interp-st)))
               (fgl-interp-error :msg (fgl-msg "Assume called not in an unequiv context: args ~x0."
-                                            (list (pseudo-term-fix test) (pseudo-term-fix x)))))
-             ((fgl-interp-recursive-call testbfr)
+                                              (list (pseudo-term-fix test) (pseudo-term-fix x))))))
+          (fgl-interp-assume! test x interp-st state)))
+
+      (define fgl-interp-assume! ((test pseudo-termp)
+                                  (x pseudo-termp)
+                                  (interp-st interp-st-bfrs-ok)
+                                  state)
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020
+                       (+ (pseudo-term-binding-count test)
+                          (pseudo-term-binding-count x))
+                       30)
+        :returns (mv
+                  (ans fgl-object-p)
+                  new-interp-st new-state)
+        (b* (((fgl-interp-recursive-call testbfr)
               (fgl-interp-test test interp-st state))
              ((fgl-interp-value ?unreachp ans)
               (fgl-maybe-interp testbfr x interp-st state)))
@@ -5801,7 +5837,10 @@
              ((mv elsefn elseargs) (fgl-object-recognize-merge-fncall elseval))
              ((unless (and** thenfn
                              (eq thenfn elsefn)
-                             (eql (len thenargs) (len elseargs))))
+                             (eql (len thenargs) (len elseargs))
+                             (not (fgl-function-mode->dont-if-merge-args
+                                   (fgl-function-mode-lookup
+                                    thenfn (fgl-config->function-modes (interp-st->config interp-st)))))))
               (b* (((mv okp obj interp-st)
                     (interp-st-object-basic-merge testbfr thenval elseval
                                                   (interp-flags->make-ites (interp-st->flags interp-st))))
@@ -8032,7 +8071,13 @@
     :hints(("Goal" :in-theory (enable pseudo-term-quote)
             :use ((:instance eval-of-fgl-binder-fncall-stub
                    (origfn (pseudo-fnsym-fix origfn)))))))
-  )
+
+  
+  (defthm fgl-ev-context-equiv-forall-extensions-of-pseudo-term-fix
+    (equal (fgl-ev-context-equiv-forall-extensions
+            context obj (pseudo-term-fix x) alist)
+           (fgl-ev-context-equiv-forall-extensions
+            context obj x alist))))
 
 
 (defsection fgl-ev-of-extension-when-term-vars-bound
@@ -8309,6 +8354,7 @@
                                       fgl-interp-match-synp))))
 
 
+  
   (local (defthm iff-forall-extensions-of-if-true-equiv
            (implies (and (iff-forall-extensions t test (append minor-bindings major-bindings1))
                          (fgl-ev-context-equiv-forall-extensions
@@ -8485,7 +8531,11 @@
     :hints (("goal" :use ((:instance iff-equiv-forall-extensions-equiv-binding-hyp
                            (var (mv-nth 0 (check-equivbind-hyp hyp interp-st state)))
                            (term (mv-nth 1 (check-equivbind-hyp hyp interp-st state)))
-                           (equiv (mv-nth 2 (check-equivbind-hyp hyp interp-st state)))))))))
+                           (equiv (mv-nth 2 (check-equivbind-hyp hyp interp-st state))))))))
+
+  (defthm iff-forall-extensions-of-pseudo-term-fix
+    (equal (iff-forall-extensions val (pseudo-term-fix x) alist)
+           (iff-forall-extensions val x alist))))
 
 
 
@@ -8749,6 +8799,48 @@
                   (member 'iff (equiv-contexts-fix contexts)))
              (fgl-ev-context-equiv-forall-extensions contexts bfr-eval x eval-alist))
     :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-append-2))
+            (acl2::witness :ruleset context-equiv-forall)))
+
+  
+  
+  
+  (defthm fgl-ev-context-equiv-forall-extensions-of-conditionalize-term-true
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'conditionalize)
+                    (equal (car x.args) (kwote ans))
+                    (equal xterm (caddr x.args))
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts ans xterm alist))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts ans x alist)))
+    :hints (("goal" :in-theory (enable conditionalize))
+            ;; (acl2::witness :ruleset iff-forall)
+            (acl2::witness :ruleset context-equiv-forall)))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-conditionalize-term-false
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'conditionalize)
+                    (equal (car x.args) (kwote ans))
+                    (equal testterm (cadr x.args))
+                    (iff?-forall-extensions contexts nil testterm alist))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts ans x alist)))
+    :hints (("goal" :in-theory (enable conditionalize))
+            ;; (acl2::witness :ruleset iff-forall)
+            (acl2::witness :ruleset context-equiv-forall)))
+
+  (defthm iff?-forall-extensions-of-pseudo-term-fix
+    (equal (iff?-forall-extensions contexts val (pseudo-term-fix x) alist)
+           (iff?-forall-extensions contexts val x alist)))
+
+  
+  (defthm iff?-forall-extensions-of-eval
+    (implies (and (iff?-forall-extensions contexts obj x env1)
+                  (eval-alist-extension-p env2 env1))
+             (iff?-forall-extensions contexts (fgl-ev x env2) x env2))
+    :hints (("goal" :in-theory (enable eval-alist-extension-p-transitive-2))
             (acl2::witness :ruleset context-equiv-forall))))
 
 
@@ -10084,6 +10176,51 @@
                  (acl2::witness :ruleset context-equiv-forall))))
 
 
+
+(local (defthm pseudo-termp-of-quote
+         (pseudo-termp (list 'quote x))
+         :hints(("Goal" :in-theory (enable pseudo-termp)))))
+
+
+(local (defthm sub-alistp-of-add-major
+         (implies (and (not (acl2::sub-alistp (append minor major) ext))
+                       (not (hons-assoc-equal v minor))
+                       (not (hons-assoc-equal v major)))
+                  (not (acl2::sub-alistp (append minor (cons (cons v val) major)) ext)))
+         :hints(("Goal" :in-theory (enable sub-alistp-by-witness)))))
+
+(local
+ (defthm fgl-ev-context-equiv-forall-extensions-of-add-binder
+   (b* (((pseudo-term-fncall x))
+        ((pseudo-term-var v) (car x.args)))
+     (implies (and (pseudo-term-case x :fncall)
+                   (consp x.args)
+                   (pseudo-term-case (car x.args) :var)
+                   (not (hons-assoc-equal v.name minor))
+                   (not (hons-assoc-equal v.name major))
+                   (fgl-ev-context-equiv-forall-extensions
+                    context obj (pseudo-term-fncall x.fn
+                                                    (cons (kwote val) (cdr x.args)))
+                    (append minor major)))
+              (fgl-ev-context-equiv-forall-extensions
+               context obj x (append minor (cons (cons v.name val) major)))))
+   :hints (("goal" :in-theory (enable fgl-ev-of-fncall-args))
+           (acl2::witness :ruleset context-equiv-forall))))
+
+
+(local
+ (defthm iff?-forall-extensions-nil-when-eval
+   (implies (and (fgl-ev test env2)
+                 (eval-alist-extension-p env2 env1))
+            (iff (iff?-forall-extensions contexts nil test env1)
+                 (member 'unequiv (equiv-contexts-fix contexts))))
+   :hints(("Goal" :in-theory (enable iff?-forall-extensions)
+           :use ((:instance iff-forall-extensions-necc
+                  (eval-alist env1)
+                  (obj nil)
+                  (term test)
+                  (ext env2)))))))
+
 (local
  (defsection-unique fgl-interp-correct
    (local (defret gobj-bfr-eval-of-interp-st-pathcond-fix
@@ -10684,6 +10821,29 @@
                    (interp-st->equiv-contexts interp-st)
                    (fgl-object-eval ans env new-logicman)
                    x eval-alist)))
+
+                ((:fnname fgl-interp-assume!)
+                 (:add-concl
+                  (and (iff?-forall-extensions
+                        (interp-st->equiv-contexts interp-st)
+                        (fgl-ev test eval-alist) test eval-alist)
+                       (implies (fgl-ev test eval-alist)
+                                (fgl-ev-context-equiv-forall-extensions
+                                 (interp-st->equiv-contexts interp-st)
+                                 (fgl-object-eval ans env new-logicman)
+                                 x eval-alist)))))
+
+                ((:fnname fgl-interp-binder-special)
+                 (:add-concl
+                  (implies successp
+                           (fgl-ev-context-equiv-forall-extensions
+                            (interp-st->equiv-contexts interp-st)
+                            (fgl-object-eval ans env new-logicman)
+                            (pseudo-term-fncall fn
+                                                (cons
+                                                 (kwote (fgl-object-eval ans env new-logicman))
+                                                 args))
+                            eval-alist))))
                 
                 ((:fnname fgl-interp-fgl-interp-obj)
                  (:add-concl

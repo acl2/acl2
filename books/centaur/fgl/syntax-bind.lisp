@@ -365,6 +365,24 @@ first argument of the rewritten object will be replaced with the second
 argument when under the equivalence.</p>"
   x)
 
+
+
+(define conditionalize (ans cond x)
+  :short "FGL binder that returns a value equal to x when cond holds, otherwise undetermined."
+  :long "<p>Operationally, this rewrites x under the assumption that cond holds, and
+returns it. This is permissible since the answer is only guaranteed to equal x
+in the case where cond holds.</p>"
+  (if cond x ans)
+  ///
+  (defthm conditionalize-equals-x
+    (implies cond
+             (equal (conditionalize ans cond x) x)))
+
+  (defmacro conditionalize! (&rest args)
+    `(binder (conditionalize! . ,args))))
+
+
+
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 
 ;; (local (acl2::def-ev-pseudo-term-fty-support synbind-ev synbind-ev-list))

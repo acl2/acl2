@@ -2712,7 +2712,7 @@ registers are not used.</p>"
     numerator rationalp realpart
     stringp symbol-name symbol-package-name
     symbolp
-    binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj trigger-constraints
+    binder syntax-interp-fn abort-rewrite unequiv assume narrow-equiv fgl-interp-obj trigger-constraints conditionalize
     fgl-time-fn fgl-hide
     #+:non-standard-analysis acl2::floor1
 

@@ -328,4 +328,8 @@ its symbolic bits.</p>"
     :rule-classes :forward-chaining)
 
   (defmacro check-memberp! (&rest args)
-    `(binder (check-memberp  ,args))))
+    `(binder (check-memberp . ,args))))
+
+
+
+
