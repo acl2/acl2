@@ -972,19 +972,7 @@
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
                                     (if (eq executable-type :elf-64) ; todo: allow ELF32 as well?
-                                        (let ((elf-type (parsed-elf-type parsed-executable)))
-                                          (prog2$ (cw "ELF type: ~x0.~%" elf-type)
-                                                  (if (parsed-elf-program-header-table parsed-executable)
-                                                      ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-                                                      (if (member-eq elf-type '(:rel :dyn))
-                                                          t
-                                                        (if (eq elf-type :exec)
-                                                            nil
-                                                          (er hard? 'unroll-x86-code-core "Unexpected ELF executable type: ~x0." elf-type)))
-                                                    ;; TODO: Get this to work:
-                                                    (er hard? 'unroll-x86-code-core "No program header table in ELF file.")
-                                                    ;;nil
-                                                    )))
+                                        (elf-position-independentp parsed-executable)
                                       ;; TODO: Think about the other cases:
                                       t))
                                 ;; position-independent is t or nil, not :auto:
@@ -1499,7 +1487,7 @@
          (assume-bytes "Indication of which sections/segments to assume still have their original bytes, either @(':all') (meaning assume it for all sections/segments) or @(':non-write') (meaning assume it for only non-writeable sections/segments).  Note that global variables may be initialized to certain values but may have then been overwritten before the function being lifted is called, so it may not be appropriate to assume such variables still have their original values.")
          (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
          (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
-         (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
+         (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
          (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
