@@ -505,8 +505,7 @@
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (member-eq position-independent '(t nil ; :auto
-                                                                ))
+                              (member-eq position-independent '(t nil :auto))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (booleanp type-assumptions-for-array-varsp)
                               ;; no recognizer for output-indicator, we just call wrap-in-output-extractor and see if it returns an error
@@ -549,24 +548,10 @@
        (- (ensure-risc-v parsed-executable))
 
        ;; Handle a :position-independent of :auto:
-
-       (position-independentp position-independent)
-       ;; (position-independentp (if (eq :auto position-independent)
-       ;;                            (if (eq executable-type :mach-o-64)
-       ;;                                t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
-       ;;                              (if (eq executable-type :elf-64)
-       ;;                                  (let ((elf-type (parsed-elf-type parsed-executable)))
-       ;;                                    (prog2$ (cw "ELF type: ~x0.~%" elf-type)
-       ;;                                            (if (parsed-elf-program-header-table parsed-executable)
-       ;;                                                ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-       ;;                                                (if (member-eq elf-type '(:rel :dyn)) t nil)
-       ;;                                              ;; TODO: Get this to work:
-       ;;                                              nil)))
-       ;;                                ;; TODO: Think about the other cases:
-       ;;                                t))
-       ;;                          ;; the user supplied a value for position-independent, so use it:
-       ;;                          position-independent))
-
+       (position-independentp (if (eq :auto position-independent)
+                                  (elf-position-independentp parsed-executable)
+                                ;; the user supplied a value for position-independent, so use it:
+                                position-independent))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
 
        ;; todo: update this for risc-v:
@@ -1008,8 +993,7 @@
                                   ;;(inputs-disjoint-from ':code)
                                   (stack-slots '100)
                                   (existing-stack-slots ':auto)
-                                  (position-independent 'nil ;':auto
-                                                        )
+                                  (position-independent ':auto)
                                   ;;(type-assumptions-for-array-vars 't)
                                   (prune-precise '1000)
                                   (prune-approx 't)
@@ -1091,7 +1075,7 @@
 ;;         (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
          (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
          (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
-         (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
+         (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
 ;;         (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
 ;;         (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  After lifting, the indicated result is projected out so that the result of lifting only represented the indicated state component.  The value supplied for this option can be :all (meaning return the whole state) or one of the values allowed by wrap-in-normal-output-extractor.")
