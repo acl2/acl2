@@ -1,7 +1,7 @@
 ; A variant of ACONS that can keep the alist smaller
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -70,3 +70,22 @@
          (acons-unique key val alist))
   :hints (("Goal" :in-theory (enable acons-unique-eq
                                      acons-unique))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Could make non-local if we ever need it.
+(local
+ (defthm member-equal-of-strip-cars-of-acons-unique
+   (iff (member-equal key (strip-cars (acons-unique key2 val alist)))
+        (or (equal key key2)
+            (member-equal key (strip-cars alist))))
+   :hints (("Goal" :in-theory (enable acons-unique)))))
+
+;; Could make non-local if we ever need it.
+(local
+ ;; If there were no duplicate keys before, there are still no duplicate keys
+ ;; after we call acons-unique-eq.
+ (defthm no-duplicatesp-equal-of-strip-cars-of-acons-unique-eq
+   (implies (no-duplicatesp-equal (strip-cars alist))
+            (no-duplicatesp-equal (strip-cars (acons-unique-eq key val alist))))
+   :hints (("Goal" :in-theory (enable acons-unique)))))
