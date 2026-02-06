@@ -16,7 +16,6 @@
 ;; fast-alist, but note that the limits alist is usually very small.
 
 (include-book "stored-rules")
-(include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -24,22 +23,23 @@
 (local (in-theory (disable assoc-equal)))
 
 (local
- (defthm all-integerp-of-strip-cdrs-of-acons-unique
-   (implies (and (all-integerp (strip-cdrs alist))
+ (defthm integer-listp-of-strip-cdrs-of-acons-unique
+   (implies (and (integer-listp (strip-cdrs alist))
                  (integerp val))
-            (all-integerp (strip-cdrs (acons-unique key val alist))))
+            (integer-listp (strip-cdrs (acons-unique key val alist))))
    :hints (("Goal" :in-theory (enable acons-unique)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The rule-limits is an alist from rule names (symbols) to the number of
+;; A rule-limits is an alist from rule names (symbols) to the number of
 ;; remaining tries allowed for each (natural numbers).  Usually LIMITS will be
-;; nil, or at least a very small alist.
+;; nil, or at least a very small alist, since usually few rules are limited
+;; and acons-unique-eq keeps the alist small.
 (defund rule-limitsp (limits)
   (declare (xargs :guard t))
   (and (symbol-alistp limits)
        ;; may go negative if we exhaust the limit when relieving hyps and then decrement once more:
-       (all-integerp (strip-cdrs limits))))
+       (integer-listp (strip-cdrs limits))))
 
 (local
  (defthm rule-limitsp-forward-to-alistp
