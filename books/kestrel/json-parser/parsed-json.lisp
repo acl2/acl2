@@ -1,6 +1,6 @@
-; Recognizers for parsed JSON objects, arrays, and values
+; Recognizers/operations for parsed JSON objects, arrays, and values
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -196,5 +196,64 @@
     (and (parsed-json-arrayp (first x))
          (parsed-json-array-listp (rest x)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund parsed-json-object-keys-aux (pairs)
+  (declare (xargs :guard (parsed-json-object-pairsp pairs)))
+  (if (endp pairs)
+      nil
+    (let* ((pair (first pairs)))
+      (cons (car pair) ; todo: named accessor?
+            (parsed-json-object-keys-aux (rest pairs))))))
+
+(local
+  (defthm string-listp-of-parsed-json-object-keys-aux
+    (implies (parsed-json-object-pairsp pairs)
+             (string-listp (parsed-json-object-keys-aux pairs)))
+    :hints (("Goal" :in-theory (enable parsed-json-object-keys-aux)))))
+
+(defund parsed-json-object-keys (obj)
+  (declare (xargs :guard (parsed-json-objectp obj)))
+  (parsed-json-object-keys-aux (parsed-json-object->pairs obj)))
+
+(defthm string-listp-of-parsed-json-object-keys
+  (implies (parsed-json-objectp obj)
+           (string-listp (parsed-json-object-keys obj)))
+  :hints (("Goal" :in-theory (enable parsed-json-object-keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Ensures that :not-found can't be the value returned when looking up a key
+;; that does have a binding in the map:
+(thm (not (parsed-json-valuep :not-found)))
+
+;; Returns the parsed-json-value to which KEY is bound, or :not-found.
+(defund parsed-json-object-lookup-aux (key pairs)
+  (declare (xargs :guard (and (stringp key)
+                              (parsed-json-object-pairsp pairs))))
+  (if (endp pairs)
+      :not-found
+    (let* ((pair (first pairs))
+           (this-key (car pair)))
+      (if (equal key this-key)
+          (cdr pair)
+        (parsed-json-object-lookup-aux key (rest pairs))))))
+
+(local
+  (defthm parsed-json-valuep-of-parsed-json-object-lookup-aux
+    (implies (and (not (equal :not-found (parsed-json-object-lookup-aux key pairs)))
+                  (parsed-json-object-pairsp pairs))
+             (parsed-json-valuep (parsed-json-object-lookup-aux key pairs)))
+    :hints (("Goal" :in-theory (enable parsed-json-object-lookup-aux)))))
+
+;; Returns the parsed-json-value to which KEY is bound, or :not-found.
+(defund parsed-json-object-lookup (key obj)
+  (declare (xargs :guard (and (stringp key)
+                              (parsed-json-objectp obj))))
+  (parsed-json-object-lookup-aux key (parsed-json-object->pairs obj)))
+
+(defthm parsed-json-valuep-of-parsed-json-object-lookup
+  (implies (and (parsed-json-objectp obj)
+                (not (equal :not-found (parsed-json-object-lookup key obj))))
+           (parsed-json-valuep (parsed-json-object-lookup key obj)))
+  :hints (("Goal" :in-theory (enable parsed-json-object-lookup))))

@@ -37,7 +37,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/assumptions-new" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rflags" :dir :system)
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/support-bv" :dir :system)
@@ -47,7 +47,8 @@
 (include-book "rule-lists")
 ;(include-book "kestrel/x86/run-until-return" :dir :system)
 ;(include-book "kestrel/x86/run-until-return4" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system) ; why?
+(include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../equivalent-dags")
@@ -200,21 +201,6 @@
 (thm (equal (len (step-opener-rules64)) 1) :hints (("Goal" :in-theory (enable step-opener-rules64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; todo: use this more
-(defund set-difference-eq-fast (l1 l2)
-  (declare (xargs :guard (and (true-listp l1)
-                              (true-listp l2)
-                              (or (symbol-listp l1)
-                                  (symbol-listp l2)))))
-  (if (endp l2)
-      l1 ; special case where there is nothing to remove
-    (set-difference-eq l1 l2)))
-
-(defthm acl2::symbol-listp-of-set-difference-eq-fast
-  (implies (symbol-listp l1)
-           (symbol-listp (set-difference-eq-fast l1 l2)))
-  :hints (("Goal" :in-theory (enable set-difference-eq-fast))))
 
 ;; Returns (mv erp assumptions assumption-rules hits state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
@@ -985,14 +971,20 @@
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
-                                    (if (eq executable-type :elf-64)
+                                    (if (eq executable-type :elf-64) ; todo: allow ELF32 as well?
                                         (let ((elf-type (parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
                                                   (if (parsed-elf-program-header-table parsed-executable)
                                                       ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-                                                      (if (member-eq elf-type '(:rel :dyn)) t nil)
+                                                      (if (member-eq elf-type '(:rel :dyn))
+                                                          t
+                                                        (if (eq elf-type :exec)
+                                                            nil
+                                                          (er hard? 'unroll-x86-code-core "Unexpected ELF executable type: ~x0." elf-type)))
                                                     ;; TODO: Get this to work:
-                                                    nil)))
+                                                    (er hard? 'unroll-x86-code-core "No program header table in ELF file.")
+                                                    ;;nil
+                                                    )))
                                       ;; TODO: Think about the other cases:
                                       t))
                                 ;; position-independent is t or nil, not :auto:
@@ -1013,7 +1005,7 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (ensure-target-exists-in-executable target parsed-executable)))
-
+       ;; Handle an existing-stack-slots of :auto:
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
                                      5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)

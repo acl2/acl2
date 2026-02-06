@@ -6393,7 +6393,7 @@
                   :mode :program))
   (b* ( ;; Check whether an identical call to the lifter has already been done:
        ((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check inputs (TODO: What other checks should we do here?):
        ;; ((when (not (input-source-alistp input-source-alist)))
        ;;  (mv t (er hard 'lift-java-code "ERROR: Ill-formed input-source-alist!") state))
@@ -6746,7 +6746,7 @@
                   :mode :program))
   (b* (;; Check whether this call to the lifter has already been made:
        ((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ((when (not input-source-alist))
         (prog2$ (hard-error 'lift-java-code-segment-fn "No input-source-alist supplied." nil) ;TODO: Remove this check and instead auto-generate it.
                 (mv t nil state)))

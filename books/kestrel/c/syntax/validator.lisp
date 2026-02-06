@@ -6734,7 +6734,10 @@
               (retmsg$ "The function definition ~x0 ~
                         is a redefinition of the function."
                        (fundef-fix fundef)))
-             ((mv uid table) (valid-get-fresh-uid ident linkage table))
+             ((mv uid table)
+              (if (and info? (valid-ord-info-case info? :objfun))
+                  (mv (valid-ord-info-objfun->uid info?) table)
+                (valid-get-fresh-uid ident linkage table)))
              (info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage

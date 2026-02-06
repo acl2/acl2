@@ -974,13 +974,11 @@
                   (acl2::print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
                   ))
-       (- (cw ")~%~%")))
-    (mv (erp-nil)
-        (extend-progn (extend-progn event (redundancy-table-event whole-form event))
-                      ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
-                      '(value-triple :invisible)
-                      )
-        state)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
+       (event (extend-progn event `(value-triple ',items-created)))
+       (- (cw ")~%~%")) ; matches "(Unrolling"
+       )
+    (mv (erp-nil) event state)))
 
 ;; This introduces a defconst that represents the unrolled computation
 ;; performed by the indicated method.
