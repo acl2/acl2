@@ -3655,8 +3655,7 @@
       These are in reverse order, to make the extension of the list efficient.
       The function @(tsee pproc-file) does not take a list of lexemes
       because it initiates the preprocessing of a file;
-      instead of a list of lexemes, it returns a @(tsee scfile),
-      which contains all the lexemes as well as the macros.")
+      but it returns one for the whole file, also in reverse order.")
     (xdoc::li
      "All the functions except @(tsee pproc-file) take and return
       a preprocessing state, for the file being preprocessed.
@@ -3739,7 +3738,8 @@
                       state
                       (limit natp))
     :returns (mv erp
-                 (scfile scfilep)
+                 (rev-lexemes plexeme-listp)
+                 (file-macros macro-scopep)
                  (max-reach integerp
                             :rule-classes (:rewrite :type-prescription))
                  (new-preprocessed string-scfile-alistp)
@@ -3779,35 +3779,38 @@
        ends with the end of the file,
        because we are at the top level,
        not inside a conditional directive.
-       If there is no error, a @(tsee scfile) is built.
-       We check whether @('preprocessed')
-       already has an entry for the same file;
-       in this case, we expect the new @(tsee scfile) to be the same
-       (but we need to investigate this in more detail),
-       and so for now we throw a hard error if they differ.
-       If the check passes, we leave @('preprocessed') unchanged;
-       the reason for re-preocessing the file,
-       as opposed to looking it up in @('preprocessed') right away,
-       is explained in @(see self-contained).
-       If the file was not already in @('preprocessed'), it is added.
-       In any case, the @(tsee scfile) is returned,
-       so the caller can use its macros."))
-    (b* (((reterr) (irr-scfile) 0 nil state)
+       If there are no errors, we return:
+       the lexemes of the file (in reverse order);
+       the macros contributed by the file,
+       i.e. the ones from the innermost scope
+       of the final macro table after the file has been preprocessed;
+       and the maximum reach of the file.")
+     (xdoc::p
+      "However, before returning, we perform a consistency double-check.
+       If the file is self-contained
+       (i.e. its maximum reach is not positive),
+       we check whether the @('preprocessed') alist
+       already contains an entry for the file:
+       if it does, we ensure that the entry
+       is consistent with the obtained lexemes and macros.
+       We expect this check to be always satisfied,
+       and thus we throw hard error if it is not;
+       but we need to investigate this property further."))
+    (b* (((reterr) nil nil 0 nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
-         (preprocessed (string-scfile-alist-fix preprocessed))
          ((when (member-equal file preprocessing))
           (reterr (msg "Circular file dependencies involving ~&0."
                        preprocessing)))
          (preprocessing (cons file preprocessing))
-         ((erp groupend lexemes macros max-reach preprocessed state)
+         ((erp groupend rev-lexemes file-macros max-reach preprocessed state)
           (with-local-stobj
             ppstate
             (mv-let (erp
                      groupend
                      rev-lexemes
-                     macros
+                     file-macros
                      max-reach
                      ppstate
                      preprocessed
@@ -3825,7 +3828,7 @@
                                           include-dirs
                                           preprocessed
                                           preprocessing
-                                          nil
+                                          nil ; rev-lexemes
                                           -2 ; max-reach
                                           ppstate
                                           state
@@ -3840,13 +3843,11 @@
                       state))
               (mv erp
                   groupend
-                  (rev rev-lexemes)
-                  (car (macro-table->scopes macros))
+                  rev-lexemes
+                  (car (macro-table->scopes file-macros))
                   max-reach
                   preprocessed
                   state))))
-         ((when (> max-reach 0))
-          (retok (irr-scfile) max-reach preprocessed state))
          ((unless (groupend-case groupend :eof))
           (reterr (msg "Found directive ~s0 ~
                         without a preceding #if, #ifdef, or #ifndef."
@@ -3856,16 +3857,21 @@
                         :elif "#elif"
                         :else "#else"
                         :endif "#endif"))))
-         (scfile (make-scfile :lexemes lexemes
-                              :macros macros))
-         (name+scfile (assoc-equal file preprocessed)))
-      (if name+scfile
-          (if (equal scfile (cdr name+scfile))
-              (retok scfile max-reach preprocessed state)
-            (prog2$ (raise "Internal error: ~x0 and ~x1 differ."
-                           scfile (cdr name+scfile))
-                    (reterr t)))
-        (retok scfile max-reach (acons file scfile preprocessed) state)))
+         ((when (and (<= max-reach 0) ; self-contained
+                     (b* ((name+scfile (assoc-equal file preprocessed)))
+                       (and name+scfile
+                            (b* (((scfile scfile) (cdr name+scfile)))
+                              (or (not (equal scfile.lexemes
+                                              (rev rev-lexemes)))
+                                  (not (equal scfile.macros
+                                              file-macros))))))))
+          (raise "Internal error: ~
+                  new ~x0 and ~x1 differ from old ~x2."
+                 (rev rev-lexemes)
+                 file-macros
+                 (cdr (assoc-equal file preprocessed)))
+          (reterr t)))
+      (retok rev-lexemes file-macros max-reach preprocessed state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4234,8 +4240,8 @@
                  ppstate
                  preprocessed
                  state)))))
-    :measure (nfix limit)
-    :no-function nil)
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4436,13 +4442,18 @@
       "If the included file is self-contained,
        we leave the @('#include') directive as is,
        including all the comments and white space.
-       The maximum reach of the including file is left unchanged."))
+       The maximum reach of the including file is left unchanged.
+       Unless the @('preprocessed') alist already has an entry for the file,
+       we add the file to the alist;
+       recall that @(tsee pproc-file) double-checks that,
+       if there is already an entry,
+       it is identical to the new one that we would otherwise add."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil 0 ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
-         ((erp scfile file-max-reach preprocessed state)
+         ((erp file-rev-lexemes file-macros file-max-reach preprocessed state)
           (pproc-file bytes
                       resolved-file
                       base-dir
@@ -4454,13 +4465,12 @@
                       state
                       (1- limit)))
          (ppstate (update-ppstate->macros
-                   (macro-table-extend-top
-                    (scfile->macros scfile)
-                    (ppstate->macros ppstate))
+                   (macro-table-extend-top file-macros
+                                           (ppstate->macros ppstate))
                    ppstate))
-         ((when (> file-max-reach 0))
-          (b* ((rev-lexemes (revappend (scfile->lexemes scfile)
-                                       (plexeme-list-fix rev-lexemes)))
+         ((when (> file-max-reach 0)) ; not self-contained
+          (b* ((rev-lexemes (append file-rev-lexemes
+                                    (plexeme-list-fix rev-lexemes)))
                (max-reach (max (1- file-max-reach) (ifix max-reach))))
             (retok rev-lexemes max-reach ppstate preprocessed state)))
          (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
@@ -4475,10 +4485,17 @@
          (rev-lexemes (revappend nontoknls-before-header rev-lexemes))
          (rev-lexemes (cons (plexeme-header header) rev-lexemes))
          (rev-lexemes (revappend nontoknls-after-header rev-lexemes))
-         (rev-lexemes (cons (plexeme-fix newline-at-end) rev-lexemes)))
+         (rev-lexemes (cons (plexeme-fix newline-at-end) rev-lexemes))
+         (preprocessed (string-scfile-alist-fix preprocessed))
+         (preprocessed (if (assoc-equal resolved-file preprocessed)
+                           preprocessed
+                         (acons resolved-file
+                                (make-scfile :lexemes (rev file-rev-lexemes)
+                                             :macros file-macros)
+                                preprocessed))))
       (retok rev-lexemes (ifix max-reach) ppstate preprocessed state))
-    :measure (nfix limit)
-    :no-function nil)
+    :no-function nil
+    :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4838,15 +4855,12 @@
      Each file is read from the file system
      and preprocessed via @(tsee pproc-file).
      Since the starting macro table is empty in these calls,
-     @(tsee pproc-file) cannot return @('t')
-     as the @('not-self-contained') result,
+     @(tsee pproc-file) can only return self-contained files,
      but we double-check it here, throwing a hard error if the check fails.
-     We pass any other error up to the caller.
-     If there is no error, the returned @(tsee scfile) is discarded,
-     because we are at the top level
-     and there are no macros to incorporate.
-     Note that @(tsee pproc-file) ensures, as a post-condition,
-     thet @(tsee scfile) is in the @('preprocessed') alist.")
+     If the @('preprocessed') alist does not already have an entry for the file,
+     we extend the alist with the file;
+     recall that @(tsee pproc-file) ensures that
+     the new entry is consistent with the old one.")
    (xdoc::p
     "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.")
@@ -4891,7 +4905,7 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp & max-reach preprocessed state)
+          ((erp file-rev-lexemes file-macros max-reach preprocessed state)
            (pproc-file bytes
                        (car files)
                        base-dir
@@ -4904,7 +4918,14 @@
                        recursion-limit))
           ((when (> max-reach 0))
            (raise "Internal error: non-self-contained top-level file ~x0." file)
-           (reterr t)))
+           (reterr t))
+          (preprocessed (string-scfile-alist-fix preprocessed))
+          (preprocessed (if (assoc-equal file preprocessed)
+                            preprocessed
+                          (acons file
+                                 (make-scfile :lexemes (rev file-rev-lexemes)
+                                              :macros file-macros)
+                                 preprocessed))))
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
@@ -4913,7 +4934,8 @@
                          ienv
                          state
                          recursion-limit))
+     :no-function nil
      :guard-hints
      (("Goal" :in-theory (enable alistp-when-string-scfile-alistp-rewrite)))
-     :no-function nil
+     :prepwork ((local (in-theory (enable acons))))
      :hooks nil)))
