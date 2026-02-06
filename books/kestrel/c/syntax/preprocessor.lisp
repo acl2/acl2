@@ -3765,7 +3765,6 @@
      (xdoc::p
       "We create a local preprocessing state stobj from
        the bytes of the file,
-       a file recursion limit of 200 (consistent with GCC),
        the macro table
        (which @(tsee init-ppstate) extends with a new empty scope for the file),
        and the implementation environment.
@@ -3814,7 +3813,7 @@
                      ppstate
                      preprocessed
                      state)
-                (b* ((ppstate (init-ppstate bytes 200 macros ienv ppstate))
+                (b* ((ppstate (init-ppstate bytes macros ienv ppstate))
                      ((mv erp
                           groupend
                           rev-lexemes
