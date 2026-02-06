@@ -218,7 +218,13 @@
       as explained in more detail elsewhere.")
     (xdoc::li
      "The preprocessor state also contains
-      a macro table that consists of all the macros in scope.")))
+      a macro table that consists of all the macros in scope.")
+    (xdoc::li
+     "The preprocessor state also contains an integer that indicates
+      the maximum `reach' of macro lookup,
+      as returned by @(tsee macro-lookup) (see its documentation).
+      This is initially -2 (i.e. no macro access),
+      but it increases as macros are (successfully) looked up.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -246,6 +252,8 @@
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table nil nil))
+      (max-reach :type (integer -2 *)
+                 :initially 2)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -257,6 +265,7 @@
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
+                 (max-reachp raw-ppstate->max-reach-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -268,6 +277,7 @@
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
+                 (max-reach raw-ppstate->max-reach)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -279,6 +289,7 @@
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
+                 (update-max-reach raw-update-ppstate->max-reach)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -390,6 +401,18 @@
          :exec (raw-ppstate->macros ppstate))
     :inline t)
 
+  (define ppstate->max-reach (ppstate)
+    :returns (max-reach integerp :rule-classes (:rewrite :type-prescription))
+    (mbe :logic (non-exec (raw-ppstate->max-reach (ppstate-fix ppstate)))
+         :exec (raw-ppstate->max-reach ppstate))
+    :inline t
+
+    ///
+
+    (defret ppstate->max-reach-lower-bound
+      (>= max-reach -2)
+      :rule-classes :linear))
+
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
@@ -467,11 +490,22 @@
 
   (define update-ppstate->macros ((macros macro-tablep) ppstate)
     :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->macros (macro-table-fix macros)
-                                             (ppstate-fix ppstate)))
+    (mbe :logic (non-exec (raw-update-ppstate->macros (macro-table-fix macros)
+                                                      (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
+
+  (define update-ppstate->max-reach ((max-reach integerp) ppstate)
+    :guard (>= max-reach -2)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->max-reach
+                           (if (>= (ifix max-reach) -2)
+                               (ifix max-reach)
+                             0)
+                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->max-reach max-reach ppstate))
+    :inline t
+    :prepwork ((local (in-theory (enable ifix)))))
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
@@ -649,16 +683,19 @@
      and no lexmarks pending.
      The macro table is obtained by pushing a new scope for the file.
      We resize the arrays of characters to the number of bytes,
-     which suffices because there are never more characters than bytes."))
+     which suffices because there are never more characters than bytes.
+     We initialize the maximum macro reach to -2,
+     i.e. no macro access yet."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
        (ppstate (update-ppstate->chars-read 0 ppstate))
        (ppstate (update-ppstate->chars-unread 0 ppstate))
        (ppstate (update-ppstate->lexmarks nil ppstate))
-       (ppstate (update-ppstate->ienv ienv ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate)))
+       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
+       (ppstate (update-ppstate->max-reach -2 ppstate))
+       (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
