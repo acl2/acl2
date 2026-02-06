@@ -266,10 +266,9 @@
    (xdoc::p
     "This captures the result of preprocessing a @(see self-contained) file:
      the list of lexemes that forms the file after preprocessing
-     (which can be printed to bytes into a file in the file system),
-     and the macros defined by the file (bundled into a single scope alist)."))
-  ((lexemes plexeme-listp)
-   (macros macro-scopep))
+     (which can be printed to bytes into a file in the file system).
+     We wrap it in a fixtype for extensibility and abstraction."))
+  ((lexemes plexeme-listp))
   :pred scfilep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -277,7 +276,7 @@
 (defirrelevant irr-scfile
   :short "An irrelevant self-contained file."
   :type scfilep
-  :body (scfile nil nil))
+  :body (scfile nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3861,10 +3860,8 @@
                      (b* ((name+scfile (assoc-equal file preprocessed)))
                        (and name+scfile
                             (b* (((scfile scfile) (cdr name+scfile)))
-                              (or (not (equal scfile.lexemes
-                                              (rev rev-lexemes)))
-                                  (not (equal scfile.macros
-                                              file-macros))))))))
+                              (not (equal scfile.lexemes
+                                          (rev rev-lexemes))))))))
           (raise "Internal error: ~
                   new ~x0 and ~x1 differ from old ~x2."
                  (rev rev-lexemes)
@@ -4429,8 +4426,7 @@
       "If the included file is not self-contained,
        i.e. when its maximum macro lookup reach is positive,
        we need to expand the file in place.
-       We add its lexemes (from the returned @(tsee scfile)),
-       reversed, to the list of reversed lexemes.
+       We add its lexemes to the list of reversed lexemes.
        We decrease the file's maximum reach by 1,
        and we combine it with the current maximum reach for the including file,
        to reflect the expansion in place:
@@ -4490,8 +4486,7 @@
          (preprocessed (if (assoc-equal resolved-file preprocessed)
                            preprocessed
                          (acons resolved-file
-                                (make-scfile :lexemes (rev file-rev-lexemes)
-                                             :macros file-macros)
+                                (make-scfile :lexemes (rev file-rev-lexemes))
                                 preprocessed))))
       (retok rev-lexemes (lifix max-reach) ppstate preprocessed state))
     :no-function nil
@@ -4905,7 +4900,7 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp file-rev-lexemes file-macros max-reach preprocessed state)
+          ((erp file-rev-lexemes & max-reach preprocessed state)
            (pproc-file bytes
                        (car files)
                        base-dir
@@ -4923,8 +4918,7 @@
           (preprocessed (if (assoc-equal file preprocessed)
                             preprocessed
                           (acons file
-                                 (make-scfile :lexemes (rev file-rev-lexemes)
-                                              :macros file-macros)
+                                 (make-scfile :lexemes (rev file-rev-lexemes))
                                  preprocessed))))
        (pproc-files-loop (cdr files)
                          base-dir
