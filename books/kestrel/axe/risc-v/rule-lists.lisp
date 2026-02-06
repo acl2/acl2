@@ -1,6 +1,6 @@
 ; Rule lists for use by the RISC-V Axe tools
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 
-(defun symbolic-execution-rules ()
+(defun symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
     run-until-return-aux-opener
@@ -35,7 +35,7 @@
     read-of-if-arg2
     read-of-if-arg3))
 
-(defun debug-rules ()
+(defun debug-rules32 ()
   (declare (xargs :guard t))
   '(step32-opener
     run-until-return-aux-opener
@@ -47,7 +47,7 @@
     ))
 
 ;; sophisticated scheme for removing inner, shadowed writes
-(defund shadowed-write-rules ()
+(defund shadowed-write-rules32 ()
   (declare (xargs :guard t))
   '(write-becomes-write-of-clear-extend-axe
     clear-extend-of-write-continue-axe
@@ -55,10 +55,10 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
-(defun lifter-rules ()
+(defun lifter-rules32 ()
   (declare (xargs :guard t))
   (append
-   (shadowed-write-rules)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
@@ -539,10 +539,9 @@
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
-
      )))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; try late
 (acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)
