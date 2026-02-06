@@ -1777,9 +1777,9 @@
       and the other is a pointer to the @('void') type.
       As a GCC/Clang extension,
       we also allow one operand to be a pointer to the @('void') type,
-      and the other is a pointer to <i>any</i> type
+      and the other to be a pointer to <i>any</i> type
       (either object or function).
-      We do not aware of explicit GCC documentation of this feature,
+      We are not aware of explicit GCC documentation of this feature,
       but a related feature is listed by the standard
       as a common extension [C17:J.5.7].")
     (xdoc::li

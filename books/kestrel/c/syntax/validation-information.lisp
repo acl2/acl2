@@ -437,6 +437,10 @@
      This information accumulates
      as we validate each translation unit in the ensemble.")
    (xdoc::p
+    "The @('completions') field is a map of @(see type-completions).
+     This maps @(see UID)s corresponding to struct and union types
+     to their list of named members.")
+   (xdoc::p
     "The @('next-uid') field stores the next unused "
     (xdoc::seetopic "uid" "unique identifier")
     "."))

@@ -1830,7 +1830,7 @@
      alongside our representation of types,
      in order to reflect true type compatibility.")
    (xdoc::p
-    "Finally, we note the perhaps surprising fact
+    "Finally, we note the perhaps surprising fact that
      type compatibility is intransitive and therefore
      not an equivalence relation.
      For instance, consider the following functions.")
