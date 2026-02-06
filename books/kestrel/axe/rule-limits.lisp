@@ -150,6 +150,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Can help determine how many times a rule fired, if we also know the initial
+;; limit for the rule.
 (defund limit-for-rule (rule-name limits)
   (declare (xargs :guard (and (symbolp rule-name)
                               (rule-limitsp limits))))
