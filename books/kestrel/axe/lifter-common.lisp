@@ -198,11 +198,14 @@
 (defun make-repeatedly-run-function-fn (name simplify-dag-name)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp simplify-dag-name))))
-  ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
-  ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
-  ;; reduced to 0, or a loop or an unsupported instruction is detected.
-  ;; Returns (mv erp result-dag-or-quotep hits state).
-  `(defun ,name (steps-done step-limit step-increment
+  ;; Repeatedly rewrites DAG to perform symbolic execution.  Repeatedly
+  ;; alternates between running some number of steps (indicated by
+  ;; STEP-INCREMENT) and pruning the DAG (usually), until the run finishes,
+  ;; STEPS-DONE reaches STEP-LIMIT, or a loop (really?) or an unsupported
+  ;; instruction is detected.  Returns (mv erp result-dag-or-quotep hits state).
+  `(defun ,name (steps-done
+                 step-limit
+                 step-increment ; not always just a number!
                  dag ; the state may be wrapped in an output-extractor
                  rule-alist pruning-rule-alist
                  assumptions
@@ -244,7 +247,7 @@
                                  (booleanp memoizep))
                      :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
                      :stobjs state
-                     :hints (("Goal" :in-theory (disable min)))
+                     :hints (("Goal" :in-theory (enable min nfix ifix)))
                      :guard-hints (("Goal" :in-theory (disable min)))))
      (if (or (not (mbt (and (natp steps-done)
                             (natp step-limit))))
@@ -252,11 +255,11 @@
          (mv (erp-nil) dag hits state)
        (b* (;; Decide how many steps to do this time:
             (this-step-increment (this-step-increment step-increment steps-done))
-            (steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
-            ((when (not (posp steps-for-this-iteration))) ; use mbt?
-             (er hard? ',name "Temination problem.")
+            (desired-steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
+            ((when (not (posp desired-steps-for-this-iteration))) ; todo: add MBT
+             (er hard? ',name "Temination problem: Desired steps is ~x0." desired-steps-for-this-iteration)
              (mv :termination-problem nil nil state))
-            (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
+            (- (cw "(Running (up to ~x0 steps):~%" desired-steps-for-this-iteration))
             ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
             (old-dag dag) ; so we can see if anything changed
             ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
@@ -265,7 +268,7 @@
             ;; Limit the run to the given number of steps:
             (limits nil) ; todo: call this empty-rule-limits?
             (limits (add-limit-for-rules (list step-opener-rule)
-                                         steps-for-this-iteration
+                                         desired-steps-for-this-iteration
                                          limits)) ; don't recompute for each small run?
             ;; Do the run:
             ((mv erp dag-or-constant limits hits-this-time state)
@@ -286,16 +289,16 @@
             ((when erp) (mv erp nil hits state))
             (hits (combine-hits hits hits-this-time))
             ;; usually 0, unless we are done (can this ever be negative?):
-            (remaining-limit ;; todo: clean this up: there is only a single rule:
-             (limit-for-rule step-opener-rule
-                             limits))
-            (steps-done-this-time (- steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
+            (remaining-limit (limit-for-rule step-opener-rule limits))
+            (steps-done-this-time (- desired-steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
+            (steps-done (+ steps-done-this-time steps-done))
             ((mv elapsed state) (real-time-since start-real-time state))
             (- (cw " (~x0 steps took " steps-done-this-time)
                (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
                (cw "s.)"))
             (- (cw ")~%")) ; matches "(Running"
             ((when (quotep dag-or-constant))
+             (cw "Total steps: ~x0.~%" steps-done)
              (cw "Result is a constant!~%")
              (mv (erp-nil) dag-or-constant hits state))
             (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
@@ -310,6 +313,7 @@
                                                                            state))
             ((when erp) (mv erp nil hits state))
             ((when (quotep dag-or-constant))
+             (cw "Total steps: ~x0.~%" steps-done)
              (cw "Result is a constant!~%")
              (mv (erp-nil) dag-or-constant hits state))
             (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
@@ -335,6 +339,7 @@
                                         state))
             ((when erp) (mv erp nil hits state))
             ((when (quotep dag-or-constant))
+             (cw "Total steps: ~x0.~%" steps-done)
              (cw "Result is a constant!~%")
              (mv (erp-nil) dag-or-constant hits state))
             (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
@@ -377,6 +382,7 @@
              (b* ((- (if run-completedp
                          (cw " The run completed normally.~%")
                        (cw " The run completed abnormally (nothing changed).~%")))
+                  (- (cw "Total steps: ~x0.~%" steps-done))
                   (- (cw "(Doing final simplification:~%"))
                   ((mv erp dag-or-constant & hits2 state) ; todo: check if it is a constant?  ; todo: use the limits?
                    (,simplify-dag-name dag
@@ -414,14 +420,15 @@
                    (mv :incomplete-run nil hits state)))
                (mv (erp-nil) dag-or-constant hits state))
            ;; Continue the symbolic execution:
-           (b* ((steps-done (+ steps-for-this-iteration steps-done))
+           (b* (((when (not (posp steps-done-this-time))) ; for termination
+                 (er hard? ',name "No steps were done, but the run is not complete.")
+                 (mv :no-steps-done dag hits state))
                 (- (cw "(Steps so far: ~x0.)~%" steps-done))
                 (state ;; Print as a term unless it would be huge:
                  (if (print-level-at-least-tp print)
                      (print-dag-nicely-with-base dag max-printed-term-size (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
                    state)))
-             (,name steps-done step-limit
-                    step-increment
+             (,name steps-done step-limit step-increment
                     dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
                     state)))))))
 
