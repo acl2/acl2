@@ -392,7 +392,66 @@
   (std::deflist expr-list-formalp (x)
     :guard (expr-listp x)
     (expr-formalp x)
-    :elementp-of-nil nil))
+    :elementp-of-nil nil)
+
+  (defruled expr-formalp-when-ident
+    (implies (expr-case expr :ident)
+             (equal (expr-formalp expr)
+                    (ident-formalp (expr-ident->ident expr)))))
+
+  (defruled expr-formalp-when-const
+    (implies (expr-case expr :const)
+             (equal (expr-formalp expr)
+                    (const-formalp (expr-const->const expr)))))
+
+  (defruled expr-formalp-when-paren
+    (implies (expr-case expr :paren)
+             (equal (expr-formalp expr)
+                    (expr-formalp (expr-paren->inner expr)))))
+
+  (defruled expr-formalp-when-unary
+    (implies (expr-case expr :unary)
+             (equal (expr-formalp expr)
+                    (and (member-equal (unop-kind (expr-unary->op expr))
+                                       '(:address :indir
+                                         :plus :minus
+                                         :bitnot :lognot))
+                         (expr-formalp (expr-unary->arg expr))))))
+
+  (defruled expr-formalp-when-cast
+    (implies (expr-case expr :cast)
+             (equal (expr-formalp expr)
+                    (and (tyname-formalp (expr-cast->type expr))
+                         (expr-formalp (expr-cast->arg expr))))))
+
+  (defruled expr-formalp-when-binary
+    (implies (expr-case expr :binary)
+             (equal (expr-formalp expr)
+                    (or (and (binop-strictp (expr-binary->op expr))
+                             (binop-purep (expr-binary->op expr))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (expr-purep (expr-binary->arg1 expr))
+                             (expr-purep (expr-binary->arg2 expr)))
+                        (and (member-equal (binop-kind (expr-binary->op expr))
+                                           '(:logand :logor))
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr)))
+                        (and (equal (binop-kind (expr-binary->op expr)) :asg)
+                             (expr-formalp (expr-binary->arg1 expr))
+                             (expr-formalp (expr-binary->arg2 expr))
+                             (or (expr-case (expr-binary->arg1 expr) :ident)
+                                 (expr-purep (expr-binary->arg2 expr)))))))
+    :enable (binop-strictp binop-purep))
+
+  (defruled expr-formalp-when-cond
+    (implies (expr-case expr :cond)
+             (equal (expr-formalp expr)
+                    (and (expr-formalp (expr-cond->test expr))
+                         (expr-cond->then expr)
+                         (expr-formalp (expr-cond->then expr))
+                         (expr-formalp (expr-cond->else expr)))))
+    :enable expr-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

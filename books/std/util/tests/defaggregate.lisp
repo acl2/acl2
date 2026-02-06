@@ -681,3 +681,7 @@
     :pred pointp)
 
   (assert! (pointp (point 3 2))))
+
+;; Added by Eric Smith:
+
+(defaggregate tagless-tree-test  ((f1 natp) (f2 natp)) :layout :tree)

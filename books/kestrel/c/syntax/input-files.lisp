@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,73 +47,6 @@
      says whether the programmatic interface has been called."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ienv-default (&key
-                      ((std (or (eq std :auto)
-                                (equal std 17)
-                                (equal std 23)))
-                       ':auto)
-                      ((gcc (or (eq gcc :auto)
-                                (booleanp gcc)))
-                       ':auto))
-  :guard-debug t
-  :short "A default implementation environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the default used by @(tsee input-files).")
-   (xdoc::p
-    "We default to the C17 standard without GCC extensions.
-     This is the C version with the strongest support.
-     Optionally, this can be overridden
-     with the @(':std') and @(':gcc') keyword arguments.")
-   (xdoc::p
-    "For the type sizes and signedness options,
-     we use values which have anecdotally appeared common
-     on 64-bit machines."))
-  (b* ((std (if (eq std :auto) 17 std))
-       (gcc (if (eq gcc :auto) nil gcc))
-       (version (if (int= std 17)
-                    (if gcc
-                        (c::version-c17+gcc)
-                      (c::version-c17))
-                  (if gcc
-                        (c::version-c23+gcc)
-                      (c::version-c23)))))
-    (make-ienv :version version
-               :bool-bytes 1
-               :short-bytes 2
-               :int-bytes 4
-               :long-bytes 8
-               :llong-bytes 8
-               :float-bytes 4
-               :double-bytes 8
-               :ldouble-bytes 16
-               :pointer-bytes 8
-               :plain-char-signedp nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *input-files-allowed-options*
-  :short "Keyword options accepted by @(tsee input-files)."
-  (list :files
-        :path
-        :preprocess
-        :preprocess-args
-        :process
-        :const
-        :std
-        :gcc
-        :short-bytes
-        :int-bytes
-        :long-bytes
-        :long-long-bytes
-        :plain-char-signed)
-  ///
-  (assert-event (keyword-listp *input-files-allowed-options*))
-  (assert-event (no-duplicatesp-eq *input-files-allowed-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -437,7 +370,9 @@
       :c17 "-std=c17"
       :c23 "-std=c23"
       :c17+gcc "-std=gnu17"
-      :c23+gcc "-std=gnu23")))
+      :c23+gcc "-std=gnu23"
+      :c17+clang "-std=gnu17"
+      :c23+clang "-std=gnu23")))
 
 (define string-stringlist-map-map-cons-values
   ((x stringp)
@@ -577,7 +512,7 @@
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
        ((erp tunits)
-        (dimb-transunit-ensemble tunits (ienv->gcc ienv) keep-going))
+        (dimb-transunit-ensemble tunits (ienv->gcc/clang ienv) keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))

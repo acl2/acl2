@@ -40,7 +40,7 @@
   })
 
   <p>where the optional keyword arguments (which might or might not include
-  @('names') are not evaluated and are described below, and each @('event-i')
+  @('names')) are not evaluated and are described below, and each @('event-i')
   is an @(see event).  The effect is the same as</p>
 
   @({(encapsulate () (local ev) EXTRA event-1 ... event-k)})

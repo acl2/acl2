@@ -2058,7 +2058,9 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards nil ; done after the unambiguity proofs
+  :verify-guards nil ; done after the unambiguity and annotations proofs
+
+  :flag-local nil
 
   ///
 
@@ -2070,7 +2072,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-unambp-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-unambp-of-simpadd0-exprs/decls
     (defret expr-unambp-of-simpadd0-expr
       (expr-unambp new-expr)
       :fn simpadd0-expr)
@@ -2277,7 +2279,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-annop-of-simpadd0-exprs/decls
+  (defret-mutual exprs/decls/stmts-annop-of-simpadd0-exprs/decls
     (defret expr-annop-of-simpadd0-expr
       (expr-annop new-expr)
       :hyp (and (expr-unambp expr)
@@ -2574,7 +2576,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual exprs/decls-aidentp-of-simpadd0-exprs/decls
+  (verify-guards simpadd0-expr)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual exprs/decls/stmts-aidentp-of-simpadd0-exprs/decls
     (defret expr-aidentp-of-simpadd0-expr
       (expr-aidentp new-expr gcc)
       :hyp (and (expr-unambp expr)
@@ -2868,11 +2874,35 @@
                                        simpadd0-stmt
                                        simpadd0-comp-stmt
                                        simpadd0-block-item
-                                       simpadd0-block-item-list))))
+                                       simpadd0-block-item-list)))))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards simpadd0-expr))
+(defsection simpadd0-formalp-when-thm-name
+  :short "Theorems saying that
+          if a transformation function returns a theorem
+          then the old and new constructs are in the formalized subset."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is in progress: more theorems will be added."))
+
+  (defret-mutual simpadd0-expr/decls/stmts-formalp-when-thm-name
+    (defret simpadd0-expr-formalp-when-thm-name
+      (implies (gout->thm-name gout)
+               (and (expr-formalp expr)
+                    (expr-formalp new-expr)))
+      :hyp (or (expr-case expr :ident)
+               (expr-case expr :const))
+      :fn simpadd0-expr
+      :hints ('(:in-theory (enable simpadd0-expr
+                                   c$::expr-formalp-when-ident
+                                   c$::expr-formalp-when-const
+                                   xeq-expr-ident-formalp-when-thm-name
+                                   xeq-expr-const-formalp-when-thm-name))))
+    :skip-others t)
+
+  (in-theory (disable simpadd0-expr-formalp-when-thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3168,7 +3198,9 @@
        ((mv new-map (gout gout-map))
         (simpadd0-filepath-transunit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
-    (mv (transunit-ensemble new-map)
+    (mv (c$::change-transunit-ensemble
+          tunits
+          :units new-map)
         (gout-no-thm gin)))
   :hooks (:fix)
 

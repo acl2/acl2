@@ -1,0 +1,12 @@
+{"command": "add-section-attr",
+ "arguments":
+ {"old-dir" : "input-files",
+  "new-dir" : "add-section-attr.output",
+  "files": ["file9.c", "file10.c"],
+  "attrs": [{"target": {"filepath": "file9.c", "ident": "foo"},
+             "section": "foosection"},
+            {"target": {"filepath": null, "ident": "bar"},
+             "section": "barsection"}
+          ]
+ }
+}

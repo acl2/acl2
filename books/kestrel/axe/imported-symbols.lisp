@@ -1,7 +1,7 @@
 ; Symbols to import into various Axe packages
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -266,7 +266,7 @@
     dag-or-quotep-vars
 
     remove-assumptions-about
-    *non-stp-assumption-functions*
+;;    *non-stp-assumption-functions*
     equivalent-dagsp2
     print-to-hundredths
     print-dag-nicely
@@ -312,7 +312,6 @@
     print-terms-elided
     make-term-into-dag
     remove-assumptions-about
-    acl2::*non-stp-assumption-functions*
     ;; simplify-terms-using-each-other
     make-cons-nest ; move?
     make-rule-alist
@@ -345,6 +344,7 @@
     subset-eq
     submit-event
     strip-cadrs
+    set-difference-eq-fast
 
     ;; formal unit tester common stuff:
     print-test-summary
@@ -369,11 +369,13 @@
     untranslate$
     untranslate$-list
 
+    ;; could split out these binary related symbols (vs symbols for core axe tool implementation)
     parse-executable
     parse-elf-file-bytes ; helpful for tracing ; todo: more
     parsed-elfp
     parsed-elf-entry-point
     subroutine-address-elf
+    elf-position-independentp
 
     ensure-target-exists-in-executable
     make-flag
@@ -381,7 +383,14 @@
 
     tacticp
     tacticsp
-    ))
+
+    hitsp
+    combine-hits
+    maybe-print-hits
+    empty-hits
+
+    command-is-redundantp
+    redundancy-table-event))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -415,7 +424,9 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
-    trim-rules))
+    trim-rules
+    prune-dag-post-rewrite-rules
+    pre-stp-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little

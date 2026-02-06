@@ -132,14 +132,14 @@
                               (consp whole-form)
                               (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
+        (mv nil '(value-triple :redundant) state))
        ;; Choose which set of rules to use:
        (rule-list (choose-rules rules ;rule-lists
                                 extra-rules remove-rules (def-simplified-rules)))
        ((mv erp rule-alist)
         (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp dag)
+       ((mv erp dag &)
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -167,9 +167,8 @@
         ;; constant, as usual:
         ;; TODO: Should the wrapper do this?
         `(progn (defconst ,defconst-name ',dag)
-                (table def-simplified-table ',whole-form ':fake)
-                (value-triple ',defconst-name) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',defconst-name))
         state)))
 
 ;; Returns an error triple, (mv erp event state).

@@ -177,7 +177,27 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp)
+  :pred ident-listp
+
+  ///
+
+  (defruled true-listp-when-ident-listp
+    (implies (ident-listp idents)
+             (true-listp idents))
+    :induct t
+    :enable ident-listp)
+
+  (defrule ident-listp-of-add-to-set-equal
+    (equal (ident-listp (add-to-set-equal ident idents))
+           (and (identp ident)
+                (ident-listp idents)))
+    :enable add-to-set-equal)
+
+  (defrule ident-listp-of-remove1-equal
+    (implies (ident-listp x)
+             (ident-listp (remove1-equal a x)))
+    :induct t
+    :enable remove1-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -891,7 +911,15 @@
   :elt-type s-char
   :true-listp t
   :elementp-of-nil nil
-  :pred s-char-listp)
+  :pred s-char-listp
+
+  ///
+
+  (defruled true-listp-when-s-char-listp
+    (implies (s-char-listp x)
+             (true-listp x))
+    :induct t
+    :enable s-char-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1858,8 +1886,8 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    (:stmt ((stmt comp-stmt)))
     ;; GCC extensions:
+    (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)
@@ -3459,6 +3487,28 @@
     :induct t
     :enable remove1-equal))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption init-declor-option
+  init-declor
+  :short "Fixtype of optional initializer declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initializer declarators are defined in @(tsee init-declor)."))
+  :pred init-declor-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption declon-option
+  declon
+  :short "Fixtype of optional declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are defined in @(tsee declon)."))
+  :pred declon-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum expr/tyname
@@ -3697,6 +3747,7 @@
      The notion of file set as formalized here will still apply to that case,
      with some elements of the ensembles
      that may be headers instead of source files."))
-  ((units filepath-transunit-map))
+  ((units filepath-transunit-map)
+   (info any))
   :pred transunit-ensemblep
   :layout :fulltree)

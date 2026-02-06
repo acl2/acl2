@@ -35,7 +35,8 @@
                                                     (monitor 'nil)
                                                     (no-warn-ground-functions 'nil)
                                                     (fns-to-elide 'nil))
-  `(simplify-term-to-term-basic-smt ,term
+  `(b* (((mv erp term & state)
+         (simplify-term-to-term-basic-smt ,term
                                     ,assumptions
                                     ,rule-alist
                                     ,interpreted-function-alist
@@ -48,7 +49,8 @@
                                     ,monitor
                                     ,no-warn-ground-functions
                                     ,fns-to-elide
-                                    state))
+                                    state)))
+     (mv erp term state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

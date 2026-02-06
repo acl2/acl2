@@ -1,6 +1,6 @@
 ; Wrappers of the C transformations, suitable for use with run-json-command
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,9 @@
 ;; We might be able to avoid creating a different wrapper for each
 ;; transformation, but consider the case when the arguments cannot be clearly
 ;; split into arguments passed to input-files/output-files and arguments passed
-;; to the transformation (e.g., if the gcc argument is passed to both).
+;; to the transformation (e.g., if the extensions argument is passed to both).
 
+(include-book "kestrel/c/transformation/add-section-attr" :dir :system)
 (include-book "kestrel/c/transformation/split-gso" :dir :system)
 (include-book "kestrel/c/transformation/simpadd0" :dir :system)
 (include-book "kestrel/c/transformation/split-fn" :dir :system)
@@ -25,6 +26,7 @@
 (include-book "kestrel/c/syntax/output-files" :dir :system)
 (include-book "kestrel/utilities/lookup-keyword" :dir :system)
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/utilities/keyword-value-lists2" :dir :system))
@@ -44,9 +46,9 @@
         (er hard? ctx "The :old-dir and :new-dir arguments must be different.")))
     nil))
 
-;; Returns (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list).
+;; Returns (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list).
 ;; Changes the default for :preprocess to :auto
-;; Changes the default for :gcc to t.
+;; Changes the default for :extensions to :gcc.
 (defun handle-common-args (kv-list ctx)
   (declare (xargs :guard t))
   (b* (((when (not (keyword-value-listp kv-list)))
@@ -97,13 +99,22 @@
                             preprocess-args
                           (omap::from-alist preprocess-args)))
        (kv-list (remove-keyword :preprocess-args kv-list))
-       ;; Change the default for :gcc:
-       (gcc-suppliedp (assoc-keyword :gcc kv-list))
-       (gcc (if gcc-suppliedp
-                (lookup-keyword :gcc kv-list)
-              t))
-       (kv-list (remove-keyword :gcc kv-list)))
-    (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc kv-list)))
+       ;; Change the default for :extensions:
+       (extensions-suppliedp (assoc-keyword :extensions kv-list))
+       (extensions
+         (b* (((unless extensions-suppliedp)
+               :gcc)
+              (extensions-str? (lookup-keyword :extensions kv-list))
+              ((when (not extensions-str?))
+               nil)
+              ((unless (stringp extensions-str?))
+               (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false."))
+              (extensions-str (string-downcase extensions-str?)))
+           (cond ((equal extensions-str "gcc") :gcc)
+                 ((equal extensions-str "clang") :clang)
+                 (t (er hard? ctx "Bad extensions.  Should be either the string \"gcc\", the string \"clang\", or false.")))))
+       (kv-list (remove-keyword :extensions kv-list)))
+    (mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions kv-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +125,7 @@
 (defun split-gso-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -122,7 +133,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::split-gso *old-const*
                        *new-const*
                        ;; Pass through all other args:
@@ -144,7 +155,7 @@
 (defun simpadd0-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -152,7 +163,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
                       ;; Pass through all other args (currently, none):
@@ -174,7 +185,7 @@
 (defun split-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -182,10 +193,10 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::split-fn *old-const*
                       *new-const*
-                      ;; Pass through all other args (currently, none):
+                      ;; Pass through all other args:
                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
                          :path ,new-dir))))
@@ -204,7 +215,7 @@
 (defun wrap-fn-wrapper (kv-list whole-form)
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
-       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args gcc remaining-kv-list)
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
@@ -212,7 +223,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :gcc ,gcc))
+                        :ienv (c$::ienv-default :extensions ,extensions))
        (c2c::wrap-fn *old-const*
                      *new-const*
                      ;; Pass through all other args (currently, :targets):
@@ -224,3 +235,73 @@
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
 (defmacro wrap-fn (&whole whole-form &rest kv-list)
   `(make-event (wrap-fn-wrapper ',kv-list ',whole-form)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund make-add-section-attr-input-aux (array-elems)
+  (declare (xargs :guard (true-listp array-elems)))
+  (if (endp array-elems)
+      nil ; empty alist
+    (let ((elem (first array-elems)))
+      ;; Elem might be {"target": {"filepath": "file9.c", "ident": "foo"}, "section": "mysection"}
+      (if (not (alistp elem))
+          (er hard? 'make-add-section-attr-input-aux "Bad item in :attr option: ~x0." elem)
+        (if (not (equal '("target" "section")
+                        (strip-cars elem)))
+            (er hard? 'make-add-section-attr-input-aux "Bad keys in item in :attr option (expected \"target\" and\"section\"): ~x0." elem)
+          (let ((target (lookup-equal "target" elem))
+                (section (lookup-equal "section" elem)))
+            (if (not (alistp target))
+                (er hard? 'make-add-section-attr-input-aux "Bad target in :attr option: ~x0." target)
+              (if (not (equal '("filepath" "ident")
+                              (strip-cars target)))
+                  (er hard? 'make-add-section-attr-input-aux "Bad keys in target in :attr option: ~x0." target)
+                (if (not (stringp section))
+                    (er hard? 'make-add-section-attr-input-aux "Bad section in :attr option: ~x0." section)
+                  (let ((filepath (lookup-equal "filepath" target))
+                        (ident (lookup-equal "ident" target)))
+                    (if (not (or (stringp filepath)
+                                 (eq :null filepath)))
+                        (er hard? 'make-add-section-attr-input-aux "Bad filepath in :attr option: ~x0." filepath)
+                      (if (not (stringp ident))
+                          (er hard? 'make-add-section-attr-input-aux "Bad ident in :attr option: ~x0." ident)
+                        (acons (c2c::make-qualified-ident :filepath? (if (eq :null filepath)
+                                                                         (c$::filepath-option-none)
+                                                                       (c$::filepath-option-some (c$::filepath filepath)))
+                                                          :ident (c$::ident ident))
+                               section
+                               (make-add-section-attr-input-aux (rest array-elems)))))))))))))))
+
+;; The attrs have been converted from a JSON value to a Lisp value (see parsed-json-value-to-lisp-value)
+(defund make-add-section-attr-input (attrs)
+  (declare (xargs :guard t))
+  (if (not (true-listp attrs))
+      (er hard? 'make-add-section-attr-input ":attr option should be a list, but it is ~x0." attrs)
+    (make-add-section-attr-input-aux attrs)))
+
+;; Returns an event.
+;; todo: error checking
+(defun add-section-attr-wrapper (kv-list whole-form)
+  (declare (xargs :guard (keyword-value-listp kv-list)))
+  (b* ((ctx whole-form)
+       ;; Pick out the args that are for input-files and output-files:
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
+        (handle-common-args kv-list ctx)))
+    `(progn
+       (c$::input-files :files ',files
+                        :path ,old-dir
+                        :const *old-const* ; todo: avoid name clash
+                        :preprocess ,preprocess
+                        ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
+                        :ienv (c$::ienv-default :extensions ,extensions))
+       (c2c::add-section-attr *old-const*
+                              *new-const*
+                              ;; The only transformation-specific option is :attrs (todo: check for any other args):
+                              :attrs ',(make-add-section-attr-input (lookup-keyword :attrs remaining-kv-list)))
+       (c$::output-files :const *new-const*
+                         :path ,new-dir))))
+
+;; A wrapper for add-section-attr that takes all its arguments as alternating keywords/values.
+;; This wrapper is in the ACL2 package, for ease of use by run-json-command
+(defmacro add-section-attr (&whole whole-form &rest kv-list)
+  `(make-event (add-section-attr-wrapper ',kv-list ',whole-form)))

@@ -11,33 +11,31 @@
 (in-package "C$")
 
 (include-book "../preprocessor-lexer")
-(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
+(defmacro test-lex (fn input &key pos more-inputs std extensions cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the preprocessing state.
   ;; Optional MORE-INPUTS go just before preprocessing state input.
   ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; EXTENSIONS indicates whether GCC/CLANG extensions are enabled (default NIL).
   ;; Optional COND may be over variables AST, POS/SPAN, PPSTATE.
   `(assert!-stobj
     (b* ((std (or ,std 23))
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1 ; no #include's
-                                (macro-table-init)
-                                (ienv-default :std std :gcc ,gcc)
+                                (macro-table-init (c::version-c17))
+                                (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
-         (,(if (member-eq fn '(plex-*-hexadecimal-digit))
+         (,(if (eq fn 'plex-*-hexadecimal-digit)
                '(mv erp ?ast ?pos/span ?pos/span2 ppstate)
              '(mv erp ?ast ?pos/span ppstate))
           (,fn ,@more-inputs ppstate)))
@@ -48,21 +46,20 @@
        ppstate))
     ppstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
+(defmacro test-lex-fail (fn input &key pos more-inputs std extensions)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the preprocessing state.
   ;; Optional MORE-INPUTS go just before preproceessing state input.
   ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
+  ;; EXTENSIONS indicates whether GCC/CLANG extensions are enabled (default NIL).
   `(assert!-stobj
     (b* ((std (or ,std 23))
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1 ; no #include's
-                                (macro-table-init)
-                                (ienv-default :std std :gcc ,gcc)
+                                (macro-table-init (c::version-c17))
+                                (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
@@ -353,7 +350,7 @@
  plex-hexadecimal-digit
  "fy"
  :cond (and (equal ast #\f)
-            (equal (ppstate->bytes 0 ppstate) (list (char-code #\y)))))
+            (equal (ppstate->bytes ppstate) (list (char-code #\y)))))
 
 (test-lex-fail
  plex-hexadecimal-digit
@@ -393,7 +390,7 @@
  plex-hex-quad
  "DeadBeef"
  :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
-            (equal (ppstate->bytes 0 ppstate) (acl2::string=>nats "Beef"))))
+            (equal (ppstate->bytes ppstate) (acl2::string=>nats "Beef"))))
 
 (test-lex-fail
  plex-hex-quad
@@ -577,7 +574,7 @@
 (test-lex
  plex-escape-sequence
  "%"
- :gcc t
+ :extensions :gcc
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -960,26 +957,24 @@
 (test-lex
  plex-line-comment
  (list 10)
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
-              (plexeme-line-comment nil (newline-lf))))
+              (plexeme-line-comment nil)))
 
 (test-lex
  plex-line-comment
  (append (acl2::string=>nats "comment") (list 10 13))
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
-              (plexeme-line-comment (acl2::string=>nats "comment")
-                                    (newline-lf))))
+              (plexeme-line-comment (acl2::string=>nats "comment"))))
 
 (test-lex
  plex-line-comment
  (append (acl2::string=>nats "/* no special significance */") (list 13))
- :more-inputs ((position 1 2))
+ :more-inputs ((position 1 2) (position 1 3))
  :cond (equal ast
               (plexeme-line-comment
-               (acl2::string=>nats "/* no special significance */")
-               (newline-cr))))
+               (acl2::string=>nats "/* no special significance */"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1508,8 +1503,7 @@
  "// single line comment
   "
  :cond (equal ast (plexeme-line-comment
-                   (acl2::string=>nats " single line comment")
-                   (newline-lf))))
+                   (acl2::string=>nats " single line comment"))))
 
 ; header names
 

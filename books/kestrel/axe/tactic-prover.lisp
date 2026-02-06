@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,9 +25,9 @@
 
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
-(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
+(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly, brings in skip-proofs ; todo: try rewriter-basic but we might need support for embedded dags
 ;(include-book "dag-size")
-(include-book "dagify") ; for dag-or-term-to-term
+(include-book "dagify") ; for dag-or-term-to-term ; todo: skip-proofs
 (include-book "make-term-into-dag-basic")
 (include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
@@ -338,7 +338,7 @@
        ;; WARNING: This can blow up:
        (term (dag-to-term dag))
        ;; Call the rewriter:
-       ((mv erp dag-or-quotep)
+       ((mv erp dag-or-quotep &) ; use the hits?
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -600,6 +600,7 @@
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
        ((mv erp dag-or-quotep & ;limits
+            & ; hits
             )
         (simplify-dag-basic dag
                             assumptions
@@ -1094,7 +1095,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check some inputs:
        ((when (not (member-eq type '(:bit :boolean))))
         (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0.  Must be :boolean or :bit." type)
@@ -1129,7 +1130,7 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of theorem succeeded.~%"))
-             (table-event `(table prove-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem ; just use :fake or :result-not-stored?
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
@@ -1223,7 +1224,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check inputs:
        ((when (not (tacticsp tactics)))
         (er hard 'prove-equal-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
@@ -1240,7 +1241,7 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
-             (table-event `(table prove-equal-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem
              (maybe-theorem
                (and produce-theoremp
                     (b* ((term1 (dag-or-term-to-term dag-or-term1 state)) ; todo: can blow up?

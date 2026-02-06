@@ -238,7 +238,7 @@
         (filepath-transunit-map-try-split-fn-when tunits.units
                                                   triggers
                                                   tunits)))
-    (retok found (transunit-ensemble map))))
+    (retok found (c$::make-transunit-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,11 +297,7 @@
    triggers
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::transunit-ensemble-annop
-                           (code-ensemble->transunits code)))
-                     :hints (("Goal" :in-theory (enable irr-code-ensemble
-                                                        irr-transunit-ensemble))))
+               (code code-ensemblep)
                (const-new$ symbolp :rule-classes :type-prescription)
                (triggers string-listp))
   :short "Process the inputs."
@@ -311,8 +307,7 @@
        (code (acl2::constant-value const-old wrld))
        ((unless (code-ensemblep code))
         (retmsg$ "~x0 must be a code ensemble." const-old))
-       (tunits (code-ensemble->transunits code))
-       ((unless (c$::transunit-ensemble-annop tunits))
+       ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new))
@@ -324,7 +319,12 @@
        ((when (endp triggers))
         (retmsg$ "~x0 must be a list with at least one element" triggers)))
     (retok code const-new triggers))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  ///
+
+  (defret code-ensemble-annop-of-split-fn-when-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +346,7 @@
   ((code code-ensemblep)
    (const-new symbolp)
    (triggers string-listp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."

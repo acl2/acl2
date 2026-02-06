@@ -1,6 +1,6 @@
 ; A utility that suggests ways to speed up events and books
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,7 +50,8 @@
 (defun set-cbd-simple (cbd state)
   (declare (xargs :guard (stringp cbd)
                   :stobjs state
-                  :mode :program))
+                  :mode :program ; because set-cbd-fn1 has raw lisp code
+                  ))
   (mv-let (erp val state)
     (set-cbd-fn cbd state)
     (declare (ignore val))

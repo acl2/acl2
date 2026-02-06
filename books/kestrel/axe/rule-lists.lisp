@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -160,10 +160,10 @@
             implies-opener ;; goes to boolor
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
-            not-of-not ;BOZO what do we do with the resulting bool-fix?
+            not-of-not ; introduces bool-fix
             equal-same
             not-<-same
-            turn-equal-around-axe ; may be dangerous?
+            turn-equal-around-axe ; puts the constant first ; may be dangerous?
 
             ifix-when-integerp
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
@@ -199,7 +199,6 @@
 
             double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
-
             )
           (mv-nth-rules)
           (boolean-rules-safe)
@@ -559,7 +558,7 @@
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
     ;; These just unconditionally replace non-bv operators with bv operators:
-    bool->bit-becomes-bool-to-bit
+    bool->bit-becomes-bool-to-bit ; bool->bit is from std
     bit->bool-becomes-bit-to-bool
     logbitp-to-getbit-equal-1 ;rename
     ))
@@ -804,6 +803,8 @@
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
+     equal-of-bvplus-constant-and-constant
+     equal-of-bvplus-constant-and-constant-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -851,6 +852,8 @@
 
      bitnot-of-bitnot
      bitnot-of-ifix
+     equal-of-0-and-bitnot
+     equal-of-1-and-bitnot
 
      bvand-of-myif-arg1
      bvand-of-myif-arg2
@@ -1304,6 +1307,11 @@
 
      bvcat-equal-rewrite-constant ; previously caused problems for aes?
      bvcat-equal-rewrite-constant-alt
+
+     equal-of-0-and-bool-to-bit
+     equal-of-1-and-bool-to-bit
+     ;; equal-of-bool-to-bit-and-0 ; not needed if we turn equals around
+     ;; equal-of-bool-to-bit-and-1 ; not needed if we turn equals around
      )))
 
 ;todo combine this with core-rules-bv
@@ -2177,7 +2185,7 @@
 
             bvcat-trim-high-size-when-constant-1
             )
-          (boolean-rules)
+          (boolean-rules) ; not really BV rules
           (base-rules)
           (bv-array-rules) ;todo: drop?
           (type-rules)
@@ -2424,8 +2432,7 @@
 
      bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
      bvif-0-1-becomes-bvnot-of-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
-     equal-of-0-and-bool-to-bit ; alt form needed?
-     equal-of-1-and-bool-to-bit ; alt form needed?
+
      getbit-0-of-bool-to-bit
      equal-of-bool-to-bit-split ; remove?
      unsigned-byte-p-of-bool-to-bit
@@ -2862,8 +2869,6 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     ;;not-of-bool-fix ; just include boolean-rules-safe?
-     ;;bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t
@@ -4166,6 +4171,44 @@
     bvif-when-not-nil
     boolif-when-nil
     boolif-when-not-nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund prune-dag-post-rewrite-rules ()
+  (declare (xargs :guard t))
+  (append
+  '(id
+    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
+    bool-fix-of-bool-fix
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
+    if-of-bool-fix-arg1
+    myif-of-bool-fix-arg1
+    bvif-of-bool-fix
+    not-of-bool-fix
+    boolor-of-bool-fix-arg1
+    boolor-of-bool-fix-arg2
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
+    booleanp-of-bool-fix-rewrite
+    if-same-branches
+    if-when-non-nil-constant
+    if-of-nil
+    ;; if-of-not ; maybe
+    if-of-t-and-nil-when-booleanp ; or bool-fix it
+    myif-same-branches
+    myif-of-nil
+    myif-of-constant-when-not-nil
+    myif-nil-t
+    myif-of-t-and-nil-when-booleanp
+    ;; todo: more rules?  try the bv-function-of-bvchop-rules?
+    bvchop-identity-axe
+    )
+  (unsigned-byte-p-forced-rules)
+  ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
+  ;; (bv-function-of-bvchop-rules) ;; hmmm, maybe we should pass in these rules?
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

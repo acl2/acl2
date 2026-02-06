@@ -61,7 +61,7 @@
       "Specifies the code to the transformed.")
      (xdoc::p
       "This must be a symbol that names an existing ACL2 constant
-       that contains a"
+       that contains a "
       (xdoc::seetopic "c$::validator" "validated")
       " (and thus "
       (xdoc::seetopic "c$::unambiguity" "unambiguous")
