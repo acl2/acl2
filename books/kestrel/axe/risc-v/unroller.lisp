@@ -569,7 +569,7 @@
             ;input-assumption-vars
             ;state
             )
-        (assumptions-elf32 parsed-executable stack-slots existing-stack-slots position-independent)
+        (assumptions-elf32 parsed-executable stack-slots existing-stack-slots position-independentp)
         ;; todo: do we need to simplify the assumptions (maybe to get disjointness claims into reduced form by cancelling constants, since that will happen during rewriting)
         ;; (assumptions-new target
         ;;                  parsed-executable
