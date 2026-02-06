@@ -95,9 +95,8 @@
 
 (mutual-recursion
   ;; Create a term representing the extraction of the indicated output from TERM.
-  ;; why "normal"?  maybe "component" ?  or non-trivial?
   ;; This can translate some parts of the output-indicator.
-  (defun wrap-in-normal-output-extractor (output-indicator term wrld)
+  (defun wrap-in-output-extractor (output-indicator term wrld)
     (declare (xargs :guard (and ;; see above comment on output-indicator
                              (plist-worldp wrld))
                     :mode :program ; because of translate-term ; todo: do that outside this function, while also checking the output-indicator?
@@ -122,17 +121,17 @@
           ;; (:pf `(get-flag ':pf ,term))
           ;; (:sf `(get-flag ':sf ,term))
           ;; (:zf `(get-flag ':zf ,term))
-          (t (er hard? 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
+          (t (er hard? 'wrap-in-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
       (if (not (and (consp output-indicator)
                     (true-listp output-indicator)))
-          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)
+          (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)
         (case (ffn-symb output-indicator)
           ;; ;; (:register <N>)
           ;; (:register (if (and (eql 1 (len (fargs output-indicator)))
           ;;                     (natp (farg1 output-indicator)) ;todo: what is the max allowed?
           ;;                     )
           ;;                `(xr ':rgf ',(farg1 output-indicator) ,term)
-          ;;              (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;              (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;;  (:register-bool <N>)
           ;; ;; TODO: Deprecate this case but the tester uses :register-bool
           ;; ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
@@ -141,27 +140,27 @@
           ;;                          (natp (farg1 output-indicator)) ;todo: what is the max allowed?
           ;;                          )
           ;;                     `(bvchop '8 (xr ':rgf ',(farg1 output-indicator) ,term))
-          ;;                   (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;                   (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:mem32 <ADDR-TERM>)
           ;; ;; TODO: Add other sizes of :memXXX
           ;; (:mem32 (if (eql 1 (len (fargs output-indicator)))
-          ;;             `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld) ,term)
-          ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;             `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-output-extractor wrld) ,term)
+          ;;           (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
 
           ;; (:read <N> <ADDR-TERM>) ; returns a chunk (a BV)
           (:read (if (= 2 (len (fargs output-indicator)))
-                     (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-normal-output-extractor wrld)
-                   (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+                     (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-output-extractor wrld)
+                   (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
 
           ;; (:byte-array <element-count> <addr-term>) ; not sure what order is best for the args
           (:byte-array (if (and (= 2 (len (fargs output-indicator)))
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
-                           `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld)
-                                                            ,(translate-term (farg2 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                           `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-output-extractor wrld)
+                                                            ,(translate-term (farg2 output-indicator) 'wrap-in-output-extractor wrld)
                                                             ,term))
-                         (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+                         (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
 
           ;; ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
           ;; (:array (if (and (eql 3 (len (fargs output-indicator)))
@@ -170,66 +169,66 @@
           ;;                  (natp (farg2 output-indicator)) ; or use posp?
           ;;                  )
           ;;             `(list-to-bv-array ',(farg1 output-indicator)
-          ;;                                      (read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+          ;;                                      (read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-output-extractor wrld)
           ;;                                                   ',(farg2 output-indicator)
           ;;                                                   ',(/ (farg1 output-indicator) 8)
           ;;                                                  ,term))
-          ;;           (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;           (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:bv-list ;; (:bv-list <bits-per-element> <element-count> <addr-term>)
           ;;  (if (and (= 3 (len (fargs output-indicator)))
           ;;           (posp (farg1 output-indicator))
           ;;           (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
           ;;           (natp (farg2 output-indicator)) ; or use posp?
           ;;           )
-          ;;      `(read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+          ;;      `(read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-output-extractor wrld)
           ;;                    ',(farg2 output-indicator)
           ;;                    ',(/ (farg1 output-indicator) 8)
           ;;                    ,term)
-          ;;    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;;    (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
-          (:tuple (make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))
-          (otherwise (er hard? 'wrap-in-normal-output-extractor "Bad output indicator: ~x0" output-indicator))
+          (:tuple (make-cons-nest (wrap-in-output-extractors (fargs output-indicator) term wrld)))
+          (otherwise (er hard? 'wrap-in-output-extractor "Bad output indicator: ~x0" output-indicator))
           ))))
 
-  (defun wrap-in-normal-output-extractors (output-indicators term wrld)
+  (defun wrap-in-output-extractors (output-indicators term wrld)
     (declare (xargs :guard (and (true-listp output-indicators)
                                 (plist-worldp wrld))))
     (if (endp output-indicators)
         nil
-      (cons (wrap-in-normal-output-extractor (first output-indicators) term wrld)
-            (wrap-in-normal-output-extractors (rest output-indicators) term wrld)))))
+      (cons (wrap-in-output-extractor (first output-indicators) term wrld)
+            (wrap-in-output-extractors (rest output-indicators) term wrld)))))
 
-;; (local (make-flag wrap-in-normal-output-extractor))
+;; (local (make-flag wrap-in-output-extractor))
 
-;; (defthm-flag-wrap-in-normal-output-extractor
-;;   (defthm pseudo-termp-of-wrap-in-normal-output-extractor
+;; (defthm-flag-wrap-in-output-extractor
+;;   (defthm pseudo-termp-of-wrap-in-output-extractor
 ;;     (implies (and (pseudo-termp term)
 ;;                   (plist-worldp wrld))
-;;              (pseudo-termp (wrap-in-normal-output-extractor output-indicator term wrld)))
-;;     :flag wrap-in-normal-output-extractor)
-;;   (defthm pseudo-term-listp-of--wrap-in-normal-output-extractors
+;;              (pseudo-termp (wrap-in-output-extractor output-indicator term wrld)))
+;;     :flag wrap-in-output-extractor)
+;;   (defthm pseudo-term-listp-of--wrap-in-output-extractors
 ;;     (implies (and (pseudo-termp term)
 ;;                   (true-listp output-indicators)
 ;;                   (plist-worldp wrld))
-;;              (pseudo-term-listp (wrap-in-normal-output-extractors output-indicators term wrld)))
-;;     :flag wrap-in-normal-output-extractors))
+;;              (pseudo-term-listp (wrap-in-output-extractors output-indicators term wrld)))
+;;     :flag wrap-in-output-extractors))
 
 ;; Wraps TERM as indicated by OUTPUT-INDICATOR.
 ;; todo: reorder args?
-(defund wrap-in-output-extractor (output-indicator term wrld)
+(defund maybe-wrap-in-output-extractor (output-indicator term wrld)
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program ; because of translate-term
                   ))
   (if (eq :all output-indicator)
       term
-    (wrap-in-normal-output-extractor output-indicator term wrld)))
+    (wrap-in-output-extractor output-indicator term wrld)))
 
-;; (defthm pseudo-termp-of-wrap-in-output-extractor
+;; (defthm pseudo-termp-of-maybe-wrap-in-output-extractor
 ;;   (implies (and (pseudo-termp term)
 ;;                 (plist-worldp wrld))
-;;            (pseudo-termp (wrap-in-output-extractor output-indicator term wrld)))
-;;   :hints (("Goal" :in-theory (enable wrap-in-output-extractor))))
+;;            (pseudo-termp (maybe-wrap-in-output-extractor output-indicator term wrld)))
+;;   :hints (("Goal" :in-theory (enable maybe-wrap-in-output-extractor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +282,7 @@
                               (member-eq position-independent '(t nil :auto))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (booleanp type-assumptions-for-array-varsp)
-                              ;; no recognizer for output-indicator, we just call wrap-in-output-extractor and see if it returns an error
+                              ;; no recognizer for output-indicator, we just call maybe-wrap-in-output-extractor and see if it returns an error
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
                                   (natp prune-precise))
@@ -307,7 +306,7 @@
                               (natp max-printed-term-size)
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program ; todo: because of wrap-in-output-extractor
+                  :mode :program ; todo: because of maybe-wrap-in-output-extractor
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -378,7 +377,7 @@
                             (subroutine-address-elf target parsed-executable)))))
        (target-address-term (if position-independentp
                                 ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                ;; We posulate that there exists some base var wrt which the executable is loaded.
+                                ;; We postulate that there exists some base var wrt which the executable is loaded.
                                 (let ((base-address-var 'base-address))
                                   ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                   (if (= 0 target-offset)
@@ -413,7 +412,7 @@
        ;;                     (if 64-bitp
        ;;                         '(run-until-return3 x86)
        ;;                       '(run-until-return4 x86))))
-       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
+       (term-to-simulate (maybe-wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-risc-v-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
         (mv :error-wrapping-in-output-extractor nil state))
@@ -427,9 +426,9 @@
         (mv :unexpected-quotep nil ; nil nil nil nil nil
             state))
        ;; Choose the lifter rules to use:
-       (lifter-rules (lifter-rules) ;(if 64-bitp (unroller-rules64) (unroller-rules32))
+       (lifter-rules (lifter-rules32) ;(if 64-bitp (unroller-rules64) (unroller-rules32))
                      )
-       (symbolic-execution-rules (symbolic-execution-rules))
+       (symbolic-execution-rules (symbolic-execution-rules32))
        ;; (symbolic-execution-rules (if stop-pcs
        ;;                               (if 64-bitp
        ;;                                   (symbolic-execution-rules-with-stop-pcs64)
@@ -462,7 +461,7 @@
        ((when erp) (mv erp nil ; nil nil nil nil nil
                        state))
        ;; Decide which rules to monitor:
-       (debug-rules (debug-rules) ; todo (if 64-bitp (debug-rules64) (debug-rules32))
+       (debug-rules (debug-rules32) ; todo (if 64-bitp (debug-rules64) (debug-rules32))
                     )
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
@@ -539,7 +538,7 @@
                               (lifter-targetp target)
                               ;; executable
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
-                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call maybe-wrap-in-output-extractor and see if it returns an error
                               ;; extra-assumptions ; untranslated-terms
 ;;                              (booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
@@ -853,7 +852,7 @@
          (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
 ;;         (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
 ;;         (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
-         (output "An indication of which state component(s) will hold the result of the computation being lifted.  After lifting, the indicated result is projected out so that the result of lifting only represented the indicated state component.  The value supplied for this option can be :all (meaning return the whole state) or one of the values allowed by wrap-in-normal-output-extractor.")
+         (output "An indication of which state component(s) will hold the result of the computation being lifted.  After lifting, the indicated result is projected out so that the result of lifting only represented the indicated state component.  The value supplied for this option can be :all (meaning return the whole state) or one of the values allowed by wrap-in-output-extractor.")
 ;;         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
          ;; todo: better name?  only for precise pruning:
          (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
