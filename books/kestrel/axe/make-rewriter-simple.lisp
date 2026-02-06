@@ -1126,6 +1126,7 @@
                            (mv (erp-nil) nil alist rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)))))))))
 
            ;; Returns (mv erp instantiated-rhs-or-nil rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array) where rhs-or-nil is (if not nil) an axe-tree representing the instantiated RHS.
+           ;; Note that the recursive calls here are tail calls.
            (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
                                              args-to-match
                                              rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
@@ -1180,26 +1181,26 @@
                                                       rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
                          ;;if there are no hyps, don't even bother: todo: inefficient?:
                          (mv (erp-nil) t alist-or-fail rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)))
-                      ((when erp) (mv erp nil rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)))
-                   (if hyps-relievedp
-                       ;; the hyps were relieved, so instantiate the RHS:
-                       (prog2$ (and (eq print :verbose!)
-                                    (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
-                               (mv (erp-nil)
-                                   ;; could use a faster version where we know there are no free vars:
-                                   (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) (get-interpreted-function-alist rewrite-stobj))
-                                   rewrite-stobj2 ,@maybe-state
-                                   memoization
-                                   ;;no need to assemble the hit-counts if we are not going to print it
-                                   (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
-                                   tries
-                                   (and limits (decrement-rule-limit stored-rule limits))
-                                   node-replacement-array))
-                     ;;failed to relieve the hyps, so try the next rule:
-                     (prog2$ (and (eq print :verbose!)
-                                  (cw " Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
-                             (,try-to-apply-rules-name (rest stored-rules)
-                                                       args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))
+                      ((when erp) (mv erp nil rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
+                      ((when (not hyps-relievedp))
+                       ;; failed to relieve the hyps, so try the next rule:
+                       (and (eq print :verbose!)
+                            (cw " Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
+                       (,try-to-apply-rules-name (rest stored-rules)
+                                                 args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))
+                   ;; the hyps were relieved, so instantiate the RHS:
+                   (prog2$ (and (eq print :verbose!)
+                                (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
+                           (mv (erp-nil)
+                               ;; could use a faster version where we know there are no free vars:
+                               (,sublis-var-and-eval-name alist (stored-rule-rhs stored-rule) (get-interpreted-function-alist rewrite-stobj))
+                               rewrite-stobj2 ,@maybe-state
+                               memoization
+                               ;;no need to assemble the hit-counts if we are not going to print it
+                               (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
+                               tries
+                               (and limits (decrement-rule-limit stored-rule limits))
+                               node-replacement-array))))))
 
            ;; Simplifies the application of FN to its simplified DARGS, where FN is a function symbol.
            ;; Returns (mv erp new-nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array).
