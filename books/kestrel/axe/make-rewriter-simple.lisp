@@ -1163,7 +1163,8 @@
                                                  args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
                       ;; The rule matched, but we need to check whether we've hit the limit for it (rare):
                       (print (get-print rewrite-stobj))
-                      ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extracted below)?
+                      (limit-reached (limit-reached stored-rule limits print)) ; todo: just pass in the rule-symbol (extracted below)?
+                      ((when (eq t limit-reached))
                        ;; the limit for this rule is reached, so try the next rule:
                        (,try-to-apply-rules-name (rest stored-rules)
                                                  args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
@@ -1187,6 +1188,16 @@
                        (and (eq print :verbose!)
                             (cw " Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                        (,try-to-apply-rules-name (rest stored-rules)
+                                                 args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
+                      ;; Check that relieving hyps didn't exhaust the limit:
+                      (limit-reached-after-hyps (if hyps
+                                                    (and ;; (eq :not-yet limit-reached) ; todo: uncomment to optimize (if there was no limit before, these is still no limit)
+                                                     (limit-reached stored-rule limits print))
+                                                  ;; no hyps, so limit unchanged:
+                                                  limit-reached))
+                      ((when (eq t limit-reached-after-hyps))
+                       ;; Must not apply the rule, to prevent the limit from going negative:
+                       (,try-to-apply-rules-name (rest stored-rules)
                                                  args-to-match rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))
                    ;; the hyps were relieved, so instantiate the RHS:
                    (prog2$ (and (eq print :verbose!)
@@ -1199,7 +1210,8 @@
                                ;;no need to assemble the hit-counts if we are not going to print it
                                (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
                                tries
-                               (and limits (decrement-rule-limit stored-rule limits))
+                               ;; limit-reached-after-hyps=nil would mean there is no limit to decrement:
+                               (if (eq :not-yet limit-reached-after-hyps) (decrement-rule-limit stored-rule limits) limits)
                                node-replacement-array))))))
 
            ;; Simplifies the application of FN to its simplified DARGS, where FN is a function symbol.
@@ -3527,7 +3539,8 @@
                      ;; (:type-prescription integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type)
                      (:type-prescription lambda-free-termp)
                      (:type-prescription len)
-                     (:type-prescription limit-reachedp)
+                     (:type-prescription limit-reached$inline)
+                     limit-reached-normalize-print-arg
                      (:type-prescription maybe-bounded-memoizationp)
                      (:type-prescription member-equal)
                      (:type-prescription myquotep)
@@ -3543,6 +3556,7 @@
                      (:type-prescription rewrite-stobj2p)
                      (:type-prescription rewrite-stobjp)
                      (:type-prescription stored-axe-rule-listp)
+                     rule-limitsp-of-decrement-rule-limit
                      (:type-prescription strip-cdrs)
                      (:type-prescription symbol-alistp)
                      (:type-prescription symbol-listp)
