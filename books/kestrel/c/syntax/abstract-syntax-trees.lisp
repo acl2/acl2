@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -165,6 +165,23 @@
   ((unwrap any))
   :pred identp
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define ident-equal ((x identp) (y identp))
+  (mbe :logic (ident-equiv x y)
+       :exec (equal (ident->unwrap x)
+                    (ident->unwrap y)))
+  :enabled t
+  :inline t
+  ;; TODO: improve proof to avoid these explicit expansions.
+  :guard-hints (("Goal" :in-theory (enable ident->unwrap
+                                           identp
+                                           identity)
+                        :expand ((len x)
+                                 (len y)
+                                 (len (cdr x))
+                                 (len (cdr y))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
