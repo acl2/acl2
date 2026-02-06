@@ -19,7 +19,6 @@
 
 (defmacro init (input)
   `(init-ppstate ,input
-                 1 ; no #include's
                  (macro-table-init (c::version-c17))
                  (ienv-default)
                  ppstate))

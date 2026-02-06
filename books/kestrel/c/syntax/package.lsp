@@ -54,6 +54,7 @@
                 int
                 keyword-listp
                 keyword-value-list-to-alist
+                lifix
                 lnfix
                 make-event-terse
                 maybe-msgp

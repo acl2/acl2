@@ -110,29 +110,18 @@
      we also decrement the preprocessing state size by one."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil ppstate)
-       (current (ppstate->bytess-current ppstate))
-       ((unless (< current (ppstate->bytess-length ppstate)))
-        (raise "Internal error: index ~x0 not below length ~x1."
-               current (ppstate->bytess-length ppstate))
-        (reterr t))
-       (bytes (ppstate->bytes current ppstate))
-       ((when (consp bytes))
+       (bytes (ppstate->bytes ppstate)))
+    (if (consp bytes)
         (b* ((psize (ppstate->size ppstate))
              ((unless (> psize 0))
               (raise "Internal error: ~
                       there is a byte but the preprocessor state size is 0.")
               (reterr t))
              (byte (car bytes))
-             (ppstate (update-ppstate->bytes current (cdr bytes) ppstate))
+             (ppstate (update-ppstate->bytes (cdr bytes) ppstate))
              (ppstate (update-ppstate->size (1- psize) ppstate)))
-          (retok byte ppstate)))
-       ((when (zp current))
-        (retok nil ppstate))
-       (ppstate (update-ppstate->bytess-current (1- current) ppstate)))
-    (read-byte ppstate))
-  :measure (nfix (ppstate->bytess-current ppstate))
-  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp
-                                           integerp-when-natp)))
+          (retok byte ppstate))
+      (retok nil ppstate)))
   :no-function nil
 
   ///
@@ -148,32 +137,27 @@
 
   (defret ppstate->chars-length-of-read-byte
     (equal (ppstate->chars-length new-ppstate)
-           (ppstate->chars-length ppstate))
-    :hints (("Goal" :induct t)))
+           (ppstate->chars-length ppstate)))
 
   (defret ppstate->chars-read-of-read-byte
     (equal (ppstate->chars-read new-ppstate)
-           (ppstate->chars-read ppstate))
-    :hints (("Goal" :induct t)))
+           (ppstate->chars-read ppstate)))
 
   (defret ppstate->lexmarks-of-read-byte
     (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate))
-    :hints (("Goal" :induct t)))
+           (ppstate->lexmarks ppstate)))
 
   (defret ppstate->size-of-read-byte-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
+    :rule-classes :linear)
 
   (defret ppstat->size-of-read-byte-cond
     (implies (and (not erp)
                   byte?)
              (<= (ppstate->size new-ppstate)
                  (1- (ppstate->size ppstate))))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,31 +165,10 @@
   :returns (byte? byte-optionp)
   :short "Peek the next data byte from the preprocessing state,
           without removing it from the state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The code is similar to @(tsee read-byte).
-     Although we do not remove the byte,
-     we decrement the current index into the array
-     if the current byte list is empty,
-     until we find a non-empty one,
-     or until the list at index 0 is empty."))
-  (b* ((current (ppstate->bytess-current ppstate))
-       ((unless (< current (ppstate->bytess-length ppstate)))
-        (raise "Internal error: index ~x0 not below length ~x1."
-               current (ppstate->bytess-length ppstate))))
-    (peek-byte-loop current ppstate))
-  :no-function nil
-
-  :prepwork
-  ((define peek-byte-loop ((current natp) (ppstate ppstatep))
-     :guard (< current (ppstate->bytess-length ppstate))
-     :returns (byte? byte-optionp)
-     :parents nil
-     (b* ((bytes (ppstate->bytes current ppstate))
-          ((when (consp bytes)) (car bytes))
-          ((when (zp current)) nil))
-       (peek-byte-loop (1- current) ppstate))))
+  (b* ((bytes (ppstate->bytes ppstate)))
+    (if (consp bytes)
+        (car bytes)
+      nil))
 
   ///
 
@@ -224,36 +187,11 @@
   :returns (byte? byte-optionp)
   :short "Peek the second next data byte from the preprocessing state,
           without removing any byte from the state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to @(tsee peek-byte),
-     but with the additional complications to skip the next byte
-     in order to get to the one just after it:
-     the recursive companion function takes a boolean flag
-     saying whether we should skip the next byte found,
-     or not (i.e. if we have already skipped it)."))
-  (b* ((current (ppstate->bytess-current ppstate))
-       ((unless (< current (ppstate->bytess-length ppstate)))
-        (raise "Internal error: index ~x0 not below length ~x1."
-               current (ppstate->bytess-length ppstate))))
-    (peek2-byte-loop current t ppstate))
-  :no-function nil
-  :prepwork
-  ((define peek2-byte-loop ((current natp) (skip booleanp) (ppstate ppstatep))
-     :guard (< current (ppstate->bytess-length ppstate))
-     :returns (byte? byte-optionp)
-     :parents nil
-     (b* ((bytes (ppstate->bytes current ppstate)))
-       (if (consp bytes)
-           (if skip
-               (b* ((bytes (cdr bytes))
-                    ((when (consp bytes)) (car bytes))
-                    ((when (zp current)) nil))
-                 (peek2-byte-loop (1- current) nil ppstate))
-             (car bytes))
-         (b* (((when (zp current)) nil))
-           (peek2-byte-loop (1- current) skip ppstate))))))
+  (b* ((bytes (ppstate->bytes ppstate)))
+    (if (and (consp bytes)
+             (consp (cdr bytes)))
+        (cadr bytes)
+      nil))
 
   ///
 
@@ -824,88 +762,3 @@
     (equal (ppstate->size new-ppstate)
            (+ (ppstate->size ppstate) (nfix n)))
     :hints (("Goal" :in-theory (enable nfix fix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define unread-pchar-to-bytes ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Put the unread character, if any,
-          back into the current list of bytes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called just before @(tsee ppstate-add-bytes),
-     when a file included via @('#include') is expanded in place.
-     This is called after consuming the @('#include') directive,
-     but possibly after having unread a character,
-     if the new line is a carriage return not followed by a line feed:
-     see @(tsee plex-lexeme).
-     That unread character would be read by the next call of @(tsee read-char),
-     which is incorrect because that character must come
-     after all the characters produced from the bytes of the included file.
-     So here we put the unread character, if any,
-     back into the current list of input bytes,
-     performing UTF-8 encoding of them.
-     We also change the current position back to the one of the character."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (chars-unread (ppstate->chars-unread ppstate))
-       ((when (= chars-unread 0)) ppstate)
-       ((unless (= chars-unread 1))
-        (raise "Internal error: ~x0 unread characters." chars-unread)
-        ppstate)
-       (chars-length (ppstate->chars-length ppstate))
-       (chars-read (ppstate->chars-read ppstate))
-       (char-index (+ chars-read (1- chars-unread)))
-       ((unless (< char-index chars-length))
-        (raise "Internal error: ~
-                index of next unread character ~x0 is not below ~x1."
-               char-index chars-length)
-        ppstate)
-       (char+pos (ppstate->char char-index ppstate))
-       (char (char+position->char char+pos))
-       (pos (char+position->position char+pos))
-       (char-bytes
-        (cond ((< char #x80) (list char))
-              ((< char #x800) (list (logior (ash char -6)
-                                            #b11000000)
-                                    (logior (logand char
-                                                    #b00111111)
-                                            #b10000000)))
-              ((< char #x10000) (list (logior (ash char -12)
-                                              #b11100000)
-                                      (logior (logand (ash char -6)
-                                                      #b00111111)
-                                              #b10000000)
-                                      (logior (logand char
-                                                      #b00111111)
-                                              #b10000000)))
-              ((< char #x10ffff) (list (logior (ash char -18)
-                                               #b11110000)
-                                       (logior (logand (ash char -12)
-                                                       #b00111111)
-                                               #b10000000)
-                                       (logior (logand (ash char -6)
-                                                       #b00111111)
-                                               #b10000000)
-                                       (logior (logand char
-                                                       #b00111111)
-                                               #b10000000)))
-              (t (raise "Internal error: character code ~x0." char))))
-       (bytess-length (ppstate->bytess-length ppstate))
-       (bytess-current (ppstate->bytess-current ppstate))
-       ((unless (< bytess-current bytess-length))
-        (raise "Internal error: ~
-                index of current input bytes ~x0 is not below ~x1."
-               bytess-current bytess-length)
-        ppstate)
-       (bytes (ppstate->bytes bytess-current ppstate))
-       (new-bytes (append char-bytes bytes))
-       (ppstate (update-ppstate->bytes bytess-current new-bytes ppstate))
-       (ppstate (update-ppstate->position pos ppstate))
-       (ppstate (update-ppstate->chars-unread 0 ppstate)))
-    ppstate)
-  :guard-hints (("Goal" :in-theory (enable fix
-                                           bytep
-                                           unsigned-byte-p
-                                           integer-range-p)))
-  :no-function nil)
