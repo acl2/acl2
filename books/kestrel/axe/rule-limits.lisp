@@ -81,6 +81,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check whether we can no longer apply the given STORED-RULE.
+;; Usually when this is called, we know LIMITS is not nil.
 (defund limit-reachedp (stored-rule limits print)
   (declare (xargs :guard (and (stored-axe-rulep stored-rule)
                               (rule-limitsp limits))
