@@ -2606,7 +2606,7 @@
             (case (macrep-mode-kind mode)
               ((:line :expr)
                (retok (cons lexmark (lexmark-list-fix rev-lexmarks))
-                      (ifix max-reach)
+                      (lifix max-reach)
                       ppstate))
               ((:arg-nonlast :arg-last :arg-dots)
                (if directivep
@@ -2627,7 +2627,7 @@
             (cond ((and (macrep-mode-case mode :arg-nonlast)
                         (zp paren-level))
                    (retok (lexmark-list-fix rev-lexmarks)
-                          (ifix max-reach)
+                          (lifix max-reach)
                           ppstate))
                   ((and (macrep-mode-case mode :arg-last)
                         (zp paren-level))
@@ -2685,7 +2685,7 @@
               ((:arg-last :arg-dots)
                (if (zp paren-level)
                    (retok (lexmark-list-fix rev-lexmarks)
-                          (ifix max-reach)
+                          (lifix max-reach)
                           ppstate)
                  (pproc-lexemes mode
                                 (cons lexmark rev-lexmarks)
@@ -2742,7 +2742,7 @@
                                         :found (plexeme-to-msg token))))))
                        ((mv info? reach)
                         (macro-lookup macro-name (ppstate->macros ppstate)))
-                       (max-reach (max reach (ifix max-reach)))
+                       (max-reach (max reach (lifix max-reach)))
                        (lexeme (if info?
                                    (plexeme-number (pnumber-digit #\1))
                                  (plexeme-number (pnumber-digit #\0))))
@@ -2770,7 +2770,7 @@
                                  (1- limit)))
                  ((mv info reach)
                   (macro-lookup ident (ppstate->macros ppstate)))
-                 (max-reach (max reach (ifix max-reach)))
+                 (max-reach (max reach (lifix max-reach)))
                  ((unless info)
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
@@ -2941,7 +2941,7 @@
                        max-reach
                        ppstate))
             (retok nil ; subst
-                   (ifix max-reach)
+                   (lifix max-reach)
                    ppstate)))
          (param (ident-fix (car params)))
          (mode (if (or (consp (cdr params))
@@ -4033,7 +4033,7 @@
                         :found (plexeme-to-msg toknl))
           (retok (groupend-eof)
                  (plexeme-list-fix rev-lexemes)
-                 (ifix max-reach)
+                 (lifix max-reach)
                  ppstate
                  (string-scfile-alist-fix preprocessed)
                  state)))
@@ -4057,7 +4057,7 @@
                                     rev-lexemes)))
               (retok nil ; no group ending
                      rev-lexemes
-                     (ifix max-reach)
+                     (lifix max-reach)
                      ppstate
                      (string-scfile-alist-fix preprocessed)
                      state)))
@@ -4067,21 +4067,21 @@
                ((equal directive "elif") ; # elif
                 (retok (groupend-elif)
                        (plexeme-list-fix rev-lexemes)
-                       (ifix max-reach)
+                       (lifix max-reach)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state))
                ((equal directive "else") ; # else
                 (retok (groupend-else)
                        (plexeme-list-fix rev-lexemes)
-                       (ifix max-reach)
+                       (lifix max-reach)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state))
                ((equal directive "endif") ; # endif
                 (retok (groupend-endif)
                        (plexeme-list-fix rev-lexemes)
-                       (ifix max-reach)
+                       (lifix max-reach)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state))
@@ -4165,7 +4165,7 @@
                 (b* (((erp ppstate) (pproc-define ppstate)))
                   (retok nil ; no group ending
                          (plexeme-list-fix rev-lexemes)
-                         (ifix max-reach)
+                         (lifix max-reach)
                          ppstate
                          (string-scfile-alist-fix preprocessed)
                          state)))
@@ -4173,7 +4173,7 @@
                 (b* (((erp ppstate) (pproc-undef ppstate)))
                   (retok nil ; no group ending
                          (plexeme-list-fix rev-lexemes)
-                         (ifix max-reach)
+                         (lifix max-reach)
                          ppstate
                          (string-scfile-alist-fix preprocessed)
                          state)))
@@ -4189,7 +4189,7 @@
                 (b* (((erp ppstate) (pproc-warning ppstate)))
                   (retok nil ; no group ending
                          (plexeme-list-fix rev-lexemes)
-                         (ifix max-reach)
+                         (lifix max-reach)
                          ppstate
                          (string-scfile-alist-fix preprocessed)
                          state)))
@@ -4471,7 +4471,7 @@
          ((when (> file-max-reach 0)) ; not self-contained
           (b* ((rev-lexemes (append file-rev-lexemes
                                     (plexeme-list-fix rev-lexemes)))
-               (max-reach (max (1- file-max-reach) (ifix max-reach))))
+               (max-reach (max (1- file-max-reach) (lifix max-reach))))
             (retok rev-lexemes max-reach ppstate preprocessed state)))
          (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
          (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
@@ -4493,7 +4493,7 @@
                                 (make-scfile :lexemes (rev file-rev-lexemes)
                                              :macros file-macros)
                                 preprocessed))))
-      (retok rev-lexemes (ifix max-reach) ppstate preprocessed state))
+      (retok rev-lexemes (lifix max-reach) ppstate preprocessed state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4615,7 +4615,7 @@
                       :found (plexeme-to-msg ident?)))
          ((mv info? reach)
           (macro-lookup ident (ppstate->macros ppstate)))
-         (max-reach (max reach (ifix max-reach)))
+         (max-reach (max reach (lifix max-reach)))
          (condp (if ifdefp
                     (and info? t)
                   (not info?))))
@@ -4730,7 +4730,7 @@
                     (pproc-*-group-part-skipped ppstate)))
                 (retok groupend
                        (plexeme-list-fix rev-lexemes)
-                       (ifix max-reach)
+                       (lifix max-reach)
                        ppstate
                        (string-scfile-alist-fix preprocessed)
                        state)))))
@@ -4782,7 +4782,7 @@
                              (pproc-*-group-part-skipped ppstate)))
                          (retok groupend
                                 rev-lexemes
-                                (ifix max-reach)
+                                (lifix max-reach)
                                 ppstate
                                 preprocessed
                                 state)))))
@@ -4808,7 +4808,7 @@
                                 :expected "a new line"
                                 :found (plexeme-to-msg toknl))))
                 (retok rev-lexemes
-                       (ifix max-reach)
+                       (lifix max-reach)
                        ppstate
                        preprocessed
                        state))))

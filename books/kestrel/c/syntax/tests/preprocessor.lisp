@@ -222,3 +222,10 @@ puts(\"The first, second, and third items.\");
 
 M_is_defined
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+;; (test-preproc '("gincluder.c")
+;;               :expected (fileset-of))

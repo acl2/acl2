@@ -423,8 +423,8 @@
      (b* (((when (endp scopes)) (mv nil -2))
           (scope (macro-scope-fix (car scopes)))
           (name+info (assoc-equal (ident-fix name) scope))
-          ((when name+info) (mv (cdr name+info) (ifix current-reach))))
-       (macro-lookup-in-scopes name (1+ (ifix current-reach)) (cdr scopes))))))
+          ((when name+info) (mv (cdr name+info) (lifix current-reach))))
+       (macro-lookup-in-scopes name (1+ (lifix current-reach)) (cdr scopes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
