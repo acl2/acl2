@@ -4412,25 +4412,31 @@
      (xdoc::p
       "We resolve the header name to a file,
        and we call @(tsee pproc-file) to preprocess it.
-       If the file is not self-contained, we need to expand it in place:
-       we put any unread character back into the current input bytes
-       (see documentation of @(tsee unread-pchar-to-bytes)),
-       and we store the bytes from the file into the stobj
-       (see documentation of @(tsee ppstate-add-bytes)).
-       If the file is self-contained,
+       Whether the file is self-contained or not,
+       we incorporate the returned macros into
+       the top scope of the macros of the current (i.e. including) file.
+       Even if the included file is self-contained,
+       in order to preprocess the rest of the including file,
+       we need to act as if we had expanded the included file in place,
+       i.e. its macros must be available as if defined in the including file.")
+     (xdoc::p
+      "If the included file is not self-contained,
+       i.e. when its maximum macro lookup reach is positive,
+       we need to expand the file in place.
+       We add its lexemes (from the returned @(tsee scfile)),
+       reversed, to the list of reversed lexemes.
+       We decrease the file's maximum reach by 1,
+       and we combine it with the current maximum reach for the including file,
+       to reflect the expansion in place:
+       e.g. if the included file has a maximum reach of 1,
+       it means that it accesses macros in the including file,
+       but when the contents of the included file are expanded in place,
+       the access has a reach of 0.")
+     (xdoc::p
+      "If the included file is self-contained,
        we leave the @('#include') directive as is,
        including all the comments and white space.
-       We also incorporate the returned macros into
-       the top scope of the macros of the current file;
-       although we do not expand the file in place,
-       in order to process the rest of the including file,
-       we need to act as if we had expanded the included file in place,
-       i.e. its macros must be available.")
-     (xdoc::p
-      "Note that @(tsee resolve-included-file)
-       always reads the whole file and returns its bytes,
-       which is wasteful when the file is found in @('preprocessed').
-       We may improve this aspect at some point."))
+       The maximum reach of the including file is left unchanged."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil 0 ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4447,19 +4453,16 @@
                       (ppstate->ienv ppstate)
                       state
                       (1- limit)))
-         ((when (> file-max-reach 0))
-          (b* ((ppstate (unread-pchar-to-bytes ppstate))
-               ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
-            (retok (plexeme-list-fix rev-lexemes)
-                   (ifix max-reach)
-                   ppstate
-                   (string-scfile-alist-fix preprocessed)
-                   state)))
          (ppstate (update-ppstate->macros
                    (macro-table-extend-top
                     (scfile->macros scfile)
                     (ppstate->macros ppstate))
                    ppstate))
+         ((when (> file-max-reach 0))
+          (b* ((rev-lexemes (revappend (scfile->lexemes scfile)
+                                       (plexeme-list-fix rev-lexemes)))
+               (max-reach (max (1- file-max-reach) (ifix max-reach))))
+            (retok rev-lexemes max-reach ppstate preprocessed state)))
          (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
          (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
          (nontoknls-before-header (plexeme-list-fix nontoknls-before-header))
