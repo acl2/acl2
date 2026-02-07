@@ -325,7 +325,11 @@
       but it increases as macros are (successfully) looked up.")
     (xdoc::li
      "The preprocessor state also contains a header guard state:
-      see @(tsee hg-state).")))
+      see @(tsee hg-state).")
+    (xdoc::li
+     "The preprocessor state also contains a list of the lexemes
+      that are being produced as the output of preprocessing.
+      These are in reverse order, for more efficient extension.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -357,6 +361,8 @@
                  :initially 2)
       (hg :type (satisfies hg-statep)
           :initially ,(hg-state-initial))
+      (rev-lexemes :type (satisfies plexeme-listp)
+                   :initially nil)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -370,6 +376,7 @@
                  (macrosp raw-ppstate->macros-p)
                  (max-reachp raw-ppstate->max-reach-p)
                  (hgp raw-ppstate->hg-p)
+                 (rev-lexemesp raw-ppstate->rev-lexemes-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -383,6 +390,7 @@
                  (macros raw-ppstate->macros)
                  (max-reach raw-ppstate->max-reach)
                  (hg raw-ppstate->hg)
+                 (rev-lexemes raw-ppstate->rev-lexemes)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -396,6 +404,7 @@
                  (update-macros raw-update-ppstate->macros)
                  (update-max-reach raw-update-ppstate->max-reach)
                  (update-hg raw-update-ppstate->hg)
+                 (update-rev-lexemes raw-update-ppstate->rev-lexemes)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -525,6 +534,12 @@
          :exec (raw-ppstate->hg ppstate))
     :inline t)
 
+  (define ppstate->rev-lexemes (ppstate)
+    :returns (rev-lexemes plexeme-listp)
+    (mbe :logic (non-exec (raw-ppstate->rev-lexemes (ppstate-fix ppstate)))
+         :exec (raw-ppstate->rev-lexemes ppstate))
+    :inline t)
+
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
@@ -624,6 +639,14 @@
     (mbe :logic (non-exec (raw-update-ppstate->hg (hg-state-fix hg)
                                                   (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->hg hg ppstate))
+    :inline t)
+
+  (define update-ppstate->rev-lexemes ((rev-lexemes plexeme-listp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes
+                           (plexeme-list-fix rev-lexemes)
+                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->rev-lexemes rev-lexemes ppstate))
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
@@ -805,7 +828,8 @@
      which suffices because there are never more characters than bytes.
      We initialize the maximum macro reach to -2,
      i.e. no macro access yet.
-     We set the header guard state to be the initial one."))
+     We set the header guard state to be the initial one.
+     We set the list of output reversed lexemes to empty."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -816,6 +840,7 @@
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
        (ppstate (update-ppstate->max-reach -2 ppstate))
        (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
+       (ppstate (update-ppstate->rev-lexemes nil ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
@@ -1103,3 +1128,42 @@
       (t (prog2$ (raise "Internal error: header guard state ~x0." hg)
                  ppstate))))
   :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-rev-lexeme ((lexeme plexemep) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Add a lexeme to the output reverse list."
+  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
+       (new-rev-lexemes (cons lexeme rev-lexemes)))
+    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define add-rev-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Add a list of lexemes to the output reverse list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The lexemes to add are passed in direct (i.e. not reverse) order,
+     so we need to append them in reverse."))
+  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
+       (new-rev-lexemes (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define add-rev-rev-lexemes ((rev-lexemes-to-add plexeme-listp)
+                             (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Add a list of reversed lexemes to the output reverse list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The difference with @(tsee add-rev-lexemes) is that
+     the lexemes to add are already reversed,
+     so we just append them."))
+  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
+       (new-rev-lexemes (append rev-lexemes-to-add rev-lexemes)))
+    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
