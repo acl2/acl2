@@ -2386,9 +2386,6 @@
      we are preprocessing a directive [C17:6.10/2] or not.
      This affects the treatment of new lines within macro arguments.")
    (xdoc::p
-    "Both functions take and return the maximum reach
-     of the macros being looked up (see @(tsee macro-lookup).")
-   (xdoc::p
     "As in @(tsee pproc-files/groups/etc),
      we use an artificial limit to ensure termination.
      There should be a termination argument,
@@ -3638,10 +3635,6 @@
     "Other inputs and outputs specific to individual functions
      are discussed in the documentation of those functions.")
    (xdoc::p
-    "All the functions, except @(tsee pproc-file),
-     take and return the maximum reach
-     of the macros being looked up (see @(tsee macro-lookup).")
-   (xdoc::p
     "In the absence of explicit checks, preprocessing may not terminate:
      @('file1.h') may include @('file2.h'), which may include @('file3.h'), etc.
      In practice, the file system is finite,
@@ -3739,8 +3732,6 @@
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
        and the consequent extension of the @('preprocessed') alist.
-       We initialize the maximum reach to -2,
-       i.e. no macro accesses yet (not even predefined ones).
        We ensure that the optional group read by @(tsee pproc-*-group-part)
        ends with the end of the file,
        because we are at the top level,
@@ -3778,14 +3769,13 @@
                state)
           (with-local-stobj
             ppstate
-            (mv-let (erp
-                     groupend
-                     rev-lexemes
-                     file-macro-table
-                     file-max-reach
-                     ppstate
-                     preprocessed
-                     state)
+            (mv-let (erp groupend
+                         rev-lexemes
+                         file-macro-table
+                         file-max-reach
+                         ppstate
+                         preprocessed
+                         state)
                 (b* ((ppstate (init-ppstate bytes macros ienv ppstate))
                      ((mv erp
                           groupend
