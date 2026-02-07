@@ -14,9 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "empty.c")
+
 (test-preproc-1 "empty.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "whitespace.c")
 
 (test-preproc-1 "whitespace.c"
                 (list 10
@@ -26,6 +30,8 @@
                       12 10)) ; FF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "comments.c")
 
 (test-preproc-1 "comments.c"
                 "/* block
@@ -37,6 +43,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "text.c")
+
 (test-preproc-1 "text.c"
                 "int x = 0;
 
@@ -47,6 +55,8 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "null-directive.c")
+
 (test-preproc-1 "null-directive.c"
                 "/*#*/
 /* comment */ /*#*/
@@ -56,6 +66,10 @@ void f(double y) {
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "including.c")
+; (depends-on "included.h")
+; (depends-on "subdir/included2.h")
 
 (test-preproc '("including.c")
               :expected (fileset-of "including.c"
@@ -73,6 +87,8 @@ void f(double y) {
 "))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "macros.c")
 
 (test-preproc-1 "macros.c"
                 "
@@ -124,6 +140,8 @@ int z6 = (1, (a,b));
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "stringize.c")
+
 (test-preproc-1 "stringize.c"
                 "
 \"\";
@@ -141,6 +159,8 @@ int z6 = (1, (a,b));
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "concatenate.c")
+
 (test-preproc-1 "concatenate.c"
                 "
 a b cd e;
@@ -151,9 +171,13 @@ x334;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example-6.10.3.3.c")
+
 (test-preproc-1 "c17-std-example-6.10.3.3.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example-6.10.3.4.c")
 
 (test-preproc-1 "c17-std-example-6.10.3.4.c"
                 "
@@ -162,6 +186,8 @@ x334;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example1-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
 int table[100];
@@ -169,9 +195,13 @@ int table[100];
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example2-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example2-6.10.3.5.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example3-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
@@ -182,6 +212,8 @@ char c[2][6] = { \"hello\", \"\" };
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example4-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
@@ -194,6 +226,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example5-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
                 "
 int j[] = { 123, 45, 67, 89,
@@ -202,9 +236,13 @@ int j[] = { 123, 45, 67, 89,
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example6-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example7-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example7-6.10.3.5.c"
                 "
@@ -216,6 +254,8 @@ puts(\"The first, second, and third items.\");
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "conditional.c")
+
 (test-preproc-1 "conditional.c"
                 "M_is_not_defined
 
@@ -224,6 +264,11 @@ M_is_defined
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "gincluder.c")
+; (depends-on "gincluder1.h")
+; (depends-on "gincluder2.h")
+; (depends-on "guarded.h")
 
 ; TODO: not quite doing what we want yet
 (test-preproc '("gincluder.c")
