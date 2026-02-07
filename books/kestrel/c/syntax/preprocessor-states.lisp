@@ -173,6 +173,104 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum hg-state
+  :short "Fixtype of header guard states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Header guards are a common technique to avoid
+     including the same header (or file, in general) multiple times.
+     The file, call it @('FILE'), has a form like")
+   (xdoc::codeblock
+    "#ifndef FILE_H"
+    "#define FILE_H"
+    "..."
+    "#endif")
+   (xdoc::p
+    "Thus, the first time @('FILE') is included via @('#include'),
+     @('FILE_H') is not defined, and the contents @('...') are included.
+     The successive times that @('FILE') is included via @('#include'),
+     @('FILE_H') is defined, and nothing is included.
+     Here `first time' and `successive times' refer to each translation unit:
+     multiple @('#include') for the same @('FILE') may occur
+     because of transitive inclusions with common ``ancestors''.")
+   (xdoc::p
+    "A file of this form should be regarded as @(see self-contained),
+     provided that the @('...') part does not access macros in outer scopes.
+     However, in the absence of some special treatment,
+     it would only be considered self-contained the first time it is included,
+     but not the successive times it is included.")
+   (xdoc::p
+    "We realize this special treatment by
+     recognizing files of the form above during preprocessing,
+     and by preserving, in the preprocessed output file, the above directives;
+     we plan to extend our "
+    (xdoc::seetopic "abstract-syntax" "abstract syntax")
+    " to capture the information about that form.
+     To recognize that form, we use a sort of finite state machine
+     that we make part of @(tsee ppstate).
+     Here we define the states of the state machine:")
+   (xdoc::ul
+    (xdoc::li
+     "The @(':initial') state is the one as we start preprocessing a file.
+      We stay in this state so long as we do not find any token
+      (i.e. just comments and white space).
+      In this state, we are waiting for a @('#ifndef').")
+    (xdoc::li
+     "If we encounter a @('#ifndef') in the @(':initial') state,
+      we transition to the @(':ifndef') state,
+      where we keep track of the identifier following the @('#ifndef').
+      Is we encounter anything else,
+      we transition to the @(':not') state,
+      meaning that the file does not have the header guard form.")
+    (xdoc::li
+     "If we encounter a @('#define') in the @(':ifndef') state,
+      with the same identifier (@('FILE_H') in the example above),
+      we transition to the @(':define') state.
+      If we encounter anything else, we transition to @(':not').")
+    (xdoc::li
+     "We stay in the @(':define') state
+      until we find the @('#endif') that matches the initial @('#ifndef'),
+      at which point we move to the @(':endif') state,
+      where we still keep track of the name.")
+    (xdoc::li
+     "If we find no other tokens (only comments and white space),
+      and we reach the end of the file,
+      we transition to the @(':eof') state.
+      This is a final state, in which we have established that
+      the file has the header guard form,
+      and we know the name of the header guard.
+      If instead there are more tokens,
+      we transition to the other final state,
+      namely the @(':not') state."))
+   (xdoc::p
+    "Here is a depiction of the states (except @(':not'))
+     with respect to the content of the file:")
+   (xdoc::codeblock
+    "... (no tokens)     :initial"
+    "#ifndef FILE_H      :ifndef(FILE_H)"
+    "#define FILE_H      :define(FILE_H)"
+    "...                 :define(FILE_H)"
+    "#endif              :endif(FILE_H)"
+    "... (no tokens)     :endif(FILE_H)"
+    "EOF                 :eof(FILE_H)")
+   (xdoc::p
+    "In the future, we may add support for equivalent forms like")
+   (xdoc::codeblock
+    "#if !defined(FILE_H)"
+    "#define FILE_H"
+    "..."
+    "#endif"))
+  (:initial ())
+  (:ifndef ((name ident)))
+  (:define ((name ident)))
+  (:endif ((name ident)))
+  (:eof ((name ident)))
+  (:not ())
+  :pred hg-statep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
@@ -224,7 +322,10 @@
       the maximum `reach' of macro lookup,
       as returned by @(tsee macro-lookup) (see its documentation).
       This is initially -2 (i.e. no macro access),
-      but it increases as macros are (successfully) looked up.")))
+      but it increases as macros are (successfully) looked up.")
+    (xdoc::li
+     "The preprocessor state also contains a header guard state:
+      see @(tsee hg-state).")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -254,6 +355,8 @@
               :initially ,(macro-table nil nil))
       (max-reach :type (integer -2 *)
                  :initially 2)
+      (hg :type (satisfies hg-statep)
+          :initially ,(hg-state-initial))
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -266,6 +369,7 @@
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
                  (max-reachp raw-ppstate->max-reach-p)
+                 (hgp raw-ppstate->hg-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -278,6 +382,7 @@
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
                  (max-reach raw-ppstate->max-reach)
+                 (hg raw-ppstate->hg)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -290,6 +395,7 @@
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-max-reach raw-update-ppstate->max-reach)
+                 (update-hg raw-update-ppstate->hg)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -413,6 +519,12 @@
       (>= max-reach -2)
       :rule-classes :linear))
 
+  (define ppstate->hg (ppstate)
+    :returns (hg hg-statep)
+    (mbe :logic (non-exec (raw-ppstate->hg (ppstate-fix ppstate)))
+         :exec (raw-ppstate->hg ppstate))
+    :inline t)
+
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
@@ -506,6 +618,13 @@
          :exec (raw-update-ppstate->max-reach max-reach ppstate))
     :inline t
     :prepwork ((local (in-theory (enable ifix)))))
+
+  (define update-ppstate->hg ((hg hg-statep) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->hg (hg-state-fix hg)
+                                                  (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->hg hg ppstate))
+    :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
     :returns (ppstate ppstatep)
@@ -685,7 +804,8 @@
      We resize the arrays of characters to the number of bytes,
      which suffices because there are never more characters than bytes.
      We initialize the maximum macro reach to -2,
-     i.e. no macro access yet."))
+     i.e. no macro access yet.
+     We set the header guard state to be the initial one."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -695,6 +815,7 @@
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
        (ppstate (update-ppstate->max-reach -2 ppstate))
+       (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
@@ -742,3 +863,243 @@
        (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-ifndef ((name identp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a header guard transition when encountering
+          a @('#ifndef') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If we are in the initial state,
+     we move to the @(':ifndef') state.
+     If we are in the @(':define') state,
+     i.e. in the main content of the file,
+     we stay in that state.
+     If we are in the @(':not') state,
+     we stay in that state (it is a final state).
+     In all other states, we transition to @(':not'):
+     if we were in @(':ifndef'),
+     it means that we are not encountering @('#define');
+     if we were in @(':endif'),
+     it means that there is extra stuff after the @('#endif')."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (hg-state-case
+     hg
+     :initial (update-ppstate->hg (hg-state-ifndef name) ppstate)
+     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
+     :define ppstate
+     :endif (update-ppstate->hg (hg-state-not) ppstate)
+     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
+                  ppstate)
+     :not ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-elif/else ((cond-level natp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a heaader guard transition when encountering
+          a @('#elif') or @('#else') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should not happen at conditional nesting level 0.
+     If we are at the conditional nesting level 1,
+     and the header guard state is @(':ifndef') or @(':define'),
+     it means that we are inside the top-level @('#ifndef'),
+     but it contains a @('#elif') or @('#else');
+     thus, we move to the @(':not') state.
+     If we are at the conditional nesting level 1,
+     and the header guard state is not @(':ifndef') or @(':define'),
+     we must be in the @(':not') state, and the state does not change.
+     If we are at a conditional nesting level 2 or more,
+     we must be in either the @(':define') or @(':not') state,
+     and the state does not change."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (cond ((zp cond-level)
+           (prog2$ (raise "Internal error: conditional level 0.")
+                   ppstate))
+          ((= cond-level 1)
+           (case (hg-state-kind hg)
+             ((:ifndef :define) (update-ppstate->hg (hg-state-not) ppstate))
+             (:not ppstate)
+             (t (prog2$ (raise "Internal error: ~
+                                header guard state ~x0 at conditional level 1."
+                               hg)
+                        ppstate))))
+          (t ; cond-level >= 2
+           (if (member-eq (hg-state-kind hg) '(:define :not))
+               ppstate
+             (prog2$ (raise "Internal error: ~
+                             header guard state ~x0 at conditional level ~x1."
+                            hg cond-level)
+                     ppstate)))))
+  :no-function nil
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-endif ((cond-level natp) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a header guard transition when encountering a @('#endif')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should not happen at conditional nesting level 0.
+     If we are at the conditional nesting level 1,
+     and the header guard state is @(':define'),
+     it means that we are inside the top-level @('#ifndef'),
+     and it does not contain a @('#elif') or @('#else')
+     (otherwise we would be in the @(':not') state);
+     thus, we move to the @(':endif') state.
+     If we are at the conditional nesting level 1,
+     and the header guard state is @(':ifndef'),
+     it means that we are missing the @('#define'),
+     so we move to the @(':not') state.
+     If the conditional level is 1
+     and the header guard state is not @(':define') or @(':ifndef'),
+     we must be in the @(':not') state, and the state does not change.
+     If we are at a conditional nesting level 2 or more,
+     we must be in either the @(':define') or @(':not') state,
+     and the state does not change."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (cond ((zp cond-level)
+           (prog2$ (raise "Internal error: conditional level 0.")
+                   ppstate))
+          ((= cond-level 1)
+           (case (hg-state-kind hg)
+             (:define (b* ((name (hg-state-define->name hg))
+                           (new-hg (hg-state-endif name)))
+                        (update-ppstate->hg new-hg ppstate)))
+             (:ifndef (update-ppstate->hg (hg-state-not) ppstate))
+             (:not ppstate)
+             (t (prog2$ (raise "Internal error: ~
+                                header guard state ~x0 at conditional level 1."
+                               hg)
+                        ppstate))))
+          (t ; cond-level >= 2
+           (if (member-eq (hg-state-kind hg) '(:define :not))
+               ppstate
+             (prog2$ (raise "Internal error: ~
+                             header guard state ~x0 at conditional level ~x1."
+                            hg cond-level)
+                     ppstate)))))
+  :no-function nil
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-define ((name identp)
+                         (obj-empty-p booleanp)
+                         (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a header guard transition when encountering
+          a @('#define') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('obj-empty-p') flag says whether the @('#define') is for
+     an object-like macro with an empty replacement list.")
+   (xdoc::p
+    "If we are in the @(':ifndef') state,
+     the @('obj-empty-p') flag is @('t'),
+     and the names match,
+     we move to the @(':define') state;
+     if the names do not match, we move to @(':not'),
+     because we have not encountered the right @('#define').
+     If we are in the @(':define') state,
+     i.e. in the main content of the file,
+     we stay in that state.
+     If we are in the @(':not') state,
+     we stay in that state (it is a final state).
+     In all other states, we transition to @(':not'):
+     if we were in @(':initial'),
+     it means that we are not encountering @('#ifndef');
+     if we were in @(':endif'),
+     it means that there is extra stuff after the @('#endif')."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (hg-state-case
+     hg
+     :initial (update-ppstate->hg (hg-state-not) ppstate)
+     :ifndef (if (and obj-empty-p
+                      (equal (ident-fix name) hg.name))
+                 (update-ppstate->hg (hg-state-define name) ppstate)
+               (update-ppstate->hg (hg-state-not) ppstate))
+     :define ppstate
+     :endif (update-ppstate->hg (hg-state-not) ppstate)
+     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
+                  ppstate)
+     :not ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-non-ifndef/elif/else/define ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a header guard transition when encountering something
+          other than a @('#ifndef'), @('#elif'), @('#else'), or @('#define')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By `something other' we man another kind of directive,
+     or a text line with at least one token
+     (i.e. not just comments and white space).")
+   (xdoc::p
+    "If we are in the @(':define') state,
+     i.e. in the main content of the file,
+     we stay in that state.
+     If we are in the @(':not') state,
+     we stay in that state (it is a final state).
+     In all other states, we transition to @(':not'):
+     if we were in @(':initial'),
+     it means that we are not encountering @('#ifndef');
+     if we were in @(':ifndef'),
+     it means that we are not encountering @('#define');
+     if we were in @(':endif'),
+     it means that there is extra stuff after the @('#endif')."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (hg-state-case
+     hg
+     :initial (update-ppstate->hg (hg-state-not) ppstate)
+     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
+     :define ppstate
+     :endif (update-ppstate->hg (hg-state-not) ppstate)
+     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
+                  ppstate)
+     :not ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hg-trans-eof ((ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Perform a header guard transition when encountering end of file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If we are in the @(':endif') state,
+     we transition to the @(':eof') state:
+     the file has the header guard form.
+     If we are in the @(':initial') state,
+     we transition to the @(':not') state;
+     the file does not have the required @('#ifndef').
+     Otherwise, we must be in the @(':not') state, where we stay.."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       (hg (ppstate->hg ppstate)))
+    (case (hg-state-kind hg)
+      (:endif (b* ((name (hg-state-endif->name hg))
+                   (new-hg (hg-state-eof name)))
+                (update-ppstate->hg new-hg ppstate)))
+      (:initial (update-ppstate->hg (hg-state-not) ppstate))
+      (:not ppstate)
+      (t (prog2$ (raise "Internal error: header guard state ~x0." hg)
+                 ppstate))))
+  :no-function nil)
