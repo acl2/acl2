@@ -97,6 +97,11 @@ __attribute__ ((section(\"my_section\"))) my_fn_t bar;
 
 my_fn_t baz;
 
+struct my_struct {
+  int foo;
+  int bar;
+};
+
 __attribute__ ((section(\"my_section\"))) int bar(int y, int z) {
   int x = 5;
   return x + y - z;

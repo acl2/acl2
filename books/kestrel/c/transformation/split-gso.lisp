@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,7 +94,8 @@
       :objfun (c$::type-case
                 ord-info.type
                 :struct ;; TODO also check defstatus isn't undefined?
-                        (retok ord-info.linkage ord-info.type.tag?)
+                        (retok ord-info.linkage
+                               (c$::type-struct->tag? ord-info.type))
                 :otherwise (retmsg$ "~x0 has type ~x1, not a struct type"
                                     ident
                                     ord-info.type))

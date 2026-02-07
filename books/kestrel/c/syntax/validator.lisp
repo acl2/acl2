@@ -104,6 +104,7 @@
 (define valid-init-table ((filepath filepathp)
                           &optional
                           (externals valid-externalsp)
+                          ((completions type-completions-p) 'nil)
                           ((next-uid uidp) '(uid 0)))
   :returns (table valid-tablep)
   :short "Initial validation table."
@@ -114,6 +115,7 @@
   (make-valid-table :filepath filepath
                     :scopes (list (valid-empty-scope))
                     :externals externals
+                    :completions completions
                     :next-uid next-uid))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,6 +223,31 @@
        ((when ident+info) (cdr ident+info)))
     nil)
   :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-lookup-tag ((ident identp) (table valid-tablep))
+  :returns (mv (info? valid-tag-info-optionp) (currentp booleanp))
+  :short "Look up a tag in a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This functions behaves just as @('valid-lookup-ord'),
+     but for tags instead of ordinary identifiers."))
+  (valid-lookup-tag-loop ident (valid-table->scopes table) t)
+
+  :prepwork
+  ((define valid-lookup-tag-loop ((ident identp)
+                                  (scopes valid-scope-listp)
+                                  (currentp booleanp))
+     :returns (mv (info? valid-tag-info-optionp) (updated-currentp booleanp))
+     :parents nil
+     (b* (((when (endp scopes)) (mv nil nil))
+          (scope (car scopes))
+          (tag-scope (valid-scope->tag scope))
+          (ident+info (assoc-equal (ident-fix ident) tag-scope))
+          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
+       (valid-lookup-tag-loop ident (cdr scopes) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,6 +462,36 @@
                                 :defstatus defstatus
                                 :uid uid)
                                table))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-add-tag ((ident identp)
+                       (info valid-tag-infop)
+                       (table valid-tablep))
+  :returns (new-table valid-tablep)
+  :short "Add a tag to the validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just as in @(tsee valid-add-ord),
+     the tag is added to the first (i.e. innermost) scope.
+     If the tag is already present in the current scope,
+     its information is overwritten."))
+  (b* (((valid-table table) table)
+       ((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (valid-table-fix table))
+       (scope (car table.scopes))
+       (tag-scope (valid-scope->tag scope))
+       (new-tag-scope (acons (ident-fix ident)
+                             (valid-tag-info-fix info)
+                             tag-scope))
+       (new-scope (change-valid-scope scope :tag new-tag-scope))
+       (new-scopes (cons new-scope (cdr table.scopes)))
+       (table (change-valid-table table :scopes new-scopes)))
+    table)
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1176,6 +1233,7 @@
                               (args expr-listp)
                               (types-arg type-listp)
                               (ellipsis booleanp)
+                              (completions type-completions-p)
                               (ienv ienvp))
   :guard (equal (len types-arg) (len args))
   :returns (erp maybe-msgp)
@@ -1248,13 +1306,13 @@
                  (type-arithmeticp type-arg))
             (and (or (type-case type-param :struct)
                      (type-case type-param :union))
-                 (type-compatiblep type-param type-arg ienv))
+                 (type-compatible-p type-param type-arg completions ienv))
             (and (type-case type-param :pointer)
                  (or (and (type-case type-arg :pointer)
                           (let ((type-to-param (type-pointer->to type-param))
                                 (type-to-arg (type-pointer->to type-arg)))
-                            (or (type-compatiblep
-                                  type-to-param type-to-arg ienv)
+                            (or (type-compatible-p
+                                  type-to-param type-to-arg completions ienv)
                                 (and (type-case type-to-param :void)
                                      (not (type-case type-to-arg :function)))
                                 (and (type-case type-to-arg :void)
@@ -1264,7 +1322,7 @@
             (and (type-case type-param :bool)
                  (type-case type-arg :pointer)))
         (valid-prototype-args
-          (rest types-param) (rest args) (rest types-arg) ellipsis ienv)
+          (rest types-param) (rest args) (rest types-arg) ellipsis completions ienv)
       (retmsg$ "Argument ~x0 with type ~x1 ~
                 cannot be applied to function parameter with type ~x2."
                arg
@@ -1277,13 +1335,14 @@
            :hints (("Goal" :induct t
                            :expand (valid-prototype-args
                                      (type-list-fix types-param) args types-arg
-                                     ellipsis ienv))))))
+                                     ellipsis completions ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-funcall ((expr exprp)
                        (type-fun typep)
                        (types-arg type-listp)
+                       (completions type-completions-p)
                        (ienv ienvp))
   :guard (and (expr-case expr :funcall)
               (equal (len types-arg)
@@ -1337,6 +1396,7 @@
                                            (expr-funcall->args expr)
                                            types-arg
                                            type-params.ellipsis
+                                           completions
                                            ienv)
           :otherwise (retok))
         :iferr (msg$ "Error in function call ~x0:~%~@1" (expr-fix expr) erp)))
@@ -1344,7 +1404,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-member ((expr exprp) (type-arg typep))
+(define valid-member ((expr exprp)
+                      (type-arg typep)
+                      (completions type-completions-p))
   :guard (expr-case expr :member)
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a member expression,
@@ -1356,21 +1418,47 @@
      Since a pointer type is not allowed here,
      there is no need to convert arrays or functions to pointers.")
    (xdoc::p
-    "For now we only have one type for structures and one type for unions.
-     We cannot look up the member type, so we return the unknown type."))
+    "The structure or union type completion
+     is looked up in the @('completions') map.
+     The struct must be complete;
+     if there is no completion, it is a validation error [C17:6.5.2.3/1].
+     The type of the member is then looked up within the completion,
+     which becomes the type of the expression [C17:6.5.2.3/3].
+     If there is no such member within the completion,
+     it is a validation error [C17:6.5.2.3/1]."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-arg :unknown))
         (retok (type-unknown)))
-       ((unless (or (type-case type-arg :struct)
-                    (type-case type-arg :union)))
-        (retmsg$ "In the member expression ~x0, ~
-                  the sub-expression has type ~x1."
-                 (expr-fix expr) (type-fix type-arg))))
-    (retok (type-unknown))))
+       (name (expr-member->name expr))
+       ((erp uid tag/members)
+        (b* (((reterr) nil nil))
+          (type-case
+            type-arg
+            :struct (retok type-arg.uid type-arg.tag/members)
+            :union (retok type-arg.uid type-arg.tag/members)
+            :otherwise (retmsg$ "In the member expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+       ((mv erp members)
+        (type-struni-tag/members->members tag/members uid completions))
+       ((when erp)
+        (retmsg$ "Cannot get member ~x0 of incomplete type ~x1. ~
+                  This occurred in the expression ~x2."
+                 name
+                 (type-fix type-arg)
+                 (expr-fix expr)))
+       (type? (type-struni-member-list-lookup name members))
+       ((unless type?)
+        (retmsg$ "No member field ~x0 in type ~x1."
+                 name
+                 (type-fix type-arg))))
+    (retok type?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-memberp ((expr exprp) (type-arg typep))
+(define valid-memberp ((expr exprp)
+                       (type-arg typep)
+                       (completions type-completions-p))
   :guard (expr-case expr :memberp)
   :returns (mv (erp maybe-msgp) (type typep))
   :short "Validate a member pointer expression,
@@ -1385,27 +1473,54 @@
      [C17:6.5.2.3/2].
      We perform array-to-pointer conversion,
      then check that the type is a pointer to a struct type.
-     As we refine our type system,
-     we will eventually check that the struct type
-     has a member of the name being accessed.
-     We do not conver functions to pointers,
+     We do not convert functions to pointers,
      because that would result into a pointer to function,
      which is not a pointer to structure or union as required;
      thus, by leaving function types unchanged, we reject them here.")
    (xdoc::p
-    "Since we cannot yet look up members in structure and union types,
-     we return the unknown type."))
+    "The structure or union type completion
+     is looked up in the @('completions') map.
+     The type must be complete;
+     if there is no completion, it is a validation error [C17:6.5.2.3/1].
+     The type of the member is then looked up within the completion,
+     which becomes the type of the expression [C17:6.5.2.3/4].
+     If there is no such member within the completion,
+     it is a validation error [C17:6.5.2.3/1]."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-arg :unknown))
         (retok (type-unknown)))
        (type (type-apconvert type-arg))
-       ((unless (and (type-case type :pointer)
-                     (or (type-case (type-pointer->to type) :unknown)
-                         (type-case (type-pointer->to type) :struct))))
+       ((unless (type-case type :pointer))
         (retmsg$ "In the member pointer expression ~x0, ~
                   the sub-expression has type ~x1."
-                 (expr-fix expr) (type-fix type-arg))))
-    (retok (type-unknown))))
+                 (expr-fix expr) (type-fix type-arg)))
+       (to-type (type-pointer->to type))
+       ((when (type-case to-type :unknown))
+        (retok (type-unknown)))
+       (name (expr-memberp->name expr))
+       ((erp uid tag/members)
+        (b* (((reterr) nil nil))
+          (type-case
+            to-type
+            :struct (retok to-type.uid to-type.tag/members)
+            :union (retok to-type.uid to-type.tag/members)
+            :otherwise (retmsg$ "In the member expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+       ((mv erp members)
+        (type-struni-tag/members->members tag/members uid completions))
+       ((when erp)
+        (retmsg$ "Cannot get member ~x0 of incomplete type ~x1. ~
+                  This occurred in the expression ~x2."
+                 name
+                 to-type
+                 (expr-fix expr)))
+       (type? (type-struni-member-list-lookup name members))
+       ((unless type?)
+        (retmsg$ "No member field ~x0 in type ~x1."
+                 name
+                 to-type)))
+    (retok type?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1537,6 +1652,7 @@
                       (op binopp)
                       (type-arg1 typep)
                       (type-arg2 typep)
+                      (completions type-completions-p)
                       (ienv ienvp))
   :guard (expr-case expr :binary)
   :returns (mv (erp maybe-msgp) (type typep))
@@ -1658,7 +1774,14 @@
      "Both operands have compatible pointer types.")
     (xdoc::li
      "One operand is a pointer to an object type
-      and the other is a pointer to the @('void') type.")
+      and the other is a pointer to the @('void') type.
+      As a GCC/Clang extension,
+      we also allow one operand to be a pointer to the @('void') type,
+      and the other to be a pointer to <i>any</i> type
+      (either object or function).
+      We are not aware of explicit GCC documentation of this feature,
+      but a related feature is listed by the standard
+      as a common extension [C17:J.5.7].")
     (xdoc::li
      "The left operand is a pointer type
       and the right operand is a null pointer constant
@@ -1697,7 +1820,7 @@
                   (type-case type-arg2 :unknown)))
         (retok (type-unknown)))
        (msg (msg$ "In the binary expression ~x0, ~
-                   the sub-expressiona have types ~x1 and ~x2."
+                   the sub-expressions have types ~x1 and ~x2."
                   (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
     (case (binop-kind op)
       ((:mul :div) (b* (((unless (and (type-arithmeticp type-arg1)
@@ -1749,8 +1872,8 @@
                                         (type-to2 (type-pointer->to type2)))
                                     (and (not (type-case type-to1 :function))
                                          (not (type-case type-to2 :function))
-                                         (type-compatiblep
-                                           type-to1 type-to2 ienv))))
+                                         (type-compatible-p
+                                           type-to1 type-to2 completions ienv))))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1)
@@ -1763,7 +1886,8 @@
             ((unless (or (and (type-arithmeticp type1)
                               (type-arithmeticp type2))
                          (if (type-case type1 :pointer)
-                             (or (type-compatiblep type1 type2 ienv)
+                             (or (type-compatible-p
+                                   type1 type2 completions ienv)
                                  (and (type-case type2 :pointer)
                                       (let ((type-to1 (type-pointer->to type1))
                                             (type-to2 (type-pointer->to type2)))
@@ -1795,29 +1919,31 @@
       (:asg
        (b* ((type1 type-arg1)
             (type2 (type-fpconvert (type-apconvert type-arg2)))
-            ((unless (or (and (type-arithmeticp type1)
-                              (type-arithmeticp type2))
-                         (and (or (type-case type1 :struct)
-                                  (type-case type1 :union))
-                              (type-compatiblep type1 type2 ienv))
-                         (and (type-case type1 :pointer)
-                              (or (and (type-case type2 :pointer)
-                                       (let ((type-to1 (type-pointer->to type1))
-                                             (type-to2 (type-pointer->to type2)))
-                                         (or (type-compatiblep
-                                               type-to1 type-to2 ienv)
-                                             (and (type-case type-to1 :void)
+            ((unless
+                 (or (and (type-arithmeticp type1)
+                          (type-arithmeticp type2))
+                     (and (or (type-case type1 :struct)
+                              (type-case type1 :union))
+                          (type-compatible-p type1 type2 completions ienv))
+                     (and (type-case type1 :pointer)
+                          (or (and (type-case type2 :pointer)
+                                   (let ((type-to1 (type-pointer->to type1))
+                                         (type-to2 (type-pointer->to type2)))
+                                     (or (type-compatible-p
+                                           type-to1 type-to2 completions ienv)
+                                         (and (type-case type-to1 :void)
+                                              (or (ienv->gcc/clang ienv)
+                                                  (not (type-case type-to2
+                                                                  :function))))
+                                         (and (type-case type-to2 :void)
+                                              (or (ienv->gcc/clang ienv)
                                                   (not
-                                                   (type-case type-to2
-                                                              :function)))
-                                             (and (type-case type-to2 :void)
-                                                  (not
-                                                   (type-case type-to1
-                                                              :function))))))
-                                  (expr-null-pointer-constp
-                                   (expr-binary->arg2 expr) type2)))
-                         (and (type-case type1 :bool)
-                              (type-case type2 :pointer))))
+                                                    (type-case type-to1
+                                                               :function)))))))
+                              (expr-null-pointer-constp
+                                (expr-binary->arg2 expr) type2)))
+                     (and (type-case type1 :bool)
+                          (type-case type2 :pointer))))
              (reterr msg)))
          (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1918,9 +2044,10 @@
                     (type-test typep)
                     (type-then typep)
                     (type-else typep)
+                    (table valid-tablep)
                     (ienv ienvp))
   :guard (expr-case expr :cond)
-  :returns (mv (erp maybe-msgp) (type typep))
+  :returns (mv (erp maybe-msgp) (type typep) (new-table valid-tablep))
   :short "Validate a conditional expression,
           given types for its operands."
   :long
@@ -1940,17 +2067,18 @@
      Currently, null pointer constants [C17:6.3.2.3/3] are approximated as any
      expression with an integer type.
      The type of the result is
-     the one from the usual arithmetic converions
+     the one from the usual arithmetic conversions
      in the first case,
      and the common type in the other cases
      [C17:6.5.15/5].
      Since pointers may be involved, we need to perform
      array-to-pointer and function-to-pointer conversions."))
-  (b* (((reterr) (irr-type))
+  (b* (((reterr) (irr-type) (valid-table-fix table))
+       ((valid-table table) table)
        ((when (or (type-case type-test :unknown)
                   (type-case type-then :unknown)
                   (type-case type-else :unknown)))
-        (retok (type-unknown)))
+        (retok (type-unknown) (valid-table-fix table)))
        (type1 (type-fpconvert (type-apconvert type-test)))
        (type2 (type-fpconvert (type-apconvert type-then)))
        (type3 (type-fpconvert (type-apconvert type-else)))
@@ -1960,27 +2088,37 @@
                  (expr-fix expr) (type-fix type-test)))
        ((when (and (type-arithmeticp type2)
                    (type-arithmeticp type3)))
-        (retok (type-uaconvert type2 type3 ienv)))
+        (retok (type-uaconvert type2 type3 ienv) (valid-table-fix table)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (if (type-equiv type2 type3)
-            (retok type2)
-          (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
-                   type2
-                   type3)))
+        (b* (((unless (type-compatible-p type2 type3 table.completions ienv))
+              (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
+                       type2
+                       type3))
+             ((mv composite table)
+              (type-composite-with-table type2 type3 table ienv)))
+          (retok composite table)))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
-        (retok (type-union)))
+        (b* (((unless (type-compatible-p type2 type3 table.completions ienv))
+              (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
+                       type2
+                       type3))
+             ((mv composite table)
+              (type-composite-with-table type2 type3 table ienv)))
+          (retok composite table)))
        ((when (and (type-case type2 :pointer)
-                   (type-compatiblep type2 type3 ienv)))
-        (retok (type-composite type2 type3 ienv)))
+                   (type-compatible-p type2 type3 table.completions ienv)))
+        (b* (((mv composite table)
+              (type-composite-with-table type2 type3 table ienv)))
+          (retok composite table)))
        ((when (and (type-case type2 :pointer)
                    (expr-null-pointer-constp (expr-cond->else expr) type3)))
-        (retok (type-fix type2)))
+        (retok (type-fix type2) (valid-table-fix table)))
        ((when (and (type-case type3 :pointer)
                    (expr-cond->then expr)
                    (expr-null-pointer-constp (expr-cond->then expr) type2)))
-        (retok (type-fix type3)))
+        (retok (type-fix type3) (valid-table-fix table)))
        ((when (and (type-case type2 :pointer)
                    (type-case type3 :pointer)
                    (let ((type-to2 (type-pointer->to type2))
@@ -1989,7 +2127,7 @@
                               (not (type-case type-to3 :function)))
                          (and (type-case type-to3 :void)
                               (not (type-case type-to2 :function)))))))
-        (retok (make-type-pointer :to (type-void)))))
+        (retok (make-type-pointer :to (type-void)) (valid-table-fix table))))
     (retmsg$ "In the conditional expression ~x0, ~
               the second operand has type ~x1 ~
               and the third operand has type ~x2."
@@ -2638,7 +2776,12 @@
                       (valid-expr expr.fun table ienv))
                      ((erp new-args types-arg rtypes-arg table)
                       (valid-expr-list expr.args table ienv))
-                     ((erp type) (valid-funcall expr type-fun types-arg ienv))
+                     ((erp type)
+                      (valid-funcall expr
+                                     type-fun
+                                     types-arg
+                                     (valid-table->completions table)
+                                     ienv))
                      (info (make-expr-funcall-info :type type)))
                   (retok (make-expr-funcall :fun new-fun
                                             :args new-args
@@ -2648,14 +2791,20 @@
                          table))
        :member (b* (((erp new-arg type-arg types-arg table)
                      (valid-expr expr.arg table ienv))
-                    ((erp type) (valid-member expr type-arg)))
+                    ((erp type)
+                     (valid-member expr
+                                   type-arg
+                                   (valid-table->completions table))))
                  (retok (make-expr-member :arg new-arg :name expr.name)
                         type
                         types-arg
                         table))
        :memberp (b* (((erp new-arg type-arg types-arg table)
                       (valid-expr expr.arg table ienv))
-                     ((erp type) (valid-memberp expr type-arg)))
+                     ((erp type)
+                      (valid-memberp expr
+                                     type-arg
+                                     (valid-table->completions table))))
                   (retok (make-expr-memberp :arg new-arg :name expr.name)
                          type
                          types-arg
@@ -2722,7 +2871,12 @@
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
-                     (valid-binary expr expr.op type-arg1 type-arg2 ienv))
+                     (valid-binary expr
+                                   expr.op
+                                   type-arg1
+                                   type-arg2
+                                   (valid-table->completions table)
+                                   ienv))
                     (info (make-expr-binary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
@@ -2738,8 +2892,8 @@
                   (type-then (or type-then? type-test))
                   ((erp new-else type-else types-else table)
                    (valid-expr expr.else table ienv))
-                  ((erp type)
-                   (valid-cond expr type-test type-then type-else ienv)))
+                  ((erp type table)
+                   (valid-cond expr type-test type-then type-else table ienv)))
                (retok (make-expr-cond  :test new-test
                                        :then new-then
                                        :else new-else)
@@ -3115,7 +3269,35 @@
      (xdoc::p
       "For a structure or union or enumeration type specifier,
        we recursively validate their sub-structures,
-       and the type is determined in all cases.")
+       and the type is determined in all cases.
+       A struct or union type specifier with a structure declaration list
+       declares a new type [C17:6.7.2.1/8].
+       If the tag has already been used
+       to declare a complete type in the current scope,
+       this is a validation error [C17:6.7.2.3/1].
+       If the tag has been used
+       to declare an incomplete type in the current scope,
+       the type must be of the same kind [C17:6.7.2.3/2].
+       Otherwise, the new struct or union type
+       is added to the current scope and completions map,
+       and this new type is the type of the type specifier.
+       If the struct or union type specifier
+       does not have a structure declaration list,
+       the tag is looked up in the tag name space.
+       If the tag is in scope and has the expected tag kind,
+       the type described by the tag is the type of the type specifier
+       [C17:6.7.2.3/9].
+       If the tag is in scope and has the wrong tag kind,
+       it is a validation error
+       [C17:6.7.2.3/2,9].
+       Otherwise, the tag is not in scope,
+       and the type specifier declares a new incomplete type [C17:6.7.2.3/8].
+       We add the incomplete type declaration to the current scope,
+       but we do not add an entry to the completions map.
+       A structure or union type specifier must have either
+       a tag or a structure declaration list [C17:6.7.2.3/1].
+       Enumeration types are not yet tracked in the validation table.
+       Their type is the singular enumeration type.")
      (xdoc::p
       "For @('typedef') names,
        we look up the type definition in the validation table.
@@ -3189,19 +3371,205 @@
                      (valid-tyname tyspec.type table ienv)))
                  (retok (type-spec-atomic new-type) type nil types table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                    ((erp new-spec types table)
+                    ((struni-spec tyspec.spec) tyspec.spec)
+                    ((when (endp tyspec.spec.members))
+                     (b* (((unless tyspec.spec.name?)
+                           (retmsg$ "Struct type specifier ~x0 has neither ~
+                                     a tag nor a structure declaration list."
+                                    (type-spec-fix tyspec)))
+                          ((erp new-spec - types table)
+                           (valid-struni-spec tyspec.spec table ienv))
+                          ((mv info? -)
+                           (valid-lookup-tag tyspec.spec.name? table))
+                          ((when info?)
+                           (if (equal (valid-tag-info->kind info?)
+                                      (tag-kind-struct))
+                               (retok (type-spec-struct new-spec)
+                                      (make-type-struct
+                                        :uid (valid-tag-info->uid info?)
+                                        :tunit? (valid-table->filepath table)
+                                        :tag/members (type-struni-tag/members-tagged
+                                                       tyspec.spec.name?))
+                                      nil
+                                      types
+                                      table)
+                             (retmsg$ "The tag is expected ~
+                                       to be of kind 'union', ~
+                                       but it is of kind 'struct'. ~
+                                       This occurred ~
+                                       in the type specifier ~x1."
+                                      tyspec.spec.name?
+                                      (type-spec-fix tyspec))))
+                          (uid (valid-table->next-uid table))
+                          (table (change-valid-table
+                                   table
+                                   :next-uid (uid-increment uid)))
+                          (table (valid-add-tag tyspec.spec.name?
+                                                (make-valid-tag-info
+                                                  :kind (tag-kind-struct)
+                                                  :uid uid)
+                                                table)))
+                       (retok (type-spec-struct new-spec)
+                              (make-type-struct
+                                :uid uid
+                                :tunit? (valid-table->filepath table)
+                                :tag/members (type-struni-tag/members-tagged
+                                               tyspec.spec.name?))
+                              nil
+                              types
+                              table)))
+                    ((mv current-uid? current+completep)
+                     (b* (((unless tyspec.spec.name?)
+                           (mv nil nil))
+                          ((mv info? currentp)
+                           (valid-lookup-tag tyspec.spec.name? table))
+                          ((unless (and info? currentp))
+                           (mv nil nil))
+                          (uid (valid-tag-info->uid info?))
+                          (members? (hons-get (valid-tag-info->uid info?)
+                                              (valid-table->completions table))))
+                       (mv uid (consp members?))))
+                    ((when current+completep)
+                     (retmsg$ "A type is already defined in this scope ~
+                               with tag ~x0. ~
+                               This occurred in the type specifier ~x1."
+                              tyspec.spec.name?
+                              (type-spec-fix tyspec)))
+                    ((mv uid table)
+                     (b* (((when current-uid?)
+                           (mv current-uid? table))
+                          (uid (valid-table->next-uid table))
+                          (table (change-valid-table
+                                   table
+                                   :next-uid (uid-increment uid))))
+                       (mv uid
+                           (if tyspec.spec.name?
+                               (valid-add-tag tyspec.spec.name?
+                                              (make-valid-tag-info
+                                                :kind (tag-kind-struct)
+                                                :uid uid)
+                                              table)
+                             table))))
+                    ((erp new-spec type-struni-members types table)
                      (valid-struni-spec tyspec.spec table ienv))
-                    ((struni-spec tyspec.spec) tyspec.spec))
+                    ((valid-table table) table)
+                    (type (make-type-struct
+                            :uid uid
+                            :tunit? table.filepath
+                            :tag/members (if tyspec.spec.name?
+                                             (type-struni-tag/members-tagged
+                                               tyspec.spec.name?)
+                                           (type-struni-tag/members-untagged
+                                             type-struni-members))))
+                    (table (change-valid-table
+                             table
+                             :completions (hons-acons
+                                            uid
+                                            type-struni-members
+                                            table.completions))))
                  (retok (type-spec-struct new-spec)
-                        (type-struct tyspec.spec.name?)
+                        type
                         nil
                         types
                         table))
        :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                   ((erp new-spec types table)
-                    (valid-struni-spec tyspec.spec table ienv)))
+                   ((struni-spec tyspec.spec) tyspec.spec)
+                   ((when (endp tyspec.spec.members))
+                    (b* (((unless tyspec.spec.name?)
+                          (retmsg$ "Union type specifier ~x0 has neither ~
+                                    a tag nor a structure declaration list."
+                                   (type-spec-fix tyspec)))
+                         ((erp new-spec - types table)
+                          (valid-struni-spec tyspec.spec table ienv))
+                         ((mv info? -)
+                          (valid-lookup-tag tyspec.spec.name? table))
+                         ((when info?)
+                          (if (equal (valid-tag-info->kind info?)
+                                     (tag-kind-union))
+                              (retok (type-spec-union new-spec)
+                                     (make-type-union
+                                       :uid (valid-tag-info->uid info?)
+                                       :tunit? (valid-table->filepath table)
+                                       :tag/members (type-struni-tag/members-tagged
+                                                      tyspec.spec.name?))
+                                     nil
+                                     types
+                                     table)
+                            (retmsg$ "The tag is expected ~
+                                      to be of kind 'struct', ~
+                                      but it is of kind 'union'. ~
+                                      This occurred in the type specifier ~x1."
+                                     tyspec.spec.name?
+                                     (type-spec-fix tyspec))))
+                         (uid (valid-table->next-uid table))
+                         (table (change-valid-table
+                                  table
+                                  :next-uid (uid-increment uid)))
+                         (table (valid-add-tag tyspec.spec.name?
+                                               (make-valid-tag-info
+                                                 :kind (tag-kind-union)
+                                                 :uid uid)
+                                               table)))
+                      (retok (type-spec-union new-spec)
+                             (make-type-union
+                               :uid uid
+                               :tunit? (valid-table->filepath table)
+                               :tag/members (type-struni-tag/members-tagged
+                                              tyspec.spec.name?))
+                             nil
+                             types
+                             table)))
+                   ((mv current-uid? current+completep)
+                    (b* (((unless tyspec.spec.name?)
+                          (mv nil nil))
+                         ((mv info? currentp)
+                          (valid-lookup-tag tyspec.spec.name? table))
+                         ((unless (and info? currentp))
+                          (mv nil nil))
+                         (uid (valid-tag-info->uid info?))
+                         (members? (hons-get (valid-tag-info->uid info?)
+                                             (valid-table->completions table))))
+                      (mv uid (consp members?))))
+                   ((when current+completep)
+                    (retmsg$ "A type is already defined in this scope ~
+                              with tag ~x0. ~
+                              This occurred in the type specifier ~x1."
+                             tyspec.spec.name?
+                             (type-spec-fix tyspec)))
+                   ((mv uid table)
+                    (b* (((when current-uid?)
+                          (mv current-uid? table))
+                         (uid (valid-table->next-uid table))
+                         (table (change-valid-table
+                                  table
+                                  :next-uid (uid-increment uid))))
+                      (mv uid
+                          (if tyspec.spec.name?
+                              (valid-add-tag tyspec.spec.name?
+                                             (make-valid-tag-info
+                                               :kind (tag-kind-union)
+                                               :uid uid)
+                                             table)
+                            table))))
+                   ((erp new-spec type-struni-members types table)
+                    (valid-struni-spec tyspec.spec table ienv))
+                   ((valid-table table) table)
+                   (type (make-type-union
+                           :uid uid
+                           :tunit? table.filepath
+                           :tag/members (if tyspec.spec.name?
+                                            (type-struni-tag/members-tagged
+                                              tyspec.spec.name?)
+                                          (type-struni-tag/members-untagged
+                                            type-struni-members))))
+                   (table (change-valid-table
+                            table
+                            :completions (hons-acons
+                                           uid
+                                           type-struni-members
+                                           table.completions))))
                 (retok (type-spec-union new-spec)
-                       (type-union)
+                       type
                        nil
                        types
                        table))
@@ -3250,15 +3618,61 @@
                                    nil
                                    same-table)
                           (reterr msg-bad-preceding))
-       :struct-empty (if (endp tyspecs)
-                         (retok (make-type-spec-struct-empty
-                                 :attribs tyspec.attribs
-                                 :name? tyspec.name?)
-                                (type-struct tyspec.name?)
-                                nil
-                                nil
-                                same-table)
-                       (reterr msg-bad-preceding))
+       :struct-empty (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
+                          ((mv current-uid? current+completep)
+                           (b* (((unless tyspec.name?)
+                                 (mv nil nil))
+                                ((mv info? currentp)
+                                 (valid-lookup-tag tyspec.name? table))
+                                ((unless (and info? currentp))
+                                 (mv nil nil))
+                                (uid (valid-tag-info->uid info?))
+                                (members? (hons-get (valid-tag-info->uid info?)
+                                                    (valid-table->completions table))))
+                             (mv uid (consp members?))))
+                          ((when current+completep)
+                           (retmsg$ "A type is already defined in this scope ~
+                                     with tag ~x0.
+                                     This occurred in the type specifier ~x1."
+                                    tyspec.name?
+                                    (type-spec-fix tyspec)))
+                          ((mv uid table)
+                           (b* (((when current-uid?)
+                                 (mv current-uid? table))
+                                (uid (valid-table->next-uid table))
+                                (table (change-valid-table
+                                         table
+                                         :next-uid (uid-increment uid))))
+                             (mv uid
+                                 (if tyspec.name?
+                                     (valid-add-tag tyspec.name?
+                                                    (make-valid-tag-info
+                                                      :kind (tag-kind-struct)
+                                                      :uid uid)
+                                                    table)
+                                   table))))
+                          ((valid-table table) table)
+                          (type (make-type-struct
+                                  :uid uid
+                                  :tunit? table.filepath
+                                  :tag/members (if tyspec.name?
+                                                   (type-struni-tag/members-tagged
+                                                     tyspec.name?)
+                                                 (type-struni-tag/members-untagged
+                                                   nil))))
+                          (table (change-valid-table
+                                   table
+                                   :completions (hons-acons
+                                                  uid
+                                                  nil
+                                                  table.completions))))
+                       (retok (make-type-spec-struct-empty
+                                :attribs tyspec.attribs
+                                :name? tyspec.name?)
+                              type
+                              nil
+                              nil
+                              table))
        :typeof-expr (if (endp tyspecs)
                         (retok (type-spec-fix tyspec)
                                (type-unknown)
@@ -3671,8 +4085,8 @@
       :rule-classes :type-prescription
       :hints
       (("Goal"
-        :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
-        :use return-type-of-valid-decl-spec-list.all-storspecs))))
+         :in-theory (disable return-type-of-valid-decl-spec-list.all-storspecs)
+         :use return-type-of-valid-decl-spec-list.all-storspecs))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3790,8 +4204,11 @@
                                         (let ((target-type-to
                                                (type-pointer->to target-type))
                                               (type-to (type-pointer->to type)))
-                                          (or (type-compatiblep
-                                                target-type-to type-to ienv)
+                                          (or (type-compatible-p
+                                                target-type-to
+                                                type-to
+                                                (valid-table->completions table)
+                                                ienv)
                                               (and (type-case target-type-to
                                                               :void)
                                                    (not
@@ -3830,7 +4247,7 @@
                         of an object in automatic storage has type ~x2.~%"
                        (initer-fix initer)
                        (type-fix target-type)
-                       table)))
+                       type)))
           (retok (initer-single new-expr) types table)))
        ((and (type-case target-type :array)
              (initer-case initer :single)
@@ -5050,6 +5467,7 @@
     :guard (struni-spec-unambp struni-spec)
     :returns (mv (erp maybe-msgp)
                  (new-struni-spec struni-specp)
+                 (type-struni-members type-struni-member-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5057,26 +5475,30 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We check that there is at least a name or a list of members
-       [C17:6.7.2.1/2].")
+      "We recursively validate the members
+       and return the @(tsee type-struni-member-list),
+       which represents the name and types of the members.")
      (xdoc::p
-      "For now our validation tables include
-       no information about structure and union tags,
-       so we do not extend the validation table,
-       if the structure or union specifier has a name.
-       However, we validate the members, if present."))
-    (b* (((reterr) (irr-struni-spec) nil (irr-valid-table))
+      "We do not extend the validation table
+       with struct or union type definitions.
+       This is handled by @(tsee valid-type-spec)
+       using information returned by this function.")
+     (xdoc::p
+      "We also check that there is a name or a list of members
+       [C17:6.7.2.1/2]."))
+    (b* (((reterr) (irr-struni-spec) nil nil (irr-valid-table))
          ((struni-spec struni-spec) struni-spec)
          ((when (and (not struni-spec.name?)
                      (endp struni-spec.members)))
           (retmsg$ "The structure or union specifier ~x0 ~
                     has no name and no members."
                    (struni-spec-fix struni-spec)))
-         ((erp new-members types table)
+         ((erp new-members type-struni-members types table)
           (valid-struct-declon-list struni-spec.members nil table ienv)))
       (retok (make-struni-spec :attribs struni-spec.attribs
                                :name? struni-spec.name?
                                :members new-members)
+             type-struni-members
              types
              table))
     :measure (struni-spec-count struni-spec))
@@ -5091,6 +5513,7 @@
     :returns (mv (erp maybe-msgp)
                  (new-structdeclon struct-declonp)
                  (new-previous ident-listp)
+                 (type-struni-members type-struni-member-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5105,11 +5528,18 @@
        the extension of @('previous') with
        the names of the members declared by this structure declaration.")
      (xdoc::p
+      "The @('type-struni-members') output consists
+       of the names and types for the members declared by
+       the structure declaration.")
+     (xdoc::p
       "If the structure declaration declares members,
        first we validate the list of specifiers and qualifiers,
        obtaining a type if the validation is successful.
        Then we use a separate validation function for the structure declarators,
-       which also returns a possibly extended list of member names.")
+       which also returns a possibly extended list of member names.
+       If there are no structure declarators,
+       the structure declaration must be
+       an anonymous structure or anonymous union [C17:6.7.2.1/13].")
      (xdoc::p
       "If the structure declaration consists of a static assertion declaration,
        we validate it using a separate validation function.
@@ -5118,13 +5548,35 @@
       "If the structure declaration is empty (i.e. a semicolon),
        which is a GCC extension,
        the list of member names and the validation table are unchanged."))
-    (b* (((reterr) (irr-struct-declon) nil nil (irr-valid-table)))
+    (b* (((reterr) (irr-struct-declon) nil nil nil (irr-valid-table)))
       (struct-declon-case
        structdeclon
        :member
        (b* (((erp new-specquals type types table)
              (valid-spec/qual-list structdeclon.specquals nil nil table ienv))
-            ((erp new-declors previous more-types table)
+            ((when (endp structdeclon.declors))
+             (if (type-case
+                   type
+                   :struct (type-struni-tag/members-case
+                             type.tag/members :untagged)
+                   :union (type-struni-tag/members-case
+                            type.tag/members :untagged)
+                   :otherwise nil)
+                 (retok (make-struct-declon-member :extension structdeclon.extension
+                                                   :specquals new-specquals
+                                                   :declors nil
+                                                   :attribs structdeclon.attribs)
+                        (ident-list-fix previous)
+                        (list (make-type-struni-member
+                                :name? nil
+                                :type type))
+                        types
+                        table)
+               (retmsg$ "Struct member ~x0 with type ~x1 ~
+                         must have a struct declarator list."
+                        (struct-declon-fix structdeclon)
+                        type)))
+            ((erp new-declors previous type-struni-members more-types table)
              (valid-struct-declor-list
               structdeclon.declors previous type table ienv)))
          (retok (make-struct-declon-member :extension structdeclon.extension
@@ -5132,6 +5584,7 @@
                                            :declors new-declors
                                            :attribs structdeclon.attribs)
                 previous
+                type-struni-members
                 (set::union types more-types)
                 table))
        :statassert
@@ -5139,14 +5592,26 @@
              (valid-statassert structdeclon.statassert table ienv)))
          (retok (struct-declon-statassert new-statassert)
                 (ident-list-fix previous)
+                nil
                 types
                 table))
        :empty
        (retok (struct-declon-empty)
               (ident-list-fix previous)
               nil
+              nil
               (valid-table-fix table))))
-    :measure (struct-declon-count structdeclon))
+    :measure (struct-declon-count structdeclon)
+
+    ///
+
+    (defret valid-struct-declon.type-struni-members-type-prescription
+      (true-listp type-struni-members)
+      :rule-classes :type-prescription
+      :hints
+      (("Goal"
+         :in-theory (disable return-type-of-valid-struct-declon.type-struni-members)
+         :use return-type-of-valid-struct-declon.type-struni-members))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5157,6 +5622,7 @@
     :guard (struct-declon-list-unambp structdeclons)
     :returns (mv (erp maybe-msgp)
                  (new-structdeclons struct-declon-listp)
+                 (type-struni-members type-struni-member-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5168,14 +5634,20 @@
        the names of the members that precede these structure declarations
        (which declare more members)
        in the structure or union specifier being validated.
-       This list is used to ensure uniqueness of member names."))
-    (b* (((reterr) nil nil (irr-valid-table))
-         ((when (endp structdeclons)) (retok nil nil (valid-table-fix table)))
-         ((erp new-structdeclon previous types table)
+       This list is used to ensure uniqueness of member names.")
+     (xdoc::p
+      "The @('type-struni-members') output consists
+       of the names and types for the members declared by
+       the structure declaration list."))
+    (b* (((reterr) nil nil nil (irr-valid-table))
+         ((when (endp structdeclons))
+          (retok nil nil nil (valid-table-fix table)))
+         ((erp new-structdeclon previous type-struni-members types table)
           (valid-struct-declon (car structdeclons) previous table ienv))
-         ((erp new-structdeclons more-types table)
+         ((erp new-structdeclons more-type-struni-members more-types table)
           (valid-struct-declon-list (cdr structdeclons) previous table ienv)))
       (retok (cons new-structdeclon new-structdeclons)
+             (append type-struni-members more-type-struni-members)
              (set::union types more-types)
              table))
     :measure (struct-declon-list-count structdeclons))
@@ -5191,6 +5663,7 @@
     :returns (mv (erp maybe-msgp)
                  (new-structdeclor struct-declorp)
                  (new-previous ident-listp)
+                 (type-struni-member type-struni-member-p)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5209,20 +5682,28 @@
        but it is currently not captured in the abstract syntax,
        so we check it here).
        If there is a declarator, we validate it,
-       and we add the declared identifier to the list member names,
+       and we add the declared identifier to the list of member names,
        after ensuring that it is not already there.
        If there is a constant expression, we validate it,
        but for now we do not perform any checks related to its value
        [C17:6.7.2.1/4];
        we also do not constrain the types of bit fields [C17:6.7.2.1/5],
-       but we ensure that the constant expression, if present, is integer."))
-    (b* (((reterr) (irr-struct-declor) nil nil (irr-valid-table))
+       but we ensure that the constant expression, if present, is integer.")
+     (xdoc::p
+      "The @('type-struni-member') output consist
+       of the name and type for the member declared by
+       the structure declarator."))
+    (b* (((reterr) (irr-struct-declor)
+                   nil
+                   (irr-type-struni-member)
+                   nil
+                   (irr-valid-table))
          ((struct-declor structdeclor) structdeclor)
          ((when (and (not structdeclor.declor?)
                      (not structdeclor.expr?)))
           (retmsg$ "The structure declarator ~x0 is empty."
                    (struct-declor-fix structdeclor)))
-         ((erp new-declor? & ident? types table)
+         ((erp new-declor? new-type ident? types table)
           (valid-declor-option structdeclor.declor? type table ienv))
          (previous (ident-list-fix previous))
          ((when (and ident?
@@ -5244,6 +5725,10 @@
                    width-type?)))
       (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
              previous
+             (make-type-struni-member
+               :name? (and structdeclor.declor?
+                           (declor->ident structdeclor.declor?))
+               :type new-type)
              (set::union types more-types)
              table))
     :measure (struct-declor-count structdeclor))
@@ -5259,6 +5744,7 @@
     :returns (mv (erp maybe-msgp)
                  (new-structdeclors struct-declor-listp)
                  (new-previous ident-listp)
+                 (type-struni-members type-struni-member-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -5272,17 +5758,22 @@
        (coming from the list of specifiers and qualifiers)
        is passed to the validation function for each structure declarator,
        since that type applied to all them
-       (possibly refined, possibly differently, by the structure declarators."))
-    (b* (((reterr) nil nil nil (irr-valid-table))
+       (possibly refined, possibly differently, by the structure declarators.")
+     (xdoc::p
+      "The @('type-struni-members') output consist
+       of the names and types for the members declared by
+       the structure declarator."))
+    (b* (((reterr) nil nil nil nil (irr-valid-table))
          ((when (endp structdeclors))
-          (retok nil (ident-list-fix previous) nil (valid-table-fix table)))
-         ((erp new-structdeclor previous types table)
+          (retok nil (ident-list-fix previous) nil nil (valid-table-fix table)))
+         ((erp new-structdeclor previous type-struni-member types table)
           (valid-struct-declor (car structdeclors) previous type table ienv))
-         ((erp new-structdeclors previous more-types table)
+         ((erp new-structdeclors previous type-struni-members more-types table)
           (valid-struct-declor-list
            (cdr structdeclors) previous type table ienv)))
       (retok (cons new-structdeclor new-structdeclors)
              previous
+             (cons type-struni-member type-struni-members)
              (set::union types more-types)
              table))
     :measure (struct-declor-list-count structdeclors))
@@ -5560,9 +6051,10 @@
                ((when (and info?
                            currentp
                            (or (not (valid-ord-info-case info? :typedef))
-                               (not (type-compatiblep
+                               (not (type-compatible-p
                                      (valid-ord-info-typedef->def info?)
                                      type
+                                     (valid-table->completions table)
                                      ienv)))))
                 (retmsg$ "The typedef name ~x0 ~
                           is already declared in the current scope ~
@@ -5617,9 +6109,10 @@
          ((when (and (linkage-case linkage :external)
                      (let ((ext-info? (valid-lookup-ext ident table)))
                        (and ext-info?
-                            (not (type-compatiblep
+                            (not (type-compatible-p
                                   (valid-ext-info->type ext-info?)
                                   type
+                                  (valid-table->completions table)
                                   ienv))))))
           (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
                     was previously declared with incompatible type ~x2."
@@ -6669,9 +7162,10 @@
        ((when (and (linkage-case linkage :external)
                    (let ((ext-info? (valid-lookup-ext ident table)))
                      (and ext-info?
-                          (not (type-compatiblep
+                          (not (type-compatible-p
                                 (valid-ext-info->type ext-info?)
                                 type
+                                (valid-table->completions table)
                                 ienv))))))
         (retmsg$ "The function definition ~x0 ~
                   with external linkage and type ~x1 ~
@@ -6714,7 +7208,10 @@
                         its associated information is ~x1."
                        (fundef-fix fundef) info))
              ((valid-ord-info-objfun info) info)
-             ((unless (type-compatiblep info.type type ienv))
+             ((unless (type-compatible-p info.type
+                                         type
+                                         (valid-table->completions table)
+                                         ienv))
               (retmsg$ "The name of the function definition ~x0 ~
                         is already in the file scope, ~
                         but it has type ~x1."
@@ -6869,6 +7366,7 @@
 (define valid-transunit ((filepath filepathp)
                          (tunit transunitp)
                          (externals valid-externalsp)
+                         (completions type-completions-p)
                          (next-uid uidp)
                          (ienv ienvp))
   :guard (transunit-unambp tunit)
@@ -6906,7 +7404,7 @@
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
        (gcc/clang (ienv->gcc/clang ienv))
-       (table (valid-init-table filepath externals next-uid))
+       (table (valid-init-table filepath externals completions next-uid))
        (table
          (if gcc/clang
              (b* ((table
@@ -6962,7 +7460,7 @@
   (b* (((reterr) (irr-transunit-ensemble))
        (map (transunit-ensemble->units tunits))
        ((erp new-map table)
-        (valid-transunit-ensemble-loop map nil (uid 0) ienv keep-going))
+        (valid-transunit-ensemble-loop map nil nil (uid 0) ienv keep-going))
        (- (if keep-going
               (b* ((len-map (omap::size map))
                    (len-new-map (omap::size new-map))
@@ -6979,6 +7477,7 @@
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (externals valid-externalsp)
+                                          (completions type-completions-p)
                                           (next-uid uidp)
                                           (ienv ienvp)
                                           (keep-going booleanp))
@@ -6992,7 +7491,8 @@
           ((when (omap::emptyp map)) (retok nil (irr-valid-table)))
           (path (omap::head-key map))
           ((mv erp new-tunit table)
-           (valid-transunit path (omap::head-val map) externals next-uid ienv))
+           (valid-transunit
+             path (omap::head-val map) externals completions next-uid ienv))
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
@@ -7000,6 +7500,7 @@
                            erp)
                        (valid-transunit-ensemble-loop (omap::tail map)
                                                       externals
+                                                      completions
                                                       next-uid
                                                       ienv
                                                       keep-going))
@@ -7009,6 +7510,7 @@
           ((valid-table table) table)
           ((erp new-map -) (valid-transunit-ensemble-loop (omap::tail map)
                                                           table.externals
+                                                          table.completions
                                                           table.next-uid
                                                           ienv
                                                           keep-going)))

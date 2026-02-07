@@ -27,7 +27,8 @@
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
-  '(:extensions
+  '(:std
+    :extensions
     :short-bytes
     :int-bytes
     :long-bytes
@@ -36,7 +37,8 @@
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
-  '(:extensions
+  '(:std
+    :extensions
     :short-bytes
     :int-bytes
     :long-bytes
@@ -80,6 +82,7 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
+       (std (or (cdr (assoc-eq :std options)) 17))
        (extensions (cdr (assoc-eq :extensions options)))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
@@ -87,9 +90,17 @@
        (double-bytes 8)
        (ldouble-bytes 16)
        (pointer-bytes 8)
-       (version (cond ((eq extensions nil) (c::version-c17))
-                      ((eq extensions :gcc) (c::version-c17+gcc))
-                      (t (c::version-c17+clang))))
+       (version (cond ((eq extensions nil)
+                       (if (equal std 17)
+                           (c::version-c17)
+                         (c::version-c23)))
+                      ((eq extensions :gcc)
+                       (if (equal std 17)
+                           (c::version-c17+gcc)
+                         (c::version-c23+gcc)))
+                      (t (if (equal std 17)
+                             (c::version-c17+clang)
+                           (c::version-c23+clang)))))
        (ienv (make-ienv :version version
                         :bool-bytes bool-bytes
                         :short-bytes short-bytes
@@ -126,15 +137,24 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
+       (std (or (cdr (assoc-eq :std options)) 17))
        (extensions (cdr (assoc-eq :extensions options)))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
        (ldouble-bytes 16)
        (pointer-bytes 8)
-       (version (cond ((eq extensions nil) (c::version-c17))
-                      ((eq extensions :gcc) (c::version-c17+gcc))
-                      (t (c::version-c17+clang))))
+       (version (cond ((eq extensions nil)
+                       (if (equal std 17)
+                           (c::version-c17)
+                         (c::version-c23)))
+                      ((eq extensions :gcc)
+                       (if (equal std 17)
+                           (c::version-c17+gcc)
+                         (c::version-c23+gcc)))
+                      (t (if (equal std 17)
+                             (c::version-c17+clang)
+                           (c::version-c23+clang)))))
        (ienv (make-ienv :version version
                         :bool-bytes bool-bytes
                         :short-bytes short-bytes
@@ -1056,7 +1076,7 @@ void foo(struct my_struct * x) {
 ")
 
 (test-valid
-  "struct s { int a; };
+  "struct my_struct { int a; };
 struct my_struct x;
 struct my_struct *y = &x;
 ")
@@ -1339,3 +1359,263 @@ foo:
 }
 "
   :extensions :gcc)
+
+(test-valid
+  "struct s {
+  int x;
+  float y;
+  void * z;
+};
+
+void f(void) {
+  struct s foo;
+  int a = foo.x;
+  float b = foo.y;
+  void * c = foo.z;
+}
+")
+
+(test-valid-fail
+  "struct s {
+  int x;
+  float y;
+  void * z;
+};
+
+void f(void) {
+  struct s foo;
+  int a = foo.x;
+  struct s b = foo.y;
+  void * c = foo.z;
+}
+")
+
+(test-valid
+  "struct s {
+  struct {
+    int x;
+    float y;
+  };
+  void * z;
+};
+
+void f(void) {
+  struct s foo;
+  int a = foo.x;
+  float b = foo.y;
+  void * c = foo.z;
+}
+")
+
+(test-valid-fail
+  "struct s {
+  struct {
+    int x;
+    float y;
+  };
+  void * z;
+};
+
+void f(void) {
+  struct s foo;
+  int a = foo.x;
+  struct s b = foo.y;
+  void * c = foo.z;
+}
+")
+
+(test-valid
+  "struct s {
+  struct {
+    int x;
+    float y;
+  };
+  void * z;
+};
+
+struct s x;
+"
+  "struct s {
+  struct {
+    int x;
+    float y;
+  };
+  void * z;
+};
+
+struct s x;
+")
+
+(test-valid-fail
+  "struct s {
+  int x;
+  float y;
+  void * z;
+};
+
+struct s x;
+"
+  "struct s {
+  struct {
+    int x;
+    float y;
+  };
+  void * z;
+};
+
+struct s x;
+")
+
+(test-valid-fail
+  "struct s {
+  int x;
+};
+
+void f(struct s);
+
+void g(void) {
+  struct s {
+    int x;
+  };
+  struct s x;
+  f(x);
+}
+")
+
+(test-valid
+  "struct s {
+  int x;
+};
+
+void f(struct s);
+
+void g(void) {
+  struct s {
+    int x;
+  };
+  struct s x;
+   f(x);
+}
+"
+  :std 23)
+
+(test-valid
+  "struct s;
+
+struct s {
+  int x;
+};
+")
+
+(test-valid
+  "void f(void) {
+  struct s * a;
+  struct s * b;
+  struct s { int x; int y; };
+}
+")
+
+(test-valid-fail
+  "struct s { int x; };
+struct s { int y; };
+")
+
+(test-valid
+  "struct s { int x; };
+
+void main(void) {
+  struct s { int y; };
+}
+")
+
+(test-valid-fail
+  "struct s { int x; };
+struct s { int x; };
+")
+
+(test-valid-fail
+  "struct s { int x; };
+union s { int x; };
+")
+
+(test-valid-fail
+  "struct s { int x; };
+union s foo;
+")
+
+(test-valid-fail
+  "struct s;
+union s * foo;
+")
+
+(test-valid-fail
+  "struct s { int x; };
+
+void f(void) {
+  union s * foo;
+}
+")
+
+(test-valid-fail
+  "union s;
+
+void f(void) {
+  struct s * foo;
+}
+")
+
+;; This example comes from [C17:6.2.7.1/16]
+(test-valid
+  "struct v {
+  union {
+    struct { int i, j; };
+    struct { long k, l; } w;
+  };
+  int m;
+} v1;
+
+void main(void) {
+  v1.i = 2;
+  v1.w.k = 5;
+}
+")
+
+;; This example comes from [C17:6.2.7.1/16]
+(test-valid-fail
+  "struct v {
+  union {
+    struct { int i, j; };
+    struct { long k, l; } w;
+  };
+  int m;
+} v1;
+
+void main(void) {
+  v1.k = 3;
+}
+")
+
+(test-valid-fail
+  "struct v {
+  union {
+    struct { int i, j; };
+    struct foo { long k, l; } w;
+  };
+  int m;
+} v1;
+
+struct foo { int x; };
+
+void main(void) {
+  v1.i = 2;
+  v1.w.k = 5;
+}
+")
+
+(test-valid
+  "struct s {
+  struct foo { int x; } foo;
+};
+
+struct foo bar;
+")
