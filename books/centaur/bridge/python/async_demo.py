@@ -20,12 +20,13 @@
 
 
 import asyncio
+import sys
 
 import acl2_bridge
 from acl2_bridge import AsyncClient, Command
 
 
-async def repl():
+async def repl(send_stop_on_eof=False):
     # create a client
     client = AsyncClient()
     # connect to the bridge server socket
@@ -55,7 +56,8 @@ async def repl():
                 command = Command("LISP", input(f"\n{current_package}> "))
             except EOFError:
                 print()
-                await client.send(Command("LISP", "(bridge::stop)"))
+                if send_stop_on_eof:
+                    await client.send(Command("LISP", "(bridge::stop)"))
                 await client.disconnect()
                 exit()
             await client.send(command)
@@ -70,4 +72,4 @@ async def repl():
 
 
 if __name__ == "__main__":
-    asyncio.run(repl())
+    asyncio.run(repl(send_stop_on_eof="--stop" in sys.argv))
