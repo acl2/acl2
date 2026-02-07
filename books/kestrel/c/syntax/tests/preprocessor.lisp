@@ -283,7 +283,10 @@ int x2 = 0;
 int x1 = 0;
 "
                                     "guarded.h"
-                                    "
+                                    "#ifndef GUARDED
+#define GUARDED
+
 void f() {}
 
+#endif
 "))

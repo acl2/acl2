@@ -329,7 +329,9 @@
     (xdoc::li
      "The preprocessor state also contains a list of the lexemes
       that are being produced as the output of preprocessing.
-      These are in reverse order, for more efficient extension.")))
+      These are in reverse order, for more efficient extension.
+      These lexemes are split into four chunks,
+      as explained in @(tsee add-rev-lexeme).")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -361,8 +363,14 @@
                  :initially 2)
       (hg :type (satisfies hg-statep)
           :initially ,(hg-state-initial))
-      (rev-lexemes :type (satisfies plexeme-listp)
-                   :initially nil)
+      (rev-lexemes1 :type (satisfies plexeme-listp)
+                    :initially nil)
+      (rev-lexemes2 :type (satisfies plexeme-listp)
+                    :initially nil)
+      (rev-lexemes3 :type (satisfies plexeme-listp)
+                    :initially nil)
+      (rev-lexemes4 :type (satisfies plexeme-listp)
+                    :initially nil)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -376,7 +384,10 @@
                  (macrosp raw-ppstate->macros-p)
                  (max-reachp raw-ppstate->max-reach-p)
                  (hgp raw-ppstate->hg-p)
-                 (rev-lexemesp raw-ppstate->rev-lexemes-p)
+                 (rev-lexemes1p raw-ppstate->rev-lexemes1-p)
+                 (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
+                 (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
+                 (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -390,7 +401,10 @@
                  (macros raw-ppstate->macros)
                  (max-reach raw-ppstate->max-reach)
                  (hg raw-ppstate->hg)
-                 (rev-lexemes raw-ppstate->rev-lexemes)
+                 (rev-lexemes1 raw-ppstate->rev-lexemes1)
+                 (rev-lexemes2 raw-ppstate->rev-lexemes2)
+                 (rev-lexemes3 raw-ppstate->rev-lexemes3)
+                 (rev-lexemes4 raw-ppstate->rev-lexemes4)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -404,7 +418,10 @@
                  (update-macros raw-update-ppstate->macros)
                  (update-max-reach raw-update-ppstate->max-reach)
                  (update-hg raw-update-ppstate->hg)
-                 (update-rev-lexemes raw-update-ppstate->rev-lexemes)
+                 (update-rev-lexemes1 raw-update-ppstate->rev-lexemes1)
+                 (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
+                 (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
+                 (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -534,10 +551,28 @@
          :exec (raw-ppstate->hg ppstate))
     :inline t)
 
-  (define ppstate->rev-lexemes (ppstate)
+  (define ppstate->rev-lexemes1 (ppstate)
     :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes ppstate))
+    (mbe :logic (non-exec (raw-ppstate->rev-lexemes1 (ppstate-fix ppstate)))
+         :exec (raw-ppstate->rev-lexemes1 ppstate))
+    :inline t)
+
+  (define ppstate->rev-lexemes2 (ppstate)
+    :returns (rev-lexemes plexeme-listp)
+    (mbe :logic (non-exec (raw-ppstate->rev-lexemes2 (ppstate-fix ppstate)))
+         :exec (raw-ppstate->rev-lexemes2 ppstate))
+    :inline t)
+
+  (define ppstate->rev-lexemes3 (ppstate)
+    :returns (rev-lexemes plexeme-listp)
+    (mbe :logic (non-exec (raw-ppstate->rev-lexemes3 (ppstate-fix ppstate)))
+         :exec (raw-ppstate->rev-lexemes3 ppstate))
+    :inline t)
+
+  (define ppstate->rev-lexemes4 (ppstate)
+    :returns (rev-lexemes plexeme-listp)
+    (mbe :logic (non-exec (raw-ppstate->rev-lexemes4 (ppstate-fix ppstate)))
+         :exec (raw-ppstate->rev-lexemes4 ppstate))
     :inline t)
 
   (define ppstate->ienv (ppstate)
@@ -641,12 +676,36 @@
          :exec (raw-update-ppstate->hg hg ppstate))
     :inline t)
 
-  (define update-ppstate->rev-lexemes ((rev-lexemes plexeme-listp) ppstate)
+  (define update-ppstate->rev-lexemes1 ((rev-lexemes plexeme-listp) ppstate)
     :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes
+    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes1
                            (plexeme-list-fix rev-lexemes)
                            (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes rev-lexemes ppstate))
+         :exec (raw-update-ppstate->rev-lexemes1 rev-lexemes ppstate))
+    :inline t)
+
+  (define update-ppstate->rev-lexemes2 ((rev-lexemes plexeme-listp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes2
+                           (plexeme-list-fix rev-lexemes)
+                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->rev-lexemes2 rev-lexemes ppstate))
+    :inline t)
+
+  (define update-ppstate->rev-lexemes3 ((rev-lexemes plexeme-listp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes3
+                           (plexeme-list-fix rev-lexemes)
+                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->rev-lexemes3 rev-lexemes ppstate))
+    :inline t)
+
+  (define update-ppstate->rev-lexemes4 ((rev-lexemes plexeme-listp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes4
+                           (plexeme-list-fix rev-lexemes)
+                           (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
@@ -840,7 +899,10 @@
        (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
        (ppstate (update-ppstate->max-reach -2 ppstate))
        (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
-       (ppstate (update-ppstate->rev-lexemes nil ppstate))
+       (ppstate (update-ppstate->rev-lexemes1 nil ppstate))
+       (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
+       (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
+       (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
@@ -1134,9 +1196,54 @@
 (define add-rev-lexeme ((lexeme plexemep) (ppstate ppstatep))
   :returns (new-ppstate ppstatep)
   :short "Add a lexeme to the output reverse list."
-  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
-       (new-rev-lexemes (cons lexeme rev-lexemes)))
-    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The reason for having four separate lists of reversed output lexemes
+     is the handling of the header guard structure,
+     explained in @(tsee hg-state).
+     If the file has the header guard structure,
+     we need to add the @('#ifndef'), @('#define'), and @('#endif') lines
+     to the output,
+     but only if the file has that structure;
+     so we accumulate the file content in chunks:
+     the first list for the content before @('#ifndef');
+     the second list for the content between @('#ifdef') and @('#define')
+     (which would have to consist of only comments and white space);
+     the third list for the content between @('#define') and @('#endif');
+     and the fourth list for the content after @('#endif')
+     (which would have to consist of only comments and white space).
+     If at any point we may discover that the file
+     does not have the header guard structure,
+     we accumulate the rest of the content into the fourth list.
+     At the end, if the file has the header guard structure,
+     we assemble the chunks and interpose
+     the @('#ifndef'), @('#define') and @('#endif');
+     if the file does not the header guard strucrure,
+     we assemble the chunks without interpositions.")
+   (xdoc::p
+    "This (i.e. the four lists and the interposition)
+     is admittedly a bit complicated.
+     Eventually we plan to obviate the need for this,
+     by integrating the preprocessor with the parser."))
+  (case (hg-state-kind (ppstate->hg ppstate))
+    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                   (new-rev-lexemes (cons lexeme rev-lexemes)))
+                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                  (new-rev-lexemes (cons lexeme rev-lexemes)))
+               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                  (new-rev-lexemes (cons lexeme rev-lexemes)))
+               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                        (new-rev-lexemes (cons lexeme rev-lexemes)))
+                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                         (ppstate->hg ppstate))
+                  (ppstate-fix ppstate)))
+    (t (prog2$ (impossible) ppstate)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1147,10 +1254,31 @@
   (xdoc::topstring
    (xdoc::p
     "The lexemes to add are passed in direct (i.e. not reverse) order,
-     so we need to append them in reverse."))
-  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
-       (new-rev-lexemes (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
+     so we need to append them in reverse.")
+   (xdoc::p
+    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
+  (case (hg-state-kind (ppstate->hg ppstate))
+    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                   (new-rev-lexemes
+                    (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                  (new-rev-lexemes
+                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                  (new-rev-lexemes
+                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                        (new-rev-lexemes
+                         (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                         (ppstate->hg ppstate))
+                  (ppstate-fix ppstate)))
+    (t (prog2$ (impossible) ppstate)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1163,7 +1291,28 @@
    (xdoc::p
     "The difference with @(tsee add-rev-lexemes) is that
      the lexemes to add are already reversed,
-     so we just append them."))
-  (b* ((rev-lexemes (ppstate->rev-lexemes ppstate))
-       (new-rev-lexemes (append rev-lexemes-to-add rev-lexemes)))
-    (update-ppstate->rev-lexemes new-rev-lexemes ppstate)))
+     so we just append them.")
+   (xdoc::p
+    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
+  (case (hg-state-kind (ppstate->hg ppstate))
+    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                   (new-rev-lexemes
+                    (append rev-lexemes-to-add rev-lexemes)))
+                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                  (new-rev-lexemes
+                   (append rev-lexemes-to-add rev-lexemes)))
+               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                  (new-rev-lexemes
+                   (append rev-lexemes-to-add rev-lexemes)))
+               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                        (new-rev-lexemes
+                         (append rev-lexemes-to-add rev-lexemes)))
+                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                         (ppstate->hg ppstate))
+                  (ppstate-fix ppstate)))
+    (t (prog2$ (impossible) ppstate)))
+  :no-function nil)
