@@ -3669,6 +3669,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define rebuild-include-directive ((nontoknls-before-hash plexeme-listp)
+                                   (nontoknls-after-hash plexeme-listp)
+                                   (nontoknls-before-header plexeme-listp)
+                                   (header header-namep)
+                                   (nontoknls-after-header plexeme-listp)
+                                   (newline-at-end plexemep)
+                                   (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Rebuild an include directive from its components."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is factored into a separate function
+     because it is sufficiently long
+     and it is called twice in @(tsee pproc-header-name).
+     This is called when a @('#include') directive can be left unexpanded."))
+  (b* ((ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
+       (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
+       (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
+       (ppstate (add-rev-lexeme (plexeme-ident (ident "include"))
+                                ppstate))
+       (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
+       (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
+       (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
+       (ppstate (add-rev-lexeme newline-at-end ppstate)))
+    ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc-files/groups/etc
   :short "Preprocess files, groups, and some related entities."
   :long
@@ -4494,15 +4523,13 @@
                ((mv info? &) (macro-lookup header-guard
                                            (ppstate->macros ppstate)))
                ((unless info?) (mv nil ppstate preprocessed state))
-               (ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
-               (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
-               (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
-               (ppstate (add-rev-lexeme (plexeme-ident (ident "include"))
-                                        ppstate))
-               (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
-               (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
-               (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
-               (ppstate (add-rev-lexeme newline-at-end ppstate)))
+               (ppstate (rebuild-include-directive nontoknls-before-hash
+                                                   nontoknls-after-hash
+                                                   nontoknls-before-header
+                                                   header
+                                                   nontoknls-after-header
+                                                   newline-at-end
+                                                   ppstate)))
             (mv t ppstate preprocessed state)))
          ((when self-contained-with-header-guard-defined-p)
           (retok ppstate preprocessed state))
@@ -4532,14 +4559,13 @@
                (max-reach (max (1- file-max-reach) max-reach))
                (ppstate (update-ppstate->max-reach max-reach ppstate)))
             (retok ppstate preprocessed state)))
-         (ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
-         (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
-         (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
-         (ppstate (add-rev-lexeme (plexeme-ident (ident "include")) ppstate))
-         (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
-         (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
-         (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
-         (ppstate (add-rev-lexeme newline-at-end ppstate))
+         (ppstate (rebuild-include-directive nontoknls-before-hash
+                                             nontoknls-after-hash
+                                             nontoknls-before-header
+                                             header
+                                             nontoknls-after-header
+                                             newline-at-end
+                                             ppstate))
          (preprocessed (if name+scfile
                            preprocessed
                          (acons resolved-file
