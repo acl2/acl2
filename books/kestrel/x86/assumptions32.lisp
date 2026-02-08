@@ -13,7 +13,7 @@
 
 (include-book "assumptions")
 (include-book "support32")
-(include-book "parsers/parsed-executable-tools")
+(include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "../axe/lifter-common") ; for lifter-targetp ; todo
 (local (include-book "kestrel/typed-lists-light/keyword-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))

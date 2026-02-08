@@ -17,7 +17,6 @@
 ;; This book lifts the functionality of popcount_64 into logic using the
 ;; Axe-based x86 lifter, and proves it equivalent to the spec.
 
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/x86/unroller" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system) ;has skip-proofs

@@ -32,7 +32,7 @@
            nil)
           ((eq :true val) t)
           ((eq :false val) nil)
-          ((eq :null val) nil) ; todo: think about this (could go to :null)
+          ((eq :null val) val)
           ((rationalp val) val)
           ((stringp val) val) ; todo: look for keywords
           ;; A JSON array becomes an ACL2 list:

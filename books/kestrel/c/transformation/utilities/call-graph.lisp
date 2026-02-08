@@ -137,7 +137,7 @@
                                (c$::linkage-internal))
                 :otherwise nil))))
     (if is-internal
-        (internal-ident filepath ident)
+        (qualified-ident filepath ident)
       (external-ident ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

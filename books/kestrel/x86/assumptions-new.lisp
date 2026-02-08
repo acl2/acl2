@@ -15,7 +15,7 @@
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; for make-standard-state-assumptions-fn
 (include-book "assumptions-for-inputs")
-(include-book "parsers/parsed-executable-tools")
+(include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "../axe/lifter-common") ; for lifter-targetp ; todo
