@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -733,7 +733,7 @@
                (out-type typep)
                (affect symbol-listp)
                (extobjs symbol-listp)
-               (limit pseudo-termp)
+               (limit limit-termp)
                (fn-guard symbolp))
   :short "Check if a term may represent a call to a C function,
           and in that case check the requirements on the call arguments."
@@ -751,7 +751,7 @@
     "We also check each actual argument
      for a formal parameter of array or pointer type,
      or for a formal parameter that represents an external object,
-     is identical to the formal,
+     to be identical to the formal,
      as required in the ATC user documentation.")
    (xdoc::p
     "The limit retrieved from the function table
@@ -762,8 +762,9 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((reterr) nil nil nil nil (irr-type) nil nil nil nil)
-       ((acl2::fun (no)) (retok nil nil nil nil (irr-type) nil nil nil nil))
+  (b* (((reterr) nil nil nil nil (irr-type) nil nil (irr-limit-term) nil)
+       ((acl2::fun (no))
+        (retok nil nil nil nil (irr-type) nil nil (irr-limit-term) nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -776,7 +777,7 @@
        (extobjs (atc-fn-info->extobjs info))
        ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
-       (limit (fty-fsublis-var var-term-alist limit))
+       (limit (limit-term-subst limit var-term-alist))
        (fn-guard (atc-fn-info->guard info))
        ((erp) (atc-check-cfun-call-args term.fn
                                         (formals+ term.fn wrld)
@@ -850,7 +851,7 @@
                (in-types type-listp)
                (affect symbol-listp)
                (loop stmtp)
-               (limit pseudo-termp))
+               (limit limit-termp))
   :short "Check if a term may represent a C loop."
   :long
   (xdoc::topstring
@@ -876,7 +877,7 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil nil (irr-stmt) nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil nil (irr-stmt) (irr-limit-term)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        (fn+info (assoc-eq term.fn (atc-symbol-fninfo-alist-fix prec-fns)))
@@ -887,7 +888,7 @@
        (in-types (atc-fn-info->in-types info))
        (affect (atc-fn-info->affect info))
        (limit (atc-fn-info->limit info))
-       (limit (fty-fsublis-var var-term-alist limit)))
+       (limit (limit-term-subst limit var-term-alist)))
     (mv t term.fn term.args in-types affect loop limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

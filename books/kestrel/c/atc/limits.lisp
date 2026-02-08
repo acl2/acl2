@@ -78,6 +78,13 @@
   :type limit-termp
   :body (make-limit-term :const 1 :nonconsts nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption limit-term-option
+  limit-term
+  :short "Fixtype of optional limit terms."
+  :pred limit-term-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define limit-term-to-term ((limterm limit-termp) state)
@@ -120,6 +127,16 @@
   (b* (((limit-term limterm) limterm))
     (make-limit-term :const (+ limterm.const (pos-fix const))
                      :nonconsts limterm.nonconsts)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define limit-term-add-nonconst ((nonconst pseudo-termp)
+                                 (limterm limit-termp))
+  :returns (limter1 limit-termp)
+  :short "Add a non-constant to a limit term."
+  (b* (((limit-term limterm) limterm))
+    (make-limit-term :const limterm.const
+                     :nonconsts (cons nonconst limterm.nonconsts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
