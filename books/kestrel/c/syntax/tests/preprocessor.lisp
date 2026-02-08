@@ -270,17 +270,20 @@ M_is_defined
 ; (depends-on "gincluder2.h")
 ; (depends-on "guarded.h")
 
-; TODO: not quite doing what we want yet
 (test-preproc '("gincluder.c")
               :expected (fileset-of "gincluder.c"
                                     "#include \"gincluder1.h\"
-
-int x2 = 0;
+#include \"gincluder2.h\"
 "
                                     "gincluder1.h"
                                     "#include \"guarded.h\"
 
 int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "#include \"guarded.h\"
+
+int x2 = 0;
 "
                                     "guarded.h"
                                     "#ifndef GUARDED

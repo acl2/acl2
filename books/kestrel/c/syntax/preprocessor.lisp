@@ -4436,8 +4436,16 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We resolve the header name to a file,
-       and we call @(tsee pproc-file) to preprocess it.
+      "We resolve the header name to a file.")
+     (xdoc::p
+      "Before attempting to preprocess the file,
+       we check whether it is in the @('preprocessed') alist
+       and it has a header guard that is currently defined.
+       This means that the inclusion results in ``nothing''
+       (i.e. no tokens from the file are included),
+       and thus it is safe to keep the @('#include') directive as is.")
+     (xdoc::p
+      "Otherwise, we call @(tsee pproc-file) to preprocess it.
        Whether the file is self-contained or not,
        we incorporate the returned macros into
        the top scope of the macros of the current (i.e. including) file:
@@ -4473,6 +4481,31 @@
          (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
+         (preprocessed (string-scfile-alist-fix preprocessed))
+         (name+scfile (assoc-equal resolved-file preprocessed))
+         ((mv self-contained-with-header-guard-defined-p
+              ppstate
+              preprocessed
+              state)
+          (b* (((unless name+scfile) (mv nil ppstate preprocessed state))
+               (scfile (cdr name+scfile))
+               (header-guard (scfile->header-guard? scfile))
+               ((unless header-guard) (mv nil ppstate preprocessed state))
+               ((mv info? &) (macro-lookup header-guard
+                                           (ppstate->macros ppstate)))
+               ((unless info?) (mv nil ppstate preprocessed state))
+               (ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
+               (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
+               (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
+               (ppstate (add-rev-lexeme (plexeme-ident (ident "include"))
+                                        ppstate))
+               (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
+               (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
+               (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
+               (ppstate (add-rev-lexeme newline-at-end ppstate)))
+            (mv t ppstate preprocessed state)))
+         ((when self-contained-with-header-guard-defined-p)
+          (retok ppstate preprocessed state))
          ((erp file-rev-lexemes
                file-macros
                file-max-reach
@@ -4499,10 +4532,6 @@
                (max-reach (max (1- file-max-reach) max-reach))
                (ppstate (update-ppstate->max-reach max-reach ppstate)))
             (retok ppstate preprocessed state)))
-         (nontoknls-before-hash (plexeme-list-fix nontoknls-before-hash))
-         (nontoknls-after-hash (plexeme-list-fix nontoknls-after-hash))
-         (nontoknls-before-header (plexeme-list-fix nontoknls-before-header))
-         (nontoknls-after-header (plexeme-list-fix nontoknls-after-header))
          (ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
          (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
          (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
@@ -4510,9 +4539,8 @@
          (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
          (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
          (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
-         (ppstate (add-rev-lexeme (plexeme-fix newline-at-end) ppstate))
-         (preprocessed (string-scfile-alist-fix preprocessed))
-         (preprocessed (if (assoc-equal resolved-file preprocessed)
+         (ppstate (add-rev-lexeme newline-at-end ppstate))
+         (preprocessed (if name+scfile
                            preprocessed
                          (acons resolved-file
                                 (make-scfile :lexemes (rev file-rev-lexemes)
