@@ -283,19 +283,15 @@ M_is_defined
 "
                                     "gincluder1.h"
                                     "#include \"guarded.h\"
-
 int x1 = 0;
 "
                                     "gincluder2.h"
                                     "#include \"guarded.h\"
-
 int x2 = 0;
 "
                                     "guarded.h"
                                     "#ifndef GUARDED
 #define GUARDED
-
 void f() {}
-
 #endif
 "))
