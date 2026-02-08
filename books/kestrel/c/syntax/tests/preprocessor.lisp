@@ -265,15 +265,21 @@ M_is_defined
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "gincluder.c")
+; (depends-on "gincluder1.c")
+; (depends-on "gincluder2.c")
 ; (depends-on "gincluder1.h")
 ; (depends-on "gincluder2.h")
 ; (depends-on "guarded.h")
 
-(test-preproc '("gincluder.c")
-              :expected (fileset-of "gincluder.c"
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
                                     "#include \"gincluder1.h\"
 #include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "#include \"gincluder2.h\"
+#include \"gincluder1.h\"
 "
                                     "gincluder1.h"
                                     "#include \"guarded.h\"
