@@ -267,9 +267,12 @@
    (xdoc::p
     "This captures the result of preprocessing a @(see self-contained) file:
      the list of lexemes that forms the file after preprocessing
-     (which can be printed to bytes into a file in the file system).
-     We wrap it in a fixtype for extensibility and abstraction."))
-  ((lexemes plexeme-listp))
+     (which can be printed to bytes into a file in the file system).")
+   (xdoc::p
+    "We also store an optional identifier that identifies a header guard
+     (see @(tsee hg-state)), if the file has that structure."))
+  ((lexemes plexeme-listp)
+   (header-guard? ident-option))
   :pred scfilep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -277,7 +280,7 @@
 (defirrelevant irr-scfile
   :short "An irrelevant self-contained file."
   :type scfilep
-  :body (scfile nil))
+  :body (scfile nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3639,9 +3642,30 @@
           (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
        rev-lexemes)
      :otherwise
-     (raise "Internal error: header guard state ~x0." (hg-state-fix hg))))
+     (raise "Internal error: non-final header guard state ~x0." hg)))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define file-header-guard ((ppstate ppstatep))
+  :returns (header-guard? ident-optionp)
+  :short "Extract the header guard of the file from the preprocessor state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after finishing the preprocessing of the file.
+     We look at the header guard state,
+     which must be a final one (i.e. either @(':eof') or @(':not')),
+     and we extract the name of the header guard if the state is @(':eof'),
+     otherwise there is no header guard and we return @('nil')."))
+  (b* ((hg (ppstate->hg ppstate)))
+    (hg-state-case
+     hg
+     :eof hg.name
+     :not nil
+     :otherwise (raise "Internal error: non-final header guard state ~x0." hg)))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3765,10 +3789,11 @@
                       state
                       (limit natp))
     :returns (mv erp
-                 (rev-lexemes plexeme-listp)
+                 (file-rev-lexemes plexeme-listp)
                  (file-macros macro-scopep)
                  (file-max-reach integerp
                                  :rule-classes (:rewrite :type-prescription))
+                 (file-header-guard? ident-optionp)
                  (new-preprocessed string-scfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -3789,7 +3814,8 @@
        is empty when this function is called by @(tsee pproc-files).
        Otherwise, it is the table for
        the file that contains the @('#include') directive
-       that results in this call of @(tsee pproc-file).")
+       that results in this call of @(tsee pproc-file),
+       called by @(tsee pproc-header-name), called by @(tsee pproc-include).")
      (xdoc::p
       "We create a local preprocessing state stobj from
        the bytes of the file,
@@ -3820,7 +3846,7 @@
        We expect this check to be always satisfied,
        and thus we throw hard error if it is not;
        but we need to investigate this property further."))
-    (b* (((reterr) nil nil 0 nil state)
+    (b* (((reterr) nil nil 0 nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -3829,17 +3855,19 @@
                        preprocessing)))
          (preprocessing (cons file preprocessing))
          ((erp groupend
-               rev-lexemes
+               file-rev-lexemes
                file-macros
                file-max-reach
+               file-header-guard?
                preprocessed
                state)
           (with-local-stobj
             ppstate
             (mv-let (erp groupend
-                         rev-lexemes
+                         file-rev-lexemes
                          file-macro-table
                          file-max-reach
+                         file-header-guard?
                          ppstate
                          preprocessed
                          state)
@@ -3863,14 +3891,16 @@
                       (all-rev-lexemes ppstate)
                       (ppstate->macros ppstate)
                       (ppstate->max-reach ppstate)
+                      (file-header-guard ppstate)
                       ppstate
                       preprocessed
                       state))
               (mv erp
                   groupend
-                  rev-lexemes
+                  file-rev-lexemes
                   (car (macro-table->scopes file-macro-table))
                   file-max-reach
+                  file-header-guard?
                   preprocessed
                   state))))
          ((unless (groupend-case groupend :eof))
@@ -3887,14 +3917,19 @@
                        (and name+scfile
                             (b* (((scfile scfile) (cdr name+scfile)))
                               (not (equal scfile.lexemes
-                                          (rev rev-lexemes))))))))
+                                          (rev file-rev-lexemes))))))))
           (raise "Internal error: ~
                   new ~x0 and ~x1 differ from old ~x2."
-                 (rev rev-lexemes)
+                 (rev file-rev-lexemes)
                  file-macros
                  (cdr (assoc-equal file preprocessed)))
           (reterr t)))
-      (retok rev-lexemes file-macros file-max-reach preprocessed state))
+      (retok file-rev-lexemes
+             file-macros
+             file-max-reach
+             file-header-guard?
+             preprocessed
+             state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4405,8 +4440,8 @@
        and we call @(tsee pproc-file) to preprocess it.
        Whether the file is self-contained or not,
        we incorporate the returned macros into
-       the top scope of the macros of the current (i.e. including) file.
-       Even if the included file is self-contained,
+       the top scope of the macros of the current (i.e. including) file:
+       even if the included file is self-contained,
        in order to preprocess the rest of the including file,
        we need to act as if we had expanded the included file in place,
        i.e. its macros must be available as if defined in the including file.")
@@ -4425,7 +4460,7 @@
      (xdoc::p
       "If the included file is self-contained,
        we leave the @('#include') directive as is,
-       including all the comments and white space.
+       along with all its comments and white space.
        The maximum reach of the including file is left unchanged.
        Unless the @('preprocessed') alist already has an entry for the file,
        we add the file to the alist;
@@ -4438,7 +4473,12 @@
          (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
-         ((erp file-rev-lexemes file-macros file-max-reach preprocessed state)
+         ((erp file-rev-lexemes
+               file-macros
+               file-max-reach
+               file-header-guard?
+               preprocessed
+               state)
           (pproc-file bytes
                       resolved-file
                       base-dir
@@ -4475,7 +4515,8 @@
          (preprocessed (if (assoc-equal resolved-file preprocessed)
                            preprocessed
                          (acons resolved-file
-                                (make-scfile :lexemes (rev file-rev-lexemes))
+                                (make-scfile :lexemes (rev file-rev-lexemes)
+                                             :header-guard? file-header-guard?)
                                 preprocessed))))
       (retok ppstate preprocessed state))
     :no-function nil
@@ -4576,10 +4617,7 @@
        which preprocesses the rest of the @('if-section').
        However, if the macro is defined
        not in the innermost scope and is not predefined,
-       then the file is not considered @(see self-contained).")
-     (xdoc::p
-      "Just before preprocessing the rest of the section,
-       we perform a header guard transition."))
+       then the file is not considered @(see self-contained)."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4872,7 +4910,12 @@
            (acl2::read-file-into-byte-list path-to-read state))
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
-          ((erp file-rev-lexemes & max-reach preprocessed state)
+          ((erp file-rev-lexemes
+                & ; file-macros
+                file-max-reach
+                file-header-guard?
+                preprocessed
+                state)
            (pproc-file bytes
                        (car files)
                        base-dir
@@ -4883,14 +4926,15 @@
                        ienv
                        state
                        recursion-limit))
-          ((when (> max-reach 0))
+          ((when (> file-max-reach 0))
            (raise "Internal error: non-self-contained top-level file ~x0." file)
            (reterr t))
           (preprocessed (string-scfile-alist-fix preprocessed))
           (preprocessed (if (assoc-equal file preprocessed)
                             preprocessed
                           (acons file
-                                 (make-scfile :lexemes (rev file-rev-lexemes))
+                                 (make-scfile :lexemes (rev file-rev-lexemes)
+                                              :header-guard? file-header-guard?)
                                  preprocessed))))
        (pproc-files-loop (cdr files)
                          base-dir
