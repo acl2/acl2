@@ -271,6 +271,16 @@ M_is_defined
 ; (depends-on "gincluder2.h")
 ; (depends-on "guarded.h")
 
+;;;;;;;;;;;;;;;;;;;;
+
+; In this test:
+; - gincluder1.c includes gincluder1.h and gincluder2.h in that order
+; - gincluder2.c includes gincluder2.h and gincluder1.h in that order
+; - gincluder1.h includes guarded.h and then introduces x1
+; - gincluder2.h includes guarded.h and then introduces x2
+; - guarded.h has a header guard, and introduces f
+; All the #include directives are preserved.
+
 (test-preproc '("gincluder1.c"
                 "gincluder2.c")
               :expected (fileset-of "gincluder1.c"
@@ -294,4 +304,54 @@ int x2 = 0;
 #define GUARDED
 void f() {}
 #endif
+"))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; This is a variant of the previous test in which we have two additional files,
+; gincludermod1.c and gincludermod2.c,
+; which "modify" f by #define'ing it to be f1 and f2 respectively.
+; Thus:
+; - guarded.h and gincluder1.h are expanded in gincludermod1.c,
+;   but not ginluder2.h
+; - guarded.h and gincluder2.h are expanded in gincludermod2.c,
+;   but not ginluder1.h
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c"
+                "gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "#include \"gincluder1.h\"
+#include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "#include \"gincluder2.h\"
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "#ifndef GUARDED
+#define GUARDED
+void f() {}
+#endif
+"
+                                    "gincludermod1.c"
+                                    "#define GUARDED
+void f1() {}
+int x1 = 0;
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "#define GUARDED
+void f2() {}
+int x2 = 0;
+#include \"gincluder1.h\"
 "))
