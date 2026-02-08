@@ -3605,7 +3605,11 @@
      we call this function to obtain the final list of lexemes.
      The header guard state must be a final one (it should be an invariant).
      Based on that, we combine the lexemes,
-     either interposing the directives or not.")
+     either interposing the directives or not.
+     However, if the file is not self-contained,
+     we only interpose the @('#define') directive,
+     because we know that the @('#ifndef') is satisfied
+     (if it were not, we would not have called @(tsee pproc-file)).")
    (xdoc::p
     "When interposing the directives,
      currently we only have information about the macro name.
@@ -3615,25 +3619,37 @@
     (hg-state-case
      hg
      :eof
-     (b* ((rev-lexemes nil)
-          (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "ifndef")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "endif")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-       rev-lexemes)
+     (if (<= (ppstate->max-reach ppstate) 0) ; i.e. self-contained
+         (b* ((rev-lexemes nil)
+              (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
+              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+              (rev-lexemes (cons (plexeme-ident (ident "ifndef")) rev-lexemes))
+              (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+              (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+              (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
+              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+              (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
+              (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+              (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+              (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
+              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+              (rev-lexemes (cons (plexeme-ident (ident "endif")) rev-lexemes))
+              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+              (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
+           rev-lexemes)
+       (b* ((rev-lexemes nil)
+            (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
+            (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
+            (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+            (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
+            (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+            (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+            (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+            (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
+            (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
+         rev-lexemes))
      :not
      (b* ((rev-lexemes nil)
           (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
