@@ -344,14 +344,22 @@ void f() {}
 #endif
 "
                                     "gincludermod1.c"
-                                    "#define GUARDED
+                                    "// #include \"gincluder1.h\" >>>>>>>>>>
+// #include \"guarded.h\" >>>>>>>>>>
+#define GUARDED
 void f1() {}
+// <<<<<<<<<< #include \"guarded.h\"
 int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
 #include \"gincluder2.h\"
 "
                                     "gincludermod2.c"
-                                    "#define GUARDED
+                                    "// #include \"gincluder2.h\" >>>>>>>>>>
+// #include \"guarded.h\" >>>>>>>>>>
+#define GUARDED
 void f2() {}
+// <<<<<<<<<< #include \"guarded.h\"
 int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
 #include \"gincluder1.h\"
 "))
