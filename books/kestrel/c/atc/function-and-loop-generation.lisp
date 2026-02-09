@@ -1432,7 +1432,7 @@
                                   (limit-var symbolp)
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
-                                  (limit pseudo-termp)
+                                  (limit limit-termp)
                                   state)
   :returns (mv (events pseudo-event-form-listp)
                (print-event pseudo-event-formp)
@@ -1603,7 +1603,7 @@
                    (equal ,fenv-var
                           (init-fun-env (preprocess ,prog-const)))
                    (integerp ,limit-var)
-                   (>= ,limit-var ,limit)
+                   (>= ,limit-var ,(limit-term-to-term limit state))
                    ,@hyps
                    ,@diff-pointer-hyps
                    ,(untranslate$ (uguard+ fn wrld) nil state)))
@@ -2419,7 +2419,7 @@
                                      (compst-var symbolp)
                                      (context atc-contextp)
                                      (names-to-avoid symbol-listp)
-                                     (wrld plist-worldp))
+                                     state)
   :returns (mv (scope atc-symbol-varinfo-alistp
                       :hyp (atc-symbol-varinfo-alistp typed-formals))
                (events pseudo-event-form-listp)
@@ -2444,7 +2444,8 @@
      for the initial symbol table;
      as we update the symbol table in the course of generating code,
      we use positive indices as suffixes."))
-  (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+  (b* ((wrld (w state))
+       ((when (endp typed-formals)) (mv nil nil names-to-avoid))
        ((cons var info) (car typed-formals))
        (type (atc-var-info->type info))
        (var-thm (atc-var-info->thm info))
@@ -2452,7 +2453,7 @@
        ((when (not externalp))
         (atc-gen-init-inscope-static fn fn-guard (cdr typed-formals)
                                      prec-tags compst-var context
-                                     names-to-avoid wrld))
+                                     names-to-avoid state))
        (type-pred (atc-type-to-recognizer type prec-tags))
        (name (pack fn '- var '-in-scope-0))
        ((mv name names-to-avoid)
@@ -2472,7 +2473,7 @@
                                     nil
                                     nil
                                     t
-                                    wrld))
+                                    state))
        (formula2 `(,type-pred ,var))
        (formula2 (atc-contextualize formula2
                                     context
@@ -2482,7 +2483,7 @@
                                     nil
                                     nil
                                     nil
-                                    wrld))
+                                    state))
        (formula `(and ,formula1 ,formula2))
        (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
        (hints
@@ -2507,7 +2508,7 @@
        ((mv scope-rest events-rest names-to-avoid)
         (atc-gen-init-inscope-static fn fn-guard (cdr typed-formals)
                                      prec-tags compst-var context
-                                     names-to-avoid wrld)))
+                                     names-to-avoid state)))
     (mv (cons (cons var
                     (make-atc-var-info :type type
                                        :thm name
@@ -2525,7 +2526,7 @@
                                    (compst-var symbolp)
                                    (context atc-contextp)
                                    (names-to-avoid symbol-listp)
-                                   (wrld plist-worldp))
+                                   state)
   :returns (mv (scope atc-symbol-varinfo-alistp
                       :hyp (atc-symbol-varinfo-alistp typed-formals))
                (events pseudo-event-form-listp)
@@ -2549,7 +2550,8 @@
      for the initial symbol table;
      as we update the symbol table in the course of generating code,
      we use positive indices as suffixes."))
-  (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+  (b* ((wrld (w state))
+       ((when (endp typed-formals)) (mv nil nil names-to-avoid))
        ((cons var info) (car typed-formals))
        (type (atc-var-info->type info))
        (var-thm (atc-var-info->thm info))
@@ -2557,7 +2559,7 @@
        ((when externalp)
         (atc-gen-init-inscope-auto fn fn-guard (cdr typed-formals)
                                    prec-tags compst-var context
-                                   names-to-avoid wrld))
+                                   names-to-avoid state))
        (type-pred (atc-type-to-recognizer type prec-tags))
        (name (pack fn '- var '-in-scope-0))
        ((mv name names-to-avoid)
@@ -2587,7 +2589,7 @@
                                     nil
                                     nil
                                     t
-                                    wrld))
+                                    state))
        (formula2 `(,type-pred ,var))
        (formula2 (atc-contextualize formula2
                                     context
@@ -2597,7 +2599,7 @@
                                     nil
                                     nil
                                     nil
-                                    wrld))
+                                    state))
        (formula `(and ,formula1 ,formula2))
        (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
@@ -2629,7 +2631,7 @@
        ((mv scope-rest events-rest names-to-avoid)
         (atc-gen-init-inscope-auto fn fn-guard (cdr typed-formals)
                                    prec-tags compst-var context
-                                   names-to-avoid wrld)))
+                                   names-to-avoid state)))
     (mv (cons (cons var
                     (make-atc-var-info :type type
                                        :thm name
@@ -2647,7 +2649,7 @@
                               (compst-var symbolp)
                               (context atc-contextp)
                               (names-to-avoid symbol-listp)
-                              (wrld plist-worldp))
+                              state)
   :returns (mv (inscope atc-symbol-varinfo-alist-listp
                         :hyp (atc-symbol-varinfo-alistp typed-formals))
                (events pseudo-event-form-listp)
@@ -2660,10 +2662,10 @@
      a scope for static storage and a scope for automatic storage."))
   (b* (((mv scope-static events-static names-to-avoid)
         (atc-gen-init-inscope-static fn fn-guard typed-formals prec-tags
-                                     compst-var context names-to-avoid wrld))
+                                     compst-var context names-to-avoid state))
        ((mv scope-auto events-auto names-to-avoid)
         (atc-gen-init-inscope-auto fn fn-guard typed-formals prec-tags
-                                   compst-var context names-to-avoid wrld)))
+                                   compst-var context names-to-avoid state)))
     (mv (list scope-auto scope-static)
         (append events-static events-auto)
         names-to-avoid)))
@@ -2755,7 +2757,7 @@
                                (prec-tags atc-string-taginfo-alistp)
                                (context atc-contextp)
                                (names-to-avoid symbol-listp)
-                               (wrld plist-worldp))
+                               state)
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
@@ -2781,7 +2783,8 @@
      the context at the end of the function body;
      this is used to contextualize the computation state
      from where the frame is popped."))
-  (b* ((compst-init-var (pack compst-var '-init))
+  (b* ((wrld (w state))
+       (compst-init-var (pack compst-var '-init))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
@@ -2805,7 +2808,7 @@
                                    nil
                                    nil
                                    t
-                                   wrld))
+                                   state))
        (formula `(let ((,compst-init-var ,compst-var)) ,formula))
        (formula (if binder
                     `(b* ((,binder ,body-term)) ,formula)
@@ -2970,7 +2973,7 @@
                                  (pop-frame-thm symbolp)
                                  (body-thm symbolp)
                                  (body-type typep)
-                                 (body-limit pseudo-termp)
+                                 (body-limit limit-termp)
                                  (prec-tags atc-string-taginfo-alistp)
                                  (prec-objs atc-string-objinfo-alistp)
                                  (names-to-avoid symbol-listp)
@@ -3010,7 +3013,7 @@
        (result-var (if (type-case body-type :void)
                        nil
                      (genvar$ 'atc "RESULT" nil formals state)))
-       (limit `(+ '1 ,body-limit))
+       (limit (limit-term-add-const 1 body-limit))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (and result-var
                                 (list result-var))
@@ -3026,7 +3029,7 @@
                         ,@context-preamble
                         (,fn-guard ,@formals)
                         (integerp ,limit-var)
-                        (>= ,limit-var ,limit)))
+                        (>= ,limit-var ,(limit-term-to-term limit state))))
        (exec-concl `(equal (exec-fun (ident ,(symbol-name fn))
                                      (list ,@init-formals)
                                      ,compst-var
@@ -3099,7 +3102,7 @@
                        ,@context-preamble
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
-                       (>= ,limit-var ,limit))
+                       (>= ,limit-var ,(limit-term-to-term limit state)))
                   (b* ((,fn-binder (,fn ,@formals)))
                     ,exec-concl)))
        (hints `(("Goal"
@@ -3304,7 +3307,7 @@
             init-inscope-events
             names-to-avoid)
         (atc-gen-init-inscope fn fn-guard typed-formals prec-tags
-                              compst-var context names-to-avoid wrld))
+                              compst-var context names-to-avoid state))
        (body (ubody+ fn wrld))
        ((erp affect) (atc-find-affected fn body typed-formals prec-fns wrld))
        ((unless (atc-formal-affectable-listp affect typed-formals))
@@ -3368,7 +3371,7 @@
                                prec-tags
                                body.context
                                names-to-avoid
-                               wrld))
+                               state))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
@@ -3376,7 +3379,7 @@
                                                           :params params)
                             :body body.items))
        (finfo (fun-info-from-fundef fundef))
-       (limit `(+ '1 ,body.limit))
+       (limit (limit-term-add-const 1 body.limit))
        (fn-fun-env-event
         (atc-gen-cfun-fun-env-thm fn
                                   fn-fun-env-thm
@@ -4273,7 +4276,7 @@
                                        (prec-objs atc-string-objinfo-alistp)
                                        (prog-const symbolp)
                                        (fn-thms symbol-symbol-alistp)
-                                       (limit pseudo-termp)
+                                       (limit limit-termp)
                                        (names-to-avoid symbol-listp)
                                        state)
   :returns (mv (local-events pseudo-event-form-listp)
@@ -4331,7 +4334,7 @@
                    (> (compustate-frames-number ,compst-var) 0)
                    (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                    (integerp ,limit-var)
-                   (>= ,limit-var ,limit)
+                   (>= ,limit-var ,(limit-term-to-term limit state))
                    ,@hyps
                    ,@diff-pointer-hyps
                    (,fn-guard ,@(strip-cars typed-formals))
@@ -4672,7 +4675,7 @@
                                   (opener-step-thm symbolp)
                                   (correct-test-thm symbolp)
                                   (correct-body-thm symbolp)
-                                  (limit pseudo-termp)
+                                  (limit limit-termp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (irecursivep+ fn (w state))
@@ -4874,7 +4877,7 @@
                       (equal ,fenv-var
                              (init-fun-env (preprocess ,prog-const)))
                       (integerp ,limit-var)
-                      (>= ,limit-var ,limit)
+                      (>= ,limit-var ,(limit-term-to-term limit state))
                       ,@hyps
                       ,@diff-pointer-hyps))
        (hyps-lemma `(and ,@hyps-common
