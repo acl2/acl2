@@ -4222,9 +4222,10 @@
                                        (second args)
                                        interp-st state)))
 
-          ((assume 2)
+          ((assume-fn 3)
            (fgl-interp-assume (first args)
-                             (second args)
+                              (second args)
+                              (third args)
                              interp-st state))
 
           ((narrow-equiv 2)
@@ -4274,10 +4275,11 @@
                      new-interp-st new-state)
         (fgl-interp-fncall-special-case
           (pseudo-fnsym-fix fn)
-          ((conditionalize 2)
-           (fgl-interp-assume! (first args)
-                               (second args)
-                               interp-st state))))
+          ((conditionalize-fn 3)
+           (fgl-interp-conditionalize (first args)
+                                      (second args)
+                                      (third args)
+                                      interp-st state))))
 
       (define fgl-interp-arglist ((args pseudo-term-listp)
                                   (argcontexts equiv-argcontexts-p)
@@ -5212,38 +5214,48 @@
           (fgl-interp-merge-branches testbfr testval elseval interp-st state)))
 
       (define fgl-interp-assume ((test pseudo-termp)
-                                (x pseudo-termp)
-                                (interp-st interp-st-bfrs-ok)
-                                state)
+                                 (x pseudo-termp)
+                                 (on-unreach pseudo-termp)
+                                 (interp-st interp-st-bfrs-ok)
+                                 state)
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020
                        (+ (pseudo-term-binding-count test)
-                          (pseudo-term-binding-count x))
-                       40)
+                          (pseudo-term-binding-count x)
+                          (pseudo-term-binding-count on-unreach))
+                       90)
         :returns (mv
                   (ans fgl-object-p)
                   new-interp-st new-state)
         (b* (((unless (member-eq 'unequiv (interp-st->equiv-contexts interp-st)))
               (fgl-interp-error :msg (fgl-msg "Assume called not in an unequiv context: args ~x0."
                                               (list (pseudo-term-fix test) (pseudo-term-fix x))))))
-          (fgl-interp-assume! test x interp-st state)))
+          (fgl-interp-conditionalize test x on-unreach interp-st state)))
 
-      (define fgl-interp-assume! ((test pseudo-termp)
-                                  (x pseudo-termp)
-                                  (interp-st interp-st-bfrs-ok)
-                                  state)
+      (define fgl-interp-conditionalize ((test pseudo-termp)
+                                         (x pseudo-termp)
+                                         (on-unreach pseudo-termp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020
                        (+ (pseudo-term-binding-count test)
-                          (pseudo-term-binding-count x))
-                       30)
+                          (pseudo-term-binding-count x)
+                          (pseudo-term-binding-count on-unreach))
+                       85)
         :returns (mv
                   (ans fgl-object-p)
                   new-interp-st new-state)
         (b* (((fgl-interp-recursive-call testbfr)
               (fgl-interp-test test interp-st state))
-             ((fgl-interp-value ?unreachp ans)
-              (fgl-maybe-interp testbfr x interp-st state)))
+             ((fgl-interp-recursive-call unreachp ans)
+              (fgl-maybe-interp testbfr x interp-st state))
+             ((when unreachp)
+              (b* (((interp-st-bind
+                     (equiv-contexts (cons 'unequiv (interp-st->equiv-contexts interp-st))))
+                    ((fgl-interp-value ans)
+                     (fgl-interp-term-top on-unreach interp-st state))))
+                (fgl-interp-value ans))))
           (fgl-interp-value ans)))
 
       (define fgl-interp-narrow-equiv ((equiv pseudo-termp)
@@ -7921,7 +7933,7 @@
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
   (defthm fgl-ev-equiv-of-narrow-equiv-call
-    (implies (member (pseudo-fnsym-fix fn) '(assume narrow-equiv fgl-time-fn))
+    (implies (member (pseudo-fnsym-fix fn) '(assume-fn narrow-equiv fgl-time-fn))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            (second args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
@@ -8807,7 +8819,7 @@
   (defthm fgl-ev-context-equiv-forall-extensions-of-conditionalize-term-true
     (b* (((pseudo-term-fncall x)))
       (implies (and (pseudo-term-case x :fncall)
-                    (equal x.fn 'conditionalize)
+                    (equal x.fn 'conditionalize-fn)
                     (equal (car x.args) (kwote ans))
                     (equal xterm (caddr x.args))
                     (fgl-ev-context-equiv-forall-extensions
@@ -8821,7 +8833,7 @@
   (defthm fgl-ev-context-equiv-forall-extensions-of-conditionalize-term-false
     (b* (((pseudo-term-fncall x)))
       (implies (and (pseudo-term-case x :fncall)
-                    (equal x.fn 'conditionalize)
+                    (equal x.fn 'conditionalize-fn)
                     (equal (car x.args) (kwote ans))
                     (equal testterm (cadr x.args))
                     (iff?-forall-extensions contexts nil testterm alist))
@@ -10822,16 +10834,23 @@
                    (fgl-object-eval ans env new-logicman)
                    x eval-alist)))
 
-                ((:fnname fgl-interp-assume!)
+                ((:fnname fgl-interp-conditionalize)
                  (:add-concl
-                  (and (iff?-forall-extensions
-                        (interp-st->equiv-contexts interp-st)
-                        (fgl-ev test eval-alist) test eval-alist)
-                       (implies (fgl-ev test eval-alist)
-                                (fgl-ev-context-equiv-forall-extensions
-                                 (interp-st->equiv-contexts interp-st)
-                                 (fgl-object-eval ans env new-logicman)
-                                 x eval-alist)))))
+                  (and
+                   ;; this basically just says that whatever test evaluates to
+                   ;; under the output alist, it won't change its value under
+                   ;; an extension to that alist -- because, basically, the
+                   ;; variables used in test are bound in eval-alist. We need
+                   ;; this because the rest of the correctness property is
+                   ;; conditional on the evaluation of test.
+                   (iff?-forall-extensions
+                    (interp-st->equiv-contexts interp-st)
+                    (fgl-ev test eval-alist) test eval-alist)
+                   (implies (fgl-ev test eval-alist)
+                            (fgl-ev-context-equiv-forall-extensions
+                             (interp-st->equiv-contexts interp-st)
+                             (fgl-object-eval ans env new-logicman)
+                             x eval-alist)))))
 
                 ((:fnname fgl-interp-binder-special)
                  (:add-concl
@@ -11353,8 +11372,3 @@
       ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
 
       :mutual-recursion fgl-interp)))
-
-
-
-
-

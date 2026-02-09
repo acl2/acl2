@@ -134,17 +134,29 @@ state.</p>")
   :enabled t
   nil)
 
-(define assume (test val)
+(define assume (test val &key on-unreachable)
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to assume some condition while interpreting a term."
-  :long "<p>Logically, @('(assume test val)') just returns VAL.  When it is
-encountered by the FGL interpreter under an @('unequiv') congruence, it
-causes the interpreter to assume that @('test') is true while interpreting
-@('val'), returning the symbolic result from @('val').</p>
-"
+  :long "<p>See also @(see conditionalize), a @(see binder) function which can be used
+outside of the @('unequiv') congruence.</p>
+
+<p>Logically, @('(assume test val)') just returns VAL.  When it is
+encountered by the FGL interpreter under an @('unequiv') congruence, it causes
+the interpreter to assume that @('test') is true while interpreting @('val'),
+returning the symbolic result from @('val'). If it is determined that @('cond')
+is unsatisfiable under the current path condition, then the optional keyword
+argument @('on-unreachable') is interpreted instead (without assuming
+@('cond')) and returned.</p>
+
+<p>Note @('cond') isn't automatically checked for unsatisfiability. It is
+shallowly checked for contradictions with the current path condition in the
+process of assuming it. If it is desirable to check for unsatisfiability, it
+can be wrapped in an @('fgl-sat-check') form or a @('(fgl-sat-check config t)')
+call can be used to check for unsatisfiability of the path condition within
+@('x').</p>"
   val)
 
 (define narrow-equiv (equiv val)
@@ -367,16 +379,36 @@ argument when under the equivalence.</p>"
 
 
 
-(define conditionalize (ans cond x)
+(define conditionalize (ans cond x
+                            &key
+                            on-unreachable)
   :short "FGL binder that returns a value equal to x when cond holds, otherwise undetermined."
-  :long "<p>Operationally, this rewrites x under the assumption that cond holds, and
-returns it. This is permissible since the answer is only guaranteed to equal x
-in the case where cond holds.</p>"
+  :long "<p>When a binder form @('(conditionalize free-var cond x :on-unreachable
+on-unreachable)') is encountered in a rewrite rule, FGL rewrites @('x') under
+the assumption that cond holds and returns the result. If @('cond') is found to
+be unsatisfiable under the current path condition, then FGL rewrites
+@('on-unreachable') (without assuming @('cond'), and under the @('unequiv')
+equivalence context, i.e. without any logical constraints on unsound rewriting)
+and returns that instead. This is all permissible since the answer is only
+guaranteed to equal x in the case where cond holds.</p>
+
+<p>Note @('cond') isn't automatically checked for unsatisfiability. It is
+shallowly checked for contradictions with the current path condition in the
+process of assuming it. If it is desirable to check for unsatisfiability, it
+can be wrapped in an @('fgl-sat-check') form or a @('(fgl-sat-check config t)')
+call can be used to check for unsatisfiability of the path condition within
+@('x').</p>
+
+<p>The (regular, non-binder) function @(see assume) has similar functionality,
+but can only be used under the @('unequiv') equivalence context, i.e. when
+there is no soundness requirements on the correctness of the evaluation.</p>"
+  :ignore-ok t
+  :irrelevant-formals-ok t
   (if cond x ans)
   ///
   (defthm conditionalize-equals-x
     (implies cond
-             (equal (conditionalize ans cond x) x)))
+             (equal (conditionalize ans cond x :on-unreachable on-unreachable) x)))
 
   (defmacro conditionalize! (&rest args)
     `(binder (conditionalize! . ,args))))
