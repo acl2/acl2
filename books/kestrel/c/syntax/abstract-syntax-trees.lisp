@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
@@ -1039,6 +1040,13 @@
   :elementp-of-nil nil
   :pred h-char-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection h-char-list->code-list ((x h-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee h-char->code) to lists."
+  (h-char->code x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod q-char
@@ -1073,6 +1081,13 @@
   :true-listp t
   :elementp-of-nil nil
   :pred q-char-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection q-char-list->code-list ((x q-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee q-char->code) to lists."
+  (q-char->code x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
