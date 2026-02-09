@@ -6917,7 +6917,9 @@
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
                                        (symbol-listp no-warn-ground-functions)
-                                       (symbol-listp fns-to-elide))
+                                       (symbol-listp fns-to-elide)
+                                       (consp whole-form)
+                                       (symbolp (car whole-form)))
                            :stobjs state
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (not (starts-and-ends-with-starsp defconst-name))) ; todo: stricter check?
@@ -6983,9 +6985,9 @@
                            )))
              (mv (erp-nil)
                  `(progn (defconst ,defconst-name ',dag-or-quotep)
-                    (with-output :off :all (table ,',(pack$ def-simplified-name '-table) ',whole-form ':fake))
-                    (value-triple ',defconst-name) ; print the name
-                    )
+                         ,(redundancy-table-event whole-form ':fake)
+                         (value-triple ',defconst-name) ; prints the name
+                         )
                  state)))
 
          ;; Macro helper function for ,def-simplified-name.  This does the
@@ -7026,8 +7028,8 @@
                            :stobjs state
                            :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))
-           (b* (((when (command-is-redundantp whole-form state)) ; will check the table named (pack$ def-simplified-name '-table)
-                 (mv nil '(value-triple :invisible) state))
+           (b* (((when (command-is-redundantp whole-form state))
+                 (mv nil '(value-triple :redundant) state))
                 ;; Translate the assumptions:
                 (assumptions (translate-terms assumptions ',def-simplified-fn-name (w state)))
                 ;; Translates, if a term:

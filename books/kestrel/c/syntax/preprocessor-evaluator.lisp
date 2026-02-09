@@ -781,12 +781,12 @@
   (b* (((reterr) (irr-pvalue)))
     (case signed/unsigned
       (:signed
-       (if (ienv-sinteger-max-rangep (ifix ival) ienv)
+       (if (ienv-sinteger-max-rangep (lifix ival) ienv)
            (retok (pvalue-signed ival))
          (reterr
-          (msg "The integer ~x0 does not fit in maxint_t." (ifix ival)))))
+          (msg "The integer ~x0 does not fit in maxint_t." (lifix ival)))))
       (:unsigned
-       (retok (pvalue-unsigned (mod (ifix ival)
+       (retok (pvalue-unsigned (mod (lifix ival)
                                     (1+ (ienv->uinteger-max ienv))))))
       (t (prog2$ (impossible) (reterr :impossible))))))
 
@@ -1722,7 +1722,7 @@
                            ((plexeme-punctuatorp token "!") (pexpr-lognot expr))
                            (t (prog2$ (impossible) (irr-pexpr))))))
             (retok expr lexemes))))
-      (pparse-primary-expression lexemes))
+      (pparse-primary-expression (cons token lexemes))) ; put back token
     :measure (two-nats-measure (len lexemes) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

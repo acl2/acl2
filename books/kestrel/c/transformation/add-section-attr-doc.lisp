@@ -36,7 +36,7 @@
       (xdoc::codeblock
         "(add-section-attr const-old"
         "                  const-new"
-        "                  :attr ... ; required"
+        "                  :attrs ... ; required"
         "  )"
         ))
     (xdoc::evmac-section-inputs
@@ -59,11 +59,11 @@
        (xdoc::p
          "This must be a symbol that is valid name for a new ACL2 constant."))
      (xdoc::desc
-       "@(':attr')"
+       "@(':attrs')"
        (xdoc::p
-         "An omap from @(see qualified-ident)s to strings.
+         "An alist from @(see qualified-ident)s to strings.
           Each @(see qualified-ident) denotes a file-scope identifier.
-          The string associated to the @(see qualified-ident) under the map
+          The string associated to the @(see qualified-ident) under the alist
           is the name of the section for the section attribute
           which is to be added."))))
   :order-subtopics t)

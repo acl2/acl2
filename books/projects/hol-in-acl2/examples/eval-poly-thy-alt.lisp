@@ -170,51 +170,29 @@
 #!HOL
 (DEFTHM HOL{SUM_POLYS}0-alt
 
-; Modify HOL{SUM_POLYS}0 by introducing variables x and y into LHS to enable
-; more matching.
+; Modify HOL{SUM_POLYS}1 by introducing variable x = [] to enable more
+; matching.
 
-  (IMPLIES (and (hp-nil-p x (typ (:hash :num :num)))
-                (hp-nil-p y (typ (:hash :num :num)))
+  (IMPLIES (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
+                (hp-nil-p x (typ (:hash :num :num)))
+                (force (HPP P HTA))
+                (force (EQUAL (HP-TYPE P)
+                              (TYP (:LIST (:HASH :NUM :NUM)))))
                 (FORCE (EVAL-POLY$PROP)))
            (EQUAL (HAP* (SUM_POLYS (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
                                                  (:LIST (:HASH :NUM :NUM))
                                                  (:LIST (:HASH :NUM :NUM)))))
                         x
-                        y)
-                  (HP-NIL (TYP (:HASH :NUM :NUM)))))
+                        p)
+                  p))
   :hints (("Goal"
-           :in-theory (disable HOL{SUM_POLYS}0)
+           :in-theory (disable HOL{SUM_POLYS}1)
            :use HOL{SUM_POLYS}0)))
 
 #!HOL
 (DEFTHM HOL{SUM_POLYS}1-alt
 
-; Modify HOL{SUM_POLYS}1 by introducing variables x = [] and y = (v6::v7) to
-; enable more matching.
-
-  (IMPLIES (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
-                (hp-nil-p x (typ (:hash :num :num)))
-                (force (hpp y hta))
-                (force (equal (hp-type y) (TYP (:LIST (:HASH :NUM :NUM)))))
-                (FORCE (EVAL-POLY$PROP)))
-           (EQUAL (HAP* (SUM_POLYS (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                                 (:LIST (:HASH :NUM :NUM))
-                                                 (:LIST (:HASH :NUM :NUM)))))
-                        x
-                        y)
-                  y))
-  :hints (("Goal"
-           :in-theory (disable HOL{SUM_POLYS}1)
-           :cases ((hp-nil-p y (typ (:hash :num :num))))
-           :use (HOL{SUM_POLYS}0
-                 (:instance HOL{SUM_POLYS}1
-                            (v6 (hp-list-car y))
-                            (v7 (hp-list-cdr y)))))))
-
-#!HOL
-(DEFTHM HOL{SUM_POLYS}2-alt
-
-; Modify HOL{SUM_POLYS}2 by introducing variables x = (v2::v3) and y = [] to
+; Modify HOL{SUM_POLYS}1 by introducing variables x = (v2::v3) and y = [] to
 ; enable more matching.
 
   (IMPLIES (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
@@ -231,14 +209,13 @@
   :hints (("Goal"
            :in-theory (disable HOL{SUM_POLYS}2)
            :cases ((hp-nil-p x (typ (:hash :num :num))))
-           :use (HOL{SUM_POLYS}0
-                 (:instance HOL{SUM_POLYS}2
+           :use ((:instance HOL{SUM_POLYS}1
                             (v2 (hp-list-car x))
                             (v3 (hp-list-cdr x)))))))
 #!HOL
-(DEFTHM HOL{SUM_POLYS}3-alt
+(DEFTHM HOL{SUM_POLYS}2-alt
 
-; Modify HOL{SUM_POLYS}3 by introducing variables x = ((c1,e1)::r1) and y =
+; Modify HOL{SUM_POLYS}2 by introducing variables x = ((c1,e1)::r1) and y =
 ; ((c2,e2)::r2) to enable more matching.
 
   (let* ((car1 (hp-list-car x))
@@ -290,8 +267,8 @@
                                                         (:LIST (:HASH :NUM :NUM)))))
                                R1 (HP-CONS (HP-COMMA C2 E2) R2))))))))
   :hints (("Goal"
-           :in-theory (disable HOL{SUM_POLYS}3)
-           :use (:instance HOL{SUM_POLYS}3
+           :in-theory (disable HOL{SUM_POLYS}2)
+           :use (:instance HOL{SUM_POLYS}2
                            (c1 (hp-hash-car (hp-list-car x)))
                            (e1 (hp-hash-cdr (hp-list-car x)))
                            (r1 (hp-list-cdr x))

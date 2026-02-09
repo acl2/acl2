@@ -20,25 +20,29 @@
   (if (endp mnemonics)
       nil
     (let* ((mnemonic (first mnemonics))
-           (execute-function (acl2::pack-in-package-of-first-symbol 'execute- (symbol-name mnemonic))))
+           (execute-function (pack-in-package-of-first-symbol 'execute- (symbol-name mnemonic))))
       (cons `(,mnemonic (,execute-function args inst-address arm))
             (make-execute-cases (rest mnemonics))))))
 
 (make-event
+ ;; Dispatches according to the mnemonic and runs the corresponding semantic
+ ;; function.
  `(defund execute-inst (mnemonic args inst-address arm)
-  (declare (xargs :guard (and (good-instp mnemonic args)
-                              (addressp inst-address))
-                  :guard-hints (("Goal" :in-theory (enable good-instp)))
-                  :stobjs arm))
-  (case mnemonic
-    ,@(make-execute-cases (strip-cars *patterns*))
-    (otherwise (update-error :unsupported-mnemonic-error arm)))))
+    (declare (xargs :guard (and (good-instp mnemonic args)
+                                (addressp inst-address))
+                    :guard-hints (("Goal" :in-theory (enable good-instp)))
+                    :stobjs arm))
+    (case mnemonic
+      ,@(make-execute-cases (strip-cars *patterns*))
+      (otherwise (update-error :unsupported-mnemonic-error arm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a new state, which might have the error flag set
 (defund step (arm)
   (declare (xargs :stobjs arm))
   (if (error arm)
-      arm
+      arm ; errors persist
     (b* ((inst-address (pc arm))
          (inst (read 4 inst-address arm))
          ((mv erp mnemonic args)
@@ -47,6 +51,9 @@
           (update-error :decoding-error arm)))
       (execute-inst mnemonic args inst-address arm))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Once an error is encountered, no more changes are made.
 (defun run (steps arm)
   (declare (xargs :guard (natp steps)
                   :stobjs arm))

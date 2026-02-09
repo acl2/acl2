@@ -1095,7 +1095,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check some inputs:
        ((when (not (member-eq type '(:bit :boolean))))
         (er hard 'prove-with-tactics-fn "Illegal value of :type argument: ~x0.  Must be :boolean or :bit." type)
@@ -1130,7 +1130,7 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of theorem succeeded.~%"))
-             (table-event `(table prove-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem ; just use :fake or :result-not-stored?
              (maybe-theorem
                (and produce-theoremp
                     (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
@@ -1224,7 +1224,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
+        (mv nil '(value-triple :redundant) state))
        ;; Check inputs:
        ((when (not (tacticsp tactics)))
         (er hard 'prove-equal-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
@@ -1241,7 +1241,7 @@
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
-             (table-event `(table prove-equal-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem
              (maybe-theorem
                (and produce-theoremp
                     (b* ((term1 (dag-or-term-to-term dag-or-term1 state)) ; todo: can blow up?

@@ -98,6 +98,14 @@
   :fix uid-attrib-spec-list-mfix
   :pred uid-attrib-spec-list-mapp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defrulel attrib-spec-listp-of-cdr-assoc-when-uid-attrib-spec-list-mapp
+  (implies (uid-attrib-spec-list-mapp map)
+           (attrib-spec-listp (cdr (omap::assoc uid map))))
+  :induct t
+  :enable omap::assoc)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define resolve-qualified-ident-attrib-spec-list-map
@@ -160,13 +168,6 @@
   :true-listp t
   :elementp-of-nil nil
   :pred attrib-spec-list+init-declor-list-listp)
-
-;; MOVE
-(defrulel attrib-spec-listp-of-cdr-assoc-when-uid-attrib-spec-list-mapp
-  (implies (uid-attrib-spec-list-mapp map)
-           (attrib-spec-listp (cdr (omap::assoc uid map))))
-  :induct t
-  :enable omap::assoc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,10 +238,12 @@
   :returns (declons declon-listp)
   (declon-case
     declon
-    :declon (declons-from-attrib-spec-list+init-declor-list-list
-              declon.extension
-              declon.specs
-              (init-declor-list-add-attrib-split declon.declors attrs))
+    :declon (if declon.declors
+                (declons-from-attrib-spec-list+init-declor-list-list
+                  declon.extension
+                  declon.specs
+                  (init-declor-list-add-attrib-split declon.declors attrs))
+              (list (declon-fix declon)))
     :statassert (list (declon-fix declon)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

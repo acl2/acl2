@@ -10,77 +10,17 @@
 
 (in-package "C$")
 
-(include-book "../input-files")
-(include-book "../preprocessor")
-
-(include-book "std/testing/assert-bang-stobj" :dir :system)
+(include-book "preprocessor-testing-macros")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Build a fileset from alternating paths and contents,
-; e.g. (fileset-of "file1.c" "void f() {}" "file2.c" "int g(int x);").
-
-(defmacro fileset-of (&rest paths+contents)
-  `(fileset (fileset-map (list ,@paths+contents))))
-
-(defun fileset-map (paths+contents)
-  (b* (((when (endp paths+contents)) nil)
-       (path (car paths+contents))
-       (content (cadr paths+contents))
-       (content (if (stringp content)
-                    (acl2::string=>nats content)
-                  content)))
-    (omap::update (filepath path)
-                  (filedata content)
-                  (fileset-map (cddr paths+contents)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Turn fileset into map from strings to strings.
-
-(defun fileset-map-to-string-map (fileset-map)
-  (b* (((when (omap::emptyp fileset-map)) nil)
-       ((mv filepath filedata) (omap::head fileset-map)))
-    (omap::update (filepath->unwrap filepath)
-                  (acl2::nats=>string (filedata->unwrap filedata))
-                  (fileset-map-to-string-map (omap::tail fileset-map)))))
-
-(defun fileset-to-string-map (fileset)
-  (fileset-map-to-string-map (fileset->unwrap fileset)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Check result of preprocessing against expectation.
-
-(defmacro test-preproc (files &key expected)
-  `(assert!-stobj
-    (b* ((files ,files)
-         (base-dir ".")
-         (include-dirs nil)
-         (ienv (ienv-default))
-         ((mv erp fileset state)
-          (pproc-files files base-dir include-dirs ienv state 1000000000)))
-      (mv (if erp
-              (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
-            (or (equal fileset ,expected)
-                (cw "Actual:~%~x0" ; CW returns nil (see above)
-                    (fileset-to-string-map fileset))))
-          state))
-    state))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; Specialization to one file.
-
-(defmacro test-preproc-1 (file expected)
-  `(test-preproc '(,file)
-                 :expected (fileset-of ,file ,expected)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; (depends-on "empty.c")
 
 (test-preproc-1 "empty.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "whitespace.c")
 
 (test-preproc-1 "whitespace.c"
                 (list 10
@@ -90,6 +30,8 @@
                       12 10)) ; FF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "comments.c")
 
 (test-preproc-1 "comments.c"
                 "/* block
@@ -101,6 +43,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "text.c")
+
 (test-preproc-1 "text.c"
                 "int x = 0;
 
@@ -111,6 +55,8 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "null-directive.c")
+
 (test-preproc-1 "null-directive.c"
                 "/*#*/
 /* comment */ /*#*/
@@ -120,6 +66,10 @@ void f(double y) {
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "including.c")
+; (depends-on "included.h")
+; (depends-on "subdir/included2.h")
 
 (test-preproc '("including.c")
               :expected (fileset-of "including.c"
@@ -137,6 +87,8 @@ void f(double y) {
 "))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "macros.c")
 
 (test-preproc-1 "macros.c"
                 "
@@ -188,6 +140,8 @@ int z6 = (1, (a,b));
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "stringize.c")
+
 (test-preproc-1 "stringize.c"
                 "
 \"\";
@@ -205,6 +159,8 @@ int z6 = (1, (a,b));
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "concatenate.c")
+
 (test-preproc-1 "concatenate.c"
                 "
 a b cd e;
@@ -215,9 +171,13 @@ x334;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example-6.10.3.3.c")
+
 (test-preproc-1 "c17-std-example-6.10.3.3.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example-6.10.3.4.c")
 
 (test-preproc-1 "c17-std-example-6.10.3.4.c"
                 "
@@ -226,6 +186,8 @@ x334;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example1-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
 int table[100];
@@ -233,9 +195,13 @@ int table[100];
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example2-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example2-6.10.3.5.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example3-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
@@ -246,6 +212,8 @@ char c[2][6] = { \"hello\", \"\" };
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example4-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
@@ -258,6 +226,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example5-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
                 "
 int j[] = { 123, 45, 67, 89,
@@ -266,9 +236,13 @@ int j[] = { 123, 45, 67, 89,
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "c17-std-example6-6.10.3.5.c")
+
 (test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "c17-std-example7-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example7-6.10.3.5.c"
                 "
@@ -277,3 +251,107 @@ fprintf(stderr, \"X = %d\\n\", x);
 puts(\"The first, second, and third items.\");
 ((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "conditional.c")
+
+(test-preproc-1 "conditional.c"
+                "M_is_not_defined
+
+
+M_is_defined
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "gincluder1.c")
+; (depends-on "gincluder2.c")
+; (depends-on "gincluder1.h")
+; (depends-on "gincluder2.h")
+; (depends-on "guarded.h")
+
+;;;;;;;;;;;;;;;;;;;;
+
+; In this test:
+; - gincluder1.c includes gincluder1.h and gincluder2.h in that order
+; - gincluder2.c includes gincluder2.h and gincluder1.h in that order
+; - gincluder1.h includes guarded.h and then introduces x1
+; - gincluder2.h includes guarded.h and then introduces x2
+; - guarded.h has a header guard, and introduces f
+; All the #include directives are preserved.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "#include \"gincluder1.h\"
+#include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "#include \"gincluder2.h\"
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "#ifndef GUARDED
+#define GUARDED
+void f() {}
+#endif
+"))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; This is a variant of the previous test in which we have two additional files,
+; gincludermod1.c and gincludermod2.c,
+; which "modify" f by #define'ing it to be f1 and f2 respectively.
+; Thus:
+; - guarded.h and gincluder1.h are expanded in gincludermod1.c,
+;   but not ginluder2.h
+; - guarded.h and gincluder2.h are expanded in gincludermod2.c,
+;   but not ginluder1.h
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c"
+                "gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "#include \"gincluder1.h\"
+#include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "#include \"gincluder2.h\"
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "#ifndef GUARDED
+#define GUARDED
+void f() {}
+#endif
+"
+                                    "gincludermod1.c"
+                                    "#define GUARDED
+void f1() {}
+int x1 = 0;
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "#define GUARDED
+void f2() {}
+int x2 = 0;
+#include \"gincluder1.h\"
+"))

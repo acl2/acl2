@@ -1,7 +1,7 @@
 ; Limiting how many times a rule can fire
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -153,3 +153,10 @@
   (declare (xargs :guard (and (symbolp rule-name)
                               (rule-limitsp limits))))
   (cdr (assoc-eq rule-name limits)))
+
+(defthm integerp-of-limit-for-rule
+  (implies (and (rule-limitsp limits)
+                ;; not nil:
+                (limit-for-rule rule-name limits))
+           (integerp (limit-for-rule rule-name limits)))
+  :hints (("Goal" :in-theory (enable limit-for-rule rule-limitsp))))

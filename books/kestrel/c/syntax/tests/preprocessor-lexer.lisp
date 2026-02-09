@@ -11,7 +11,6 @@
 (in-package "C$")
 
 (include-book "../preprocessor-lexer")
-(include-book "../input-files") ; for IENV-DEFAULT
 
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
@@ -31,8 +30,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -60,8 +58,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                1 ; no #include's
-                                (macro-table-init)
+                                (macro-table-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -353,7 +350,7 @@
  plex-hexadecimal-digit
  "fy"
  :cond (and (equal ast #\f)
-            (equal (ppstate->bytes 0 ppstate) (list (char-code #\y)))))
+            (equal (ppstate->bytes ppstate) (list (char-code #\y)))))
 
 (test-lex-fail
  plex-hexadecimal-digit
@@ -393,7 +390,7 @@
  plex-hex-quad
  "DeadBeef"
  :cond (and (equal ast (hex-quad #\D #\e #\a #\d))
-            (equal (ppstate->bytes 0 ppstate) (acl2::string=>nats "Beef"))))
+            (equal (ppstate->bytes ppstate) (acl2::string=>nats "Beef"))))
 
 (test-lex-fail
  plex-hex-quad

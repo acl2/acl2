@@ -353,3 +353,21 @@
   (implies (acl2::parsed-elfp parsed-elf)
            (x::memory-regionsp (mv-nth 1 (elf64-regions-to-load parsed-elf))))
   :hints (("Goal" :in-theory (enable elf64-regions-to-load))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund elf-position-independentp (parsed-elf)
+  (declare (xargs :guard (acl2::parsed-elfp parsed-elf)))
+  (b* ((elf-type (parsed-elf-type parsed-elf))
+       (- (cw "ELF type: ~x0.~%" elf-type)) ; suppress?
+       )
+    (if (parsed-elf-program-header-table parsed-elf) ; todo: why do we check this?
+        ;; We treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
+        (if (member-eq elf-type '(:rel :dyn))
+            t
+          (if (eq elf-type :exec)
+              nil
+            (er hard? 'unroll-x86-code-core "Unexpected ELF executable type: ~x0." elf-type)))
+      (er hard? 'unroll-x86-code-core "No program header table in ELF file.")
+      ;;nil
+      )))

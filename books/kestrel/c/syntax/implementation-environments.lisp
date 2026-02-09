@@ -677,8 +677,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->uchar-max ienv)))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->uchar-max ienv)))
 
   ///
 
@@ -694,8 +694,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed char')."
-  (and (<= (ienv->schar-min ienv) (ifix val))
-       (<= (ifix val) (ienv->schar-max ienv)))
+  (and (<= (ienv->schar-min ienv) (lifix val))
+       (<= (lifix val) (ienv->schar-max ienv)))
 
   ///
 
@@ -712,8 +712,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('char')."
-  (and (<= (ienv->char-min ienv) (ifix val))
-       (<= (ifix val) (ienv->char-max ienv)))
+  (and (<= (ienv->char-min ienv) (lifix val))
+       (<= (lifix val) (ienv->char-max ienv)))
 
   ///
 
@@ -730,8 +730,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ushort-max ienv)))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->ushort-max ienv)))
 
   ///
 
@@ -747,8 +747,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed short')."
-  (and (<= (ienv->sshort-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sshort-max ienv)))
+  (and (<= (ienv->sshort-min ienv) (lifix val))
+       (<= (lifix val) (ienv->sshort-max ienv)))
 
   ///
 
@@ -765,8 +765,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->uint-max ienv)))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->uint-max ienv)))
 
   ///
 
@@ -782,8 +782,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed int')."
-  (and (<= (ienv->sint-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sint-max ienv)))
+  (and (<= (ienv->sint-min ienv) (lifix val))
+       (<= (lifix val) (ienv->sint-max ienv)))
 
   ///
 
@@ -800,8 +800,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ulong-max ienv)))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->ulong-max ienv)))
 
   ///
 
@@ -817,8 +817,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed long')."
-  (and (<= (ienv->slong-min ienv) (ifix val))
-       (<= (ifix val) (ienv->slong-max ienv)))
+  (and (<= (ienv->slong-min ienv) (lifix val))
+       (<= (lifix val) (ienv->slong-max ienv)))
 
   ///
 
@@ -835,8 +835,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->ullong-max ienv)))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->ullong-max ienv)))
 
   ///
 
@@ -852,8 +852,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACl2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
-  (and (<= (ienv->sllong-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sllong-max ienv)))
+  (and (<= (ienv->sllong-min ienv) (lifix val))
+       (<= (lifix val) (ienv->sllong-max ienv)))
 
   ///
 
@@ -870,8 +870,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('uintmax_t')."
-  (and (<= 0 (ifix val))
-       (<= (ifix val) (ienv->uinteger-max ienv))))
+  (and (<= 0 (lifix val))
+       (<= (lifix val) (ienv->uinteger-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -879,8 +879,8 @@
   :returns (yes/no booleanp)
   :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('intmax_t')."
-  (and (<= (ienv->sinteger-min ienv) (ifix val))
-       (<= (ifix val) (ienv->sinteger-max ienv))))
+  (and (<= (ienv->sinteger-min ienv) (lifix val))
+       (<= (lifix val) (ienv->sinteger-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -914,6 +914,7 @@
 
 (define ienv->std ((ienv ienvp))
   :returns (number posp
+                   :rule-classes (:rewrite :type-prescription)
                    :hints (("Goal" :in-theory (enable c::version-std-c17p
                                                       c::version-std-c23p))))
   :short "Numeric version of the C standard (regardless of GCC extensions)."
@@ -922,3 +923,56 @@
           ((c::version-std-c23p ienv.version) 23)))
   :guard-hints (("Goal" :in-theory (enable c::version-std-c17p
                                            c::version-std-c23p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-default (&key
+                      ((std (or (eq std :auto)
+                                (equal std 17)
+                                (equal std 23)))
+                       ':auto)
+                      ((extensions (or (eq extensions nil)
+                                       (eq extensions :gcc)
+                                       (eq extensions :clang)))
+                       'nil))
+  :short "A default implementation environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the default used by @(tsee input-files), but it is more general.
+     In particular, it could be used as default for tests
+     that do not necessarily involve @(tsee input-files).")
+   (xdoc::p
+    "We default to the C17 standard without GCC extensions.
+     This is the C version with the strongest support.
+     Optionally, this can be overridden
+     with the @(':std') and @(':extensions') keyword arguments.
+     The legal arguments for @(':std') are @(':auto'), @('17'), and @('23').
+     The legal arguments for @(':extensions') are
+     @('nil'), @(':gcc'), and @(':clang').")
+   (xdoc::p
+    "For the type sizes and signedness options,
+     we use values which have anecdotally appeared common
+     on 64-bit machines."))
+  (b* ((std (if (eq std :auto) 17 std))
+       (version (if (int= std 17)
+                    (cond ((eq extensions nil) (c::version-c17))
+                          ((eq extensions :gcc) (c::version-c17+gcc))
+                          (t ; :clang
+                           (c::version-c17+clang)))
+                  (cond
+                   ((eq extensions nil) (c::version-c23))
+                   ((eq extensions :gcc) (c::version-c23+gcc))
+                   (t ; :clang
+                    (c::version-c23+clang))))))
+    (make-ienv :version version
+               :bool-bytes 1
+               :short-bytes 2
+               :int-bytes 4
+               :long-bytes 8
+               :llong-bytes 8
+               :float-bytes 4
+               :double-bytes 8
+               :ldouble-bytes 16
+               :pointer-bytes 8
+               :plain-char-signedp nil)))
