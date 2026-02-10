@@ -83,7 +83,7 @@
     "Like @(tsee token), this is abstract-syntax-like,
      but it is not part of the abstract syntax,
      because it is not needed there."))
-  (:token ((unwrap token)))
+  (:token ((token token)))
   (:comment ())
   (:prepr-directive ())
   (:whitespace ())
@@ -3580,7 +3580,7 @@
           ((when (not lexeme?))
            (retok nil span parstate))
           ((when (lexeme-case lexeme? :token))
-           (b* ((token (lexeme-token->unwrap lexeme?))
+           (b* ((token (lexeme-token->token lexeme?))
                 ((unless (< parstate.tokens-read
                             (parstate->tokens-length parstate)))
                  (raise "Internal error: index ~x0 out of bound ~x1."
