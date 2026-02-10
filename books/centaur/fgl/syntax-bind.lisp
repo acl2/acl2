@@ -350,7 +350,7 @@ that term is assumed true (as in a hypothesis or path condition element), the sy
 <p>In other cases, replacement might still occur, but whether left by right or
 right by left will be governed according to heuristics.</p>
 
-<p>Example:
+<p>Example:</p>
 @({
  (fgl::def-fgl-rewrite signed-byte-assumption-to-logext
     (iff (signed-byte-p n x)
