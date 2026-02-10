@@ -76,26 +76,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>lexeme</i> in our ABNF grammar,
-     but since for now we just skip over comments and white space,
-     we have no additional information about them here.")
+    "This corresponds to the rule for lexemes in our ABNF grammar.
+     Since for now we just skip over comments and white space,
+     we have no additional information about them here.
+     The entry for control lines also carried no information:
+     see the documentation about this in the ABNF grammar.")
    (xdoc::p
     "Like @(tsee token), this is AST-like,
      but it is not part of the ASTs in @(see abstract-syntax-trees),
-     because it is not needed there.")
-   (xdoc::p
-    "We also add an entry for unhandled preprocessing directives.
-     We have found that, when using an external preprocessor,
-     sometimes some directives survive preprocessing
-     (although it seems like they should not).
-     Thus, our lexer is equipped to recognize and ignore them,
-     as it currently does with comments and white space.
-     We are actually extending the parser to handle certain directives,
-     but this is for the ones still unhandled."))
+     because it is not needed there."))
   (:token ((token token)))
   (:comment ())
   (:whitespace ())
-  (:unhandled-directive ())
+  (:control-line ())
   :pred lexemep
   :layout :fulltree)
 
@@ -2747,7 +2740,7 @@
      which is returned by the loop function."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-prepr-directive-loop first-pos parstate)))
-    (retok (lexeme-unhandled-directive)
+    (retok (lexeme-control-line)
            (make-span :start first-pos :end last-pos)
            parstate))
 
