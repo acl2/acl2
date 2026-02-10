@@ -1,5 +1,8 @@
 set -e # Stop on errors
 
+OS=`uname -s`
+echo "OS is $OS."
+
 # Note that the first test takes longer because we have to save an image
 
 rm -f split-gso.output/*.*
@@ -15,8 +18,13 @@ rm -f split-fn.output/*.*
 rm -f wrap-fn.output/*.*
 ../transform-c.sh wrap-fn.json
 rm -f add-section-attr.output/*.*
-../transform-c.sh add-section-attr.json
-../transform-c.sh add-section-attr2.json
+if [ ${OS} == "Darwin" ]; then
+    ../transform-c.sh add-section-attr-mac.json
+    ../transform-c.sh add-section-attr2-mac.json
+else
+    ../transform-c.sh add-section-attr.json
+    ../transform-c.sh add-section-attr2.json
+fi
 
 # cd input-files
 # gcc -O0 -c *.c
