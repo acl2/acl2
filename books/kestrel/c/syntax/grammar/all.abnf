@@ -311,56 +311,10 @@ line-comment = "//" *character-not-new-line new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Header Names [C17:6.4.7] [C17:A.1.8]
-
-header-name = "<" h-char-sequence ">"
-            / double-quote q-char-sequence double-quote
-
-h-char-sequence = h-char
-                / h-char-sequence h-char
-
-h-char = character-not-greater-than-or-new-line
-
-q-char-sequence = q-char
-                / q-char-sequence q-char
-
-q-char = character-not-double-quote-or-new-line
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
-
-pp-number = digit
-          / "." digit
-          / pp-number digit
-          / pp-number identifier-nondigit
-          / pp-number %i"e" sign
-          / pp-number %i"p" sign
-          / pp-number "."
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Lexical Elements [C17:A.1.1] [C17:6.4]
-
-token = keyword
-      / identifier
-      / constant
-      / string-literal
-      / punctuator
-
-preprocessing-token = header-name
-                    / identifier
-                    / pp-number
-                    / character-constant
-                    / string-literal
-                    / punctuator
-                    / character ; non-white-space none of the above
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Keywords [C17:A.1.2] [C17:6.4.1]
 
-; We include three keywords in [C23], as a preliminary approach.
+; We include three keywords in [C23], as a preliminary approach;
+; all the others are both in [C23] and [C17].
 ; We plan to modularize this grammar according to C versions.
 
 keyword = %s"auto"
@@ -735,6 +689,53 @@ punctuator = "["
            / "%>"
            / "%:"
            / "%:%:"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Header Names [C17:6.4.7] [C17:A.1.8]
+
+header-name = "<" h-char-sequence ">"
+            / double-quote q-char-sequence double-quote
+
+h-char-sequence = h-char
+                / h-char-sequence h-char
+
+h-char = character-not-greater-than-or-new-line
+
+q-char-sequence = q-char
+                / q-char-sequence q-char
+
+q-char = character-not-double-quote-or-new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
+
+pp-number = digit
+          / "." digit
+          / pp-number digit
+          / pp-number identifier-nondigit
+          / pp-number %i"e" sign
+          / pp-number %i"p" sign
+          / pp-number "."
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical Elements [C17:A.1.1] [C17:6.4]
+
+token = keyword
+      / identifier
+      / constant
+      / string-literal
+      / punctuator
+
+preprocessing-token = header-name
+                    / identifier
+                    / pp-number
+                    / character-constant
+                    / string-literal
+                    / punctuator
+                    / character ; non-white-space none of the above
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
