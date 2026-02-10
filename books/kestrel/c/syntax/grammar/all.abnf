@@ -284,6 +284,33 @@ white-space = space
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Comments [C17:6.4.9]
+
+; [C17] does not provide grammar rules for comments;
+; it describes them informally in [C17:6.4.9].
+; Here we provide ABNF grammar rules that capture the syntax of comments.
+; [C17:6.4.9/2] says that the ending new line is not part of the line comment,
+; but, grammatically, it is convenient to make it part of the comment,
+; so we can enforce that the line comment ends with new line.
+
+comment = block-comment
+        / line-comment
+
+block-comment = "/*" rest-of-block-comment
+
+rest-of-block-comment =
+      "*" rest-of-block-comment-after-star
+    / character-not-star rest-of-block-comment
+
+rest-of-block-comment-after-star =
+      "/"
+    / "*" rest-of-block-comment-after-star
+    / character-not-star-or-slash rest-of-block-comment
+
+line-comment = "//" *character-not-new-line new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Header Names [C17:6.4.7] [C17:A.1.8]
 
 header-name = "<" h-char-sequence ">"
@@ -310,33 +337,6 @@ pp-number = digit
           / pp-number %i"e" sign
           / pp-number %i"p" sign
           / pp-number "."
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Comments [C17:6.4.9]
-
-; [C17] does not provide grammar rules for comments;
-; it describes them informally in [C17:6.4.9].
-; Here we provide ABNF grammar rules that capture the syntax of comments.
-; [C17:6.4.9/2] says that the ending new line is not part of the line comment,
-; but, grammatically, it is convenient to make it part of the comment,
-; so we can enforce that the line comment ends with new line.
-
-comment = block-comment
-        / line-comment
-
-block-comment = "/*" rest-of-block-comment
-
-rest-of-block-comment =
-      "*" rest-of-block-comment-after-star
-    / character-not-star rest-of-block-comment
-
-rest-of-block-comment-after-star =
-      "/"
-    / "*" rest-of-block-comment-after-star
-    / character-not-star-or-slash rest-of-block-comment
-
-line-comment = "//" *character-not-new-line new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
