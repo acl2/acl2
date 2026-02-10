@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
@@ -1039,6 +1040,13 @@
   :elementp-of-nil nil
   :pred h-char-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection h-char-list->code-list ((x h-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee h-char->code) to lists."
+  (h-char->code x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod q-char
@@ -1074,6 +1082,13 @@
   :elementp-of-nil nil
   :pred q-char-listp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection q-char-list->code-list ((x q-char-listp))
+  :returns (chars nat-listp)
+  :short "Lift @(tsee q-char->code) to lists."
+  (q-char->code x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum header-name
@@ -1086,6 +1101,15 @@
   (:quotes ((chars q-char-list)))
   :pred header-namep
   :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist header-name-list
+  :short "Fixtype of lists of header names."
+  :elt-type header-name
+  :true-listp t
+  :elementp-of-nil nil
+  :pred header-name-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3703,8 +3727,14 @@
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
     "A translation unit consists of a list of external declarations,
-     optionally preceded by a line comment,
-     which we represent as its content, namely a list of character codes;
+     optionally preceded by a line comment
+     and by zero or more @('#include') directives.
+     The comment comes first, if present;
+     then the @('#include') directives;
+     then the external declarations.")
+   (xdoc::p
+    "The line comment is represented as its content,
+     namely a list of character codes;
      the comment is absent if the list is empty.
      This is useful when generating code:
      the comment can convey information about the generation.
@@ -3714,8 +3744,14 @@
      also extending our parser to recognize and preserve those comments
      (now the tokenizer skips over all comments.")
    (xdoc::p
+    "The @('#include') directives are represented as their header names,
+     in a list of zero or more.
+     Eventually, we may generalize this to allow @('#include') directives
+     in other (top-level) places in the translation unit.")
+   (xdoc::p
     "We also add a slot with additional information, e.g. from validation."))
   ((comment nat-list)
+   (includes header-name-list)
    (declons ext-declon-list)
    (info any))
   :pred transunitp

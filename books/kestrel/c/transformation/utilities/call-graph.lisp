@@ -639,6 +639,9 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
   (b* (((transunit transunit) transunit)
+       ((when transunit.includes)
+        (raise "Unsupported #include directives.")
+        (call-graph-fix call-graph))
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
     (call-graph-ext-declon-list transunit.declons filepath valid-table call-graph))

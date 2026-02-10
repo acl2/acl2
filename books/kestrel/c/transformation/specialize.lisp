@@ -199,11 +199,15 @@
    (const exprp))
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
+  (b* (((transunit tunit) tunit)
+       ((when tunit.includes)
+        (raise "Unsupported #include directives.")
+        (transunit-fix tunit)))
     (make-transunit
      :comment nil
      :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
-     :info tunit.info)))
+     :info tunit.info))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
