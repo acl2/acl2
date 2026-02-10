@@ -3714,6 +3714,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expand-include-in-place ((header header-namep)
+                                 (newline-at-end plexemep)
+                                 (rev-included-file-lexemes plexeme-listp)
+                                 (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Expand an included file in place."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when, while preprocessing an including file,
+     we find a @('#include') of a file (the included file)
+     that is not self-contained, and must therefore be expanded in place.
+     At the code, this just adds the lexemes of the included file
+     to the list of lexemes of the including file.
+     To facilitate inspection, we surround them by two line comments,
+     indicating and delimiting the contents of the included file;
+     this feature could be made optional in the future.")
+   (xdoc::p
+    "With reference to @(tsee pproc-header-name), which calls this function,
+     we ignore all the white space and comments in the @('#include') directive,
+     except for the final new line, which we pass to this function,
+     so we can use it to end the delimiting line comments that we generate.")
+   (xdoc::p
+    "A @('#include') directive takes one or more lines.
+     Conceptually it is just one line,
+     but it could contain block comments that take multiple lines;
+     it is a single line when those block comments are regarded as single spaces
+     [C17:5.1.1.2/3].
+     In any case, it takes a whole number of lines.
+     We replace those lines with the lexemes we generate in this function,
+     which also take a whole number of lines."))
+  (b* ((header-codes (header-name-case
+                      header
+                      :angles (append (list (char-code #\<))
+                                      (h-char-list->code-list header.chars)
+                                      (list (char-code #\>)))
+                      :quotes (append (list (char-code #\"))
+                                      (q-char-list->code-list header.chars)
+                                      (list (char-code #\")))))
+       (include-codes (append (acl2::string=>nats " #include ") header-codes))
+       (opening-codes (append include-codes (acl2::string=>nats " >>>>>>>>>>")))
+       (closing-codes (append (acl2::string=>nats " <<<<<<<<<<") include-codes))
+       (ppstate (add-rev-lexeme (plexeme-line-comment opening-codes) ppstate))
+       (ppstate (add-rev-lexeme newline-at-end ppstate))
+       (ppstate (add-rev-rev-lexemes rev-included-file-lexemes ppstate))
+       (ppstate (add-rev-lexeme (plexeme-line-comment closing-codes) ppstate))
+       (ppstate (add-rev-lexeme newline-at-end ppstate)))
+    ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc-files/groups/etc
   :short "Preprocess files, groups, and some related entities."
   :long
@@ -4570,7 +4621,10 @@
                                            (ppstate->macros ppstate))
                    ppstate))
          ((when (> file-max-reach 0)) ; not self-contained
-          (b* ((ppstate (add-rev-rev-lexemes file-rev-lexemes ppstate))
+          (b* ((ppstate (expand-include-in-place header
+                                                 newline-at-end
+                                                 file-rev-lexemes
+                                                 ppstate))
                (max-reach (ppstate->max-reach ppstate))
                (max-reach (max (1- file-max-reach) max-reach))
                (ppstate (update-ppstate->max-reach max-reach ppstate)))

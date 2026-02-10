@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -2548,6 +2548,7 @@
                            stack-slots
                            existing-stack-slots
                            position-independent
+                           feature-flags
                            ;; todo: continue reordering args below here
                            loop-alist ; relative to the target-offset (but adjusted below)
                            extra-rules
@@ -2610,6 +2611,10 @@
        ((when (not (booleanp position-independent)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for position-independent ~x0" position-independent)
                 (mv (erp-t) nil state)))
+       ;; Check the feature-flags argument:
+       ((when (not (feature-flagsp feature-flags)))
+        (prog2$ (er hard? 'lift-subroutine-fn "Bad value for feature-flags ~x0" feature-flags)
+                (mv (erp-t) nil state)))
        ;; Check the loop-alist argument::
        ((when (eq :none loop-alist))
         (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
@@ -2653,6 +2658,7 @@
         (if (eq :mach-o-64 executable-type)
             (assumptions-macho64-new target
                                      position-independent
+                                     feature-flags
                                      stack-slots
                                      existing-stack-slots
                                      'x86_0
@@ -2664,6 +2670,7 @@
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
                                     position-independent
+                                    feature-flags
                                     stack-slots
                                     existing-stack-slots
                                     'x86_0
@@ -2675,6 +2682,7 @@
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
                                        position-independent
+                                       feature-flags
                                        stack-slots
                                        existing-stack-slots
                                        'x86_0
@@ -2795,8 +2803,8 @@
        )
     (mv erp event state)))
 
-;; todo: add position-indendent option
-(defmacro lift-subroutine (&whole
+(make-event
+ `(defmacro lift-subroutine (&whole
                            whole-form
                            lifted-name ;the name to use for the function created by the lifter
                            &key
@@ -2811,7 +2819,7 @@
                            (stack-slots '10)
                            (existing-stack-slots ':auto)
                            (position-independent 't)
-
+                           (feature-flags ',*default-feature-flags*)
                            (loops ':none) ; required (for now)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            (extra-rules 'nil)
@@ -2837,7 +2845,7 @@
                            ',stack-slots
                            ',existing-stack-slots
                            ',position-independent
-
+                           ',feature-flags
                            ',loops
                            ,extra-rules
                            ,remove-rules
@@ -2855,7 +2863,7 @@
          state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state))))
+         state)))))
 
 ;(defttag t)
 ;(remove-untouchable acl2::verify-termination-on-raw-program-okp nil)

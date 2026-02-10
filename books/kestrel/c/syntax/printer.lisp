@@ -4461,6 +4461,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-include-directive ((hname header-namep) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a @('#include') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we do not have ASTs for @('#include') directives,
+     but we use header names to represent such directives:
+     see @(tsee transunit).
+     So this function takes as input a header name.
+     We print it as an include directive, in its own line.
+     Since this is only used at the top level,
+     no indentation is needed."))
+  (b* ((pstate (print-astring "#include " pstate))
+       (pstate (print-header-name hname pstate))
+       (pstate (print-new-line pstate)))
+    pstate)
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-version print-include-directive))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-include-directive-list ((hnames header-name-listp)
+                                      (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero of more @('#include') directives."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee print-include-directive),
+     currently we do not have AST for @('#include') directives,
+     which we represent as header names.
+     So this function takes as input a list of header names."))
+  (b* (((when (endp hnames)) (pristate-fix pstate))
+       (pstate (print-include-directive (car hnames) pstate)))
+    (print-include-directive-list (cdr hnames) pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-rec-same-version print-include-directive-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-transunit ((tunit transunitp) (pstate pristatep))
   :guard (and (transunit-unambp tunit)
               (transunit-aidentp tunit (pristate->version pstate)))
@@ -4470,6 +4517,10 @@
   (xdoc::topstring
    (xdoc::p
     "If there is a line comment, we print it in one line,
+     followed by a blank line if there are
+     @('#include') directives or external declarations.
+     If there are @('#include') directives,
+     they are printed in contiguous lines,
      followed by a blank line if there are external declarations."))
   (b* (((transunit tunit) tunit)
        (pstate
@@ -4478,7 +4529,8 @@
                 (b* ((pstate (print-astring "// " pstate))
                      (pstate (print-chars tunit.comment pstate))
                      (pstate (print-new-line pstate))
-                     (pstate (if tunit.declons
+                     (pstate (if (or tunit.includes
+                                     tunit.declons)
                                  (print-new-line pstate) ; blank line
                                pstate)))
                   pstate)
@@ -4486,12 +4538,16 @@
                (raise "Internal error: ~
                        non-grammatical line comment ~x0."
                       tunit.comment)
-               pstate))
-          pstate)))
+               (pristate-fix pstate)))
+          pstate))
+       (pstate (print-include-directive-list tunit.includes pstate))
+       (pstate (if (and tunit.includes
+                        tunit.declons)
+                   (print-new-line pstate) ; blank line
+                 pstate)))
     (print-ext-declon-list tunit.declons pstate))
   :hooks (:fix)
   :no-function nil
-
   ///
 
   (defret-same-version print-transunit))

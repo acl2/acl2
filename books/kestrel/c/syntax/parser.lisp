@@ -1207,7 +1207,7 @@
         (b* ((parstate (if token (unread-token parstate) parstate)))
           (retok nil (irr-span) parstate)))
        ;; stringlit
-       (string (token-string->unwrap token))
+       (string (token-string->literal token))
        ((erp strings last-span parstate) (parse-*-stringlit parstate)))
     ;; stringlit stringlits
     (retok (cons string strings)
@@ -1562,11 +1562,11 @@
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((and token (token-case token :ident)) ; ident
-      (retok (attrib-name-ident (token-ident->unwrap token))
+      (retok (attrib-name-ident (token-ident->ident token))
              span
              parstate))
      ((and token (token-case token :keyword)) ; keyword
-      (retok (attrib-name-keyword (token-keyword->unwrap token))
+      (retok (attrib-name-keyword (token-keyword->keyword token))
              span
              parstate))
      (t
@@ -3174,7 +3174,7 @@
         (b* (((erp token2 last-span parstate) (read-token parstate)))
           (cond
            ((and token2 (token-case token2 :ident)) ; && ident
-            (retok (expr-label-addr (token-ident->unwrap token2))
+            (retok (expr-label-addr (token-ident->ident token2))
                    (span-join span last-span)
                    parstate))
            (t ; && other
@@ -3836,19 +3836,19 @@
                span
                parstate))
        ((and token (token-case token :ident)) ; identifier
-        (retok (make-expr-ident :ident (token-ident->unwrap token)
+        (retok (make-expr-ident :ident (token-ident->ident token)
                                 :info nil)
                span
                parstate))
        ((and token (token-case token :const)) ; constant
-        (retok (make-expr-const :const (token-const->unwrap token))
+        (retok (make-expr-const :const (token-const->const token))
                span
                parstate))
        ((and token (token-case token :string)) ; stringlit
         (b* (((erp strings last-span parstate) ; stringlit stringlits
               (parse-*-stringlit parstate)))
           (retok (make-expr-string
-                  :strings (cons (token-string->unwrap token) strings))
+                  :strings (cons (token-string->literal token) strings))
                  (if strings (span-join span last-span) span)
                  parstate)))
        ((token-punctuatorp token "(") ; (
@@ -4867,7 +4867,7 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->unwrap token)))
+                (type-spec-typedef (token-ident->ident token)))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5152,7 +5152,7 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->unwrap token)))
+                (type-spec-typedef (token-ident->ident token)))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5563,7 +5563,7 @@
        ;; it may be the whole structure or union specifier,
        ;; or there may be more to it, so we read another token.
        ((and token (token-case token :ident)) ; struct/union ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace, there are two cases.
@@ -5734,7 +5734,7 @@
        ;; it may be the whole specifier, or there may be more,
        ;; so we read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace,
@@ -6568,7 +6568,7 @@
        ;; that must be the start of the direct declarator.
        ((and token (token-case token :ident)) ; ident
         (parse-direct-declarator-rest (dirdeclor-ident
-                                       (token-ident->unwrap token))
+                                       (token-ident->ident token))
                                       span
                                       parstate))
        ;; If token is an open parenthesis,
@@ -8513,7 +8513,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; [ name ] string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; [ name ] constraint
@@ -8538,7 +8538,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; constraint
@@ -8643,7 +8643,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; [ name ] string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; [ name ] constraint
@@ -8668,7 +8668,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; constraint
@@ -8973,7 +8973,7 @@
        ;; we could have a labeled statement or an expression statement.
        ;; So we need to read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is a colon,
@@ -11885,7 +11885,11 @@
                       are not enabled.")))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :comment nil :declons extdecls :info nil) parstate))
+    (retok (make-transunit :comment nil
+                           :includes nil
+                           :declons extdecls
+                           :info nil)
+           parstate))
 
   ///
 

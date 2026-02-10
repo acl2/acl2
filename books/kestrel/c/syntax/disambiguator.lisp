@@ -3860,6 +3860,9 @@
      we should refine our GCC/Clang flag with
      a richer description of the C implementation."))
   (b* (((reterr) (irr-transunit))
+       ((when (transunit->includes tunit))
+        (reterr
+         (msg "Disambiguator does not support #include directives yet.")))
        (edecls (transunit->declons tunit))
        (table (dimb-init-table))
        (table
