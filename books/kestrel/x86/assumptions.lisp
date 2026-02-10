@@ -30,6 +30,7 @@
 (defconst *default-feature-flags*
   '(:avx
     :avx2
+    :bmi1
     :bmi2
     :sse
     :sse2
