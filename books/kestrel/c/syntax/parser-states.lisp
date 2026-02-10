@@ -43,23 +43,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>token</i> and <i>preprocessing-token</i>
-     in the grammar [C17:A.1.1] [C17:6.4],
-     but without <i>pp-number</i>
-     (because we have integer and floating constants instead)
-     and without the entities that fit the prose description
-     in the last alternative for <i>preprocessing-token</i>
-     (we do not support these for now);
-     also note that
-     the <i>character-constant</i> alternative in <i>preprocessing-token</i>
-     is part of the <i>constant</i> alternative of <i>token</i>.")
+    "This corresponds to the rule for tokens in the ABNF grammar.
+     By the time we run the parser,
+     preprocessing tokens (see the rule for them in the ABNF grammar)
+     have been turned into tokens.")
    (xdoc::p
     "This notion of token is used by the parser.
      It is not part of the ASTs defined in @(see abstract-syntax-trees),
      even though the ABNF grammar has rules
      for @('token') and @('preprocessing-token').
      Our parser is structured in two levels, which is common:
-     (i) lexing/tokenization; and (ii) parsing proper.
+     (i) lexing/tokenization; and (ii) parsing proper
+     (currently preprocessing precedes lexing/tokenization,
+     but in the future we may integrate them).
      Thus, it is useful to have an AST-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
