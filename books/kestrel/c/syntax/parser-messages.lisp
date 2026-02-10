@@ -51,11 +51,11 @@
   (if token
       (token-case
        token
-       :keyword (msg "the keyword ~x0" token.unwrap)
+       :keyword (msg "the keyword ~x0" token.keyword)
        :ident "an identifier"
        :const "a constant"
        :string "a string literal"
-       :punctuator (msg "the punctuator ~x0" token.unwrap))
+       :punctuator (msg "the punctuator ~x0" token.punctuator))
     "end of file"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

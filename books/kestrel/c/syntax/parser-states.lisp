@@ -67,11 +67,11 @@
      which overlap with identifiers,
      but need type checking to be distinguished from identifiers;
      the parser always classifies those as identifiers."))
-  (:keyword ((unwrap string)))
-  (:ident ((unwrap ident)))
-  (:const ((unwrap const)))
-  (:string ((unwrap stringlit)))
-  (:punctuator ((unwrap stringp)))
+  (:keyword ((keyword string)))
+  (:ident ((ident ident)))
+  (:const ((const const)))
+  (:string ((literal stringlit)))
+  (:punctuator ((punctuator stringp)))
   :pred tokenp
   :layout :fulltree)
 
@@ -118,7 +118,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :keyword)
-       (equal (the string (token-keyword->unwrap token))
+       (equal (the string (token-keyword->keyword token))
               (the string keyword)))
   :hooks nil
 
@@ -144,7 +144,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :punctuator)
-       (equal (the string (token-punctuator->unwrap token))
+       (equal (the string (token-punctuator->punctuator token))
               (the string punctuator)))
   :hooks nil
 

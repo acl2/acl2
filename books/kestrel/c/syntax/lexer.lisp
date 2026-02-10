@@ -3916,7 +3916,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a string literal"
                     :found (token-to-msg token)))
-       (stringlit (token-string->unwrap token)))
+       (stringlit (token-string->literal token)))
     (retok stringlit span parstate))
 
   ///
@@ -3953,7 +3953,7 @@
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "an identifier"
                     :found (token-to-msg token)))
-       (ident (token-ident->unwrap token)))
+       (ident (token-ident->ident token)))
     (retok ident span parstate))
 
   ///
