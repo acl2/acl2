@@ -55,7 +55,8 @@
        :ident "an identifier"
        :const "a constant"
        :string "a string literal"
-       :punctuator (msg "the punctuator ~x0" token.punctuator))
+       :punctuator (msg "the punctuator ~x0" token.punctuator)
+       :header "a header name")
     "end of file"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
