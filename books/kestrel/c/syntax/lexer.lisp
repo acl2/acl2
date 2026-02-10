@@ -2716,7 +2716,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-prepr-directive ((first-pos positionp) (parstate parstatep))
+(define lex-control-line ((first-pos positionp) (parstate parstatep))
   :returns (mv erp
                (lexeme lexemep)
                (span spanp)
@@ -2739,14 +2739,14 @@
      and the position of the closing new-line,
      which is returned by the loop function."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
-       ((erp last-pos parstate) (lex-prepr-directive-loop first-pos parstate)))
+       ((erp last-pos parstate) (lex-control-line-loop first-pos parstate)))
     (retok (lexeme-control-line)
            (make-span :start first-pos :end last-pos)
            parstate))
 
   :prepwork
 
-  ((define lex-prepr-directive-loop ((first-pos positionp) (parstate parstatep))
+  ((define lex-control-line-loop ((first-pos positionp) (parstate parstatep))
      :returns (mv erp
                   (last-pos positionp)
                   (new-parstate parstatep :hyp (parstatep parstate)))
@@ -2764,19 +2764,19 @@
         ((utf8-= char 10) ; new-line
          (retok pos parstate))
         (t ; other
-         (lex-prepr-directive-loop first-pos parstate))))
+         (lex-control-line-loop first-pos parstate))))
      :measure (parsize parstate)
      :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
      ///
 
-     (defret parsize-of-lex-prepr-directive-loop-uncond
+     (defret parsize-of-lex-control-line-loop-uncond
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
        :hints (("Goal" :induct t)))
 
-     (defret parsize-of-lex-prepr-directive-loop-cond
+     (defret parsize-of-lex-control-line-loop-cond
        (implies (not erp)
                 (<= (parsize new-parstate)
                     (1- (parsize parstate))))
@@ -2785,12 +2785,12 @@
 
   ///
 
-  (defret parsize-of-lex-prepr-directive-uncond
+  (defret parsize-of-lex-control-line-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-prepr-directive-cond
+  (defret parsize-of-lex-control-line-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -3128,7 +3128,7 @@
 
      ((and (utf8-= char (char-code #\#))
            (only-whitespace-backward-through-line parstate))
-      (lex-prepr-directive first-pos parstate))
+      (lex-control-line first-pos parstate))
 
      ((or (utf8-= char (char-code #\[)) ; [
           (utf8-= char (char-code #\])) ; ]
