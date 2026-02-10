@@ -18,7 +18,6 @@
 (include-book "statement-generation")
 (include-book "function-and-loop-generation")
 (include-book "tag-generation")
-(include-book "limits")
 
 (include-book "symbolic-execution-rules/top")
 

@@ -766,8 +766,8 @@
              This is @('nil') if there are no subsequent block items,
              which happens exactly when
              these block items return a non-@('void') type.")
-   (limit pseudo-term
-          "Symbolic limit value
+   (limit limit-term
+          "Symbolic limit term
            that suffices for @(tsee exec-block-item-list)
            to execute the block items completely.")
    (events pseudo-event-form-list
@@ -798,7 +798,7 @@
                         :term nil
                         :context (irr-atc-context)
                         :inscope nil
-                        :limit nil
+                        :limit (irr-limit-term)
                         :events nil
                         :thm-name nil
                         :thm-index 1
@@ -813,7 +813,7 @@
                (term* pseudo-termp :hyp (pseudo-termp term))
                (result "An untranslated term.")
                (new-compst "An untranslated term.")
-               (limit pseudo-termp)
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -882,7 +882,7 @@
         nil
         nil
         nil
-        nil
+        (irr-limit-term)
         nil
         nil
         nil
@@ -951,12 +951,13 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              (result-fn-thm (atc-fn-info->result-thm fninfo))
-             (limit `(+ '1 ,limit))
+             (limit (limit-term-add-const 1 limit))
              ((unless (expr-list-purep args.exprs))
               (reterr (raise "Internal error: ~
                               non-pure function call arguments ~x0."
                              args.exprs)))
-             (limit `(+ ',(expr-list-pure-limit args.exprs) ,limit))
+             (limit (limit-term-add-const (expr-list-pure-limit args.exprs)
+                                          limit))
              ((when (or (not gin.proofs)
                         (not called-fn-thm)))
               (retok expr
@@ -988,7 +989,7 @@
                                                      nil
                                                      nil
                                                      nil
-                                                     wrld))
+                                                     state))
              (guard-lemma-hints
               `(("Goal"
                  :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
@@ -1028,7 +1029,7 @@
                                               gin.limit-var
                                               limit
                                               t
-                                              wrld))
+                                              state))
              ((mv type-formula &)
               (atc-gen-term-type-formula uterm
                                          out-type
@@ -1043,7 +1044,7 @@
                                               nil
                                               nil
                                               nil
-                                              wrld))
+                                              state))
              (call-formula `(and ,exec-formula ,type-formula))
              (call-hints
               `(("Goal"
@@ -1163,7 +1164,7 @@
                            state))
        ((unless (expr-purep pure.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." pure.expr)))
-       (limit `(quote ,(expr-pure-limit pure.expr)))
+       (limit (limit-term-const (expr-pure-limit pure.expr)))
        ((when (not gin.proofs))
         (retok pure.expr
                pure.type
@@ -1204,7 +1205,7 @@
                                     gin.limit-var
                                     limit
                                     t
-                                    wrld))
+                                    state))
        (formula2 (atc-contextualize formula2
                                     gin.context
                                     gin.fn
@@ -1213,7 +1214,7 @@
                                     nil
                                     nil
                                     nil
-                                    wrld))
+                                    state))
        (formula `(and ,formula1 ,formula2))
        (hints
         `(("Goal" :in-theory '(compustatep-of-add-frame
@@ -1276,7 +1277,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-block-item-stmt ((stmt stmtp)
-                                 (stmt-limit pseudo-termp)
+                                 (stmt-limit limit-termp)
                                  (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
                                  (uterm? "An untranslated term.")
@@ -1286,7 +1287,7 @@
                                  (gin stmt-ginp)
                                  state)
   :returns (mv (item block-itemp)
-               (item-limit pseudo-termp)
+               (item-limit limit-termp)
                (item-events pseudo-event-form-listp
                             :hyp (pseudo-event-form-listp stmt-events))
                (item-thm symbolp)
@@ -1323,10 +1324,7 @@
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (item (block-item-stmt stmt))
-       (item-limit (pseudo-term-fncall
-                    '+
-                    (list (pseudo-term-quote 1)
-                          stmt-limit)))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        (name (pack gin.fn '-correct- gin.thm-index))
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
@@ -1344,7 +1342,7 @@
                                         gin.limit-var
                                         item-limit
                                         t
-                                        wrld))
+                                        state))
        (formula
         (if uterm?
             (b* (((mv type-formula &)
@@ -1361,7 +1359,7 @@
                                                   nil
                                                   nil
                                                   nil
-                                                  wrld)))
+                                                  state)))
               `(and ,exec-formula ,type-formula))
           exec-formula))
        (hints
@@ -1397,13 +1395,13 @@
                                    (type typep)
                                    (expr exprp)
                                    (expr-term pseudo-termp)
-                                   (expr-limit pseudo-termp)
+                                   (expr-limit limit-termp)
                                    (expr-events pseudo-event-form-listp)
                                    (expr-thm symbolp)
                                    (gin stmt-ginp)
                                    state)
   :returns (mv (item block-itemp)
-               (item-limit pseudo-termp :hyp (pseudo-termp expr-limit))
+               (item-limit limit-termp)
                (item-events pseudo-event-form-listp
                             :hyp (pseudo-event-form-listp expr-events))
                (item-thm symbolp)
@@ -1438,7 +1436,7 @@
                                 :declor declor
                                 :init? initer))
        (item (block-item-declon declon))
-       (item-limit `(+ '3 ,expr-limit))
+       (item-limit (limit-term-add-const 3 expr-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not gin.proofs))
         (mv item
@@ -1472,7 +1470,7 @@
                                         gin.limit-var
                                         item-limit
                                         t
-                                        wrld))
+                                        state))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (value-kind-when-type-pred
         (atc-type-to-value-kind-thm type gin.prec-tags))
@@ -1543,7 +1541,7 @@
                                  gin.prec-tags
                                  thm-index
                                  names-to-avoid
-                                 wrld)))
+                                 state)))
     (mv item
         item-limit
         (append expr-events
@@ -1566,7 +1564,7 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (pseudo-termp val-term))
-               (limit pseudo-termp)
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -1582,7 +1580,9 @@
      retrieved in @(tsee atc-gen-stmt) and passed here,
      must be absent (i.e. @('nil')):
      the declared variable must be new."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil (irr-limit-term)
+        nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        ((when var-info?)
         (reterr
@@ -1654,14 +1654,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-block-item-asg ((asg exprp)
-                                (asg-limit pseudo-termp)
+                                (asg-limit limit-termp)
                                 (asg-events pseudo-event-form-listp)
                                 (asg-thm-name symbolp)
                                 (new-compst "An untranslated term.")
                                 (gin stmt-ginp)
                                 state)
   :returns (mv (item block-itemp)
-               (item-limit pseudo-termp)
+               (item-limit limit-termp)
                (item-events pseudo-event-form-listp
                             :hyp (pseudo-event-form-listp asg-events))
                (item-thm symbolp)
@@ -1686,7 +1686,7 @@
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
-       (stmt-limit `(+ '1 ,asg-limit))
+       (stmt-limit (limit-term-add-const 1 asg-limit))
        (stmt-formula `(equal (exec-stmt ',stmt
                                         ,gin.compst-var
                                         ,gin.fenv-var
@@ -1700,7 +1700,7 @@
                                         gin.limit-var
                                         stmt-limit
                                         t
-                                        wrld))
+                                        state))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-expr
                                (:e stmt-kind)
@@ -1756,7 +1756,7 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (pseudo-termp val-term))
-               (limit pseudo-termp)
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -1775,7 +1775,9 @@
      The left side is a variable so it just needs 1,
      so the limit for the right side, which is always at least 1,
      covers it."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil (irr-limit-term) nil
+        nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless var-info?)
@@ -1823,9 +1825,9 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (expr-limit `(+ '1 ,rhs.limit))
-       (stmt-limit `(+ '1 ,expr-limit))
-       (item-limit `(+ '1 ,stmt-limit))
+       (expr-limit (limit-term-add-const 1 rhs.limit))
+       (stmt-limit (limit-term-add-const 1 expr-limit))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        ((when (not rhs.thm-name))
         (retok item
                rhs.term
@@ -1863,7 +1865,7 @@
                                         gin.limit-var
                                         expr-limit
                                         t
-                                        wrld))
+                                        state))
        (pred (atc-type-to-recognizer rhs.type gin.prec-tags))
        (type-formula `(,pred ,rhs.result))
        (type-formula (atc-contextualize type-formula
@@ -1874,7 +1876,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (asg-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type (atc-type-to-valuep-thm rhs.type gin.prec-tags))
        (value-kind-when-type-pred
@@ -2000,7 +2002,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events)))
@@ -2033,8 +2035,7 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (symbolp array-write-fn))
-               (limit pseudo-termp
-                      :hints (("Goal" :in-theory (enable pseudo-termp))))
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2060,7 +2061,8 @@
      which is always at least 1, and suffices for the index sub-expression.
      Instead of adding the limit for the right expression
      we could take the maximum, but the addition is simpler."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr) (irr-block-item) nil (irr-limit-term)
+        nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless (eq wrapper? nil))
@@ -2157,13 +2159,13 @@
         (reterr (raise "Internal error: non-pure expression ~x0." sub.expr)))
        ((unless (expr-purep elem.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
-       (sub-limit `(quote ,(expr-pure-limit sub.expr)))
-       (right-limit `(quote ,(expr-pure-limit elem.expr)))
-       (sub+right-limit `(+ ,sub-limit ,right-limit))
-       (left+right-limit `(+ '1 ,sub+right-limit))
-       (expr-limit `(+ '1 ,left+right-limit))
-       (stmt-limit `(+ '1 ,expr-limit))
-       (item-limit `(+ '1 ,stmt-limit))
+       (sub-limit (limit-term-const (expr-pure-limit sub.expr)))
+       (right-limit (limit-term-const (expr-pure-limit elem.expr)))
+       (sub+right-limit (limit-term-add sub-limit right-limit))
+       (left+right-limit (limit-term-add-const 1 sub+right-limit))
+       (expr-limit (limit-term-add-const 1 left+right-limit))
+       (stmt-limit (limit-term-add-const 1 expr-limit))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
@@ -2198,7 +2200,7 @@
                                              nil
                                              nil
                                              nil
-                                             wrld))
+                                             state))
        (okp-lemma-hints
         `(("Goal"
            :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -2235,7 +2237,7 @@
                                         gin.limit-var
                                         expr-limit
                                         t
-                                        wrld))
+                                        state))
        (pred (atc-type-to-recognizer elem.type gin.prec-tags))
        (type-formula `(,pred ,uterm))
        (type-formula (atc-contextualize type-formula
@@ -2246,7 +2248,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-when-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
         (pack 'exec-expr-when-asg-arrsub-when-
@@ -2461,7 +2463,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events)))
@@ -2498,8 +2500,7 @@
                (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
                                                  (pseudo-termp member-term)
                                                  (symbolp var)))
-               (limit pseudo-termp
-                      :hints (("Goal" :in-theory (enable pseudo-termp))))
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2522,7 +2523,9 @@
      The left side is a struct member expression,
      so we need 1 to go to @(tsee exec-expr) on the sub-expression;
      the (struct) sub-expression is always a variable so it needs 1 more."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil (irr-limit-term)
+        nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
@@ -2604,12 +2607,13 @@
        (item (block-item-stmt stmt))
        ((unless (expr-purep member.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." member.expr)))
-       (struct-limit ''1)
-       (left-limit `(+ '1 ,struct-limit))
-       (right-limit `(quote ,(expr-pure-limit member.expr)))
-       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
-       (stmt-limit `(+ '1 ,expr-limit))
-       (item-limit `(+ '1 ,stmt-limit))
+       (struct-limit (limit-term-const 1))
+       (left-limit (limit-term-add-const 1 struct-limit))
+       (right-limit (limit-term-const (expr-pure-limit member.expr)))
+       (expr-limit
+        (limit-term-add-const 1 (limit-term-add left-limit right-limit)))
+       (stmt-limit (limit-term-add-const 1 expr-limit))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        ((when (eq struct-write-fn 'quote))
         (reterr (raise "Internal error: structure writer is QUOTE.")))
        (struct-write-term `(,struct-write-fn ,member.term ,var))
@@ -2655,7 +2659,7 @@
                                         gin.limit-var
                                         expr-limit
                                         t
-                                        wrld))
+                                        state))
        (pred (atc-type-to-recognizer member.type gin.prec-tags))
        (type-formula `(,pred ,uterm))
        (type-formula (atc-contextualize type-formula
@@ -2666,7 +2670,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
@@ -2880,7 +2884,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events)))
@@ -2920,8 +2924,7 @@
                                                  (pseudo-termp index-term)
                                                  (pseudo-termp elem-term)
                                                  (symbolp var)))
-               (limit pseudo-termp
-                      :hints (("Goal" :in-theory (enable pseudo-termp))))
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2946,7 +2949,9 @@
      the array sub-expression is a struct member expression so it needs 1 more;
      the struct sub-expression is always a variable so it needs 1 more;
      then we add the limit needed for the index sub-expression."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil (irr-limit-term)
+        nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless (eq wrapper? nil))
@@ -3055,12 +3060,13 @@
         (reterr (raise "Internal error: non-pure expression ~x0." index.expr)))
        ((unless (expr-purep elem.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." elem.expr)))
-       (index-limit `(quote ,(expr-pure-limit index.expr)))
-       (left-limit `(+ '3 ,index-limit))
-       (right-limit `(quote ,(expr-pure-limit elem.expr)))
-       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
-       (stmt-limit `(+ '1 ,expr-limit))
-       (item-limit `(+ '1 ,stmt-limit))
+       (index-limit (limit-term-const (expr-pure-limit index.expr)))
+       (left-limit (limit-term-add-const 3 index-limit))
+       (right-limit (limit-term-const (expr-pure-limit elem.expr)))
+       (expr-limit
+        (limit-term-add-const 1 (limit-term-add left-limit right-limit)))
+       (stmt-limit (limit-term-add-const 1 expr-limit))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        ((when (eq struct-write-fn 'quote))
         (reterr (raise "Internal error: structure writer is QUOTE.")))
        (struct-write-term `(,struct-write-fn ,index.term ,elem.term ,var))
@@ -3103,7 +3109,7 @@
                                              nil
                                              nil
                                              nil
-                                             wrld))
+                                             state))
        (okp-lemma-hints
         `(("Goal"
            :in-theory '(,gin.fn-guard-unnorm if* test* declar assign)
@@ -3140,7 +3146,7 @@
                                         gin.limit-var
                                         expr-limit
                                         t
-                                        wrld))
+                                        state))
        (pred (atc-type-to-recognizer elem.type gin.prec-tags))
        (type-formula `(,pred ,uterm))
        (type-formula (atc-contextualize type-formula
@@ -3151,7 +3157,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (asg-formula `(and ,exec-formula ,type-formula))
        (exec-expr-when-asg-thms
         (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
@@ -3392,7 +3398,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events)))
@@ -3425,8 +3431,7 @@
   :returns (mv erp
                (item block-itemp)
                (val-term* pseudo-termp :hyp (symbolp integer-write-fn))
-               (limit pseudo-termp
-                      :hints (("Goal" :in-theory (enable pseudo-termp))))
+               (limit limit-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3450,7 +3455,9 @@
      so we need 1 to go to the operand expression;
      the latter is always a variable,
      so we need 1 more to execute it."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil (irr-limit-term)
+        nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
@@ -3519,12 +3526,13 @@
        (item (block-item-stmt stmt))
        ((unless (expr-purep int.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." int.expr)))
-       (var-limit ''1)
-       (left-limit `(+ '1 ,var-limit))
-       (right-limit `(quote ,(expr-pure-limit int.expr)))
-       (expr-limit `(+ '1 (+ ,left-limit ,right-limit)))
-       (stmt-limit `(+ '1 ,expr-limit))
-       (item-limit `(+ '1 ,stmt-limit))
+       (var-limit (limit-term-const 1))
+       (left-limit (limit-term-add-const 1 var-limit))
+       (right-limit (limit-term-const (expr-pure-limit int.expr)))
+       (expr-limit
+        (limit-term-add-const 1 (limit-term-add left-limit right-limit)))
+       (stmt-limit (limit-term-add-const 1 expr-limit))
+       (item-limit (limit-term-add-const 1 stmt-limit))
        ((when (eq integer-write-fn 'quote))
         (reterr (raise "Internal error: integer writer is QUOTE.")))
        (integer-write-term `(,integer-write-fn ,int.term))
@@ -3567,7 +3575,7 @@
                                         gin.limit-var
                                         expr-limit
                                         t
-                                        wrld))
+                                        state))
        (pred (atc-type-to-recognizer int.type gin.prec-tags))
        (type-formula `(,pred ,uterm))
        (type-formula (atc-contextualize type-formula
@@ -3578,7 +3586,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (asg-formula `(and ,exec-formula ,type-formula))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (exec-expr-when-asg-thm
@@ -3718,7 +3726,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events)))
@@ -3760,7 +3768,7 @@
      to not return an error due to the limit being exhausted."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
-       (limit (pseudo-term-quote 1))
+       (limit (limit-term-const 1))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items nil
@@ -3790,7 +3798,7 @@
                                         gin.limit-var
                                         limit
                                         t
-                                        wrld))
+                                        state))
        ((mv type-formula type-thms)
         (atc-gen-term-type-formula (untranslate$ term nil state)
                                    (type-void)
@@ -3805,7 +3813,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (formula `(and ,exec-formula ,type-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-of-nil
@@ -3853,7 +3861,7 @@
   ((term pseudo-termp)
    (type typep)
    (item block-itemp)
-   (item-limit pseudo-termp)
+   (item-limit limit-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
    (stmt-value "An untranslated term.")
@@ -3898,10 +3906,7 @@
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (items (list item))
-       (items-limit (pseudo-term-fncall
-                     '+
-                     (list (pseudo-term-quote 1)
-                           item-limit)))
+       (items-limit (limit-term-add-const 1 item-limit))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items items
@@ -3932,7 +3937,7 @@
                                         gin.limit-var
                                         items-limit
                                         t
-                                        wrld))
+                                        state))
        (uterm (untranslate$ term nil state))
        ((mv type-formula &)
         (atc-gen-term-type-formula
@@ -3945,7 +3950,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (formula `(and ,exec-formula ,type-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
@@ -4002,11 +4007,11 @@
 (define atc-gen-block-item-list-cons
   ((term pseudo-termp)
    (item block-itemp)
-   (item-limit pseudo-termp)
+   (item-limit limit-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
    (items block-item-listp)
-   (items-limit pseudo-termp)
+   (items-limit limit-termp)
    (items-events pseudo-event-form-listp)
    (items-thm symbolp)
    (items-type typep)
@@ -4052,7 +4057,8 @@
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
-       (all-items-limit `(+ '1 (+ ,item-limit ,items-limit)))
+       (all-items-limit
+        (limit-term-add-const 1 (limit-term-add item-limit items-limit)))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items all-items
@@ -4087,7 +4093,7 @@
                                         gin.limit-var
                                         all-items-limit
                                         t
-                                        wrld))
+                                        state))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
@@ -4096,7 +4102,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (formula `(and ,exec-formula ,type-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
@@ -4142,8 +4148,7 @@
                                     (list event))
                     :thm-name thm-name
                     :thm-index thm-index
-                    :names-to-avoid names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+                    :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4151,8 +4156,8 @@
   ((term pseudo-termp)
    (items1 block-item-listp)
    (items2 block-item-listp)
-   (items1-limit pseudo-termp)
-   (items2-limit pseudo-termp)
+   (items1-limit limit-termp)
+   (items2-limit limit-termp)
    (items1-events pseudo-event-form-listp)
    (items2-events pseudo-event-form-listp)
    (items1-thm symbolp)
@@ -4194,7 +4199,8 @@
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (items (append items1 items2))
-       (items-limit `(+ '1 (+ ,items1-limit ,items2-limit)))
+       (items-limit
+        (limit-term-add-const 1 (limit-term-add items1-limit items2-limit)))
        ((when (not gin.proofs))
         (make-stmt-gout
          :items items
@@ -4282,7 +4288,7 @@
                                         gin.limit-var
                                         items-limit
                                         t
-                                        wrld))
+                                        state))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
@@ -4291,7 +4297,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (formula `(and ,exec-formula ,type-formula))
        (hints
         `(("Goal" :in-theory '(,lemma-name
@@ -4455,18 +4461,12 @@
                 :term term
                 :context gin.context
                 :inscope gin.inscope
-                :limit (pseudo-term-fncall
-                        '+
-                        (list (pseudo-term-quote 3)
-                              expr.limit))
+                :limit (limit-term-add-const 3 expr.limit)
                 :events expr.events
                 :thm-name nil
                 :thm-index expr.thm-index
                 :names-to-avoid expr.names-to-avoid)))
-       (stmt-limit (pseudo-term-fncall
-                    '+
-                    (list (pseudo-term-quote 1)
-                          expr.limit)))
+       (stmt-limit (limit-term-add-const 1 expr.limit))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
@@ -4491,7 +4491,7 @@
                                          gin.limit-var
                                          stmt-limit
                                          t
-                                         wrld))
+                                         state))
        ((mv stmt-formula2 type-thms)
         (atc-gen-term-type-formula uterm
                                    expr.type
@@ -4506,7 +4506,7 @@
                                          nil
                                          nil
                                          nil
-                                         wrld))
+                                         state))
        (stmt-formula `(and ,stmt-formula1 ,stmt-formula2))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-return
@@ -4583,7 +4583,7 @@
                                  (else-term pseudo-termp)
                                  (then-items block-item-listp)
                                  (then-type typep)
-                                 (then-limit pseudo-termp)
+                                 (then-limit limit-termp)
                                  (then-events pseudo-event-form-listp)
                                  (then-thm symbolp)
                                  (new-context atc-contextp)
@@ -4673,7 +4673,7 @@
                                          nil
                                          nil
                                          nil
-                                         wrld))
+                                         state))
        (lemma-hints `(("Goal"
                        :in-theory '(,gin.fn-guard-unnorm
                                     if* test* declar assign)
@@ -4704,7 +4704,7 @@
                                     gin.limit-var
                                     then-limit
                                     t
-                                    wrld))
+                                    state))
        (formula (if (type-case then-type :void)
                     formula1
                   (b* ((type-pred
@@ -4718,7 +4718,7 @@
                                                     nil
                                                     nil
                                                     nil
-                                                    wrld)))
+                                                    state)))
                     `(and ,formula1 ,formula2))))
        (hints `(("Goal" :use ,then-thm :in-theory '(,lemma-name))))
        ((mv thm-event &) (evmac-generate-defthm thm-name
@@ -4750,9 +4750,9 @@
                                 (test-type typep)
                                 (then-type typep)
                                 (else-type typep)
-                                (test-limit pseudo-termp)
-                                (then-limit pseudo-termp)
-                                (else-limit pseudo-termp)
+                                (test-limit limit-termp)
+                                (then-limit limit-termp)
+                                (else-limit limit-termp)
                                 (test-thm symbolp)
                                 (then-thm symbolp)
                                 (else-thm symbolp)
@@ -4835,14 +4835,16 @@
                (make-stmt-if :test test-expr
                              :then then-stmt)))
        (term `(if* ,test-term ,then-term ,else-term))
-       (then-stmt-limit `(+ '1 ,then-limit))
-       (else-stmt-limit `(+ '1 ,else-limit))
-       (if-stmt-limit `(+ '1
-                          (+ ,test-limit
-                             (+ ,then-stmt-limit
-                                ,else-stmt-limit))))
-       (item-limit `(+ '1 ,if-stmt-limit))
-       (items-limit `(+ '1 ,item-limit))
+       (then-stmt-limit (limit-term-add-const 1 then-limit))
+       (else-stmt-limit (limit-term-add-const 1 else-limit))
+       (if-stmt-limit
+        (limit-term-add-const
+         1
+         (limit-term-add test-limit
+                         (limit-term-add then-stmt-limit
+                                         else-stmt-limit))))
+       (item-limit (limit-term-add-const 1 if-stmt-limit))
+       (items-limit (limit-term-add-const 1 item-limit))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
@@ -4913,7 +4915,7 @@
                                                   gin.limit-var
                                                   then-stmt-limit
                                                   t
-                                                  wrld))
+                                                  state))
        (else-stmt-exec-formula `(equal (exec-stmt ',else-stmt
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
@@ -4927,7 +4929,7 @@
                                                   gin.limit-var
                                                   else-stmt-limit
                                                   t
-                                                  wrld))
+                                                  state))
        (then-stmt-type-formula (atc-contextualize then-stmt-type-formula
                                                   then-context-start
                                                   gin.fn
@@ -4936,7 +4938,7 @@
                                                   nil
                                                   nil
                                                   nil
-                                                  wrld))
+                                                  state))
        (else-stmt-type-formula (atc-contextualize else-stmt-type-formula
                                                   else-context-start
                                                   gin.fn
@@ -4945,7 +4947,7 @@
                                                   nil
                                                   nil
                                                   nil
-                                                  wrld))
+                                                  state))
        (then-stmt-formula `(and ,then-stmt-exec-formula
                                 ,then-stmt-type-formula))
        (else-stmt-formula `(and ,else-stmt-exec-formula
@@ -5050,7 +5052,7 @@
                                                 gin.limit-var
                                                 if-stmt-limit
                                                 t
-                                                wrld))
+                                                state))
        (if-stmt-type-formula (atc-contextualize if-stmt-type-formula
                                                 gin.context
                                                 gin.fn
@@ -5059,7 +5061,7 @@
                                                 nil
                                                 nil
                                                 nil
-                                                wrld))
+                                                state))
        (if-stmt-formula `(and ,if-stmt-exec-formula
                               ,if-stmt-type-formula))
        (test-type-pred (atc-type-to-recognizer test-type gin.prec-tags))
@@ -5140,34 +5142,34 @@
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
-                       gin.context nil nil nil nil nil nil wrld))
+                       gin.context nil nil nil nil nil nil state))
           (claim ,(atc-contextualize `(test* ,test-term)
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (if* ,test-term ,then-term ,else-term)
                            ,then-term)
-                   gin.context nil nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil state)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (claim ,(atc-contextualize
                    `(equal ,new-compst ,then-new-compst)
-                   gin.context nil nil gin.compst-var nil nil nil wrld)
+                   gin.context nil nil gin.compst-var nil nil nil state)
                  :hints (("Goal" :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,if-stmt-hints)
           (claim ,(atc-contextualize `(test* (not ,test-term))
-                                     gin.context nil nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (if* ,test-term ,then-term ,else-term)
                            ,else-term)
-                   gin.context nil nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil state)
                  :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
           (claim ,(atc-contextualize
                    `(equal ,new-compst ,else-new-compst)
-                   gin.context nil nil gin.compst-var nil nil nil wrld)
+                   gin.context nil nil gin.compst-var nil nil nil state)
                  :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
@@ -5234,7 +5236,7 @@
                                        gin.prec-tags
                                        thm-index
                                        names-to-avoid
-                                       wrld)
+                                       state)
           (mv nil nil thm-index names-to-avoid))))
     (retok
      (atc-gen-block-item-list-one term
@@ -5267,7 +5269,7 @@
                                 (arg-types type-listp)
                                 (affect symbol-listp)
                                 (extobjs symbol-listp)
-                                (limit pseudo-termp)
+                                (limit limit-termp)
                                 (called-fn-guard symbolp)
                                 (gin stmt-ginp)
                                 state)
@@ -5342,8 +5344,8 @@
         (reterr (raise "Internal error: ~
                         non-pure function call arguments ~x0."
                        args.exprs)))
-       (limit `(+ '1 ,limit))
-       (limit `(+ ',(expr-list-pure-limit args.exprs) ,limit))
+       (limit (limit-term-add-const 1 limit))
+       (limit (limit-term-add-const (expr-list-pure-limit args.exprs) limit))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)))
         (retok (make-stmt-gout
@@ -5373,7 +5375,7 @@
                                                nil
                                                nil
                                                nil
-                                               wrld))
+                                               state))
        (guard-lemma-hints
         `(("Goal"
            :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
@@ -5412,7 +5414,7 @@
                                         gin.limit-var
                                         limit
                                         t
-                                        wrld))
+                                        state))
        ((mv type-formula inscope-thms)
         (atc-gen-term-type-formula uterm
                                    (type-void)
@@ -5427,7 +5429,7 @@
                                         nil
                                         nil
                                         nil
-                                        wrld))
+                                        state))
        (call-formula `(and ,exec-formula ,type-formula))
        (call-hints
         `(("Goal"
@@ -5560,7 +5562,7 @@
                                                  :hints call-hints
                                                  :enable nil))
        (stmt (stmt-expr call-expr))
-       (stmt-limit `(+ '1 ,limit))
+       (stmt-limit (limit-term-add-const 1 limit))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix stmt-thm-name
@@ -5581,7 +5583,7 @@
                                              gin.limit-var
                                              stmt-limit
                                              t
-                                             wrld))
+                                             state))
        ((mv stmt-type-formula &) (atc-gen-term-type-formula uterm
                                                             (type-void)
                                                             gin.affect
@@ -5595,7 +5597,7 @@
                                              nil
                                              nil
                                              nil
-                                             wrld))
+                                             state))
        (stmt-formula `(and ,stmt-exec-formula ,stmt-type-formula))
        (stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-expr
@@ -5729,7 +5731,7 @@
                              gin.prec-tags
                              thm-index
                              names-to-avoid
-                             wrld))
+                             state))
        (thm-index (1+ thm-index))
        (events (append item-events
                        new-inscope-events))
@@ -6024,7 +6026,7 @@
                                                gin.prec-tags
                                                test.thm-index
                                                test.names-to-avoid
-                                               wrld)
+                                               state)
                       (mv (cons nil gin.inscope)
                           then-context-start
                           nil
@@ -6072,7 +6074,7 @@
                                                gin.prec-tags
                                                then.thm-index
                                                then.names-to-avoid
-                                               wrld)
+                                               state)
                       (mv (cons nil gin.inscope)
                           else-context-start
                           nil
@@ -6099,7 +6101,7 @@
              ((unless (expr-purep test.expr))
               (reterr
                (raise "Internal error: non-pure expression ~x0." test.expr)))
-             (test.limit `(quote ,(expr-pure-limit test.expr))))
+             (test.limit (limit-term-const (expr-pure-limit test.expr))))
           (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
@@ -6218,12 +6220,9 @@
                                    :proofs nil)
                                   state))
                    (type body.type)
-                   (limit (pseudo-term-fncall
-                           '+
-                           (list (pseudo-term-quote 3)
-                                 (pseudo-term-fncall
-                                  '+
-                                  (list init.limit body.limit))))))
+                   (limit
+                    (limit-term-add-const
+                     3 (limit-term-add init.limit body.limit))))
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
@@ -6308,12 +6307,8 @@
                                    :proofs nil)
                                   state))
                    (type body.type)
-                   (limit (pseudo-term-fncall
-                           '+
-                           (list (pseudo-term-quote 6)
-                                 (pseudo-term-fncall
-                                  '+
-                                  (list rhs.limit body.limit))))))
+                   (limit (limit-term-add-const
+                           6 (limit-term-add rhs.limit body.limit))))
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type type
@@ -6391,8 +6386,7 @@
                      mv-var all-vars indices xform.term body.term)))
              (items (append xform.items body.items))
              (type body.type)
-             (limit (pseudo-term-fncall '+
-                                        (list xform.limit body.limit))))
+             (limit (limit-term-add xform.limit body.limit)))
           (retok (make-stmt-gout
                   :items items
                   :type type
@@ -6894,10 +6888,7 @@
                      This is indicative of dead code under the guards, ~
                      given that the code is guard-verified."
                     loop-fn in-types formals types)))
-             (limit (pseudo-term-fncall
-                     '+
-                     (list (pseudo-term-quote 3)
-                           loop-limit))))
+             (limit (limit-term-add-const 3 loop-limit)))
           (retok (make-stmt-gout
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
@@ -6917,7 +6908,7 @@
                     :term term
                     :context gin.context
                     :inscope gin.inscope
-                    :limit (pseudo-term-quote 1)
+                    :limit (limit-term-const 1)
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
@@ -7035,8 +7026,8 @@
    (test-term pseudo-term)
    (body-term pseudo-term)
    (affect symbol-list)
-   (limit-body pseudo-term)
-   (limit-all pseudo-term)
+   (limit-body limit-term)
+   (limit-all limit-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
@@ -7052,8 +7043,8 @@
                          :test-term nil
                          :body-term nil
                          :affect nil
-                         :limit-body nil
-                         :limit-all nil
+                         :limit-body (irr-limit-term)
+                         :limit-all (irr-limit-term)
                          :events nil
                          :thm-name nil
                          :thm-index 1
@@ -7194,9 +7185,9 @@
        (measure-call `(,gin.measure-for-fn ,@gin.measure-formals))
        ((unless (expr-purep test.expr))
         (reterr (raise "Internal error: non-pure expression ~x0." test.expr)))
-       (limit `(+ '1
-                  (+ ,`(quote ,(expr-pure-limit test.expr))
-                     (+ ,body.limit ,measure-call)))))
+       (limit (limit-term-add-const (1+ (expr-pure-limit test.expr))
+                                    (limit-term-add-nonconst measure-call
+                                                             body.limit))))
     (retok (make-lstmt-gout :stmt stmt
                             :test-term test-term
                             :body-term then-term
@@ -7208,8 +7199,9 @@
                             :names-to-avoid body.names-to-avoid)))
   :measure (pseudo-term-count term)
   :hints (("Goal" :in-theory (enable o< o-finp)))
-  :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p
-                                           pseudo-termp)))
+  :guard-hints (("Goal" :in-theory (e/d (acl2::pseudo-fnsym-p
+                                         pseudo-termp)
+                                        ((:e tau-system)))))
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
