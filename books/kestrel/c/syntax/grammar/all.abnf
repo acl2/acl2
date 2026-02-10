@@ -10,7 +10,29 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
+; This file is divided into three sections
+; (for lexical, preprocessing, and phrase structure rules),
+; separated by lines of 80 semicolons.
+; Each section is divided into subsections,
+; separated by lines of 40 semicolons.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical Rules
+
+; These rules (partially) describe how
+; a finite sequence of Unicode characters
+; is organized into a sequence of lexemes.
+; The description is partial because the rules do not capture things like
+; the fact that an identifier cannot be a keyword, and that
+; the longest match is always taken [C17:6.4/4] (with an exception noted there).
+
+; Organizing Unicode characters into lexemes also involves some preprocessing,
+; but we present the rules for preprocessing in a separate section,
+; also because preprocessing can be run as a separate phase (as we do now),
+; but eventually we plan to integrate that into lexing and parsing.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Characters [C17:5.2.1]
 
@@ -31,7 +53,7 @@
 ; The basic characters are defined according to [C17:5.2.1].
 ; The 'digit' rule name corresponds to
 ; the 'digit' nonterminal in [C17:A.1.3] [C17:6.4.2.1];
-; all the other rule names in this section (i.e. till the line of 80 semicolons)
+; all the other rule names in this subsection
 ; do not directly correspond to nonterminals in [C17].
 
 uppercase-letter = %x41-5a ; A-Z
@@ -266,7 +288,7 @@ character-not-double-quote-or-backslash-or-new-line =
       basic-character-not-double-quote-or-backslash
     / extended-character-not-new-line
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; White Space [C17:6.4/3]
 
@@ -282,7 +304,7 @@ white-space = space
             / form-feed
             / new-line
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Comments [C17:6.4.9]
 
@@ -309,7 +331,7 @@ rest-of-block-comment-after-star =
 
 line-comment = "//" *character-not-new-line new-line
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Keywords [C17:A.1.2] [C17:6.4.1]
 
@@ -444,7 +466,7 @@ typeof-keyword = %s"typeof" / %s"__typeof" / %s"__typeof__"
 
 volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Identifiers [C17:A.1.3] [C17:6.4.2.1]
 
@@ -477,7 +499,7 @@ nondigit = "_"
 ; However, in the rule for 'identifier' in [C17:A.1.3] [C17:6.4.2.1],
 ; grammatically identifiers include keywords, as does our ABNF grammar rule.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Universal Character Names [C17:A.1.4] [C17:6.4.3]
 
@@ -489,7 +511,7 @@ hex-quad =
 
 ; The rule name 'hexadecimal-digit' is defined below, as part of constants.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Constants [C17:A.1.5] [C17:6.4.4]
 
@@ -614,7 +636,7 @@ octal-escape-sequence = "\" octal-digit
 hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
                             / hexadecimal-escape-sequence hexadecimal-digit
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; String Literals [C17:A.1.6] [C17:6.4.5]
 
@@ -631,7 +653,7 @@ s-char-sequence = s-char
 s-char = character-not-double-quote-or-backslash-or-new-line
        / escape-sequence
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Punctuators [C17:A.1.7] [C17:6.4.6]
 
@@ -690,7 +712,7 @@ punctuator = "["
            / "%:"
            / "%:%:"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Header Names [C17:6.4.7] [C17:A.1.8]
 
@@ -707,7 +729,7 @@ q-char-sequence = q-char
 
 q-char = character-not-double-quote-or-new-line
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
 
@@ -719,15 +741,9 @@ pp-number = digit
           / pp-number %i"p" sign
           / pp-number "."
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexical Elements [C17:A.1.1] [C17:6.4]
-
-token = keyword
-      / identifier
-      / constant
-      / string-literal
-      / punctuator
+; Preprocessing Tokens [C17:A.1.1] [C17:6.4]
 
 preprocessing-token = header-name
                     / identifier
@@ -737,44 +753,127 @@ preprocessing-token = header-name
                     / punctuator
                     / character ; non-white-space none of the above
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tokens [C17:A.1.1] [C17:6.4]
+
+; We add header names (which in [C17] are preprocessing tokens, not tokens)
+; because our preprocessor preserves certain #include directives.
+
+token = keyword
+      / identifier
+      / constant
+      / string-literal
+      / punctuator
+      / header-name
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Lexemes
 
-; As explained earlier when talking about the two grammar levels,
-; the purpose of the lexical part of this ABNF grammar
-; is to describe a single lexing phase.
-; Thus, we provide an ABNF grammar rule for lexemes,
-; i.e. the lexical units that the code is organized into.
-; This rule has no grammar rule counterpart in [C17].
+; These are the lexical units that the code is organized into.
+; [C17] has no rule for lexemes, but our grammar does.
 
 lexeme = token
        / comment
-       / control-line
        / white-space
+       / control-line
 
-; The intent of the lexical part of our ABNF grammar is that
-; a finite sequence of Unicode characters
-; is organized into a sequence of lexemes.
-; The ABNF grammar rules express most of the requirements for this,
-; but not all, such as the fact that an identifier cannot be a keyword.
-; An important and general extra-grammatical requirement is that
-; the longest match is always taken [C17:6.4/4],
-; with the exception noted there.
-
-; We include control-line preprocessing directives
-; as they occasionally appear in code even after preprocessing.
-; (Especially pragma directives.)
-
-; The rest of the ABNF grammar rules in this file
-; describe how lexemes are organized into higher-level constructs,
-; corresponding to the phase structure grammar in [C17:A.2].
-; Currently we only use tokens,
-; discarding comments, preprocessing directives, and white-space characters,
-; but in the future we may retain some information from comments,
-; given the purpose of this ABNF grammar.
+; The alternative for control lines
+; (which are defined later, as part of the preprocessing constructs)
+; is motivated by the fact that we have found that in some cases
+; certain preprocessing directives (grammatically, control lines)
+; survive the preprocessing by (popular) external preprocessors,
+; i.e. we find those directives in the code after preprocessing.
+; This only applies to the control lines that we do not otherwise cover
+; as part of our phrase structure grammar rules (given below).
+; Given the nature of those directives that survive preprocessing,
+; they can be just ignored, and we treat them like comments and white space.
+; This is not the case for our own preprocessor,
+; which purposely leaves some directives after preprocessing,
+; but those are all meant to be parsed according to the phrase structure rules.
+; Eventually, we might eliminate this control line alternative
+; from the grammar rule for lexemes above.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing Rules
+
+; As mentioned in the section about lexical rules,
+; the preprocessing rules are also relevant to
+; organizing Unicode characters into lexemes.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing Directives [C17:6.10] [C17:A.3]
+
+preprocessing-file = [ group ]
+
+group = group-part
+      / group group-part
+
+group-part = if-section
+           / control-line
+           / text-line
+           / "#" non-directive
+
+if-section = if-group [ elif-groups ] [ else-group ] endif-line
+
+if-group = "#" %s"if" constant-expression new-line [ group ]
+         / "#" %s"ifdef" identifier new-line [ group ]
+         / "#" %s"ifndef" identifier new-line [ group ]
+
+elif-groups = elif-group
+            / elif-groups elif-group
+
+elif-group = "#" %s"elif" constant-expression new-line [ group ]
+
+else-group = "#" %s"else" new-line [ group ]
+
+endif-line = "#" %s"endif" new-line
+
+control-line = "#" %s"include" pp-tokens new-line
+             / "#" %s"define" identifier replacement-list new-line
+             / "#" %s"define" identifier lparen [ identifier-list ] ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen "..." ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen identifier-list "," "..." ")"
+               replacement-list new-line
+             / "#" %s"undef" identifier new-line
+             / "#" %s"line" pp-tokens new-line
+             / "#" %s"error" [ pp-tokens ] new-line
+             / "#" %s"pragma" [ pp-tokens ] new-line
+             / "#" new-line
+
+text-line = [ pp-tokens ] new-line
+
+non-directive = pp-tokens new-line
+
+lparen = "(" ; not immediately preceded by white space
+
+replacement-list = [ pp-tokens ]
+
+pp-tokens = preprocessing-token
+          / pp-tokens preprocessing-token
+
+on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
+
+; The rule for new line is omitted here,
+; because it is already under the subsection on characters.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Phrase Structure Rules
+
+; These rules (partially) describe how a sequence of lexemes
+; is organized into higher-level constructs,
+; corresponding to the phase structure grammar in [C17:A.2].
+; Currently we only use tokens,
+; discarding comments, white space, and control lines;
+; in the future, we plan to retain at least some forms of comments.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Expressions [C17:A.2.1]
 
@@ -987,7 +1086,7 @@ expression = assignment-expression
 
 constant-expression = conditional-expression
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Attributes (https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html)
 
@@ -1047,7 +1146,7 @@ attribute-list = attribute *( "," attribute )
 
 attribute-specifier = attribute-keyword "(" "(" [ attribute-list ] ")" ")"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Assembler
 ; (https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html)
@@ -1104,7 +1203,7 @@ asm-clobber = 1*string-literal
 
 asm-goto-labels = [ identifier *( "," identifier ) ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Declarations [C17:A.2.2]
 
@@ -1429,7 +1528,7 @@ designator = "[" constant-expression
 static-assert-declaration =
     %s"_Static_assert" "(" constant-expression "," 1*string-literal ")" ";"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Statements [C17:A.2.3]
 
@@ -1524,9 +1623,31 @@ attributed-null-statement = attribute-specifier ";"
 
 attributed-return-statement = attribute-specifier %s"return" expression ";"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Directives
+
+; Here we single out the #include directives,
+; but with a slightly different rule than presented in [C17:A.3] [C17:6.10]
+; and formalized above in the section for preprocesing rules.
+; We define the #include directive as containing a header name,
+; while the rule in [C17:A.3] [C17:6.10] is more general;
+; this is because the following rule is for the phrase structure,
+; after lexical analysis and preprocessing have taken place.
+; Note that only our preprocessor generates
+; #include directives for the phrase structure grammar;
+; external preprocessors expand them away.
+
+include-directive = "#" %s"include" header-name
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; External Definitions [C17:A.2.4]
+
+; We allow a translation unit to start with #include directives.
+; We plan to extend this to allow #include directives
+; to be intermixed with external declarations;
+; we also plan to allow conditional directives (i.e. #if etc.).
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
@@ -1558,7 +1679,8 @@ attributed-return-statement = attribute-specifier %s"return" expression ";"
 ; that explicitly says that empty translation units are allowed,
 ; but we found that they are allowed when running GCC on them.
 
-translation-unit = *external-declaration ; none only as GCC extension
+translation-unit = *include-directive ; from our preprocessor
+                   *external-declaration ; none only as GCC extension
 
 external-declaration = function-definition
                      / declaration
@@ -1575,61 +1697,3 @@ function-definition = [ %s"__extension__" ] ; GCC extension
 
 declaration-list = declaration
                  / declaration-list declaration
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Preprocessing Directives [C17:6.10] [C17:A.3]
-
-; We omit the rule for 'new-line' here because it is already under 'Characters'.
-
-preprocessing-file = [ group ]
-
-group = group-part
-      / group group-part
-
-group-part = if-section
-           / control-line
-           / text-line
-           / "#" non-directive
-
-if-section = if-group [ elif-groups ] [ else-group ] endif-line
-
-if-group = "#" %s"if" constant-expression new-line [ group ]
-         / "#" %s"ifdef" identifier new-line [ group ]
-         / "#" %s"ifndef" identifier new-line [ group ]
-
-elif-groups = elif-group
-            / elif-groups elif-group
-
-elif-group = "#" %s"elif" constant-expression new-line [ group ]
-
-else-group = "#" %s"else" new-line [ group ]
-
-endif-line = "#" %s"endif" new-line
-
-control-line = "#" %s"include" pp-tokens new-line
-             / "#" %s"define" identifier replacement-list new-line
-             / "#" %s"define" identifier lparen [ identifier-list ] ")"
-               replacement-list new-line
-             / "#" %s"define" identifier lparen "..." ")"
-               replacement-list new-line
-             / "#" %s"define" identifier lparen identifier-list "," "..." ")"
-               replacement-list new-line
-             / "#" %s"undef" identifier new-line
-             / "#" %s"line" pp-tokens new-line
-             / "#" %s"error" [ pp-tokens ] new-line
-             / "#" %s"pragma" [ pp-tokens ] new-line
-             / "#" new-line
-
-text-line = [ pp-tokens ] new-line
-
-non-directive = pp-tokens new-line
-
-lparen = "(" ; not immediately preceded by white space
-
-replacement-list = [ pp-tokens ]
-
-pp-tokens = preprocessing-token
-          / pp-tokens preprocessing-token
-
-on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"

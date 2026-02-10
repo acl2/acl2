@@ -62,24 +62,16 @@
      is organized into lexical units (identifiers, constants, etc.),
      and the second grammar describes how the sequence of those lexical units
      is organized into higher-level constructs (expressions, statements, etc.).
-     In C, the lexical organization is a more complicated than other languages,
+     In C, the lexical organization is more complicated than other languages,
      because of preprocessing [C23:A.4] and other features.
      In fact, the complete syntactic (and semantic) processing of code
      is described as consisting of 8 translation phases [C23:5.2.1.2].")
    (xdoc::p
-    "Since our grammar formulation aims at capturing at the same time
-     the phrase structure of the code and some preprocessing constructs,
-     we regard our grammar rules as defining just two phases:
-     one for the lexical organization
-     (which therefore includes both tokens and some preprocessing tokens),
-     and one for a phrase structure
-     that may also include preprocessing constructs
-     (which therefore is an extension of the phrase structure grammar in [C23]).
-     However, we retain grammar rules for the preprocessing phase,
-     which in some cases precede (i.e. are not mixed with) the phrase structure,
-     because it is not always possible to integrate
-     preprocessing constructs into the phrase structure,
-     since preprocessing operates at the lexical level.")
+    "We regard our grammar rules as defining three phases:
+     one for the lexical organization,
+     one for preprocessing (which preserves certain preprocessing constructs),
+     and one for a phrase structure that includes some preprocessing constructs.
+     The details are in the documentation that accompanies the grammar rules.")
    (xdoc::p
     "Our ABNF grammar rules doe not consider
      the translation of trigraph sequences
