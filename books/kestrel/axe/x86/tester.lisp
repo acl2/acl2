@@ -551,56 +551,56 @@
 
 ;; Test a single function:
 (make-event
-`(defmacro test-function (&whole
-                         whole-form
-                         function-name-string
-                         executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
-                         &key
-                         (param-names ':none) ; specific to test-function
-                         (assumptions 'nil) ; different form compared to test-file?
+ `(defmacro test-function (&whole
+                             whole-form
+                             function-name-string
+                             executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
+                           &key
+                             (param-names ':none) ; specific to test-function
+                             (assumptions 'nil) ; different form compared to test-file?
 
-                         (extra-rules 'nil)
-                         (extra-assumption-rules 'nil)
-                         (extra-lift-rules 'nil)
-                         (extra-proof-rules 'nil)
-                         (remove-rules 'nil)
-                         (remove-assumption-rules 'nil)
-                         (remove-lift-rules 'nil)
-                         (remove-proof-rules 'nil)
-                         (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
-                         (count-hits 'nil)
-                         (print 'nil)
-                         (max-printed-term-size '10000)
-                         (monitor 'nil)
-                         (step-limit '1000000)
-                         (step-increment '100)
-                         (prune-precise '10000) ; t, nil, or a max size
-                         (prune-approx 't)      ; t, nil, or a max size
-                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (max-conflicts '1000000)
-                         (inputs-disjoint-from ':code)
-                         (assume-bytes ':all)
-                         (stack-slots ':auto)
-                         (existing-stack-slots ':auto)
-                         (position-independent ':auto)
-                         (feature-flags ',*default-feature-flags*)
-                         (expected-result ':pass) ; todo: use :auto (look at the name)
-                         )
-  `(make-event-quiet
-     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+                             (extra-rules 'nil)
+                             (extra-assumption-rules 'nil)
+                             (extra-lift-rules 'nil)
+                             (extra-proof-rules 'nil)
+                             (remove-rules 'nil)
+                             (remove-assumption-rules 'nil)
+                             (remove-lift-rules 'nil)
+                             (remove-proof-rules 'nil)
+                             (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
+                             (count-hits 'nil)
+                             (print 'nil)
+                             (max-printed-term-size '10000)
+                             (monitor 'nil)
+                             (step-limit '1000000)
+                             (step-increment '100)
+                             (prune-precise '10000) ; t, nil, or a max size
+                             (prune-approx 't)      ; t, nil, or a max size
+                             (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                             (max-conflicts '1000000)
+                             (inputs-disjoint-from ':code)
+                             (assume-bytes ':all)
+                             (stack-slots ':auto)
+                             (existing-stack-slots ':auto)
+                             (position-independent ':auto)
+                             (feature-flags ',*default-feature-flags*)
+                             (expected-result ':pass) ; todo: use :auto (look at the name)
+                             )
+    `(make-event-quiet
+      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-function"
        (test-function-fn ',function-name-string
-                         ,executable   ; gets evaluated
-                         ,param-names  ; gets evaluated
-                         ,assumptions  ; gets evaluated
-                         ,extra-rules  ; gets evaluated
-                         ,extra-assumption-rules ; gets evaluated
-                         ,extra-lift-rules ; gets evaluated
-                         ,extra-proof-rules ; gets evaluated
-                         ,remove-rules ; gets evaluated
+                         ,executable              ; gets evaluated
+                         ,param-names             ; gets evaluated
+                         ,assumptions             ; gets evaluated
+                         ,extra-rules             ; gets evaluated
+                         ,extra-assumption-rules  ; gets evaluated
+                         ,extra-lift-rules        ; gets evaluated
+                         ,extra-proof-rules       ; gets evaluated
+                         ,remove-rules            ; gets evaluated
                          ,remove-assumption-rules ; gets evaluated
-                         ,remove-lift-rules ; gets evaluated
-                         ,remove-proof-rules ; gets evaluated
+                         ,remove-lift-rules       ; gets evaluated
+                         ,remove-proof-rules      ; gets evaluated
                          ',normalize-xors
                          ',count-hits
                          ',print
@@ -611,10 +611,10 @@
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir, if it exists:
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state)
+        state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state)))))
+        state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,54 +930,54 @@
 ;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
 ;; The :include and :exclude options can be used to override this default.
 (make-event
-`(defmacro test-file (&whole
-                     whole-form
-                     executable ; a string
-                     &key
-                     (include ':all) ; names of functions (strings) to test, or can be :all
-                     (exclude 'nil) ; names of functions (strings) to exclude from testing
-                     (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (extra-rules 'nil)
-                     (extra-assumption-rules 'nil)
-                     (extra-lift-rules 'nil)
-                     (extra-proof-rules 'nil)
-                     (remove-rules 'nil)
-                     (remove-assumption-rules 'nil)
-                     (remove-lift-rules 'nil)
-                     (remove-proof-rules 'nil)
-                     (normalize-xors 't)
-                     (count-hits 'nil)
-                     (print 'nil)
-                     (max-printed-term-size '10000)
-                     (monitor 'nil)
-                     (step-limit '1000000)
-                     (step-increment '100)
-                     (prune-precise '10000) ; t, nil, or a max size
-                     (prune-approx 't)      ; t, nil, or a max size
-                     (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                     (max-conflicts '1000000)
-                     (inputs-disjoint-from ':code)
-                     (assume-bytes ':all)
-                     (stack-slots ':auto)
-                     (existing-stack-slots ':auto)
-                       (position-independent ':auto)
-                       (feature-flags ',*default-feature-flags*)
-                     (expected-failures ':auto))
-  `(make-event-quiet
-     (acl2-unwind-protect ; enable cleanup on errors/interrupts
+ `(defmacro test-file (&whole
+                         whole-form
+                         executable ; a string
+                       &key
+                         (include ':all) ; names of functions (strings) to test, or can be :all
+                         (exclude 'nil) ; names of functions (strings) to exclude from testing
+                         (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
+                         (extra-rules 'nil)
+                         (extra-assumption-rules 'nil)
+                         (extra-lift-rules 'nil)
+                         (extra-proof-rules 'nil)
+                         (remove-rules 'nil)
+                         (remove-assumption-rules 'nil)
+                         (remove-lift-rules 'nil)
+                         (remove-proof-rules 'nil)
+                         (normalize-xors 't)
+                         (count-hits 'nil)
+                         (print 'nil)
+                         (max-printed-term-size '10000)
+                         (monitor 'nil)
+                         (step-limit '1000000)
+                         (step-increment '100)
+                         (prune-precise '10000) ; t, nil, or a max size
+                         (prune-approx 't)      ; t, nil, or a max size
+                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                         (max-conflicts '1000000)
+                         (inputs-disjoint-from ':code)
+                         (assume-bytes ':all)
+                         (stack-slots ':auto)
+                         (existing-stack-slots ':auto)
+                         (position-independent ':auto)
+                         (feature-flags ',*default-feature-flags*)
+                         (expected-failures ':auto))
+    `(make-event-quiet
+      (acl2-unwind-protect ; enable cleanup on errors/interrupts
        "acl2-unwind-protect for test-file"
-       (test-file-fn ,executable ; gets evaluated
-                     ',include ; todo: evaluate?
-                     ',exclude ; todo: evaluate?
-                     ,assumptions  ; gets evaluated
-                     ,extra-rules  ; gets evaluated
+       (test-file-fn ,executable              ; gets evaluated
+                     ',include                ; todo: evaluate?
+                     ',exclude                ; todo: evaluate?
+                     ,assumptions             ; gets evaluated
+                     ,extra-rules             ; gets evaluated
                      ,extra-assumption-rules  ; gets evaluated
-                     ,extra-lift-rules ; gets evaluated
-                     ,extra-proof-rules ; gets evaluated
-                     ,remove-rules ; gets evaluated
+                     ,extra-lift-rules        ; gets evaluated
+                     ,extra-proof-rules       ; gets evaluated
+                     ,remove-rules            ; gets evaluated
                      ,remove-assumption-rules ; gets evaluated
-                     ,remove-lift-rules ; gets evaluated
-                     ,remove-proof-rules ; gets evaluated
+                     ,remove-lift-rules       ; gets evaluated
+                     ,remove-proof-rules      ; gets evaluated
                      ',normalize-xors
                      ',count-hits
                      ',print
@@ -991,7 +991,7 @@
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir, if it exists:
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state)
+        state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state)))))
+        state)))))
