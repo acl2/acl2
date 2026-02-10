@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,17 +37,20 @@
      The grammar family is defined using the files @('grammar/*.abnf'),
      which contain various components which are parsed into ACL2 representations
      and combined into full grammars parameterized by the versions.
-     This parameterization is actually work in progress:
+     This parameterization is work in progress:
      currently there is a single grammar file,
      but we plan to split and differentiate it soon.")
    (xdoc::p
-    "the ABNF notation can capture well
-     the notation described in  [C23:6.1].
+    "The ABNF notation can capture well
+     the notation described in [C23:6.1].
      Our ABNF grammar rules are as similar as possible to
      the grammar rules in [C17] and [C23], for the standard constructs.
-     The GCC constructs are captured based on [GCCM] and [GCCL],
+     The GCC constructs are captured based on [GCCM] [GCCL],
      but these documents do not use a grammar notation,
      so the relationship is less direct than for the standard constructs.
+     Currently the grammar only mentions GCC extensions,
+     but most of them also apply to Clang;
+     we plan to assess and explicate the Clang extensions.
      However, we depart from the official syntax
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
@@ -72,16 +75,27 @@
      and one for a phrase structure
      that may also include preprocessing constructs
      (which therefore is an extension of the phrase structure grammar in [C23]).
-     Our ABNF grammar rules doe not consider
-     the trigraph sequences handled in the first phase in [C23:5.2.1.2]
+     However, we retain grammar rules for the preprocessing phase,
+     which in some cases precede (i.e. are not mixed with) the phrase structure,
+     because it is not always possible to integrate
+     preprocessing constructs into the phrase structure,
+     since preprocessing operates at the lexical level.")
+   (xdoc::p
+    "Our ABNF grammar rules doe not consider
+     the translation of trigraph sequences
+     handled in the first phase in [C23:5.2.1.2]
      and the splicing of lines in the second phase in [C23:5.2.1.2].
      These are simple transformations that can be performed
-     prior to the processing described by our ABNF grammar rules,
+     prior to the language recognition described by our ABNF grammar rules,
      along with UTF-8 decoding of bytes into Unicode scalar values.
      Our ABNF grammar rules do not capture the requirement that
      a non-empty file ends with a new-line character
      (see phase 3 in [C23:5.2.1.2]);
-     this can be easily enforced outside the grammar as well.")
+     this can be easily enforced outside the grammar as well;
+     furthermore, GCC relaxes that requirement "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
+                 "[CPPM:1.2]")
+    ", and we may conditionally do that as well at some point.")
    (xdoc::p
     "Phase 6 in [C23:5.2.1.2] requires that
      adjacent string literals are concatenated.
