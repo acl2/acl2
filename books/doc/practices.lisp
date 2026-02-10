@@ -642,3 +642,109 @@ whose effect may be more easy to guess.</p>")
   directory, in your shell do:</p>
 
   @({find . -name '*.lisp' -exec egrep -l \" +$\" {} \;})")
+
+(defxdoc emacs-workflow
+  :short "A typical Emacs-based workflow for using ACL2"
+  :parents (emacs best-practices acl2-tutorial)
+  :long
+  (xdoc::topstring
+    (xdoc::p "This @(see documentation) topic describes a simple ACL2 workflow
+    based on the Emacs editor.  Many, perhaps most, ACL2 experts use something
+    like this.")
+
+    (xdoc::p "Typically, you want to develop a @('.lisp') file containing ACL2
+    @(see events) (definitions, theorems, etc.).  In ACL2 terminology, we call
+    this @('.lisp') file a <i>book</i>.  Your goal is to get ACL2 to accept
+    everything in the book.")
+
+    (xdoc::p "In Emacs, you open the book for editing and you also start a shell
+    buffer (within Emacs, via a command like @('M-x shell')).  You start ACL2 in
+    the shell buffer, which starts up its REPL (Read-Eval-Print Loop).  Now you
+    can submit commands to the ACL2 REPL via the shell buffer.")
+
+    (xdoc::p "As you develop the book, you submit the events it contains to
+    ACL2, one by one.  If ACL2 rejects an event, you fix it and try
+    again (e.g., by adding a lemma or proof hint).")
+
+    (xdoc::p "As you work, you maintain the following important invariant:")
+
+    (xdoc::p "<b><i>At all times, the ACL2 REPL has accepted some prefix of the
+    events in your book.</i></b>")
+
+    (xdoc::p "Imagine that there is an invisible horizontal line in your book.
+    Everything above the line has been submitted to ACL2 (in order) and been
+    accepted by it.  Below the line is everything you are still working on.
+    Your goal is to move the imaginary line downward, which can only be done by
+    getting ACL2 to accept more events.  When ACL2 accepts an event, it extends
+    its logical @(see world) to contain that event, and you imagine the line to
+    have moved down to just below that event.")
+
+    (xdoc::p "Sometimes you may need to change one of the events above the
+    line (e.g., if a definition is not quite right).  To do that, use ACL2's
+    @(tsee undo) commands to undo back through that event.  (The imaginary line
+    is now just above that event.)  You submit the changed event, making sure
+    ACL2 still accepts it.  (Then the imaginary line is just below that event.)
+    Then you resubmit all of the subsequent events that ACL2 had accepted
+    before, to make sure that the change doesn't break any of them.  (If this
+    all works, the imaginary line will be back where it was before, and you
+    can continue with whatever you were working on.)")
+
+    (xdoc::p "Occasionally, you may need to change something in a different
+    book.  In that case, you can undo back through the @(tsee include-book)
+    event that brought in that book, make the changes, and then redo the
+    @('include-book') and the subsequent events.  When working with that other
+    book, you can use the approach described in this documentation topic,
+    either using your current shell (restarting ACL2) or a separate shell.
+    Warning: You should make sure that the change to that other book didn't
+    break later events in that book, or any books that depend on it!  That is,
+    you should use <see topic=\"@(url build::cert.pl)\"><tt>cert.pl</tt></see>
+    to re-certify the book and any books that depend on it.")
+
+    (xdoc::p "Once you are done developing your main book (meaning ACL2 accepts all the
+    forms in it), you can exit ACL2 and call <see topic=\"@(url
+    build::cert.pl)\"><tt>cert.pl</tt></see> to certify the book.")
+
+    (xdoc::p "Various shortcuts are available:")
+
+    (xdoc::ol
+
+      (xdoc::li "Manually copying events from your book to the ACL2 shell
+      buffer can be tedious.  So ACL2 provides custom Emacs commands to
+      automate the process.  See @(see emacs), which describes how to make
+      those commands available.")
+
+      (xdoc::li "Many other helpful ACL2-related Emacs commands and settings
+      are available.  Again, see @(see emacs).  We recommend following the
+      instructions there to make them available in your Emacs session and
+      looking through the @('emacs-acl2.el') file described there to see what
+      commands are available.")
+
+      (xdoc::li "Instead of submitting events one-by-one, you can use @(see
+      ld) (load) to have the ACL2 REPL process as much of your book as it
+      can, stopping at the first error.  Warning: Be sure you understand how
+      far the @('ld') process got and where it got stuck.  That's where you
+      need to work.  One way to ensure you know how much material was loaded is
+      to use @('i-am-here').")
+
+      (xdoc::li "If you are confident that a change to a book will be accepted
+      by ACL2, you can avoid the ACL2 REPL entirely and try just using <see
+      topic=\"@(url build::cert.pl)\"><tt>cert.pl</tt></see> to certify the
+      book (and any books that depend on it).  However, most ACL2 work should
+      be done within the ACL2 REPL, where you can iterate quickly and where you
+      have access to ACL2's @(see history) commands to inspect the contents of
+      its @(see world) (e.g., to show existing definitions and rules).")
+
+      (xdoc::li "If you ever get confused about which events are in ACL2's
+      REPL, you can just restart ACL2 and call @('ld') to sync things up.  Or
+      you can use @(tsee ubi) ('undo back to includes', which undoes everything
+      except an initial prefix of @('include-book') events) and then reload
+      your book using @('ld').  Using @('ubi') saves time if the
+      @('include-book')s are slow."))
+
+    (xdoc::p "What directory should your shell be in?  When working with a book,
+    it is best to first change to that book's directory (using @('cd')) and
+    then start ACL2 there. This ensures that ACL2 loads the @(see
+    acl2-customization) file for that directory, if any.")
+
+    (xdoc::p "An Eclipse-based interface to ACL2 is also available.  See @(see
+    acl2-sedan).")))
