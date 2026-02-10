@@ -274,6 +274,7 @@
                         print
                         executable-type
                         position-independentp ; drop?
+                        feature-flags
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
@@ -290,7 +291,8 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (equal executable-type (parsed-executable-type parsed-executable))
-                              (booleanp position-independentp))
+                              (booleanp position-independentp)
+                              (feature-flagsp feature-flags))
                   :stobjs state))
   (if (eq :elf-64 executable-type)
       ;; New assumption generation behavior for ELF64:
@@ -299,6 +301,7 @@
                 (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
               (assumptions-elf64-new target
                                      position-independentp
+                                     feature-flags
                                      stack-slots
                                      existing-stack-slots
                                      'x86
@@ -324,6 +327,7 @@
                   (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                 (assumptions-macho64-new target
                                          position-independentp
+                                         feature-flags
                                          stack-slots
                                          existing-stack-slots
                                          'x86
@@ -349,6 +353,7 @@
                     (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                   (assumptions-pe64-new target
                                         position-independentp
+                                        feature-flags
                                         stack-slots
                                         existing-stack-slots
                                         'x86
@@ -674,6 +679,7 @@
                              stack-slots
                              existing-stack-slots
                              position-independent
+                             feature-flags
                              inputs
                              type-assumptions-for-array-varsp
                              output-indicator
@@ -705,6 +711,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
@@ -798,6 +805,7 @@
                          print
                          executable-type
                          position-independentp
+                         feature-flags
                          state))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
@@ -914,6 +922,7 @@
                         stack-slots
                         existing-stack-slots
                         position-independent
+                        feature-flags
                         type-assumptions-for-array-varsp
                         prune-precise
                         prune-approx
@@ -951,6 +960,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
@@ -1012,7 +1022,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag-or-quotep assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
-                              extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                              extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                               inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
                               step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
@@ -1164,7 +1174,8 @@
 ;bad name?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(defmacrodoc def-unrolled (&whole whole-form
+(make-event
+`(defmacrodoc def-unrolled (&whole whole-form
                                   lifted-name
                                   &key
                                   (target ':entry-point)
@@ -1178,6 +1189,7 @@
                                   (stack-slots '100)
                                   (existing-stack-slots ':auto)
                                   (position-independent ':auto)
+                                  (feature-flags ',*default-feature-flags*)
                                   (type-assumptions-for-array-vars 't)
                                   (prune-precise '1000)
                                   (prune-approx 't)
@@ -1219,6 +1231,7 @@
         ',stack-slots
         ',existing-stack-slots
         ',position-independent
+        ',feature-flags
         ',type-assumptions-for-array-vars
         ',prune-precise
         ',prune-approx
@@ -1264,6 +1277,7 @@
          (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
          (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
          (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
+         (feature-flags "A list of the CPU features to assume are supported.  Each feature is represented by a keyword.  By default, the value of the constant @('*default-feature-flags*') is used.")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
          (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
@@ -1296,4 +1310,4 @@
          (restrict-theory "To be deprecated..."))
   :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
                 "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
-                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it.")))

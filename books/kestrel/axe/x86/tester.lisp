@@ -214,6 +214,7 @@
                            stack-slots
                            existing-stack-slots
                            position-independentp
+                           feature-flags
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
@@ -247,7 +248,8 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp))
+                              (booleanp position-independentp)
+                              (feature-flagsp feature-flags))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((- (acl2::ensure-x86 parsed-executable))
@@ -310,6 +312,7 @@
           stack-slots
           existing-stack-slots
           position-independentp
+          feature-flags
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
@@ -455,6 +458,7 @@
                          prune-precise prune-approx tactics
                          max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots
                          position-independent
+                         feature-flags
                          expected-result
                          whole-form
                          state)
@@ -491,6 +495,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
@@ -521,7 +526,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (print-to-hundredths elapsed)
@@ -545,7 +550,8 @@
               (mv :unexpected-result nil state)))))
 
 ;; Test a single function:
-(defmacro test-function (&whole
+(make-event
+`(defmacro test-function (&whole
                          whole-form
                          function-name-string
                          executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
@@ -577,7 +583,7 @@
                          (stack-slots ':auto)
                          (existing-stack-slots ':auto)
                          (position-independent ':auto)
-
+                         (feature-flags ',*default-feature-flags*)
                          (expected-result ':pass) ; todo: use :auto (look at the name)
                          )
   `(make-event-quiet
@@ -601,14 +607,14 @@
                          ',max-printed-term-size
                          ,monitor ; gets evaluated
                          ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
-                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',expected-result ',whole-form state)
+                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags ',expected-result ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir, if it exists:
        (maybe-remove-temp-dir ; ,keep-temp-dir
          state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state))))
+         state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -627,6 +633,7 @@
                            stack-slots
                            existing-stack-slots
                            position-independentp
+                           feature-flags
                            expected-failures
                            result-alist
                            state)
@@ -666,6 +673,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (booleanp position-independentp)
+                              (feature-flagsp feature-flags)
                               (string-listp expected-failures)
                               (alistp result-alist))
                   :mode :program
@@ -679,7 +687,7 @@
                               (lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -691,7 +699,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
                           expected-failures
                           (acons function-name (list result expected-result elapsed) result-alist)
                           state))))
@@ -706,7 +714,7 @@
                       extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                       remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                       normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                      tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                      tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                       expected-failures
                       state)
   (declare (xargs :guard (and (stringp executable)
@@ -746,6 +754,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -822,7 +831,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
                             expected-failures
                             nil ; empty result-alist
                             state))
@@ -845,7 +854,7 @@
                      extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                      remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                      normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                     tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                     tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                      expected-failures
                      whole-form
                      state)
@@ -886,6 +895,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -902,7 +912,7 @@
                        extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                        remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                        normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                       tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent
+                       tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                        expected-failures
                        state))
        ((when erp) (mv erp nil state)))
@@ -919,7 +929,8 @@
 ;; By default, we test all the functions in the file whose names start with any
 ;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
 ;; The :include and :exclude options can be used to override this default.
-(defmacro test-file (&whole
+(make-event
+`(defmacro test-file (&whole
                      whole-form
                      executable ; a string
                      &key
@@ -949,7 +960,8 @@
                      (assume-bytes ':all)
                      (stack-slots ':auto)
                      (existing-stack-slots ':auto)
-                     (position-independent ':auto)
+                       (position-independent ':auto)
+                       (feature-flags ',*default-feature-flags*)
                      (expected-failures ':auto))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on errors/interrupts
@@ -972,7 +984,7 @@
                      ',max-printed-term-size
                      ,monitor ; gets evaluated
                      ',step-limit ',step-increment ',prune-precise ',prune-approx
-                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent
+                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags
                      ',expected-failures
                      ',whole-form
                      state)
@@ -982,4 +994,4 @@
          state)
        ;; Normal exit (remove the temp-dir, if it exists):
        (maybe-remove-temp-dir ; ,keep-temp-dir
-         state))))
+         state)))))
