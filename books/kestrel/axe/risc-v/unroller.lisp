@@ -37,7 +37,6 @@
 (include-book "rewriter")
 (include-book "../step-increments")
 (include-book "../rule-limits")
-(include-book "../rewriter-basic")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../lifter-common")
@@ -58,7 +57,7 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
-(include-book "kestrel/executable-parsers/elf-tools" :dir :system) ; for the user's convenience
+(include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
