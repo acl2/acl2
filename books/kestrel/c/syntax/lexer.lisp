@@ -80,13 +80,22 @@
      but since for now we just skip over comments and white space,
      we have no additional information about them here.")
    (xdoc::p
-    "Like @(tsee token), this is abstract-syntax-like,
-     but it is not part of the abstract syntax,
-     because it is not needed there."))
+    "Like @(tsee token), this is AST-like,
+     but it is not part of the ASTs in @(see abstract-syntax-trees),
+     because it is not needed there.")
+   (xdoc::p
+    "We also add an entry for unhandled preprocessing directives.
+     We have found that, when using an external preprocessor,
+     sometimes some directives survive preprocessing
+     (although it seems like they should not).
+     Thus, our lexer is equipped to recognize and ignore them,
+     as it currently does with comments and white space.
+     We are actually extending the parser to handle certain directives,
+     but this is for the ones still unhandled."))
   (:token ((token token)))
   (:comment ())
-  (:prepr-directive ())
   (:whitespace ())
+  (:unhandled-directive ())
   :pred lexemep
   :layout :fulltree)
 
@@ -2738,7 +2747,7 @@
      which is returned by the loop function."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-prepr-directive-loop first-pos parstate)))
-    (retok (lexeme-prepr-directive)
+    (retok (lexeme-unhandled-directive)
            (make-span :start first-pos :end last-pos)
            parstate))
 
