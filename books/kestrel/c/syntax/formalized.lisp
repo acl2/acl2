@@ -1221,8 +1221,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "There must be no @('#include') directives.")
+   (xdoc::p
     "All its external declarations must be supported."))
-  (ext-declon-list-formalp (transunit->declons tunit))
+  (and (not (transunit->includes tunit))
+       (ext-declon-list-formalp (transunit->declons tunit)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1102,6 +1102,15 @@
   :pred header-namep
   :layout :fulltree)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist header-name-list
+  :short "Fixtype of lists of header names."
+  :elt-type header-name
+  :true-listp t
+  :elementp-of-nil nil
+  :pred header-name-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum keyword-uscores
@@ -3718,8 +3727,14 @@
     "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
     "A translation unit consists of a list of external declarations,
-     optionally preceded by a line comment,
-     which we represent as its content, namely a list of character codes;
+     optionally preceded by a line comment
+     and by zero or more @('#include') directives.
+     The comment comes first, if present;
+     then the @('#include') directives;
+     then the external declarations.")
+   (xdoc::p
+    "The line comment is represented as its content,
+     namely a list of character codes;
      the comment is absent if the list is empty.
      This is useful when generating code:
      the comment can convey information about the generation.
@@ -3729,8 +3744,14 @@
      also extending our parser to recognize and preserve those comments
      (now the tokenizer skips over all comments.")
    (xdoc::p
+    "The @('#include') directives are represented as their header names,
+     in a list of zero or more.
+     Eventually, we may generalize this to allow @('#include') directives
+     in other (top-level) places in the translation unit.")
+   (xdoc::p
     "We also add a slot with additional information, e.g. from validation."))
   ((comment nat-list)
+   (includes header-name-list)
    (declons ext-declon-list)
    (info any))
   :pred transunitp

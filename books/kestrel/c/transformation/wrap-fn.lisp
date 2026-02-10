@@ -601,6 +601,8 @@
   :short "Transform a translation unit."
   (b* (((reterr) nil nil (c$::transunit-fix transunit))
        ((transunit transunit) transunit)
+       ((when transunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((erp foundp found-satp extdecls)
         (ext-declon-list-wrap-fn
           transunit.declons target-name wrapper-name? blacklist))
