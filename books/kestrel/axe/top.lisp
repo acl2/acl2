@@ -306,3 +306,6 @@
 
 ;; The r1cs-specific Axe tools:
 (include-book "r1cs/top")
+
+;; The ARM-specific Axe tools:
+(include-book "arm/top")
