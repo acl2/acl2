@@ -57,6 +57,7 @@
      "             :base-dir        ...  ; default \".\""
      "             :preprocess      ...  ; default nil"
      "             :preprocess-args ...  ; default nil"
+     "             :include-dirs    ...  ; default nil"
      "             :process         ...  ; default :validate"
      "             :const           ...  ; required, no default"
      "             :keep-going      ...  ; default nil"
@@ -175,6 +176,20 @@
        an omap from strings to string lists;
        the behavior is the same under either interpretation:
        only the @('-E') and @('-std=') arguments are provided for each file."))
+
+    (xdoc::desc
+     "@(':include-dirs') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies the directories used by the internal preprocessor
+       to search for files included with angle-bracket @('#include') directives
+       (and with double-quote @('#include') directives
+       when the file is not found relative to the including file).")
+     (xdoc::p
+      "This must evaluate to a list of strings,
+       which should be absolute paths in the file system.")
+     (xdoc::p
+      "Unless @(':preprocess') is @(':internal'),
+       @(':include-dirs') must evaluate to @('nil')."))
 
     (xdoc::desc
      "@(':process') &mdash; default @(':validate')"

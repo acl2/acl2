@@ -211,6 +211,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define input-files-process-include-dirs ((preprocessor string-optionp)
+                                          include-dirs)
+  :returns (mv erp (new-include-dirs string-listp))
+  :short "Process the @(':include-dirs') input."
+  (b* (((reterr) nil)
+       ((unless (string-listp include-dirs))
+        (reterr (msg "The :INCLUDE-DIRS input must be a list of strings, ~
+                      but it is ~x0 instead."
+                     include-dirs)))
+       ((when (and (consp include-dirs)
+                   (not (equal preprocessor "")))) ; not :internal
+        (reterr (msg "Unless the :PREPROCESSOR input is :INTERNAL, ~
+                      the :INCLUDE-DIRS input must be NIL, ~
+                      but it is ~x0 instead."
+                     include-dirs))))
+    (retok include-dirs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-process-process (process)
   :returns (mv erp (new-process input-files-process-inputp))
   :short "Process the @(':process') input."
@@ -289,6 +308,7 @@
                                     base-dir
                                     preprocess
                                     preprocess-args
+                                    include-dirs
                                     process
                                     (const-presentp booleanp)
                                     const
@@ -303,6 +323,7 @@
                (preprocess-extra-args
                  (or (string-listp preprocess-extra-args)
                      (acl2::string-stringlist-mapp preprocess-extra-args)))
+               (new-include-dirs string-listp)
                (new-process input-files-process-inputp)
                (new-const symbolp)
                (keep-going booleanp)
@@ -318,7 +339,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil :parse nil nil (irr-ienv))
+  (b* (((reterr) nil "" nil nil nil :parse nil nil (irr-ienv))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
        ((erp base-dir) (input-files-process-base-dir base-dir))
@@ -327,6 +348,8 @@
         (input-files-process-preprocess-args preprocessor
                                              preprocess-args
                                              state))
+       ((erp include-dirs)
+        (input-files-process-include-dirs preprocessor include-dirs))
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
        ((erp keep-going) (input-files-process-keep-going keep-going))
@@ -335,6 +358,7 @@
            base-dir
            preprocessor
            preprocess-extra-args
+           include-dirs
            process
            const
            keep-going
@@ -489,6 +513,7 @@
                                  (or (acl2::string-stringlist-mapp
                                       preprocess-extra-args)
                                      (string-listp preprocess-extra-args)))
+                                (include-dirs string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
                                 (keep-going booleanp)
@@ -508,21 +533,14 @@
      resulting from processing the (possibly preprocessed) files,
      together with the implementation environment.
      If the programmatic interface is being used,
-     no events are actually generated.")
-   (xdoc::p
-    "When using the internal preprocessor,
-     for now we pass no directories to search for
-     angle-bracket @('#include')s.
-     We need to extend the interface of @(tsee input-files)
-     to provide that list.
-     We pass 1,000,000,000 as recursion limit."))
+     no events are actually generated."))
   (b* (((reterr) nil (irr-code-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Preprocess if required, or just read files from file system.
        ((erp files state)
         (cond ((equal preprocessor "") ; internal preprocessor
-               (pproc-files files base-dir nil ienv state 1000000000))
+               (pproc-files files base-dir include-dirs ienv state 1000000000))
               ((not preprocessor)
                (input-files-read-files files base-dir state))
               (t ; external preprocessor
@@ -587,6 +605,7 @@
                                                    base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   include-dirs
                                                    process
                                                    (const-presentp booleanp)
                                                    const
@@ -611,6 +630,7 @@
              base-dir
              preprocessor
              preprocess-extra-args
+             include-dirs
              process
              const
              keep-going
@@ -620,6 +640,7 @@
                                     base-dir
                                     preprocess
                                     preprocess-args
+                                    include-dirs
                                     process
                                     const-presentp
                                     const
@@ -632,6 +653,7 @@
                                 base-dir
                                 preprocessor
                                 preprocess-extra-args
+                                include-dirs
                                 process
                                 const
                                 keep-going
@@ -657,6 +679,7 @@
                         base-dir
                         preprocess
                         preprocess-args
+                        include-dirs
                         process
                         (const-presentp booleanp)
                         const
@@ -677,6 +700,7 @@
                                                    base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   include-dirs
                                                    process
                                                    const-presentp
                                                    const
@@ -695,6 +719,7 @@
                               (base-dir '".")
                               (preprocess 'nil)
                               (preprocess-args 'nil)
+                              (include-dirs 'nil)
                               (process ':validate)
                               (const 'nil const-presentp)
                               (keep-going 'nil)
@@ -705,6 +730,7 @@
                        ',base-dir
                        ',preprocess
                        ,preprocess-args
+                       ,include-dirs
                        ',process
                        ',const-presentp
                        ',const
@@ -729,6 +755,7 @@
     "                  :base-dir        ...  ; default \".\""
     "                  :preprocess      ...  ; default nil"
     "                  :preprocess-args ...  ; default nil"
+    "                  :include-dirs    ...  ; default nil"
     "                  :process         ...  ; default :validate"
     "                  :keep-going      ...  ; default nil"
     "                  :ienv            ...  ; default (ienv-default)"
@@ -768,6 +795,7 @@
                              base-dir
                              preprocess
                              preprocess-args
+                             include-dirs
                              process
                              (const-presentp booleanp)
                              const
@@ -789,6 +817,7 @@
                                                    base-dir
                                                    preprocess
                                                    preprocess-args
+                                                   include-dirs
                                                    process
                                                    const-presentp
                                                    const
@@ -814,6 +843,7 @@
                                    (base-dir '".")
                                    (preprocess 'nil)
                                    (preprocess-args 'nil)
+                                   (include-dirs 'nil)
                                    (process ':validate)
                                    (const 'nil const-presentp)
                                    (keep-going 'nil)
@@ -823,6 +853,7 @@
                           ',base-dir
                           ',preprocess
                           ,preprocess-args
+                          ,include-dirs
                           ',process
                           ',const-presentp
                           ',const
