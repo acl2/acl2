@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,6 +24,7 @@
 (include-book "output-files")
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
+(include-book "langdef-mapping-inverse")
 (include-book "formalized")
 (include-book "compilation-db")
 (include-book "infer-ienv")
@@ -216,4 +217,5 @@
                     input-files
                     output-files
                     mapping-to-language-definition
+                    mapping-from-language-definition
                     formalized-subset))

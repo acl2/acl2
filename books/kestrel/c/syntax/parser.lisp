@@ -11855,6 +11855,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-include-directive ((hash-span spanp) (parstate parstatep))
+  :returns (mv erp
+               (include header-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a @('#include') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after parsing the initial @('#').
+     The next token must be the @('include') identifier,
+     and the one after that must be a header name,
+     which we return, because we represent
+     @('#include') directives as header names."))
+  (b* (((reterr) (irr-header-name) (irr-span) parstate)
+       ((erp ident span parstate) (read-identifier parstate))
+       ((unless (equal (ident->unwrap ident) "include"))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "the 'include' identifier"
+                    :found (msg "the '~s0' identifier"
+                                (ident->unwrap ident))))
+       ((erp hname last-span parstate) (read-header-name parstate)))
+    (retok hname (span-join hash-span last-span) parstate))
+
+  ///
+
+  (defret parsize-of-parse-include-directive-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-include-directive-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-*-include-directive ((parstate parstatep))
+  :returns (mv erp
+               (includes header-name-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more @('#include') directives."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-punctuatorp token "#"))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ((erp include first-span parstate) (parse-include-directive span parstate))
+       ((erp includes last-span parstate) (parse-*-include-directive parstate)))
+    (retok (cons include includes) (span-join first-span last-span) parstate))
+  :measure (parsize parstate)
+  :verify-guards :after-returns
+
+  ///
+
+  (more-returns
+   (includes true-listp :rule-classes :type-prescription))
+
+  (defret parsize-of-parse-*-include-directive-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-translation-unit ((parstate parstatep))
   :returns (mv erp
                (tunit transunitp)
@@ -11866,10 +11935,12 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     We parse zero or more external declarations,
-     consistently with the grammar.
-     But unless GCC/Clang extensions are enabled,
-     we reject input with zero external declarations.")
+     Unless we must skip control lines,
+     we parse zero or more @('#include') directives.
+     Then we parse zero or more external declarations.
+     Unless GCC/Clang extensions are enabled,
+     we reject input with no @('#include') declarations
+     and no external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
@@ -11880,17 +11951,26 @@
      the last character is a new-line,
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
+       ((erp includes & parstate)
+        (if (parstate->skip-control-lines parstate)
+            (mv nil nil nil parstate)
+          (parse-*-include-directive parstate)))
        ((erp extdecls & eof-pos parstate)
         (parse-*-external-declaration parstate))
-       ((when (and (endp extdecls)
+       ((when (and (endp includes)
+                   (endp extdecls)
                    (not (parstate->gcc/clang parstate))))
         (reterr (msg "The translation unit has no external declarations, ~
+                      ~s0 ~
                       but GCC/Clang extensions (which allow that) ~
-                      are not enabled.")))
+                      are not enabled."
+                     (if (parstate->skip-control-lines parstate)
+                         ""
+                       "and no #include directives"))))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
     (retok (make-transunit :comment nil
-                           :includes nil
+                           :includes includes
                            :declons extdecls
                            :info nil)
            parstate))
