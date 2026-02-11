@@ -3530,6 +3530,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection spec/qual-typespec-list ((x type-spec-listp))
+  :returns (specquals spec/qual-listp)
+  :short "Lift @(tsee spec/qual-typespec) to lists."
+  (spec/qual-typespec x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection decl-spec-stoclass-list ((x stor-spec-listp))
+  :returns (declspecs decl-spec-listp)
+  :short "Lift @(tsee decl-spec-stoclass) to lists."
+  (decl-spec-stoclass x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection decl-spec-typespec-list ((x type-spec-listp))
+  :returns (declspecs decl-spec-listp)
+  :short "Lift @(tsee decl-spec-typespec) to lists."
+  (decl-spec-typespec x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption init-declor-option
   init-declor
   :short "Fixtype of optional initializer declarators."
