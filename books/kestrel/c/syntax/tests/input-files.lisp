@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Parse.
+; Parse (without preprocessing).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,70 +38,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocess and parse.
+; Preprocess externally and parse.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files '("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
+(input-files :files '("simple.c")
              :preprocess :auto
              :process :parse
-             :const *parsed-simple/stdbool*)
+             :const *ppext-parsed-simple*)
 
-(acl2::assert! (code-ensemblep *parsed-simple/stdbool*))
+(acl2::assert! (code-ensemblep *ppext-parsed-simple*))
 
 (acl2::assert-equal
- (transunit-ensemble-paths (code-ensemble->transunits *parsed-simple/stdbool*))
- (set::mergesort (list (filepath "simple.c")
-                       (filepath "stdbool.c"))))
+ (transunit-ensemble-paths (code-ensemble->transunits *ppext-parsed-simple*))
+ (set::mergesort (list (filepath "simple.c"))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Preprocess with arguments and parse.
+(acl2::assert-equal *ppext-parsed-simple*
+                    *parsed-simple*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files '("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
              :process :parse
-             :preprocess-args '("-E" "-std=c17")
-             :const *parsed-with-args-simple/stdbool*)
+             :const *ppext-parsed-simple/stdbool/stdint*)
 
-(acl2::assert! (code-ensemblep *parsed-with-args-simple/stdbool*))
+(acl2::assert! (code-ensemblep *ppext-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
  (transunit-ensemble-paths
-   (code-ensemble->transunits *parsed-with-args-simple/stdbool*))
+  (code-ensemble->transunits *ppext-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
-                       (filepath "stdbool.c"))))
+                       (filepath "stdbool.c")
+                       (filepath "stdint.c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocess with omap arguments and parse.
+; Preprocess externally with list arguments and parse.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *preprocess-args-simple/stdbool*
+(input-files :files '("simple.c" "stdbool.c" "stdint.c")
+             :preprocess :auto
+             :process :parse
+             :preprocess-args '("-E" "-std=c17")
+             :const *ppextlist-parsed-simple/stdbool/stdint*)
+
+(acl2::assert! (code-ensemblep *ppextlist-parsed-simple/stdbool/stdint*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths
+   (code-ensemble->transunits *ppextlist-parsed-simple/stdbool/stdint*))
+ (set::mergesort (list (filepath "simple.c")
+                       (filepath "stdbool.c")
+                       (filepath "stdint.c"))))
+
+(acl2::assert-equal *ppextlist-parsed-simple/stdbool/stdint*
+                    *ppext-parsed-simple/stdbool/stdint*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocess externally with omap arguments and parse.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *preprocess-args-simple/stdbool/stdint*
   (omap::update "simple.c"
                 (list "-P" "-std=c17")
                 (omap::update "stdbool.c"
                               (list "-std=c17" "-P")
-                              nil)))
+                              (omap::update "stdint.c"
+                                            (list "-std=c17" "-P")
+                                            nil))))
 
-(input-files :files '("simple.c" "stdbool.c")
+(input-files :files '("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
              :process :parse
-             :preprocess-args *preprocess-args-simple/stdbool*
-             :const *parsed-with-omap-args-simple/stdbool*)
+             :preprocess-args *preprocess-args-simple/stdbool/stdint*
+             :const *ppextomap-parsed-simple/stdbool/stdint*)
 
-(acl2::assert! (code-ensemblep *parsed-with-omap-args-simple/stdbool*))
+(acl2::assert! (code-ensemblep *ppextomap-parsed-simple/stdbool/stdint*))
 
 (acl2::assert-equal
  (transunit-ensemble-paths
-   (code-ensemble->transunits *parsed-with-omap-args-simple/stdbool*))
+   (code-ensemble->transunits *ppextomap-parsed-simple/stdbool/stdint*))
  (set::mergesort (list (filepath "simple.c")
-                       (filepath "stdbool.c"))))
+                       (filepath "stdbool.c")
+                       (filepath "stdint.c"))))
+
+(acl2::assert-equal *ppextlist-parsed-simple/stdbool/stdint*
+                    *ppext-parsed-simple/stdbool/stdint*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test with :gcc t
+; Test with GCC extensions.
 (input-files :files '("macro_test1.c" "macro_test2.c")
              :preprocess :auto
              :preprocess-args *preprocess-args-macro-tests*
@@ -143,7 +170,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Parse and disambiguate.
+; Preprocess internally and parse.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files '("simple.c")
+             :preprocess :internal
+             :process :parse
+             :const *ppint-parsed-simple*)
+
+(acl2::assert! (code-ensemblep *ppint-parsed-simple*))
+
+(acl2::assert-equal
+ (transunit-ensemble-paths (code-ensemble->transunits *ppint-parsed-simple*))
+ (set::mergesort (list (filepath "simple.c"))))
+
+(acl2::assert-equal *ppint-parsed-simple*
+                    *parsed-simple*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Parse and disambiguate (without preprocessing).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,18 +202,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocess and parse and disambiguate.
+; Preprocess externally and parse and disambiguate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files '("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
+(input-files :files '("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
              :process :disambiguate
-             :const *disamb-simple/stdbool*)
+             ;; We need GCC (or Clang) extensions because
+             ;; stdint.h brings in __buildin_va_list.
+             :ienv (ienv-default :extensions :gcc)
+             :const *ppext-disamb-simple/stdbool/stdint*)
 
-(acl2::assert! (code-ensemblep *disamb-simple/stdbool*))
+(acl2::assert! (code-ensemblep *ppext-disamb-simple/stdbool/stdint*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,22 +230,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocess and parse and disambiguate and validate.
+; Preprocess externally and parse and disambiguate and validate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(input-files :files '("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
+(input-files :files '("simple.c" "stdbool.c" "stdint.c")
              :preprocess :auto
              :process :validate
-             :const *valid-simple/stdbool*)
+             ;; We need GCC (or Clang) extensions because
+             ;; stdint.h brings in __buildin_va_list.
+             :ienv (ienv-default :extensions :gcc)
+             :const *valid-simple/stdbool/stdint*)
 
-(acl2::assert! (code-ensemblep *valid-simple/stdbool*))
+(acl2::assert! (code-ensemblep *valid-simple/stdbool/stdint*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Error in parsing
+; Error in parsing.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +262,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Error in disambiguating
+; Error in disambiguation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Error in validation
+; Error in validation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
