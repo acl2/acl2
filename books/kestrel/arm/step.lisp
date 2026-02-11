@@ -51,6 +51,18 @@
           (update-error :decoding-error arm)))
       (execute-inst mnemonic args inst-address arm))))
 
+(defthm step-opener
+  (implies (not (error arm)) ; avoids loops
+           (equal (step arm)
+                  (b* ((inst-address (pc arm))
+                       (inst (read 4 inst-address arm))
+                       ((mv erp mnemonic args)
+                        (arm32-decode inst))
+                       ((when erp)
+                        (update-error :decoding-error arm)))
+                    (execute-inst mnemonic args inst-address arm))))
+  :hints (("Goal" :in-theory (enable step))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Once an error is encountered, no more changes are made.
