@@ -52,16 +52,24 @@
       (execute-inst mnemonic args inst-address arm))))
 
 (defthm step-opener
-  (implies (not (error arm)) ; avoids loops
+  (implies (and (not (error arm)) ; avoids loops
+                ;; todo: use a binding-hyp?
+                (not (mv-nth 0 (arm32-decode (read 4 (pc arm) arm)))))
            (equal (step arm)
                   (b* ((inst-address (pc arm))
                        (inst (read 4 inst-address arm))
-                       ((mv erp mnemonic args)
+                       ((mv & ;erp
+                            mnemonic args)
                         (arm32-decode inst))
-                       ((when erp)
-                        (update-error :decoding-error arm)))
+                       ;; ((when erp)
+                       ;;  (update-error :decoding-error arm))
+                       )
                     (execute-inst mnemonic args inst-address arm))))
   :hints (("Goal" :in-theory (enable step))))
+
+(defthm step-of-if
+  (equal (step (if test arm1 arm2))
+         (if test (step arm1) (step arm2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -435,6 +435,16 @@
          (overflow (if (== (logext n result) signed_sum) 0 1)))
     (mv result carry_out overflow)))
 
+;; todo: other rvs
+(defthm mv-nth-0-of-AddWithCarry
+  (implies (and (posp n)
+                (integerp x)
+                (integerp y)
+                (integerp carry_in))
+           (equal (mv-nth 0 (AddWithCarry n x y carry_in))
+                  (bvplus n x (bvplus n y carry_in))))
+  :hints (("Goal" :in-theory (enable AddWithCarry bvplus))))
+
 (defthm unsigned-byte-p-of-mv-nth-0-of-AddWithCarry
   (implies (and (unsigned-byte-p n x)
                 (unsigned-byte-p n y)
