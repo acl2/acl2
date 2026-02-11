@@ -26,7 +26,8 @@
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version))
+                                    version
+                                    t))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
@@ -44,7 +45,8 @@
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
-                                    version))
+                                    version
+                                    t))
          (- (cw "~%Input:~%~x0~|" ast))
          ((mv erp2 ?ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
