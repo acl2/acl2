@@ -1,6 +1,6 @@
 ; An xdoc constructor for a list of paragraphs
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -109,11 +109,34 @@
   (declare (xargs :guard (stringp string)))
   (wrap-separated-chunks-of-string string 'xdoc::p))
 
-;; Splits STR into paragraphs at blank lines.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun xdoc::items-to-paras (items)
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
+      nil
+    (let ((item (first items)))
+      (if (stringp item)
+          ;; it's a string, so we split into paragraphs, each wrapped in a call
+          ;; of xdoc::p:
+          (append (xdoc::paras item)
+                  (xdoc::items-to-paras (rest items)))
+        ;; it's not a string (probably a call to some xdoc constructor):
+        (cons item (xdoc::items-to-paras (rest items)))))))
+
+(defun xdoc::topparas-fn (items)
+  (declare (xargs :guard (true-listp items)))
+  `(xdoc::topstring ,@(xdoc::items-to-paras items)))
+
+;; For each of the ITEMS that is a string, this splits it into paragraphs
+;; (splitting at blank lines), with each resulting paragraph wrapped in a call
+;; of xdoc::p.  Then the new list of items is supplied to xdoc::topstring.
 ;; Returns a "top-level" xdoc string suitable for use as a :long string.
-(defmacro xdoc::topparas (str)
-  (declare (xargs :guard (stringp str)))
-  `(xdoc::topstring ,@(xdoc::paras str)))
+(defmacro xdoc::topparas (&rest items)
+  (declare (xargs :guard (true-listp items)))
+  (xdoc::topparas-fn items))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Makes an xdoc tree for an ordered list, given a string, interpreting blank
 ;; lines as separators between list items.
