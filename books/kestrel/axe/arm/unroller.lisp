@@ -55,7 +55,6 @@
 ;(include-book "write-over-write-rules")
 ;(include-book "clear-writes")
 ;(include-book "lifter-rules")
-;(include-book "../risc-v/lifter-rules") ; fixme
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
@@ -400,6 +399,9 @@
                                  (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
                                                                          (equal t nil)))))
                              (cw ")~%"))))
+       ((when (not (acl2::term-listp assumptions (w state))))
+        (er hard? 'unroll-arm-code-core "Some assumption is not a valid term: ~x0." assumptions)
+        (mv :bad-assumptions nil state))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        ;; (- (and stop-pcs
@@ -468,7 +470,7 @@
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep hits state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
-                        'step32-opener
+                        'run-until-return-aux-opener ;arm::step-opener
                         ;; (if 64-bitp
                         ;;     (first (step-opener-rules64))
                         ;;   (first (step-opener-rules32)))
