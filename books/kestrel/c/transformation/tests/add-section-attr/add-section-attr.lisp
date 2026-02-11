@@ -31,7 +31,7 @@
                                        "my_section")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   ;; To see the section in the `.o` file, you can do:
   ;;   readelf -S test.o
@@ -58,7 +58,7 @@
                                        "my_section")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -85,7 +85,7 @@ __attribute__ ((section(\"my_section\"))) __attribute__ ((noinline)) int foo(int
                                        "my_section")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test3.c"
@@ -127,7 +127,7 @@ __attribute__ ((section(\"my_section\"))) int bar(int y, int z) {
                                    "external_foo_section")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/internal-foo.c"
@@ -172,7 +172,7 @@ int main(void) {
                                    "external_foo_section")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/internal-foo.c"
@@ -220,7 +220,7 @@ int main(void) {
                                    "sec2")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/internal-foo.c"

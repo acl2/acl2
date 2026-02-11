@@ -39,7 +39,7 @@
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -85,7 +85,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -127,7 +127,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -173,7 +173,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -226,7 +226,7 @@ int main(void) {
              :split-members ("x"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -309,7 +309,7 @@ static struct S2 s2 = {.x = 0};
              :split-members ("b"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -388,7 +388,7 @@ static struct S s = {.x = 0};
              :split-members ("x"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -481,7 +481,7 @@ struct S_1 s_1 = {.x = 0};
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   ;; No definitions of my_0 and my_1!
   (assert-file-contents
@@ -526,7 +526,7 @@ int main(void) {
              :split-members ("baz"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/typedef2.c"

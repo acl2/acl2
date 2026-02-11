@@ -144,7 +144,7 @@
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
-                        :path ,old-dir
+                        :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
@@ -154,7 +154,7 @@
                        ;; Pass through all other args:
                        ,@remaining-kv-list)
        (c$::output-files :const *new-const*
-                         :path ,new-dir))))
+                         :base-dir ,new-dir))))
 
 ;; A wrapper for split-gso that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command.
@@ -174,7 +174,7 @@
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
-                        :path ,old-dir
+                        :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
@@ -184,7 +184,7 @@
                       ;; Pass through all other args (currently, none):
                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
-                         :path ,new-dir))))
+                         :base-dir ,new-dir))))
 
 ;; A wrapper for simpadd0 that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
@@ -204,7 +204,7 @@
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
-                        :path ,old-dir
+                        :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
@@ -214,7 +214,7 @@
                       ;; Pass through all other args:
                       ,@remaining-kv-list)
        (c$::output-files :const *new-const*
-                         :path ,new-dir))))
+                         :base-dir ,new-dir))))
 
 ;; A wrapper for split-fn that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
@@ -234,7 +234,7 @@
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
-                        :path ,old-dir
+                        :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
@@ -244,7 +244,7 @@
                      ;; Pass through all other args (currently, :targets):
                      ,@remaining-kv-list)
        (c$::output-files :const *new-const*
-                         :path ,new-dir))))
+                         :base-dir ,new-dir))))
 
 ;; A wrapper for wrap-fn that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
@@ -304,7 +304,7 @@
         (handle-common-args kv-list ctx)))
     `(progn
        (c$::input-files :files ',files
-                        :path ,old-dir
+                        :base-dir ,old-dir
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
@@ -314,7 +314,7 @@
                               ;; The only transformation-specific option is :attrs (todo: check for any other args):
                               :attrs ',(make-add-section-attr-input (lookup-keyword :attrs remaining-kv-list)))
        (c$::output-files :const *new-const*
-                         :path ,new-dir))))
+                         :base-dir ,new-dir))))
 
 ;; A wrapper for add-section-attr that takes all its arguments as alternating keywords/values.
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command

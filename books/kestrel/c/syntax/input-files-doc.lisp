@@ -54,7 +54,7 @@
 
     (xdoc::codeblock
      "(input-files :files           ...  ; required, no default"
-     "             :path            ...  ; default \".\""
+     "             :base-dir        ...  ; default \".\""
      "             :preprocess      ...  ; default nil"
      "             :preprocess-args ...  ; default nil"
      "             :process         ...  ; default :validate"
@@ -76,12 +76,13 @@
       "Each file path must be a string.")
      (xdoc::p
       "These paths are relative to
-       the path specified by the @(':path') input."))
+       the path specified by the @(':base-dir') input."))
 
     (xdoc::desc
-     "@(':path') &mdash; default @('\".\"')"
+     "@(':base-dir') &mdash; default @('\".\"')"
      (xdoc::p
-      "Path that the file paths in @(':files') are relative to.")
+      "Base directory,
+       i.e. path that the file paths in @(':files') are relative to.")
      (xdoc::p
       "This must be a non-empty string that is a valid path name in the system.
        It may or may not end with a slash.
@@ -94,7 +95,7 @@
      "@(':preprocess') &mdash; default @('nil')"
      (xdoc::p
       "Specifies the preprocessor to use, if any,
-       on the files specified by the @(':files') and @(':path') inputs.")
+       on the files specified by the @(':files') and @(':base-dir') inputs.")
      (xdoc::p
       "This input must be one of the following:")
      (xdoc::ul
@@ -166,7 +167,7 @@
        (again, after the @('-E') and @('-std=') arguments).
        A file in the @(':files') list corresponds to a list of arguments
        in the map only when the file name matches the map key exactly
-       (i.e., without prepending the @(':path')).
+       (i.e., without prepending the @(':base-dir')).
        If the file name is not in the key set,
        only the @('-E') and @('std=') arguments are provided.
        If @(':preprocess-args') is @('nil'),
@@ -179,7 +180,7 @@
      "@(':process') &mdash; default @(':validate')"
      (xdoc::p
       "Specifies the processing to perform
-       on the files specified by the @(':files') and @(':path') inputs
+       on the files specified by the @(':files') and @(':base-dir') inputs
        (if @(':preprocess') is @('nil'))
        or on the result of preprocessing those files
        (if @(':preprocess') is not @('nil')).")
@@ -226,7 +227,7 @@
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
        the result of processing (and possibly preprocessing)
-       the files specified in the @(':files') and @(':path') inputs.")
+       the files specified in the @(':files') and @(':base-dir') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is a "
@@ -259,7 +260,7 @@
      (xdoc::p
       "In all cases, the keys of the translation unit ensemble map
        are the file paths specified in the @(':files') input,
-       without the @(':path') prefix.")
+       without the @(':base-dir') prefix.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
@@ -299,7 +300,7 @@
      (xdoc::p
       "The named constant containing the result of processing,
        as specified by @(':process'),
-       the files specified by the @(':files') and @(':path') inputs
+       the files specified by the @(':files') and @(':base-dir') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
        (if @(':preprocess') is not @('nil')).")

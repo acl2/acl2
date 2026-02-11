@@ -32,7 +32,7 @@
                            (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -64,7 +64,7 @@ int bar(int y, int z) {
                            (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -101,7 +101,7 @@ int bar(int x) {
                            (c$::ident "fib")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/fib.c"
@@ -141,7 +141,7 @@ int fib(int x) {
                            (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/generic-selection.c"

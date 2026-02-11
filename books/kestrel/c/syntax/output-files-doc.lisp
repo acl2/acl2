@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -52,7 +52,7 @@
 
     (xdoc::codeblock
      "(output-files :const           ...  ; required, no default"
-     "              :path            ...  ; default \".\""
+     "              :base-dir        ...  ; default \".\""
      "              :printer-options ...  ; default nil"
      "  )"))
 
@@ -81,9 +81,10 @@
        let @('*const*') be the name of this constant."))
 
     (xdoc::desc
-     "@(':path') &mdash; default @('\".\"')"
+     "@(':base-dir') &mdash; default @('\".\"')"
      (xdoc::p
-      "Path that the files are written into.")
+      "Base directory,
+       i.e. path that the files are written into.")
      (xdoc::p
       "This must be a non-empty string that is a valid path name in the system.
        It may or may not end with a slash.
@@ -95,7 +96,7 @@
       "Each file in the file set obtained from the translation unit ensemble
        is written to the path resulting from
        prepending the corresponding key in the file set map
-       with the path specified by the @(':path') input."))
+       with the path specified by the @(':base-dir') input."))
 
     (xdoc::desc
      "@(':printer-options') &mdash; default @('nil')"
@@ -143,4 +144,4 @@
       for each translation unit in @('*const*'),
       at the paths that are obtained by
       prepending the keys of the translation unit ensemble map
-      with the path specified by the @(':path') input."))))
+      with the path specified by the @(':base-dir') input."))))

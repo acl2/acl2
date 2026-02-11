@@ -32,7 +32,7 @@
   (split-all-gso *old* *new*)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -81,7 +81,7 @@ int main(void) {
   (split-all-gso *old* *new*)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -136,7 +136,7 @@ int main(void) {
   (split-all-gso *old* *new*)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/static-struct1.c"
@@ -243,7 +243,7 @@ static struct S_1 s_1 = {.x = 0};
                  *new*)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/typedef1.c"
@@ -295,7 +295,7 @@ int main(void) {
                  *new*)
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/typedef2.c"

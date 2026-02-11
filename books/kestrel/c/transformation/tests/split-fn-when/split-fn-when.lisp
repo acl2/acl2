@@ -30,7 +30,7 @@
                  :triggers "bar")
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -60,7 +60,7 @@ int foo(int y) {
                  :triggers ("setuid" "fork"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
@@ -103,7 +103,7 @@ int foo(int y) {
                  :triggers "bar")
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test3.c"

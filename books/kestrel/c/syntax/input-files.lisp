@@ -90,9 +90,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-path (path)
-  :returns (mv erp (new-path stringp))
-  :short "Process the @(':path') input."
+(define input-files-process-base-dir (base-dir)
+  :returns (mv erp (new-base-dir stringp))
+  :short "Process the @(':base-dir') input."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -101,20 +101,20 @@
      This is for uniformity when concatenating this
      with the files specified in the @(':files') input."))
   (b* (((reterr) "")
-       ((unless (stringp path))
-        (reterr (msg "The :PATH input must be a string, ~
+       ((unless (stringp base-dir))
+        (reterr (msg "The :BASE-DIR input must be a string, ~
                       but it is ~x0 instead."
-                     path)))
-       (path-chars (str::explode path))
-       ((unless (consp path-chars))
-        (reterr (msg "The :PATH input must be not empty, ~
+                     base-dir)))
+       (base-dir-chars (str::explode base-dir))
+       ((unless (consp base-dir-chars))
+        (reterr (msg "The :BASE-DIR input must be not empty, ~
                       but it is the empty string instead.")))
-       (path-chars (if (and (consp (cdr path-chars))
-                            (eql (car (last path-chars)) #\/))
-                       (butlast path-chars 1)
-                     path-chars))
-       (path (str::implode path-chars)))
-    (retok path)))
+       (base-dir-chars (if (and (consp (cdr base-dir-chars))
+                                (eql (car (last base-dir-chars)) #\/))
+                           (butlast base-dir-chars 1)
+                         base-dir-chars))
+       (base-dir (str::implode base-dir-chars)))
+    (retok base-dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,7 +286,7 @@
 
 (define input-files-process-inputs ((files-presentp booleanp)
                                     files
-                                    path
+                                    base-dir
                                     preprocess
                                     preprocess-args
                                     process
@@ -298,7 +298,7 @@
                                     state)
   :returns (mv erp
                (new-files string-listp)
-               (new-path stringp)
+               (new-base-dir stringp)
                (preprocessor string-optionp)
                (preprocess-extra-args
                  (or (string-listp preprocess-extra-args)
@@ -321,7 +321,7 @@
   (b* (((reterr) nil "" nil nil :parse nil nil (irr-ienv))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
-       ((erp path) (input-files-process-path path))
+       ((erp base-dir) (input-files-process-base-dir base-dir))
        ((erp preprocessor) (input-files-process-preprocess preprocess))
        ((erp preprocess-extra-args)
         (input-files-process-preprocess-args preprocessor
@@ -332,7 +332,7 @@
        ((erp keep-going) (input-files-process-keep-going keep-going))
        ((erp ienv) (input-files-process-ienv ienv)))
     (retok files
-           path
+           base-dir
            preprocessor
            preprocess-extra-args
            process
@@ -432,6 +432,7 @@
         (cons arg-std preprocess-extra-args)
       (string-stringlist-map-map-cons-values arg-std preprocess-extra-args)))
   :guard-hints (("Goal" :in-theory (enable acl2::string-stringlist-mapp)))
+
   ///
 
   (defret string-stringlist-mapp-of-input-files-complete-preprocess-extra-args.new-preprocess-extra-args
@@ -450,28 +451,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-read-files ((files string-listp) (path stringp) state)
+(define input-files-read-files ((files string-listp) (base-dir stringp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We go through each file, we prepend the path,
+    "We go through each file, we prepend the base directory,
      and we attempt to read the file at each resulting path,
      constructing the file set along the way.
-     Recall that @('path') never ends with @('/') (unless it is just @('/')),
+     Recall that @('base-dir') never ends with @('/')
+     (unless it is just @('/')),
      because input processing removes the ending slash."))
   (b* (((reterr) (irr-fileset) state)
        ((when (endp files)) (retok (fileset nil) state))
        (file (car files))
-       (path-to-read (str::cat path "/" file))
+       (path-to-read (str::cat base-dir "/" file))
        ((mv erp bytes state)
         (acl2::read-file-into-byte-list path-to-read state))
        ((when erp)
         (reterr (msg "Reading ~x0 failed." path-to-read)))
        (data (filedata bytes))
        ((erp fileset state)
-        (input-files-read-files (cdr files) path state)))
+        (input-files-read-files (cdr files) base-dir state)))
     (retok (fileset (omap::update (filepath file)
                                   data
                                   (fileset->unwrap fileset)))
@@ -481,7 +483,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-gen-events ((files string-listp)
-                                (path stringp)
+                                (base-dir stringp)
                                 (preprocessor string-optionp)
                                 (preprocess-extra-args
                                  (or (acl2::string-stringlist-mapp
@@ -520,13 +522,13 @@
        ;; Preprocess if required, or just read files from file system.
        ((erp files state)
         (cond ((equal preprocessor "") ; internal preprocessor
-               (pproc-files files path nil ienv state 1000000000))
+               (pproc-files files base-dir nil ienv state 1000000000))
               ((not preprocessor)
-               (input-files-read-files files path state))
+               (input-files-read-files files base-dir state))
               (t ; external preprocessor
                (preprocess-files
                 files
-                :path path
+                :path base-dir
                 :preprocessor preprocessor
                 :extra-args (input-files-complete-preprocess-extra-args
                              preprocess-extra-args
@@ -582,7 +584,7 @@
 
 (define input-files-process-inputs-and-gen-events ((files-presentp booleanp)
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
                                                    process
@@ -606,7 +608,7 @@
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-code-ensemble) state)
        ((erp files
-             path
+             base-dir
              preprocessor
              preprocess-extra-args
              process
@@ -615,7 +617,7 @@
              ienv)
         (input-files-process-inputs files-presentp
                                     files
-                                    path
+                                    base-dir
                                     preprocess
                                     preprocess-args
                                     process
@@ -627,7 +629,7 @@
                                     state))
        ((erp events code state)
         (input-files-gen-events files
-                                path
+                                base-dir
                                 preprocessor
                                 preprocess-extra-args
                                 process
@@ -652,7 +654,7 @@
 
 (define input-files-fn ((files-presentp booleanp)
                         files
-                        path
+                        base-dir
                         preprocess
                         preprocess-args
                         process
@@ -672,7 +674,7 @@
   (b* (((mv erp event & state)
         (input-files-process-inputs-and-gen-events files-presentp
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
                                                    process
@@ -690,7 +692,7 @@
 (defsection input-files-definition
   :short "Definition of the @(tsee input-files) macro."
   (defmacro input-files (&key (files 'nil files-presentp)
-                              (path '".")
+                              (base-dir '".")
                               (preprocess 'nil)
                               (preprocess-args 'nil)
                               (process ':validate)
@@ -700,7 +702,7 @@
     `(make-event-terse
        (input-files-fn ',files-presentp
                        ,files
-                       ',path
+                       ',base-dir
                        ',preprocess
                        ,preprocess-args
                        ',process
@@ -724,7 +726,7 @@
      It has the form:")
    (xdoc::codeblock
     "(input-files-prog :files           ...  ; required"
-    "                  :path            ...  ; default \".\""
+    "                  :base-dir        ...  ; default \".\""
     "                  :preprocess      ...  ; default nil"
     "                  :preprocess-args ...  ; default nil"
     "                  :process         ...  ; default :validate"
@@ -763,7 +765,7 @@
 
 (define input-files-prog-fn ((files-presentp booleanp)
                              files
-                             path
+                             base-dir
                              preprocess
                              preprocess-args
                              process
@@ -784,7 +786,7 @@
        ((erp & code state)
         (input-files-process-inputs-and-gen-events files-presentp
                                                    files
-                                                   path
+                                                   base-dir
                                                    preprocess
                                                    preprocess-args
                                                    process
@@ -809,7 +811,7 @@
 (defsection input-files-prog-definition
   :short "Definition of the @(tsee input-files-prog) macro."
   (defmacro input-files-prog (&key (files 'nil files-presentp)
-                                   (path '".")
+                                   (base-dir '".")
                                    (preprocess 'nil)
                                    (preprocess-args 'nil)
                                    (process ':validate)
@@ -818,7 +820,7 @@
                                    (ienv 'nil))
     `(input-files-prog-fn ',files-presentp
                           ,files
-                          ',path
+                          ',base-dir
                           ',preprocess
                           ,preprocess-args
                           ',process
