@@ -984,10 +984,10 @@
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit comment declons info))
+    (equal (transunit-annop (transunit comment includes declons info))
            (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit comment declons info))
+    :expand (transunit-annop (transunit comment includes declons info))
     :enable identity)
 
   (defruled transunit-ensemble-annop-of-transunit-ensemble

@@ -33,7 +33,10 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
+         (parstate (init-parstate (acl2::string=>nats ,input)
+                                  version
+                                  t
+                                  parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -59,7 +62,10 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
+         (parstate (init-parstate (acl2::string=>nats ,input)
+                                  version
+                                  t
+                                  parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)

@@ -195,10 +195,15 @@
                (tunit$ transunitp))
   (b* (((reterr) nil (c$::irr-transunit))
        ((transunit tunit) tunit)
+       ((when tunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((erp found extdecls)
         (ext-declon-list-try-split-fn-when tunit.declons triggers transunits)))
     (retok found
-           (make-transunit :comment nil :declons extdecls :info tunit.info))))
+           (make-transunit :comment nil
+                           :includes nil
+                           :declons extdecls
+                           :info tunit.info))))
 
 (define filepath-transunit-map-try-split-fn-when
   ((map filepath-transunit-mapp)

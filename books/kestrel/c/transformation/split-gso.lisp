@@ -445,6 +445,8 @@
                (tunit$ transunitp))
   (b* (((reterr) nil nil (c$::irr-transunit))
        ((transunit tunit) tunit)
+       ((when tunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((erp new1 new2 extdecls)
         (dup-split-struct-type-ext-declon-list
           original
@@ -455,7 +457,9 @@
           tunit.declons)))
     (retok new1
            new2
-           (make-transunit :comment nil :declons extdecls :info tunit.info)))
+           (make-transunit :comment nil
+                           :declons extdecls
+                           :info tunit.info)))
     ///
 
     (defret identp-of-dup-split-struct-type-transunit.new2$
@@ -822,6 +826,8 @@
                (tunit$ transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
+       ((when tunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((erp extdecls)
         (split-gso-split-object-ext-declon-list
           original

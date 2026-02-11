@@ -179,8 +179,11 @@
   :guard (transunit-annop transunit)
   :returns (mv (er? maybe-msgp)
                (uid c$::uidp))
-  (ext-declon-list-resolve-qualified-ident qual-ident
-                                           (transunit->declons transunit))
+  (b* (((reterr) (c$::irr-uid))
+       ((when (transunit->includes transunit))
+        (retmsg$ "Unsupported #include directives.")))
+    (ext-declon-list-resolve-qualified-ident qual-ident
+                                             (transunit->declons transunit)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define resolve-qualified-ident

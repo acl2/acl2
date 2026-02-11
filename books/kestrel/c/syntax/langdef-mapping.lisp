@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1777,6 +1777,8 @@
      obtaining a corresponding list of external declaration,
      which we put into a @(tsee c::file)."))
   (b* (((reterr) (c::file nil))
+       ((when (transunit->includes tunit))
+        (reterr (msg "Unsupported #include directives.")))
        (extdecls (transunit->declons tunit))
        ((erp extdecls1) (ldm-ext-declon-list extdecls)))
     (retok (c::make-file :declons extdecls1)))

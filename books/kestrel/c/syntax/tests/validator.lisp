@@ -115,7 +115,7 @@
        (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version t nil))
             ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
@@ -169,7 +169,7 @@
        (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version nil))
+       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version t nil))
             ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
             ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))

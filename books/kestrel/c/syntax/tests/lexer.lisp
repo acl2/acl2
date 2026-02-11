@@ -38,6 +38,7 @@
                                       (acl2::string=>nats ,input)
                                     ,input)
                                   version
+                                  t
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -68,6 +69,7 @@
                                       (acl2::string=>nats ,input)
                                     ,input)
                                   version
+                                  t
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
