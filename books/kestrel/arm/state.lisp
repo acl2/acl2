@@ -112,6 +112,23 @@
   (declare (xargs :stobjs arm))
   (reg *pc* arm))
 
+(defun r0 (arm) (declare (xargs :stobjs arm)) (reg 0 arm))
+(defun r1 (arm) (declare (xargs :stobjs arm)) (reg 1 arm))
+(defun r2 (arm) (declare (xargs :stobjs arm)) (reg 2 arm))
+(defun r3 (arm) (declare (xargs :stobjs arm)) (reg 3 arm))
+(defun r4 (arm) (declare (xargs :stobjs arm)) (reg 4 arm))
+(defun r5 (arm) (declare (xargs :stobjs arm)) (reg 5 arm))
+(defun r6 (arm) (declare (xargs :stobjs arm)) (reg 6 arm))
+(defun r7 (arm) (declare (xargs :stobjs arm)) (reg 7 arm))
+(defun r8 (arm) (declare (xargs :stobjs arm)) (reg 8 arm))
+(defun r9 (arm) (declare (xargs :stobjs arm)) (reg 9 arm))
+(defun r10 (arm) (declare (xargs :stobjs arm)) (reg 10 arm))
+(defun r11 (arm) (declare (xargs :stobjs arm)) (reg 11 arm))
+(defun r12 (arm) (declare (xargs :stobjs arm)) (reg 12 arm))
+(defun r13 (arm) (declare (xargs :stobjs arm)) (reg 13 arm))
+(defun r14 (arm) (declare (xargs :stobjs arm)) (reg 14 arm))
+(defun r15 (arm) (declare (xargs :stobjs arm)) (reg 15 arm))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Sets register N to VAL.
@@ -173,6 +190,15 @@
 (defund set-apsr.c (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 29 bit (apsr arm)) arm))
 (defund set-apsr.v (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 28 bit (apsr arm)) arm))
 (defund set-apsr.q (bit arm) (declare (xargs :guard (bitp bit) :stobjs arm)) (update-apsr (putbit 32 27 bit (apsr arm)) arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-apsr-type
+  (implies (armp arm)
+           (integerp (apsr arm)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use acl2::field-type-of-apsr
+                  :in-theory (disable acl2::field-type-of-apsr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
