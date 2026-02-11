@@ -308,4 +308,4 @@
 (include-book "r1cs/top")
 
 ;; The ARM-specific Axe tools:
-(include-book "arm/top")
+;;(include-book "arm/top") ; todo: uncomment (but fix name conflicts)
