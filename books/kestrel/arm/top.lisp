@@ -14,6 +14,7 @@
 ;; (include-book "decoder-tests")
 (include-book "encodings")
 (include-book "decoder")
+(include-book "memory32")
 (include-book "memory")
 (include-book "state")
 (include-book "pseudocode")
