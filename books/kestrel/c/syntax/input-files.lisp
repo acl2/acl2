@@ -12,6 +12,7 @@
 (in-package "C$")
 
 (include-book "external-preprocessing")
+(include-book "preprocessor")
 (include-book "parser")
 (include-book "disambiguator")
 (include-book "validator")
@@ -54,6 +55,7 @@
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':preprocess') input."
   (or (not x)
+      (eq x :internal)
       (eq x :auto)
       (stringp x)))
 
@@ -124,14 +126,24 @@
                                :in-theory
                                (enable input-files-preprocess-inputp)))))
   :short "Process the @(':preprocess') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('preprocessor') result of this function
+     encodes the preprocessor provided by this library as the empty string,
+     so that we can use a simpler return type here,
+     namely @(tsee string-optionp).
+     Note that the empty string cannot be confused with
+     any command to invoke an external preprocessor."))
   (b* (((reterr) nil)
        ((unless (input-files-preprocess-inputp preprocess))
-        (reterr (msg "The :PREPROCESS input must be NIL, :AUTO, or a string, ~
+        (reterr (msg "The :PREPROCESS input must be ~
+                      NIL, :INTERNAL, :AUTO, or a string, ~
                       but it is ~x0 instead."
                      preprocess)))
-       (preprocessor (if (eq preprocess :auto)
-                         "gcc"
-                       preprocess)))
+       (preprocessor (cond ((eq preprocess :internal) "")
+                           ((eq preprocess :auto) "gcc")
+                           (t preprocess))))
     (retok preprocessor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -150,8 +162,9 @@
    (xdoc::p
     "The @('preprocessor') input to this function
      is the result of processing the @(':preprocess') input.
-     If it is @('nil'), the @(':preprocess-args') input
-     is expected to also be @('nil').")
+     If it is @('nil') or the empty string
+     (the latter encodes the internal preprocessor of this library),
+     the @(':preprocess-args') input is expected to also be @('nil').")
    (xdoc::p
     "If processing of the @(':preprocess-args') input is successful,
      we return its value,
@@ -159,9 +172,9 @@
      This value is passed as part of the @(':extra-args') input
      of @(tsee preprocess-files), which justifies the name of the result."))
   (b* (((reterr) nil)
-       ((when (and (not preprocessor)
+       ((when (and (member-equal preprocessor '(nil ""))
                    preprocess-args))
-        (reterr (msg "Since the :PREPROCESS input is NIL, ~
+        (reterr (msg "Since the :PREPROCESS input is NIL or :INTERNAL, ~
                       the :PREPROCESS-ARGS input must also be NIL, ~
                       but it is ~x0 instead."
                      preprocess-args)))
@@ -374,6 +387,8 @@
       :c17+clang "-std=gnu17"
       :c23+clang "-std=gnu23")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define string-stringlist-map-map-cons-values
   ((x stringp)
    (map acl2::string-stringlist-mapp))
@@ -389,6 +404,8 @@
         (cons x (omap::head-val map))
         (string-stringlist-map-map-cons-values x (omap::tail map)))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-complete-preprocess-extra-args
   ((preprocess-extra-args
@@ -431,6 +448,8 @@
       :in-theory
       (disable return-type-of-input-files-complete-preprocess-extra-args)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-read-files ((files string-listp) (path stringp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
@@ -459,6 +478,8 @@
            state))
   :verify-guards :after-returns)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-gen-events ((files string-listp)
                                 (path stringp)
                                 (preprocessor string-optionp)
@@ -485,25 +506,36 @@
      resulting from processing the (possibly preprocessed) files,
      together with the implementation environment.
      If the programmatic interface is being used,
-     no events are actually generated."))
+     no events are actually generated.")
+   (xdoc::p
+    "When using the internal preprocessor,
+     for now we pass no directories to search for
+     angle-bracket @('#include')s.
+     We need to extend the interface of @(tsee input-files)
+     to provide that list.
+     We pass 1,000,000,000 as recursion limit."))
   (b* (((reterr) nil (irr-code-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
-       ;; Preprocess if required, or read files from file system.
+       ;; Preprocess if required, or just read files from file system.
        ((erp files state)
-        (if preprocessor
-            (preprocess-files
-              files
-              :path path
-              :preprocessor preprocessor
-              :extra-args (input-files-complete-preprocess-extra-args
-                            preprocess-extra-args
-                            ienv))
-          (input-files-read-files files path state)))
+        (cond ((equal preprocessor "") ; internal preprocessor
+               (pproc-files files path nil ienv state 1000000000))
+              ((not preprocessor)
+               (input-files-read-files files path state))
+              (t ; external preprocessor
+               (preprocess-files
+                files
+                :path path
+                :preprocessor preprocessor
+                :extra-args (input-files-complete-preprocess-extra-args
+                             preprocess-extra-args
+                             ienv)))))
        ;; Parsing is always required.
+       (skip-control-lines (not (equal preprocessor "")))
        ((erp tunits) (parse-fileset files
                                     (ienv->version ienv)
-                                    t ; skip-control-lines
+                                    skip-control-lines
                                     keep-going))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
