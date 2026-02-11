@@ -14,8 +14,15 @@
 (include-book "std/portcullis" :dir :system) ; for xdoc package
 
 (defpkg "ARM"
-  (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvmult bvcat bvsx bvcount repeatbit putbit
-            bool-to-bit bit-to-bool
+    (append '(bvnot bvor bvand bvxor slice getbit bvchop bvplus bvminus bvuminus bvmult bvcat bvsx bvcount repeatbit putbit
+              bvlt sbvlt
+              bvle sbvle
+              bv-array-read
+              bv-array-read-chunk-little
+              bv-list-read-chunk-little
+              bool-to-bit bit-to-bool
+              putbyte
+              putbits
             logext logtail
             defstobj+
             lookup-eq
@@ -28,6 +35,7 @@
             must-be-redundant
             keyword-listp
             pack-in-package-of-first-symbol
+            smaller-termp
             ;; xdoc stuff:
             defxdoc
             xdoc::topparas)
