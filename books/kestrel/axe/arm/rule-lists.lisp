@@ -124,6 +124,13 @@
      arm::add-to-address
      arm::read-of-set-reg
      arm::error-of-set-reg
+     arm::isetstate-of-set-reg
+
+     arm::isetstate-of-set-apsr.n
+     arm::isetstate-of-set-apsr.z
+     arm::isetstate-of-set-apsr.c
+     arm::isetstate-of-set-apsr.v
+     arm::isetstate-of-set-apsr.q
 
      arm::apsr.n-of-set-apsr.n
      arm::apsr.n-of-set-apsr.z
@@ -208,6 +215,7 @@
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
      arm::error-of-write
+     arm::isetstate-of-write
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::shift
