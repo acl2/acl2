@@ -2725,8 +2725,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called when we expect a preprocessing directive,
-     after reading the initial @('#').")
+    "This is called when we expect a preprocessing directive to skip,
+     after reading the initial @('#').
+     This is only called if the @('skip-control-lines') flag
+     in the @(tsee parstate) stobj is @('t');
+     see the documentation in @(tsee parstate).")
    (xdoc::p
     "We read characters in a loop until
      either we find a new-line character (success)
@@ -2974,7 +2977,17 @@
       and so we need to first try and lex the longer ones,
       using code similar to the one for other lexemes explained above.
       Some punctuators are not prefixes of others,
-      and so they can be immediately decided.")))
+      and so they can be immediately decided.")
+    (xdoc::li
+     "If we encounter the @('#') punctuator,
+      we look at the @('skip-control-lines') flag of the stobj.
+      If it is @('t'), we call @(tsee lex-control-line),
+      which will consume the whole preprocessing directive,
+      generating a control line lexeme that tokenization will skip.
+      If the flag is @('nil') instead,
+      we generate a token for the @('#'),
+      so that our parser can handle that and parse certain directives
+      (when we use our own preprocessor).")))
 
   (b* (((reterr) nil (irr-span) parstate)
        ((erp char first-pos parstate) (read-char parstate))
@@ -3126,9 +3139,16 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((and (utf8-= char (char-code #\#))
-           (only-whitespace-backward-through-line parstate))
-      (lex-control-line first-pos parstate))
+     ((utf8-= char (char-code #\#))
+      (if (parstate->skip-control-lines parstate)
+          (if (only-whitespace-backward-through-line parstate)
+              (lex-control-line first-pos parstate)
+            (reterr-msg :where (position-to-msg first-pos)
+                        :expected "not a #"
+                        :found "a #"))
+        (retok (lexeme-token (token-punctuator "#"))
+               (make-span :start first-pos :end first-pos)
+               parstate)))
 
      ((or (utf8-= char (char-code #\[)) ; [
           (utf8-= char (char-code #\])) ; ]
