@@ -398,6 +398,9 @@
                                  (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
                                                                          (equal t nil)))))
                              (cw ")~%"))))
+       ((when (not (acl2::term-listp assumptions (w state))))
+        (er hard? 'unroll-risc-v-code-core "Some assumption is not a valid term: ~x0." assumptions)
+        (mv :bad-assumptions nil state))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        ;; (- (and stop-pcs
