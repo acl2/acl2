@@ -1,6 +1,6 @@
 ; A tool to track functions that are known to return only t or nil
 ;
-; Copyright (C) 2016-2025 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system)
-(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "tools/er-soft-logic" :dir :system)
 
 ;; A table for tracking functions that are known to be booleans. This allows
@@ -91,7 +90,7 @@
                 (mv nil '(value-triple :redundant) state)))
        (formals (fn-formals fn (w state))))
     (mv nil
-        `(progn (defthm ,(pack$ fn '$-known-booleans-justification)
+        `(progn (defthm ,(add-suffix fn "$-KNOWN-BOOLEANS-JUSTIFICATION")
                   (booleanp (,fn ,@formals))
                   :rule-classes nil)
                 ;; If the theorem fails, the table event will not be processed.
