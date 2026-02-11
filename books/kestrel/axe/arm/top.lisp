@@ -20,7 +20,7 @@
 ;; (include-book "clear-writes")
 ;; (include-book "pc")
 ;; (include-book "registers")
-;; (include-book "support")
+(include-book "support")
 
 ;; ;; Support for proofs using the ACL2 rewriter rather than Axe's rewriter/lifter:
 ;; (include-book "support-non-axe")
