@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -691,6 +691,40 @@
     :measure (dirabsdeclor-count dirabsdeclor))
 
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declor-to-dirdeclor ((declor declorp))
+  :returns (ddeclor dirdeclorp)
+  :short "Turn a declarator into a direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the declarator has no pointers,
+     we return its direct declarator component.
+     Otherwise, we parenthesize it into a direct declarator."))
+  (b* (((declor declor) declor))
+    (if declor.pointers
+        (dirdeclor-paren declor)
+      declor.direct)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define absdeclor-to-dirabsdeclor? ((adeclor absdeclorp))
+  :returns (dadeclor dirabsdeclor-optionp)
+  :short "Turn an abstract declarator into
+          an optional direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the abstract declarator has no pointers,
+     we return its direct abstract declarator component.
+     Otherwise, we parenthesize it
+     into an optional direct abstract declarator."))
+  (b* (((absdeclor adeclor) adeclor))
+    (if adeclor.pointers
+        (dirabsdeclor-paren adeclor)
+      adeclor.direct?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

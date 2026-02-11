@@ -88,6 +88,16 @@
            (unsigned-byte-p 32 (reg n arm)))
   :hints (("Goal" :in-theory (enable reg))))
 
+(defthm integerp-of-reg
+  (implies (and (register-numberp n)
+                (armp arm))
+           (integerp (reg n arm)))
+  :hints (("Goal" :in-theory (enable reg unsigned-byte-p))))
+
+(defthm reg-of-if-arg2
+  (equal (reg n (if test arm1 arm2))
+         (if test (reg n arm1) (reg n arm2))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *sp* #b1101)
@@ -111,6 +121,23 @@
 (defun pc (arm)
   (declare (xargs :stobjs arm))
   (reg *pc* arm))
+
+(defun r0 (arm) (declare (xargs :stobjs arm)) (reg 0 arm))
+(defun r1 (arm) (declare (xargs :stobjs arm)) (reg 1 arm))
+(defun r2 (arm) (declare (xargs :stobjs arm)) (reg 2 arm))
+(defun r3 (arm) (declare (xargs :stobjs arm)) (reg 3 arm))
+(defun r4 (arm) (declare (xargs :stobjs arm)) (reg 4 arm))
+(defun r5 (arm) (declare (xargs :stobjs arm)) (reg 5 arm))
+(defun r6 (arm) (declare (xargs :stobjs arm)) (reg 6 arm))
+(defun r7 (arm) (declare (xargs :stobjs arm)) (reg 7 arm))
+(defun r8 (arm) (declare (xargs :stobjs arm)) (reg 8 arm))
+(defun r9 (arm) (declare (xargs :stobjs arm)) (reg 9 arm))
+(defun r10 (arm) (declare (xargs :stobjs arm)) (reg 10 arm))
+(defun r11 (arm) (declare (xargs :stobjs arm)) (reg 11 arm))
+(defun r12 (arm) (declare (xargs :stobjs arm)) (reg 12 arm))
+(defun r13 (arm) (declare (xargs :stobjs arm)) (reg 13 arm))
+(defun r14 (arm) (declare (xargs :stobjs arm)) (reg 14 arm))
+(defun r15 (arm) (declare (xargs :stobjs arm)) (reg 15 arm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,10 +203,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm integerp-of-apsr-type
+  (implies (armp arm)
+           (integerp (apsr arm)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use acl2::field-type-of-apsr
+                  :in-theory (disable acl2::field-type-of-apsr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm apsr-of-set-reg
   (equal (apsr (set-reg n val arm))
          (apsr arm))
   :hints (("Goal" :in-theory (enable set-reg apsr))))
+
+(defthm apsr.n-of-set-reg (equal (apsr.n (set-reg n val arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable set-reg apsr.n))))
+(defthm apsr.z-of-set-reg (equal (apsr.z (set-reg n val arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable set-reg apsr.z))))
+(defthm apsr.c-of-set-reg (equal (apsr.c (set-reg n val arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable set-reg apsr.c))))
+(defthm apsr.v-of-set-reg (equal (apsr.v (set-reg n val arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable set-reg apsr.v))))
+(defthm apsr.q-of-set-reg (equal (apsr.q (set-reg n val arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable set-reg apsr.q))))
+
+(defthm apsr.n-of-set-apsr.n (equal (apsr.n (set-apsr.n bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.n set-apsr.n))))
+(defthm apsr.n-of-set-apsr.z (equal (apsr.n (set-apsr.z bit arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n set-apsr.z))))
+(defthm apsr.n-of-set-apsr.c (equal (apsr.n (set-apsr.c bit arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n set-apsr.c))))
+(defthm apsr.n-of-set-apsr.v (equal (apsr.n (set-apsr.v bit arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n set-apsr.v))))
+(defthm apsr.n-of-set-apsr.q (equal (apsr.n (set-apsr.q bit arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n set-apsr.q))))
+
+(defthm apsr.z-of-set-apsr.n (equal (apsr.z (set-apsr.n bit arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z set-apsr.n))))
+(defthm apsr.z-of-set-apsr.z (equal (apsr.z (set-apsr.z bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.z set-apsr.z))))
+(defthm apsr.z-of-set-apsr.c (equal (apsr.z (set-apsr.c bit arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z set-apsr.c))))
+(defthm apsr.z-of-set-apsr.v (equal (apsr.z (set-apsr.v bit arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z set-apsr.v))))
+(defthm apsr.z-of-set-apsr.q (equal (apsr.z (set-apsr.q bit arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z set-apsr.q))))
+
+(defthm apsr.c-of-set-apsr.n (equal (apsr.c (set-apsr.n bit arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c set-apsr.n))))
+(defthm apsr.c-of-set-apsr.z (equal (apsr.c (set-apsr.z bit arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c set-apsr.z))))
+(defthm apsr.c-of-set-apsr.c (equal (apsr.c (set-apsr.c bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.c set-apsr.c))))
+(defthm apsr.c-of-set-apsr.v (equal (apsr.c (set-apsr.v bit arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c set-apsr.v))))
+(defthm apsr.c-of-set-apsr.q (equal (apsr.c (set-apsr.q bit arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c set-apsr.q))))
+
+(defthm apsr.v-of-set-apsr.n (equal (apsr.v (set-apsr.n bit arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable apsr.v set-apsr.n))))
+(defthm apsr.v-of-set-apsr.z (equal (apsr.v (set-apsr.z bit arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable apsr.v set-apsr.z))))
+(defthm apsr.v-of-set-apsr.c (equal (apsr.v (set-apsr.c bit arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable apsr.v set-apsr.c))))
+(defthm apsr.v-of-set-apsr.v (equal (apsr.v (set-apsr.v bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.v set-apsr.v))))
+(defthm apsr.v-of-set-apsr.q (equal (apsr.v (set-apsr.q bit arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable apsr.v set-apsr.q))))
+
+(defthm apsr.q-of-set-apsr.n (equal (apsr.q (set-apsr.n bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.n))))
+(defthm apsr.q-of-set-apsr.z (equal (apsr.q (set-apsr.z bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.z))))
+(defthm apsr.q-of-set-apsr.c (equal (apsr.q (set-apsr.c bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.c))))
+(defthm apsr.q-of-set-apsr.v (equal (apsr.q (set-apsr.v bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.v))))
+(defthm apsr.q-of-set-apsr.q (equal (apsr.q (set-apsr.q bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.q))))
+
 
 (defthm error-of-set-reg
   (equal (error (set-reg n val arm))

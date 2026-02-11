@@ -159,8 +159,8 @@
                                           position-independentp
                                           nil))
        ((when erp) (mv erp nil))
-       (standard-assumptions '((not (error32p stat))
-                               ;; (stat32p stat)
+       (standard-assumptions `((not (error32p ,state-var))
+                               ;; (stat32p ,state-var)
                                )) ; todo: what else?
        )
     (mv nil ; no error

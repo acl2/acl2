@@ -513,10 +513,16 @@
   :short "Transform a translation unit."
   :returns (mv (er? maybe-msgp)
                (new-tunit transunitp))
-  (b* (((transunit tunit) tunit)
+  (b* (((reterr) (irr-transunit))
+       ((transunit tunit) tunit)
+       ((when tunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((mv er extdecls)
         (split-fn-ext-declon-list target-fn new-fn-name tunit.declons split-point)))
-    (mv er (make-transunit :comment nil :declons extdecls :info tunit.info))))
+    (mv er (make-transunit :comment nil
+                           :includes nil
+                           :declons extdecls
+                           :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

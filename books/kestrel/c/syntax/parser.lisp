@@ -1207,7 +1207,7 @@
         (b* ((parstate (if token (unread-token parstate) parstate)))
           (retok nil (irr-span) parstate)))
        ;; stringlit
-       (string (token-string->unwrap token))
+       (string (token-string->literal token))
        ((erp strings last-span parstate) (parse-*-stringlit parstate)))
     ;; stringlit stringlits
     (retok (cons string strings)
@@ -1562,11 +1562,11 @@
        ((erp token span parstate) (read-token parstate)))
     (cond
      ((and token (token-case token :ident)) ; ident
-      (retok (attrib-name-ident (token-ident->unwrap token))
+      (retok (attrib-name-ident (token-ident->ident token))
              span
              parstate))
      ((and token (token-case token :keyword)) ; keyword
-      (retok (attrib-name-keyword (token-keyword->unwrap token))
+      (retok (attrib-name-keyword (token-keyword->keyword token))
              span
              parstate))
      (t
@@ -2834,7 +2834,8 @@
                  ;; no larger than the initial one,
                  ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                 (b* ((parstate
+                       (init-parstate nil (c::version-c17) nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -3030,8 +3031,8 @@
                          ;; so we just return the empty parser state.
                          ;; This is just logical:
                          ;; execution stops at the RAISE above.
-                         (b* ((parstate
-                               (init-parstate nil (c::version-c17) parstate)))
+                         (b* ((parstate (init-parstate
+                                         nil (c::version-c17) nil parstate)))
                            (reterr t)))
                         (parstate (unread-token parstate))) ;
                      (parse-postfix-expression parstate))))))
@@ -3095,7 +3096,7 @@
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
                      (b* ((parstate
-                           (init-parstate nil (c::version-c17) parstate)))
+                           (init-parstate nil (c::version-c17) nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -3174,7 +3175,7 @@
         (b* (((erp token2 last-span parstate) (read-token parstate)))
           (cond
            ((and token2 (token-case token2 :ident)) ; && ident
-            (retok (expr-label-addr (token-ident->unwrap token2))
+            (retok (expr-label-addr (token-ident->ident token2))
                    (span-join span last-span)
                    parstate))
            (t ; && other
@@ -3836,19 +3837,19 @@
                span
                parstate))
        ((and token (token-case token :ident)) ; identifier
-        (retok (make-expr-ident :ident (token-ident->unwrap token)
+        (retok (make-expr-ident :ident (token-ident->ident token)
                                 :info nil)
                span
                parstate))
        ((and token (token-case token :const)) ; constant
-        (retok (make-expr-const :const (token-const->unwrap token))
+        (retok (make-expr-const :const (token-const->const token))
                span
                parstate))
        ((and token (token-case token :string)) ; stringlit
         (b* (((erp strings last-span parstate) ; stringlit stringlits
               (parse-*-stringlit parstate)))
           (retok (make-expr-string
-                  :strings (cons (token-string->unwrap token) strings))
+                  :strings (cons (token-string->literal token) strings))
                  (if strings (span-join span last-span) span)
                  parstate)))
        ((token-punctuatorp token "(") ; (
@@ -4867,7 +4868,7 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->unwrap token)))
+                (type-spec-typedef (token-ident->ident token)))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5152,7 +5153,7 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->unwrap token)))
+                (type-spec-typedef (token-ident->ident token)))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5563,7 +5564,7 @@
        ;; it may be the whole structure or union specifier,
        ;; or there may be more to it, so we read another token.
        ((and token (token-case token :ident)) ; struct/union ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace, there are two cases.
@@ -5734,7 +5735,7 @@
        ;; it may be the whole specifier, or there may be more,
        ;; so we read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace,
@@ -6568,7 +6569,7 @@
        ;; that must be the start of the direct declarator.
        ((and token (token-case token :ident)) ; ident
         (parse-direct-declarator-rest (dirdeclor-ident
-                                       (token-ident->unwrap token))
+                                       (token-ident->ident token))
                                       span
                                       parstate))
        ;; If token is an open parenthesis,
@@ -7276,7 +7277,7 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical: execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) parstate)))
+                          (init-parstate nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((erp tyname span parstate) (parse-type-name parstate))
                    ;; Ensure there is a closed parenthesis,
@@ -7312,8 +7313,8 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((parstate
-                              (init-parstate nil (c::version-c17) parstate)))
+                        (b* ((parstate (init-parstate
+                                        nil (c::version-c17) nil parstate)))
                           (reterr t)))
                        ((mv erp tyname span-tyname parstate)
                         (parse-type-name parstate)))
@@ -7354,10 +7355,8 @@
                               ;; so we just return the empty parser state.
                               ;; This is just logical:
                               ;; execution stops at the RAISE above.
-                              (b* ((parstate
-                                    (init-parstate nil
-                                                   (c::version-c17)
-                                                   parstate)))
+                              (b* ((parstate (init-parstate nil (c::version-c17)
+                                                            nil parstate)))
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
@@ -7429,6 +7428,7 @@
                                 (b* ((parstate
                                       (init-parstate nil
                                                      (c::version-c17)
+                                                     nil
                                                      parstate)))
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
@@ -7458,7 +7458,7 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical: execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) parstate)))
+                            (init-parstate nil (c::version-c17) nil parstate)))
                         (reterr t)))
                      ((erp tyname span parstate) (parse-type-name parstate))
                      ;; Ensure there is a closed parenthesis,
@@ -7555,7 +7555,8 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                (b* ((parstate
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp first-span parstate) ; (
                 (read-punctuator "(" parstate))
@@ -7586,7 +7587,7 @@
           ;; so we just return the empty parser state.
           ;; This is just logical:
           ;; execution stops at the RAISE above.
-          (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+          (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
             (reterr t)))
          ;; If the parsing of any part of the parenthesized type name fails,
          ;; we have an unambiguous expression, already parsed.
@@ -7624,7 +7625,8 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                (b* ((parstate
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-tyname tyname & parstate) ; ( tyname
@@ -7649,7 +7651,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) parstate)))
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-close-paren & parstate) ; ( tyname )
@@ -7674,7 +7676,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) parstate)))
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ;; If the parsing of the parenthesized type name succeeds,
@@ -7705,7 +7707,7 @@
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) parstate)))
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate))))
       ;; If the expression is a parenthesized one,
@@ -7780,7 +7782,7 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
                 (b* ((parstate
-                      (init-parstate nil (c::version-c17) parstate)))
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -7805,7 +7807,7 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+              (b* ((parstate (init-parstate nil (c::version-c17) nil parstate)))
                 (reterr t)))
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
@@ -7844,7 +7846,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) parstate)))
+                          (init-parstate nil (c::version-c17) nil parstate)))
                       (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
@@ -7906,7 +7908,7 @@
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
                       (b* ((parstate
-                            (init-parstate nil (c::version-c17) parstate)))
+                            (init-parstate nil (c::version-c17) nil parstate)))
                         (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
@@ -8372,7 +8374,8 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                (b* ((parstate
+                      (init-parstate nil (c::version-c17) nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-declon/stmt-declon decl) span parstate))
@@ -8407,7 +8410,7 @@
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
                     (b* ((parstate
-                          (init-parstate nil (c::version-c17) parstate)))
+                          (init-parstate nil (c::version-c17) nil parstate)))
                       (reterr t)))
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
@@ -8445,8 +8448,8 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((parstate
-                                (init-parstate nil (c::version-c17) parstate)))
+                          (b* ((parstate (init-parstate nil (c::version-c17)
+                                                        nil parstate)))
                             (reterr t))))
                       (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
@@ -8483,7 +8486,7 @@
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
                   (b* ((parstate
-                        (init-parstate nil (c::version-c17) parstate)))
+                        (init-parstate nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
               (retok (amb?-declon/stmt-declon decl) span parstate))))))
@@ -8513,7 +8516,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; [ name ] string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; [ name ] constraint
@@ -8538,7 +8541,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; constraint
@@ -8643,7 +8646,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; [ name ] string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; [ name ] string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; [ name ] constraint
@@ -8668,7 +8671,7 @@
                           :expected "a string literal"
                           :found (token-to-msg token2)))
              ;; string
-             (string (token-string->unwrap token2))
+             (string (token-string->literal token2))
              ((erp strings & parstate) ; string strings
               (parse-*-stringlit parstate))
              (constraint (cons string strings)) ; constraint
@@ -8973,7 +8976,7 @@
        ;; we could have a labeled statement or an expression statement.
        ;; So we need to read another token.
        ((and token (token-case token :ident)) ; ident
-        (b* ((ident (token-ident->unwrap token))
+        (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is a colon,
@@ -9925,7 +9928,8 @@
                   ;; no larger than the initial one,
                   ;; so we just return the initial parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((parstate (init-parstate nil (c::version-c17) parstate)))
+                  (b* ((parstate
+                        (init-parstate nil (c::version-c17) nil parstate)))
                     (reterr t)))
                  (parstate (unread-token parstate)) ;
                  ((erp declon span parstate) ; declon
@@ -11851,6 +11855,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-include-directive ((hash-span spanp) (parstate parstatep))
+  :returns (mv erp
+               (include header-namep)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse a @('#include') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after parsing the initial @('#').
+     The next token must be the @('include') identifier,
+     and the one after that must be a header name,
+     which we return, because we represent
+     @('#include') directives as header names."))
+  (b* (((reterr) (irr-header-name) (irr-span) parstate)
+       ((erp ident span parstate) (read-identifier parstate))
+       ((unless (equal (ident->unwrap ident) "include"))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "the 'include' identifier"
+                    :found (msg "the '~s0' identifier"
+                                (ident->unwrap ident))))
+       ((erp hname last-span parstate) (read-header-name parstate)))
+    (retok hname (span-join hash-span last-span) parstate))
+
+  ///
+
+  (defret parsize-of-parse-include-directive-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-include-directive-cond
+    (implies (not erp)
+             (<= (parsize new-parstate)
+                 (1- (parsize parstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-*-include-directive ((parstate parstatep))
+  :returns (mv erp
+               (includes header-name-listp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse zero or more @('#include') directives."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp token span parstate) (read-token parstate))
+       ((unless (token-punctuatorp token "#"))
+        (b* ((parstate (if token (unread-token parstate) parstate)))
+          (retok nil (irr-span) parstate)))
+       ((erp include first-span parstate) (parse-include-directive span parstate))
+       ((erp includes last-span parstate) (parse-*-include-directive parstate)))
+    (retok (cons include includes) (span-join first-span last-span) parstate))
+  :measure (parsize parstate)
+  :verify-guards :after-returns
+
+  ///
+
+  (more-returns
+   (includes true-listp :rule-classes :type-prescription))
+
+  (defret parsize-of-parse-*-include-directive-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-translation-unit ((parstate parstatep))
   :returns (mv erp
                (tunit transunitp)
@@ -11862,10 +11935,12 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     We parse zero or more external declarations,
-     consistently with the grammar.
-     But unless GCC/Clang extensions are enabled,
-     we reject input with zero external declarations.")
+     Unless we must skip control lines,
+     we parse zero or more @('#include') directives.
+     Then we parse zero or more external declarations.
+     Unless GCC/Clang extensions are enabled,
+     we reject input with no @('#include') declarations
+     and no external declarations.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
@@ -11876,16 +11951,29 @@
      the last character is a new-line,
      otherwise that position would be at a non-zero column."))
   (b* (((reterr) (irr-transunit) parstate)
+       ((erp includes & parstate)
+        (if (parstate->skip-control-lines parstate)
+            (mv nil nil nil parstate)
+          (parse-*-include-directive parstate)))
        ((erp extdecls & eof-pos parstate)
         (parse-*-external-declaration parstate))
-       ((when (and (endp extdecls)
+       ((when (and (endp includes)
+                   (endp extdecls)
                    (not (parstate->gcc/clang parstate))))
         (reterr (msg "The translation unit has no external declarations, ~
+                      ~s0 ~
                       but GCC/Clang extensions (which allow that) ~
-                      are not enabled.")))
+                      are not enabled."
+                     (if (parstate->skip-control-lines parstate)
+                         ""
+                       "and no #include directives"))))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (make-transunit :comment nil :declons extdecls :info nil) parstate))
+    (retok (make-transunit :comment nil
+                           :includes includes
+                           :declons extdecls
+                           :info nil)
+           parstate))
 
   ///
 
@@ -11896,7 +11984,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-file ((path filepathp) (data byte-listp) (version c::versionp))
+(define parse-file ((path filepathp)
+                    (data byte-listp)
+                    (version c::versionp)
+                    (skip-control-lines booleanp))
   :returns (mv erp (tunit transunitp))
   :short "Parse (the data bytes of) a file."
   :long
@@ -11919,7 +12010,7 @@
   (with-local-stobj
     parstate
     (mv-let (erp tunit parstate)
-        (b* ((parstate (init-parstate data version parstate))
+        (b* ((parstate (init-parstate data version skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)
@@ -11937,6 +12028,7 @@
 
 (define parse-fileset ((fileset filesetp)
                        (version c::versionp)
+                       (skip-control-lines booleanp)
                        (keep-going booleanp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Parse a file set."
@@ -11956,7 +12048,8 @@
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-transunit-ensemble))
        (filemap (fileset->unwrap fileset))
-       ((erp tunitmap) (parse-fileset-loop filemap version keep-going))
+       ((erp tunitmap)
+        (parse-fileset-loop filemap version skip-control-lines keep-going))
        (- (if keep-going
               (b* ((len-filemap (omap::size filemap))
                    (len-tunitmap (omap::size tunitmap))
@@ -11971,22 +12064,30 @@
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
                                (version c::versionp)
+                               (skip-control-lines booleanp)
                                (keep-going booleanp))
      :returns (mv erp (tunitmap filepath-transunit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
           ((mv erp tunit)
-           (parse-file filepath (filedata->unwrap filedata) version))
+           (parse-file filepath
+                       (filedata->unwrap filedata)
+                       version
+                       skip-control-lines))
           ((when erp)
            (if keep-going
                (prog2$ (cw "~@0~%" erp)
                        (parse-fileset-loop (omap::tail filemap)
                                            version
+                                           skip-control-lines
                                            keep-going))
              (reterr erp)))
           ((erp tunitmap)
-           (parse-fileset-loop (omap::tail filemap) version keep-going)))
+           (parse-fileset-loop (omap::tail filemap)
+                               version
+                               skip-control-lines
+                               keep-going)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
      :verify-guards :after-returns
 

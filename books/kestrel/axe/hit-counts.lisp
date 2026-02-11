@@ -127,7 +127,7 @@
   ;; if hit-counts is nil, it remains so:
   (and hit-counts
        (if (natp hit-counts)
-           (+ 1 hit-counts)
+           (+ 1 (the (integer 0 *) hit-counts))
          (increment-hit-count rule-symbol hit-counts))))
 
 (defthm hit-countsp-of-maybe-increment-hit-count

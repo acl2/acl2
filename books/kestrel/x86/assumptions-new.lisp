@@ -1,7 +1,7 @@
 ; New method of generating assumptions for x86 lifting
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 
 (include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
 (include-book "canonical-unsigned")
-(include-book "assumptions") ; for make-standard-state-assumptions-fn
+(include-book "assumptions") ; for make-standard-state-assumptions-fn-aux
 (include-book "assumptions-for-inputs")
 (include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
@@ -375,13 +375,15 @@
                                          state-var
                                          base-address-var ; only needed if position-independentp
                                          target-offset
-                                         position-independentp)
+                                         position-independentp
+                                         feature-flags)
   (declare (xargs :guard (and (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var)
                               (symbolp base-address-var)
                               (natp target-offset)
-                              (booleanp position-independentp))))
+                              (booleanp position-independentp)
+                              (feature-flagsp feature-flags))))
   (if (<= (expt 2 47) target-offset)
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
@@ -396,7 +398,7 @@
                                      `(bvplus '64 ',target-offset ,base-address-var))
                                  ;; Not position-independent, so the target is a concrete address:
                                  (acl2::enquote target-offset))))
-      (append (make-standard-state-assumptions-fn state-var) ; todo: these are untranslated
+      (append (make-standard-state-assumptions-fn-aux state-var feature-flags)
               ;; Assumptions about the BASE-ADDRESS-VAR:
               (if position-independentp
                   `((integerp ,base-address-var) ; seems needed, or add a rule to conclude this from unsigned-byte-p
@@ -443,14 +445,15 @@
               ;;           nil))
               ))))
 
-(defthm true-listp-of-make-standard-assumptions64-new
-  (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp)))
+(local
+ (defthm true-listp-of-make-standard-assumptions64-new
+   (true-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))))
 
 (local
  (defthm pseudo-term-listp-of-make-standard-assumptions64-new
    (implies (and (symbolp state-var)
                  (if position-independentp (symbolp base-address-var) t))
-            (pseudo-term-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp)))
+            (pseudo-term-listp (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags)))
    :hints (("Goal" :in-theory (enable make-standard-assumptions64-new)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,6 +586,7 @@
 ;; introduced by the assumptions to represent various state components.
 (defund assumptions-elf64-new (target
                                position-independentp
+                               feature-flags
                                stack-slots-needed
                                existing-stack-slots
                                state-var
@@ -593,6 +597,7 @@
                                parsed-elf)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
+                              (feature-flagsp feature-flags)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
@@ -614,7 +619,7 @@
         (er hard? 'assumptions-elf64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::elf64-regions-to-load parsed-elf)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -664,14 +669,14 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
-  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf)))
+  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
 (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-elf64-new
   (implies (and (symbolp state-var)
                 (or (eq :skip inputs) (names-and-typesp inputs))
                 (acl2::parsed-elfp parsed-elf))
-           (pseudo-term-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf))))
+           (pseudo-term-listp (mv-nth 1 (assumptions-elf64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf))))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -682,6 +687,7 @@
 ;; introduced by the assumptions to represent various state components.
 (defund assumptions-macho64-new (target
                                  position-independentp
+                                 feature-flags
                                  stack-slots-needed
                                  existing-stack-slots
                                  state-var
@@ -692,6 +698,7 @@
                                  parsed-macho)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
+                              (feature-flagsp feature-flags)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
@@ -715,7 +722,7 @@
         (er hard? 'assumptions-macho64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::macho64-regions-to-load parsed-macho)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -765,12 +772,13 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
-  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho)))
+  (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
 (defthm pseudo-term-list-of-mv-nth-1-of-assumptions-macho64-new
   (implies (and (acl2::lifter-targetp target)
-                ;(booleanp position-independentp)
+                ;; (booleanp position-independentp)
+                ;; (feature-flagsp feature-flags)
                 (natp stack-slots-needed)
                 (natp existing-stack-slots)
                 (symbolp state-var) ; todo: too strict?
@@ -779,7 +787,7 @@
                 ;(member-eq inputs-disjoint-from '(nil :code :all))
                 ;(member-eq assume-bytes '(:all :non-write))
                 (acl2::parsed-mach-o-p parsed-macho))
-           (pseudo-term-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho))))
+           (pseudo-term-listp (mv-nth 1 (assumptions-macho64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho))))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -787,6 +795,7 @@
 ;; Returns (mv erp assumptions assumption-vars).
 (defund assumptions-pe64-new (target
                               position-independentp
+                              feature-flags
                               stack-slots-needed
                               existing-stack-slots
                               state-var
@@ -797,6 +806,7 @@
                               parsed-pe)
   (declare (xargs :guard (and (acl2::lifter-targetp target)
                               (booleanp position-independentp)
+                              (feature-flagsp feature-flags)
                               (natp stack-slots-needed)
                               (natp existing-stack-slots)
                               (symbolp state-var) ; todo: too strict?
@@ -822,7 +832,7 @@
         (er hard? 'assumptions-pe64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
        ;; Make the standard assumptions:
-       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp))
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))
        ;; Gather memory-regions to assume loaded:
        ((mv erp regions-to-load) (acl2::pe64-regions-to-load parsed-pe)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
@@ -880,7 +890,7 @@
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
-  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe)))
+  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe)))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 
 (defthm pseudo-term-list-of-mv-nth-1-of-assumptions-pe64-new
@@ -890,7 +900,7 @@
                 (symbolp state-var) ; todo: too strict?
                 (or (eq :skip inputs) (names-and-typesp inputs))
                 (acl2::parsed-pe-p parsed-pe))
-           (pseudo-term-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe))))
+           (pseudo-term-listp (mv-nth 1 (assumptions-pe64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe))))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

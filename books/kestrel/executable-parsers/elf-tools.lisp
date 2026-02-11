@@ -367,7 +367,7 @@
             t
           (if (eq elf-type :exec)
               nil
-            (er hard? 'unroll-x86-code-core "Unexpected ELF executable type: ~x0." elf-type)))
-      (er hard? 'unroll-x86-code-core "No program header table in ELF file.")
+            (er hard? 'elf-position-independentp "Unexpected ELF executable type: ~x0." elf-type)))
+      (er hard? 'elf-position-independentp "No program header table in ELF file.")
       ;;nil
       )))

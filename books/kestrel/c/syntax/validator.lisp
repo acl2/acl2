@@ -7403,6 +7403,9 @@
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-transunit) (irr-valid-table))
+       ((when (transunit->includes tunit))
+        (reterr
+         (msg "Validator does not support #include directives yet.")))
        (gcc/clang (ienv->gcc/clang ienv))
        (table (valid-init-table filepath externals completions next-uid))
        (table

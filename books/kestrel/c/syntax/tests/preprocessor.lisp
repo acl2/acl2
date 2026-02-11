@@ -284,23 +284,28 @@ M_is_defined
 (test-preproc '("gincluder1.c"
                 "gincluder2.c")
               :expected (fileset-of "gincluder1.c"
-                                    "#include \"gincluder1.h\"
+                                    "
+#include \"gincluder1.h\"
 #include \"gincluder2.h\"
 "
                                     "gincluder2.c"
-                                    "#include \"gincluder2.h\"
+                                    "
+#include \"gincluder2.h\"
 #include \"gincluder1.h\"
 "
                                     "gincluder1.h"
-                                    "#include \"guarded.h\"
+                                    "
+#include \"guarded.h\"
 int x1 = 0;
 "
                                     "gincluder2.h"
-                                    "#include \"guarded.h\"
+                                    "
+#include \"guarded.h\"
 int x2 = 0;
 "
                                     "guarded.h"
-                                    "#ifndef GUARDED
+                                    "
+#ifndef GUARDED
 #define GUARDED
 void f() {}
 #endif
@@ -322,36 +327,55 @@ void f() {}
                 "gincludermod1.c"
                 "gincludermod2.c")
               :expected (fileset-of "gincluder1.c"
-                                    "#include \"gincluder1.h\"
+                                    "
+#include \"gincluder1.h\"
 #include \"gincluder2.h\"
 "
                                     "gincluder2.c"
-                                    "#include \"gincluder2.h\"
+                                    "
+#include \"gincluder2.h\"
 #include \"gincluder1.h\"
 "
                                     "gincluder1.h"
-                                    "#include \"guarded.h\"
+                                    "
+#include \"guarded.h\"
 int x1 = 0;
 "
                                     "gincluder2.h"
-                                    "#include \"guarded.h\"
+                                    "
+#include \"guarded.h\"
 int x2 = 0;
 "
                                     "guarded.h"
-                                    "#ifndef GUARDED
+                                    "
+#ifndef GUARDED
 #define GUARDED
 void f() {}
 #endif
 "
                                     "gincludermod1.c"
-                                    "#define GUARDED
+                                    "
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+#define GUARDED
 void f1() {}
+// <<<<<<<<<< #include \"guarded.h\"
 int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
 #include \"gincluder2.h\"
 "
                                     "gincludermod2.c"
-                                    "#define GUARDED
+                                    "
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+#define GUARDED
 void f2() {}
+// <<<<<<<<<< #include \"guarded.h\"
 int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
 #include \"gincluder1.h\"
 "))

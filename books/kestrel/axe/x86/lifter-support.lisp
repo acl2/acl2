@@ -21,7 +21,7 @@
 (defconst *non-stp-assumption-functions*
   '(canonical-address-p$inline ; not used much anymore ; todo: update to what is used
     program-at
-    separate
+    separate ; not used much anymore ; todo: update to what is used
     x86p
     cr0bits-p$inline
     cr4bits-p$inline

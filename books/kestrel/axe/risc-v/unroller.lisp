@@ -37,7 +37,6 @@
 (include-book "rewriter")
 (include-book "../step-increments")
 (include-book "../rule-limits")
-(include-book "../rewriter-basic")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../lifter-common")
@@ -58,7 +57,7 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
-(include-book "kestrel/executable-parsers/elf-tools" :dir :system) ; for the user's convenience
+(include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
@@ -399,6 +398,9 @@
                                  (print-terms-elided assumptions '(;(program-at t nil t) ; the program can be huge
                                                                          (equal t nil)))))
                              (cw ")~%"))))
+       ((when (not (acl2::term-listp assumptions (w state))))
+        (er hard? 'unroll-risc-v-code-core "Some assumption is not a valid term: ~x0." assumptions)
+        (mv :bad-assumptions nil state))
        ;; Prepare for symbolic execution:
        ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        ;; (- (and stop-pcs

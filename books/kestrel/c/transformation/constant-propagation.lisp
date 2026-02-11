@@ -2000,8 +2000,12 @@
 (define const-prop-transunit
   ((tunit transunitp))
   :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
+  (b* (((transunit tunit) tunit)
+       ((when tunit.includes)
+        (raise "Unsupported #include directives.")
+        (transunit-fix tunit)))
     (make-transunit :comment nil
+                    :includes nil
                     :declons (const-prop-ext-declon-list tunit.declons nil)
                     :info tunit.info)))
 

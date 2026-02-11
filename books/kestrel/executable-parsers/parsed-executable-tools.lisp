@@ -99,3 +99,14 @@
         (if (not (eq :em_riscv cpu-type))
             (er hard? 'ensure-risc-v "Non-RISC-V executable detected.  CPU type is ~x0" cpu-type)
           nil)))))
+
+(defund ensure-arm (parsed-executable)
+  (declare (xargs :guard (parsed-executablep parsed-executable)))
+  (let ((executable-type (parsed-executable-type parsed-executable)))
+    (if (not (eq executable-type :elf-32))
+        ;; todo: handle :elf-64 and maybe other executable-types
+        (er hard? 'ensure-arm "Non-ELF-32 executable detected.  Executable type is ~x0" executable-type)
+      (let ((cpu-type (parsed-elf-cpu-type parsed-executable)))
+        (if (not (eq :em_arm cpu-type))
+            (er hard? 'ensure-arm "Non-ARM executable detected.  CPU type is ~x0" cpu-type)
+          nil)))))

@@ -156,8 +156,12 @@
   :guard (transunit-annop tunit)
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
+  (b* (((transunit tunit) tunit)
+       ((when tunit.includes)
+        (raise "Unsupported #include directives.")
+        (transunit-fix tunit)))
     (make-transunit :comment nil
+                    :includes nil
                     :declons (copy-fn-ext-declon-list tunit.declons target-fn new-fn)
                     :info tunit.info)))
 

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -227,4 +227,6 @@
                 (comp-stmt-standardp (fundef->body fundef))))
    (ext-declon :empty nil)
    (ext-declon :asm nil)
-   (transunit (consp (transunit->declons transunit)))))
+   (transunit (and (consp (transunit->declons transunit))
+                   (ext-declon-list-standardp
+                    (transunit->declons transunit))))))

@@ -65,6 +65,7 @@
 ;; (def-constant-opener list-to-bv-array)
 ;; (def-constant-opener list-to-bv-array-aux) ; too slow?
 
+;dup ;move
 (def-constant-opener bv-list-read-chunk-little)
 (def-constant-opener packbv-little)
 

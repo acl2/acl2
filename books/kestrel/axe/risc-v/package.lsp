@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2") ; to support LDing this book, since in this dir, ACL2 starts in the "R" package
+(in-package "ACL2") ; to support LDing this file, since in this dir, ACL2 starts in the "R" package
 
 (include-book "kestrel/axe/imported-symbols" :dir :system)
 (include-book "kestrel/risc-v/portcullis" :dir :system)

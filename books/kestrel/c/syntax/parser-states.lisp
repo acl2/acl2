@@ -43,14 +43,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>token</i> in the grammar in [C17:A.1.1] [C17:6.4].")
+    "This corresponds to the rule for tokens in the ABNF grammar.
+     By the time we run the parser,
+     preprocessing tokens (see the rule for them in the ABNF grammar)
+     have been turned into tokens.")
    (xdoc::p
-    "This is used by the parser.
-     It is not part of the abstract syntax in @(see abstract-syntax),
-     even though the ABNF grammar has a rule for @('token').
+    "This notion of token is used by the parser.
+     It is not part of the ASTs defined in @(see abstract-syntax-trees),
+     even though the ABNF grammar has rules
+     for @('token') and @('preprocessing-token').
      Our parser is structured in two levels, which is common:
-     (i) lexing/tokenization; and (ii) parsing proper.
-     Thus, it is useful to have an abstract-syntax-like type for tokens,
+     (i) lexing/tokenization; and (ii) parsing proper
+     (currently preprocessing precedes lexing/tokenization,
+     but in the future we may integrate them).
+     Thus, it is useful to have an AST-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
     "We represent a C keyword or punctuator as an ACL2 string,
@@ -60,18 +66,19 @@
      for keywords and punctuators instead,
      and use them here instead of strings.")
    (xdoc::p
-    "We use the identifiers, constants, and string literals
+    "We use the identifiers, constants, string literals, and header names
      from the abstract syntax
      to represent the corresponding tokens.
      However, note that the parser never generates enumeration constants,
      which overlap with identifiers,
      but need type checking to be distinguished from identifiers;
      the parser always classifies those as identifiers."))
-  (:keyword ((unwrap string)))
-  (:ident ((unwrap ident)))
-  (:const ((unwrap const)))
-  (:string ((unwrap stringlit)))
-  (:punctuator ((unwrap stringp)))
+  (:keyword ((keyword string)))
+  (:ident ((ident ident)))
+  (:const ((const const)))
+  (:string ((literal stringlit)))
+  (:punctuator ((punctuator stringp)))
+  (:header ((name header-name)))
   :pred tokenp
   :layout :fulltree)
 
@@ -118,7 +125,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :keyword)
-       (equal (the string (token-keyword->unwrap token))
+       (equal (the string (token-keyword->keyword token))
               (the string keyword)))
   :hooks nil
 
@@ -144,7 +151,7 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :punctuator)
-       (equal (the string (token-punctuator->unwrap token))
+       (equal (the string (token-punctuator->punctuator token))
               (the string punctuator)))
   :hooks nil
 
@@ -362,7 +369,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our parsing functions take and return parser states.")
+    "Our (lexing and) parsing functions take and return parser states.")
    (xdoc::p
     "The parser state is a stobj, which we turn into a fixtype
      by adding a fixer along with readers and writers
@@ -527,6 +534,21 @@
      but that transformation currently does not quite handle
      all of the parser's functions.")
    (xdoc::p
+    "The @('skip-control-lines') says whether control lines,
+     i.e. a subset of the preprocessing directives [C17:6.10],
+     should be skipped by the lexer like comments and white space.
+     As described in the documentation accompanying
+     the ABNF grammar rule for lexemes,
+     when using an external preprocessor,
+     certain (harmless) directives may survive preprocessing;
+     when the @('skip-control-lines') flag in this stobj is @('t'),
+     our lexer skips (i.e. ignores) such directives.
+     The flag must be set to @('nil') when instead we use our preprocessor,
+     which purposely preserves some directives
+     so that our (lexer and) parser can recognize them
+     and turn into ASTs;
+     our lexer does not skip control lines if this flag is @('nil').")
+   (xdoc::p
     "The definition of the stobj itself is straightforward,
      but we use a @(tsee make-event) so we can use
      richer terms for initial values.
@@ -616,6 +638,8 @@
                :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
+      (skip-control-lines :type (satisfies booleanp)
+                          :initially nil)
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
@@ -627,6 +651,7 @@
                  (tokens-unreadp raw-parstate->tokens-unread-p)
                  (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
+                 (skip-control-linesp raw-parstate->skip-control-lines-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
@@ -640,6 +665,7 @@
                  (tokens-unread raw-parstate->tokens-unread)
                  (version raw-parstate->version)
                  (size raw-parstate->size)
+                 (skip-control-lines raw-parstate->skip-control-lines)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
@@ -652,7 +678,9 @@
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
                  (update-version raw-update-parstate->version)
-                 (update-size raw-update-parstate->size))
+                 (update-size raw-update-parstate->size)
+                 (update-skip-control-lines
+                  raw-update-parstate->skip-control-lines))
       :inline t))
 
   ;; fixer:
@@ -822,6 +850,15 @@
     :inline t
     :hooks nil)
 
+  (define parstate->skip-control-lines (parstate)
+    :returns (skip-control-lines booleanp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->skip-control-lines parstate)
+                  nil)
+         :exec (raw-parstate->skip-control-lines parstate))
+    :inline t
+    :hooks nil)
+
   ;; writers:
 
   (define update-parstate->bytes ((bytes byte-listp) parstate)
@@ -951,6 +988,15 @@
     :inline t
     :hooks nil)
 
+  (define update-parstate->skip-control-lines ((skip-control-lines booleanp)
+                                               parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->skip-control-lines (bool-fix skip-control-lines)
+                                               parstate))
+    :inline t
+    :hooks nil)
+
   ;; readers over writers:
 
   (defrule parstate->size-of-update-parstate->bytes
@@ -1020,6 +1066,17 @@
              parstate-fix
              length))
 
+  (defrule parstate->size-of-update-parstate->skip-control-lines
+    (equal (parstate->size
+            (update-parstate->skip-control-lines skip-control-lines parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->skip-control-lines
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
   ;; writers over readers:
 
   (defrule update-parstate->chars-read-of-parstate->chars-read
@@ -1066,7 +1123,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (version c::versionp) parstate)
+(define init-parstate ((data byte-listp)
+                       (version c::versionp)
+                       (skip-control-lines booleanp)
+                       parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
@@ -1074,7 +1134,8 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a C version,
+     a C version,
+     and a flag for skipping control lines or not,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1097,7 +1158,9 @@
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
        (parstate (update-parstate->version version parstate))
-       (parstate (update-parstate->size (len data) parstate)))
+       (parstate (update-parstate->size (len data) parstate))
+       (parstate
+        (update-parstate->skip-control-lines skip-control-lines parstate)))
     parstate)
   :hooks nil)
 
@@ -1119,7 +1182,7 @@
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil version parstate))
+    (equal (parsize (init-parstate nil version skip-control-lines parstate))
            0)
     :enable init-parstate))
 
@@ -1135,7 +1198,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (version c::version))
+   (version c::version)
+   (skip-control-lines booleanp))
   :layout :fulltree)
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
@@ -1153,7 +1217,8 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :version (parstate->version parstate))
+   :version (parstate->version parstate)
+   :skip-control-lines (parstate->skip-control-lines parstate))
   :hooks nil
 
   :prepwork

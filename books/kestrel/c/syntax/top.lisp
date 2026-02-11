@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,6 +24,7 @@
 (include-book "output-files")
 (include-book "output-files-doc")
 (include-book "langdef-mapping")
+(include-book "langdef-mapping-inverse")
 (include-book "formalized")
 (include-book "compilation-db")
 (include-book "infer-ienv")
@@ -37,25 +38,36 @@
   (xdoc::topstring
    (xdoc::p
     "We provide an abstract syntax of C
-     for use by tools that manipulate C code, e.g. C code generators.
+     for use by tools that manipulate C code,
+     e.g. C code generators and C code transformers.
      This abstract syntax preserves (i.e. does not abstract away)
      much of the information in the concrete syntax,
      in order to afford more control on
-     the form of the code produced by those tools.")
+     the form of the code produced by those tools.
+     It could be also useful to support higher-level code browsing
+     in IDE-like tools.")
    (xdoc::p
     "Currently this abstract syntax covers all of C after preprocessing,
-     but we plan to extend it to include
-     at least some forms of preprocessing constructs and comments,
-     to afford even more control on the code produced by tools.
-     Supporting all possible forms of preprocessing constructs and comments
+     but it also includes some initial forms of preprocessing constructs,
+     which we plan to extend.
+     Preserving preprocessing constructs from the original concrete syntax
+     is also important,
+     since preprocessed code can be fairly distant from the original one.
+     Supporting all possible forms of preprocessing constructs
      would be challenging in an abstract syntax,
      because preprocessing in C operates at the lexical level.
-     Nonetheless, certain constructs are relatively simple
-     (such as @('#include') directives at the top level,
-     or comments accompanying function definitions),
-     and increasingly elaborate forms can be introduced incrementally.
-     We may even add some information about file layout,
-     if that turns out to be useful.")
+     Nonetheless, certain constructs are relatively simple,
+     such as @('#include') directives at the top level.")
+   (xdoc::p
+    "This abstract syntax also includes
+     some initial support for preserving comments,
+     which we plan to extend.
+     Supporting all forms of comments may be challenging,
+     since they may appear anywhere between tokens.
+     But there are cases in which they are easy to support,
+     such as comments at the top level,
+     or comments clearly associated with certain constructs
+     (e.g. just before a function definition).")
    (xdoc::p
     "We include some constructs for GCC/Clang extensions,
      which, as mentioned in "
@@ -75,9 +87,9 @@
      we provide a concrete syntax, based on an ABNF grammar.
      This is not a different syntax for C,
      but just a different formulation of the syntax of C,
-     motivated by the fact that we want this tool-oriented syntax
-     to be neither before nor after preprocessing,
-     but to incorporate constructs from both forms of the C code;
+     motivated by the fact that this tool-oriented syntax
+     is neither before nor after preprocessing,
+     but incorporates constructs from both forms of the C code;
      the grammar in [C17] is organized differently,
      with preprocessing being a distinguished translation phase
      [C17:5.1.1.2].")
@@ -90,8 +102,9 @@
      and is not needed to run the tools described below
      (parser, printer, etc.).")
    (xdoc::p
-    "We provide a parser that produces abstract syntax,
-     which covers all of the C constructs after preprocessing.
+    "We provide a parser that produces this abstract syntax.
+     This parser currently operates on preprocessed code,
+     but we are extending it to support some preprocessing constructs.
      The syntax of C is notoriously ambiguous,
      requiring some semantic analysis to disambiguate it.
      Instead of performing this semantic analysis during parsing,
@@ -100,12 +113,23 @@
      that transforms the abstract syntax, after parsing,
      by disambiguating it via the necessary semantic analysis.")
    (xdoc::p
-    "In order to process typical C code,
+    "In order to handle typical C code,
      we provide an "
-    (xdoc::seetopic "preprocessing" "ACL2 tool to invoke a C preprocessor")
+    (xdoc::seetopic "external-preprocessing"
+                    "ACL2 tool to invoke an external C preprocessor")
     ". The tool can be run on headers and source files,
      to obtain preprocessed source files,
      which can be then parsed by our parser.")
+   (xdoc::p
+    "Additionally, we provide our own @(see preprocessor),
+     which, unlike typical C preprocessors,
+     preserves preprocessing constructs under certain conditions.
+     This preprocessor is still in a preliminary stage,
+     but our parser will soon be able to parse
+     the code produced by our preprocessor,
+     including the preprocessing constructs.
+     Eventually, we plan to merge our preprocessor and parser
+     into one parser that also performs preprocessing.")
    (xdoc::p
     "We provide a @(see validator) on the abstract syntax (after disambiguation)
      that checks the static constraints on C code (i.e. type checking etc.),
@@ -116,11 +140,9 @@
     "We provide a (pretty-)@(see printer)
      that turns our abstract syntax
      into concrete syntax that is valid C code.
-     Like the parser and the abstract syntax,
-     our printer covers all the C constructs after preprocessing.
-     This printer is an initial version;
+     This printer is working,
      we plan to improve it in various respects,
-     in particular by supporting printing options
+     in particular by supporting certain printing options
      (e.g. for the right margin position).")
    (xdoc::p
     "We provide a collection of predicates that characterize "
@@ -166,8 +188,8 @@
      We already provide a "
     (xdoc::seetopic "mapping-to-language-definition" "(partial) mapping")
     " from the tool-oriented abstract syntax
-     to the abstract syntax of the formal language definition.
-     We also provide "
+     to the abstract syntax of the formal language definition,
+     along with "
     (xdoc::seetopic "formalized-subset" "predicates")
     " to identify which subset of the abstract syntax
      not only maps to the language definition's abstract syntax,
@@ -195,4 +217,5 @@
                     input-files
                     output-files
                     mapping-to-language-definition
+                    mapping-from-language-definition
                     formalized-subset))
