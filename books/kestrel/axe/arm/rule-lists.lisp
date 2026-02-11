@@ -31,10 +31,11 @@
     ;; riscv::instr-fix$inline
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
-    ;step32-of-if
+    arm::step-of-if
     ;pc-of-if
     arm::read-of-if-arg2
-    arm::read-of-if-arg3))
+    arm::read-of-if-arg3
+    arm::reg-of-if-arg2))
 
 (defun debug-rules32 ()
   (declare (xargs :guard t))
@@ -59,7 +60,28 @@
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
   '(arm::execute-ldr-immediate ; todo more!  gen this list
-    ))
+    arm::execute-add-immediate
+    arm::execute-lsl-immediate
+    arm::execute-mov-immediate
+    arm::mov-common
+    arm::mov-register-core
+    arm::pop-encoding-a2-core
+    arm::pop-common
+    arm::pop-loop-base
+    arm::pop-loop-unroll
+    arm::execute-push-encoding-a1
+    arm::execute-push-encoding-a2
+    arm::push-encoding-a1-core
+    arm::push-encoding-a2-core
+    arm::push-common
+    arm::push-loop-base
+    arm::push-loop-unroll
+    arm::execute-add-register
+    arm::execute-sub-immediate
+    arm::execute-str-immediate
+    arm::execute-cmp-immediate
+    arm::execute-ldr-register
+    arm::execute-bx))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -67,10 +89,27 @@
    (instruction-semantic-functions)
    '(arm::lookup-eq2
 
+     arm::r0
+     arm::r1
+     arm::r2
+     arm::r3
+     arm::r4
+     arm::r5
+     arm::r6
+     arm::r7
+     arm::r8
+     arm::r9
+     arm::r10
+     arm::r11
+     arm::r12
+     arm::r13
+     arm::r14
+     arm::r15
+
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
      arm::ldr-literal-core
-;                   arm::conditionpassed
+     arm::conditionpassed
      arm::uint
      arm::zeroextend
      arm::nullcheckifthumbee
@@ -86,37 +125,95 @@
      arm::read-of-set-reg
      arm::error-of-set-reg
 
-     arm::execute-lsl-immediate
-     arm::execute-mov-immediate
-     arm::mov-common
-     arm::mov-register-core
-     arm::pop-encoding-a2-core
-     arm::pop-common
-     arm::pop-loop-base arm::pop-loop-unroll
-     arm::execute-push-encoding-a2
-     arm::push-encoding-a2-core
-     arm::push-common
-     arm::push-loop-base arm::push-loop-unroll
-     arm::execute-add-register
+     arm::apsr.n-of-set-apsr.n
+     arm::apsr.n-of-set-apsr.z
+     arm::apsr.n-of-set-apsr.c
+     arm::apsr.n-of-set-apsr.v
+     arm::apsr.n-of-set-apsr.q
 
+     arm::apsr.z-of-set-apsr.n
+     arm::apsr.z-of-set-apsr.z
+     arm::apsr.z-of-set-apsr.c
+     arm::apsr.z-of-set-apsr.v
+     arm::apsr.z-of-set-apsr.q
+
+     arm::apsr.c-of-set-apsr.n
+     arm::apsr.c-of-set-apsr.z
+     arm::apsr.c-of-set-apsr.c
+     arm::apsr.c-of-set-apsr.v
+     arm::apsr.c-of-set-apsr.q
+
+     arm::apsr.v-of-set-apsr.n
+     arm::apsr.v-of-set-apsr.z
+     arm::apsr.v-of-set-apsr.c
+     arm::apsr.v-of-set-apsr.v
+     arm::apsr.v-of-set-apsr.q
+
+     arm::apsr.q-of-set-apsr.n
+     arm::apsr.q-of-set-apsr.z
+     arm::apsr.q-of-set-apsr.c
+     arm::apsr.q-of-set-apsr.v
+     arm::apsr.q-of-set-apsr.q
+
+     arm::apsr.n-of-set-reg
+     arm::apsr.z-of-set-reg
+     arm::apsr.c-of-set-reg
+     arm::apsr.v-of-set-reg
+     arm::apsr.q-of-set-reg
+
+     arm::error-of-set-apsr.n
+     arm::error-of-set-apsr.z
+     arm::error-of-set-apsr.c
+     arm::error-of-set-apsr.v
+     arm::error-of-set-apsr.q
+
+     arm::read-of-set-apsr.n
+     arm::read-of-set-apsr.z
+     arm::read-of-set-apsr.c
+     arm::read-of-set-apsr.v
+     arm::read-of-set-apsr.q
+
+     arm::reg-of-set-apsr.n
+     arm::reg-of-set-apsr.z
+     arm::reg-of-set-apsr.c
+     arm::reg-of-set-apsr.v
+     arm::reg-of-set-apsr.q
+
+     arm::branchto
      arm::pcstorevalue
+     arm::loadwritepc
+     arm::bxwritepc
+     arm::branchwritepc
 
      arm::armexpandimm_c
+     arm::armexpandimm
      arm::shift_c
+     arm::ror_c
+     arm::lsr
+     arm::lsr_c
+     arm::lsl
      arm::bitcount
      arm::write_memu
+     arm::write_mema
      arm::!=$inline
      arm::zeros
 
+     arm::archversion
+     arm::currentinstrset
+     arm::unalignedsupport ; why?
+
      acl2::bvcount-constant-opener
+     arm::integerp-of-reg
      arm::reg-of-write
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
      arm::error-of-write
      arm::decodeimmshift
-     arm::addwithcarry
+     arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::shift
      arm::lsl_c
+     arm::iszerobit
+     arm::iszero
      )
 ;   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
