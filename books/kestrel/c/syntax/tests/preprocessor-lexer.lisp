@@ -30,7 +30,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                (macro-table-init (c::version-c17))
+                                (macro-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -58,7 +58,7 @@
          (ppstate (init-ppstate (if (stringp ,input)
                                     (acl2::string=>nats ,input)
                                   ,input)
-                                (macro-table-init (c::version-c17))
+                                (macro-init (c::version-c17))
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos

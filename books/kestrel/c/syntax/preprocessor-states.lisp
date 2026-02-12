@@ -896,7 +896,7 @@
        (ppstate (update-ppstate->chars-unread 0 ppstate))
        (ppstate (update-ppstate->lexmarks nil ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
-       (ppstate (update-ppstate->macros (macro-table-push macros) ppstate))
+       (ppstate (update-ppstate->macros (macro-push macros) ppstate))
        (ppstate (update-ppstate->max-reach -2 ppstate))
        (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
        (ppstate (update-ppstate->rev-lexemes1 nil ppstate))

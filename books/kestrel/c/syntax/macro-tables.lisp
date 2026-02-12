@@ -454,7 +454,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-init ((version c::versionp))
+(define macro-init ((version c::versionp))
   :returns (table macro-tablep)
   :short "Initial macro table."
   :long
@@ -467,7 +467,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-push ((table macro-tablep))
+(define macro-push ((table macro-tablep))
   :returns (new-table macro-tablep)
   :short "Push a scope onto the macro table."
   :long
@@ -479,13 +479,13 @@
 
   ///
 
-  (defret consp-of-scopes-of-macro-table-push
+  (defret consp-of-scopes-of-macro-push
     (consp (macro-table->scopes new-table))
     :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-add ((name identp) (info macro-infop) (table macro-tablep))
+(define macro-define ((name identp) (info macro-infop) (table macro-tablep))
   :returns (mv erp (new-table macro-tablep))
   :short "Add a macro definition to the macro table."
   :long
@@ -550,7 +550,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-table-extend-top ((scope macro-scopep) (table macro-tablep))
+(define macro-extend ((scope macro-scopep) (table macro-tablep))
   :returns (new-table macro-tablep)
   :short "Extend the top scope of a macro table with another scope."
   :long
@@ -578,7 +578,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-remove ((name identp) (table macro-tablep))
+(define macro-undefine ((name identp) (table macro-tablep))
   :returns (mv erp (new-table macro-tablep))
   :short "Add a macro undefinition to the macro table."
   :long

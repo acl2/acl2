@@ -1619,7 +1619,7 @@
            (plexeme-case lexeme :newline)) ; # define name EOL
       (b* ((macros (ppstate->macros ppstate))
            (info (make-macro-info-object :replist nil))
-           ((erp new-macros) (macro-add name info macros))
+           ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
            (ppstate (hg-trans-define name t ppstate)))
         (retok ppstate)))
@@ -1629,7 +1629,7 @@
             (read-macro-object-replist name ppstate))
            (macros (ppstate->macros ppstate))
            (info (make-macro-info-object :replist replist))
-           ((erp new-macros) (macro-add name info macros))
+           ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
            (ppstate (hg-trans-define name (not replist) ppstate)))
         (retok ppstate)))
@@ -1644,7 +1644,7 @@
                                            :ellipsis ellipsis
                                            :replist replist
                                            :hash-params hash-params))
-           ((erp new-macros) (macro-add name info macros))
+           ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
            (ppstate (hg-trans-define name nil ppstate)))
         (retok ppstate)))
@@ -1678,7 +1678,7 @@
      possibly with some white space and comments in between.")
    (xdoc::p
     "We remove the macro from the table.
-     Note that @(tsee macro-remove) takes care of
+     Note that @(tsee macro-undefine) takes care of
      ensuring that the macro is not a predefined one."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
@@ -1698,7 +1698,7 @@
                     :expected "a new line"
                     :found (plexeme-to-msg newline?)))
        (macros (ppstate->macros ppstate))
-       ((erp new-macros) (macro-remove name macros))
+       ((erp new-macros) (macro-undefine name macros))
        (ppstate (update-ppstate->macros new-macros ppstate))
        (ppstate (hg-trans-non-ifndef/elif/else/define ppstate)))
     (retok ppstate))
@@ -4617,8 +4617,7 @@
                       state
                       (1- limit)))
          (ppstate (update-ppstate->macros
-                   (macro-table-extend-top file-macros
-                                           (ppstate->macros ppstate))
+                   (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
          ((when (> file-max-reach 0)) ; not self-contained
           (b* ((ppstate (expand-include-in-place header
@@ -5046,7 +5045,7 @@
                        include-dirs
                        preprocessed
                        preprocessing
-                       (macro-table-init (ienv->version ienv))
+                       (macro-init (ienv->version ienv))
                        ienv
                        state
                        recursion-limit))
