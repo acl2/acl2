@@ -4010,15 +4010,21 @@
                      new-interp-st new-state)
         (b* (((interp-st-bind
                (equiv-contexts (fgl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
-              (was-fncall-p (pseudo-term-case x :call))
+              ;; (was-fncall-p (pseudo-term-case x :call))
               (left-to-rightp (pseudo-term-case x :fncall (eq x.fn 'left-to-right) :otherwise nil))
               ((fgl-interp-recursive-call xobj)
                (fgl-interp-term-equivs x interp-st state))))
-          ;; already-rewritten: xobj has probably already been rewritten under
-          ;; IFF if x was a function/lambda call, otherwise probably not.
-          ;; E.g. if x was a variable, it was probably not bound in an IFF
-          ;; context.
-          (fgl-interp-simplify-if-test was-fncall-p left-to-rightp xobj interp-st state)))
+          ;; already-rewritten: even though we rewrite the object under iff
+          ;; context above, it can often benefit from rewriting under iff again
+          ;; to ensure that things are in normal form before they are added to
+          ;; the bvar-db.  We used to assume that if the term was a function
+          ;; call, then it had already been rewritten under iff. But e.g., if
+          ;; our input here is (foo z), with definition (foo z) = z, z is bound
+          ;; to (bar y), and we have a rule (iff (bar y) (baz y)) expecting we
+          ;; therefore won't see calls of bar in the bvar-db, this expectation will
+          ;; be violated if we say already-rewritten (because (foo z) is a
+          ;; function call) here.
+          (fgl-interp-simplify-if-test nil left-to-rightp xobj interp-st state)))
 
       (define fgl-interp-test-under-pathcond ((x pseudo-termp)
                                               (interp-st interp-st-bfrs-ok)
@@ -5593,7 +5599,7 @@
               (b* (((interp-st-bind
                      (reclimit (1- reclimit) reclimit))
                     ((fgl-interp-value ans)
-                     (fgl-interp-simplify-if-test t left-to-rightp ans interp-st state))))
+                     (fgl-interp-simplify-if-test nil left-to-rightp ans interp-st state))))
                 (fgl-interp-value ans)))
 
              (xobj (hons-copy xobj))
