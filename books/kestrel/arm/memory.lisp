@@ -920,6 +920,11 @@
          (error arm))
   :hints (("Goal" :in-theory (enable write-byte error))))
 
+(defthm isetstate-of-write-byte
+  (equal (isetstate (write-byte addr byte arm))
+         (isetstate arm))
+  :hints (("Goal" :in-theory (enable write-byte isetstate))))
+
 (defthm update-memoryi-when-not-integerp
   (implies (not (integerp addr))
            (equal (update-memoryi addr val arm)
@@ -1125,6 +1130,11 @@
 (defthm error-of-write
   (equal (error (write n addr byte arm))
          (error arm))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm isetstate-of-write
+  (equal (isetstate (write n addr byte arm))
+         (isetstate arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthmd write-of-+

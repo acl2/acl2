@@ -1,6 +1,6 @@
 ; Generating assumptions for 32-bit ARM code proofs
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "portcullis")
 (include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
+(include-book "kestrel/arm/pseudocode" :dir :system) ; for *InstrSet_ARM*
 ;(include-book "read-and-write")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
@@ -160,6 +161,7 @@
                                           nil))
        ((when erp) (mv erp nil))
        (standard-assumptions `((equal (error ,state-var) 'nil)
+                               (equal (isetstate arm) ',*InstrSet_ARM*) ; todo: set this the way a loader would, or at least make this an option
                                ;; (stat32p ,state-var)
                                )) ; todo: what else?
        )

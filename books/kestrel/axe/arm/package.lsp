@@ -24,6 +24,14 @@
 (defconst *arm-symbols*
   '(arm::arm ; the stobj name
     arm::armp ; stobj recognizer
+
+    arm::registers
+    arm::apsr
+    arm::isetstate
+    arm::itstate
+    arm::endianstate
+    arm::memory
+
     arm::read-byte
     arm::read-bytes
     arm::read
@@ -72,7 +80,12 @@
 
     arm::in-region32p
     arm::subregion32p
-    arm::disjoint-regions32p))
+    arm::disjoint-regions32p
+
+    arm::*InstrSet_ARM*
+    arm::*InstrSet_Thumb*
+    arm::*InstrSet_Jazelle*
+    arm::*InstrSet_ThumbEE*))
 
 ;; (defconst *arm-symbols-in-acl2-package*
 ;;   '(ubyte32-list-fix))
