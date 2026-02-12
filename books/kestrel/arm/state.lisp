@@ -43,8 +43,11 @@
   ;; Application Program Status Register:
   (apsr :type (unsigned-byte 32) :initially 0)
   ;; Execution state registers:
+  ;; Instruction set state register (ARM, Thumb, Jazelle, or ThumbEE):
   (isetstate :type (unsigned-byte 2) :initially 0)
+  ;; IT block state register:
   (itstate  :type (unsigned-byte 8) :initially 0)
+  ;; Endianness mapping register:
   (endianstate :type bit :initially 0)
   ;; TODO: SIMD / floating point registers
   ;; TODO: Exception bit?
@@ -52,8 +55,9 @@
   ;; This array can use a lot of memory, so we use :non-executable below:
   (memory :type (array (unsigned-byte 8) (4294967296)) ; 2^32 bytes
           :initially 0)
-  (error ; nil means no error, anything else is an error
-    )
+  ;; Whether an error has occurred (nil means no error, anything else is an
+  ;; error):
+  (error)
   ;; This avoids actually allocating 4GB of memory for the MEMORY field (even
   ;; though that only takes a few seconds).  See add-global-stobj if you want
   ;; execution for this stobj.  See also the "large stobj" discussion on Zulip.
@@ -186,6 +190,11 @@
          (set-reg n val1 arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+(defthm isetstate-of-set-reg
+  (equal (isetstate (set-reg n val arm))
+         (isetstate arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Individual status bits:
@@ -270,6 +279,12 @@
 (defthm error-of-set-apsr.c (equal (error (set-apsr.c bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.c reg))))
 (defthm error-of-set-apsr.v (equal (error (set-apsr.v bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.v reg))))
 (defthm error-of-set-apsr.q (equal (error (set-apsr.q bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
+
+(defthm isetstate-of-set-apsr.n (equal (isetstate (set-apsr.n bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
+(defthm isetstate-of-set-apsr.z (equal (isetstate (set-apsr.z bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))
+(defthm isetstate-of-set-apsr.c (equal (isetstate (set-apsr.c bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.c reg))))
+(defthm isetstate-of-set-apsr.v (equal (isetstate (set-apsr.v bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.v reg))))
+(defthm isetstate-of-set-apsr.q (equal (isetstate (set-apsr.q bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
 
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 

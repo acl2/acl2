@@ -530,21 +530,27 @@
 (defconst *InstrSet_Jazelle* #b10)
 (defconst *InstrSet_ThumbEE* #b11)
 
-(defun CurrentInstrSet ()
-  (declare (xargs :guard t))
-  *InstrSet_ARM* ; for now
-  )
+(defund CurrentInstrSet (arm)
+  (declare (xargs :stobjs arm))
+  (isetstate arm))
 
-(defun SelectInstrSet (iset arm)
+(defthm natp-of-CurrentInstrSet-type
+  (implies (armp arm)
+           (natp (CurrentInstrSet arm)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+
+(defund SelectInstrSet (iset arm)
   (declare (xargs :guard (member iset (list *InstrSet_ARM*
                                             *InstrSet_Thumb*
                                             *InstrSet_Jazelle*
                                             *InstrSet_ThumbEE*))
                   :stobjs arm))
   (if (== iset *InstrSet_ARM*)
-      arm ; for now we do nothing because we are always in ARM mode
-    ;; todo: flesh out:
-    (update-error *unsupported* arm)))
+      (if (== (CurrentInstrSet arm) *InstrSet_ThumbEE*)
+          (update-error *unpredictable* arm)
+        (update-isetstate *InstrSet_ARM* arm))
+    (update-isetstate iset arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -571,12 +577,12 @@
 (defun BranchWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
-  (if (== (CurrentInstrSet) *InstrSet_ARM*)
+  (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
       (if (and (< (ArchVersion) 6)
                (!= (slice 1 0 address) #b00))
           (update-error *unpredictable* arm)
         (BranchTo (bvcat 30 (slice 31 2 address) 2 #b00) arm))
-    (if (== (CurrentInstrSet) *InstrSet_Jazelle*)
+    (if (== (CurrentInstrSet arm) *InstrSet_Jazelle*)
         (update-error *unsupported* arm) ; todo
       (BranchTo (bvcat 31 (slice 31 1 address) 1 #b0) arm))))
 
@@ -584,7 +590,7 @@
 (defun BXWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
-  (if (== (CurrentInstrSet) *InstrSet_ThumbEE*)
+  (if (== (CurrentInstrSet arm) *InstrSet_ThumbEE*)
       (update-error :unsupported arm) ; todo
     (if (== (getbit 0 address) 1)
         (update-error :unsupported arm) ; todo: use the name "set-error"
@@ -598,7 +604,7 @@
   (declare (xargs :guard (addressp address)
                   :stobjs arm))
   (if (and (>= (ArchVersion) 7)
-           (== (CurrentInstrSet) *InstrSet_ARM*))
+           (== (CurrentInstrSet arm) *InstrSet_ARM*))
       (BXWritePC address arm)
     (BranchWritePC address arm)))
 
