@@ -29,11 +29,6 @@
 
 (def-constant-opener arm::arm32-decode)
 
-;dup ;move
-(def-constant-opener bv-list-read-chunk-little)
-(def-constant-opener packbv-little)
-(def-constant-opener unsigned-byte-listp)
-
 ;; may help with sbox lookup, etc.
 ;; (defthm in-region32p-byte-special
 ;;   (implies (and (unsigned-byte-p 8 x)
