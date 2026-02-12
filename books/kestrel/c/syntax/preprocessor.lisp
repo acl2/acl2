@@ -267,11 +267,13 @@
    (xdoc::p
     "This captures the result of preprocessing a @(see self-contained) file:
      the list of lexemes that forms the file after preprocessing
-     (which can be printed to bytes into a file in the file system).")
-   (xdoc::p
-    "We also store an optional identifier that identifies a header guard
-     (see @(tsee hg-state)), if the file has that structure."))
+     (which can be printed to bytes into a file in the file system),
+     the macro definitions and undefinitions contributed by the file
+     (forming a macro scope),
+     and an optional identifier that identifies a header guard
+     (see @(tsee hg-state)) if the file has that structure."))
   ((lexemes plexeme-listp)
+   (macros macro-scope)
    (header-guard? ident-option))
   :pred scfilep)
 
@@ -280,7 +282,7 @@
 (defirrelevant irr-scfile
   :short "An irrelevant self-contained file."
   :type scfilep
-  :body (scfile nil nil))
+  :body (scfile nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4012,12 +4014,14 @@
                      (b* ((name+scfile (assoc-equal file preprocessed)))
                        (and name+scfile
                             (b* (((scfile scfile) (cdr name+scfile)))
-                              (not (equal scfile.lexemes
-                                          (rev file-rev-lexemes))))))))
+                              (or (not (equal scfile.lexemes
+                                              (rev file-rev-lexemes)))
+                                  (not (equal scfile.header-guard?
+                                              file-header-guard?))))))))
           (raise "Internal error: ~
-                  new ~x0 and ~x1 differ from old ~x2."
+                  new ~x0 or ~x1 differ from old ~x2."
                  (rev file-rev-lexemes)
-                 file-macros
+                 file-header-guard?
                  (cdr (assoc-equal file preprocessed)))
           (reterr t)))
       (retok file-rev-lexemes
@@ -4639,6 +4643,7 @@
                            preprocessed
                          (acons resolved-file
                                 (make-scfile :lexemes (rev file-rev-lexemes)
+                                             :macros file-macros
                                              :header-guard? file-header-guard?)
                                 preprocessed))))
       (retok ppstate preprocessed state))
@@ -5034,7 +5039,7 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp file-rev-lexemes
-                & ; file-macros
+                file-macros
                 file-max-reach
                 file-header-guard?
                 preprocessed
@@ -5057,6 +5062,7 @@
                             preprocessed
                           (acons file
                                  (make-scfile :lexemes (rev file-rev-lexemes)
+                                              :macros file-macros
                                               :header-guard? file-header-guard?)
                                  preprocessed))))
        (pproc-files-loop (cdr files)
