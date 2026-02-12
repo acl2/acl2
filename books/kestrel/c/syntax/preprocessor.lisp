@@ -3961,14 +3961,15 @@
                state)
           (with-local-stobj
             ppstate
-            (mv-let (erp groupend
-                         file-rev-lexemes
-                         file-macro-table
-                         file-max-reach
-                         file-header-guard?
-                         ppstate
-                         preprocessed
-                         state)
+            (mv-let (erp
+                     groupend
+                     file-rev-lexemes
+                     file-macro-table
+                     file-max-reach
+                     file-header-guard?
+                     ppstate
+                     preprocessed
+                     state)
                 (b* ((ppstate (init-ppstate bytes macros ienv ppstate))
                      ((mv erp
                           groupend
