@@ -82,6 +82,8 @@
     arm::subregion32p
     arm::disjoint-regions32p
 
+    arm::*patterns*
+
     arm::*InstrSet_ARM*
     arm::*InstrSet_Thumb*
     arm::*InstrSet_Jazelle*
