@@ -17170,7 +17170,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Without the setting of custom:*default-file-encoding* for clisp in
 ; acl2.lisp, the build breaks with the following string (note the accented "i"
 ; in Martin, below):
-;   Francisco J. Martín Mateos
+;   Francisco J. MartÃ­n Mateos
 ; With that setting, we do not need an explicit :external-format argument for
 ; the call of with-open-file in acl2-check.lisp that opens a stream for
 ; "acl2-characters".
