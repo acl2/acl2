@@ -12,6 +12,7 @@
 
 (include-book "portcullis")
 (include-book "../rule-lists")
+(include-book "kestrel/arm/encodings" :dir :system)
 
 (defun symbolic-execution-rules32 ()
   (declare (xargs :guard t))
@@ -57,31 +58,33 @@
 ;;     clear-extend-of-write-of-clear-retract
 ;;     write-of-clear-retract))
 
+(defun execute-function-names (mnemonics)
+  (declare (xargs :guard (keyword-listp mnemonics)))
+  (if (endp mnemonics)
+      nil
+    (let* ((mnemonic (first mnemonics)))
+      (cons (acl2::pack-in-package "ARM" 'execute- (symbol-name mnemonic))
+            (execute-function-names (rest mnemonics))))))
+
+(make-event
+ `(defund semantic-functions-for-mnemonics ()
+    (declare (xargs :guard t))
+    ',(execute-function-names (strip-cars *patterns*))))
+
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
-  '(arm::execute-ldr-immediate ; todo more!  gen this list
-    arm::execute-add-immediate
-    arm::execute-lsl-immediate
-    arm::execute-mov-immediate
-    arm::mov-common
-    arm::mov-register-core
-    arm::pop-encoding-a2-core
-    arm::pop-common
-    arm::pop-loop-base
-    arm::pop-loop-unroll
-    arm::execute-push-encoding-a1
-    arm::execute-push-encoding-a2
-    arm::push-encoding-a1-core
-    arm::push-encoding-a2-core
-    arm::push-common
-    arm::push-loop-base
-    arm::push-loop-unroll
-    arm::execute-add-register
-    arm::execute-sub-immediate
-    arm::execute-str-immediate
-    arm::execute-cmp-immediate
-    arm::execute-ldr-register
-    arm::execute-bx))
+  (append (semantic-functions-for-mnemonics)
+          '(arm::mov-common
+            arm::mov-register-core
+            arm::pop-encoding-a2-core
+            arm::pop-common
+            arm::pop-loop-base
+            arm::pop-loop-unroll
+            arm::push-encoding-a1-core
+            arm::push-encoding-a2-core
+            arm::push-common
+            arm::push-loop-base
+            arm::push-loop-unroll)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -124,6 +127,7 @@
      arm::add-to-address
      arm::read-of-set-reg
      arm::error-of-set-reg
+     arm::arch-version-of-set-reg
      arm::isetstate-of-set-reg
 
      arm::isetstate-of-set-apsr.n
@@ -174,6 +178,12 @@
      arm::error-of-set-apsr.v
      arm::error-of-set-apsr.q
 
+     arm::arch-version-of-set-apsr.n
+     arm::arch-version-of-set-apsr.z
+     arm::arch-version-of-set-apsr.c
+     arm::arch-version-of-set-apsr.v
+     arm::arch-version-of-set-apsr.q
+
      arm::read-of-set-apsr.n
      arm::read-of-set-apsr.z
      arm::read-of-set-apsr.c
@@ -215,6 +225,7 @@
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
      arm::error-of-write
+     arm::arch-version-of-write
      arm::isetstate-of-write
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
