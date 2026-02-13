@@ -1060,7 +1060,7 @@
    "ATC generates a named constant whose value is
     the AST of the generated C program.
     More precisely, it is the AST of the generated C file,
-    which is a value of the fixtype @(tsee file) in "
+    which is a value of the fixtype @(tsee transunit-ensemble) in "
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". More precisely, it is the content of the generated file on disk:
     the AST is "
