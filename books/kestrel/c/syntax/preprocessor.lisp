@@ -4010,21 +4010,7 @@
                         :eof (impossible)
                         :elif "#elif"
                         :else "#else"
-                        :endif "#endif"))))
-         ((when (and (<= file-max-reach 0) ; self-contained
-                     (b* ((name+scfile (assoc-equal file preprocessed)))
-                       (and name+scfile
-                            (b* (((scfile scfile) (cdr name+scfile)))
-                              (or (not (equal scfile.lexemes
-                                              (rev file-rev-lexemes)))
-                                  (not (equal scfile.header-guard?
-                                              file-header-guard?))))))))
-          (raise "Internal error: ~
-                  new ~x0 or ~x1 differ from old ~x2."
-                 (rev file-rev-lexemes)
-                 file-header-guard?
-                 (cdr (assoc-equal file preprocessed)))
-          (reterr t)))
+                        :endif "#endif")))))
       (retok file-rev-lexemes
              file-macros
              file-max-reach
@@ -4582,33 +4568,11 @@
          (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
-         (preprocessed (string-scfile-alist-fix preprocessed))
-         (name+scfile (assoc-equal resolved-file preprocessed))
-         ((mv self-contained-with-header-guard-defined-p
-              ppstate
-              preprocessed
-              state)
-          (b* (((unless name+scfile) (mv nil ppstate preprocessed state))
-               (scfile (cdr name+scfile))
-               (header-guard (scfile->header-guard? scfile))
-               ((unless header-guard) (mv nil ppstate preprocessed state))
-               ((mv info? &) (macro-lookup header-guard
-                                           (ppstate->macros ppstate)))
-               ((unless info?) (mv nil ppstate preprocessed state))
-               (ppstate (rebuild-include-directive nontoknls-before-hash
-                                                   nontoknls-after-hash
-                                                   nontoknls-before-header
-                                                   header
-                                                   nontoknls-after-header
-                                                   newline-at-end
-                                                   ppstate)))
-            (mv t ppstate preprocessed state)))
-         ((when self-contained-with-header-guard-defined-p)
-          (retok ppstate preprocessed state))
+         (ienv (ppstate->ienv ppstate))
          ((erp file-rev-lexemes
                file-macros
-               file-max-reach
-               file-header-guard?
+               & ; file-max-reach
+               & ; file-header-guard?
                preprocessed
                state)
           (pproc-file bytes
@@ -4618,35 +4582,82 @@
                       preprocessed
                       preprocessing
                       (ppstate->macros ppstate)
-                      (ppstate->ienv ppstate)
+                      ienv
                       state
                       (1- limit)))
+         ((erp standalone-file-rev-lexemes
+               & ; file-macros
+               standalone-file-header-guard?
+               preprocessed
+               state)
+          (b* (((reterr) nil nil nil nil state)
+               (name+scfile (assoc-equal resolved-file preprocessed)))
+            (if name+scfile
+                (b* (((scfile scfile) (cdr name+scfile)))
+                  (retok (rev scfile.lexemes)
+                         scfile.macros
+                         scfile.header-guard?
+                         preprocessed
+                         state))
+              (b* (((erp file-rev-lexemes
+                         file-macros
+                         & ; file-max-reach
+                         file-header-guard?
+                         preprocessed
+                         state)
+                    (pproc-file bytes
+                                resolved-file
+                                base-dir
+                                include-dirs
+                                preprocessed
+                                preprocessing
+                                (macro-init (ienv->version ienv))
+                                ienv
+                                state
+                                (1- limit)))
+                   (scfile (make-scfile :lexemes (rev file-rev-lexemes)
+                                        :macros file-macros
+                                        :header-guard? file-header-guard?))
+                   (preprocessed (acons resolved-file scfile preprocessed)))
+                (retok file-rev-lexemes
+                       file-macros
+                       file-header-guard?
+                       preprocessed
+                       state)))))
+         (preserve-include-p
+          (or (and standalone-file-header-guard?
+                   (b* (((mv info? &)
+                         (macro-lookup standalone-file-header-guard?
+                                       (ppstate->macros ppstate))))
+                     info?)
+                   (or (plexeme-list-not-tokenp file-rev-lexemes)
+                       (raise "Internal error: ~
+                               header guard ~x0 is defined ~
+                               but file has tokens ~x1."
+                              standalone-file-header-guard?
+                              file-rev-lexemes))
+                   (or (not file-macros)
+                       (raise "Internal error: ~
+                               header guard ~x0 is defined ~
+                               but file has macros ~x1."
+                              standalone-file-header-guard?
+                              file-macros)))
+              (equal standalone-file-rev-lexemes file-rev-lexemes)))
          (ppstate (update-ppstate->macros
                    (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
-         ((when (> file-max-reach 0)) ; not self-contained
-          (b* ((ppstate (expand-include-in-place header
+         (ppstate (if preserve-include-p
+                      (rebuild-include-directive nontoknls-before-hash
+                                                 nontoknls-after-hash
+                                                 nontoknls-before-header
+                                                 header
+                                                 nontoknls-after-header
                                                  newline-at-end
-                                                 file-rev-lexemes
-                                                 ppstate))
-               (max-reach (ppstate->max-reach ppstate))
-               (max-reach (max (1- file-max-reach) max-reach))
-               (ppstate (update-ppstate->max-reach max-reach ppstate)))
-            (retok ppstate preprocessed state)))
-         (ppstate (rebuild-include-directive nontoknls-before-hash
-                                             nontoknls-after-hash
-                                             nontoknls-before-header
-                                             header
-                                             nontoknls-after-header
+                                                 ppstate)
+                    (expand-include-in-place header
                                              newline-at-end
-                                             ppstate))
-         (preprocessed (if name+scfile
-                           preprocessed
-                         (acons resolved-file
-                                (make-scfile :lexemes (rev file-rev-lexemes)
-                                             :macros file-macros
-                                             :header-guard? file-header-guard?)
-                                preprocessed))))
+                                             file-rev-lexemes
+                                             ppstate))))
       (retok ppstate preprocessed state))
     :no-function nil
     :measure (nfix limit))
