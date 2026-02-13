@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -340,7 +340,7 @@
     is in the community books @('kestrel/c/representation/integers.lisp')
     and @('kestrel/c/representation/integer-operations.lisp').
     These are automatically included when ATC is included,
-    but one may want to include those file as part of an APT derivation
+    but one may want to include those files as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
     (see @(see atc-tutorial-approach)),
     and thus before including ATC itself,
@@ -1093,7 +1093,7 @@
    "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-fileset) is applied
+    when @(tsee check-transunit-ensemble) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1104,7 +1104,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-fileset) is executable,
+    and @(tsee check-transunit-ensemble) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p
