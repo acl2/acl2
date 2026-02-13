@@ -1,6 +1,6 @@
 #|-*-Lisp-*-=================================================================|#
 #|                                                                           |#
-#|      Copyright © 2005-7 Rockwell Collins, Inc.  All Rights Reserved.      |#
+#|      Copyright Â© 2005-7 Rockwell Collins, Inc.  All Rights Reserved.      |#
 #|                                                                           |#
 #|===========================================================================|#
 (in-package "ACL2")

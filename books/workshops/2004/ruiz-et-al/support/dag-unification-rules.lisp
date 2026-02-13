@@ -1,6 +1,6 @@
 ;;; ============================================================================
 ;;; dag-unification-rules.lisp
-;;; TÌtulo: Unification rules on term dags
+;;; T√≠tulo: Unification rules on term dags
 ;;; ============================================================================
 
 #| To certify this book:
@@ -22,7 +22,7 @@
 
 ;;; ============================================================================
 ;;;
-;;; 0) IntroducciÛn
+;;; 0) Introducci√≥n
 ;;;
 ;;; ============================================================================
 
@@ -211,12 +211,12 @@
 ;;; variables. We define the "bounded" version and the "relaxed"
 ;;; version.
 
-;;; NOTA: La guarda de esta funciÛn serÌa muy rara, ya que dag-p
+;;; NOTA: La guarda de esta funci√≥n ser√≠a muy rara, ya que dag-p
 ;;; necesita term-graph-p, que es como bounded-term-graph-p pero para
-;;; n=(len g). AsÌ que ha optado por no ponerle guarda( creo que esta no
+;;; n=(len g). As√≠ que ha optado por no ponerle guarda( creo que esta no
 ;;; tinene ni que ejecutarse ni que usarse en una guarda) y luego
 ;;; definir well-formed-term-dag-p igual que esto pero con n=(len g) y
-;;; esa si ponerle guarda. Adem·s, pongo una regla de reescritura que
+;;; esa si ponerle guarda. Adem√°s, pongo una regla de reescritura que
 ;;; relacione ambas cosas.
 (defun bounded-well-formed-term-dag-p (g n)
   (and (bounded-term-graph-p g n)
@@ -281,7 +281,7 @@
 ;;; system and the substitution.
 
 
-;;; NOTA: aquÌ se aplica el mismo comentario que antes
+;;; NOTA: aqu√≠ se aplica el mismo comentario que antes
 (defun bounded-well-formed-upl (upl n)
   (and (bounded-nat-pairs-true-listp (first upl) n)
        (bounded-nat-substitution-p (second upl) n)
