@@ -1767,7 +1767,7 @@
 
 (define ldm-transunit ((tunit transunitp))
   :guard (transunit-unambp tunit)
-  :returns (mv erp (file c::filep))
+  :returns (mv erp (tunit1 c::transunitp))
   :short "Map a translation unit to the language definition."
   :long
   (xdoc::topstring
@@ -1775,13 +1775,13 @@
     "A translation unit consists of a list of external declarations.
      We map all of them to the language definition (if possible),
      obtaining a corresponding list of external declaration,
-     which we put into a @(tsee c::file)."))
-  (b* (((reterr) (c::file nil))
+     which we put into a @(tsee c::transunit)."))
+  (b* (((reterr) (c::transunit nil))
        ((when (transunit->includes tunit))
         (reterr (msg "Unsupported #include directives.")))
        (extdecls (transunit->declons tunit))
        ((erp extdecls1) (ldm-ext-declon-list extdecls)))
-    (retok (c::make-file :declons extdecls1)))
+    (retok (c::make-transunit :declons extdecls1)))
   :hooks (:fix)
 
   ///
@@ -1795,32 +1795,30 @@
 
 (define ldm-transunit-ensemble ((tunits transunit-ensemblep))
   :guard (transunit-ensemble-unambp tunits)
-  :returns (mv erp (fileset c::filesetp))
+  :returns (mv erp (tunits1 c::transunit-ensemblep))
   :short "Map a translation unit ensemble to the language definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "Currently we only support translation unit ensembles
      consisting of a single translation unit.
-     We map that to a @(tsee c::fileset)
+     We map that to a @(tsee c::transunit-ensemblep)
      without header, just with a source file
      that corresponds to the translation unit.
-     We set the path of the @(tsee c::fileset) to the empty string for now,
-     as we are not concerned with any actual interaction with the file system.")
-   (xdoc::p
-    "Note that @(tsee c::fileset) is quite different from @(tsee c$::fileset).
-     We plan to make the terminology more consistent."))
-  (b* (((reterr) (c::fileset "" nil (c::file nil)))
+     We set the path of the @(tsee c::transunit-ensemble)
+     to the empty string for now,
+     as we are not concerned with any actual interaction with the file system."))
+  (b* (((reterr) (c::transunit-ensemble "" nil (c::transunit nil)))
        (map (transunit-ensemble->units tunits))
        ((unless (= (omap::size map) 1))
         (reterr (msg "Unsupported translation unit ensemble ~
                       with ~x0 translation units."
                      (omap::size map))))
        (tunit (omap::head-val map))
-       ((erp file) (ldm-transunit tunit)))
-    (retok (c::make-fileset :path-wo-ext ""
-                            :dot-h nil
-                            :dot-c file)))
+       ((erp tunit1) (ldm-transunit tunit)))
+    (retok (c::make-transunit-ensemble :path-wo-ext ""
+                                       :dot-h nil
+                                       :dot-c tunit1)))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
   :hooks (:fix)
 
