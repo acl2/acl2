@@ -271,8 +271,6 @@ M_is_defined
 ; (depends-on "gincluder2.h")
 ; (depends-on "guarded.h")
 
-;;;;;;;;;;;;;;;;;;;;
-
 ; In this test:
 ; - gincluder1.c includes gincluder1.h and gincluder2.h in that order
 ; - gincluder2.c includes gincluder2.h and gincluder1.h in that order
@@ -311,7 +309,15 @@ void f() {}
 #endif
 "))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "gincludermod1.c")
+; (depends-on "gincludermod2.c")
+; (depends-on "gincluder1.c")
+; (depends-on "gincluder2.c")
+; (depends-on "gincluder1.h")
+; (depends-on "gincluder2.h")
+; (depends-on "guarded.h")
 
 ; This is a variant of the previous test in which we have two additional files,
 ; gincludermod1.c and gincludermod2.c,
