@@ -318,12 +318,6 @@
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")
     (xdoc::li
-     "The preprocessor state also contains an integer that indicates
-      the maximum `reach' of macro lookup,
-      as returned by @(tsee macro-lookup) (see its documentation).
-      This is initially -2 (i.e. no macro access),
-      but it increases as macros are (successfully) looked up.")
-    (xdoc::li
      "The preprocessor state also contains a header guard state:
       see @(tsee hg-state).")
     (xdoc::li
@@ -365,8 +359,6 @@
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table nil nil))
-      (max-reach :type (integer -2 *)
-                 :initially 2)
       (hg :type (satisfies hg-statep)
           :initially ,(hg-state-initial))
       (rev-lexemes1 :type (satisfies plexeme-listp)
@@ -390,7 +382,6 @@
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
-                 (max-reachp raw-ppstate->max-reach-p)
                  (hgp raw-ppstate->hg-p)
                  (rev-lexemes1p raw-ppstate->rev-lexemes1-p)
                  (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
@@ -408,7 +399,6 @@
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
-                 (max-reach raw-ppstate->max-reach)
                  (hg raw-ppstate->hg)
                  (rev-lexemes1 raw-ppstate->rev-lexemes1)
                  (rev-lexemes2 raw-ppstate->rev-lexemes2)
@@ -426,7 +416,6 @@
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
-                 (update-max-reach raw-update-ppstate->max-reach)
                  (update-hg raw-update-ppstate->hg)
                  (update-rev-lexemes1 raw-update-ppstate->rev-lexemes1)
                  (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
@@ -543,18 +532,6 @@
     (mbe :logic (non-exec (raw-ppstate->macros (ppstate-fix ppstate)))
          :exec (raw-ppstate->macros ppstate))
     :inline t)
-
-  (define ppstate->max-reach (ppstate)
-    :returns (max-reach integerp :rule-classes (:rewrite :type-prescription))
-    (mbe :logic (non-exec (raw-ppstate->max-reach (ppstate-fix ppstate)))
-         :exec (raw-ppstate->max-reach ppstate))
-    :inline t
-
-    ///
-
-    (defret ppstate->max-reach-lower-bound
-      (>= max-reach -2)
-      :rule-classes :linear))
 
   (define ppstate->hg (ppstate)
     :returns (hg hg-statep)
@@ -673,18 +650,6 @@
                                                       (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
-
-  (define update-ppstate->max-reach ((max-reach integerp) ppstate)
-    :guard (>= max-reach -2)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->max-reach
-                           (if (>= (ifix max-reach) -2)
-                               (ifix max-reach)
-                             0)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->max-reach max-reach ppstate))
-    :inline t
-    :prepwork ((local (in-theory (enable ifix)))))
 
   (define update-ppstate->hg ((hg hg-statep) ppstate)
     :returns (ppstate ppstatep)
@@ -912,8 +877,6 @@
      The macro table is obtained by pushing a new scope for the file.
      We resize the arrays of characters to the number of bytes,
      which suffices because there are never more characters than bytes.
-     We initialize the maximum macro reach to -2,
-     i.e. no macro access yet.
      We set the header guard state to be the initial one.
      We set the list of output reversed lexemes to empty."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
@@ -924,7 +887,6 @@
        (ppstate (update-ppstate->lexmarks nil ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros (macro-push macros) ppstate))
-       (ppstate (update-ppstate->max-reach -2 ppstate))
        (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
        (ppstate (update-ppstate->rev-lexemes1 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes2 nil ppstate))

@@ -2732,11 +2732,8 @@
                                         :expected "an identifier or ~
                                                    a left parenthesis"
                                         :found (plexeme-to-msg token))))))
-                       ((mv info? reach)
+                       ((mv info? &)
                         (macro-lookup macro-name (ppstate->macros ppstate)))
-                       (max-reach (ppstate->max-reach ppstate))
-                       (max-reach (max reach max-reach))
-                       (ppstate (update-ppstate->max-reach max-reach ppstate))
                        (lexeme (if info?
                                    (plexeme-number (pnumber-digit #\1))
                                  (plexeme-number (pnumber-digit #\0))))
@@ -2760,11 +2757,8 @@
                                  directivep
                                  ppstate
                                  (1- limit)))
-                 ((mv info reach)
+                 ((mv info &)
                   (macro-lookup ident (ppstate->macros ppstate)))
-                 (max-reach (ppstate->max-reach ppstate))
-                 (max-reach (max reach max-reach))
-                 (ppstate (update-ppstate->max-reach max-reach ppstate))
                  ((unless info)
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
@@ -3609,7 +3603,8 @@
      The header guard state must be a final one (it should be an invariant).
      Based on that, we combine the lexemes,
      either interposing the directives or not.
-     However, if the file is not self-contained,
+     However, unless we are preprocessing the file stand-alone,
+     i.e. exactly when there is a single macro scope,
      we only interpose the @('#define') directive,
      because we know that the @('#ifndef') is satisfied
      (if it were not, we would not have called @(tsee pproc-file)).")
@@ -3622,37 +3617,36 @@
     (hg-state-case
      hg
      :eof
-     (if (<= (ppstate->max-reach ppstate) 0) ; i.e. self-contained
-         (b* ((rev-lexemes nil)
-              (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-              (rev-lexemes (cons (plexeme-ident (ident "ifndef")) rev-lexemes))
-              (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-              (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-              (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-              (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
-              (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-              (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-              (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-              (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-              (rev-lexemes (cons (plexeme-ident (ident "endif")) rev-lexemes))
-              (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-              (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-           rev-lexemes)
-       (b* ((rev-lexemes nil)
-            (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-            (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-            (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-            (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
-            (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-            (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-            (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-            (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-            (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-         rev-lexemes))
+     (b* ((rev-lexemes nil)
+          (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
+          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident (ident "ifndef")) rev-lexemes))
+          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+          (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
+          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
+          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+          (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
+          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident (ident "endif")) rev-lexemes))
+          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+          (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
+       rev-lexemes)
+     ;; (b* ((rev-lexemes nil)
+     ;;      (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
+     ;;      (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
+     ;;      (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
+     ;;      (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
+     ;;      (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+     ;;      (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+     ;;      (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
+     ;;      (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
+     ;;      (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
+     ;;   rev-lexemes)
      :not
      (b* ((rev-lexemes nil)
           (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
@@ -3891,8 +3885,6 @@
     :returns (mv erp
                  (file-rev-lexemes plexeme-listp)
                  (file-macros macro-scopep)
-                 (file-max-reach integerp
-                                 :rule-classes (:rewrite :type-prescription))
                  (file-header-guard? ident-optionp)
                  (new-preprocessed string-scfile-alistp)
                  state)
@@ -3946,7 +3938,7 @@
        We expect this check to be always satisfied,
        and thus we throw hard error if it is not;
        but we need to investigate this property further."))
-    (b* (((reterr) nil nil 0 nil nil state)
+    (b* (((reterr) nil nil nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -3957,7 +3949,6 @@
          ((erp groupend
                file-rev-lexemes
                file-macros
-               file-max-reach
                file-header-guard?
                preprocessed
                state)
@@ -3967,7 +3958,6 @@
                      groupend
                      file-rev-lexemes
                      file-macro-table
-                     file-max-reach
                      file-header-guard?
                      ppstate
                      preprocessed
@@ -3992,7 +3982,6 @@
                       groupend
                       (all-rev-lexemes ppstate)
                       (ppstate->macros ppstate)
-                      (ppstate->max-reach ppstate)
                       (file-header-guard ppstate)
                       ppstate
                       preprocessed
@@ -4001,7 +3990,6 @@
                   groupend
                   file-rev-lexemes
                   (car (macro-table->scopes file-macro-table))
-                  file-max-reach
                   file-header-guard?
                   preprocessed
                   state))))
@@ -4016,7 +4004,6 @@
                         :endif "#endif")))))
       (retok file-rev-lexemes
              file-macros
-             file-max-reach
              file-header-guard?
              preprocessed
              state))
@@ -4574,7 +4561,6 @@
          (ienv (ppstate->ienv ppstate))
          ((erp file-rev-lexemes
                file-macros
-               & ; file-max-reach
                & ; file-header-guard?
                preprocessed
                state)
@@ -4605,7 +4591,6 @@
                          state))
               (b* (((erp file-rev-lexemes
                          file-macros
-                         & ; file-max-reach
                          file-header-guard?
                          preprocessed
                          state)
@@ -4779,11 +4764,8 @@
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "a new line"
                       :found (plexeme-to-msg ident?)))
-         ((mv info? reach)
+         ((mv info? &)
           (macro-lookup ident (ppstate->macros ppstate)))
-         (max-reach (ppstate->max-reach ppstate))
-         (max-reach (max reach max-reach))
-         (ppstate (update-ppstate->max-reach max-reach ppstate))
          (condp (if ifdefp
                     (and info? t)
                   (not info?)))
@@ -5063,7 +5045,6 @@
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp file-rev-lexemes
                 file-macros
-                file-max-reach
                 file-header-guard?
                 preprocessed
                 state)
@@ -5078,9 +5059,6 @@
                        ienv
                        state
                        recursion-limit))
-          ((when (> file-max-reach 0))
-           (raise "Internal error: non-self-contained top-level file ~x0." file)
-           (reterr t))
           (preprocessed (string-scfile-alist-fix preprocessed))
           (preprocessed (if (assoc-equal file preprocessed)
                             preprocessed

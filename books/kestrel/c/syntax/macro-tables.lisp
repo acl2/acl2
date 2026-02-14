@@ -401,7 +401,7 @@
 
 (define macro-lookup ((name identp) (table macro-tablep))
   :returns (mv (info? macro-info-optionp)
-               (reach integerp :rule-classes (:rewrite :type-prescription)))
+               (predefinedp booleanp))
   :short "Look up a macro in a macro table."
   :long
   (xdoc::topstring
@@ -409,48 +409,43 @@
     "We search from innermost to outermost scope,
      and then the predefined scope if needed.
      This lookup order matches GCC's behavior,
-     notes in @(tsee macro-scope) and @(tsee macro-table).")
-   (xdoc::p
-    "We also return an integer that we call `reach',
-     indicating how far in the macro tables
-     we had to look to find the macro, if we found it.
-     The reach is 0 if we find the macro in the innermost scope,
-     1 if we find it in the scope just before that, and so on.
-     If we find it in the predefined scope, the reach is -1.
-     If we do not find the macro at all, the reach is -2.
-     The rationale for this notion of reach is
-     to support the recognition of self-contained files,
-     as explained elsewhere.")
+     noted in @(tsee macro-scope) and @(tsee macro-table).")
    (xdoc::p
     "We return @('nil') if we find the macro name
      in an alist with associated value @('nil'),
      which means that the macro has been undefined via @('#undef');
      see @(tsee macro-scope).
-     We also return @('nil') if the macro is not found in any alist."))
-  (b* (((mv foundp info? reach)
-        (macro-lookup-in-scopes name 0 (macro-table->scopes table)))
-       ((when foundp) (mv info? reach))
+     We also return @('nil') if the macro is not found in any alist.
+     Note that we need an explicit @('foundp') flag,
+     returned by the recursive function on scopes,
+     to signal whether a definition or an undefinition was found there.")
+   (xdoc::p
+    "We also return a flag saying whether the macro was found
+     in the predefined scope.
+     In this case, @('info?') is not @('nil')."))
+  (b* (((mv foundp info?)
+        (macro-lookup-in-scopes name (macro-table->scopes table)))
+       ((when foundp) (mv info? nil))
        (name+info
-        (assoc-equal (ident-fix name) (macro-table->predefined table)))
-       ((when name+info) (mv (cdr name+info) -1)))
-    (mv nil -2))
+        (assoc-equal (ident-fix name) (macro-table->predefined table))))
+    (if name+info
+        (mv (cdr name+info) t)
+      (mv nil nil)))
 
   :prepwork
 
   ((local (in-theory (enable alistp-when-macro-scopep-rewrite)))
 
    (define macro-lookup-in-scopes ((name identp)
-                                   (current-reach integerp)
                                    (scopes macro-scope-listp))
      :returns (mv (foundp booleanp)
-                  (info? macro-info-optionp)
-                  (final-reach integerp))
+                  (info? macro-info-optionp))
      :parents nil
-     (b* (((when (endp scopes)) (mv nil nil -2))
+     (b* (((when (endp scopes)) (mv nil nil))
           (scope (macro-scope-fix (car scopes)))
           (name+info (assoc-equal (ident-fix name) scope))
-          ((when name+info) (mv t (cdr name+info) (lifix current-reach))))
-       (macro-lookup-in-scopes name (1+ (lifix current-reach)) (cdr scopes))))))
+          ((when name+info) (mv t (cdr name+info))))
+       (macro-lookup-in-scopes name (cdr scopes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,10 +516,10 @@
      This shadow any other undefinition and definition in that scope,
      as well as in other scopes."))
   (b* (((reterr) (irr-macro-table))
-       ((mv info? reach) (macro-lookup name table))
+       ((mv info? predefinedp) (macro-lookup name table))
        ((erp &)
         (if info?
-            (if (= reach -1)
+            (if predefinedp
                 (reterr (msg "Redefinition of predefined macro ~x0."
                              (ident-fix name)))
               (if (equal info? (macro-info-fix info))

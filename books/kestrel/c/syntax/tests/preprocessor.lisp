@@ -365,8 +365,10 @@ void f() {}
 
 // #include \"guarded.h\" >>>>>>>>>>
 
+#ifndef GUARDED
 #define GUARDED
 void f1() {}
+#endif
 // <<<<<<<<<< #include \"guarded.h\"
 int x1 = 0;
 // <<<<<<<<<< #include \"gincluder1.h\"
@@ -378,8 +380,10 @@ int x1 = 0;
 
 // #include \"guarded.h\" >>>>>>>>>>
 
+#ifndef GUARDED
 #define GUARDED
 void f2() {}
+#endif
 // <<<<<<<<<< #include \"guarded.h\"
 int x2 = 0;
 // <<<<<<<<<< #include \"gincluder2.h\"
