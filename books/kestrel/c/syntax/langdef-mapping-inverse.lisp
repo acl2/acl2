@@ -14,7 +14,10 @@
 
 (include-book "../language/abstract-syntax")
 
+(include-book "kestrel/fty/string-option" :dir :system)
+
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -30,12 +33,7 @@
     (xdoc::seetopic
      "mapping-to-language-definition"
      "the one from the tool-oriented syntax to the language definition")
-    ".")
-   (xdoc::p
-    "We provide mappings from constructs up to @(tsee c::ext-declon-list),
-     because that is what we need for now.
-     We do not provide mappings for
-     @(tsee c::transunit), @(tsee c::file), and @(tsee c::fileset)."))
+    "."))
   :order-subtopics t
   :default-parent t)
 
@@ -794,3 +792,69 @@
   (cond ((endp edeclons) nil)
         (t (cons (ildm-ext-declon (car edeclons))
                  (ildm-ext-declon-list (cdr edeclons))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define chars-to-q-chars ((chars character-listp))
+  :returns (qchars q-char-listp)
+  :short "Map a list of ACL2 characters to a list of @(tsee q-char) values."
+  (cond ((endp chars) nil)
+        (t (cons (q-char (char-code (car chars)))
+                 (chars-to-q-chars (cdr chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string-to-q-header-name ((str stringp))
+  :returns (hname header-namep)
+  :short "Map an ACL2 string to a header name with double quotes."
+  (header-name-quotes (chars-to-q-chars (str::explode str))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-transunit ((file-name string-optionp) (tunit c::transunitp))
+  :returns (tunit1 transunitp)
+  :short "Map a translation unit in the language definition
+          to a translation unit in the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The optional file name passed as input represents (if present)
+     an implicit @('#include') in the translation unit
+     for a header with that name, to which we add the @('.h') extension.
+     See @(tsee ildm-transunit-ensemble)."))
+  (make-transunit
+   :comment nil
+   :includes (and file-name
+                  (list (string-to-q-header-name (str::cat file-name ".h"))))
+   :declons (ildm-ext-declon-list (c::transunit->declons tunit))
+   :info nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-transunit-ensemble ((file-name stringp)
+                                 (tunits c::transunit-ensemblep))
+  :returns (tunits1 transunit-ensemblep)
+  :short "Map a translation unit ensemble in the language definition
+          to a translation unit ensemble in the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The string input represents the name of the file or files,
+     without extension."))
+  (b* (((c::transunit-ensemble tunits) tunits)
+       (file-name (str-fix file-name)))
+    (make-transunit-ensemble
+     :units (b* ((map-with-source-file
+                  (omap::update (filepath (str::cat file-name ".c"))
+                                (ildm-transunit (and tunits.dot-h
+                                                     file-name)
+                                                tunits.dot-c)
+                                nil))
+                 (map-with-all-files
+                  (if tunits.dot-h
+                      (omap::update (filepath (str::cat file-name ".h"))
+                                    (ildm-transunit nil tunits.dot-h)
+                                    map-with-source-file)
+                    map-with-source-file)))
+              map-with-all-files)
+     :info nil)))

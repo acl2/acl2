@@ -920,6 +920,11 @@
          (error arm))
   :hints (("Goal" :in-theory (enable write-byte error))))
 
+(defthm arch-version-of-write-byte
+  (equal (arch-version (write-byte addr byte arm))
+         (arch-version arm))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
 (defthm isetstate-of-write-byte
   (equal (isetstate (write-byte addr byte arm))
          (isetstate arm))
@@ -1130,6 +1135,11 @@
 (defthm error-of-write
   (equal (error (write n addr byte arm))
          (error arm))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm arch-version-of-write
+  (equal (arch-version (write n addr byte arm))
+         (arch-version arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthm isetstate-of-write

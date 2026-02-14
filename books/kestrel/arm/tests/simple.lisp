@@ -37,7 +37,7 @@
                   ;; #b1110 0000000 1 0011 0000 0100 1001 0101)
                   #b11100000000100110000010010010101)
            (not (error arm)) ; no error yet
-           )
+           (== (ArchVersion arm) 5))
           (equal (step arm)
                  (advance-pc (set-apsr.z (bool-to-bit (equal 0 (bvmult 32 (reg 5 arm) (reg 4 arm))))
                                          (set-apsr.n (getbit 31 (bvmult 32 (reg 5 arm) (reg 4 arm)))
@@ -57,7 +57,7 @@
                   ;; #b1110 0000000 1 0010 0000 0100 1001 0011)
                   #b11100000000100100000010010010011)
            (not (error arm)) ; no error yet
-           )
+           (== (ArchVersion arm) 5))
           (equal (run 2 arm)
                  ;; state after execution:
                  (set-reg 2 ; register 2 gets (r5*r4)*r4

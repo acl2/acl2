@@ -807,7 +807,7 @@
         (update-error *unpredictable* arm))
        ((when (and wback
                    (== (getbit n registers) 1)
-                   (>= (ArchVersion) 7)))
+                   (>= (ArchVersion arm) 7)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        (arm (NullCheckIfThumbEE n arm))
@@ -881,7 +881,7 @@
        (registers register_list)
        (UnalignedAllowed *false*)
        ((when (and (== (getbit 13 registers) 1)
-                   (>= (ArchVersion) 7)))
+                   (>= (ArchVersion arm) 7)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
        )
@@ -906,7 +906,7 @@
           (update-error *unpredictable* arm))
          ((when (and wback
                      (==  (getbit n registers) 1)
-                     (>= (ArchVersion) 7)))
+                     (>= (ArchVersion arm) 7)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations ;; todo: check for missing nullchecks everywhere
          (address (bvplus 32 (reg n arm) 4))
@@ -1008,7 +1008,7 @@
                   (== n tval)
                   (== m 15)))
         (update-error *unpredictable* arm))
-       ((when (and (< (ArchVersion) 6)
+       ((when (and (< (ArchVersion arm) 6)
                    (== m n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
@@ -1139,7 +1139,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -1241,7 +1241,7 @@
                   (== n tval)
                   (== m 15)))
         (update-error *unpredictable* arm))
-       ((when (and (< (ArchVersion) 6)
+       ((when (and (< (ArchVersion arm) 6)
                    (== m n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
@@ -1343,7 +1343,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -1479,7 +1479,7 @@
                          (== n tval)
                          (== n t2))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -1684,7 +1684,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -1855,7 +1855,7 @@
                     (== m 15)
                     (== a 15)))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (== d n)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
@@ -1867,7 +1867,7 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
+                         (arm (set-apsr.c (if (== (ArchVersion arm) 4)
                                               (unknown-bit :mla arm)
                                             (apsr.c arm))
                                           arm))
@@ -1963,7 +1963,7 @@
                     (== n 15)
                     (== m 15)))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (== d n)))
           (update-error *unpredictable* arm))
          ;; end EncodingSpecificOperations
@@ -1974,7 +1974,7 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 31 result) arm))
                          (arm (set-apsr.z (IsZeroBit 32 (slice 31 0 result)) arm))
-                         (arm (if (== (ArchVersion) 4)
+                         (arm (if (== (ArchVersion arm) 4)
                                   (set-apsr.c (unknown-bit :mul arm) arm)
                                 arm ; APSR.C unchanged
                                 ))
@@ -1994,7 +1994,7 @@
                   (== n 15)
                   (== m 15)))
         (update-error *unpredictable* arm))
-       ((when (and (< (ArchVersion) 6)
+       ((when (and (< (ArchVersion arm) 6)
                    (== d n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
@@ -2003,7 +2003,7 @@
        (arm (if setflags
                 (let* ((arm (set-apsr.n (getbit 31 my-result) arm))
                        (arm (set-apsr.z (IsZeroBit 32 my-result) arm))
-                       (arm (if (== (ArchVersion) 4)
+                       (arm (if (== (ArchVersion arm) 4)
                                 (set-apsr.c (unknown-bit :mul arm) arm)
                               arm ; APSR.C unchanged
                               ))
@@ -2494,7 +2494,7 @@
           (update-error *unpredictable* arm))
          ((when (== dLo dHi))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (or (== dHi n)
                          (== dLo n))))
           (update-error *unpredictable* arm))
@@ -2507,11 +2507,11 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 63 result) arm))
                          (arm (set-apsr.z (IsZeroBit 64 (slice 63 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
+                         (arm (set-apsr.c (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :smlal :c) arm)
                                             (apsr.c arm))
                                           arm))
-                         (arm (set-apsr.v (if (== (ArchVersion) 4)
+                         (arm (set-apsr.v (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :smlal :v) arm)
                                             (apsr.v arm))
                                           arm)))
@@ -2536,7 +2536,7 @@
           (update-error *unpredictable* arm))
          ((when (== dLo dHi))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (or (== dHi n)
                          (== dLo n))))
           (update-error *unpredictable* arm))
@@ -2548,11 +2548,11 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 63 result) arm))
                          (arm (set-apsr.z (IsZeroBit 64 (slice 63 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
+                         (arm (set-apsr.c (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :smull :c) arm)
                                             (apsr.c arm))
                                           arm))
-                         (arm (set-apsr.v (if (== (ArchVersion) 4)
+                         (arm (set-apsr.v (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :smull :v) arm)
                                             (apsr.v arm))
                                           arm)))
@@ -2773,7 +2773,7 @@
           (update-error *unpredictable* arm))
          ((when (== dLo dHi))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (or (== dHi n)
                          (== dLo n))))
           (update-error *unpredictable* arm))
@@ -2786,11 +2786,11 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 63 result) arm))
                          (arm (set-apsr.z (IsZeroBit 64 (slice 63 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
+                         (arm (set-apsr.c (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :umlal :c) arm)
                                             (apsr.c arm))
                                           arm))
-                         (arm (set-apsr.v (if (== (ArchVersion) 4)
+                         (arm (set-apsr.v (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :umlal :v) arm)
                                             (apsr.v arm))
                                           arm)))
@@ -2813,7 +2813,7 @@
           (update-error *unpredictable* arm))
          ((when (== dLo dHi))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      (or (== dHi n)
                          (== dLo n))))
           (update-error *unpredictable* arm))
@@ -2825,11 +2825,11 @@
          (arm (if setflags
                   (let* ((arm (set-apsr.n (getbit 63 result) arm))
                          (arm (set-apsr.z (IsZeroBit 64 (slice 63 0 result)) arm))
-                         (arm (set-apsr.c (if (== (ArchVersion) 4)
+                         (arm (set-apsr.c (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :umull :c) arm)
                                             (apsr.c arm))
                                           arm))
-                         (arm (set-apsr.v (if (== (ArchVersion) 4)
+                         (arm (set-apsr.v (if (== (ArchVersion arm) 4)
                                               (unknown-bit (cons :umull :v) arm)
                                             (apsr.v arm))
                                           arm)))
@@ -3006,7 +3006,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -3199,7 +3199,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -3304,7 +3304,7 @@
                   (== n tval)
                   (== m 15)))
         (update-error *unpredictable* arm))
-       ((when (and (< (ArchVersion) 6)
+       ((when (and (< (ArchVersion arm) 6)
                    (== m n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
@@ -3516,7 +3516,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -3615,7 +3615,7 @@
                   (== n tval)
                   (== m 15)))
         (update-error *unpredictable* arm))
-       ((when (and (< (ArchVersion) 6)
+       ((when (and (< (ArchVersion arm) 6)
                    (== m n)))
         (update-error *unpredictable* arm))
        ;; end EncodingSpecificOperations
@@ -3676,7 +3676,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -3825,7 +3825,7 @@
                      (or (== n 15)
                          (== n tval))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))
@@ -3914,7 +3914,7 @@
                          (== n tval)
                          (== n t2))))
           (update-error *unpredictable* arm))
-         ((when (and (< (ArchVersion) 6)
+         ((when (and (< (ArchVersion arm) 6)
                      wback
                      (== m n)))
           (update-error *unpredictable* arm))

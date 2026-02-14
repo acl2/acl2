@@ -554,10 +554,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund archversion ()
-  (declare (xargs :guard t))
-  5 ; todo
-  )
+;; Let's leave this enabled to expose the stobj field accessor
+(defun ArchVersion (arm)
+  (declare (xargs :stobjs arm))
+  (mbe :logic (nfix (arch-version arm)) ; could even pos-fix if we need to
+       :exec (arch-version arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -578,7 +579,7 @@
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
   (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
-      (if (and (< (ArchVersion) 6)
+      (if (and (< (ArchVersion arm) 6)
                (!= (slice 1 0 address) #b00))
           (update-error *unpredictable* arm)
         (BranchTo (bvcat 30 (slice 31 2 address) 2 #b00) arm))
@@ -603,7 +604,7 @@
 (defun ALUWritePC (address arm)
   (declare (xargs :guard (addressp address)
                   :stobjs arm))
-  (if (and (>= (ArchVersion) 7)
+  (if (and (>= (ArchVersion arm) 7)
            (== (CurrentInstrSet arm) *InstrSet_ARM*))
       (BXWritePC address arm)
     (BranchWritePC address arm)))
@@ -612,7 +613,7 @@
 (defun LoadWritePC (address arm)
   (declare (xargs :guard (addressp address)
                   :stobjs arm))
-  (if (>= (ArchVersion) 5)
+  (if (>= (ArchVersion arm) 5)
       (BXWritePC address arm)
     (BranchWritePC address arm)))
 

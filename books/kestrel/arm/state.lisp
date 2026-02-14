@@ -58,6 +58,10 @@
   ;; Whether an error has occurred (nil means no error, anything else is an
   ;; error):
   (error)
+  ;; The major version of the ARM architecture (4 for ARMv4, up to 7 for
+  ;; ARMv7).  A real CPU would not have this field, of course, but this field
+  ;; allows the user to make an assumption about the version when lifting.
+  (arch-version :type (integer 4 7) :initially 7)
   ;; This avoids actually allocating 4GB of memory for the MEMORY field (even
   ;; though that only takes a few seconds).  See add-global-stobj if you want
   ;; execution for this stobj.  See also the "large stobj" discussion on Zulip.
@@ -262,10 +266,14 @@
 (defthm apsr.q-of-set-apsr.v (equal (apsr.q (set-apsr.v bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.v))))
 (defthm apsr.q-of-set-apsr.q (equal (apsr.q (set-apsr.q bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.q))))
 
-
 (defthm error-of-set-reg
   (equal (error (set-reg n val arm))
          (error arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm arch-version-of-set-reg
+  (equal (arch-version (set-reg n val arm))
+         (arch-version arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
 (defthm reg-of-set-apsr.n (equal (reg n (set-apsr.n bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
@@ -279,6 +287,12 @@
 (defthm error-of-set-apsr.c (equal (error (set-apsr.c bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.c reg))))
 (defthm error-of-set-apsr.v (equal (error (set-apsr.v bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.v reg))))
 (defthm error-of-set-apsr.q (equal (error (set-apsr.q bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
+
+(defthm arch-version-of-set-apsr.n (equal (arch-version (set-apsr.n bit arm)) (arch-version arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
+(defthm arch-version-of-set-apsr.z (equal (arch-version (set-apsr.z bit arm)) (arch-version arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))
+(defthm arch-version-of-set-apsr.c (equal (arch-version (set-apsr.c bit arm)) (arch-version arm)) :hints (("Goal" :in-theory (enable set-apsr.c reg))))
+(defthm arch-version-of-set-apsr.v (equal (arch-version (set-apsr.v bit arm)) (arch-version arm)) :hints (("Goal" :in-theory (enable set-apsr.v reg))))
+(defthm arch-version-of-set-apsr.q (equal (arch-version (set-apsr.q bit arm)) (arch-version arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
 
 (defthm isetstate-of-set-apsr.n (equal (isetstate (set-apsr.n bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
 (defthm isetstate-of-set-apsr.z (equal (isetstate (set-apsr.z bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))
