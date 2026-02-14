@@ -48,33 +48,51 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
-     preserves the information about the @('#include') directives
+     preserves preprocessing constructs particularly @('#include') directives,
      under conditions that should be often satisfied in practical code.
-     That is, it does not replace such directives
-     with the (preprocessed) contents of the referenced files,
-     but it otherwise performs the rest of the preprocessing.
+     That is, instead of expanding @('#include') directives in place,
+     i.e. replacing them with the referenced files,
+     it leaves them in place, preprocessing the included file separately,
+     to preserve the original structure of the code.
      This is only done under certain conditions;
-     in general, the C preprocessor operates at the low level of characters,
+     in general, the C preprocessor operates at the low lexical level,
      making it difficult to preserve code structure in general
      (in those cases, our preprocessor expands the included files in place,
      like typical preprocessors).")
    (xdoc::p
-    "Our preprocessor maps a list of file paths
-     to a file set (see @(see files)):
-     it preprocesses all the files with the given file paths,
-     as well as all the files directly and indirectly included.
-     The resulting file set contains entries
-     for all the files with the given file paths,
-     as well as for zero or more @(see self-contained) files
-     that are included directly or indirectly by the given list of files.")
+    "The correctness criterior for the preservation of preprocessing constructs
+     is that the full preprocessing expansion of the original files
+     must be the same as the of the files produced by our preprocessor.
+     That is, if we apply full preprocessing,
+     i.e. the one done by typical preprocessors,
+     to the result of our preprocessor,
+     we must obtain the same results as
+     applying full preprocessing to the original files.")
    (xdoc::p
-    "The input to our preprocessor is similar to @(tsee input-files),
-     in the sense that the files to preprocess are specified by
+    "The input to our preprocessor is similar to @(tsee input-files):
+     the files to preprocess are specified by
      (1) a base directory path and (2) a list of file paths.
      The base directory path (1) may be absolute,
      or relative to the "
     (xdoc::seetopic "cbd" "connected book directory")
     ". The file paths in the list (2) are relative to the base directory.")
+   (xdoc::p
+    "Our preprocessor maps (1) and (2) to a file set (see @(see files)):
+     it preprocesses all the files listed in (2),
+     as well as all the files directly and indirectly included.
+     When a @('#include') directive references a file not in (2)
+     (e.g. a header from the standard library),
+     if that @('#include') directive is preserved,
+     the file set resulting from our preprocessor contains
+     an entry for that included file as well.
+     The file set resulting from our preprocessor contains entries
+     for all the files with the file paths in the given list,
+     as well as for zero or more files
+     referenced in at least one preserved @('#include').
+     These preserved @('#include')s may occur in the files in (2),
+     or in files transitively brought in by the additional files.
+     The file set returned by our preprocessor
+     is closed with respect to the preserved @('#include')s.")
    (xdoc::p
     "The file set output of our preprocessor has keys
      that are either absolute or relative paths.
@@ -95,15 +113,20 @@
      In contrast, absolute path keys in the output file set are for
      files included via @('#include') directives with angle brackets,
      which our preprocessor searches in certain directories,
-     unrelated to the base directory;
-     some of these files may actually be included via double quotes,
+     unrelated to the base directory.
+     Some of these files may actually be included via double quotes,
      so long as they are not found relative to the including file,
      because in that case, according to [C17:6.10.2/3],
      an attempt is made to locate the file as if it had angle brackets.
      [C17:6.10.2] gives leeway in how included file are resolved;
      our preprocessor uses an approch similar to GCC [CPPM:2.3].
      The directories where to search files included with angle brackets
+     (and with double quotes when the search from the including file fails)
      are passed as an additional input to our preprocessor.")
+   (xdoc::p
+    "The exact conditions under which @('#include')s are preserved,
+     along with the approach we use to check those conditions,
+     are discussed in @(see self-contained).")
    (xdoc::p
     "Our preprocessor
      reads characters from files,
