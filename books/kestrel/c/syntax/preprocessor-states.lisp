@@ -195,7 +195,7 @@
      multiple @('#include') for the same @('FILE') may occur
      because of transitive inclusions with common ``ancestors''.")
    (xdoc::p
-    "A file of this form should be regarded as @(see self-contained),
+    "A file of this form should be regarded as self-contained,
      provided that the @('...') part
      does not access macros from including files.
      However, in the absence of some special treatment,
@@ -332,7 +332,7 @@
       @('#error') and @('#warning') directives should be ignored,
       i.e. treated as no-ops.
       This flag is set when files are re-preprocessed
-      in a fresh context to check whether they are @(see self-contained).")))
+      in a fresh context to check whether they are self-contained.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
