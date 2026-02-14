@@ -331,7 +331,13 @@
       that are being produced as the output of preprocessing.
       These are in reverse order, for more efficient extension.
       These lexemes are split into four chunks,
-      as explained in @(tsee add-rev-lexeme).")))
+      as explained in @(tsee add-rev-lexeme).")
+    (xdoc::li
+     "The preprocessor state also contains a flag saying whether
+      @('#error') and @('#warning') directives should be ignored,
+      i.e. treated as no-ops.
+      This flag is set when files are re-preprocessed
+      in a fresh context to check whether they are @(see self-contained).")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -371,6 +377,8 @@
                     :initially nil)
       (rev-lexemes4 :type (satisfies plexeme-listp)
                     :initially nil)
+      (ignore-err/warn :type (satisfies booleanp)
+                       :initially nil)
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -388,6 +396,7 @@
                  (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
                  (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
                  (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
+                 (ignore-err/warnp raw-ppstat->ignore-err/warn-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -405,6 +414,7 @@
                  (rev-lexemes2 raw-ppstate->rev-lexemes2)
                  (rev-lexemes3 raw-ppstate->rev-lexemes3)
                  (rev-lexemes4 raw-ppstate->rev-lexemes4)
+                 (ignore-err/warn raw-ppstate->ignore-err/warn)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -422,6 +432,7 @@
                  (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
                  (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
                  (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
+                 (update-ignore-err/warn raw-update-ppstate->ignore-err/warn)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -575,6 +586,12 @@
          :exec (raw-ppstate->rev-lexemes4 ppstate))
     :inline t)
 
+  (define ppstate->ignore-err/warn (ppstate)
+    :returns (ignore-err/warn booleanp)
+    (mbe :logic (non-exec (raw-ppstate->ignore-err/warn (ppstate-fix ppstate)))
+         :exec (raw-ppstate->ignore-err/warn ppstate))
+    :inline t)
+
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
@@ -706,6 +723,14 @@
                            (plexeme-list-fix rev-lexemes)
                            (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
+    :inline t)
+
+  (define update-ppstate->ignore-err/warn ((ignore-err/warn booleanp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->ignore-err/warn (bool-fix ignore-err/warn)
+                                                      (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->ignore-err/warn ignore-err/warn ppstate))
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
@@ -862,6 +887,7 @@
 
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
+                      (ignore-err/warn booleanp)
                       (ienv ienvp)
                       ppstate)
   :returns (ppstate ppstatep)
@@ -873,6 +899,7 @@
      It is built from
      (the data of) a file to preprocess,
      the current table of macros in scope,
+     a flag saying whether to ignore errors and warnings,
      and an implementation environment.")
    (xdoc::p
     "The array of byte lists is resized to the file recursion limit,
@@ -903,6 +930,7 @@
        (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
+       (ppstate (update-ppstate->ignore-err/warn ignore-err/warn ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 

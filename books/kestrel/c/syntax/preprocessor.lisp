@@ -3529,19 +3529,20 @@
    (xdoc::p
     "This is called just after the @('error') identifier has been parsed.")
    (xdoc::p
-    "We return an error message that contains the rest of the line,
+    "We read the rest of the directive.
+     If errors and warnings must be ignored, we do nothing.
+     Otherwise, we return an error message that contains the rest of the line,
      in printed form (using the preprocessor printer).
      This could be refined in the future.")
    (xdoc::p
     "Although neither [C17:6.10.5] nor [C23:6.10.7]
      explicitly say that preprocessing must stop,
-     [CPPM:5] does, and that seems indeed the intention.")
-   (xdoc::p
-    "Since we return an error,
-     there is no need to perform header guard transitions."))
+     [CPPM:5] does, and that seems indeed the intention."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
+       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
+       ((when (ppstate->ignore-err/warn ppstate)) (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes)))
     (reterr (msg "#error: ~s0" string)))
@@ -3562,7 +3563,9 @@
      or the GCC or Clang extensions are enabled;
      otherwise we return an error.")
    (xdoc::p
-    "We use the printer to turn the lexemes in the rest of the line
+    "We read the rest of the directive.
+     If errors and warnings must be ignored, we do nothing.
+     Otherwise, we use the printer to turn the lexemes in the rest of the line
      into an ACL2 string, which we print as comment output.
      Unlike @(tsee pproc-error), we do not return an error,
      so preprocessing can continue.
@@ -3573,10 +3576,7 @@
    (xdoc::p
     "Although [C23:6.10.7] does not explicitly say that
      preprocessing must continue,
-     [CPPM:5] does, and that seems indeed the intention.")
-   (xdoc::p
-    "Although a warning does not affect the included content,
-     we perform a header guard transition."))
+     [CPPM:5] does, and that seems indeed the intention."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        (ienv (ppstate->ienv ppstate))
@@ -3585,10 +3585,11 @@
         (reterr (msg "#warning directive disallowed in ~
                       C17 without GCC or Clang extensions.")))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
+       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
+       ((when (ppstate->ignore-err/warn ppstate)) (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes))
-       (- (cw "#warning: ~s0" string))
-       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate)))
+       (- (cw "#warning: ~s0" string)))
     (retok ppstate))
   :guard-hints
   (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
@@ -3883,6 +3884,7 @@
                       (preprocessed string-scfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
+                      (ignore-err/warn booleanp)
                       (ienv ienvp)
                       state
                       (limit natp))
@@ -3970,7 +3972,8 @@
                      ppstate
                      preprocessed
                      state)
-                (b* ((ppstate (init-ppstate bytes macros ienv ppstate))
+                (b* ((ppstate
+                      (init-ppstate bytes macros ignore-err/warn ienv ppstate))
                      ((mv erp
                           groupend
                           ppstate
@@ -4582,6 +4585,7 @@
                       preprocessed
                       preprocessing
                       (ppstate->macros ppstate)
+                      nil ; ignore-err/warn
                       ienv
                       state
                       (1- limit)))
@@ -4612,6 +4616,7 @@
                                 preprocessed
                                 preprocessing
                                 (macro-init (ienv->version ienv))
+                                t ; ignore-err/warn
                                 ienv
                                 state
                                 (1- limit)))
@@ -5023,8 +5028,14 @@
      with perhaps a reasonably large default."))
   (b* (((reterr) (irr-fileset) state)
        ((erp preprocessed state)
-        (pproc-files-loop files base-dir include-dirs
-                          nil nil ienv state recursion-limit)))
+        (pproc-files-loop files
+                          base-dir
+                          include-dirs
+                          nil ; preprocessed
+                          nil ; preprocessing
+                          ienv
+                          state
+                          recursion-limit)))
     (retok
      (fileset (string-scfile-alist-to-filepath-filedata-map preprocessed))
      state))
@@ -5063,6 +5074,7 @@
                        preprocessed
                        preprocessing
                        (macro-init (ienv->version ienv))
+                       nil ; ignore-err/warn
                        ienv
                        state
                        recursion-limit))

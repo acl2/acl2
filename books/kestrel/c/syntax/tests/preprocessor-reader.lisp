@@ -20,6 +20,7 @@
 (defmacro init (input)
   `(init-ppstate ,input
                  (macro-init (c::version-c17))
+                 nil ; ignore-err/warn
                  (ienv-default)
                  ppstate))
 

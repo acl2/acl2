@@ -31,6 +31,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-init (c::version-c17))
+                                nil ; ignore-err/warn
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
@@ -59,6 +60,7 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-init (c::version-c17))
+                                nil ; ignore-err/warn
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
