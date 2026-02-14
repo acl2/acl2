@@ -196,7 +196,8 @@
      because of transitive inclusions with common ``ancestors''.")
    (xdoc::p
     "A file of this form should be regarded as @(see self-contained),
-     provided that the @('...') part does not access macros in outer scopes.
+     provided that the @('...') part
+     does not access macros from including files.
      However, in the absence of some special treatment,
      it would only be considered self-contained the first time it is included,
      but not the successive times it is included.")
@@ -874,7 +875,6 @@
      The position is the initial one.
      There are no read or unread characters,
      and no lexmarks pending.
-     The macro table is obtained by pushing a new scope for the file.
      We resize the arrays of characters to the number of bytes,
      which suffices because there are never more characters than bytes.
      We set the header guard state to be the initial one.

@@ -3758,12 +3758,7 @@
      we call this function to obtain the final list of lexemes.
      The header guard state must be a final one (it should be an invariant).
      Based on that, we combine the lexemes,
-     either interposing the directives or not.
-     However, unless we are preprocessing the file stand-alone,
-     i.e. exactly when there is a single macro scope,
-     we only interpose the @('#define') directive,
-     because we know that the @('#ifndef') is satisfied
-     (if it were not, we would not have called @(tsee pproc-file)).")
+     either interposing the directives or not.")
    (xdoc::p
     "When interposing the directives,
      currently we only have information about the macro name.
@@ -3792,17 +3787,6 @@
           (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
           (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
        rev-lexemes)
-     ;; (b* ((rev-lexemes nil)
-     ;;      (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-     ;;      (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-     ;;      (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-     ;;      (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
-     ;;      (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-     ;;      (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-     ;;      (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-     ;;      (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-     ;;      (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-     ;;   rev-lexemes)
      :not
      (b* ((rev-lexemes nil)
           (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
@@ -4067,8 +4051,7 @@
      (xdoc::p
       "We create a local preprocessing state stobj from
        the bytes of the file,
-       the macro table
-       (which @(tsee init-ppstate) extends with a new empty scope for the file),
+       the macro table,
        and the implementation environment.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
@@ -4872,10 +4855,7 @@
        otherwise, the condition evaluates to false or true.
        We pass the result of the condition
        to @(tsee pproc-if/ifdef/ifndef-rest),
-       which preprocesses the rest of the @('if-section').
-       However, if the macro is defined
-       not in the innermost scope and is not predefined,
-       then the file is not considered @(see self-contained)."))
+       which preprocesses the rest of the @('if-section')."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
