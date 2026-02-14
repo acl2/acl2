@@ -17169,14 +17169,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Without the setting of custom:*default-file-encoding* for clisp in
 ; acl2.lisp, the build breaks with the following string (note the accented "i"
-; in Martin, below):
+; in Martin, below) -- or at least it did before a change to that line with
+; commit 5c4ef31d0f782123833b91c4dda2b0c290592d5d (2/13/2026), but now that
+; clisp builds of ACL2 are no longer supported, it's hard to know.
 ;   Francisco J. Martín Mateos
 ; With that setting, we do not need an explicit :external-format argument for
 ; the call of with-open-file in acl2-check.lisp that opens a stream for
 ; "acl2-characters".
 
 ; Because of the comment above, save an Emacs buffer connected to this file
-; after setting the necessary buffer-local variable as follows.
+; after setting the necessary buffer-local variable as follows.  (Is that still
+; necessary after commit 5c4ef31d0f782123833b91c4dda2b0c290592d5d (2/13/2026)?
+; Not sure.)
 
 ; (setq save-buffer-coding-system 'iso-8859-1)
 
