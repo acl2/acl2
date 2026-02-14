@@ -11,12 +11,12 @@
 (in-package "C$")
 
 (include-book "preprocessor-lexemes")
-(include-book "stringization")
-(include-book "token-concatenation")
 (include-book "macro-tables")
-(include-book "preprocessor-evaluator")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
+(include-book "stringization")
+(include-book "token-concatenation")
+(include-book "preprocessor-evaluator")
 (include-book "preprocessor-reader")
 (include-book "preprocessor-lexer")
 (include-book "preprocessor-printer")
@@ -111,9 +111,9 @@
      and parses the lexemes while executing the preprocessing directives.
      The resulting sequences of lexemes are then turned into characters
      that are written (printed) to files.
-     The resulting file set is amenable to our parser
-     (more precisely, it will be, once we have extended our parser
-     to accept @('#include') directives in certain places).
+     The resulting file set is amenable to our parser,
+     but our parser needs a few more extensions to be able to accept
+     everything that our preprocessor can generate.
      Our preprocessor preserves white space and comments when possible,
      but some layout (i.e. white space) changes are inherent to preprocessing,
      some comments may be difficult or impossible to preserve
@@ -137,12 +137,12 @@
      by avoiding markers altogether,
      instead attaching ``provenance'' information to certain tokens."))
   :order-subtopics (preprocessor-lexemes
-                    stringization
-                    token-concatenation
                     macro-tables
-                    preprocessor-evaluator
                     preprocessor-states
                     preprocessor-messages
+                    stringization
+                    token-concatenation
+                    preprocessor-evaluator
                     preprocessor-reader
                     preprocessor-lexer
                     preprocessor-printer
@@ -177,16 +177,14 @@
      because those details do not matter here.")
    (xdoc::p
     "Since @('#include') is substitution in place,
-     it is possible for @('FILE') to reference @('M')
-     in a way that needs @('M') to be defined.
-     This means that @('FILE') would not be legal if preprocessed alone,
-     but the including file is legal.
+     it is possible for @('FILE') to reference @('M').
+     This means that @('FILE') could give a different result
+     when preprocessed alone vs. when processed within the including file.
      Indeed, the result of preprocessing @('#include FILE')
      depends on where that directive occurs;
      different occurrences may result in
      possibly very different replacements,
-     e.g. if @('M') affects conditional inclusion [C17:6.10.1],
-     or more simply if @('M') is used anywhere in the included file.")
+     e.g. if @('M') affects conditional inclusion [C17:6.10.1].")
    (xdoc::p
     "However, the situation above is not a common case.
      In particular, if @('FILE') is part of a library,
@@ -212,51 +210,210 @@
      not via a direct or indirect @('#include').")
    (xdoc::p
     "When we encounter a @('#include') directive,
-     we find the file and we attempt to preprocess it as self-contained.
-     If all the macros it references are
-     either predefined or defined in the file itself,
-     then the file is considered self-contained.
-     If we later encounter another @('#include') of the same file
-     (likely in a different including file),
-     we cannot just assume that it is self-contained,
-     because essentially any identifier that occurs in the included file
-     could refer to a macro.
-     That is, if the included file has an identifier @('I') somewhere,
-     and the first time that we preprocess the file
-     we see that @('I') is not a macro name,
-     the second time that we preprocess the file
-     the same identifier @('I') may happen to be now defined as a macro.
-     Thus, we must always re-preprocess the file the second time,
-     to confirm that it is still self-contained
-     with respect to this other @('#include');
-     if we confirm that it is still self-contained,
-     we double-check that we obtain the same exact result (i.e. lexemes),
-     and then we leave the second @('#include') as such,
-     referring to the self-contained file.
-     Otherwise, we must expand the file in place.")
+     we find the file and we preprocess in the context of the including file,
+     i.e. using the current macro table.
+     Then, to see whether we can avoid expanding its @('#include'),
+     we re-process the included file in a fresh context,
+     i.e. in a macro table that only has the predefined macros.
+     If we get the same results on the included file,
+     we leave the @('#include') in place;
+     otherwise, we expand it into the included file's content
+     (the content generated when preprocessing the file
+     in the context of the included file).")
    (xdoc::p
-    "This approach needs some extension for header guards,
-     i.e. when @('FILE') has a form like")
+    "Whenever we re-process a file without non-predefined macros as above,
+     we add the results to an alist (called @('preprocessed') in our code).
+     Thus, if later we encounter another @('#include') for the same file,
+     we do not need to re-process it afresh,
+     but we can just obtain the result from the alist,
+     and compare it with the result of preprocessing the included file
+     in the context of the including file.
+     So, depending on context,
+     a @('#include') of a file may be preserved in one place,
+     but it may be expanded in another place,
+     although we expect that this should not happen in well-structured code.
+     Indeed, one could force the expansion in place even of a library file,
+     simply by preceding the @('#include') with a @('#define')
+     that defines some identifier that occurs in the library file:
+     this is contrived, and may rarely lead to compilable code,
+     but it is perfectly possible as far as preprocessing is concerned.")
+   (xdoc::p
+    "Every @('#include') of the same file needs to be preprocessed
+     in the context of the including file, at that place of the including file.
+     This is because potentially any identifier that occurs in the included file
+     could have or not have a macro definition at that point.")
+   (xdoc::p
+    "Header guards deserve some special consideration.
+     Header guards are a well-known approach
+     to avoid including the same file multiple times.
+     The files to include have a form like")
    (xdoc::codeblock
-    "#ifndef FILE_H"
-    "#define FILE_H"
-    "..."
-    "#endif")
+    "+-F.h-----------+"
+    "| #ifndef F     |"
+    "| #define F     |"
+    "| ...F stuff... |"
+    "| #endif        |"
+    "+---------------+")
    (xdoc::p
-    "This is a well-known pattern to avoid
-     including the same file multiple times.
-     In this case, when @('FILE') is preprocessed the first time,
-     it would be recognized as self-contained,
-     because @('FILE_H') is not defined at that moment.
-     If later @('FILE') is re-preprocessed when @('FILE_H') is now defined,
-     the file would not be considered self-contained this time,
-     and so it would be expanded in place;
-     however, it would also cause the including file
-     to be considered non-self-contained,
-     because the @('#ifndef') now appears in the including file.
-     This is why the approach needs extension, as mentioned above;
-     but the extension should not be difficult,
-     because the pattern is easily recognized.")))
+    "Consider additional files of the form")
+   (xdoc::codeblock
+    "+-G.h-----------+"
+    "| #ifndef G     |"
+    "| #define G     |"
+    "| #include F.h  |"
+    "| ...G stuff... |"
+    "| #endif        |"
+    "+---------------+")
+   (xdoc::p
+    "and")
+   (xdoc::codeblock
+    "+-A.c-----------+"
+    "| #include F.h  |"
+    "| #include G.h  |"
+    "| ...A stuff... |"
+    "+---------------+")
+   (xdoc::p
+    "where we intentionally omit
+     angle brackes and double quotes from the @('#include')s
+     because they are not relevant here.")
+   (xdoc::p
+    "We start preprocessing @('A.c').
+     The @('#include F.h') can be preserved,
+     because @('A.c') defines no macros before including @('F.h').
+     We get the same result for @('F.h')
+     whether we preprocess it from @('A.c') or stand-alone:")
+   (xdoc::codeblock
+    "+-F.h preprocessed from G.h----+"
+    "| ...F stuff preprocessed...   |"
+    "+------------------------------+"
+    ""
+    "+-F.h preprocessed stand-alone-+"
+    "| ...F stuff preprocessed...   |"
+    "+------------------------------+")
+   (xdoc::p
+    "As we move to the @('#include G.h'),
+     we preprocess @('G.h') in the context from @('A.c'),
+     which in particular has a definition for @('F'),
+     coming from the included @('A.h').
+     Thus, when we encounter the @('#include F.h') in @('G.h'),
+     and we preprocess @('F.h') in that context,
+     the result of preprocessing @('F.h') would be empty (i.e. no tokens):")
+   (xdoc::codeblock
+    "+-F.h preprocessed from G.h from A.c-+"
+    "|                                    |"
+    "+------------------------------------+")
+   (xdoc::p
+    "This differs from @('F.h') preprocessed stand-alone (see above),
+     and so we need to expand the @('#include F.h') in @('G.h'),
+     which amounts to removing the @('#include F.h') from @('g.h'):")
+   (xdoc::codeblock
+    "+-G.h preprocessed from A.c--+"
+    "| ...G stuff preprocessed... |"
+    "+----------------------------+")
+   (xdoc::p
+    "This is not bad so far,
+     but after we finish preprocessing @('G.h')
+     in the context of the including @('A.c'),
+     in order to decide whether we can preserve the @('#include G.h'),
+     we re-process @('G.h') with only the predefined macros,
+     and in particular without @('F') being defined, obtaining:")
+   (xdoc::codeblock
+    "+-G.h preprocessed stand-alone-+"
+    "| #include F.h                 |"
+    "| ...G stuff preprocessed...   |"
+    "+------------------------------+")
+   (xdoc::p
+    "Since the two results of preprocessing @('G.h') differ
+     (even assuming the the preprocessed @('G') stuff is the same),
+     we need to expand the @('#include G.h') in place, obtaining:")
+   (xdoc::codeblock
+    "+-A.c preprocessed-----------+"
+    "| #include F.h               |"
+    "| ...G stuff preprocessed... |"
+    "| ...A stuff preprocessed... |"
+    "+----------------------------+")
+   (xdoc::p
+    "This is correct, but unfortunate.
+     The only difference in the two preprocessing results of @('G.h')
+     is the presence vs. absence of @('#include F.h').
+     However, in the result where it is missing,
+     it would be harmless to leave,
+     because, in that context, @('F') is defined,
+     and thus @('#include F.h') would expand to nothing anyways.
+     The file inclusion pattern above is very common,
+     e.g. when @('F.h') and @('G.h') are library headers.")
+   (xdoc::p
+    "Thus, we treat files with header guards specially.
+     First, when we preprocess a file, we recognize whether
+     it has the header guard form, i.e. the form of @('F.h') and @('G.h') above.
+     Currently we only accept exactly the form with @('#ifndef ...'),
+     and not the equivalent @('#if !defined(...)'),
+     but we plan to extend this.
+     Thus, when an included file has the header guard form
+     and its header guard symbol is defined,
+     we leave its @('#include') in place:")
+   (xdoc::codeblock
+    "+-G.h preprocessed from A.c--+"
+    "| #include F.h               |"
+    "| ...G stuff preprocessed... |"
+    "+----------------------------+")
+   (xdoc::p
+    "This is now the same result as when preprocessing @('G.h') stand-alone,
+     and thus we can preserve @('#include G.h') in @('A.c'):")
+   (xdoc::codeblock
+    "+-A.c preprocessed-----------+"
+    "| #include F.h               |"
+    "| #include G.h               |"
+    "| ...A stuff preprocessed... |"
+    "+----------------------------+")
+   (xdoc::p
+    "However, if we leave the @('#include F.h') in @('G.h'),
+     we need to retain somehow the information about the fact that
+     @('F.h') should not duplicated.
+     If we were to fully preprocess the resulting files,
+     expanding all @('#include')s,
+     we would get two copies of the @('F') stuff in @('A.c').
+     Thus, we also need to preserve
+     the @('#ifndef') and @('#define') directives for the header guards:")
+   (xdoc::codeblock
+    "+-F.h preprocessed-----------+"
+    "| #ifndef F                  |"
+    "| #define F                  |"
+    "| ...F stuff preprocessed... |"
+    "| #endif                     |"
+    "+----------------------------+"
+    ""
+    "+-G.h preprocessed-------------+"
+    "| #ifndef G                    |"
+    "| #define G                    |"
+    "| #include F.h                 |"
+    "| ...G stuff preprocessed...   |"
+    "| #endif                     |"
+    "+------------------------------+"
+    ""
+    "+-A.c preprocessed-----------+"
+    "| #include F.h               |"
+    "| ...G stuff preprocessed... |"
+    "| ...A stuff preprocessed... |"
+    "+----------------------------+")
+   (xdoc::p
+    "This way, we preserve the information about
+     conditional inclusion with respect to the header guard symbols,
+     and their definitions.")
+   (xdoc::p
+    "In fact, nothing prevents the presence of @('#define')s
+     for the header guards outside the normal place,
+     i.e. not just after the @('#ifndef'),
+     but instead in any random place;
+     as well as the presence of random @('#undef')s for the same symbols.
+     This should only occur in contrived code,
+     but we need to handle things correctly in all possible cases.
+     Thus, in general we need to preserve information about
+     all the @('#define')s and @('#undef')s that may affect header guards.
+     We are not quite doing that yet, but we plan to.
+     We also need to extend our ASTs and @(see parser)
+     to accept these additional directives
+     (currently they only accept @('#include')s at the start of a file.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,12 +425,11 @@
     "This captures the result of preprocessing a @(see self-contained) file:
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
-     the macro definitions and undefinitions contributed by the file
-     (forming a macro scope),
+     the macro definitions and undefinitions contributed by the file,
      and an optional identifier that identifies a header guard
      (see @(tsee hg-state)) if the file has that structure."))
   ((lexemes plexeme-listp)
-   (macros macro-scope)
+   (macros ident-macro-info-option-alist)
    (header-guard? ident-option))
   :pred scfilep)
 
@@ -1659,8 +1815,9 @@
                   :found (plexeme-to-msg lexeme)))))
   :no-function nil
   :guard-simplify :limited ; to stop (:E IDENT)
-  :guard-hints (("Goal" :in-theory (e/d (alistp-when-macro-scopep-rewrite)
-                                        ((:e ident))))))
+  :guard-hints
+  (("Goal" :in-theory (e/d (alistp-when-ident-macro-info-alistp-rewrite)
+                           ((:e ident))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2732,8 +2889,8 @@
                                         :expected "an identifier or ~
                                                    a left parenthesis"
                                         :found (plexeme-to-msg token))))))
-                       ((mv info? &)
-                        (macro-lookup macro-name (ppstate->macros ppstate)))
+                       (info? (macro-lookup macro-name
+                                            (ppstate->macros ppstate)))
                        (lexeme (if info?
                                    (plexeme-number (pnumber-digit #\1))
                                  (plexeme-number (pnumber-digit #\0))))
@@ -2757,8 +2914,7 @@
                                  directivep
                                  ppstate
                                  (1- limit)))
-                 ((mv info &)
-                  (macro-lookup ident (ppstate->macros ppstate)))
+                 (info (macro-lookup ident (ppstate->macros ppstate)))
                  ((unless info)
                   (pproc-lexemes mode
                                  (cons lexmark rev-lexmarks)
@@ -3884,7 +4040,7 @@
                       (limit natp))
     :returns (mv erp
                  (file-rev-lexemes plexeme-listp)
-                 (file-macros macro-scopep)
+                 (file-macros ident-macro-info-option-alistp)
                  (file-header-guard? ident-optionp)
                  (new-preprocessed string-scfile-alistp)
                  state)
@@ -3921,23 +4077,10 @@
        ends with the end of the file,
        because we are at the top level,
        not inside a conditional directive.
-       If there are no errors, we return:
-       the lexemes of the file (in reverse order);
+       If there are no errors, we return
+       the lexemes of the file (in reverse order),
        the macros contributed by the file,
-       i.e. the ones from the innermost scope
-       of the final macro table after the file has been preprocessed;
-       and the maximum reach of the file.")
-     (xdoc::p
-      "However, before returning, we perform a consistency double-check.
-       If the file is self-contained
-       (i.e. its maximum reach is not positive),
-       we check whether the @('preprocessed') alist
-       already contains an entry for the file:
-       if it does, we ensure that the entry
-       is consistent with the obtained lexemes and macros.
-       We expect this check to be always satisfied,
-       and thus we throw hard error if it is not;
-       but we need to investigate this property further."))
+       and the header guard symbol (if the file has the header guard form)."))
     (b* (((reterr) nil nil nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -3989,7 +4132,7 @@
               (mv erp
                   groupend
                   file-rev-lexemes
-                  (car (macro-table->scopes file-macro-table))
+                  (macro-table->dynamic file-macro-table)
                   file-header-guard?
                   preprocessed
                   state))))
@@ -4525,23 +4668,15 @@
       "Otherwise, we call @(tsee pproc-file) to preprocess it.
        Whether the file is self-contained or not,
        we incorporate the returned macros into
-       the top scope of the macros of the current (i.e. including) file:
+       the macros of the current (i.e. including) file:
        even if the included file is self-contained,
        in order to preprocess the rest of the including file,
        we need to act as if we had expanded the included file in place,
        i.e. its macros must be available as if defined in the including file.")
      (xdoc::p
       "If the included file is not self-contained,
-       i.e. when its maximum macro lookup reach is positive,
        we need to expand the file in place.
-       We add its lexemes to the list of reversed lexemes.
-       We decrease the file's maximum reach by 1,
-       and we combine it with the current maximum reach for the including file,
-       to reflect the expansion in place:
-       e.g. if the included file has a maximum reach of 1,
-       it means that it accesses macros in the including file,
-       but when the contents of the included file are expanded in place,
-       the access has a reach of 0.")
+       We add its lexemes to the list of reversed lexemes.")
      (xdoc::p
       "If the included file is self-contained,
        we leave the @('#include') directive as is,
@@ -4616,22 +4751,15 @@
                        state)))))
          (preserve-include-p
           (or (and standalone-file-header-guard?
-                   (b* (((mv info? &)
-                         (macro-lookup standalone-file-header-guard?
-                                       (ppstate->macros ppstate))))
+                   (b* ((info? (macro-lookup standalone-file-header-guard?
+                                             (ppstate->macros ppstate))))
                      info?)
                    (or (plexeme-list-not-tokenp file-rev-lexemes)
                        (raise "Internal error: ~
                                header guard ~x0 is defined ~
                                but file has tokens ~x1."
                               standalone-file-header-guard?
-                              file-rev-lexemes))
-                   (or (not file-macros)
-                       (raise "Internal error: ~
-                               header guard ~x0 is defined ~
-                               but file has macros ~x1."
-                              standalone-file-header-guard?
-                              file-macros)))
+                              file-rev-lexemes)))
               (equal standalone-file-rev-lexemes file-rev-lexemes)))
          (ppstate (update-ppstate->macros
                    (macro-extend file-macros (ppstate->macros ppstate))
@@ -4764,8 +4892,7 @@
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "a new line"
                       :found (plexeme-to-msg ident?)))
-         ((mv info? &)
-          (macro-lookup ident (ppstate->macros ppstate)))
+         (info? (macro-lookup ident (ppstate->macros ppstate)))
          (condp (if ifdefp
                     (and info? t)
                   (not info?)))

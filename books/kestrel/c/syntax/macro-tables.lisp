@@ -44,28 +44,12 @@
     "This does not include the name, which we represent separately.")
    (xdoc::p
     "Both object-like and function-like macros have replacement lists,
-     which grammatically are sequences of zero or more preprocessing tokens.
-     Although white space and comments between such tokens
-     could be ignored if we always operated on tokens,
-     our "
-    (xdoc::seetopic "preprocessor-printer" "preprocessor printer")
-    " could print something incorrect without white space separation:
-     for instance, given")
-   (xdoc::codeblock
-    "#define M A B"
-    "M")
+     which grammatically are sequences of zero or more preprocessing tokens.")
    (xdoc::p
-    "should result in")
-   (xdoc::codeblock
-    "A B")
-   (xdoc::p
-    "and not in")
-   (xdoc::codeblock
-    "AB")
-   (xdoc::p
-    "Additionally, [C17:6.10.3/1] suggests that
+    "Since [C17:6.10.3/1] suggests that
      the notion of `identical replacement lists'
-     involves considerations of white space separation between tokens.")
+     involves considerations of white space separation between tokens,
+     we more generally use lexemes in replacement lists..")
    (xdoc::p
     "To facilitate comparisons with multiple definitions of the same macro
      [C17:6.10.3/1] [C17:6.10.3/2],
@@ -124,79 +108,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist macro-scope
-  :short "Fixtype of macro scopes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A file may define some macros, and then include another file.
-     When preprocessing the included file as @(see self-contained),
-     the included file may define its own macros,
-     while the macros defined in the including file are also in scope.
-     If the included file includes a further file,
-     which we also try prepreocessing as @(see self-contained),
-     the latter sees the macros of
-     the two (directly and indirectly) including files.
-     This leads to a natural stack-like structure
-     for keeping track of the macros in scope,
-     where each scope corresponds to a file.
-     [C17] does not have a notion of macro scopes,
-     but our preprocessor uses this notion to determine
-     when included files are @(see self-contained).")
-   (xdoc::p
-    "The values of this alist fixtype represent a macro scope.
-     The keys of the alist represent the names of the macros,
-     with the values of the alist representing the associated information.
-     The reason why we use an option type for the values of the alist
-     is that we use @('nil') to represent a macro undefinition,
-     i.e. the effect of a @('#undef') directive.
-     This may seem strange, but it motivated by the fact that,
-     when we encounter a @('#include') that does not need to be expanded,
-     we need to incorporate into the macro table of the including file
-     the effect of the macro definitions, and also undefinitions,
-     contributed by the included file.
-     This amounts to treating a macro undefinition
-     like a definition to be ``undefined''.")
-   (xdoc::p
-    "The names of the macros (keys of the alist)
-     are identifiers [C17:6.10.3/9] [C17:6.10.3/10].
-     These are not necessarily unique,
-     because a macro may be alternatively defined and undefined.
-     Multiple undefinitions without intervening definitions are harmless
-     [C17:6.10.3.5/2].
-     Multiple definitions without intervening undefinitions
-     are disallowed unless they are suitably equivalent [C17:6.10.3/2];
-     in practice, GCC allows redefinition within a file,
-     with the last definition overriding the previous one.
-     So our current structure with non-unique alist keys
-     is amenable to accommodate this GCC (and probably also Clang) relaxation.
-     Definitions and undefinitions are added with @(tsee acons),
-     and looked up with @(tsee assoc-equal),
-     so the latest one is always found."))
+(fty::defalist ident-macro-info-alist
+  :short "Fixtype of alists from identifiers to macro information."
+  :key-type ident
+  :val-type macro-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred ident-macro-info-alistp
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled macro-infop-of-cdr-of-assoc-equal-when-ident-macro-info-alistp
+    (implies (and (ident-macro-info-alistp macros)
+                  (assoc-equal name macros))
+             (macro-infop (cdr (assoc-equal name macros))))
+    :induct t
+    :enable ident-macro-info-alistp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist ident-macro-info-option-alist
+  :short "Fixtype of alists from identifiers to optional macro information."
   :key-type ident
   :val-type macro-info-option
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil t
-  :pred macro-scopep
+  :pred ident-macro-info-option-alistp
   :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defruled macro-info-optionp-of-cdr-of-assoc-equal-when-macro-scopep
-    (implies (macro-scopep scope)
-             (macro-info-optionp (cdr (assoc-equal name scope))))
+  (defruled
+    macro-info-optionp-of-cdr-of-assoc-equal-when-macro-info-option-alistp
+    (implies (ident-macro-info-option-alistp macros)
+             (macro-info-optionp (cdr (assoc-equal name macros))))
     :induct t
-    :enable macro-scopep))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist macro-scope-list
-  :short "Fixtype of lists of macro scopes."
-  :elt-type macro-scope
-  :true-listp t
-  :elementp-of-nil t
-  :pred macro-scope-listp)
+    :enable ident-macro-info-option-alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,38 +155,67 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(tsee macro-scope),
-     we organize macros in a stack of scopes,
-     i.e. a list of scopes corresponding to the files
-     being preprocessed as @(see self-contained),
-     the @(tsee car) being the innermost scope,
-     and the list being empty only before any file is being preprocessed.
-     We also have a separate scope of predefined macros [C17:6.10.8].")
+    "We represent the predefined macros [C17:6.10.8]
+     as an alist from their names to the information about them.
+     Some predefined macros, e.g. @('__LINE__') and @('__FILE__'),
+     are special in the sense that they do not have a fixed definition
+     [C17:6.10.8.1].
+     We represent them as having empty replacement list,
+     but handle their actual replacement specially in code.
+     The exact predefined macros depend on the version:
+     see @(tsee predefined-macros).
+     The predefined macros never change,
+     i.e. that component of the macro table stays constant.")
    (xdoc::p
-    "For the same reason we discuss in @(tsee macro-scope),
-     we do not enforce any constraint on keys in different scopes,
-     because we keep track of both definitions and undefinitions.
-     This can accommodate future extensions in which we may allow
-     overriding of definitions (without intervening undefinitions).")
+    "The alist of predefined macros has unique keys.
+     We enforce that with an invariant.")
    (xdoc::p
-    "The predefined macros can be viewed as being in an outermost scope.
-     Their names and definitions depend on the C version,
-     and should be initialized accordingly.
-     Many predefined macros are adequately modeled
-     with the same @(tsee macro-info) data as non-predefined ones.
-     A few predefined macros are special,
-     such as @('__LINE__') and @('__FILE__') [C17:6.10.10],
-     which do not have a fixed value:
-     these need to be recognized (by name)
-     and handled appropriately;
-     we model them as having empty replacement lists,
-     and include them in the predefined scope.")
+    "The second component of the macro table is dynamic:
+     it starts empty, and gets extended
+     every time a @('#define') or a @('#undef') is encountered.
+     While a @('#define') adds an entry with a @(tsee macro-info),
+     a @('#undef') adds an entry with @('nil'):
+     this is why we use an alist from names to optional macro information.
+     In essence, we treat a macro undefinition
+     like a definition to be ``undefined''.")
    (xdoc::p
-    "The scope of predefined macros only contains definitions, no undefinitions.
-     We could use a slightly tighter type for the scope of predefined macros."))
-  ((predefined macro-scope)
-   (scopes macro-scope-list))
-  :pred macro-tablep)
+    "It may seem strange to handle macro undefinition
+     by adding an entry with @('nil') to the dynamic alist,
+     instead of just removing the entry from the alist.
+     The reason is to facilitate the handling of
+     @('#include') directives that we do not expand.
+     When one such directive is encountered,
+     although it is not expanded in place,
+     we need to preprocess the rest of the including file
+     as if the included file were expanded,
+     and in particular its @('#define') and @('#undef').
+     Thus, we can simply append the macros contributed by the included file
+     to the front of the (dynamic) alist of the including file:
+     see @(tsee macro-extend).")
+   (xdoc::p
+    "The dynamic alist of macros does not necessarily have unique keys.
+     This is intentional,
+     because a macro may be alternatively defined and undefined.
+     Multiple undefinitions without intervening definitions are harmless
+     [C17:6.10.3.5/2].
+     Multiple definitions without intervening undefinitions
+     are disallowed unless they are suitably equivalent [C17:6.10.3/2];
+     in practice, GCC and Clang allow redefinition within a file,
+     with the last definition overriding the previous one.
+     So in the future we can (optionallY) accommodate this GCC/Clang extension,
+     simply by adding the new definition to the front of the alist.
+     Definitions and undefinitions are added with @(tsee acons),
+     and looked up with @(tsee assoc-equal),
+     so the latest one is always found."))
+  ((predefined ident-macro-info-alist
+               :reqfix (if (no-duplicatesp-equal (strip-cars predefined))
+                           predefined
+                         nil))
+   (dynamic ident-macro-info-option-alist))
+  :require (no-duplicatesp-equal (strip-cars predefined))
+  :pred macro-tablep
+  :prepwork
+  ((local (in-theory (enable alistp-when-ident-macro-info-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +227,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c17 ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C17 (without GCC or Clang extensions)."
   :long
   (xdoc::topstring
@@ -270,12 +249,17 @@
                            (pnumber-number-digit
                             (pnumber-digit
                              #\2) #\0) #\1) #\7) #\1) #\0) #\L))))))
-  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
+  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c17
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c23 ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C17 (without GCC or Clang extensions)."
   :long
   (xdoc::topstring
@@ -297,12 +281,17 @@
                            (pnumber-number-digit
                             (pnumber-digit
                              #\2) #\0) #\2) #\3) #\1) #\1) #\L))))))
-  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p))))
+  :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c23
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c17+gcc ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C17 with GCC extensions."
   :long
   (xdoc::topstring
@@ -310,12 +299,17 @@
     "This is work in progress:
      we start with a few macros,
      but we need to systematically add more."))
-  (predefined-macros-c17))
+  (predefined-macros-c17)
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c17+gcc
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c23+gcc ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C23 with GCC extensions."
   :long
   (xdoc::topstring
@@ -323,12 +317,17 @@
     "This is work in progress:
      we start with a few macros,
      but we need to systematically add more."))
-  (predefined-macros-c23))
+  (predefined-macros-c23)
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c23+gcc
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c17+clang ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C17 with Clang extensions."
   :long
   (xdoc::topstring
@@ -349,12 +348,17 @@
                        (list (plexeme-number (pnumber-digit #\4)))))
                 (cons (ident "__GNUC_MINOR__")
                       (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2))))))))
+                       (list (plexeme-number (pnumber-digit #\2)))))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c17+clang
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros-c23+clang ()
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for C23 with Clang extensions."
   :long
   (xdoc::topstring
@@ -375,12 +379,17 @@
                        (list (plexeme-number (pnumber-digit #\4)))))
                 (cons (ident "__GNUC_MINOR__")
                       (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2))))))))
+                       (list (plexeme-number (pnumber-digit #\2)))))))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros-c23+clang
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predefined-macros ((version c::versionp))
-  :returns (macros macro-scopep)
+  :returns (macros ident-macro-info-alistp)
   :short "Predefined macros for the given C version."
   :long
   (xdoc::topstring
@@ -395,57 +404,46 @@
    :c17+gcc (predefined-macros-c17+gcc)
    :c23+gcc (predefined-macros-c23+gcc)
    :c17+clang (predefined-macros-c17+clang)
-   :c23+clang (predefined-macros-c23+clang)))
+   :c23+clang (predefined-macros-c23+clang))
+
+  ///
+
+  (defret no-duplicatesp-equal-of-predefined-macros
+    (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define macro-lookup ((name identp) (table macro-tablep))
-  :returns (mv (info? macro-info-optionp)
-               (predefinedp booleanp))
+  :returns
+  (info?
+   macro-info-optionp
+   :hints
+   (("Goal"
+     :in-theory
+     (enable
+      macro-info-optionp
+      macro-infop-of-cdr-of-assoc-equal-when-ident-macro-info-alistp))))
   :short "Look up a macro in a macro table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We search from innermost to outermost scope,
-     and then the predefined scope if needed.
-     This lookup order matches GCC's behavior,
-     noted in @(tsee macro-scope) and @(tsee macro-table).")
-   (xdoc::p
-    "We return @('nil') if we find the macro name
-     in an alist with associated value @('nil'),
-     which means that the macro has been undefined via @('#undef');
-     see @(tsee macro-scope).
-     We also return @('nil') if the macro is not found in any alist.
-     Note that we need an explicit @('foundp') flag,
-     returned by the recursive function on scopes,
-     to signal whether a definition or an undefinition was found there.")
-   (xdoc::p
-    "We also return a flag saying whether the macro was found
-     in the predefined scope.
-     In this case, @('info?') is not @('nil')."))
-  (b* (((mv foundp info?)
-        (macro-lookup-in-scopes name (macro-table->scopes table)))
-       ((when foundp) (mv info? nil))
-       (name+info
-        (assoc-equal (ident-fix name) (macro-table->predefined table))))
-    (if name+info
-        (mv (cdr name+info) t)
-      (mv nil nil)))
-
-  :prepwork
-
-  ((local (in-theory (enable alistp-when-macro-scopep-rewrite)))
-
-   (define macro-lookup-in-scopes ((name identp)
-                                   (scopes macro-scope-listp))
-     :returns (mv (foundp booleanp)
-                  (info? macro-info-optionp))
-     :parents nil
-     (b* (((when (endp scopes)) (mv nil nil))
-          (scope (macro-scope-fix (car scopes)))
-          (name+info (assoc-equal (ident-fix name) scope))
-          ((when name+info) (mv t (cdr name+info))))
-       (macro-lookup-in-scopes name (cdr scopes))))))
+    "First we look in the dynamic alist,
+     returning @('nil') if we find an undefinition.
+     If we find no definition or undefinition in the dynamic alist,
+     we look in the predefined alist:
+     if we find it, we return the information,
+     otherwise @('nil').
+     Either way, @('nil') means that no definition,
+     possibly due to undefinition,
+     is found."))
+  (b* ((name+info? (assoc-equal (ident-fix name)
+                                (macro-table->dynamic table)))
+       ((when name+info?) (cdr name+info?)))
+    (cdr (assoc-equal (ident-fix name) (macro-table->predefined table))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
+                       alistp-when-ident-macro-info-option-alistp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,28 +453,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the table before we preprocess any file, so there are no scopes.
+    "This is the table before we preprocess any file,
+     so there are no macros int the dynamic alist.
      But we have the predefined macros."))
   (make-macro-table :predefined (predefined-macros version)
-                    :scopes nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-push ((table macro-tablep))
-  :returns (new-table macro-tablep)
-  :short "Push a scope onto the macro table."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used just before preprocessing a file.
-     We add a new empty scope for the new file."))
-  (change-macro-table table :scopes (cons nil (macro-table->scopes table)))
-
-  ///
-
-  (defret consp-of-scopes-of-macro-push
-    (consp (macro-table->scopes new-table))
-    :rule-classes :type-prescription))
+                    :dynamic nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,10 +467,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is added to the innermost scope,
-     because it is the scope of the file being currently preprocessed.")
+    "If the table already contains a predefined macro with the given name,
+     we give an error outright,
+     because [C:6.10.8/2] prohibits redefinition of predefined macros.
+     We may need to relax this check at some point,
+     based on the C version,
+     because GCC allows redefinition of predefined macros.")
    (xdoc::p
-    "If the table already contains a non-predefined macro with the given name,
+    "If the table already contains, in the dynamic alist,
+     a macro with the given name,
      that has not been undefined
      (i.e. looking up the macro name finds a definition),
      the associated information must be the same:
@@ -504,44 +490,32 @@
      We may need to relax this check at some point,
      based on the C version, because GCC allows redefinition.")
    (xdoc::p
-    "If the table already contains a predefined macro with the given name,
-     we give an error outright,
-     because [C:6.10.8/2] prohibits redefinition of predefined macros.
-     We may need to relax this check at some point,
-     based on the C version,
-     because GCC allows redefinition of predefined macros.")
-   (xdoc::p
     "If the above checks pass, we add the macro to the table,
-     at the beginning of the alist for the innermost scope.
-     This shadow any other undefinition and definition in that scope,
-     as well as in other scopes."))
+     at the beginning of the dynamic alist.
+     This shadows any other undefinition and definition."))
   (b* (((reterr) (irr-macro-table))
-       ((mv info? predefinedp) (macro-lookup name table))
+       ((macro-table table) table)
+       ((when (assoc-equal (ident-fix name) table.predefined))
+        (reterr (msg "Cannot re-define the predefined macro ~x0."
+                     (ident-fix name))))
+       (info? (cdr (assoc-equal (ident-fix name) table.dynamic)))
        ((erp &)
         (if info?
-            (if predefinedp
-                (reterr (msg "Redefinition of predefined macro ~x0."
-                             (ident-fix name)))
-              (if (equal info? (macro-info-fix info))
-                  (retok nil)
-                (reterr (msg "Duplicate macro ~x0 ~
-                              with incompatible definitions ~x1 and ~x2."
-                             (ident-fix name)
-                             (macro-info-fix info)
-                             info?))))
+            (if (equal info? (macro-info-fix info))
+                (retok nil)
+              (reterr (msg "Duplicate macro ~x0 ~
+                            with incompatible definitions ~x1 and ~x2."
+                           (ident-fix name)
+                           (macro-info-fix info)
+                           info?)))
           (retok nil)))
-       (scopes (macro-table->scopes table))
-       ((unless (consp scopes))
-        (raise "Internal error: no macro scopes.")
-        (reterr t))
-       (scope (car scopes))
-       (new-scope (acons (ident-fix name) (macro-info-fix info) scope))
-       (new-scopes (cons new-scope (cdr scopes)))
-       (new-table (change-macro-table table :scopes new-scopes)))
-    (retok new-table))
-  :guard-hints (("Goal" :in-theory (enable alistp-when-macro-scopep-rewrite
-                                           acons)))
-  :no-function nil)
+       (new-dynamic
+        (acons (ident-fix name) (macro-info-fix info) table.dynamic)))
+    (retok (change-macro-table table :dynamic new-dynamic)))
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
+                              alistp-when-ident-macro-info-option-alistp-rewrite
+                              acons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -551,7 +525,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We just add an undefinition to the innermost scope,
+    "We add an undefinition to the dynamic alist,
      at the start, so that subsequent lookups find this undefinition.")
    (xdoc::p
     "This has no effect on subsequent lookups
@@ -560,45 +534,38 @@
    (xdoc::p
     "[C17:6.10.8/2] prohibits the removal of a predefined macro.
      So we return an error if an attempt is made.
-     However, Clang allows that, so we may need to optionally relax this."))
+     However, GCC and Clang allows that,
+     so we may need to optionally relax this."))
   (b* (((reterr) (irr-macro-table))
        ((macro-table table) table)
        ((when (assoc-equal (ident-fix name) table.predefined))
         (reterr (msg "Cannot undefine the predefined macro ~x0."
                      (ident-fix name))))
-       (scope (car table.scopes))
-       (new-scope (acons (ident-fix name) nil scope))
-       (new-scopes (cons new-scope (cdr table.scopes)))
-       (new-table (change-macro-table table :scopes new-scopes)))
-    (retok new-table))
-  :guard-hints (("Goal" :in-theory (enable alistp-when-macro-scopep-rewrite
-                                           acons)))
-  :no-function nil)
+       (new-dynamic (acons (ident-fix name) nil table.dynamic)))
+    (retok (change-macro-table table :dynamic new-dynamic)))
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
+                              alistp-when-ident-macro-info-option-alistp-rewrite
+                              acons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-extend ((scope macro-scopep) (table macro-tablep))
+(define macro-extend ((macros ident-macro-info-option-alistp)
+                      (table macro-tablep))
   :returns (new-table macro-tablep)
-  :short "Extend the top scope of a macro table with another scope."
+  :short "Extend the macro table with some macro definitions and undefinitions."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used to incorporate,
      into the macro table of a file being preprocessed,
-     the macros contributed by a (@(see self-contained)) file
-     included by the former file.
-     When the included file is self-contained,
-     it is not expanded in place,
-     but we need to preprocess the rest of the including file
-     as if the included file were expanded in place,
-     in particular we must add the macro definitions that
-     the expanded included file would produce."))
-  (b* ((old-scopes (macro-table->scopes table))
-       ((unless (consp old-scopes))
-        (raise "Internal error: no scopes in macro table.")
-        (irr-macro-table))
-       (old-scope (car old-scopes))
-       (new-scope (append scope old-scope))
-       (new-scopes (cons new-scope (cdr old-scopes))))
-    (change-macro-table table :scopes new-scopes))
-  :no-function nil)
+     the macros contributed by a included file
+     whose @('#include') directive is not expanded in place.
+     Although the included file is not expanded in place,
+     we need to preprocess the rest of the including file
+     as if the included file were expanded in place:
+     in particular, we must add the macro definitions and undefinitions that
+     the expanded included file would contribute."))
+  (b* (((macro-table table) table)
+       (new-dynamic (append macros table.dynamic)))
+    (change-macro-table table :dynamic new-dynamic)))
