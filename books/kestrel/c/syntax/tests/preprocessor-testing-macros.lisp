@@ -51,7 +51,15 @@
 
 ; Check result of preprocessing against expectation.
 
-(defmacro test-preproc (files &key std gcc clang include-dirs expected)
+(defmacro test-preproc (files
+                        &key
+                        (base-dir '".")
+                        include-dirs
+                        full-expansion
+                        std
+                        gcc
+                        clang
+                        expected)
   `(assert!-stobj
     (b* ((version (if (or (not ,std)
                           (= ,std 17))
@@ -62,11 +70,17 @@
                           (,clang (c::version-c23+clang))
                           (t (c::version-c23)))))
          (files ,files)
-         (base-dir ".")
+         (base-dir ,base-dir)
          (include-dirs ,include-dirs)
+         (full-expansion ,full-expansion)
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state)
-          (pproc-files files base-dir include-dirs nil ienv state 1000000000)))
+         ((mv erp fileset state) (pproc-files files
+                                              base-dir
+                                              include-dirs
+                                              full-expansion
+                                              ienv
+                                              state
+                                              1000000000)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -79,19 +93,35 @@
 
 ; Specialization to one file.
 
-(defmacro test-preproc-1 (file expected &key std gcc clang include-dirs)
+(defmacro test-preproc-1 (file
+                          expected
+                          &key
+                          (base-dir '".")
+                          include-dirs
+                          full-expansion
+                          std
+                          gcc
+                          clang)
   `(test-preproc '(,file)
+                 :base-dir ,base-dir
+                 :include-dirs ,include-dirs
+                 :full-expansion ,full-expansion
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang
-                 :include-dirs ,include-dirs
                  :expected (fileset-of ,file ,expected)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Show result of preprocessing.
 
-(defmacro show-preproc (files &key std gcc clang include-dirs)
+(defmacro show-preproc (files &key
+                              (base-dir '".")
+                              include-dirs
+                              full-expansion
+                              std
+                              gcc
+                              clang)
   `(assert!-stobj
     (b* ((version (if (or (not ,std)
                           (= ,std 17))
@@ -101,11 +131,17 @@
                     (cond (,gcc (c::version-c23+gcc))
                           (,clang (c::version-c23+clang))
                           (t (c::version-c23)))))(files ,files)
-         (base-dir ".")
+         (base-dir ,base-dir)
          (include-dirs ,include-dirs)
+         (full-expansion ,full-expansion)
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state)
-          (pproc-files files base-dir include-dirs nil ienv state 1000000000))
+         ((mv erp fileset state) (pproc-files files
+                                              base-dir
+                                              include-dirs
+                                              full-expansion
+                                              ienv
+                                              state
+                                              1000000000))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
@@ -116,9 +152,18 @@
 
 ; Specialization to one file.
 
-(defmacro show-preproc-1 (file &key std gcc clang include-dirs)
+(defmacro show-preproc-1 (file
+                          &key
+                          (base-dir '".")
+                          include-dirs
+                          full-expansion
+                          std
+                          gcc
+                          clang)
   `(show-preproc '(,file)
+                 :base-dir ,base-dir
+                 :include-dirs ,include-dirs
+                 :full-expansion ,full-expansion
                  :std ,std
                  :gcc ,gcc
-                 :clang ,clang
-                 :include-dirs ,include-dirs))
+                 :clang ,clang))
