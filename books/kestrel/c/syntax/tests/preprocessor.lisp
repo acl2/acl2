@@ -448,3 +448,43 @@ z
                                     "#include \"g.c\"
 ")
               :base-dir "preproc-example3")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example4/f.c")
+; (depends-on "preproc-example4/g.c")
+; (depends-on "preproc-example4/h.c")
+; (depends-on "preproc-example4/i.c")
+; (depends-on "preproc-example4/j.c")
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "f.c"
+                                    "#ifndef F
+#define F
+x
+#endif
+"
+                                    "g.c"
+                                    "// #include \"f.c\" >>>>>>>>>>
+#ifndef F
+#define F
+y
+#endif
+// <<<<<<<<<< #include \"f.c\"
+z
+"
+                                    "h.c"
+                                    "#include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+#include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+"
+
+                                    "i.c"
+                                    "#include \"h.c\"
+"
+                                    "j.c"
+                                    "#include \"g.c\"
+")
+              :base-dir "preproc-example4")
