@@ -187,27 +187,7 @@
     "..."
     "#endif")
    (xdoc::p
-    "Thus, the first time @('FILE') is included via @('#include'),
-     @('FILE_H') is not defined, and the contents @('...') are included.
-     The successive times that @('FILE') is included via @('#include'),
-     @('FILE_H') is defined, and nothing is included.
-     Here `first time' and `successive times' refer to each translation unit:
-     multiple @('#include') for the same @('FILE') may occur
-     because of transitive inclusions with common ``ancestors''.")
-   (xdoc::p
-    "A file of this form should be regarded as self-contained,
-     provided that the @('...') part
-     does not access macros from including files.
-     However, in the absence of some special treatment,
-     it would only be considered self-contained the first time it is included,
-     but not the successive times it is included.")
-   (xdoc::p
-    "We realize this special treatment by
-     recognizing files of the form above during preprocessing,
-     and by preserving, in the preprocessed output file, the above directives;
-     we plan to extend our "
-    (xdoc::seetopic "abstract-syntax" "abstract syntax")
-    " to capture the information about that form.
+    "When we preprocess a file, we check whether it has that form.
      To recognize that form, we use a sort of finite state machine
      that we make part of @(tsee ppstate).
      Here we define the states of the state machine:")
@@ -332,7 +312,7 @@
       @('#error') and @('#warning') directives should be ignored,
       i.e. treated as no-ops.
       This flag is set when files are re-preprocessed
-      in a fresh context to check whether they are self-contained.")))
+      in a fresh context as explained in @(see preservable-inclusions).")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
