@@ -416,3 +416,35 @@ int x2 = 0;
 #include \"gincluder1.h\"
 ")
               :base-dir "preproc-example2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example3/f.c")
+; (depends-on "preproc-example3/g.c")
+; (depends-on "preproc-example3/h.c")
+; (depends-on "preproc-example3/i.c")
+; (depends-on "preproc-example3/j.c")
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "f.c"
+                                    "#ifndef F
+#define F
+x
+#endif
+"
+                                    "g.c"
+                                    "#include \"f.c\"
+z
+"
+                                    "h.c"
+                                    "#include \"f.c\"
+#include \"g.c\"
+"
+
+                                    "i.c"
+                                    "#include \"h.c\"
+"
+                                    "j.c"
+                                    "#include \"g.c\"
+")
+              :base-dir "preproc-example3")
