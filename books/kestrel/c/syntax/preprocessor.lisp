@@ -177,11 +177,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ppfile
-  :short "Fixtype of self-contained files."
+  :short "Fixtype of preprocessed files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This captures the result of preprocessing a self-contained file:
+    "This captures the result of preprocessing a file:
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
      the macro definitions and undefinitions contributed by the file,
@@ -195,31 +195,33 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-ppfile
-  :short "An irrelevant self-contained file."
+  :short "An irrelevant preprocessed file."
   :type ppfilep
   :body (ppfile nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defalist string-ppfile-alist
-  :short "Fixtype of alists from strings to self-contained files."
+  :short "Fixtype of alists from strings to preprocessed files."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use these alists to keep track of which files
-     have been already preprocessed and are self-contained.")
+     have been already preprocessed.
+     The alist is initially empty,
+     and eventually contains an entry for each file
+     whose path is specified as input to the preprocessor,
+     ad well as zero or more additional entries for
+     other files references in preserved @('#include')s
+     (see @(see preservable-inclusions)).")
    (xdoc::p
     "These alists always have unique keys, i.e. there are no shadowed pairs;
      this is not enforced in this fixtype.
      The keys are file paths,
      either absolute,
-     or relative to the base directory passed to the @(see preprocessor).")
-   (xdoc::p
-    "When all the files have been preprocessed,
-     this alist contains all the results from the preprocessing,
-     which is turned into a file set.
-     The non-self-contained files are not part of this alist,
-     because they have been expanded in place."))
+     or relative to the base directory passed to the @(see preprocessor).
+     The alist has the same keys as the file set returned by our preprocessor;
+     see @(tsee string-ppfile-alist-to-filepath-filedata-map)."))
   :key-type string
   :val-type ppfile
   :true-listp t
@@ -249,7 +251,7 @@
 (define string-ppfile-alist-to-filepath-filedata-map
   ((alist string-ppfile-alistp))
   :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to self-contained files
+  :short "Turn (1) an alist from string to preprocessed files
           into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
@@ -260,7 +262,8 @@
      The lists of lexemes are printed to bytes,
      obtaining the file datas.")
    (xdoc::p
-    "This is called on the alist at the end of the preprocessing."))
+    "This is called on the alist at the end of the preprocessing,
+     as explained in @(tsee string-ppfile-alist)."))
   (b* (((when (endp alist)) nil)
        ((cons string ppfile) (car (string-ppfile-alist-fix alist)))
        (bytes (plexemes-to-bytes (ppfile->lexemes ppfile)))
@@ -3621,8 +3624,8 @@
    (xdoc::p
     "This is called when, while preprocessing an including file,
      we find a @('#include') of a file (the included file)
-     that is not self-contained, and must therefore be expanded in place.
-     At the code, this just adds the lexemes of the included file
+     that must be expanded in place.
+     At the core, this just adds the lexemes of the included file
      to the list of lexemes of the including file.
      To facilitate inspection, we surround them by two line comments,
      indicating and delimiting the contents of the included file;
@@ -3685,12 +3688,12 @@
     (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
-      the (self-contained) files preprocessed so far.
-      This starts empty and eventually contains
-      all the self-contained preprocessed files,
-      including the files listed in the list @('files')
-      passed to @(tsee pproc-files)
-      (if there are no errors).")
+      the files preprocessed so far.
+      This starts empty and eventually (if there are no errors)
+      contains all the preprocessed files,
+      namely the files listed in the list @('files')
+      passed to @(tsee pproc-files),
+      as well as zero or more referenced in preserved @('#include')s.")
     (xdoc::li
      "All the functions take
       the list @('preprocessing') of the files being preprocessed.
@@ -3721,44 +3724,10 @@
      according to "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Implementation-limits.html"
                  "[CPPM:12.2]")
-    ". But fleshing out the termination argument takes a bit of extra work:
-     we cannot just use a lexicographic measure consisting of
+    ". So we could perhaps use a lexicographic measure consisting of
      the number of recursive files remaining
-     followed by the size of the preprocessing state,
-     because the latter increases
-     when included files are not self-contained and must be expanded in place
-     as well as when macros are expanded.
-     There should still be a way in which things get suitably smaller.
-     In particular, to handle the expansion in place of included files,
-     we could probably make a lexicographic measure consisting of
-     the number of recursive files remaining
-     followed by the list of sizes of the byte lists
-     in the array in the @('bytess') component of @(tsee ppstate),
-     in the same order,
-     so that adding a list of bytes to the array at index @('i+1')
-     weighs less than having removed a non-zero number of bytes
-     from the list in the array at index @('i'),
-     namely the bytes that form the @('#include') directive.
-     But we also need to consider the sizes of the unread lexmarks,
-     which may get larger when macros are expanded.
-     Macro expansion is bounded in the C preprocessor,
-     to prevent recursive expansion,
-     so perhaps one could include, in the measure,
-     some indication of which macros have been already expanded.
-     All of this is not straightforward,
-     and may require explicating invariants about the preprocessing state
-     and perhaps other inputs of the functions in the clique.
-     So for now we use a simpler approach,
-     i.e. an artificial limit on the number of recursive calls in the clique:
-     each function first checks whether 0 is reached,
-     and if not it calls other functions with the limit reduced by one;
-     the limit is then just the measure.
-     This is the same approach as in our dynamic semantics of C,
-     but it is a necessity there,
-     because there is no reason why the execution of C code should terminate.
-     For the preprocessor, we should be able to do better,
-     by just using a limit on the number of files recursively preprocessed,
-     but we defer this to later, since it is not critical for now.")
+     followed by the size of the preprocessing state.
+     We plan to flesh out the termination proof at some point.")
    (xdoc::p
     "These functions handle the state machine described in @(tsee hg-state),
      via the @('hg-trans-...') functions defined on the preprocessor state.")
@@ -4400,35 +4369,22 @@
      (xdoc::p
       "We resolve the header name to a file.")
      (xdoc::p
-      "Before attempting to preprocess the file,
-       we check whether it is in the @('preprocessed') alist
-       and it has a header guard that is currently defined.
-       This means that the inclusion results in ``nothing''
-       (i.e. no tokens from the file are included),
-       and thus it is safe to keep the @('#include') directive as is.")
+      "We preprocess the file, in the context of the including file.")
      (xdoc::p
-      "Otherwise, we call @(tsee pproc-file) to preprocess it.
-       Whether the file is self-contained or not,
-       we incorporate the returned macros into
-       the macros of the current (i.e. including) file:
-       even if the included file is self-contained,
-       in order to preprocess the rest of the including file,
-       we need to act as if we had expanded the included file in place,
-       i.e. its macros must be available as if defined in the including file.")
+      "To see whether we can avoid expanding the @('#include'),
+       we re-preprocess the included file in a fresh context,
+       unless we have already done that,
+       in which case we use the previous results,
+       which are part of the @('preprocessed') alist;
+       after re-processing the file afresh,
+       we add it to the @('preprocessed') alist.")
      (xdoc::p
-      "If the included file is not self-contained,
-       we need to expand the file in place.
-       We add its lexemes to the list of reversed lexemes.")
-     (xdoc::p
-      "If the included file is self-contained,
-       we leave the @('#include') directive as is,
-       along with all its comments and white space.
-       The maximum reach of the including file is left unchanged.
-       Unless the @('preprocessed') alist already has an entry for the file,
-       we add the file to the alist;
-       recall that @(tsee pproc-file) double-checks that,
-       if there is already an entry,
-       it is identical to the new one that we would otherwise add."))
+      "There are two cases in which we can preserve the @('#include').
+       The normal case is when we obtain identical results
+       when we preprocess the included file in context vs. stand-alone.
+       The special case is when the file has a header guard structure,
+       and the header guard is defined in the context of the including file:
+       see @(see preservable-inclusions)."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4850,26 +4806,27 @@
      for @('#include') directives with angle brackets.")
    (xdoc::p
     "The elements of @('files') are preprocessed in order.
-     Each file is read from the file system
-     and preprocessed via @(tsee pproc-file).
-     Since the starting macro table is empty in these calls,
-     @(tsee pproc-file) can only return self-contained files,
-     but we double-check it here, throwing a hard error if the check fails.
-     If the @('preprocessed') alist does not already have an entry for the file,
-     we extend the alist with the file;
-     recall that @(tsee pproc-file) ensures that
-     the new entry is consistent with the old one.")
+     Each file is read from the file system,
+     preprocessed via @(tsee pproc-file),
+     and added to the @('preprocessed') alist.
+     It is possible for a file in @('files')
+     to @('#include') another file in @('files'),
+     which, as explained in @(see preservable-inclusions),
+     causes the second file to be re-processed afresh
+     to see whether the @('#include') can be preserved.
+     If this happens before the loop below considers the second file,
+     the file will be already in the @('preprocessed') alist,
+     so it does not need to be added.
+     Note that the resulting @(tsee ppfile) cannot differ,
+     because all the files in @('files'), in the loop below,
+     are preprocessed afresh, i.e. with only the predefined macros.")
    (xdoc::p
     "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.")
    (xdoc::p
     "The result of this function is a file set,
-     whose paths are generally a superset of the input ones:
-     the files specified by @('files') may include, directly or indirectly,
-     files whose paths are not in @('files'), e.g. files from the C library.
-     The resulting file set is ``closed'' with respect to @('#include'):
-     the self-contained ones are in the file set,
-     and the non-self-contained ones have been expanded.")
+     whose paths are generally a superset of the input ones,
+     as already explained in @(see preprocessor).")
    (xdoc::p
     "The recursion limit is discussed in @(tsee pproc-files/groups/etc).
      It seems best to let the user set this limit (outside this function),
