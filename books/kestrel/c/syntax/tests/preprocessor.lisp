@@ -14,6 +14,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Single-file tests.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; (depends-on "preproc-examples/empty.c")
 
 (test-preproc-1 "empty.c"
@@ -70,28 +74,6 @@ void f(double y) {
     /*#*/
 "
                 :base-dir "preproc-examples")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; (depends-on "preproc-example1/including.c")
-; (depends-on "preproc-example1/included.h")
-; (depends-on "preproc-example1/subdir/included2.h")
-
-(test-preproc '("including.c")
-              :expected (fileset-of "including.c"
-                                    "#include \"included.h\"
-/* comment
-   on two lines */ #include \"subdir/included2.h\"
-#include \"included.h\" // comment
-   #include \"included.h\"
-"
-                                    "included.h"
-                                    "#include \"subdir/included2.h\"
-"
-                                    "subdir/included2.h"
-                                    "/*#*/ // null directive
-")
-              :base-dir "preproc-example1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,13 +268,41 @@ M_is_defined
 "
                 :base-dir "preproc-examples")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Multi-file tests.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "gincluder1.c")
-; (depends-on "gincluder2.c")
-; (depends-on "gincluder1.h")
-; (depends-on "gincluder2.h")
-; (depends-on "guarded.h")
+; (depends-on "preproc-example1/including.c")
+; (depends-on "preproc-example1/included.h")
+; (depends-on "preproc-example1/subdir/included2.h")
+
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "#include \"included.h\"
+/* comment
+   on two lines */ #include \"subdir/included2.h\"
+#include \"included.h\" // comment
+   #include \"included.h\"
+"
+                                    "included.h"
+                                    "#include \"subdir/included2.h\"
+"
+                                    "subdir/included2.h"
+                                    "/*#*/ // null directive
+")
+              :base-dir "preproc-example1")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example2/gincluder1.c")
+; (depends-on "preproc-example2/gincluder2.c")
+; (depends-on "preproc-example2/gincluder1.h")
+; (depends-on "preproc-example2/gincluder2.h")
+; (depends-on "preproc-example2/guarded.h")
+; (depends-on "preproc-example2/gincludermod1.c")
+; (depends-on "preproc-example2/gincludermod2.c")
 
 ; In this test:
 ; - gincluder1.c includes gincluder1.h and gincluder2.h in that order
@@ -330,17 +340,10 @@ int x2 = 0;
 #define GUARDED
 void f() {}
 #endif
-"))
+")
+              :base-dir "preproc-example2")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; (depends-on "gincludermod1.c")
-; (depends-on "gincludermod2.c")
-; (depends-on "gincluder1.c")
-; (depends-on "gincluder2.c")
-; (depends-on "gincluder1.h")
-; (depends-on "gincluder2.h")
-; (depends-on "guarded.h")
+;;;;;;;;;;;;;;;;;;;;
 
 ; This is a variant of the previous test in which we have two additional files,
 ; gincludermod1.c and gincludermod2.c,
@@ -411,4 +414,5 @@ void f2() {}
 int x2 = 0;
 // <<<<<<<<<< #include \"gincluder2.h\"
 #include \"gincluder1.h\"
-"))
+")
+              :base-dir "preproc-example2")
