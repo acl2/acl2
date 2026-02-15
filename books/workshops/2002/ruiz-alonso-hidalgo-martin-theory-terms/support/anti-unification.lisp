@@ -206,9 +206,9 @@
 ;;; (pre-anti-unify-aux flg t1 t2 phi) computes a glb of t1 and t2,
 ;;; whenever it exists.
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 2.2.1 Assumptions on phi
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 ;;; The following function defines the properties we are going to
 ;;; assume about an injection phi: it has to be an association such that
@@ -232,9 +232,9 @@
 
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 2.2.2 pre-anti-unify-aux computes a generalization of t1 and t2
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 ;;; We have to prove something like:
 ;  (let* ((glb (pre-anti-unify-aux flg t1 t2 phi))
@@ -449,10 +449,10 @@
 	     (equal (apply-subst flg sigma (first glb)) t2)))))
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 2.2.3 pre-anti-unify-aux computes the least common generalization of
 ;;; t1 and t2
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 ;;; This means, using completeness, that we have to construct, given an
 ;;; lower bound of t1 and t2, term, a matching substitution for term and

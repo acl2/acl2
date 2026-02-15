@@ -1,6 +1,6 @@
 ;; ============================================================================
 ;;; q-dag-unification.lisp
-;;; TÌtulo: A quadratic dag based unification algorithm
+;;; T√≠tulo: A quadratic dag based unification algorithm
 ;;; ============================================================================
 
 #| To certify this book:
@@ -20,7 +20,7 @@
 
 ;;;============================================================================
 ;;;
-;;; 0) IntroducciÛn
+;;; 0) Introducci√≥n
 ;;;
 ;;;============================================================================
 
@@ -356,7 +356,7 @@
 		      (term-dag-non-variable-p (cdr (first requations))
 					       g)
 		      (not (term-dag-is-p (car (first requations)) g))
-;;; la anterior condiciÛn es redundante, pero necesaria para la guarda
+;;; la anterior condici√≥n es redundante, pero necesaria para la guarda
 		      (term-dag-variable-p (car (first requations)) g)
 		      (equation-justify-equality
 		       (car rargs1) (car rargs2)
@@ -419,8 +419,8 @@
 	 (idc (first id-equ)))
     (and
      (equal idc 'id)
-     (let* ((id1 (second id-equ)) ;;; Este let* est· aquÌ por la
-				  ;;; verificaciÛn de guardas
+     (let* ((id1 (second id-equ)) ;;; Este let* est√° aqu√≠ por la
+				  ;;; verificaci√≥n de guardas
 	    (id2 (third id-equ))
 	    (p1 (dagi-l id1 g))
 	    (p2 (dagi-l id2 g)))

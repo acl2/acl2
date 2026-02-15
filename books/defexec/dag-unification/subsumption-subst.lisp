@@ -26,15 +26,15 @@
 ;;; Our goal is to define the subsumption relation between
 ;;; substitutions. In the literature, this relation is defined in this
 ;;; way:
-;;;     sigma <= delta iff (exists gamma) gamma·sigma = delta
-;;; where "·" stands for composition.
+;;;     sigma <= delta iff (exists gamma) gammaÂ·sigma = delta
+;;; where "Â·" stands for composition.
 
 ;;; Note that equality between substitutions is functional equality (we cannot
 ;;; use equal), so we reformulate this property as:
 
 ;;; (*) sigma <= delta iff (exists gamma)
 ;;;                        s.t. for all term
-;;;                        gamma·sigma(term) = delta(term)
+;;;                        gammaÂ·sigma(term) = delta(term)
 
 
 ;;; Our goal in this book is to define the subsumption relation between
@@ -285,9 +285,9 @@
 ;;; if (subs-sust sigma delta)
 ;;; WE DISTINGUISH THREE CASES.
 
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 ;;; 3.1.1 Case 1: x is a variable outside V
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 
@@ -303,14 +303,14 @@
    :hints (("Goal" :in-theory (enable x-not-in-domain-remains-the-same)))))
 
 
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 ;;; 3.1.2. Case 2: x is a variable of (domain-var sigma)
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 ;;; 3.1.2.1 A lemma for this case 2:
 ;;; subs-subst composed with sigma is equal to delta in V.
-;;; ······················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (encapsulate
@@ -373,7 +373,7 @@
 (local (in-theory (disable subs-subst matching-subst)))
 
 ;;; 3.1.2.2 Another lemma for case 2:
-;;; ·······························
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defthm variables-co-domain-var
@@ -383,7 +383,7 @@
 
 
 ;;; 3.1.2.3 The main result for Case 2
-;;; ································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defthm
@@ -396,14 +396,14 @@
 		   (val x delta)))))
 
 
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 ;;; 3.1.3. Case 3: x in V but not in (domain-var sigma)
-;;; ············································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 ;;; 3.1.3.1 A lemma for Case 3
 ;;; In this case, matching and matching-subst-r take the same values.
-;;; ·································································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defthm
@@ -472,7 +472,7 @@
 
 
 ;;; With terms and list of terms (not only with variables)
-;;; ······················································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (local
  (defthm
@@ -512,7 +512,7 @@
 ;;; following version will be used as a rewrite rule.
 
 ;;; With terms but without using composition
-;;; ········································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 (defthm
   subs-subst-implies-matching-subst-r-appplied-to-sigma-term-is-delta-term
@@ -526,7 +526,7 @@
 
 
 ;;; With respect to subsumption between terms
-;;; ·········································
+;;; Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·Â·
 
 
 ;;; Trivial consequence of completeness of subsumption and the previous
@@ -563,7 +563,7 @@
 ;;; existence of two substitutions, called sigma-w and delta-w and the
 ;;; only property we will assume about them is that sigma-w <=
 ;;; delta-w. That is, exists another substitution gamma-w such that
-;;; delta-w = gamma-w·sigma-w.
+;;; delta-w = gamma-wÂ·sigma-w.
 
 ;;; We will use encapsulate for that purpose. Let sigma-w, delta-w and
 ;;; gamma-w three susbtitutions such that delta-w is functionally equal

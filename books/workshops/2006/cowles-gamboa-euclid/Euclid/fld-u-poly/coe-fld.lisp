@@ -42,22 +42,22 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; DescripciÃ³n:
 ;;;
 ;;; Anillo abeliano de coeficientes. El conjunto de los coeficientes
 ;;; se representa como un anillo abeliano abstracto mediante un
-;;; encapsulado. El conjunto de los números de ACL2 con su
-;;; interpretación habitual sirve como modelo de la teoría generada.
+;;; encapsulado. El conjunto de los nÃºmeros de ACL2 con su
+;;; interpretaciÃ³n habitual sirve como modelo de la teorÃ­a generada.
 ;;;
 ;;; Notas generales:
 ;;;
-;;; Puede ser interesante comparar esta formalización con la que
-;;; aparece en los libros sobre aritmética de Kaufmann, Brock y
+;;; Puede ser interesante comparar esta formalizaciÃ³n con la que
+;;; aparece en los libros sobre aritmÃ©tica de Kaufmann, Brock y
 ;;; Cowles.
 ;;;
 ;;; Se han incluido algunos teoremas que se deducen inmediatamente de
-;;; otros por aplicación directa de la conmutatividad. Estos teoremas
-;;; son innecesarios desde un punto de vista lógico, pero evitan el
+;;; otros por aplicaciÃ³n directa de la conmutatividad. Estos teoremas
+;;; son innecesarios desde un punto de vista lÃ³gico, pero evitan el
 ;;; abuso de la conmutatividad.
 ;;; ------------------------------------------------------------------
 #|
@@ -140,21 +140,21 @@ To certify this book, first, create a world with the following package:
 	  fdp (a)
 	  (acl2-numberp a)))
 
-  ;;; Primera operación
+  ;;; Primera operaciÃ³n
 
  (local
   (defun + (a b)
 ;   (declare (xargs :guard (and (coeficientep a) (coeficientep b))))
     (ACL2::+ a b)))
 
-  ;;; Segunda operación
+  ;;; Segunda operaciÃ³n
 
  (local
   (defun * (a b)
 ;   (declare (xargs :guard (and (coeficientep a) (coeficientep b))))
     (ACL2::* a b)))
 
-  ;;; Inverso de la primera operación
+  ;;; Inverso de la primera operaciÃ³n
 
  (local
   (defun - (a)
@@ -166,7 +166,7 @@ To certify this book, first, create a world with the following package:
 ;   (declare (xargs :guard (coeficientep a)))
     (ACL2::/ a)))
 
-  ;;; Neutro de la primera operación
+  ;;; Neutro de la primera operaciÃ³n
 
 ;;   (local
 ;;     (defun nulo ()
@@ -175,7 +175,7 @@ To certify this book, first, create a world with the following package:
  (local (defun 0_f ()
 	  0))
 
-  ;;; Neutro de la segunda operación
+  ;;; Neutro de la segunda operaciÃ³n
 
 ;;   (local
 ;;     (defun identidad ()
@@ -184,7 +184,7 @@ To certify this book, first, create a world with the following package:
  (local (defun 1_f ()
 	  1))
 
-  ;;; Igualdad sintáctica
+  ;;; Igualdad sintÃ¡ctica
 
 ;;   (defmacro = (a b)
 ;;     `(equal ,a ,b))
@@ -200,7 +200,7 @@ To certify this book, first, create a world with the following package:
   ;;; -------
   ;;; Field Axioms:
 
- ;;; El reconocedor es una función booleana
+ ;;; El reconocedor es una funciÃ³n booleana
 
 ;;   (defthm booleanp-coeficientep
 ;;     (booleanp (coeficientep a))
@@ -463,7 +463,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Congruence-Laws)))
 
-  ;;; Conmutatividad de la primera operación
+  ;;; Conmutatividad de la primera operaciÃ³n
 
 ;;   (defthm |a + b = b + a|
 ;;     (implies (and (coeficientep a) (coeficientep b))
@@ -476,7 +476,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Commutativity-Laws)))
 
-  ;;; Asociatividad de la primera operación
+  ;;; Asociatividad de la primera operaciÃ³n
 
 ;;   (defthm |(a + b) + c = a + (b + c)|
 ;;     (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -490,7 +490,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Associativity-Laws)))
 
-  ;;; Neutro de la primera operación
+  ;;; Neutro de la primera operaciÃ³n
 
 ;;   (defthm |0 + a = a|
 ;;     (implies (coeficientep a)
@@ -502,7 +502,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Left-Unicity-Laws)))
 
-  ;;; Conmutatividad de la segunda operación
+  ;;; Conmutatividad de la segunda operaciÃ³n
 
 ;;   (defthm |a * b = b * a|
 ;;     (implies (and (coeficientep a) (coeficientep b))
@@ -515,7 +515,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Commutativity-Laws)))
 
-  ;;; Asociatividad de la segunda operación
+  ;;; Asociatividad de la segunda operaciÃ³n
 
 ;;   (defthm |(a * b) * c = a * (b * c)|
 ;;      (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -529,7 +529,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Associativity-Laws)))
 
-  ;;; Neutro de la segunda operación
+  ;;; Neutro de la segunda operaciÃ³n
 
 ;;   (defthm |1 * a = a|
 ;;     (implies (coeficientep a)
@@ -541,7 +541,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Left-Unicity-Laws)))
 
-  ;;; Inverso de la primera operación
+  ;;; Inverso de la primera operaciÃ³n
 
 ;;   (defthm |a + (- a) = 0|
 ;;     (implies (coeficientep a)
@@ -560,7 +560,7 @@ To certify this book, first, create a world with the following package:
   :hints (("Goal"
 	   :use Right-Inverse-Laws)))
 
-  ;;; Distributividad de la segunda operación respecto a la primera
+  ;;; Distributividad de la segunda operaciÃ³n respecto a la primera
 
 ;;   (defthm |a * (b + c) = (a * b) + (a * c)|
 ;;     (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -575,7 +575,7 @@ To certify this book, first, create a world with the following package:
 	   :use Left-Distributivity-Law)))
 
 ;;; -----------------------------------------------------------------------
-;;; El inverso debe ser invisible para la primera operación y para sí mismo
+;;; El inverso debe ser invisible para la primera operaciÃ³n y para sÃ­ mismo
 ;;; -----------------------------------------------------------------------
 
 ;; (ACL2::set-invisible-fns-table ((+ -) (- -)))
@@ -642,7 +642,7 @@ To certify this book, first, create a world with the following package:
 		(fdp (double-rewrite c)))
 	   (= (* (+ a b) c) (+ (* a c) (* b c)))))
 
-;;; Teorema de cancelación
+;;; Teorema de cancelaciÃ³n
 
 ;; (defthm |a + c = b + c <=> a = b|
 ;;   (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -666,8 +666,8 @@ To certify this book, first, create a world with the following package:
 
 ;;; NOTA:
 ;;;
-;;; Estos teoremas son innecesarios desde un punto de vista lógico
-;;; pero son útiles en las subsecuentes demostraciones.
+;;; Estos teoremas son innecesarios desde un punto de vista lÃ³gico
+;;; pero son Ãºtiles en las subsecuentes demostraciones.
 
 ;; (local
 ;;   (defthm |a + b = b <=> a = 0|
@@ -701,16 +701,16 @@ To certify this book, first, create a world with the following package:
 	     :in-theory (disable |a + c = b + c <=> a = b|)
 	     :use (:instance |a + c = b + c <=> a = b| (a b) (b (- a)) (c a))))))
 
-;;; Complemento a la conmutatividad y la asociatividad de la primera operación
+;;; Complemento a la conmutatividad y la asociatividad de la primera operaciÃ³n
 
 ;;; NOTA:
 ;;;
-;;; Dada una operación, las reglas generadas por este teorema y los
+;;; Dada una operaciÃ³n, las reglas generadas por este teorema y los
 ;;; axiomas de conmutatividad y asociatividad permiten decidir una
-;;; igualdad de dos términos en los que sólo intervienen símbolos sin
-;;; interpretación y dicha operación. Esto se debe a que ACL2 emplea
-;;; un sistema de reescritura ordenada. Véase «Ordered Rewriting and
-;;; Confluence», por Martin y Nipkow.
+;;; igualdad de dos tÃ©rminos en los que sÃ³lo intervienen sÃ­mbolos sin
+;;; interpretaciÃ³n y dicha operaciÃ³n. Esto se debe a que ACL2 emplea
+;;; un sistema de reescritura ordenada. VÃ©ase Â«Ordered Rewriting and
+;;; ConfluenceÂ», por Martin y Nipkow.
 
 ;; (defthm |a + (b + c) = b + (a + c)|
 ;;   (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -730,11 +730,11 @@ To certify this book, first, create a world with the following package:
 	   :use (|(a + b) + c = a + (b + c)|
 		 (:instance |(a + b) + c = a + (b + c)| (a b) (b a))))))
 
-;;; Complemento a la conmutatividad y la asociatividad de la segunda operación
+;;; Complemento a la conmutatividad y la asociatividad de la segunda operaciÃ³n
 
 ;;; NOTA:
 ;;;
-;;; Se aplican comentarios análogos a los del caso anterior.
+;;; Se aplican comentarios anÃ¡logos a los del caso anterior.
 
 ;; (defthm |a * (b * c) = b * (a * c)|
 ;;   (implies (and (coeficientep a) (coeficientep b) (coeficientep c))
@@ -770,7 +770,7 @@ To certify this book, first, create a world with the following package:
 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 	   :use (:instance |a + b = 0 <=> b = - a| (a (- a)) (b a)))))
 
-;;; Distributividad de la inversa sobre la primera operación
+;;; Distributividad de la inversa sobre la primera operaciÃ³n
 
 ;; (defthm |- (a + b) = (- a) + (- b)|
 ;;   (implies (and (coeficientep a) (coeficientep b))
@@ -788,7 +788,7 @@ To certify this book, first, create a world with the following package:
 	   :use (:instance |a + b = 0 <=> b = - a|
 			   (a (+ a b)) (b (+ (- a) (- b)))))))
 
-;;; Inverso del neutro de la primera operación
+;;; Inverso del neutro de la primera operaciÃ³n
 
 ;; (defthm |- 0 = 0|
 ;;   (= (- (nulo)) (nulo))
@@ -802,7 +802,7 @@ To certify this book, first, create a world with the following package:
 	   :in-theory (disable |a + b = 0 <=> b = - a|)
 	   :use (:instance |a + b = 0 <=> b = - a| (a (0_f)) (b (0_f))))))
 
-;;; Generalización de |a + (- a) = 0|
+;;; GeneralizaciÃ³n de |a + (- a) = 0|
 
 ;; (defthm |a + ((- a) + b) = b|
 ;;   (implies (and (coeficientep a) (coeficientep b))
@@ -828,7 +828,7 @@ To certify this book, first, create a world with the following package:
 		(fdp (double-rewrite b)))
 	   (= (+ a (+ b (- a))) b)))
 
-;;; Elemento cancelador de la segunda operación
+;;; Elemento cancelador de la segunda operaciÃ³n
 
 ;; (defthm |0 * a = 0|
 ;;   (implies (coeficientep a)
@@ -857,7 +857,7 @@ To certify this book, first, create a world with the following package:
   (implies (fdp (double-rewrite a))
 	   (= (* a (0_f)) (0_f))))
 
-;;; Extracción del inverso
+;;; ExtracciÃ³n del inverso
 
 ;; (defthm |a * (- b) = - (a * b)|
 ;;   (implies (and (coeficientep a) (coeficientep b))
@@ -885,7 +885,7 @@ To certify this book, first, create a world with the following package:
 		(fdp (double-rewrite b)))
 	   (= (* (- a) b) (- (* a b)))))
 
-;;; Generalización de |- 0 = 0|
+;;; GeneralizaciÃ³n de |- 0 = 0|
 
 ;; (defthm |- a = 0 <=> a = 0|
 ;;   (implies (coeficientep a)
@@ -1027,10 +1027,10 @@ To certify this book, first, create a world with the following package:
 ;;; NOTA:
 ;;;
 ;;; El lado izquierdo puede aparecer por varias razones, sin
-;;; descartar una aplicación de |- (a + b) = (- a) + (- b)| en un
+;;; descartar una aplicaciÃ³n de |- (a + b) = (- a) + (- b)| en un
 ;;; contexto en el que aparece |- (a + b) = c| y posteriormente se
-;;; establece que |c = 0|. Esto podría evitarse postponiendo la
-;;; definición de dicha regla.
+;;; establece que |c = 0|. Esto podrÃ­a evitarse postponiendo la
+;;; definiciÃ³n de dicha regla.
 
 ;; (defthm |(- a) + (- b) = 0 <=> a + b = 0|
 ;;   (implies (and (coeficientep a) (coeficientep b))
@@ -1049,7 +1049,7 @@ To certify this book, first, create a world with the following package:
 
 ;;; NOTA:
 ;;;
-;;; En un anillo el recíproco no es, en general, cierto.
+;;; En un anillo el recÃ­proco no es, en general, cierto.
 
 ;; (defthm |b + c = 0 => (a * b) + (a * c) = 0|
 ;;   (implies (and (coeficientep a) (coeficientep b) (coeficientep c)
