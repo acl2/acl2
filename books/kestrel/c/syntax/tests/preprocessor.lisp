@@ -14,24 +14,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "empty.c")
+; (depends-on "preproc-examples/empty.c")
 
-(test-preproc-1 "empty.c" "")
+(test-preproc-1 "empty.c"
+                ""
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "whitespace.c")
+; (depends-on "preproc-examples/whitespace.c")
 
 (test-preproc-1 "whitespace.c"
                 (list 10
                       32 32 32 10 ; SP SP SP
                       9 10 ; HT
                       11 10 ; VT
-                      12 10)) ; FF
+                      12 10) ; FF
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "comments.c")
+; (depends-on "preproc-examples/comments.c")
 
 (test-preproc-1 "comments.c"
                 "/* block
@@ -39,11 +42,12 @@
  */
 
 // line comment
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "text.c")
+; (depends-on "preproc-examples/text.c")
 
 (test-preproc-1 "text.c"
                 "int x = 0;
@@ -51,11 +55,12 @@
 void f(double y) {
   y = 0.1;
 }
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "null-directive.c")
+; (depends-on "preproc-examples/null-directive.c")
 
 (test-preproc-1 "null-directive.c"
                 "/*#*/
@@ -63,13 +68,14 @@ void f(double y) {
 /*#*/ // comment
 /* comment */ /*#*/ // comment
     /*#*/
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "including.c")
-; (depends-on "included.h")
-; (depends-on "subdir/included2.h")
+; (depends-on "preproc-example1/including.c")
+; (depends-on "preproc-example1/included.h")
+; (depends-on "preproc-example1/subdir/included2.h")
 
 (test-preproc '("including.c")
               :expected (fileset-of "including.c"
@@ -84,11 +90,12 @@ void f(double y) {
 "
                                     "subdir/included2.h"
                                     "/*#*/ // null directive
-"))
+")
+              :base-dir "preproc-example1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "macros.c")
+; (depends-on "preproc-examples/macros.c")
 
 (test-preproc-1 "macros.c"
                 "
@@ -136,11 +143,12 @@ int z6 = (1, (a,b));
 ((f(x,y))*(g(w)),);
 ((1)*(2),3);
 ((1)*(2),3, 4);
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "stringize.c")
+; (depends-on "preproc-examples/stringize.c")
 
 (test-preproc-1 "stringize.c"
                 "
@@ -155,11 +163,12 @@ int z6 = (1, (a,b));
 \"U'a'\";
 \"u'a'\";
 \"\\\"abc\\\"\";
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "concatenate.c")
+; (depends-on "preproc-examples/concatenate.c")
 
 (test-preproc-1 "concatenate.c"
                 "
@@ -167,41 +176,48 @@ a b cd e;
 x334;
 6e+8P-;
 >>=;
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example-6.10.3.3.c")
+; (depends-on "preproc-examples/c17-std-example-6.10.3.3.c")
 
-(test-preproc-1 "c17-std-example-6.10.3.3.c" "")
+(test-preproc-1 "c17-std-example-6.10.3.3.c"
+                ""
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example-6.10.3.4.c")
+; (depends-on "preproc-examples/c17-std-example-6.10.3.4.c")
 
 (test-preproc-1 "c17-std-example-6.10.3.4.c"
                 "
 2*9*g
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example1-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example1-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
 int table[100];
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example2-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example2-6.10.3.5.c")
 
-(test-preproc-1 "c17-std-example2-6.10.3.5.c" "")
+(test-preproc-1 "c17-std-example2-6.10.3.5.c"
+                ""
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example3-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example3-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
@@ -209,11 +225,12 @@ f(2 * (y+1)) + f(2 * (f(2 * (z[0])))) % f(2 * (0)) + t(1);
 f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
 int i[] = { 1, 23, 4, 5,  };
 char c[2][6] = { \"hello\", \"\" };
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example4-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example4-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
@@ -222,27 +239,31 @@ fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
 include \"vers2.h\" // omit # in #include to avoid access
 \"hello\";
 \"hello\" \", world\"
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example5-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example5-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
                 "
 int j[] = { 123, 45, 67, 89,
            10, 11, 12,  };
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example6-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example6-6.10.3.5.c")
 
-(test-preproc-1 "c17-std-example6-6.10.3.5.c" "")
+(test-preproc-1 "c17-std-example6-6.10.3.5.c"
+                ""
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "c17-std-example7-6.10.3.5.c")
+; (depends-on "preproc-examples/c17-std-example7-6.10.3.5.c")
 
 (test-preproc-1 "c17-std-example7-6.10.3.5.c"
                 "
@@ -250,18 +271,20 @@ fprintf(stderr, \"Flag\");
 fprintf(stderr, \"X = %d\\n\", x);
 puts(\"The first, second, and third items.\");
 ((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; (depends-on "conditional.c")
+; (depends-on "preproc-examples/conditional.c")
 
 (test-preproc-1 "conditional.c"
                 "M_is_not_defined
 
 
 M_is_defined
-")
+"
+                :base-dir "preproc-examples")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
