@@ -249,7 +249,7 @@
     "| #define G                    |"
     "| #include F.h                 |"
     "| ...G stuff preprocessed...   |"
-    "| #endif                     |"
+    "| #endif                       |"
     "+------------------------------+"
     ""
     "+-A.c preprocessed-----------+"
