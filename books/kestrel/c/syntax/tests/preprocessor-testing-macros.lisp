@@ -72,12 +72,12 @@
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
-         (full-expansion ,full-expansion)
+         (options (make-ppoptions :full-expansion ,full-expansion))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (pproc-files files
                                               base-dir
                                               include-dirs
-                                              full-expansion
+                                              options
                                               ienv
                                               state
                                               1000000000)))
@@ -133,12 +133,12 @@
                           (t (c::version-c23)))))(files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
-         (full-expansion ,full-expansion)
+         (options (make-ppoptions :full-expansion ,full-expansion))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (pproc-files files
                                               base-dir
                                               include-dirs
-                                              full-expansion
+                                              options
                                               ienv
                                               state
                                               1000000000))

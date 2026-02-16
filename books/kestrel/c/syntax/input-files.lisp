@@ -543,7 +543,7 @@
                (pproc-files files
                             base-dir
                             include-dirs
-                            nil ; full-expansion
+                            (make-ppoptions :full-expansion nil)
                             ienv
                             state
                             1000000000))
