@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -45,3 +46,10 @@
      in order for the preservation of the @('#include')s to work)."))
   ((full-expansion bool))
   :pred ppoptionsp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-ppoptions
+  :short "Irrelevant preprocessor options."
+  :type ppoptionsp
+  :body (ppoptions nil))
