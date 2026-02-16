@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; Prune irrelevant if-then-else branches in terms and DAGs using rewriting and calls to STP.
+;; Prunes irrelevant if-then-else branches in terms and DAGs using rewriting and calls to STP.
+;; This uses rewriter-basic.
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
@@ -22,7 +23,7 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "rule-alists")
 (include-book "count-branches")
-(include-book "rewriter-basic") ;because we call simplify-term-basic
+(include-book "rewriter-basic") ; for simplify-term-basic
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -30,8 +31,6 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
-
-;(in-theory (disable table-alist)) ;why?
 
 (local (in-theory (disable symbol-listp
                            ;; subsetp-car-member ; bad?
@@ -93,6 +92,7 @@
       (if (quotep (farg1 assumption))
           (list assumption)
         (if (quotep (farg2 assumption))
+            ;; todo: why rebuild?
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
           (prog2$ (and (print-level-at-least-briefp print)
                        (cw "(Note: Dropping equality assumption ~x0.)~%" assumption))
@@ -113,6 +113,7 @@
                               (print-levelp print))))
   (if (endp assumptions)
       nil
+    ;; just use append?
     (union-equal (fixup-assumption (first assumptions) print)
                  (fixup-assumptions (rest assumptions) print))))
 
@@ -174,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; We name this to try to avoid case splits in later guard proofs
+;; We name this to try to avoid case splits in later guard proofs.
 (defund call-stp-optionp (call-stp)
   (declare (xargs :guard t))
   (or (booleanp call-stp)
@@ -205,7 +206,7 @@
        ;; TODO: Consider first doing something faster than a DAG-producing
        ;; rewrite, such as evaluating ground terms, using assumptions, and
        ;; applying rules that don't expand the term size too much.
-       ;; TODO: Skip this if the test is known to already be simplified, but if we are calling this we may be usig precise contexts for the first time (perhaps combine pruning and dag-to-term?).
+       ;; TODO: Skip this if the test is known to already be simplified, but if we are calling this we may be using precise contexts for the first time (perhaps combine pruning and dag-to-term?).
        ;; TODO: Can we skip this if there are no rules (well, there may be assumptions mentioning subterms of the test).  We could add a rewritep option.
        ((mv erp simplified-dag-or-quotep &) ; use the hits?
         (simplify-term-basic test
@@ -574,7 +575,6 @@
     :skip-others t
     :hints (("Goal" :in-theory (enable prune-terms-aux)))))
 
-;; todo: slow
 (local
   (defthm-flag-prune-term-aux
     (defthm prune-term-aux-return-type
@@ -597,9 +597,14 @@
                                                              rule-alist interpreted-function-alist
                                                              monitored-rules call-stp no-warn-ground-functions print state))))
       :flag prune-terms-aux)
-    :hints (("Goal" :in-theory (e/d (prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
-                                    (;pseudo-term-listp quotep
-                                     ))))))
+    :hints (("Goal"
+             ;; this :expand hint is much faster than an enable:
+             :expand ((prune-term-aux term assumptions equality-assumptions
+                                             rule-alist interpreted-function-alist
+                                             monitored-rules call-stp
+                                             no-warn-ground-functions print state))
+             :in-theory (e/d (prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
+                             (pseudo-term-listp quotep))))))
 
 (verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
 
