@@ -294,6 +294,30 @@ M_is_defined
 ")
               :base-dir "preproc-example1")
 
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+/*#*/ // null directive
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+// #include \"subdir/included2.h\" >>>>>>>>>>
+/*#*/ // null directive
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+/*#*/ // null directive
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+/*#*/ // null directive
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+")
+              :base-dir "preproc-example1"
+              :full-expansion t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example2/gincluder1.c")
@@ -343,10 +367,54 @@ void f() {}
 ")
               :base-dir "preproc-example2")
 
+; This is the same test but with full expansion.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+")
+              :base-dir "preproc-example2"
+              :full-expansion t)
+
 ;;;;;;;;;;;;;;;;;;;;
 
-; This is a variant of the previous test in which we have two additional files,
-; gincludermod1.c and gincludermod2.c,
+; This is a variant of the previous test in which
+; instead of gincluder1.c and gincluder2.c,
+; we have gincludermod1.c and gincludermod2.c,
 ; which "modify" f by #define'ing it to be f1 and f2 respectively.
 ; Thus:
 ; - guarded.h and gincluder1.h are expanded in gincludermod1.c,
@@ -354,38 +422,9 @@ void f() {}
 ; - guarded.h and gincluder2.h are expanded in gincludermod2.c,
 ;   but not ginluder1.h
 
-(test-preproc '("gincluder1.c"
-                "gincluder2.c"
-                "gincludermod1.c"
+(test-preproc '("gincludermod1.c"
                 "gincludermod2.c")
-              :expected (fileset-of "gincluder1.c"
-                                    "
-#include \"gincluder1.h\"
-#include \"gincluder2.h\"
-"
-                                    "gincluder2.c"
-                                    "
-#include \"gincluder2.h\"
-#include \"gincluder1.h\"
-"
-                                    "gincluder1.h"
-                                    "
-#include \"guarded.h\"
-int x1 = 0;
-"
-                                    "gincluder2.h"
-                                    "
-#include \"guarded.h\"
-int x2 = 0;
-"
-                                    "guarded.h"
-                                    "
-#ifndef GUARDED
-#define GUARDED
-void f() {}
-#endif
-"
-                                    "gincludermod1.c"
+              :expected (fileset-of "gincludermod1.c"
                                     "
 // #include \"gincluder1.h\" >>>>>>>>>>
 
@@ -414,8 +453,68 @@ void f2() {}
 int x2 = 0;
 // <<<<<<<<<< #include \"gincluder2.h\"
 #include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED
+void f() {}
+#endif
 ")
               :base-dir "preproc-example2")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f1() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f2() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+")
+              :base-dir "preproc-example2"
+              :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,6 +547,32 @@ z
                                     "#include \"g.c\"
 ")
               :base-dir "preproc-example3")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "i.c"
+                                    "// #include \"h.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+// <<<<<<<<<< #include \"h.c\"
+"
+                                    "j.c"
+                                    "// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+")
+              :base-dir "preproc-example3"
+              :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,6 +614,32 @@ z
 ")
               :base-dir "preproc-example4")
 
+; This is the same test but with full expansion.
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "i.c"
+                                    "// #include \"h.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+// <<<<<<<<<< #include \"h.c\"
+"
+                                    "j.c"
+                                    "// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+y
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+")
+              :base-dir "preproc-example4"
+              :full-expansion t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example5/a.c")
@@ -511,3 +662,19 @@ int a;
 void f();
 ")
               :base-dir "preproc-example5")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("b.c")
+              :expected (fileset-of "b.c"
+                                    "// #include \"a.c\" >>>>>>>>>>
+int a;
+// <<<<<<<<<< #include \"a.c\"
+// #include \"c.c\" >>>>>>>>>>
+// #include \"a.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"a.c\"
+void f();
+// <<<<<<<<<< #include \"c.c\"
+")
+              :base-dir "preproc-example5"
+              :full-expansion t)
