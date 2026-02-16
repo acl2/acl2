@@ -128,20 +128,15 @@ instruction has two encodings, A1 and A2.  We assign these separate mnemonics:"
          corresponds to an instruction whose description in the ARM manual
          makes reference to another instruction.")
 
-"The full list of encodings is:
-
-@(def *patterns*)."
+    "See @(see arm32-encodings) for the full list of encodings."
 
     (xdoc::h4 "Decoding Instructions")
 
     "Given formalized encoding diagrams for each instruction, our @('make-decoder')
       tool automatically generates a decoder.  The decoder takes a 4-byte value
       and determines which ARM instruction (if any) is represented. The
-      function it generates is @('arm32-decode'):
-
-@(def arm32-decode)
-
-     "
+      function it generates is @('arm32-decode').  See @(see arm32-decoder) for the
+      full body of that function."
 
     (xdoc::h4 "Instruction Semantic Functions")
 
@@ -208,10 +203,9 @@ boilerplate code inserted by @('def-inst') does the following:"
     (xdoc::h4 "Step and Run Functions")
 
     "Our machinery automatically generates a dispatch function, @('execute-inst')
-that, according to the instruction mnemonic, dispatches control to the
-corresponding semantic function:
-
-@(def execute-inst)
+ that, according to the instruction mnemonic, dispatches control to the
+ corresponding semantic function. See @(see arm32-dispatch) for the full body of
+ @('execute-inst').
 
 Our model includes a function, @('step') to fetch, decode, and execute a single instruction:
 
@@ -227,3 +221,31 @@ and a function, @('run') to run a given number of instructions:
     ))
 
 ;; todo: link to axe/arm
+
+(acl2::defxdoc arm32-encodings
+  :short "ARM32 instruction encodings."
+  :parents (arm32)
+  :long
+  (xdoc::topparas
+    "The full list of encodings of supported instructions (used to generate the decoder) is:
+
+     @(def *patterns*)."))
+
+(acl2::defxdoc arm32-decoder
+  :short "ARM32 instruction decoding function."
+  :parents (arm32)
+  :long
+  (xdoc::topparas
+    "The generated decoder function is:
+
+     @(def arm32-decode)."))
+
+(acl2::defxdoc arm32-dispatch
+  :short "ARM32 instruction dispatch function."
+  :parents (arm32)
+  :long
+  (xdoc::topparas
+    "The generated instruction dispatch function is:
+
+     @(def execute-inst).
+     "))
