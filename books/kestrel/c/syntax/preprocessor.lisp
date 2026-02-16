@@ -4446,7 +4446,10 @@
                       state
                       (1- limit)))
          ((when full-expansion)
-          (b* ((ppstate (expand-include-in-place header
+          (b* ((ppstate (update-ppstate->macros
+                         (macro-extend file-macros (ppstate->macros ppstate))
+                         ppstate))
+               (ppstate (expand-include-in-place header
                                                  newline-at-end
                                                  file-rev-lexemes
                                                  ppstate)))
