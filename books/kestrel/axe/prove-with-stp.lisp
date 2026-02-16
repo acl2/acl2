@@ -1551,6 +1551,7 @@
                                 (variablep arg1)
                               (and (variablep arg1)
                                    (variablep arg2)))))))))
+        ;; TODO: What if it's some other known-boolean (could be mentioned in an BVIF or something)?:
         (otherwise nil)))))
 
 ;; Keeps terms that may possibly be useful for SMT.
