@@ -3802,7 +3802,12 @@
        If there are no errors, we return
        the lexemes of the file (in reverse order),
        the macros contributed by the file,
-       and the header guard symbol (if the file has the header guard form)."))
+       and the header guard symbol (if the file has the header guard form).")
+     (xdoc::p
+      "If full expansion is required,
+       we set the header guard state to @(':not'),
+       because for full expansion we do not need
+       to recognize the header guard form."))
     (b* (((reterr) nil nil nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -3829,6 +3834,9 @@
                      state)
                 (b* ((ppstate
                       (init-ppstate bytes macros ignore-err/warn ienv ppstate))
+                     (ppstate (if full-expansion
+                                  (update-ppstate->hg (hg-state-not) ppstate)
+                                ppstate))
                      ((mv erp
                           groupend
                           ppstate
