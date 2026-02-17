@@ -49,6 +49,16 @@
 "
                 :base-dir "preproc-examples")
 
+; This is the same test but dropping comments.
+
+(test-preproc-1 "comments.c"
+                "
+
+
+"
+                :base-dir "preproc-examples"
+                :keep-comments nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-examples/text.c")
@@ -74,6 +84,17 @@ void f(double y) {
     /*#*/
 "
                 :base-dir "preproc-examples")
+
+; This is the same test but dropping comments.
+
+(test-preproc-1 "null-directive.c"
+                (list 10
+                      32 10 ; SP
+                      32 10 ; SP
+                      32 32 10 ; SP SP
+                      32 32 32 32 10) ; SP SP SP SP
+                :base-dir "preproc-examples"
+                :keep-comments nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
