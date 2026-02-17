@@ -46,7 +46,6 @@
 (include-book "kestrel/x86/zmm" :dir :system)
 (include-book "rule-lists")
 ;(include-book "kestrel/x86/run-until-return" :dir :system)
-;(include-book "kestrel/x86/run-until-return4" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system) ; why?
 (include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (include-book "../rules-in-rule-lists")
