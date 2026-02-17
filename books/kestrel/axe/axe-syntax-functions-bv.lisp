@@ -721,11 +721,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund-inline darg-quotep (darg)
-  (declare (xargs :guard (dargp darg)))
-  (consp darg) ;; means that it is a quotep, not a nodenum
-  )
-
 ;; Returns the path to ADDEND in a nest of bvplus calls (all with WIDTH as the
 ;; size argument) rooted at DARG, or :none.  A path is a list of :l's and :r's
 ;; indicating whether to go into the left or right subtree of a bvplus node.
