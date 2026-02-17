@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
 (include-book "macro-tables")
 (include-book "preprocessor-states")
@@ -49,6 +50,7 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
+     an unless an option for full expansion is selected by the user,
      preserves preprocessing constructs particularly @('#include') directives,
      under conditions that should be often satisfied in practical code.
      That is, instead of expanding @('#include') directives in place,
@@ -60,11 +62,6 @@
      making it difficult to preserve code structure in general
      (in those cases, our preprocessor expands the included files in place,
      like typical preprocessors).")
-   (xdoc::p
-    "Our preprocessor also provides the option
-     to not preserve preprocessing constructs,
-     expanding all the preprocessing constructs,
-     like typical C preprocessors.")
    (xdoc::p
     "The correctness criterior for the preservation of preprocessing constructs
      is that the full preprocessing expansion of the original files
@@ -165,7 +162,8 @@
      but we are planning to implement a more general that should always work,
      by avoiding markers altogether,
      instead attaching ``provenance'' information to certain tokens."))
-  :order-subtopics (preprocessor-lexemes
+  :order-subtopics (preprocessor-options
+                    preprocessor-lexemes
                     macro-tables
                     preprocessor-states
                     preprocessor-messages
@@ -3691,11 +3689,6 @@
       The @('file') path comes from the list @('files') in @(tsee pproc-files),
       as well as from the resolution of @('#include') directives.")
     (xdoc::li
-     "All the functions take as input a flag @('full-expansion')
-      saying whether all preprocessing constructs should be expanded,
-      i.e. not preserved.
-      This flag comes from @(tsee pproc-files).")
-    (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
       the files preprocessed so far.
@@ -3753,7 +3746,7 @@
                       (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (full-expansion booleanp)
+                      (options ppoptionsp)
                       (preprocessed string-ppfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
@@ -3802,7 +3795,12 @@
        If there are no errors, we return
        the lexemes of the file (in reverse order),
        the macros contributed by the file,
-       and the header guard symbol (if the file has the header guard form)."))
+       and the header guard symbol (if the file has the header guard form).")
+     (xdoc::p
+      "If full expansion is required,
+       we set the header guard state to @(':not'),
+       because for full expansion we do not need
+       to recognize the header guard form."))
     (b* (((reterr) nil nil nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -3827,8 +3825,15 @@
                      ppstate
                      preprocessed
                      state)
-                (b* ((ppstate
-                      (init-ppstate bytes macros ignore-err/warn ienv ppstate))
+                (b* ((ppstate (init-ppstate bytes
+                                            macros
+                                            ignore-err/warn
+                                            options
+                                            ienv
+                                            ppstate))
+                     (ppstate (if (ppoptions->full-expansion options)
+                                  (update-ppstate->hg (hg-state-not) ppstate)
+                                ppstate))
                      ((mv erp
                           groupend
                           ppstate
@@ -3837,7 +3842,6 @@
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
-                                          full-expansion
                                           preprocessed
                                           preprocessing
                                           0 ; cond-level
@@ -3881,7 +3885,6 @@
   (define pproc-*-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (full-expansion booleanp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -3912,7 +3915,6 @@
           (pproc-?-group-part file
                               base-dir
                               include-dirs
-                              full-expansion
                               preprocessed
                               preprocessing
                               cond-level
@@ -3924,7 +3926,6 @@
       (pproc-*-group-part file
                           base-dir
                           include-dirs
-                          full-expansion
                           preprocessed
                           preprocessing
                           cond-level
@@ -3938,7 +3939,6 @@
   (define pproc-?-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (full-expansion booleanp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -4087,7 +4087,6 @@
                       (pproc-if file
                                 base-dir
                                 include-dirs
-                                full-expansion
                                 preprocessed
                                 preprocessing
                                 (1+ (lnfix cond-level))
@@ -4104,7 +4103,6 @@
                                           file
                                           base-dir
                                           include-dirs
-                                          full-expansion
                                           preprocessed
                                           preprocessing
                                           (1+ (lnfix cond-level))
@@ -4121,7 +4119,6 @@
                                           file
                                           base-dir
                                           include-dirs
-                                          full-expansion
                                           preprocessed
                                           preprocessing
                                           (1+ (lnfix cond-level))
@@ -4139,7 +4136,6 @@
                                      file
                                      base-dir
                                      include-dirs
-                                     full-expansion
                                      preprocessed
                                      preprocessing
                                      ppstate
@@ -4233,7 +4229,6 @@
                          (file stringp)
                          (base-dir stringp)
                          (include-dirs string-listp)
-                         (full-expansion booleanp)
                          (preprocessed string-ppfile-alistp)
                          (preprocessing string-listp)
                          (ppstate ppstatep)
@@ -4318,7 +4313,6 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 full-expansion
                                  preprocessed
                                  preprocessing
                                  ppstate
@@ -4355,7 +4349,6 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 full-expansion
                                  preprocessed
                                  preprocessing
                                  ppstate
@@ -4376,7 +4369,6 @@
                              (file stringp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (full-expansion booleanp)
                              (preprocessed string-ppfile-alistp)
                              (preprocessing string-listp)
                              (ppstate ppstatep)
@@ -4410,7 +4402,7 @@
        and the header guard is defined in the context of the including file:
        see @(see preservable-inclusions).")
      (xdoc::p
-      "However, if the @('full-expansion') flag is @('t'),
+      "However, if the options indicate full expansion,
        we do not re-preprocess the file,
        and we always expand it in place."))
     (b* ((ppstate (ppstate-fix ppstate))
@@ -4420,6 +4412,7 @@
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
          (ienv (ppstate->ienv ppstate))
+         (options (ppstate->options ppstate))
          ((erp file-rev-lexemes
                file-macros
                & ; file-header-guard?
@@ -4429,7 +4422,7 @@
                       resolved-file
                       base-dir
                       include-dirs
-                      full-expansion
+                      options
                       preprocessed
                       preprocessing
                       (ppstate->macros ppstate)
@@ -4437,8 +4430,11 @@
                       ienv
                       state
                       (1- limit)))
-         ((when full-expansion)
-          (b* ((ppstate (expand-include-in-place header
+         ((when (ppoptions->full-expansion options))
+          (b* ((ppstate (update-ppstate->macros
+                         (macro-extend file-macros (ppstate->macros ppstate))
+                         ppstate))
+               (ppstate (expand-include-in-place header
                                                  newline-at-end
                                                  file-rev-lexemes
                                                  ppstate)))
@@ -4466,7 +4462,7 @@
                                 resolved-file
                                 base-dir
                                 include-dirs
-                                nil ; full-expansion
+                                options
                                 preprocessed
                                 preprocessing
                                 (macro-init (ienv->version ienv))
@@ -4519,7 +4515,6 @@
   (define pproc-if ((file stringp)
                     (base-dir stringp)
                     (include-dirs string-listp)
-                    (full-expansion booleanp)
                     (preprocessed string-ppfile-alistp)
                     (preprocessing string-listp)
                     (cond-level natp)
@@ -4559,7 +4554,6 @@
                                   file
                                   base-dir
                                   include-dirs
-                                  full-expansion
                                   preprocessed
                                   preprocessing
                                   cond-level
@@ -4574,7 +4568,6 @@
                               (file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (full-expansion booleanp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -4638,7 +4631,6 @@
                                   file
                                   base-dir
                                   include-dirs
-                                  full-expansion
                                   preprocessed
                                   preprocessing
                                   cond-level
@@ -4655,7 +4647,6 @@
                                       (file stringp)
                                       (base-dir stringp)
                                       (include-dirs string-listp)
-                                      (full-expansion booleanp)
                                       (preprocessed string-ppfile-alistp)
                                       (preprocessing string-listp)
                                       (cond-level natp)
@@ -4730,7 +4721,6 @@
                 (pproc-*-group-part file
                                     base-dir
                                     include-dirs
-                                    full-expansion
                                     preprocessed
                                     preprocessing
                                     cond-level
@@ -4757,7 +4747,6 @@
                                            file
                                            base-dir
                                            include-dirs
-                                           full-expansion
                                            preprocessed
                                            preprocessing
                                            cond-level
@@ -4777,7 +4766,6 @@
                          (pproc-*-group-part file
                                              base-dir
                                              include-dirs
-                                             full-expansion
                                              preprocessed
                                              preprocessing
                                              cond-level
@@ -4834,7 +4822,7 @@
 (define pproc-files ((files string-listp)
                      (base-dir stringp)
                      (include-dirs string-listp)
-                     (full-expansion booleanp)
+                     (options ppoptionsp)
                      (ienv ienvp)
                      state
                      (recursion-limit natp))
@@ -4881,7 +4869,7 @@
         (pproc-files-loop files
                           base-dir
                           include-dirs
-                          full-expansion
+                          options
                           nil ; preprocessed
                           nil ; preprocessing
                           ienv
@@ -4896,7 +4884,7 @@
   ((define pproc-files-loop ((files string-listp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (full-expansion booleanp)
+                             (options ppoptionsp)
                              (preprocessed string-ppfile-alistp)
                              (preprocessing string-listp)
                              (ienv ienvp)
@@ -4922,7 +4910,7 @@
                        (car files)
                        base-dir
                        include-dirs
-                       full-expansion
+                       options
                        preprocessed
                        preprocessing
                        (macro-init (ienv->version ienv))
@@ -4941,7 +4929,7 @@
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
-                         full-expansion
+                         options
                          preprocessed
                          preprocessing
                          ienv

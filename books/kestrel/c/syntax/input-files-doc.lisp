@@ -53,15 +53,16 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files           ...  ; required, no default"
-     "             :base-dir        ...  ; default \".\""
-     "             :preprocess      ...  ; default nil"
-     "             :preprocess-args ...  ; default nil"
-     "             :include-dirs    ...  ; default nil"
-     "             :process         ...  ; default :validate"
-     "             :const           ...  ; required, no default"
-     "             :keep-going      ...  ; default nil"
-     "             :ienv            ...  ; default (ienv-default)"
+     "(input-files :files              ...  ; required, no default"
+     "             :base-dir           ...  ; default \".\""
+     "             :preprocess         ...  ; default nil"
+     "             :preprocess-args    ...  ; default nil"
+     "             :preprocess-options ...  ; default nil"
+     "             :include-dirs       ...  ; default nil"
+     "             :process            ...  ; default :validate"
+     "             :const              ...  ; required, no default"
+     "             :keep-going         ...  ; default nil"
+     "             :ienv               ...  ; default (ienv-default)"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,6 +177,43 @@
        an omap from strings to string lists;
        the behavior is the same under either interpretation:
        only the @('-E') and @('-std=') arguments are provided for each file."))
+
+    (xdoc::desc
+     "@(':preprocess-options') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies options for the preprocessor provided by this ACL2 library.
+       This must be @('nil') unless @(':preprocess') is @(':internal').")
+     (xdoc::p
+      "This must be a "
+      (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+      " @('(opt-name1 opt-value1 opt-name2 opt-value2 ...)')
+       where each @('opt-namek') is a keyword among the ones described below,
+       and each @('opt-valuek') is one of the allowed values
+       for the corresponding keyword as described below.")
+     (xdoc::p
+      "The following preprocessor options are supported:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':full-expansion t/nil'),
+        where @('t/nil') is either @('t') or @('nil'),
+        and whose default is @('nil').
+        This option, if @('t'), specifies that
+        the preprocessing constructs should be fully expanded,
+        like typical C preprocessors.
+        The preferred value for this option is @('nil') (the default),
+        with which the preprocessor attempts to preserve
+        preprocessing constructs under suitable conditions;
+        this distinguishes the preprocessors provided by this ACL2 library
+        from typical C preprocessors.")
+      (xdoc::li
+       "@(':keep-comments t/nil'),
+        where @('t/nil') is either @('t') or @('nil'),
+        and whose default is @('t').
+        This option, if @('t'), specifies that
+        the comments in the original files should be preserved by preprocessing,
+        if they occur in text lines (i.e. not in preprocessing directives),
+        or in @('#include') directives that are preserved.
+        Comments occurring in other places are dropped, currently.")))
 
     (xdoc::desc
      "@(':include-dirs') &mdash; default @('nil')"

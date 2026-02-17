@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
 (include-book "macro-tables")
 (include-book "parser-states")
@@ -312,7 +313,9 @@
       @('#error') and @('#warning') directives should be ignored,
       i.e. treated as no-ops.
       This flag is set when files are re-preprocessed
-      in a fresh context as explained in @(see preservable-inclusions).")))
+      in a fresh context as explained in @(see preservable-inclusions).")
+    (xdoc::li
+     "The preprocessor state also contains the preprocessor options.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -352,6 +355,8 @@
                     :initially nil)
       (ignore-err/warn :type (satisfies booleanp)
                        :initially nil)
+      (options :type (satisfies ppoptionsp)
+               :initially ,(irr-ppoptions))
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -368,7 +373,8 @@
                  (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
                  (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
                  (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
-                 (ignore-err/warnp raw-ppstat->ignore-err/warn-p)
+                 (ignore-err/warnp raw-ppstate->ignore-err/warn-p)
+                 (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -386,6 +392,7 @@
                  (rev-lexemes3 raw-ppstate->rev-lexemes3)
                  (rev-lexemes4 raw-ppstate->rev-lexemes4)
                  (ignore-err/warn raw-ppstate->ignore-err/warn)
+                 (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -403,6 +410,7 @@
                  (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
                  (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
                  (update-ignore-err/warn raw-update-ppstate->ignore-err/warn)
+                 (update-options raw-update-ppstate->options)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -550,6 +558,12 @@
          :exec (raw-ppstate->ignore-err/warn ppstate))
     :inline t)
 
+  (define ppstate->options (ppstate)
+    :returns (options ppoptionsp)
+    (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
+         :exec (raw-ppstate->options ppstate))
+    :inline t)
+
   (define ppstate->ienv (ppstate)
     :returns (ienv ienvp)
     (mbe :logic (non-exec (raw-ppstate->ienv (ppstate-fix ppstate)))
@@ -677,6 +691,14 @@
                  (raw-update-ppstate->ignore-err/warn (bool-fix ignore-err/warn)
                                                       (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->ignore-err/warn ignore-err/warn ppstate))
+    :inline t)
+
+  (define update-ppstate->options ((options ppoptionsp) ppstate)
+    :returns (ppstate ppstatep)
+    (mbe :logic (non-exec
+                 (raw-update-ppstate->options (ppoptions-fix options)
+                                              (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->options options ppstate))
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
@@ -834,6 +856,7 @@
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
                       (ignore-err/warn booleanp)
+                      (options ppoptionsp)
                       (ienv ienvp)
                       ppstate)
   :returns (ppstate ppstatep)
@@ -846,6 +869,7 @@
      (the data of) a file to preprocess,
      the current table of macros in scope,
      a flag saying whether to ignore errors and warnings,
+     the preprocessor options,
      and an implementation environment.")
    (xdoc::p
     "The array of byte lists is resized to the file recursion limit,
@@ -873,6 +897,7 @@
        (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
        (ppstate (update-ppstate->ignore-err/warn ignore-err/warn ppstate))
+       (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
@@ -1169,6 +1194,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The lexeme is skipped (i.e. not added)
+     if it is a comment and
+     the preprocessor options say that comments should be discarded.")
+   (xdoc::p
     "The reason for having four separate lists of reversed output lexemes
      is the handling of the header guard structure,
      explained in @(tsee hg-state).
@@ -1196,23 +1225,26 @@
      is admittedly a bit complicated.
      Eventually we plan to obviate the need for this,
      by integrating the preprocessor with the parser."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes (cons lexeme rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes (cons lexeme rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (if (and (plexeme-commentp lexeme)
+           (not (ppoptions->keep-comments (ppstate->options ppstate))))
+      (ppstate-fix ppstate)
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes (cons lexeme rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes (cons lexeme rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes (cons lexeme rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes (cons lexeme rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1223,31 +1255,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We discard the comments if the preprocessor options require that.")
+   (xdoc::p
     "The lexemes to add are passed in direct (i.e. not reverse) order,
      so we need to append them in reverse.")
    (xdoc::p
     "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (b* ((lexemes (if (ppoptions->keep-comments (ppstate->options ppstate))
+                    lexemes
+                  (plexemes-without-comments lexemes))))
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes
+                      (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes
+                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes
+                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes
+                           (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1259,30 +1296,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We discard the comments if the preprocessor options require that.")
+   (xdoc::p
     "The difference with @(tsee add-rev-lexemes) is that
      the lexemes to add are already reversed,
      so we just append them.")
    (xdoc::p
     "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (append rev-lexemes-to-add rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (append rev-lexemes-to-add rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (b* ((rev-lexemes-to-add
+        (if (ppoptions->keep-comments (ppstate->options ppstate))
+            rev-lexemes-to-add
+          (plexemes-without-comments rev-lexemes-to-add))))
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes
+                      (append rev-lexemes-to-add rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes
+                     (append rev-lexemes-to-add rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes
+                     (append rev-lexemes-to-add rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes
+                           (append rev-lexemes-to-add rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)
