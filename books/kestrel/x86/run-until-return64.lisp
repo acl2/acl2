@@ -23,7 +23,7 @@
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
 ;; larger RSP means a shorter stack.
 (defund rsp-is-abovep (old-rsp x86)
-  (declare (xargs :guard (signed-byte-p 64 old-rsp) ; todo: update to unsigned soon
+  (declare (xargs :guard (unsigned-byte-p 64 old-rsp)
                   :stobjs x86))
   (bvlt 64 2147483648 ; 2^31 ; todo: consider 32-bit and 64-bit
         (bvminus 64 old-rsp (rsp x86))))
