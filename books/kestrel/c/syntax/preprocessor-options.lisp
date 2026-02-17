@@ -39,15 +39,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support the following options:")
+    "We support options to specify whether:")
    (xdoc::ul
     (xdoc::li
-     "One to specify whether
-      the preprocessing directives should be fully expanded,
-      as typical C preprocessors do,
+     "The preprocessing directives should be fully expanded,
       as opposed to preserved under suitable conditions.")
     (xdoc::li
-     "One to specify whether comments should be preserved or not.")))
+     "Comments should be preserved or not."))
+   (xdoc::p
+    "These options are explained in more detail in @(tsee input-files),
+     which provides an interface to setting these options."))
   ((full-expansion bool)
    (keep-comments bool))
   :pred ppoptionsp)
