@@ -319,32 +319,31 @@
                                    STRIP-CDRS
                                    STRIP-CARS)))))
 
-;localize?
-(defthm bounded-node-replacement-arrayp-aux-monotone-2
-  (implies (and (bounded-node-replacement-arrayp-aux array-name array index bound2)
-                (<= bound2 bound)
-                (natp bound)
-                (natp bound2)
-                ;(natp index)
-                )
-           (bounded-node-replacement-arrayp-aux array-name array index bound))
-  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux))))
+(local
+  (defthm bounded-node-replacement-arrayp-aux-monotone-2
+    (implies (and (bounded-node-replacement-arrayp-aux array-name array index bound2)
+                  (<= bound2 bound)
+                  (natp bound)
+                  (natp bound2)
+                  ;(natp index)
+                  )
+             (bounded-node-replacement-arrayp-aux array-name array index bound))
+    :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux)))))
 
 (defthm bounded-node-replacement-arrayp-monotone-2
   (implies (and (bounded-node-replacement-arrayp array-name array bound2)
                 (<= bound2 bound)
                 (natp bound)
-                (natp bound2)
-                )
+                (natp bound2))
            (bounded-node-replacement-arrayp array-name array bound))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp))))
 
-;localize?
-(defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
-  (implies (bounded-node-replacement-arrayp-aux name array index bound)
-           (node-replacement-arrayp-aux name array index))
-  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
-                                     node-replacement-arrayp-aux))))
+(local
+  (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
+    (implies (bounded-node-replacement-arrayp-aux name array index bound)
+             (node-replacement-arrayp-aux name array index))
+    :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
+                                       node-replacement-arrayp-aux)))))
 
 ;; does this need to be exported?
 (defthm node-replacement-arrayp-when-bounded-node-replacement-arrayp
