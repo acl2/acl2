@@ -830,11 +830,11 @@
                                                     ;; the stop-pcs are just numbers (addresses):
                                                     `',stop-pcs)))
                                (if 64-bitp
-                                   `(run-until-return-or-reach-pc3 ,stop-pcs-term x86)
-                                 `(run-until-return-or-reach-pc4 ,stop-pcs-term x86)))
+                                   `(run-until-return-or-reach-pc64 ,stop-pcs-term x86)
+                                 `(run-until-return-or-reach-pc32 ,stop-pcs-term x86)))
                            (if 64-bitp
-                               '(run-until-return3 x86)
-                             '(run-until-return4 x86))))
+                               '(run-until-return64 x86)
+                             '(run-until-return32 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-x86-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)

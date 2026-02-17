@@ -1,7 +1,7 @@
-; A variant scheme for handling "run-until-return"
+; A new scheme for handling "run-until-return" (64-bit mode)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,7 +59,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above)
-(defund-nx run-until-return3 (x86)
+(defund-nx run-until-return64 (x86)
   (declare (xargs :stobjs x86))
   (run-until-rsp-is-above (rsp x86) x86))
 
@@ -96,7 +96,7 @@
              (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86a)
            (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86b))))
 
-(defund-nx run-until-return-or-reach-pc3 (stop-pcs x86)
+(defund-nx run-until-return-or-reach-pc64 (stop-pcs x86)
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above-or-reach-pc)
   (declare (xargs :stobjs x86))
   (run-until-rsp-is-above-or-reach-pc (rsp x86) stop-pcs x86))

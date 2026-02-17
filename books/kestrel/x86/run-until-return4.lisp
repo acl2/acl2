@@ -1,7 +1,7 @@
-; A variant scheme for handling "run-until-return" (32-bit mode)
+; A new scheme for handling "run-until-return" (32-bit mode)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -61,7 +61,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-esp-is-above)
-(defund-nx run-until-return4 (x86)
+(defund-nx run-until-return32 (x86)
   (declare (xargs :stobjs x86))
   (run-until-esp-is-above (esp x86) x86))
 
@@ -98,7 +98,7 @@
              (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86a)
            (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86b))))
 
-(defund-nx run-until-return-or-reach-pc4 (stop-pcs x86)
+(defund-nx run-until-return-or-reach-pc32 (stop-pcs x86)
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-esp-is-above-or-reach-pc)
   (declare (xargs :stobjs x86))
   (run-until-esp-is-above-or-reach-pc (esp x86) stop-pcs x86))
