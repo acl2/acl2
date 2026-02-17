@@ -38,15 +38,15 @@
       x86
     (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86))))
 
-;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-base
-  (implies (rsp-is-abovep old-rsp x86)
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (rsp-is-abovep old-rsp x86))
            (equal (run-until-rsp-is-above old-rsp x86)
                   x86)))
 
-;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-opener
-  (implies (not (rsp-is-abovep old-rsp x86))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (not (rsp-is-abovep old-rsp x86)))
            (equal (run-until-rsp-is-above old-rsp x86)
                   (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86)))))
 
@@ -76,17 +76,17 @@
       x86
     (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
-;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-or-reach-pc-base
-  (implies (or (rsp-is-abovep old-rsp x86)
-               (memberp (rip x86) stop-pcs))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (or (rsp-is-abovep old-rsp x86)
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
-;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-above-or-reach-pc-opener
-  (implies (not (or (rsp-is-abovep old-rsp x86)
-                    (memberp (rip x86) stop-pcs)))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (not (or (rsp-is-abovep old-rsp x86)
+                         (memberp (rip x86) stop-pcs))))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86)))))
 
