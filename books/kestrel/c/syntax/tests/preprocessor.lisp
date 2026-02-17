@@ -315,6 +315,8 @@ M_is_defined
 ")
               :base-dir "preproc-example1")
 
+; This is the same test but with full expansion.
+
 (test-preproc '("including.c")
               :expected (fileset-of "including.c"
                                     "// #include \"included.h\" >>>>>>>>>>
@@ -338,6 +340,11 @@ M_is_defined
 ")
               :base-dir "preproc-example1"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("including.c")
+                      :base-dir "preproc-example1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -430,6 +437,12 @@ int x1 = 0;
 ")
               :base-dir "preproc-example2"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincluder1.c"
+                        "gincluder2.c")
+                      :base-dir "preproc-example2")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -537,6 +550,12 @@ int x1 = 0;
               :base-dir "preproc-example2"
               :full-expansion t)
 
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincludermod1.c"
+                        "gincludermod2.c")
+                      :base-dir "preproc-example2")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example3/f.c")
@@ -594,6 +613,11 @@ z
 ")
               :base-dir "preproc-example3"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example3")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -661,6 +685,11 @@ z
               :base-dir "preproc-example4"
               :full-expansion t)
 
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example4")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example5/a.c")
@@ -699,3 +728,8 @@ void f();
 ")
               :base-dir "preproc-example5"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("b.c")
+                      :base-dir "preproc-example5")
