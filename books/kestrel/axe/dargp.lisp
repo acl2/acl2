@@ -1,4 +1,4 @@
-; Arguments in DAG exprs that are function calls
+; Function arguments in DAG exprs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute
@@ -16,13 +16,14 @@
 
 (include-book "kestrel/utilities/quote" :dir :system)
 
-;; Recognizes a function argument that appears in a DAG. For a DAG node that is
-;; a function call, each argument of the call should satisfy dargp.  Each such
+;; Recognizes a function argument that appears in a DAG.  For a DAG node that is
+;; a function call, each argument of the call satisfies dargp.  Each such
 ;; argument is either a quoted constant or a node number.
 (defund dargp (item)
   (declare (xargs :guard t))
-  (or (myquotep item)
-      (natp item)))
+  (or (myquotep item) ; quoted constant
+      (natp item) ; nodenum
+      ))
 
 (defthm dargp-when-myquotep-cheap
   (implies (myquotep item)
