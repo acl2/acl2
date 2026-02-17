@@ -209,7 +209,7 @@
     :induct t
     :enable plexeme-option-listp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-tokenp ((lexeme plexemep))
   :returns (yes/no booleanp)
@@ -332,6 +332,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plexeme-commentp ((lexeme plexemep))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme is a (block or line) comment."
+  (and (member-eq (plexeme-kind lexeme) '(:block-comment :line-comment)) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plexeme-punctuatorp ((lexeme plexemep) (punctuator stringp))
   :returns (yes/no booleanp)
   :short "Check if a lexeme is a given punctuator."
@@ -368,3 +375,14 @@
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
          (or (equal string "##")
              (equal string "%:%:")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexemes-without-comments ((lexemes plexeme-listp))
+  :returns (new-lexemes plexeme-listp)
+  :short "Remove all the comments from a list of lexemes."
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes)))
+    (if (plexeme-commentp lexeme)
+        (plexemes-without-comments (cdr lexemes))
+      (cons (plexeme-fix lexeme) (plexemes-without-comments (cdr lexemes))))))
