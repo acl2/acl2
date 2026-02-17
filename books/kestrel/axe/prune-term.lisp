@@ -313,7 +313,7 @@
  ;; to TERM. Tries to rewrite each if/myif/boolif/bvif test using context from all overarching
  ;; tests (and any given assumptions).
  ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
- ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
+ ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP translation to use the known-booleans machinery so it rejects many fewer assumptions).
   ;; TODO: Before recurring, don't bother if there is no function that can be pruned.
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
    (declare (xargs :guard (and (pseudo-termp term)

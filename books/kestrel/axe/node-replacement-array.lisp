@@ -45,8 +45,7 @@
                         ;;default-car
                         ;;default-cdr
                         myquotep
-                        natp
-                        ))))
+                        natp))))
 
 ;dup
 (defthmd bounded-natp-alistp-redef
@@ -60,8 +59,7 @@
                                      all-natp
                                      all-<
                                      strip-cars
-                                     alistp
-                                     ))))
+                                     alistp))))
 
 ;;add support in typed arrays machinery for make-into-array?
 
@@ -157,27 +155,27 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
+;localize?
 (defthm <-of-max-key-bound
-  (implies (and
-            (< (max-key alist val2) max-so-far)
-            (< val max-so-far)
-            (< val2 max-so-far)
-            )
-           (< (max-key alist val)
-              max-so-far))
+  (implies (and (< (max-key alist val2) max-so-far)
+                (< val max-so-far)
+                (< val2 max-so-far))
+           (< (max-key alist val) max-so-far))
   :hints (("Goal" :in-theory (enable max-key max))))
 
+;localize?
 (defthm <-of-max-key-when-all-<-of-STRIP-CARS
   (implies (and (ALL-< (STRIP-CARS alist) bound)
                 (all-natp (STRIP-CARS alist)) ;drop?
-                (posp bound)
-                )
+                (posp bound))
            (< (MAX-KEY alist '0) bound))
   :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=-1) (max)))))
 
 ;;;
 ;;; end of library stuff
 ;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; node-replacement-arrayp
@@ -187,11 +185,12 @@
 (defconst *non-nil* :non-nil)
 
 ;; To be left enabled?
+;; See also bounded-node-replacement-valp.
 (defun node-replacement-valp (val)
   (declare (xargs :guard t))
   (or (null val)
-      (dargp val)
-      (eq val *non-nil*)))
+      (eq val *non-nil*)
+      (dargp val)))
 
 ;; Each node maps to nil (no replacement), or to a replacement (a quotep or a nodenum), or to the special symbol :non-nil.
 ;; TODO: Bake in the name of the array
@@ -243,6 +242,11 @@
   (or (null val)
       (eq val *non-nil*)
       (dargp-less-than val bound)))
+
+;; Sanity check
+(thm
+  (implies (bounded-node-replacement-valp val bound)
+           (node-replacement-valp val)))
 
 (defthm bounded-node-replacement-valp-of-nil
   (bounded-node-replacement-valp nil dag-len)
@@ -954,8 +958,8 @@
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
            (mv-let (erp new-node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (update-node-replacement-array-and-extend-dag-for-alist alist
-                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                        node-replacement-array node-replacement-count)
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                     node-replacement-array node-replacement-count)
              (implies (not erp)
                       (and (natp node-replacement-count)
                            (node-replacement-arrayp 'node-replacement-array new-node-replacement-array) ; convenient but follows from the below
@@ -997,10 +1001,9 @@
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
            (mv-let (erp node-replacement-array new-node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (update-node-replacement-array-and-extend-dag-for-alist alist
-                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                        node-replacement-array node-replacement-count)
-             (declare (ignore DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                              new-node-replacement-count))
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                     node-replacement-array node-replacement-count)
+             (declare (ignore dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist new-node-replacement-count))
              (implies (and (not erp))
                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
   :hints (("Goal" :use update-node-replacement-array-and-extend-dag-for-alist-return-type
@@ -1160,7 +1163,7 @@
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
-             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array  ))
+             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array))
              (implies (not erp)
                       (and (natp new-dag-len)
                            (integerp new-dag-len) ; drop?
@@ -1179,7 +1182,7 @@
              (make-node-replacement-array-and-extend-dag assumptions
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             known-booleans)
-             (declare (ignore NODE-REPLACEMENT-ARRAY NODE-REPLACEMENT-COUNT DAG-ARRAY DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST))
+             (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
                       (<= bound new-dag-len))))
   :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
