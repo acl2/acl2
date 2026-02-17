@@ -257,7 +257,7 @@
 
 ;; This simplifies the assumptions (if there are any extra-assumptions).
 ;; Returns (mv erp assumptions assumption-rules input-assumption-vars hits state).
-(defun assumptions-new (target
+(defund assumptions-new (target
                         parsed-executable
                         extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                         suppress-assumptions
