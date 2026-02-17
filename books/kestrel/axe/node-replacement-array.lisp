@@ -155,6 +155,11 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
+(defthmd bounded-natp-alistp-when-node-replacement-alistp
+  (implies (node-replacement-alistp alist bound)
+           (bounded-natp-alistp alist bound))
+  :hints (("Goal" :in-theory (enable bounded-natp-alistp node-replacement-alistp))))
+
 ;localize?
 (defthm <-of-max-key-bound
   (implies (and (< (max-key alist val2) max-so-far)
@@ -181,18 +186,20 @@
 ;;; node-replacement-arrayp
 ;;;
 
-;; Use a defined constant to avoid typos:
+;; We use a defined constant to avoid typos when code mentions :non-nil.
 (defconst *non-nil* :non-nil)
 
+;; Recognizes a replacement for a node in a node-replacement-array.
 ;; To be left enabled?
 ;; See also bounded-node-replacement-valp.
 (defun node-replacement-valp (val)
   (declare (xargs :guard t))
-  (or (null val)
-      (eq val *non-nil*)
-      (dargp val)))
+  (or (null val) ; no replacement for the node
+      (eq val *non-nil*) ; no replacement, but we know the node is non-nil
+      (dargp val) ; the node is to be replaced by this darg
+      ))
 
-;; Each node maps to nil (no replacement), or to a replacement (a quotep or a nodenum), or to the special symbol :non-nil.
+;; An array that maps nodes to node-replacement-vals.
 ;; TODO: Bake in the name of the array
 (def-typed-acl2-array2 node-replacement-arrayp (node-replacement-valp val))
 
@@ -252,6 +259,7 @@
   (bounded-node-replacement-valp nil dag-len)
   :hints (("Goal" :in-theory (enable bounded-node-replacement-valp))))
 
+;; A bounded version of a node-replacement-array, where if a nodenum maps to another nodenum, we know that other nodenum is not too big.
 ;; Each node maps to nil (no replacement), to a quotep, or to a nodenum less than the bound, or to the special symbol :non-nil.
 ;;todo: make a variant that bakes in the name
 (def-typed-acl2-array2 bounded-node-replacement-arrayp
@@ -269,10 +277,7 @@
   :hints (("Goal" :use (:instance TYPE-OF-AREF1-WHEN-BOUNDED-NODE-REPLACEMENT-ARRAYP)
            :in-theory (disable TYPE-OF-AREF1-WHEN-BOUNDED-NODE-REPLACEMENT-ARRAYP))))
 
-(defthmd bounded-natp-alistp-when-node-replacement-alistp
-  (implies (node-replacement-alistp alist bound)
-           (bounded-natp-alistp alist bound))
-  :hints (("Goal" :in-theory (enable bounded-natp-alistp node-replacement-alistp))))
+
 
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
   (implies (and (node-replacement-alistp alist bound)
@@ -332,23 +337,24 @@
            (bounded-node-replacement-arrayp array-name array bound))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp))))
 
+;localize?
 (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
   (implies (bounded-node-replacement-arrayp-aux name array index bound)
            (node-replacement-arrayp-aux name array index))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
                                      node-replacement-arrayp-aux))))
 
+;; does this need to be exported?
 (defthm node-replacement-arrayp-when-bounded-node-replacement-arrayp
   (implies (bounded-node-replacement-arrayp name array bound)
            (node-replacement-arrayp name array))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp
                                      node-replacement-arrayp))))
 
-;;;
-;;; known-true-in-node-replacement-arrayp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether NODENUM is known to be non-nil.
+;; A node-replacement-array is often accompanied by a node-replacement-count that says how many of its entries are valid.
 (defund known-true-in-node-replacement-arrayp (nodenum node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
                               (natp node-replacement-count)
@@ -363,11 +369,9 @@
                (unquote res) ;constant must be non-nil
                )))))
 
-;;;
-;;; apply-node-replacement-array
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns NODENUM (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
+;; Returns NODENUM itself (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
 ;; TODO: Consider having the array map non-replaced nodes to themselves, to avoid
 ;; having to check whether the result is nil.
 (defund apply-node-replacement-array (nodenum node-replacement-array node-replacement-count)
@@ -619,7 +623,6 @@
   :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-dargs bounded-darg-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand

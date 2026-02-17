@@ -237,7 +237,7 @@
        ;; (- (cw "(Simplified to ~X01.)~%" simplified-dag-or-quotep nil))
        (- (and (print-level-at-least-verbosep print)
                (cw "Test did not simplify to a constant.)~%")))
-       ;; Is this needed, given that we simplified the test above using the assumptions?
+       ;; Is this needed, given that we simplified the test above using the assumptions (maybe if non-boolean)?
        ;; TODO: Also look for an equality in the other order?:
        ((when (or (member-equal test assumptions)
                   (member-equal test equality-assumptions))) ;; In case the test is not a known boolean (so rewriting can't rewrite it to t). ;todo: use simplified-test-term here?
@@ -295,10 +295,10 @@
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
         (prog2$ (and (print-level-at-least-verbosep print)
                      (cw "STP proved the test false.))~%"))
-                (mv nil :false state))))
-    (prog2$ (and (print-level-at-least-verbosep print)
-                 (cw "STP did not resolve the test.))~%"))
-            (mv nil :unknown state))))
+                (mv nil :false state)))
+       (- (and (print-level-at-least-verbosep print)
+               (cw "STP did not resolve the test.))~%"))))
+    (mv nil :unknown state)))
 
 (local
   (defthm w-of-mv-nth-2-of-try-to-resolve-test
@@ -315,6 +315,7 @@
  ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
  ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP translation to use the known-booleans machinery so it rejects many fewer assumptions).
   ;; TODO: Before recurring, don't bother if there is no function that can be pruned.
+  ;; TODO: Add an argument for the objective (e.g., try to prove true, based on which branch is bad, such as an error branch).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-term-listp assumptions)
@@ -625,6 +626,9 @@
 ;; Returns (mv erp changep result-term state).
 ;; TODO: Print some stats about the pruning process?
 ;; TODO: Allow rewriting to be suppressed (just call STP)?
+;; TODO: Add option to only prune top-level IFs (during lifting, these will
+;; have states as their then and else parts and thus represent unresolved
+;; conditional branches in the code).
 (defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
@@ -640,6 +644,7 @@
        ;; (- (cw "(Term: ~x0)~%" term))  ;; TODO: Print, but only if small (and thread through a print arg)
        ((mv erp new-term state)
         (prune-term-aux term
+                        ;; Splitting the assumptions here may not be needed, as the rewriter doesn't rewrite replacements
                         (fixup-assumptions assumptions print)
                         (get-equalities assumptions)
                         rule-alist
