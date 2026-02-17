@@ -29,12 +29,9 @@
 
 ;; This is separate so we can prevent opening it when INSTR is not a constant.
 (defund update-call-stack-height-aux (instr call-stack-height arm)
-  (declare (xargs :guard (and (unsigned-byte-p 32 instr)
-                              (integerp call-stack-height)
-                              )
-                  :stobjs arm
-;                  :guard-hints (("Goal" :in-theory (enable)))
-                  ))
+  (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
+                              (integerp call-stack-height))
+                  :stobjs arm))
   (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
       (arm::arm32-decode instr)
     (declare (ignore args)) ; for now
@@ -63,23 +60,28 @@
 
 ;; Increment on call, decrement on return
 (defund update-call-stack-height (call-stack-height arm)
-  (declare (xargs :guard (and (integerp call-stack-height)
-                              )
-                  :stobjs arm
-;                  :guard-hints (("Goal" :in-theory (enable)))
-                  ))
+  (declare (xargs :guard (integerp call-stack-height)
+                  :stobjs arm))
   (let* ((pc (pc arm))
          (instr (read 4 pc arm)))
     (update-call-stack-height-aux instr call-stack-height arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: What should we do about faults?
-;; TODO: How to get defpun to work with a stobj?
+;; TODO: Consider stopping if the error field of the state is set.
+;; It would be nice to support the :stobjs arm below, but it is
+;; not very important, because a defpun is already non-executable.
 (defpun run-until-return-aux (call-stack-height arm)
+  ;; (declare (xargs :stobjs arm))
   (if (< call-stack-height 0)
       arm ; stop since we've returned from the function being lifted
+    ;; Step the state and also update our tracked version of the call-stack-height:
     (run-until-return-aux (update-call-stack-height call-stack-height arm) (step arm))))
+
+;; TODO: Can we prove this?
+;; (thm
+;;   (implies (armp arm)
+;;            (armp (run-until-return-aux call-stack-height arm))))
 
 ;; todo: restrict to when arm is not an IF/MYIF
 (defthm run-until-return-aux-base
@@ -111,10 +113,9 @@
    arm))
 
 (defund run-subroutine (arm)
-  ;; (declare (xargs :guard )) ; todo: need a property of the defpun
+  ;; (declare (xargs :stobjs arm))  ;; (declare (xargs :guard )) ; todo: need a property of the defpun
   ;; OLD: We start by stepping once.  This increases the stack height.  Then we run
   ;; until the stack height decreases again.  Finally, we step one more time to
   ;; do the RET.
   ;;(step32 (run-until-return (step32 arm)))
-  (run-until-return arm)
-  )
+  (run-until-return arm))
