@@ -82,16 +82,16 @@
                               (print-levelp print))))
   (if (not (and (consp assumption)
                 (eq 'equal (ffn-symb assumption))
-                (eql 2 (len (fargs assumption))) ;for guards
+                (consp (rest (fargs assumption))) ;for guards
                 ))
       (list assumption)
-    (if (subtermp (farg1 assumption) (farg2 assumption))
+    (if (subtermp (farg1 assumption) (farg2 assumption)) ; (equal <subterm> <superterm>)
         (prog2$ (and (print-level-at-least-briefp print)
                      (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption))
                 `((equal ,(farg2 assumption) ,(farg1 assumption))))
-      (if (quotep (farg1 assumption))
+      (if (quotep (farg1 assumption)) ; (equal <constant> <x>)
           (list assumption)
-        (if (quotep (farg2 assumption))
+        (if (quotep (farg2 assumption)) ; (equal <non-constant> <constant>)
             ;; todo: why rebuild?
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
           (prog2$ (and (print-level-at-least-briefp print)
