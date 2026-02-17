@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -718,3 +718,96 @@
                     (natp (unquote len-arg))
                     (bind-unquoted-varname quoted-varname len-arg))))
             (otherwise nil)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund-inline darg-quotep (darg)
+  (declare (xargs :guard (dargp darg)))
+  (consp darg) ;; means that it is a quotep, not a nodenum
+  )
+
+;; Returns the path to ADDEND in a nest of bvplus calls (all with WIDTH as the
+;; size argument) rooted at DARG, or :none.  A path is a list of :l's and :r's
+;; indicating whether to go into the left or right subtree of a bvplus node.
+;; An empty path indicates the current node itself.
+(defund path-in-bvplus-nest (addend quoted-width darg dag-array)
+  (declare (xargs :guard (and (or (myquotep addend)
+                                  (and (natp addend)
+                                       ;; (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))
+                                       ))
+                              (myquotep quoted-width)
+                              (natp (unquote quoted-width))
+                              (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))
+                  :measure (if (quotep darg)
+                               0
+                             (+ 1 (nfix darg)))
+                  :hints (("Goal" :in-theory (e/d (dargp darg-quotep) (natp))))))
+  (if (or (darg-quotep darg)
+          (not ; for termination:
+           (mbt (or (myquotep darg)
+                    (and (natp darg)
+                         (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+      ;; DARG is a constant, so just check if it is ADDEND (we do not look up the expr at addend)
+      (if (equal darg addend)
+          nil ; empty path means we found it
+        :none)
+    ;; otherwise, DARG is a nodenum:
+    (if (equal addend darg)
+        nil ; empty path means we found it
+      (let ((expr (aref1 'dag-array dag-array darg)))
+        (if (not (consp expr))
+            :none ; fail (it's a variable but its nodenum is not equal to addend)
+          (let ((fn (ffn-symb expr)))
+            (case fn
+              ;; rare:
+              (quote (if (equal expr addend)
+                         nil ; we found it
+                       ;; fail (it's a constant but it is not equal to addend,
+                       ;; and its nodenum is not equal to addend):
+                       :none))
+              ;; (bvplus <size> <left> <right>)
+              (bvplus (if (and (= 3 (len (dargs expr)))
+                               (equal (darg1 expr) quoted-width))
+                          ;; look in the subtrees
+                          (let* ((arg-l (darg2 expr))
+                                 (result-l (if (mbt (or (quotep arg-l) ;for termination
+                                                        (and (< arg-l darg)
+                                                             (natp arg-l))))
+                                               (path-in-bvplus-nest addend quoted-width arg-l dag-array)
+                                             :none)))
+                            (if (not (eq :none result-l))
+                                ;; found in the left subtree:
+                                (cons :l result-l)
+                              ;; not found in left subtree, so try the right subtree:
+                              (let* ((arg-r (darg3 expr))
+                                     (result-r (if (mbt (or (quotep arg-r) ;for termination
+                                                            (and (< arg-r darg)
+                                                                 (natp arg-r))))
+                                                   (path-in-bvplus-nest addend quoted-width arg-r dag-array)
+                                                 :none)))
+                                (if (not (eq :none result-r))
+                                    (cons :r result-r)
+                                  ;; not found in either subtree:
+                                  :none))))
+                        ;; width is wrong and this node's nodenum is not addend
+                        :none))
+              (otherwise :none))))))))
+
+;; Returns nil (failure) or an alist that binds PATH to a quoted constant path (which be nil).
+(defund bind-path-in-bvplus-nest (addend quoted-width darg dag-array)
+  (declare (xargs :guard (and (or (myquotep addend)
+                                  (and (natp addend)
+                                       ;; (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))
+                                       ))
+                              (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (if (and (myquotep quoted-width)
+           (natp (unquote quoted-width)))
+      (let ((result (path-in-bvplus-nest addend quoted-width darg dag-array)))
+        (if (eq :none result)
+            nil
+          (acons 'path (enquote result) nil)))
+    nil))
