@@ -828,6 +828,7 @@
                   :measure (acl2-count assumption)))
   (if (variablep assumption)
       ;; The best we can do is map the var to *non-nil*, since it may not be t:
+      ;; (I suppose we could replace (equal <var> nil) and/or (not <var>) with nil.)
       (acons assumption *non-nil* acc)
     (let ((fn (ffn-symb assumption)))
       (case fn
@@ -866,10 +867,12 @@
                                                      (term-replacement-alist-for-assumption (farg1 assumption)
                                                                                             known-booleans
                                                                                             acc))))
-        (t ;; (<predicate> x ...) becomes the pair ((<predicate> x ...) . 't)
+        (t ;; (<predicate> ...) becomes the pair ((<predicate> ...) . 't)
          (if (member-eq fn known-booleans) ;we test for not above so dont need to exclude it here?
              (acons assumption *t* acc)
            ;; It's not a known boolean, so the best we can do is mark it as non-nil:
+           ;; We could print something here (perhaps add-known-boolean should be called), but consider that member-equal assumptions
+           ;; (e.g., about initialized-classes in the JVM model) may cause a lot of printing.
            (acons assumption *non-nil* acc)))))))
 
 (defthm term-replacement-alistp-of-term-replacement-alist-for-assumption
@@ -1010,81 +1013,6 @@
                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
   :hints (("Goal" :use update-node-replacement-array-and-extend-dag-for-alist-return-type
            :in-theory (disable update-node-replacement-array-and-extend-dag-for-alist-return-type))))
-
-;; ;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;; (defun update-node-replacement-array-and-extend-dag-for-assumption (assumption
-;;                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-;;                                                                        node-replacement-array node-replacement-count
-;;                                                                        known-booleans)
-;;   (declare (xargs :guard (and (pseudo-termp assumption)
-;;                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-;;                               (node-replacement-arrayp 'node-replacement-array array)
-;;                               (natp node-replacement-count)
-;;                               (<= node-replacement-count (alen1 'node-replacement-array array))
-;;                               (symbol-listp known-booleans))))
-
-;; )
-
-
-
-
-  ;; (if (variablep assumption) ;; Could add an assumption from (equal nil x) to nil...
-  ;;     (b* (;; Add the var to the DAG:
-  ;;          ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
-  ;;           (add-variable-to-dag-array assumption dag-array dag-len dag-parent-array dag-variable-alist))
-  ;;          ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-  ;;          ;; Add the fact that the var's node in non-nil:
-  ;;          ((mv node-replacement-array node-replacement-count)
-  ;;           (add-node-replacement-entry-and-maybe-expand nodenum *non-nil* node-replacement-array node-replacement-count)))
-  ;;       (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-  ;;   (let ((fn (ffn-symb assumption)))
-  ;;     (if (eq 'quote fn)  ;can this happen?
-  ;;       (prog2$ (cw "NOTE: Skipping constant assumption ~x0.~%" assumption)
-  ;;               (mv (erp-nil) node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-  ;;       (mv-let (term replacement)
-  ;;         (case fn
-  ;;           (not (mv (farg1 assumption) *nil*)) ; (not <nodenum>) means assuming <nodenum> is nil
-  ;;           ..)
-  ;;         .. now merge the rhs and lhs
-
-  ;;         split out term-equalt
-
-  ;;       (not
-  ;;        ;; Add the argument of NOT to the DAG:
-  ;;        ((mv erp nodenum dag-array dag-len dag-parent-array dag-variable-alist)
-  ;;         (add-variable-to-dag-array assumption dag-array dag-len dag-parent-array dag-variable-alist))
-  ;;        ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-
-
-  ;;       (if (eq 'equal fn) ;fixme consider more sophisticated tests to decide whether to turn around the assumption?
-  ;;           (if (quotep (farg1 assumption))
-  ;;               ;; (equal x y) becomes the pair (y . x) because x is a quotep
-  ;;               (cons (cons (farg2 assumption) (farg1 assumption))
-  ;;                     acc)
-  ;;             ;; (equal x y) becomes the pair (x . y)
-  ;;             (cons (cons (farg1 assumption) (farg2 assumption))
-  ;;                   acc))
-  ;;         (if (eq 'not fn)
-  ;;             ;; (not x) becomes the pair (x . 'nil) ;;the case above for 'equal above handles the (equal x nil) phrasing for nots..
-  ;;             (cons (cons (farg1 assumption) ''nil)
-  ;;                   acc)
-  ;;           (if (and (eq 'booland fn) ;; TODO: Other ways of stripping conjuncts?
-  ;;                    (= 2 (len (fargs assumption)))) ;for termination
-  ;;               ;; (booland x y) causes x and y to be processed recursively
-  ;;               (add-equality-pairs-for-assumption (farg2 assumption)
-  ;;                                                  known-booleans
-  ;;                                                  (add-equality-pairs-for-assumption (farg1 assumption)
-  ;;                                                                                     known-booleans
-  ;;                                                                                     acc))
-  ;;             ;; (<predicate> x ...) becomes the pair ((<predicate> x ...) . 't)
-  ;;             (if (member-eq fn known-booleans) ;we test for not above so dont need to exclude it here?
-  ;;                 (cons (cons assumption ''t)
-  ;;                       acc)
-  ;;               ;; TODO: Consider putting back this printing once we stop using member-equal for assumptions
-  ;;               ;; about initialized classes:
-  ;;               (prog2$ nil ;(cw "NOTE: add-equality-pairs-for-assumption is skipping a ~x0 assumption.~%" fn) ;todo: print the assumption if small?
-  ;;                       acc))))))))
-
 
 ;; ;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; (defun make-node-replacement-array-and-extend-dag-aux (assumptions
