@@ -4826,17 +4826,20 @@
                      (ienv ienvp)
                      state
                      (recursion-limit natp))
-  :returns (mv erp (fileset filesetp) state)
+  :returns (mv erp (preprocessed string-ppfile-alistp) state)
   :short "Preprocess zero or more files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level function of the preprocessor.
-     The files are identified by the @('files') strings,
+    "The files are identified by the @('files') strings,
      which must be paths relative to the @('base-dir') string path:
      this is the same interface as @(tsee input-files).
      The list @('include-dirs') specifies the directories to search
-     for @('#include') directives with angle brackets.")
+     for @('#include') directives with angle brackets.
+     The input to this function come directly from @(tsee preprocess),
+     except for the recursion limit
+     (discussed in @(tsee pproc-files/groups/etc)),
+     which is set there.")
    (xdoc::p
     "The elements of @('files') are preprocessed in order.
      Each file is read from the file system,
@@ -4857,27 +4860,18 @@
     "We keep track of the files under preprocessing in a list (initially empty),
      to detect and avoid circularities.")
    (xdoc::p
-    "The result of this function is a file set,
-     whose paths are generally a superset of the input ones,
-     as already explained in @(see preprocessor).")
-   (xdoc::p
-    "The recursion limit is discussed in @(tsee pproc-files/groups/etc).
-     It seems best to let the user set this limit (outside this function),
-     with perhaps a reasonably large default."))
-  (b* (((reterr) (irr-fileset) state)
-       ((erp preprocessed state)
-        (pproc-files-loop files
-                          base-dir
-                          include-dirs
-                          options
-                          nil ; preprocessed
-                          nil ; preprocessing
-                          ienv
-                          state
-                          recursion-limit)))
-    (retok
-     (fileset (string-ppfile-alist-to-filepath-filedata-map preprocessed))
-     state))
+    "The result of this function is an alist of @(tsee ppfile)s,
+     whose keys are generally a superset of the input file names,
+     as already explained in @(see preprocessor)."))
+  (pproc-files-loop files
+                    base-dir
+                    include-dirs
+                    options
+                    nil ; preprocessed
+                    nil ; preprocessing
+                    ienv
+                    state
+                    recursion-limit)
   :hooks nil
 
   :prepwork
@@ -4940,3 +4934,38 @@
      (("Goal" :in-theory (enable alistp-when-string-ppfile-alistp-rewrite)))
      :prepwork ((local (in-theory (enable acons))))
      :hooks nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define preprocess ((files string-listp)
+                    (base-dir stringp)
+                    (include-dirs string-listp)
+                    (options ppoptionsp)
+                    (ienv ienvp)
+                    state)
+  :returns (mv erp (fileset filesetp) state)
+  :short "Preprocess files into a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the top-level function of the preprocessor.
+     It is called by @(tsee input-files)
+     when the option for the internal preprocessor is selected;
+     the inputs to this function come directly from @(tsee input-files),
+     which lets the user specify them.")
+   (xdoc::p
+    "We call @(tsee pproc-files) with a recursion limit of 1,000,000,000,
+     which should be normally sufficient.
+     We convert the resulting alist into a file set."))
+  (b* (((reterr) (irr-fileset) state)
+       ((erp preprocessed state) (pproc-files files
+                                              base-dir
+                                              include-dirs
+                                              options
+                                              ienv
+                                              state
+                                              1000000000)))
+    (retok (fileset
+            (string-ppfile-alist-to-filepath-filedata-map preprocessed))
+           state))
+  :hooks nil)

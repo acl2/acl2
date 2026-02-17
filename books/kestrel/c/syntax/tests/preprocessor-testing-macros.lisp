@@ -76,13 +76,12 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments))
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (pproc-files files
-                                              base-dir
-                                              include-dirs
-                                              options
-                                              ienv
-                                              state
-                                              1000000000)))
+         ((mv erp fileset state) (preprocess files
+                                             base-dir
+                                             include-dirs
+                                             options
+                                             ienv
+                                             state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -141,13 +140,13 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments))
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (pproc-files files
-                                              base-dir
-                                              include-dirs
-                                              options
-                                              ienv
-                                              state
-                                              1000000000))
+         ((mv erp fileset state) (preprocess files
+                                             base-dir
+                                             include-dirs
+                                             options
+                                             ienv
+                                             state
+                                             1000000000))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))

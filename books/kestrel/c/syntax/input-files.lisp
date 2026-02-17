@@ -606,13 +606,7 @@
        ;; Preprocess if required, or just read files from file system.
        ((erp files state)
         (cond ((equal preprocessor "") ; internal preprocessor
-               (pproc-files files
-                            base-dir
-                            include-dirs
-                            options
-                            ienv
-                            state
-                            1000000000))
+               (preprocess files base-dir include-dirs options ienv state))
               ((not preprocessor)
                (input-files-read-files files base-dir state))
               (t ; external preprocessor
