@@ -26,6 +26,7 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 ;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
+(local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
@@ -45,7 +46,9 @@
                         ;;default-car
                         ;;default-cdr
                         myquotep
-                        natp))))
+                        natp
+                        assoc-keyword ;prevent inductions
+                        ))))
 
 ;dup
 (defthmd bounded-natp-alistp-redef
@@ -267,34 +270,32 @@
   :extra-vars (bound)
   :extra-guards ((natp bound)))
 
-(DEFTHM TYPE-OF-AREF1-WHEN-BOUNDED-NODE-REPLACEMENT-ARRAYP-alt
-  (IMPLIES (AND (BOUNDED-NODE-REPLACEMENT-ARRAYP ARRAY-NAME ARRAY BOUND)
-                (< INDEX (ALEN1 ARRAY-NAME ARRAY))
-                (NATP INDEX)
-                (AREF1 ARRAY-NAME ARRAY INDEX)
-                (not (eq *non-nil* (AREF1 ARRAY-NAME ARRAY INDEX))))
-           (DARGP-LESS-THAN (AREF1 ARRAY-NAME ARRAY INDEX) BOUND))
-  :hints (("Goal" :use (:instance TYPE-OF-AREF1-WHEN-BOUNDED-NODE-REPLACEMENT-ARRAYP)
-           :in-theory (disable TYPE-OF-AREF1-WHEN-BOUNDED-NODE-REPLACEMENT-ARRAYP))))
-
-
+(defthm dargp-less-than-of-aref1-when-bounded-node-replacement-arrayp-alt
+  (implies (and (bounded-node-replacement-arrayp array-name array bound)
+                (aref1 array-name array index)
+                (not (eq *non-nil* (aref1 array-name array index)))
+                (< index (alen1 array-name array))
+                (natp index))
+           (dargp-less-than (aref1 array-name array index) bound))
+  :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp)
+           :in-theory (disable type-of-aref1-when-bounded-node-replacement-arrayp))))
 
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
   (implies (and (node-replacement-alistp alist bound)
                 (natp index)
-                (< (max-key alist 0) *max-1d-array-length*) ;or say bounded-natp-alistp
+                (< (max-key alist 0) *max-1d-array-length*) ;or say bounded-natp-alistp, or even bounded-node-replacement-alistp
                 (<= index (max-key alist 0))
                 (symbolp array-name))
            (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
   :hints (("Goal" :in-theory (e/d (bounded-node-replacement-arrayp-aux
-                                     bounded-natp-alistp-when-node-replacement-alistp
-                                     make-into-array ;todo
-                                     aref1 ;todo
-                                     make-into-array-with-len ;todo
-                                     dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
-                                     acons
-                                     array1p-of-cons-header
-                                     )
+                                   bounded-natp-alistp-when-node-replacement-alistp
+                                   make-into-array ;todo
+                                   aref1 ;todo
+                                   make-into-array-with-len ;todo
+                                   dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                                   acons
+                                   array1p-of-cons-header
+                                   )
                                   ;; for speed:
                                   (bounded-node-replacement-arrayp-aux-beyond-length)))))
 
@@ -304,7 +305,7 @@
                 (<= bound *max-1d-array-length*)
                 ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
-           (bounded-node-replacement-arrayp 'node-replacement-array
+           (bounded-node-replacement-arrayp 'node-replacement-array ; gen?
                                             (make-into-array 'node-replacement-array node-replacement-alist)
                                             bound))
   :hints (("Goal" :cases ((CONSP NODE-REPLACEMENT-ALIST))
@@ -318,6 +319,7 @@
                                    STRIP-CDRS
                                    STRIP-CARS)))))
 
+;localize?
 (defthm bounded-node-replacement-arrayp-aux-monotone-2
   (implies (and (bounded-node-replacement-arrayp-aux array-name array index bound2)
                 (<= bound2 bound)
@@ -641,8 +643,6 @@
     (mv (aset1 'node-replacement-array node-replacement-array nodenum replacement)
         (max (+ 1 nodenum)
              node-replacement-count))))
-
-(local (in-theory (disable assoc-keyword))) ;prevent inductions
 
 ;; Any index works, because either it's in range and we get a good value, or it's out of range and we get the default
 (defthm node-replacement-arrayp-aux-when-node-replacement-arrayp-aux-of-len-minus-1
