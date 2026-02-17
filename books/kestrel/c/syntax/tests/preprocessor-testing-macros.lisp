@@ -56,6 +56,7 @@
                         (base-dir '".")
                         include-dirs
                         full-expansion
+                        (keep-comments 't)
                         std
                         gcc
                         clang
@@ -72,7 +73,8 @@
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
-         (options (make-ppoptions :full-expansion ,full-expansion))
+         (options (make-ppoptions :full-expansion ,full-expansion
+                                  :keep-comments ,keep-comments))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (pproc-files files
                                               base-dir
@@ -99,6 +101,7 @@
                           (base-dir '".")
                           include-dirs
                           full-expansion
+                          (keep-comments 't)
                           std
                           gcc
                           clang)
@@ -106,6 +109,7 @@
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
+                 :keep-comments ,keep-comments
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang
@@ -119,6 +123,7 @@
                               (base-dir '".")
                               include-dirs
                               full-expansion
+                              (keep-comments 't)
                               std
                               gcc
                               clang)
@@ -133,7 +138,8 @@
                           (t (c::version-c23)))))(files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
-         (options (make-ppoptions :full-expansion ,full-expansion))
+         (options (make-ppoptions :full-expansion ,full-expansion
+                                  :keep-comments ,keep-comments))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (pproc-files files
                                               base-dir
@@ -157,6 +163,7 @@
                           (base-dir '".")
                           include-dirs
                           full-expansion
+                          (keep-comments 't)
                           std
                           gcc
                           clang)
@@ -164,6 +171,7 @@
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
+                 :keep-comments ,keep-comments
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang))

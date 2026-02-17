@@ -215,7 +215,8 @@
 (defval *input-files-allowed-preprocess-options*
   :short "Keyword options accepted by @(tsee input-files)
           for the @(':preprocess-options') input."
-  (list :full-expansion))
+  (list :full-expansion
+        :keep-comments))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,12 +249,21 @@
                       must have no duplicates, ~
                       but the list ~x0 contains duplicates."
                      keywords)))
-       (full-expansion (assoc-eq :full-expansion alist))
+       (full-expansion (cdr (assoc-eq :full-expansion alist)))
        ((unless (booleanp full-expansion))
         (reterr (msg "The preprocessor option :FULL-EXPANSION ~
                       must be T or NIL, but it is ~x0 instead."
-                     full-expansion))))
-    (retok (make-ppoptions :full-expansion full-expansion)))
+                     full-expansion)))
+       (keep-comments (b* ((kwd+val (assoc-eq :keep-comments alist)))
+                        (if kwd+val
+                            (cdr kwd+val)
+                          t)))
+       ((unless (booleanp keep-comments))
+        (reterr (msg "The preprocessor option :KEEP-COMMENTS ~
+                      must be T or NIL, but it is ~x0 instead."
+                     keep-comments))))
+    (retok (make-ppoptions :full-expansion full-expansion
+                           :keep-comments keep-comments)))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::symbol-listp-of-strip-cars-when-symbol-alistp))))

@@ -204,7 +204,16 @@
         with which the preprocessor attempts to preserve
         preprocessing constructs under suitable conditions;
         this distinguishes the preprocessors provided by this ACL2 library
-        from typical C preprocessors.")))
+        from typical C preprocessors.")
+      (xdoc::li
+       "@(':keep-comments t/nil'),
+        where @('t/nil') is either @('t') or @('nil'),
+        and whose default is @('t').
+        This option, if @('t'), specifies that
+        the comments in the original files should be preserved by preprocessing,
+        if they occur in text lines (i.e. not in preprocessing directives),
+        or in @('#include') directives that are preserved.
+        Comments occurring in other places are dropped, currently.")))
 
     (xdoc::desc
      "@(':include-dirs') &mdash; default @('nil')"

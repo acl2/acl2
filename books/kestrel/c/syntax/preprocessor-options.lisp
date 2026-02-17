@@ -39,12 +39,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we just have one boolean options,
-     for fully expanding all the directives (when @('t'))
-     as opposed to trying to preserve the @('#include') directives
-     (and a few others that necessarily need to be also preserved
-     in order for the preservation of the @('#include')s to work)."))
-  ((full-expansion bool))
+    "We support the following options:")
+   (xdoc::ul
+    (xdoc::li
+     "One to specify whether
+      the preprocessing directives should be fully expanded,
+      as typical C preprocessors do,
+      as opposed to preserved under suitable conditions.")
+    (xdoc::li
+     "One to specify whether comments should be preserved or not.")))
+  ((full-expansion bool)
+   (keep-comments bool))
   :pred ppoptionsp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -52,4 +57,4 @@
 (defirrelevant irr-ppoptions
   :short "Irrelevant preprocessor options."
   :type ppoptionsp
-  :body (ppoptions nil))
+  :body (ppoptions nil nil))

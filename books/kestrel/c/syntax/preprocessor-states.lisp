@@ -1194,6 +1194,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "The lexeme is skipped (i.e. not added)
+     if it is a comment and
+     the preprocessor options say that comments should be discarded.")
+   (xdoc::p
     "The reason for having four separate lists of reversed output lexemes
      is the handling of the header guard structure,
      explained in @(tsee hg-state).
@@ -1221,23 +1225,26 @@
      is admittedly a bit complicated.
      Eventually we plan to obviate the need for this,
      by integrating the preprocessor with the parser."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes (cons lexeme rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes (cons lexeme rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (if (and (plexeme-commentp lexeme)
+           (not (ppoptions->keep-comments (ppstate->options ppstate))))
+      (ppstate-fix ppstate)
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes (cons lexeme rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes (cons lexeme rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes (cons lexeme rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes (cons lexeme rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1248,31 +1255,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We discard the comments if the preprocessor options require that.")
+   (xdoc::p
     "The lexemes to add are passed in direct (i.e. not reverse) order,
      so we need to append them in reverse.")
    (xdoc::p
     "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (b* ((lexemes (if (ppoptions->keep-comments (ppstate->options ppstate))
+                    lexemes
+                  (plexemes-without-comments lexemes))))
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes
+                      (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes
+                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes
+                     (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes
+                           (revappend (plexeme-list-fix lexemes) rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1284,30 +1296,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "We discard the comments if the preprocessor options require that.")
+   (xdoc::p
     "The difference with @(tsee add-rev-lexemes) is that
      the lexemes to add are already reversed,
      so we just append them.")
    (xdoc::p
     "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (append rev-lexemes-to-add rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (append rev-lexemes-to-add rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
+  (b* ((rev-lexemes-to-add
+        (if (ppoptions->keep-comments (ppstate->options ppstate))
+            rev-lexemes-to-add
+          (plexemes-without-comments rev-lexemes-to-add))))
+    (case (hg-state-kind (ppstate->hg ppstate))
+      (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
+                     (new-rev-lexemes
+                      (append rev-lexemes-to-add rev-lexemes)))
+                  (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
+      (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
+                    (new-rev-lexemes
+                     (append rev-lexemes-to-add rev-lexemes)))
+                 (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
+      (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
+                    (new-rev-lexemes
+                     (append rev-lexemes-to-add rev-lexemes)))
+                 (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
+      ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
+                          (new-rev-lexemes
+                           (append rev-lexemes-to-add rev-lexemes)))
+                       (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
+      (:eof (prog2$ (raise "Internal error: header guard state ~x0."
+                           (ppstate->hg ppstate))
+                    (ppstate-fix ppstate)))
+      (t (prog2$ (impossible) ppstate))))
   :no-function nil)

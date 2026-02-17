@@ -21,7 +21,8 @@
   `(init-ppstate ,input
                  (macro-init (c::version-c17))
                  nil ; ignore-err/warn
-                 (make-ppoptions :full-expansion nil)
+                 (make-ppoptions :full-expansion nil
+                                 :keep-comments t)
                  (ienv-default)
                  ppstate))
 
