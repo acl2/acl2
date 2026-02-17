@@ -1036,7 +1036,12 @@
 ;;                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
 ;;                                                              node-replacement-array node-replacement-count))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Turns the ASSUMPTIONS into a node-replacemant-array and extends the DAG to include all relevant nodes.
 ;; Returns (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; This first makes a term-replacement-alist and then turns that into a node-replacement-array.
+;; TODO: Optimize by avoiding ever making the alist.
 (defund make-node-replacement-array-and-extend-dag (assumptions
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     known-booleans)
@@ -1056,16 +1061,15 @@
                 (symbol-listp known-booleans))
            (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            known-booleans)
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         known-booleans)
              (implies (not erp)
                       (and (natp node-replacement-count)
                            (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array new-dag-len)
                            (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                            (wf-dagp 'dag-array dag-array new-dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                           (<= dag-len new-dag-len)
-                           ))))
+                           (<= dag-len new-dag-len)))))
   :hints (("Goal" :in-theory (e/d (make-node-replacement-array-and-extend-dag) (symbol-listp)))))
 
 ;; generalizes the bound
@@ -1091,15 +1095,14 @@
                 (symbol-listp known-booleans))
            (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            known-booleans)
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         known-booleans)
              (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array))
              (implies (not erp)
                       (and (natp new-dag-len)
                            (integerp new-dag-len) ; drop?
                            (dag-variable-alistp dag-variable-alist)
-                           (dag-constant-alistp dag-constant-alist)
-                           ))))
+                           (dag-constant-alistp dag-constant-alist)))))
   :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
            :in-theory (disable make-node-replacement-array-and-extend-dag-return-type))))
 
@@ -1110,8 +1113,8 @@
                 (<= bound dag-len))
            (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (make-node-replacement-array-and-extend-dag assumptions
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            known-booleans)
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         known-booleans)
              (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
                       (<= bound new-dag-len))))
