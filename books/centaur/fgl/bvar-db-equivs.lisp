@@ -34,6 +34,7 @@
 (include-book "pathcond")
 (include-book "contexts")
 
+(local (std::add-default-post-define-hook :fix))
 
 ;; (defines fgl-object-boundedp
 ;;   (define fgl-object-boundedp (x &optional ((bfrstate bfrstate-p) 'bfrstate))
