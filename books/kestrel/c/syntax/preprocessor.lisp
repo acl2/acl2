@@ -50,6 +50,7 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a preprocessor for C that, unlike typical preprocessors,
+     an unless an option for full expansion is selected by the user,
      preserves preprocessing constructs particularly @('#include') directives,
      under conditions that should be often satisfied in practical code.
      That is, instead of expanding @('#include') directives in place,
@@ -61,11 +62,6 @@
      making it difficult to preserve code structure in general
      (in those cases, our preprocessor expands the included files in place,
      like typical preprocessors).")
-   (xdoc::p
-    "Our preprocessor also provides the option
-     to not preserve preprocessing constructs,
-     expanding all the preprocessing constructs,
-     like typical C preprocessors.")
    (xdoc::p
     "The correctness criterior for the preservation of preprocessing constructs
      is that the full preprocessing expansion of the original files
