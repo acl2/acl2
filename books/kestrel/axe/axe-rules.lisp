@@ -1,7 +1,7 @@
 ; Axe's representation of rewrite rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,7 @@
 ;; See also rule-alists.lisp.
 ;; See also stored-rules.lisp.
 
+(include-book "dargp")
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
@@ -29,6 +30,15 @@
 (local (include-book "kestrel/lists-light/list-sets" :dir :system))
 
 ;(local (in-theory (disable all-vars)))
+
+;; quotep gets converted to this when inside an axe-syntaxp
+;; todo: just use darg-quotep?
+(defund-inline axe-quotep (darg)
+  (declare (xargs :guard (dargp darg)))
+  (consp darg) ;; means that it is a quotep, not a nodenum
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund list-of-variables-and-constantsp (items)
   (declare (xargs :guard t))

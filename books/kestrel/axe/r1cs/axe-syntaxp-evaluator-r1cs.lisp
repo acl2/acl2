@@ -1,7 +1,7 @@
 ; A custom axe-syntaxp-evaluator for R1CS proofs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "../axe-syntax-functions")
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
 (include-book "../make-axe-syntaxp-evaluator")
