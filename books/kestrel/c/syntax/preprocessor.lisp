@@ -3689,9 +3689,6 @@
       The @('file') path comes from the list @('files') in @(tsee pproc-files),
       as well as from the resolution of @('#include') directives.")
     (xdoc::li
-     "All the functions take as input preprocessor options,
-      which come from @(tsee pproc-files).")
-    (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
       the files preprocessed so far.
@@ -3828,8 +3825,12 @@
                      ppstate
                      preprocessed
                      state)
-                (b* ((ppstate
-                      (init-ppstate bytes macros ignore-err/warn ienv ppstate))
+                (b* ((ppstate (init-ppstate bytes
+                                            macros
+                                            ignore-err/warn
+                                            options
+                                            ienv
+                                            ppstate))
                      (ppstate (if (ppoptions->full-expansion options)
                                   (update-ppstate->hg (hg-state-not) ppstate)
                                 ppstate))
@@ -3841,7 +3842,6 @@
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
-                                          options
                                           preprocessed
                                           preprocessing
                                           0 ; cond-level
@@ -3885,7 +3885,6 @@
   (define pproc-*-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (options ppoptionsp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -3916,7 +3915,6 @@
           (pproc-?-group-part file
                               base-dir
                               include-dirs
-                              options
                               preprocessed
                               preprocessing
                               cond-level
@@ -3928,7 +3926,6 @@
       (pproc-*-group-part file
                           base-dir
                           include-dirs
-                          options
                           preprocessed
                           preprocessing
                           cond-level
@@ -3942,7 +3939,6 @@
   (define pproc-?-group-part ((file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (options ppoptionsp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -4091,7 +4087,6 @@
                       (pproc-if file
                                 base-dir
                                 include-dirs
-                                options
                                 preprocessed
                                 preprocessing
                                 (1+ (lnfix cond-level))
@@ -4108,7 +4103,6 @@
                                           file
                                           base-dir
                                           include-dirs
-                                          options
                                           preprocessed
                                           preprocessing
                                           (1+ (lnfix cond-level))
@@ -4125,7 +4119,6 @@
                                           file
                                           base-dir
                                           include-dirs
-                                          options
                                           preprocessed
                                           preprocessing
                                           (1+ (lnfix cond-level))
@@ -4143,7 +4136,6 @@
                                      file
                                      base-dir
                                      include-dirs
-                                     options
                                      preprocessed
                                      preprocessing
                                      ppstate
@@ -4237,7 +4229,6 @@
                          (file stringp)
                          (base-dir stringp)
                          (include-dirs string-listp)
-                         (options ppoptionsp)
                          (preprocessed string-ppfile-alistp)
                          (preprocessing string-listp)
                          (ppstate ppstatep)
@@ -4322,7 +4313,6 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 options
                                  preprocessed
                                  preprocessing
                                  ppstate
@@ -4359,7 +4349,6 @@
                                  file
                                  base-dir
                                  include-dirs
-                                 options
                                  preprocessed
                                  preprocessing
                                  ppstate
@@ -4380,7 +4369,6 @@
                              (file stringp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (options ppoptionsp)
                              (preprocessed string-ppfile-alistp)
                              (preprocessing string-listp)
                              (ppstate ppstatep)
@@ -4424,6 +4412,7 @@
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
          (ienv (ppstate->ienv ppstate))
+         (options (ppstate->options ppstate))
          ((erp file-rev-lexemes
                file-macros
                & ; file-header-guard?
@@ -4526,7 +4515,6 @@
   (define pproc-if ((file stringp)
                     (base-dir stringp)
                     (include-dirs string-listp)
-                    (options ppoptionsp)
                     (preprocessed string-ppfile-alistp)
                     (preprocessing string-listp)
                     (cond-level natp)
@@ -4566,7 +4554,6 @@
                                   file
                                   base-dir
                                   include-dirs
-                                  options
                                   preprocessed
                                   preprocessing
                                   cond-level
@@ -4581,7 +4568,6 @@
                               (file stringp)
                               (base-dir stringp)
                               (include-dirs string-listp)
-                              (options ppoptionsp)
                               (preprocessed string-ppfile-alistp)
                               (preprocessing string-listp)
                               (cond-level natp)
@@ -4645,7 +4631,6 @@
                                   file
                                   base-dir
                                   include-dirs
-                                  options
                                   preprocessed
                                   preprocessing
                                   cond-level
@@ -4662,7 +4647,6 @@
                                       (file stringp)
                                       (base-dir stringp)
                                       (include-dirs string-listp)
-                                      (options ppoptionsp)
                                       (preprocessed string-ppfile-alistp)
                                       (preprocessing string-listp)
                                       (cond-level natp)
@@ -4737,7 +4721,6 @@
                 (pproc-*-group-part file
                                     base-dir
                                     include-dirs
-                                    options
                                     preprocessed
                                     preprocessing
                                     cond-level
@@ -4764,7 +4747,6 @@
                                            file
                                            base-dir
                                            include-dirs
-                                           options
                                            preprocessed
                                            preprocessing
                                            cond-level
@@ -4784,7 +4766,6 @@
                          (pproc-*-group-part file
                                              base-dir
                                              include-dirs
-                                             options
                                              preprocessed
                                              preprocessing
                                              cond-level

@@ -32,7 +32,9 @@
                                   ,input)
                                 (macro-init (c::version-c17))
                                 nil ; ignore-err/warn
-                                (ienv-default :std std :extensions ,extensions)
+                                (make-ppoptions :full-expansion nil)
+                                (ienv-default :std std
+                                              :extensions ,extensions)
                                 ppstate))
          ,@(and pos
                 `((ppstate (update-ppstate->position ,pos ppstate))))
@@ -61,6 +63,7 @@
                                   ,input)
                                 (macro-init (c::version-c17))
                                 nil ; ignore-err/warn
+                                (make-ppoptions :full-expansion nil)
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
