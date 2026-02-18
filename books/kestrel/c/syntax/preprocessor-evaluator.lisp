@@ -13,6 +13,7 @@
 (include-book "implementation-environments")
 (include-book "preprocessor-messages")
 (include-book "abstract-syntax-irrelevants")
+(include-book "preprocessor-files")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -58,134 +59,6 @@
      see @(tsee uaconvert-pvalues)."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum pexpr
-  :short "Fixtype of preprocessor expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We define ASTs for the constant expressions
-     in @('#if') and @('#elif') directives [C17:6.10.1].
-     These are similar to @(tsee expr) in our full abstract syntax:
-     see that fixtype along with this one.
-     We represent integer constant expressions [C17:6.6/6],
-     with modifications motivated by the fact that we are preprocessing.
-     [C17:6.6/6] does not give a completely precise definition;
-     we discuss and motivate our choices below.")
-   (xdoc::p
-    "We represent integer constants as preprocessing numbers:
-     we elaborate preprocessing numbers into integer constants
-     (if they can be elaborated as such)
-     during evaluation, after parsing.")
-   (xdoc::p
-    "Although [C17:6.6/6] allows floating constants
-     as immediate operands of casts (to integer types, presumably),
-     this does not seem to apply to the preprocessor.
-     The preprocessor does not really know about types and casts.
-     Indeed, both GCC and Clang fail when attempting to use
-     a cast of a floating constant, or any cast in fact,
-     as the expression of a conditional.
-     Thus, we exclude floating constants.")
-   (xdoc::p
-    "We have a separate fixtype summand for character constants.
-     These are explicitly called for in [C17:6.10.1/4], see footnote 171.")
-   (xdoc::p
-    "Unlike @(tsee expr), there are no enumeration constants here:
-     they are just identifiers at this point,
-     which are turned into @('0') [C17:6.10.1/4] during parsing.")
-   (xdoc::p
-    "We include no string literals, since they do not have integer types.")
-   (xdoc::p
-    "We include no parenthesized expressions,
-     because for now we use these preprocessor expressions only transitorily,
-     in order to evaluate them after parsing them,
-     and parentheses are not relevant to that in ASTs.")
-   (xdoc::p
-    "Since the only allowed operands are numbers and characters [C17:6.6/6],
-     it seems reasonable to exclude operations that require
-     lvalues or pointer values or aggregate values.
-     This excludes compound literals,
-     array subscript operations,
-     and structure/union member access;
-     among the unary operators, it excludes @('&') and @('*');
-     among the binary operators, it excludes all forms of assignment.
-     Instead of using subtypes of @(tsee unop) and @(tsee binop),
-     we spell out the allowed unary and binary operators
-     as separate fixtype summands.")
-   (xdoc::p
-    "Perhaps somewhat inconsistently with [C17:6.6/6],
-     [C17:6.6/3] allows for certain kinds of expressions
-     to occur only in sub-expressions that are not evaluated.
-     We omit them completely for now, to keep things simpler;
-     we will add support for them later if needed.
-     These are the unary operators that take lvalues (increment and decrement),
-     the assignment operators (simple and compound),
-     function calls,
-     and comma expressions.")
-   (xdoc::p
-    "Note also that the comma operator is excluded at the top level
-     by the fact the grammar rule for constant expressions says that
-     they are conditional expressions [C17:6.6/1].")
-   (xdoc::p
-    "Although [C17:6.6/6] explictly calls out @('sizeof') and @('_Alignof'),
-     both GCC and Clang reject them,
-     which makes sense because the preprocessor
-     does not really know about types.")
-   (xdoc::p
-    "Although [C17:6.6/6] explicitly calls out casts,
-     both GCC and Clang reject them, as mentioned earlier.")
-   (xdoc::p
-    "Neither [C17:6.10.1] nor [C17:6.6/6] mention generic selections.
-     Both GCC and Clang reject them.
-     This makes sense because the preprocessor
-     does not really know about types.")
-   (xdoc::p
-    "We avoid any GCC or Clang extensions for now.")
-   (xdoc::p
-    "Unlike @(tsee expr), there is no need to include ambiguous expressions.
-     Those only arise when certain identifiers
-     may ambiguously denote variables or types,
-     but there are no identifiers here.")
-   (xdoc::p
-    "There is an additional kind of expression here, not found in @(tsee expr),
-     namely the @('defined') operator [C17:6.10.1/1]."))
-  (:number ((number pnumber)))
-  (:char ((char cconst)))
-  (:plus ((arg pexpr)))
-  (:minus ((arg pexpr)))
-  (:bitnot ((arg pexpr)))
-  (:lognot ((arg pexpr)))
-  (:mul ((arg1 pexpr) (arg2 pexpr)))
-  (:div ((arg1 pexpr) (arg2 pexpr)))
-  (:rem ((arg1 pexpr) (arg2 pexpr)))
-  (:add ((arg1 pexpr) (arg2 pexpr)))
-  (:sub ((arg1 pexpr) (arg2 pexpr)))
-  (:shl ((arg1 pexpr) (arg2 pexpr)))
-  (:shr ((arg1 pexpr) (arg2 pexpr)))
-  (:lt ((arg1 pexpr) (arg2 pexpr)))
-  (:gt ((arg1 pexpr) (arg2 pexpr)))
-  (:le ((arg1 pexpr) (arg2 pexpr)))
-  (:ge ((arg1 pexpr) (arg2 pexpr)))
-  (:eq ((arg1 pexpr) (arg2 pexpr)))
-  (:ne ((arg1 pexpr) (arg2 pexpr)))
-  (:bitand ((arg1 pexpr) (arg2 pexpr)))
-  (:bitxor ((arg1 pexpr) (arg2 pexpr)))
-  (:bitior ((arg1 pexpr) (arg2 pexpr)))
-  (:logand ((arg1 pexpr) (arg2 pexpr)))
-  (:logor ((arg1 pexpr) (arg2 pexpr)))
-  (:cond ((test pexpr) (then pexpr) (else pexpr)))
-  (:defined ((name ident)))
-  :pred pexprp
-  :prepwork ((set-induction-depth-limit 1)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-pexpr
-  :short "An irrelevant preprocessor expression."
-  :type pexprp
-  :body (pexpr-number (irr-pnumber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

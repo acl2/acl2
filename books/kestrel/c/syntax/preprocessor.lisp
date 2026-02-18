@@ -12,6 +12,7 @@
 
 (include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
+(include-book "preprocessor-files")
 (include-book "macro-tables")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
@@ -164,6 +165,7 @@
      instead attaching ``provenance'' information to certain tokens."))
   :order-subtopics (preprocessor-options
                     preprocessor-lexemes
+                    preprocessor-files
                     macro-tables
                     preprocessor-states
                     preprocessor-messages
