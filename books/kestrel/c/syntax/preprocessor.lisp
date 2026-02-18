@@ -187,11 +187,9 @@
     "This captures the result of preprocessing a file:
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
-     the macro definitions and undefinitions contributed by the file,
      and an optional identifier that identifies a header guard
      (see @(tsee hg-state)) if the file has that structure."))
   ((lexemes plexeme-listp)
-   (macros ident-macro-info-option-alist)
    (header-guard? ident-option))
   :pred ppfilep)
 
@@ -200,7 +198,7 @@
 (defirrelevant irr-ppfile
   :short "An irrelevant preprocessed file."
   :type ppfilep
-  :body (ppfile nil nil nil))
+  :body (ppfile nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4510,21 +4508,19 @@
                                                  ppstate)))
             (retok ppstate preprocessed state)))
          ((erp standalone-file-rev-lexemes
-               & ; file-macros
                standalone-file-header-guard?
                preprocessed
                state)
-          (b* (((reterr) nil nil nil nil state)
+          (b* (((reterr) nil nil nil state)
                (name+ppfile (assoc-equal resolved-file preprocessed)))
             (if name+ppfile
                 (b* (((ppfile ppfile) (cdr name+ppfile)))
                   (retok (rev ppfile.lexemes)
-                         ppfile.macros
                          ppfile.header-guard?
                          preprocessed
                          state))
               (b* (((erp file-rev-lexemes
-                         file-macros
+                         & ; file-macros
                          file-header-guard?
                          preprocessed
                          state)
@@ -4541,11 +4537,9 @@
                                 state
                                 (1- limit)))
                    (ppfile (make-ppfile :lexemes (rev file-rev-lexemes)
-                                        :macros file-macros
                                         :header-guard? file-header-guard?))
                    (preprocessed (acons resolved-file ppfile preprocessed)))
                 (retok file-rev-lexemes
-                       file-macros
                        file-header-guard?
                        preprocessed
                        state)))))
@@ -4966,7 +4960,7 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp file-rev-lexemes
-                file-macros
+                & ; file-macros
                 file-header-guard?
                 preprocessed
                 state)
@@ -4986,7 +4980,6 @@
                             preprocessed
                           (acons file
                                  (make-ppfile :lexemes (rev file-rev-lexemes)
-                                              :macros file-macros
                                               :header-guard? file-header-guard?)
                                  preprocessed))))
        (pproc-files-loop (cdr files)
