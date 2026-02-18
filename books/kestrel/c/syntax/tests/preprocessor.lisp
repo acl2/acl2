@@ -77,24 +77,8 @@ void f(double y) {
 ; (depends-on "preproc-examples/null-directive.c")
 
 (test-preproc-1 "null-directive.c"
-                "/*#*/
-/* comment */ /*#*/
-/*#*/ // comment
-/* comment */ /*#*/ // comment
-    /*#*/
-"
+                ""
                 :base-dir "preproc-examples")
-
-; This is the same test but dropping comments.
-
-(test-preproc-1 "null-directive.c"
-                (list 10
-                      32 10 ; SP
-                      32 10 ; SP
-                      32 32 10 ; SP SP
-                      32 32 32 32 10) ; SP SP SP SP
-                :base-dir "preproc-examples"
-                :keep-comments nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,7 +308,7 @@ M_is_defined
                                     "#include \"subdir/included2.h\"
 "
                                     "subdir/included2.h"
-                                    "/*#*/ // null directive
+                                    "void f() {}
 ")
               :base-dir "preproc-example1")
 
@@ -334,20 +318,20 @@ M_is_defined
               :expected (fileset-of "including.c"
                                     "// #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 // #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 ")

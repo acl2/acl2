@@ -4059,11 +4059,7 @@
        If we find none, it is an error,
        beacuse the file cannot end without a new line [C17:5.2.1.2/2].
        If we find a new line, we have a null directive [C17:6.10.7]:
-       we leave the line as is,
-       but we wrap the @('#') into a (small) block comment
-       (perhaps we could allow a different behavior based on user options);
-       we also update the header guard state according to
-       a non-@('#ifndef') directive.
+       we eliminate the line, since it does nothing.
        If we find an identifier, we dispatch based on the identifier:
        for @('#elif'), @('#else'), and @('#endif'),
        we return the corresponding group ending;
@@ -4135,18 +4131,10 @@
                         :expected "a token or new line"
                         :found (plexeme-to-msg toknl2)))
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
-            (b* ((ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
-                 (ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
-                 (ppstate (add-rev-lexeme (plexeme-block-comment
-                                           (list (char-code #\#)))
-                                          ppstate))
-                 (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
-                 (ppstate (add-rev-lexeme toknl2 ; toknl2 is the new line
-                                          ppstate)))
-              (retok nil ; no group ending
-                     ppstate
-                     (string-ppfile-alist-fix preprocessed)
-                     state)))
+            (retok nil ; no group ending
+                   ppstate
+                   (string-ppfile-alist-fix preprocessed)
+                   state))
            ((plexeme-case toknl2 :ident) ; # ident
             (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
               (cond
