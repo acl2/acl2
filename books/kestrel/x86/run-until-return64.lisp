@@ -38,12 +38,14 @@
       x86
     (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86))))
 
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-base
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (rsp-is-abovep old-rsp x86))
            (equal (run-until-rsp-is-above old-rsp x86)
                   x86)))
 
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-opener
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (not (rsp-is-abovep old-rsp x86)))
@@ -76,6 +78,7 @@
       x86
     (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-or-reach-pc-base
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (or (rsp-is-abovep old-rsp x86)
@@ -83,6 +86,7 @@
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-or-reach-pc-opener
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (not (or (rsp-is-abovep old-rsp x86)

@@ -40,12 +40,14 @@
       x86
     (run-until-esp-is-above old-esp (x86-fetch-decode-execute x86))))
 
+;; This is the non-Axe rule
 (defthm run-until-esp-is-above-base
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (esp-is-abovep old-esp x86))
            (equal (run-until-esp-is-above old-esp x86)
                   x86)))
 
+;; This is the non-Axe rule
 (defthm run-until-esp-is-above-opener
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (not (esp-is-abovep old-esp x86)))
@@ -78,6 +80,7 @@
       x86
     (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
 
+;; This is the non-Axe rule
 (defthm run-until-esp-is-above-or-reach-pc-base
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (or (esp-is-abovep old-esp x86)
@@ -85,6 +88,7 @@
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   x86)))
 
+;; This is the non-Axe rule
 (defthm run-until-esp-is-above-or-reach-pc-opener
   (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
                 (not (or (esp-is-abovep old-esp x86)
