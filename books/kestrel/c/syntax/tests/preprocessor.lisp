@@ -773,7 +773,7 @@ z
 ; (depends-on "preproc-example5/b.c")
 ; (depends-on "preproc-example5/c.c")
 
-(test-preproc '("b.c")
+(test-preproc '("c.c")
               :expected (fileset-of "a.c"
                                     "#ifndef A
 #define A
@@ -783,33 +783,33 @@ int a;
 "
                                     "b.c"
                                     "#include \"a.c\"
-#include \"c.c\"
+void f();
 "
                                     "c.c"
                                     "#include \"a.c\"
-void f();
+#include \"b.c\"
 ")
               :base-dir "preproc-example5")
 
 ; This is the same test but with full expansion.
 
-(test-preproc '("b.c")
-              :expected (fileset-of "b.c"
+(test-preproc '("c.c")
+              :expected (fileset-of "c.c"
                                     "// #include \"a.c\" >>>>>>>>>>
 int a;
 // <<<<<<<<<< #include \"a.c\"
-// #include \"c.c\" >>>>>>>>>>
+// #include \"b.c\" >>>>>>>>>>
 // #include \"a.c\" >>>>>>>>>>
 // <<<<<<<<<< #include \"a.c\"
 void f();
-// <<<<<<<<<< #include \"c.c\"
+// <<<<<<<<<< #include \"b.c\"
 ")
               :base-dir "preproc-example5"
               :full-expansion t)
 
 ; Check against full expansion.
 
-(test-preproc-fullexp '("b.c")
+(test-preproc-fullexp '("c.c")
                       :base-dir "preproc-example5")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
