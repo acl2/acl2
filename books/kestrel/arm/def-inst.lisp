@@ -63,7 +63,7 @@
                    body))
            (body (if check-condition
                      `(if (not (ConditionPassed cond arm)) ; this can be outside the check for 1111 because the 1111 condition always passes
-                          arm
+                          (advance-pc arm) ; skip past this instruction without executing it
                         ,body)
                    body))
            ;; todo: can we automate any more of the body?
@@ -93,7 +93,7 @@
                                    alt-body))
                        (alt-body (if check-condition
                                      `(if (not (ConditionPassed cond arm)) ; this can be outside the check for 1111 because the 1111 condition always passes
-                                          arm
+                                          (advance-pc arm)
                                         ,alt-body)
                                    alt-body)))
                   `((encapsulate ()
