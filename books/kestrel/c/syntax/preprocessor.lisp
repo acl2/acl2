@@ -63,7 +63,7 @@
      (in those cases, our preprocessor expands the included files in place,
      like typical preprocessors).")
    (xdoc::p
-    "The correctness criterior for the preservation of preprocessing constructs
+    "The correctness criterion for the preservation of preprocessing constructs
      is that the full preprocessing expansion of the original files
      must be the same as the of the files produced by our preprocessor.
      That is, if we apply full preprocessing,
@@ -1172,6 +1172,7 @@
 (define read-macro-object-replist ((name identp) (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
+               (newline plexemep)
                (new-ppstate ppstatep))
   :short "Read the replacement list of an object-like macro."
   :long
@@ -1185,25 +1186,28 @@
      to exclude any initial white space and comments,
      which are not part of the replacement list [C17:6.10.3/7].
      We ensure that @('##') does not occur
-     at the start or end of the replacement list [C17:6.10.3.3/1]."))
+     at the start or end of the replacement list [C17:6.10.3.3/1].
+     We also return the final new line lexeme."))
   (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil ppstate)
-       ((erp replist ppstate) (read-macro-object-replist-loop t ppstate))
+       ((reterr) nil (irr-plexeme) ppstate)
+       ((erp replist newline ppstate)
+        (read-macro-object-replist-loop t ppstate))
        ((when (and (consp replist)
                    (or (plexeme-hashhashp (car replist))
                        (plexeme-hashhashp (car (last replist))))))
         (reterr (msg "The replacement list of ~x0 starts or ends with ##."
                      (ident-fix name)))))
-    (retok replist ppstate))
+    (retok replist newline ppstate))
 
   :prepwork
   ((define read-macro-object-replist-loop ((startp booleanp) (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
+                  (newline plexemep)
                   (new-ppstate ppstatep))
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
-          ((reterr) nil ppstate)
+          ((reterr) nil (irr-plexeme) ppstate)
           ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
        (cond
         ((not toknl) ; EOF
@@ -1214,16 +1218,16 @@
                                 other white space"
                      :found (plexeme-to-msg toknl)))
         ((plexeme-case toknl :newline) ; EOL
-         (retok nil ppstate))
+         (retok nil toknl ppstate))
         (t ; token
-         (b* (((erp replist ppstate) ; token replist
+         (b* (((erp replist newline ppstate) ; token replist
                (read-macro-object-replist-loop nil ppstate))
               (replist (cons toknl replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist ppstate)))))
+           (retok replist newline ppstate)))))
      :no-function nil
      :measure (ppstate->size ppstate)
 
@@ -1238,12 +1242,21 @@
                           plexeme-tokenp
                           plexeme-token/newline-p)
                          (plexeme-token/newline-p-of-read-token/newline)))
-        '(:use plexeme-token/newline-p-of-read-token/newline)))))
+        '(:use plexeme-token/newline-p-of-read-token/newline)))
+
+     (defret plexeme-newline-of-read-macro-object-replist-loop
+       (implies (not erp)
+                (equal (plexeme-kind newline) :newline))
+       :hints (("Goal" :induct t)))))
 
   ///
 
   (defret plexeme-list-token/space-p-of-read-macro-object-replist
-    (plexeme-list-token/space-p replist)))
+    (plexeme-list-token/space-p replist))
+
+  (defret plexeme-newline-of-read-macro-object-replist
+    (implies (not erp)
+             (equal (plexeme-kind newline) :newline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1253,6 +1266,7 @@
                                      (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
+               (newline plexemep)
                (hash-params ident-listp)
                (new-ppstate ppstatep))
   :short "Read the replacement list of a function-like macro."
@@ -1286,7 +1300,9 @@
       at the start or end of the replacement list [C17:6.10.3.3/1]."))
    (xdoc::p
     "We also ensure that @('__VA_ARGS__') occurs in the replacement list
-     only if the macro has ellipsis."))
+     only if the macro has ellipsis.")
+   (xdoc::p
+    "We also return the final new line lexeme."))
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
@@ -1297,11 +1313,12 @@
                                              (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
+                  (newline plexemep)
                   (hash-params ident-listp)
                   (new-ppstate ppstatep))
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
-          ((reterr) nil nil ppstate)
+          ((reterr) nil (irr-plexeme) nil ppstate)
           ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
        (cond
         ((not toknl) ; EOF
@@ -1320,7 +1337,7 @@
                           (plexeme-hashhashp previous))) ; ## EOL
                (reterr (msg "The replacement list of ~x0 must not end with ##."
                             (ident-fix name)))))
-           (retok nil nil ppstate)))
+           (retok nil toknl nil ppstate)))
         ((plexeme-case toknl :ident) ; ident
          (b* ((ident (plexeme-ident->ident toknl))
               ((when (and (equal ident (ident "__VA_ARGS__"))
@@ -1339,7 +1356,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist hash-params ppstate)
+              ((erp replist newline hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1356,7 +1373,7 @@
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist hash-params ppstate)))
+           (retok replist newline hash-params ppstate)))
         ((plexeme-hashhashp toknl) ; ##
          (b* (((when (not previous)) ; nothing ##
                (reterr
@@ -1368,7 +1385,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist hash-params ppstate)
+              ((erp replist newline hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1387,7 +1404,7 @@
               (replist (if nontoknls
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist hash-params ppstate)))
+           (retok replist newline hash-params ppstate)))
         (t ; other token
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # token
@@ -1395,7 +1412,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist hash-params ppstate)
+              ((erp replist newline hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1405,7 +1422,7 @@
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist hash-params ppstate)))))
+           (retok replist newline hash-params ppstate)))))
      :no-function nil
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
@@ -1423,6 +1440,11 @@
                           plexeme-token/newline-p)
                          (plexeme-token/newline-p-of-read-token/newline)))
         '(:use plexeme-token/newline-p-of-read-token/newline)))
+
+     (defret plexeme-newline-of-read-macro-function-replist-loop
+       (implies (not erp)
+                (equal (plexeme-kind newline) :newline))
+       :hints (("Goal" :induct t)))
 
      (defret read-macro-function-replist-loop-subsetp-when-ellipsis
        (subsetp-equal hash-params
@@ -1442,6 +1464,10 @@
   (defret plexeme-list-token/space-p-of-read-macro-function-replist
     (plexeme-list-token/space-p replist))
 
+  (defret plexeme-newline-of-read-macro-function-replist
+    (implies (not erp)
+             (equal (plexeme-kind newline) :newline)))
+
   (defret read-macro-replist-subsetp-when-ellipsis
     (subsetp-equal hash-params
                    (cons (ident "__VA_ARGS__") params))
@@ -1457,6 +1483,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define add-define-id ((name identp) (newline plexemep) (ppstate ppstatep))
+  :returns (new-ppstate ppstatep)
+  :short "Generate a directive of the form @('#define N N')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rationale for this is explained in @(see preservable-inclusions)."))
+  (add-rev-lexemes (list (plexeme-punctuator "#")
+                         (plexeme-ident (ident "define"))
+                         (plexeme-spaces 1)
+                         (plexeme-ident name)
+                         (plexeme-spaces 1)
+                         (plexeme-ident name)
+                         newline)
+                   ppstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pproc-define ((ppstate ppstatep))
   :returns (mv erp (new-ppstate ppstatep))
   :short "Preprocess a @('#define') directive."
@@ -1465,7 +1509,7 @@
    (xdoc::p
     "This is called just after the @('define') identifier has been parsed.
      We do not pass the comments and white space before and after the @('#'),
-     because we make no use of them, at lest for now.")
+     because we make no use of them, at least for now.")
    (xdoc::p
     "We read an identifier, which is the name of the macro.
      This name must not be the @('defined') identifier [C17:6.10.8/2].
@@ -1521,7 +1565,17 @@
      We try to add the macro definition to the macro table.")
    (xdoc::p
     "If the next lexeme is absent, or anything else than the above,
-     the macro definition is syntactically incorrect."))
+     the macro definition is syntactically incorrect.")
+   (xdoc::p
+    "Unless full expansion is required in the options,
+     we add to the output a @('#define N N'),
+     where @('N') is the name of the macro.
+     The rationale is explained in @(see preservable-inclusions).
+     But we omit the generation of this @('#define N N')
+     if this directive is the one for the header guard,
+     i.e. the one that changes the @(tsee hg-state)
+     from (':ifndef') to @(':define'),
+     because it is already generated in @(tsee all-rev-lexemes)."))
   (b* ((ppstate (ppstate-fix ppstate)) ; # define
        ((reterr) ppstate)
        ((erp & name name-span ppstate) (read-token/newline ppstate))
@@ -1544,23 +1598,35 @@
            (info (make-macro-info-object :replist nil))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
+           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
+                        ppstate
+                      (if (and (hg-state-case (ppstate->hg ppstate) :ifndef)
+                               (equal name
+                                      (hg-state-ifndef->name
+                                       (ppstate->hg ppstate))))
+                          ppstate
+                        (add-define-id name lexeme ppstate))))
            (ppstate (hg-trans-define name t ppstate)))
         (retok ppstate)))
      ((and lexeme
            (not (plexeme-token/newline-p lexeme))) ; # define name WSC
-      (b* (((erp replist ppstate) ; # define name WSC REPLIST
+      (b* (((erp replist newline ppstate) ; # define name WSC REPLIST EOL
             (read-macro-object-replist name ppstate))
            (macros (ppstate->macros ppstate))
            (info (make-macro-info-object :replist replist))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (hg-trans-define name (not replist) ppstate)))
+           (ppstate (hg-trans-define name (not replist) ppstate))
+           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
+                        ppstate
+                      (add-define-id name newline ppstate))))
         (retok ppstate)))
      ((and lexeme
            (plexeme-equiv lexeme (plexeme-punctuator "("))) ; # define (
       (b* (((erp params ellipsis ppstate) ; # define ( params )
             (read-macro-params ppstate))
-           ((erp replist hash-params ppstate) ; # define ( params ) replist
+           ((erp replist newline hash-params ppstate)
+            ;; # define ( params ) replist EOL
             (read-macro-function-replist name params ellipsis ppstate))
            (macros (ppstate->macros ppstate))
            (info (make-macro-info-function :params params
@@ -1569,7 +1635,10 @@
                                            :hash-params hash-params))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (hg-trans-define name nil ppstate)))
+           (ppstate (hg-trans-define name nil ppstate))
+           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
+                        ppstate
+                      (add-define-id name newline ppstate))))
         (retok ppstate)))
      (t ; # define EOF/other
       (reterr-msg :where (position-to-msg (span->start lexeme-span))
@@ -1603,7 +1672,11 @@
    (xdoc::p
     "We remove the macro from the table.
      Note that @(tsee macro-undefine) takes care of
-     ensuring that the macro is not a predefined one."))
+     ensuring that the macro is not a predefined one.")
+   (xdoc::p
+    "Unless full expansion is required in the options,
+     we add to the output the @('#undef') directive.
+     The rationale is explained in @(see preservable-inclusions)."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp & name? name?-span ppstate) (read-token/newline ppstate))
@@ -1624,7 +1697,15 @@
        (macros (ppstate->macros ppstate))
        ((erp new-macros) (macro-undefine name macros))
        (ppstate (update-ppstate->macros new-macros ppstate))
-       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate)))
+       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
+       (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
+                    ppstate
+                  (add-rev-lexemes (list (plexeme-punctuator "#")
+                                         (plexeme-ident (ident "undef"))
+                                         (plexeme-spaces 1)
+                                         (plexeme-ident name)
+                                         newline?)
+                                   ppstate))))
     (retok ppstate))
   :no-function nil)
 

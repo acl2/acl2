@@ -147,7 +147,8 @@ int z6 = (1, (a,b));
 ((1)*(2),3);
 ((1)*(2),3, 4);
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +168,8 @@ int z6 = (1, (a,b));
 \"u'a'\";
 \"\\\"abc\\\"\";
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +182,8 @@ x334;
 6e+8P-;
 >>=;
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +191,8 @@ x334;
 
 (test-preproc-1 "c17-std-example-6.10.3.3.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,7 +202,8 @@ x334;
                 "
 2*9*g
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -208,7 +213,8 @@ x334;
                 "
 int table[100];
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +222,8 @@ int table[100];
 
 (test-preproc-1 "c17-std-example2-6.10.3.5.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -229,7 +236,8 @@ f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
 int i[] = { 1, 23, 4, 5,  };
 char c[2][6] = { \"hello\", \"\" };
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +251,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 \"hello\";
 \"hello\" \", world\"
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,7 +263,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 int j[] = { 123, 45, 67, 89,
            10, 11, 12,  };
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +272,8 @@ int j[] = { 123, 45, 67, 89,
 
 (test-preproc-1 "c17-std-example6-6.10.3.5.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +286,8 @@ fprintf(stderr, \"X = %d\\n\", x);
 puts(\"The first, second, and third items.\");
 ((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +299,8 @@ puts(\"The first, second, and third items.\");
 
 M_is_defined
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -488,6 +501,7 @@ int x1 = 0;
                 "gincludermod2.c")
               :expected (fileset-of "gincludermod1.c"
                                     "
+#define f f
 // #include \"gincluder1.h\" >>>>>>>>>>
 
 // #include \"guarded.h\" >>>>>>>>>>
@@ -503,6 +517,7 @@ int x1 = 0;
 "
                                     "gincludermod2.c"
                                     "
+#define f f
 // #include \"gincluder2.h\" >>>>>>>>>>
 
 // #include \"guarded.h\" >>>>>>>>>>
@@ -541,6 +556,7 @@ void f() {}
                 "gincludermod2.c")
               :expected (fileset-of "gincludermod1.c"
                                     "
+#define f f
 
 
 #ifndef GUARDED
@@ -552,6 +568,7 @@ int x1 = 0;
 "
                                     "gincludermod2.c"
                                     "
+#define f f
 
 
 #ifndef GUARDED
@@ -709,7 +726,8 @@ x
 #endif
 "
                                     "g.c"
-                                    "// #include \"f.c\" >>>>>>>>>>
+                                    "#define x x
+// #include \"f.c\" >>>>>>>>>>
 #ifndef F
 #define F
 y
@@ -720,6 +738,7 @@ z
                                     "h.c"
                                     "#include \"f.c\"
 // #include \"g.c\" >>>>>>>>>>
+#define x x
 #include \"f.c\"
 z
 // <<<<<<<<<< #include \"g.c\"
@@ -774,6 +793,7 @@ z
               :expected (fileset-of "a.c"
                                     "#ifndef A
 #define A
+#define X X
 int a;
 #endif
 "
@@ -807,3 +827,27 @@ void f();
 
 (test-preproc-fullexp '("b.c")
                       :base-dir "preproc-example5")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example6/guarded.h")
+; (depends-on "preproc-example6/defguard.c")
+
+(test-preproc '("defguard.c")
+              :expected (fileset-of "guarded.h"
+                                    "#ifndef G
+#define G
+void g();
+#endif
+"
+                                    "defguard.c"
+                                    "#define G G
+#include \"guarded.h\"
+int n = 10;
+")
+              :base-dir "preproc-example6")
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("defguard.c")
+                      :base-dir "preproc-example6")
