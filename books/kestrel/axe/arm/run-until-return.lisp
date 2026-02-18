@@ -83,15 +83,17 @@
 ;;   (implies (armp arm)
 ;;            (armp (run-until-return-aux call-stack-height arm))))
 
-;; todo: restrict to when arm is not an IF/MYIF
+;; This is a non-Axe rule
 (defthm run-until-return-aux-base
-  (implies (< call-stack-height 0)
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (< call-stack-height 0))
            (equal (run-until-return-aux call-stack-height arm)
                   arm)))
 
-;; todo: restrict to when arm is not an IF/MYIF
+;; This is a non-Axe rule
 (defthm run-until-return-aux-opener
-  (implies (not (< call-stack-height 0))
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (not (< call-stack-height 0)))
            (equal (run-until-return-aux call-stack-height arm)
                   ;; todo: decoding is done here twice (in update-call-stack-height and step):
                   (run-until-return-aux (update-call-stack-height call-stack-height arm) (step arm)))))

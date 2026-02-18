@@ -17,8 +17,8 @@
 (defun symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
-    run-until-return-aux-opener
-    run-until-return-aux-base
+    run-until-return-aux-opener-axe
+    run-until-return-aux-base-axe
     run-until-return-aux-of-if-arg2
     run-subroutine
     ;; sp-is-abovep
@@ -557,6 +557,8 @@
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
+
+     myif ; always expand to IF
      )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

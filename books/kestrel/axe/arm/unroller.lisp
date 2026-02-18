@@ -51,6 +51,7 @@
 (include-book "run-until-return")
 ;(include-book "pc")
 (include-book "rule-lists")
+(include-book "axe-rules")
 ;(include-book "read-over-write-rules")
 ;(include-book "write-over-write-rules")
 ;(include-book "clear-writes")
