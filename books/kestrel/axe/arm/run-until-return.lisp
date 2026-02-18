@@ -10,6 +10,8 @@
 
 (in-package "A")
 
+;; This machinery is useful for symbolic execution.
+
 (include-book "portcullis")
 (include-book "kestrel/arm/step" :dir :system)
 ;(include-book "registers") ; for SP
