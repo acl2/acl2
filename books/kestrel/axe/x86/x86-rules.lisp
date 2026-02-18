@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,10 +22,10 @@
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
-(include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system) ; drop?
 ;(include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
-(include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
-(include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
+(include-book "kestrel/x86/run-until-return32" :dir :system) ; newer scheme
+(include-book "kestrel/x86/run-until-return64" :dir :system) ; newer scheme
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/read-and-write2" :dir :system)
 (include-book "kestrel/x86/support64" :dir :system)
