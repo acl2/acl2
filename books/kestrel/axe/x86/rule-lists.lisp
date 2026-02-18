@@ -1890,7 +1890,7 @@
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(    ;; newer scheme, 32-bit:
-    run-until-return4
+    run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
     run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1917,7 +1917,7 @@
     acl2::equal-of-+-cancel-2
 
     ;; newer scheme:
-    run-until-return3
+    run-until-return64
     run-until-rsp-is-above-opener-axe ; not for IFs
     run-until-rsp-is-above-base-axe ; not for IFs
     run-until-rsp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
@@ -1956,7 +1956,7 @@
     ;; run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
 
     ;;newer-scheme:
-    run-until-return-or-reach-pc3
+    run-until-return-or-reach-pc64
     run-until-rsp-is-above-or-reach-pc-opener-axe
     run-until-rsp-is-above-or-reach-pc-base-axe
     acl2::memberp-of-cons-irrel-strong ; for resolving the stop-pcs check

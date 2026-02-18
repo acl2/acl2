@@ -1,6 +1,6 @@
 ; A stobj to gather (non-read-only) parameters used in rewriting
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A stobj that gathers the 5 components of the DAG and the xor-signature information.
+;; A stobj that gathers data that changes during rewriting, incluing the 5 components of the DAG, the xor-signature information, etc.
 (defstobj+ rewrite-stobj2
   ;; TODO: Make this (and the dag-parent-array) into true stobj arrays (but that will be a lot of work):
   (dag-array :type t :initially nil) ; todo: strengthen pred? will always be named 'dag-array
@@ -74,7 +74,7 @@
                                  (max-nodenum-leaf . 0)
                                  (combined-constant . 0)))
   (xor-signature-to-nodenums-map :type (hash-table hons-equal 1000 (satisfies nat-listp))) ; the size of 1000 is just a hint
-  (negated-assumptions :type (satisfies possibly-negated-nodenumsp) :initially nil)
+  (negated-smt-assumptions :type (satisfies possibly-negated-nodenumsp) :initially nil)
   :inline t
   ;; We use get-XXX and put-XXX names for everything except the hash-table fields (which have a more complex interface):
   :renaming ((dag-array get-dag-array)
@@ -99,8 +99,8 @@
              ;; (xor-signature-to-nodenums-map get-xor-signature-to-nodenums-map)
              ;; (update-xor-signature-to-nodenums-map put-xor-signature-to-nodenums-map)
 
-             (negated-assumptions get-negated-assumptions)
-             (update-negated-assumptions put-negated-assumptions)))
+             (negated-smt-assumptions get-negated-smt-assumptions)
+             (update-negated-smt-assumptions put-negated-smt-assumptions)))
 
 (defthm rewrite-stobj2p-of-xor-signature-to-nodenums-map-put
   (implies (and (rewrite-stobj2p rewrite-stobj2)
@@ -199,15 +199,15 @@
          (xor-signature-to-nodenums-map-get k1 rewrite-stobj2))
   :hints (("Goal" :in-theory (enable xor-signature-to-nodenums-map-get nodenum-to-xor-signature-map-put))))
 
-(defthm get-negated-assumptions-of-xor-signature-to-nodenums-map-put
-  (equal (get-negated-assumptions (xor-signature-to-nodenums-map-put k v rewrite-stobj2))
-         (get-negated-assumptions rewrite-stobj2))
-  :hints (("Goal" :in-theory (enable xor-signature-to-nodenums-map-put get-negated-assumptions))))
+(defthm get-negated-smt-assumptions-of-xor-signature-to-nodenums-map-put
+  (equal (get-negated-smt-assumptions (xor-signature-to-nodenums-map-put k v rewrite-stobj2))
+         (get-negated-smt-assumptions rewrite-stobj2))
+  :hints (("Goal" :in-theory (enable xor-signature-to-nodenums-map-put get-negated-smt-assumptions))))
 
-(defthm get-negated-assumptions-of-nodenum-to-xor-signature-map-put
-  (equal (get-negated-assumptions (nodenum-to-xor-signature-map-put k v rewrite-stobj2))
-         (get-negated-assumptions rewrite-stobj2))
-  :hints (("Goal" :in-theory (enable nodenum-to-xor-signature-map-put get-negated-assumptions))))
+(defthm get-negated-smt-assumptions-of-nodenum-to-xor-signature-map-put
+  (equal (get-negated-smt-assumptions (nodenum-to-xor-signature-map-put k v rewrite-stobj2))
+         (get-negated-smt-assumptions rewrite-stobj2))
+  :hints (("Goal" :in-theory (enable nodenum-to-xor-signature-map-put get-negated-smt-assumptions))))
 
 ;; todo: defstobj+ should do this, and prove rules:
 (in-theory (disable nodenum-to-xor-signature-map-get
@@ -215,8 +215,8 @@
                     xor-signature-to-nodenums-map-get
                     xor-signature-to-nodenums-map-put))
 
-(defthm get-negated-assumptions-of-create-rewrite-stobj2
-  (equal (get-negated-assumptions (create-rewrite-stobj2))
+(defthm get-negated-smt-assumptions-of-create-rewrite-stobj2
+  (equal (get-negated-smt-assumptions (create-rewrite-stobj2))
          nil)
   :hints (("Goal" :in-theory (enable create-rewrite-stobj2))))
 
@@ -228,7 +228,7 @@
 (defund wf-rewrite-stobj2p (rewrite-stobj2)
   (declare (xargs :stobjs rewrite-stobj2))
   (and (wf-dagp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 'dag-parent-array (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2))
-       (bounded-possibly-negated-nodenumsp (get-negated-assumptions rewrite-stobj2) (get-dag-len rewrite-stobj2))))
+       (bounded-possibly-negated-nodenumsp (get-negated-smt-assumptions rewrite-stobj2) (get-dag-len rewrite-stobj2))))
 
 (defthm wf-rewrite-stobj2p-of-if
   (equal (wf-rewrite-stobj2p (if test tp ep))
@@ -252,14 +252,14 @@
                 (dag-constant-alistp (get-dag-constant-alist rewrite-stobj2))
                 (bounded-dag-constant-alistp (get-dag-constant-alist rewrite-stobj2)
                                              (get-dag-len rewrite-stobj2))
-                (bounded-possibly-negated-nodenumsp (get-negated-assumptions rewrite-stobj2) (get-dag-len rewrite-stobj2))))
+                (bounded-possibly-negated-nodenumsp (get-negated-smt-assumptions rewrite-stobj2) (get-dag-len rewrite-stobj2))))
   :hints (("Goal" :in-theory (enable wf-rewrite-stobj2p))))
 
-(defthm bounded-possibly-negated-nodenumsp-of-get-negated-assumptions-gen
+(defthm bounded-possibly-negated-nodenumsp-of-get-negated-smt-assumptions-gen
   (implies (and (<= (get-dag-len rewrite-stobj2) bound)
                 (natp bound) ; could say integerp
                 (wf-rewrite-stobj2p rewrite-stobj2))
-           (bounded-possibly-negated-nodenumsp (get-negated-assumptions rewrite-stobj2) bound))
+           (bounded-possibly-negated-nodenumsp (get-negated-smt-assumptions rewrite-stobj2) bound))
   :hints (("Goal" :in-theory (e/d (wf-rewrite-stobj2p)
                                   (wf-rewrite-stobj2p-conjuncts)))))
 
@@ -283,10 +283,10 @@
            (wf-rewrite-stobj2p (nodenum-to-xor-signature-map-put k v rewrite-stobj2)))
   :hints (("Goal" :in-theory (enable wf-rewrite-stobj2p))))
 
-(defthm wf-rewrite-stobj2p-of-put-negated-assumptions
+(defthm wf-rewrite-stobj2p-of-put-negated-smt-assumptions
   (implies (wf-rewrite-stobj2p rewrite-stobj2)
-           (equal (wf-rewrite-stobj2p (put-negated-assumptions negated-assumptions rewrite-stobj2))
-                  (bounded-possibly-negated-nodenumsp negated-assumptions (get-dag-len rewrite-stobj2))))
+           (equal (wf-rewrite-stobj2p (put-negated-smt-assumptions negated-smt-assumptions rewrite-stobj2))
+                  (bounded-possibly-negated-nodenumsp negated-smt-assumptions (get-dag-len rewrite-stobj2))))
   :hints (("Goal" :in-theory (enable wf-rewrite-stobj2p))))
 
 (defthm wf-rewrite-stobj2p-conjuncts2
@@ -629,7 +629,7 @@
   (implies (and (rewrite-stobj2p rewrite-stobj2)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist))
            (equal (wf-rewrite-stobj2p (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2))
-                  (bounded-possibly-negated-nodenumsp (get-negated-assumptions rewrite-stobj2) dag-len)))
+                  (bounded-possibly-negated-nodenumsp (get-negated-smt-assumptions rewrite-stobj2) dag-len)))
   :hints (("Goal" :in-theory (e/d (load-dag wf-rewrite-stobj2p) (wf-rewrite-stobj2p-conjuncts)))))
 
 (defthm get-xxx-of-load-dag

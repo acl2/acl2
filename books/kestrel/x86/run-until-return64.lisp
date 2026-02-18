@@ -1,7 +1,7 @@
-; A variant scheme for handling "run-until-return"
+; A new scheme for handling "run-until-return" (64-bit mode)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,7 @@
 ;; "above" as "not closely below".  Recall that the stack grows downward, so a
 ;; larger RSP means a shorter stack.
 (defund rsp-is-abovep (old-rsp x86)
-  (declare (xargs :guard (signed-byte-p 64 old-rsp) ; todo: update to unsigned soon
+  (declare (xargs :guard (unsigned-byte-p 64 old-rsp)
                   :stobjs x86))
   (bvlt 64 2147483648 ; 2^31 ; todo: consider 32-bit and 64-bit
         (bvminus 64 old-rsp (rsp x86))))
@@ -38,15 +38,17 @@
       x86
     (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86))))
 
-;; todo: restrict to when x86 is not an IF/MYIF
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-base
-  (implies (rsp-is-abovep old-rsp x86)
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (rsp-is-abovep old-rsp x86))
            (equal (run-until-rsp-is-above old-rsp x86)
                   x86)))
 
-;; todo: restrict to when x86 is not an IF/MYIF
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-opener
-  (implies (not (rsp-is-abovep old-rsp x86))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (not (rsp-is-abovep old-rsp x86)))
            (equal (run-until-rsp-is-above old-rsp x86)
                   (run-until-rsp-is-above old-rsp (x86-fetch-decode-execute x86)))))
 
@@ -59,7 +61,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above)
-(defund-nx run-until-return3 (x86)
+(defund-nx run-until-return64 (x86)
   (declare (xargs :stobjs x86))
   (run-until-rsp-is-above (rsp x86) x86))
 
@@ -76,17 +78,19 @@
       x86
     (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
 
-;; todo: restrict to when x86 is not an IF/MYIF
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-or-reach-pc-base
-  (implies (or (rsp-is-abovep old-rsp x86)
-               (memberp (rip x86) stop-pcs))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (or (rsp-is-abovep old-rsp x86)
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86)))
 
-;; todo: restrict to when x86 is not an IF/MYIF
+;; This is the non-Axe rule
 (defthm run-until-rsp-is-above-or-reach-pc-opener
-  (implies (not (or (rsp-is-abovep old-rsp x86)
-                    (memberp (rip x86) stop-pcs)))
+  (implies (and (syntaxp (not (and (consp x86) (eq 'if (ffn-symb x86)))))
+                (not (or (rsp-is-abovep old-rsp x86)
+                         (memberp (rip x86) stop-pcs))))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86)))))
 
@@ -96,7 +100,7 @@
              (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86a)
            (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86b))))
 
-(defund-nx run-until-return-or-reach-pc3 (stop-pcs x86)
+(defund-nx run-until-return-or-reach-pc64 (stop-pcs x86)
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-is-above-or-reach-pc)
   (declare (xargs :stobjs x86))
   (run-until-rsp-is-above-or-reach-pc (rsp x86) stop-pcs x86))

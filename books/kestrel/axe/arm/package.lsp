@@ -87,7 +87,15 @@
     arm::*InstrSet_ARM*
     arm::*InstrSet_Thumb*
     arm::*InstrSet_Jazelle*
-    arm::*InstrSet_ThumbEE*))
+    arm::*InstrSet_ThumbEE*
+
+    ;; keeping this axe-specific for now:
+    ;; arm::update-call-stack-height-aux
+    ;; arm::update-call-stack-height
+    ;; arm::run-until-return-aux
+    ;; arm::run-until-return
+    ;; arm::run-subroutine
+    ))
 
 ;; (defconst *arm-symbols-in-acl2-package*
 ;;   '(ubyte32-list-fix))
