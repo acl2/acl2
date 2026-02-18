@@ -48,13 +48,20 @@
      "Comments should be preserved or not.")
     (xdoc::li
      "Comments should be generated
-      to trace the expansion of @('#include') directives."))
+      to trace the expansion of @('#include') directives.")
+    (xdoc::li
+     "The @('#error') and @('#warning') directives should be ignored,
+      in the sense of not causing actual errors or warnings."))
    (xdoc::p
-    "These options are explained in more detail in @(tsee input-files),
-     which provides an interface to setting these options."))
+    "These options, except the last one,
+     are explained in more detail in @(tsee input-files),
+     which provides an interface to setting these options.
+     The last option is for internal preprocessor use,
+     not accessible via @(tsee input-files)."))
   ((full-expansion bool)
    (keep-comments bool)
-   (trace-expansion bool))
+   (trace-expansion bool)
+   (no-errors/warnings bool))
   :pred ppoptionsp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -62,4 +69,4 @@
 (defirrelevant irr-ppoptions
   :short "Irrelevant preprocessor options."
   :type ppoptionsp
-  :body (ppoptions nil nil nil))
+  :body (ppoptions nil nil nil nil))

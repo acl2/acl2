@@ -76,7 +76,8 @@
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
-                                  :trace-expansion ,trace-expansion))
+                                  :trace-expansion ,trace-expansion
+                                  :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (preprocess files
                                              base-dir
@@ -145,7 +146,8 @@
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
-                                  :trace-expansion ,trace-expansion))
+                                  :trace-expansion ,trace-expansion
+                                  :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (preprocess files
                                              base-dir
@@ -246,10 +248,12 @@
          (ienv (change-ienv (ienv-default) :version version))
          (options-preserve (make-ppoptions :full-expansion nil
                                            :keep-comments ,keep-comments
-                                           :trace-expansion ,trace-expansion))
+                                           :trace-expansion ,trace-expansion
+                                           :no-errors/warnings nil))
          (options-expand (make-ppoptions :full-expansion t
                                          :keep-comments ,keep-comments
-                                         :trace-expansion nil))
+                                         :trace-expansion nil
+                                         :no-errors/warnings nil))
          ((mv erp fileset state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
          ((when erp)

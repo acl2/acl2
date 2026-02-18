@@ -3457,7 +3457,8 @@
        ((reterr) ppstate)
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
        (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
-       ((when (ppstate->ignore-err/warn ppstate)) (retok ppstate))
+       ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
+        (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes)))
     (reterr (msg "#error: ~s0" string)))
@@ -3501,7 +3502,8 @@
                       C17 without GCC or Clang extensions.")))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
        (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
-       ((when (ppstate->ignore-err/warn ppstate)) (retok ppstate))
+       ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
+        (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
        (string (acl2::nats=>string bytes))
        (- (cw "#warning: ~s0" string)))
@@ -3752,7 +3754,6 @@
                       (preprocessed string-ppfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
-                      (ignore-err/warn booleanp)
                       (ienv ienvp)
                       state
                       (limit natp))
@@ -3829,7 +3830,6 @@
                      state)
                 (b* ((ppstate (init-ppstate bytes
                                             macros
-                                            ignore-err/warn
                                             options
                                             ienv
                                             ppstate))
@@ -4428,7 +4428,6 @@
                       preprocessed
                       preprocessing
                       (ppstate->macros ppstate)
-                      nil ; ignore-err/warn
                       ienv
                       state
                       (1- limit)))
@@ -4464,11 +4463,11 @@
                                 resolved-file
                                 base-dir
                                 include-dirs
-                                options
+                                (change-ppoptions options
+                                                  :no-errors/warnings t)
                                 preprocessed
                                 preprocessing
                                 (macro-init (ienv->version ienv))
-                                t ; ignore-err/warn
                                 ienv
                                 state
                                 (1- limit)))
@@ -4910,7 +4909,6 @@
                        preprocessed
                        preprocessing
                        (macro-init (ienv->version ienv))
-                       nil ; ignore-err/warn
                        ienv
                        state
                        recursion-limit))

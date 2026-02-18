@@ -274,7 +274,8 @@
                      trace-expansion))))
     (retok (make-ppoptions :full-expansion full-expansion
                            :keep-comments keep-comments
-                           :trace-expansion trace-expansion)))
+                           :trace-expansion trace-expansion
+                           :no-errors/warnings nil)))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::symbol-listp-of-strip-cars-when-symbol-alistp))))
