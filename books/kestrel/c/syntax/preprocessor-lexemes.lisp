@@ -386,3 +386,20 @@
     (if (plexeme-commentp lexeme)
         (plexemes-without-comments (cdr lexemes))
       (cons (plexeme-fix lexeme) (plexemes-without-comments (cdr lexemes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexemes-without-nontokens ((lexemes plexeme-listp))
+  :returns (new-lexemes plexeme-listp)
+  :short "Remove all the non-tokens from a list of lexemes."
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes)))
+    (if (plexeme-tokenp lexeme)
+        (cons (plexeme-fix lexeme) (plexemes-without-nontokens (cdr lexemes)))
+      (plexemes-without-nontokens (cdr lexemes))))
+
+  ///
+
+  (defret plexeme-list-tokenp-of-plexemes-without-nontokens
+    (plexeme-list-tokenp new-lexemes)
+    :hints (("Goal" :induct t))))

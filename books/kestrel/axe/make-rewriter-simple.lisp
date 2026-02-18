@@ -1064,7 +1064,7 @@
                                           ((mv result state)
                                            (if axe-smtp
                                                ;; Tries to prove that the rewriten HYP is true or some assumption is false:
-                                               (prove-disjunction-with-stp (cons new-nodenum (get-negated-assumptions rewrite-stobj2))
+                                               (prove-disjunction-with-stp (cons new-nodenum (get-negated-smt-assumptions rewrite-stobj2))
                                                                            (get-dag-array rewrite-stobj2)
                                                                            (get-dag-len rewrite-stobj2)
                                                                            (get-dag-parent-array rewrite-stobj2)
@@ -1340,15 +1340,15 @@
                     (if memoization ; can't use context if we are memoizing:
                         refined-assumption-alist
                       (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist simplified-test (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                  ;; Extend the negated-assumptions to include the test (thus assuming that the test is false), if not memoizing:
+                  ;; Extend the negated-smt-assumptions to include the test (thus assuming that the test is false), if not memoizing:
                   ,@(and smtp
-                         '(((mv old-negated-assumptions rewrite-stobj2)
+                         '(((mv old-negated-smt-assumptions rewrite-stobj2)
                             (if memoization  ; can't use context if we are memoizing:
                                 (mv nil ; meaningless
                                     rewrite-stobj2)
-                              (let* ((old-negated-assumptions (get-negated-assumptions rewrite-stobj2))
-                                     (rewrite-stobj2 (put-negated-assumptions (cons simplified-test old-negated-assumptions) rewrite-stobj2)))
-                                (mv old-negated-assumptions rewrite-stobj2))))))
+                              (let* ((old-negated-smt-assumptions (get-negated-smt-assumptions rewrite-stobj2))
+                                     (rewrite-stobj2 (put-negated-smt-assumptions (cons simplified-test old-negated-smt-assumptions) rewrite-stobj2)))
+                                (mv old-negated-smt-assumptions rewrite-stobj2))))))
                   ;; Rewrite the else-branch:
                   ((mv erp simplified-else-branch rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name else-branch
@@ -1365,11 +1365,11 @@
                   ;; like it was before we set it (except perhaps longer):
                   ;; If memoizing, undo-pairs will be nil:
                   (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count (get-dag-len rewrite-stobj2)))
-                  ;; Restore the old negated-assumptions:
+                  ;; Restore the old negated-smt-assumptions:
                   ,@(and smtp
                          '((rewrite-stobj2 (if memoization
                                                rewrite-stobj2 ; we didn't change it above
-                                             (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))))
+                                             (put-negated-smt-assumptions old-negated-smt-assumptions rewrite-stobj2))))))
                ;; Now simplify the call of IF/MYIF/BOOLIF (this function takes simplified args and does not handle ifs specially, or else things might loop):
                ;; (We know we don't have a ground term, because simplified-test is not a constant.)
                (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-then-branch simplified-else-branch)
@@ -1427,15 +1427,15 @@
                     (if memoization ; can't use context if we are memoizing:
                         refined-assumption-alist
                       (extend-refined-assumption-alist-assuming-node refined-assumption-alist simplified-test (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                  ;; Extend the negated-assumptions to include the negated test (thus assuming that the test is true -- double negative), if not memoizing:
+                  ;; Extend the negated-smt-assumptions to include the negated test (thus assuming that the test is true -- double negative), if not memoizing:
                   ,@(and smtp
-                         '(((mv old-negated-assumptions rewrite-stobj2)
+                         '(((mv old-negated-smt-assumptions rewrite-stobj2)
                             (if memoization  ; can't use context if we are memoizing:
                                 (mv nil ; meaningless
                                     rewrite-stobj2)
-                              (let* ((old-negated-assumptions (get-negated-assumptions rewrite-stobj2))
-                                     (rewrite-stobj2 (put-negated-assumptions (cons `(not ,simplified-test) old-negated-assumptions) rewrite-stobj2)))
-                                (mv old-negated-assumptions rewrite-stobj2))))))
+                              (let* ((old-negated-smt-assumptions (get-negated-smt-assumptions rewrite-stobj2))
+                                     (rewrite-stobj2 (put-negated-smt-assumptions (cons `(not ,simplified-test) old-negated-smt-assumptions) rewrite-stobj2)))
+                                (mv old-negated-smt-assumptions rewrite-stobj2))))))
                   ;; Rewrite the then-branch:
                   ((mv erp simplified-then-branch rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name then-branch
@@ -1452,11 +1452,11 @@
                   ;; like it was before we assumed the test (except perhaps longer):
                   ;; If memoizing, undo-pairs will be nil:
                   (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count (get-dag-len rewrite-stobj2)))
-                  ;; Restore the old negated-assumptions:
+                  ;; Restore the old negated-smt-assumptions:
                   ,@(and smtp
                          '((rewrite-stobj2 (if memoization
                                                rewrite-stobj2 ; we didn't change it above
-                                             (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))))
+                                             (put-negated-smt-assumptions old-negated-smt-assumptions rewrite-stobj2))))))
                ;; Continue rewriting the IF/MYIF/BOOLIF:
                (,simplify-if/myif/boolif-tree-and-add-to-dag3-name fn
                                                                    simplified-test ; a nodenum
@@ -1638,15 +1638,15 @@
                     (if memoization ; can't use context if we are memoizing:
                         refined-assumption-alist
                       (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist simplified-test (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                  ;; Extend the negated-assumptions to include the test (thus assuming that the test is false), if not memoizing:
+                  ;; Extend the negated-smt-assumptions to include the test (thus assuming that the test is false), if not memoizing:
                   ,@(and smtp
-                         '(((mv old-negated-assumptions rewrite-stobj2)
+                         '(((mv old-negated-smt-assumptions rewrite-stobj2)
                             (if memoization  ; can't use context if we are memoizing:
                                 (mv nil ; meaningless
                                     rewrite-stobj2)
-                              (let* ((old-negated-assumptions (get-negated-assumptions rewrite-stobj2))
-                                     (rewrite-stobj2 (put-negated-assumptions (cons simplified-test old-negated-assumptions) rewrite-stobj2)))
-                                (mv old-negated-assumptions rewrite-stobj2))))))
+                              (let* ((old-negated-smt-assumptions (get-negated-smt-assumptions rewrite-stobj2))
+                                     (rewrite-stobj2 (put-negated-smt-assumptions (cons simplified-test old-negated-smt-assumptions) rewrite-stobj2)))
+                                (mv old-negated-smt-assumptions rewrite-stobj2))))))
                   ;; Simplify the else-branch
                   ((mv erp simplified-else-branch rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name else-branch
@@ -1659,11 +1659,11 @@
                   ;; like it was before we set it (except perhaps longer):
                   ;; If memoizing, undo-pairs will be nil:
                   (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count (get-dag-len rewrite-stobj2)))
-                  ;; Restore the old negated-assumptions:
+                  ;; Restore the old negated-smt-assumptions:
                   ,@(and smtp
                          '((rewrite-stobj2 (if memoization
                                                rewrite-stobj2 ; we didn't change it above
-                                             (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))))
+                                             (put-negated-smt-assumptions old-negated-smt-assumptions rewrite-stobj2))))))
                ;; Try to apply rules to the call of BVIF on the simplified args:
                (,simplify-fun-call-and-add-to-dag-name 'bvif (list simplified-size simplified-test simplified-then-branch simplified-else-branch)
                                                        (maybe-extend-trees-equal-to-tree memoization tree trees-equal-to-tree) ; the BVIF call we are rewriting here is equal to TREE
@@ -1720,15 +1720,15 @@
                     (if memoization ; can't use context if we are memoizing:
                         refined-assumption-alist
                       (extend-refined-assumption-alist-assuming-node refined-assumption-alist simplified-test (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                  ;; Extend the negated-assumptions to include the negation of the test (thus assuming that the test is true -- double negative), if not memoizing:
+                  ;; Extend the negated-smt-assumptions to include the negation of the test (thus assuming that the test is true -- double negative), if not memoizing:
                   ,@(and smtp
-                         '(((mv old-negated-assumptions rewrite-stobj2)
+                         '(((mv old-negated-smt-assumptions rewrite-stobj2)
                             (if memoization  ; can't use context if we are memoizing:
                                 (mv nil ; meaningless
                                     rewrite-stobj2)
-                              (let* ((old-negated-assumptions (get-negated-assumptions rewrite-stobj2))
-                                     (rewrite-stobj2 (put-negated-assumptions (cons `(not ,simplified-test) old-negated-assumptions) rewrite-stobj2)))
-                                (mv old-negated-assumptions rewrite-stobj2))))))
+                              (let* ((old-negated-smt-assumptions (get-negated-smt-assumptions rewrite-stobj2))
+                                     (rewrite-stobj2 (put-negated-smt-assumptions (cons `(not ,simplified-test) old-negated-smt-assumptions) rewrite-stobj2)))
+                                (mv old-negated-smt-assumptions rewrite-stobj2))))))
                   ;; Simplify the then-branch:
                   ((mv erp simplified-then-branch rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name then-arg
@@ -1741,11 +1741,11 @@
                   ;; like it was before we assumed the test (except perhaps longer):
                   ;; If memoizing, undo-pairs will be nil:
                   (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count (get-dag-len rewrite-stobj2)))
-                  ;; Restore the old negated-assumptions:
+                  ;; Restore the old negated-smt-assumptions:
                   ,@(and smtp
                          '((rewrite-stobj2 (if memoization
                                                rewrite-stobj2 ; we didn't change it above
-                                             (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))))
+                                             (put-negated-smt-assumptions old-negated-smt-assumptions rewrite-stobj2))))))
                (,simplify-bvif-tree-and-add-to-dag3-name simplified-size
                                                          simplified-test
                                                          simplified-then-branch
@@ -3240,17 +3240,17 @@
                      ;; (:definition wf-rewrite-stobj2p)
                      (:rewrite wf-rewrite-stobj2p-conjuncts)
                      (:linear wf-rewrite-stobj2p-conjuncts2)
-                     wf-rewrite-stobj2p-of-put-negated-assumptions
-                     rewrite-stobj2p-of-put-negated-assumptions
+                     wf-rewrite-stobj2p-of-put-negated-smt-assumptions
+                     rewrite-stobj2p-of-put-negated-smt-assumptions
                      bounded-possibly-negated-nodenumsp-of-cons
                      possibly-negated-nodenumsp-of-cons
                      bounded-possibly-negated-nodenump-of-cons-of-not
                      possibly-negated-nodenump-of-cons-of-not
-                     get-dag-len-of-put-negated-assumptions
-                     possibly-negated-nodenumsp-of-get-negated-assumptions
+                     get-dag-len-of-put-negated-smt-assumptions
+                     possibly-negated-nodenumsp-of-get-negated-smt-assumptions
                      bounded-possibly-negated-nodenump-when-not-consp
                      possibly-negated-nodenump-when-not-consp
-                     bounded-possibly-negated-nodenumsp-of-get-negated-assumptions-gen
+                     bounded-possibly-negated-nodenumsp-of-get-negated-smt-assumptions-gen
                      (:executable-counterpart all-natp)
                      (:executable-counterpart axe-rule-hyp-listp)
                      (:executable-counterpart axe-tree-listp)
@@ -5422,7 +5422,7 @@
          ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
          ;; Returns (mv erp rewrite-stobj2 ,@maybe-state memoization hits tries limits node-replacement-array renumbering-stobj). The caller can use the renumbering-stobj to lookup what the old top node rewrote to.
          (defund ,simplify-dag-nodes-name (rev-dag ; the old dag, low nodes come first
-                                           rewrite-stobj2 ; the new DAG
+                                           rewrite-stobj2 ; contains the new DAG
                                            ,@maybe-state
                                            maybe-internal-context-array ; if present, old and new dags agree on old nodenums
                                            memoization ; this is over the NEW nodenums (the ones in the dag-array field of rewrite-stobj2)
@@ -5492,29 +5492,31 @@
                   (nodenum (the (integer 0 1152921504606846974) (car entry))) ; or, since they are consecutive, we could track this numerically.
                   (print (get-print rewrite-stobj))
                   (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
+                  ;; If memoizing, this will be (true-context), due to the guard:
                   (context-for-this-node (if maybe-internal-context-array (aref1 'context-array maybe-internal-context-array nodenum) (true-context)))
+                  ;; If memoizing, this will be (true-context):
                   (context-for-this-node (if (false-contextp context-for-this-node)
                                              (prog2$ (cw "WARNING: False context for node ~x0.~%" nodenum)
                                                      (true-context) ; safe
                                                      )
                                            context-for-this-node))
                   ;; (- (cw "Node ~x0 has ~x1 context items (array ~x2).~%" nodenum (len context-for-this-node) maybe-internal-context-array))
-                  ;; Temporarily add context info to the node-replacement-array:
+                  ;; Context Step 1: Temporarily add context info to the node-replacement-array:
                   ((mv node-replacement-array node-replacement-count-for-this-node undo-pairs)
                    (update-node-replacement-array-for-assuming-possibly-negated-nodenums context-for-this-node
                                                                                          node-replacement-array node-replacement-count
                                                                                          (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2)
                                                                                          (get-known-booleans rewrite-stobj)
                                                                                          nil))
-                  ;; Temporarily add context info to the assumptions used for free var matching:
+                  ;; Context Step 2: Temporarily add context info to the assumptions used for free var matching:
                   (context-exprs-for-this-node (context-to-exprs context-for-this-node (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2)))
                   (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
-                  ;; Temporarily assume the context info (must negate each node since we are extended the negated-assumptions):
+                  ;; Context Step 3: Temporarily assume the context info (must negate each node since we are extending the negated-smt-assumptions):
                   ;; Due to the guard, we know there will be no context info if we are memoizing.
                   ,@(and smtp
-                         '((old-negated-assumptions (get-negated-assumptions rewrite-stobj2))
+                         '((old-negated-smt-assumptions (get-negated-smt-assumptions rewrite-stobj2))
                            ;; we could look for contradictions here, I suppose:
-                           (rewrite-stobj2 (put-negated-assumptions (negate-possibly-negated-nodenums-and-append context-for-this-node old-negated-assumptions) rewrite-stobj2))))
+                           (rewrite-stobj2 (put-negated-smt-assumptions (negate-possibly-negated-nodenums-and-append context-for-this-node old-negated-smt-assumptions) rewrite-stobj2))))
                   ;; Save the old-memoization for comparison below (see todo below):
                   (old-memoization memoization)
                   ((mv erp new-nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
@@ -5529,11 +5531,12 @@
                                             renumbering-stobj))
                   ((when erp) (mv erp rewrite-stobj2 ,@maybe-state memoization nil tries limits node-replacement-array renumbering-stobj))
                   (memoization (if (null old-memoization) nil memoization)) ;; ensure the memoization did not become non-nil (todo: prove that this is unneeded and drop it)
-                  ;; Pop the context (if not using contexts, undo-pairs will be nil):
+                  ;; Undo Context Step 1: Pop the context (if not using contexts, undo-pairs will be nil):
                   (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count-for-this-node (get-dag-len rewrite-stobj2)))
-                  ;; Restore the old negated-assumptions:
+                  ;; Undo Context Step 2: Nothing needed!
+                  ;; Context Step 3: Restore the old negated-smt-assumptions:
                   ,@(and smtp
-                         '((rewrite-stobj2 (put-negated-assumptions old-negated-assumptions rewrite-stobj2))))
+                         '((rewrite-stobj2 (put-negated-smt-assumptions old-negated-smt-assumptions rewrite-stobj2))))
                   ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
                   (renumbering-stobj (update-renumbering nodenum new-nodenum-or-quotep renumbering-stobj)))
                (,simplify-dag-nodes-name (rest rev-dag)
@@ -5921,7 +5924,7 @@
                 ((when erp) (mv erp nil limits nil ,@maybe-state))
                 ,@(and smtp '(;; Form the negated-assumptions for STP:
                               ;; todo: combine with the above assumption-processing steps, but note that this is conditional on smtp:
-                              ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                              ((mv erp negated-smt-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                (negate-assumptions-and-add-to-dag-array (keep-smt-assumptions assumptions)
                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
                               ((when erp) (mv erp nil limits nil state)))))
@@ -5946,7 +5949,7 @@
                       (rewrite-stobj2 (if (eq :compact (get-normalize-xors rewrite-stobj))
                                           (set-xor-signature-fields 0 rewrite-stobj2)
                                         rewrite-stobj2))
-                      ,@(and smtp '((rewrite-stobj2 (put-negated-assumptions negated-assumptions rewrite-stobj2))))
+                      ,@(and smtp '((rewrite-stobj2 (put-negated-smt-assumptions negated-smt-assumptions rewrite-stobj2))))
                       (renumbering-stobj (resize-renumbering old-len renumbering-stobj))
                       ;; Decide whether to count and print tries:
                       (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
@@ -6524,14 +6527,14 @@
                            :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
                                                                   natp-of-+-of-1
                                                                   <-of-+-of-1-when-integers
-                                                                  <-OF-+-OF-1-WHEN-natps
+                                                                  <-of-+-of-1-when-natps
                                                                   ;; integerp-when-dargp ;caused problems when natp is known
                                                                   axe-treep-when-pseudo-termp
                                                                   dargp-when-natp
                                                                   <-of-if-arg2-axe
                                                                   wf-rewrite-stobj2p)
                                                                  (natp
-                                                                  NATP-WHEN-DARGP ;caused problems when natp is known
+                                                                  natp-when-dargp ;caused problems when natp is known
                                                                   wf-rewrite-stobj2p-conjuncts))))))
            (b* (;; Fix some values, so we don't need assumptions about them in later theorems (should have no runtime cost):
                 (monitored-symbols (my-symbol-list-fix monitored-symbols))
@@ -6563,7 +6566,7 @@
                 ,@(and smtp
                        '(;; Form the negated-assumptions for STP:
                          ;; todo: combine with the above assumption-processing steps, but note that this is conditional on smtp:
-                         ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                         ((mv erp negated-smt-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                           (negate-assumptions-and-add-to-dag-array (keep-smt-assumptions assumptions)
                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
                          ((when erp) (mv erp nil nil state))))
@@ -6598,7 +6601,7 @@
                                              (rewrite-stobj2 (if (eq :compact (get-normalize-xors rewrite-stobj))
                                                                  (set-xor-signature-fields 0 rewrite-stobj2)
                                                                rewrite-stobj2))
-                                             ,@(and smtp '((rewrite-stobj2 (put-negated-assumptions negated-assumptions rewrite-stobj2))))
+                                             ,@(and smtp '((rewrite-stobj2 (put-negated-smt-assumptions negated-smt-assumptions rewrite-stobj2))))
                                              ;; Decide whether to count and print tries:
                                              (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)))
                                         (mv-let (erp new-nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)

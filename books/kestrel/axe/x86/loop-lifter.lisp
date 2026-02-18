@@ -78,7 +78,7 @@
 (include-book "kestrel/x86/alt-defs" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "rule-lists")
-(include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system) ; drop?
 ;(include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 ;(include-book "kestrel/x86/assumptions64" :dir :system)

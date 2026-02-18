@@ -206,7 +206,7 @@
   `(encapsulate ()
        (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-     (defun ,name (steps-done
+     (defund ,name (steps-done
                    step-limit
                    step-increment ; not always just a number!
                    dag ; the state may be wrapped in an output-extractor
@@ -251,7 +251,7 @@
                        :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
                        :stobjs state
                        :hints (("Goal" :in-theory (enable min nfix ifix)))
-                       :guard-hints (("Goal" :in-theory (e/d (acl2-numberp-when-natp) (min))))))
+                       :guard-hints (("Goal" :in-theory (e/d (acl2-numberp-when-natp) (min member-equal))))))
        (if (or (not (mbt (and (natp steps-done)
                               (natp step-limit))))
                (<= step-limit steps-done))

@@ -74,7 +74,7 @@
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 ;(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 ;(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
-(include-book "make-assumption-array")
+(include-book "make-assumption-array") ; for maybe-replace-nodenum-using-assumption-array
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))

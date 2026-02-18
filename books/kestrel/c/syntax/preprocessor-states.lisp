@@ -353,8 +353,6 @@
                     :initially nil)
       (rev-lexemes4 :type (satisfies plexeme-listp)
                     :initially nil)
-      (ignore-err/warn :type (satisfies booleanp)
-                       :initially nil)
       (options :type (satisfies ppoptionsp)
                :initially ,(irr-ppoptions))
       (ienv :type (satisfies ienvp)
@@ -373,7 +371,6 @@
                  (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
                  (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
                  (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
-                 (ignore-err/warnp raw-ppstate->ignore-err/warn-p)
                  (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
@@ -391,7 +388,6 @@
                  (rev-lexemes2 raw-ppstate->rev-lexemes2)
                  (rev-lexemes3 raw-ppstate->rev-lexemes3)
                  (rev-lexemes4 raw-ppstate->rev-lexemes4)
-                 (ignore-err/warn raw-ppstate->ignore-err/warn)
                  (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
@@ -409,7 +405,6 @@
                  (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
                  (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
                  (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
-                 (update-ignore-err/warn raw-update-ppstate->ignore-err/warn)
                  (update-options raw-update-ppstate->options)
                  (update-ienv raw-update-ppstate->ienv))))
 
@@ -552,12 +547,6 @@
          :exec (raw-ppstate->rev-lexemes4 ppstate))
     :inline t)
 
-  (define ppstate->ignore-err/warn (ppstate)
-    :returns (ignore-err/warn booleanp)
-    (mbe :logic (non-exec (raw-ppstate->ignore-err/warn (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ignore-err/warn ppstate))
-    :inline t)
-
   (define ppstate->options (ppstate)
     :returns (options ppoptionsp)
     (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
@@ -683,14 +672,6 @@
                            (plexeme-list-fix rev-lexemes)
                            (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->ignore-err/warn ((ignore-err/warn booleanp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec
-                 (raw-update-ppstate->ignore-err/warn (bool-fix ignore-err/warn)
-                                                      (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ignore-err/warn ignore-err/warn ppstate))
     :inline t)
 
   (define update-ppstate->options ((options ppoptionsp) ppstate)
@@ -855,7 +836,6 @@
 
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
-                      (ignore-err/warn booleanp)
                       (options ppoptionsp)
                       (ienv ienvp)
                       ppstate)
@@ -868,7 +848,6 @@
      It is built from
      (the data of) a file to preprocess,
      the current table of macros in scope,
-     a flag saying whether to ignore errors and warnings,
      the preprocessor options,
      and an implementation environment.")
    (xdoc::p
@@ -896,7 +875,6 @@
        (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
        (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
-       (ppstate (update-ppstate->ignore-err/warn ignore-err/warn ppstate))
        (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))

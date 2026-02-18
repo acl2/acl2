@@ -1,2 +1,2 @@
 #include "a.c"
-#include "c.c"
+X f();

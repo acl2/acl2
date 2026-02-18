@@ -1,1 +1,1 @@
-# // null directive
+void f() {}

@@ -213,7 +213,14 @@
         the comments in the original files should be preserved by preprocessing,
         if they occur in text lines (i.e. not in preprocessing directives),
         or in @('#include') directives that are preserved.
-        Comments occurring in other places are dropped, currently.")))
+        Comments occurring in other places are dropped, currently.")
+      (xdoc::li
+       "@(':trace-expansion t/nil'),
+        where @('t/nil') is either @('t') or @('nil'),
+        and whose default is @('t').
+        This option, if @('t') specifies that
+        when a @('#include') directive is expanded,
+        it is surrounded by two line comments delimiting the expansion.")))
 
     (xdoc::desc
      "@(':include-dirs') &mdash; default @('nil')"

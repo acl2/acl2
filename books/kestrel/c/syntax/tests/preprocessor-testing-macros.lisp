@@ -57,6 +57,7 @@
                         include-dirs
                         full-expansion
                         (keep-comments 't)
+                        (trace-expansion 't)
                         std
                         gcc
                         clang
@@ -74,15 +75,16 @@
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
-                                  :keep-comments ,keep-comments))
+                                  :keep-comments ,keep-comments
+                                  :trace-expansion ,trace-expansion
+                                  :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (pproc-files files
-                                              base-dir
-                                              include-dirs
-                                              options
-                                              ienv
-                                              state
-                                              1000000000)))
+         ((mv erp fileset state) (preprocess files
+                                             base-dir
+                                             include-dirs
+                                             options
+                                             ienv
+                                             state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -102,6 +104,7 @@
                           include-dirs
                           full-expansion
                           (keep-comments 't)
+                          (trace-expansion 't)
                           std
                           gcc
                           clang)
@@ -110,6 +113,7 @@
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
+                 :trace-expansion ,trace-expansion
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang
@@ -124,6 +128,7 @@
                               include-dirs
                               full-expansion
                               (keep-comments 't)
+                              (trace-expansion 't)
                               std
                               gcc
                               clang)
@@ -135,19 +140,22 @@
                             (t (c::version-c17)))
                     (cond (,gcc (c::version-c23+gcc))
                           (,clang (c::version-c23+clang))
-                          (t (c::version-c23)))))(files ,files)
+                          (t (c::version-c23)))))
+         (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
-                                  :keep-comments ,keep-comments))
+                                  :keep-comments ,keep-comments
+                                  :trace-expansion ,trace-expansion
+                                  :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (pproc-files files
-                                              base-dir
-                                              include-dirs
-                                              options
-                                              ienv
-                                              state
-                                              1000000000))
+         ((mv erp fileset state) (preprocess files
+                                             base-dir
+                                             include-dirs
+                                             options
+                                             ienv
+                                             state
+                                             1000000000))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
@@ -164,6 +172,7 @@
                           include-dirs
                           full-expansion
                           (keep-comments 't)
+                          (trace-expansion 't)
                           std
                           gcc
                           clang)
@@ -172,6 +181,101 @@
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
+                 :trace-expansion ,trace-expansion
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Check directive-preserving expansion against full expansion.
+
+(defun filemap-drop-absolute-paths (filemap)
+  (b* (((when (omap::emptyp filemap)) nil)
+       ((mv path data) (omap::head filemap))
+       (new-filemap-tail (filemap-drop-absolute-paths (omap::tail filemap))))
+    (if (path-absolutep (filepath->unwrap path))
+        new-filemap-tail
+      (omap::update path data new-filemap-tail))))
+
+(defun fileset-drop-absolute-paths (fileset)
+  (fileset (filemap-drop-absolute-paths (fileset->unwrap fileset))))
+
+(defun compare-ppfiles (original transformed)
+  (b* (((when (endp original))
+        (if (endp transformed)
+            t
+          (cw "Transformed files have extra elements ~x0."
+              (strip-cars transformed))))
+       ((when (endp transformed))
+        (cw "Transformed files miss elements ~x0."
+            (strip-cars original)))
+       ((cons name ppfile-original) (car original))
+       (name+ppfile (assoc-equal name transformed))
+       ((unless name+ppfile)
+        (cw "Transformed files miss element ~x0." name))
+       (ppfile-transformed (cdr name+ppfile))
+       (tokens-original
+        (plexemes-without-nontokens (ppfile->lexemes ppfile-original)))
+       (tokens-transformed
+        (plexemes-without-nontokens (ppfile->lexemes ppfile-transformed))))
+    (if (equal tokens-original tokens-transformed)
+        t
+      (cw "Original tokens ~x0 differ from transformed tokens ~x1."
+          tokens-original tokens-transformed))))
+
+(defmacro test-preproc-fullexp (files
+                                &key
+                                (base-dir '".")
+                                include-dirs
+                                (keep-comments 't)
+                                (trace-expansion 't)
+                                std
+                                gcc
+                                clang)
+  `(assert!-stobj
+    (b* ((version (if (or (not ,std)
+                          (= ,std 17))
+                      (cond (,gcc (c::version-c17+gcc))
+                            (,clang (c::version-c17+clang))
+                            (t (c::version-c17)))
+                    (cond (,gcc (c::version-c23+gcc))
+                          (,clang (c::version-c23+clang))
+                          (t (c::version-c23)))))
+         (files ,files)
+         (base-dir ,base-dir)
+         (include-dirs ,include-dirs)
+         (ienv (change-ienv (ienv-default) :version version))
+         (options-preserve (make-ppoptions :full-expansion nil
+                                           :keep-comments ,keep-comments
+                                           :trace-expansion ,trace-expansion
+                                           :no-errors/warnings nil))
+         (options-expand (make-ppoptions :full-expansion t
+                                         :keep-comments ,keep-comments
+                                         :trace-expansion nil
+                                         :no-errors/warnings nil))
+         ((mv erp fileset state)
+          (preprocess files base-dir include-dirs options-preserve ienv state))
+         ((when erp)
+          (mv (cw "Initial preprocessing fails: ~@0" erp) state))
+         (tmp-dir (str::cat base-dir "/tmp"))
+         (fileset (fileset-drop-absolute-paths fileset))
+         ((mv erp state) (write-fileset fileset tmp-dir state))
+         ((when erp)
+          (mv (cw "File set writing fails: ~x0" erp) state))
+         ((mv erp ppfiles-original state)
+          (pproc-files files base-dir include-dirs
+                       options-expand ienv state 1000000000))
+         ((when erp)
+          (mv (cw "Full-expansion preprocessing of original files fails: ~@0"
+                  erp)
+              state))
+         ((mv erp ppfiles-transformed state)
+          (pproc-files files tmp-dir include-dirs
+                       options-expand ienv state 1000000000))
+         ((when erp)
+          (mv (cw "Full-expansion preprocessing of transformed files fails: ~@0"
+                  erp)
+              state)))
+      (mv (compare-ppfiles ppfiles-original ppfiles-transformed) state))
+    state))
