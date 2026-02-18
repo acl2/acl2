@@ -1923,6 +1923,24 @@
 
   (fty::deffixequiv-mutual pparse-expressions))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pparse-const-expr ((lexemes plexeme-listp))
+  :returns (mv erp (expr pexprp))
+  :short "Parse the constant expression in a @('#if') or @('#elif') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We parse the expression and we ensure that
+     there are no tokens left after the expression."))
+  (b* (((reterr) (irr-pexpr))
+       ((erp expr lexemes) (pparse-expression lexemes))
+       ((mv token lexemes) (find-first-token lexemes))
+       ((when token)
+        (reterr (msg "Found extra lexemes with tokens ~x0."
+                     (cons token lexemes)))))
+    (retok expr)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pparseval-const-expr ((lexemes plexeme-listp)
@@ -1934,13 +1952,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is used for the expressions in @('#if') and @('#elif') directives.
-     We parse the expression, obtaining an AST,
-     and ensuring that there are no tokens left after the expression.
+     We parse the expression, obtaining an AST.
      Then we evaluate the AST, obtaining a preprocessor value."))
   (b* (((reterr) (irr-pvalue))
-       ((erp expr lexemes) (pparse-expression lexemes))
-       ((mv token lexemes) (find-first-token lexemes))
-       ((when token)
-        (reterr (msg "Found extra lexemes with tokens ~x0."
-                     (cons token lexemes)))))
+       ((erp expr) (pparse-const-expr lexemes)))
     (peval-expr expr macros ienv)))
