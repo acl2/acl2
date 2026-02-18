@@ -302,8 +302,7 @@
       just after @('#if') or @('#elif').
       The stopping criterion is the end of the line,
       and macro replacement is modified
-      to handle the @('defined') operator [C17:6.10.1/1]
-      and to replace identifiers with 0 [C17:6.10.1/4].")
+      to replace identifiers with 0 [C17:6.10.1/4].")
     (xdoc::li
      "The @(':arg-nonlast'), @(':arg-last'), and @(':arg-dots') modes
       are for arguments of function-like macros [C17:6.10.3/10],
@@ -2527,11 +2526,9 @@
        If we are in the @(':expr') mode and the identifier is @('defined'),
        it is the operator described in [C17:6.10.1/1],
        which must be followed by another identifier, possibly parenthesized.
-       If the macro is found in the macro table,
-       we add the lexeme @('1') to the reversed lexmarks;
-       otherwise, we add the lexeme @('0') to the reversed lexmarks.
-       That is, we evaluate the operator.
-       And we continue preprocessing.")
+       It is important that we leave the argument identifier as is,
+       so that it can be parsed as part of the expression;
+       in recognizing the identifier, we check that the syntax is correct.")
      (xdoc::p
       "If the next lexmark is an identifier different from @('defined'),
        or if we are not in the @(':expr') mode,
@@ -2694,54 +2691,63 @@
             (b* ((ident (plexeme-ident->ident lexeme))
                  ((when (and (macrep-mode-case mode :expr)
                              (equal (ident->unwrap ident) "defined"))) ; defined
-                  (b* (((erp macro-name disabled ppstate)
-                        (b* (((reterr) (irr-ident) nil ppstate)
-                             ((erp token span2 disabled ppstate)
+                  (b* (((erp lexmarks disabled ppstate)
+                        (b* (((reterr) nil nil ppstate)
+                             ((erp token2 span2 disabled ppstate)
                               (read-token-handling-markers directivep
                                                            disabled
                                                            ppstate)))
                           (cond
-                           ((plexeme-case token :ident) ; defined ident
-                            (b* ((macro-name (plexeme-ident->ident token)))
-                              (retok macro-name disabled ppstate)))
-                           ((plexeme-punctuatorp token "(") ; defined (
-                            (b* (((erp token span3 disabled ppstate)
+                           ((plexeme-case token2 :ident) ; defined ident
+                            (retok (list (make-lexmark-lexeme :lexeme token2
+                                                              :span (irr-span)))
+                                   disabled
+                                   ppstate))
+                           ((plexeme-punctuatorp token2 "(") ; defined (
+                            (b* (((erp token3 span3 disabled ppstate)
                                   (read-token-handling-markers directivep
                                                                disabled
                                                                ppstate))
-                                 ((unless (plexeme-case token :ident))
+                                 ((unless (plexeme-case token3 :ident))
                                   ;; defined ( ident
                                   (reterr-msg :where (position-to-msg
                                                       (span->start span3))
                                               :expected "an identifier"
-                                              :found (plexeme-to-msg token)))
-                                 (macro-name (plexeme-ident->ident token))
-                                 ((erp token span4 disabled ppstate)
+                                              :found (plexeme-to-msg token3)))
+                                 ((erp token4 span4 disabled ppstate)
                                   (read-token-handling-markers directivep
                                                                disabled
                                                                ppstate))
-                                 ((unless (plexeme-punctuatorp token ")"))
+                                 ((unless (plexeme-punctuatorp token4 ")"))
                                   ;; defined ( ident )
                                   (reterr-msg :where (position-to-msg
                                                       (span->start span4))
                                               :expected "a right parenthesis"
-                                              :found (plexeme-to-msg token))))
-                              (retok macro-name disabled ppstate)))
+                                              :found (plexeme-to-msg token4))))
+                              (retok (list (make-lexmark-lexeme
+                                            :lexeme token2
+                                            :span (irr-span))
+                                           (make-lexmark-lexeme
+                                            :lexeme token3
+                                            :span (irr-span))
+                                           (make-lexmark-lexeme
+                                            :lexeme token4
+                                            :span (irr-span)))
+                                     disabled
+                                     ppstate)))
                            (t ; defined EOF-or-not-ident-and-not-(
                             (reterr-msg :where (position-to-msg
                                                 (span->start span2))
                                         :expected "an identifier or ~
                                                    a left parenthesis"
-                                        :found (plexeme-to-msg token))))))
-                       (info? (macro-lookup macro-name
-                                            (ppstate->macros ppstate)))
-                       (lexeme (if info?
-                                   (plexeme-number (pnumber-digit #\1))
-                                 (plexeme-number (pnumber-digit #\0))))
-                       (lexmark (make-lexmark-lexeme :lexeme lexeme
-                                                     :span (irr-span))))
+                                        :found (plexeme-to-msg token2)))))))
                     (pproc-lexemes mode
-                                   (cons lexmark rev-lexmarks)
+                                   (revappend lexmarks
+                                              (cons (make-lexmark-lexeme
+                                                     :lexeme (plexeme-ident
+                                                              (ident "defined"))
+                                                     :span (irr-span))
+                                                    rev-lexmarks))
                                    paren-level
                                    no-expandp
                                    disabled
@@ -2976,10 +2982,7 @@
      The lexemes are reversed back to their order of occurrence.")
    (xdoc::p
     "Then we must parse and evaluate those lexemes, obtaining a boolean,
-     which this function returns as the value of the expression.
-     Note that @(tsee pproc-lexemes) already handles
-     the @('defined') operator [C17:6.10.1/1],
-     replacing its uses with the preprocessing number @('0') or @('1')."))
+     which this function returns as the value of the expression."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil ppstate)
        ((erp rev-lexmarks ppstate)
@@ -2996,7 +2999,9 @@
         (reterr t))
        (rev-lexemes (lexmark-list-to-lexeme-list rev-lexmarks))
        (lexemes (rev rev-lexemes))
-       ((erp pval) (pparseval-const-expr lexemes (ppstate->ienv ppstate)))
+       ((erp pval) (pparseval-const-expr lexemes
+                                         (ppstate->macros ppstate)
+                                         (ppstate->ienv ppstate)))
        (result (not (= (pvalue->integer pval) 0))))
     (retok result ppstate))
   :no-function nil
