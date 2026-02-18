@@ -185,6 +185,8 @@
 (fty::deftypes pparts/conds
   :short "Fixtypes of preprocessor group parts and related entities."
 
+;;;;;;;;;;;;;;;;;;;;
+
   (fty::deftagsum ppart
     :short "Fixtype of preprocessor group parts."
     :long
@@ -205,6 +207,8 @@
     :pred ppartp
     :measure (two-nats-measure (acl2-count x) 0))
 
+;;;;;;;;;;;;;;;;;;;;
+
   (fty::deflist ppart-list
     :short "Fixtype of lists of preprocessor group parts."
     :elt-type ppart
@@ -212,6 +216,8 @@
     :elementp-of-nil nil
     :pred ppart-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelif
     :short "Fixtype of preprocessor `elif' groups."
@@ -225,6 +231,8 @@
     :pred pelifp
     :measure (two-nats-measure (acl2-count x) 1))
 
+;;;;;;;;;;;;;;;;;;;;
+
   (fty::deflist pelif-list
     :short "Fixtype of lists of preprocessor `elif' groups."
     :elt-type pelif
@@ -232,6 +240,8 @@
     :elementp-of-nil nil
     :pred pelif-listp
     :measure (two-nats-measure (acl2-count x) 0))
+
+;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod pelse
     :short "Fixtype of `else' groups."
@@ -244,11 +254,15 @@
     :pred pelsep
     :measure (two-nats-measure (acl2-count x) 1))
 
+;;;;;;;;;;;;;;;;;;;;
+
   (fty::defoption pelse-option
     pelse
     :short "Fixtype of optional `else' groups."
     :pred pelse-optionp
     :measure (two-nats-measure (acl2-count x) 2))
+
+;;;;;;;;;;;;;;;;;;;;
 
   :prepwork ((local (in-theory (enable nfix)))))
 
