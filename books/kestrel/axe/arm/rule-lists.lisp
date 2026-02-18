@@ -14,34 +14,42 @@
 (include-book "../rule-lists")
 (include-book "kestrel/arm/encodings" :dir :system)
 
-(defun symbolic-execution-rules32 ()
+(defun symbolic-execution-rules32-common ()
   (declare (xargs :guard t))
-  '(run-until-return
-    run-until-return-aux-opener-axe
-    run-until-return-aux-base-axe
-    run-until-return-aux-of-if-arg2
-    run-subroutine
-    ;; sp-is-abovep
-    ;; run-until-sp-is-above-opener
-    ;; run-until-sp-is-above-base
-    ;; run-until-sp-is-above-of-if-arg2
-    update-call-stack-height
+  '(update-call-stack-height
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
-    ;; riscv::instr-option-some->val$inline
-    ;; riscv::instr-fix$inline
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
-    ;pc-of-if
     arm::read-of-if-arg2
     arm::read-of-if-arg3
     arm::reg-of-if-arg2))
 
+(defun symbolic-execution-rules32 ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-aux-base-axe
+            run-until-return-aux-opener-axe
+            run-until-return-aux-of-if-arg2
+            run-until-return
+            run-subroutine)))
+
+(defun symbolic-execution-rules-with-stop-pcs32 ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-or-reach-pc-aux-base-axe
+            run-until-return-or-reach-pc-aux-opener-axe
+            run-until-return-or-reach-pc-aux-of-if-arg2
+            run-until-return-or-reach-pc
+            acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            )))
+
 (defun debug-rules32 ()
   (declare (xargs :guard t))
   '(arm::step-opener
-    run-until-return-aux-opener
+    run-until-return-aux-opener-axe
+    run-until-return-or-reach-pc-aux-opener-axe
     ;;run-until-sp-is-above-opener
     read-when-equal-of-read-bytes-and-subregion32p
     read-when-equal-of-read-bytes-and-subregion32p-alt

@@ -14,11 +14,9 @@
 
 (include-book "portcullis")
 (include-book "kestrel/arm/step" :dir :system)
-;(include-book "registers") ; for SP
-;(include-book "pc")
-;(include-book "read-and-write")
 (include-book "misc/defpun" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
 
 (defstub error-wrapper (* * arm) => *)
 
@@ -123,3 +121,58 @@
   ;; do the RET.
   ;;(step32 (run-until-return (step32 arm)))
   (run-until-return arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Consider stopping if the error field of the state is set.
+;; It would be nice to support the :stobjs arm below, but it is
+;; not very important, because a defpun is already non-executable.
+(defpun run-until-return-or-reach-pc-aux (call-stack-height stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (if (or (< call-stack-height 0)
+          (memberp (reg *pc* arm) ; (pc arm)
+                   stop-pcs))
+      arm ; stop since we've returned from the function being lifted
+    ;; Step the state and also update our tracked version of the call-stack-height:
+    (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm))))
+
+;; TODO: Can we prove this?
+;; (thm
+;;   (implies (armp arm)
+;;            (armp (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arm))))
+
+;; This is a non-Axe rule
+(defthm run-until-return-or-reach-pc-aux-base
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (or (< call-stack-height 0)
+                    (memberp (reg *pc* arm) ; (pc arm)
+                             stop-pcs)))
+           (equal (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arm)
+                  arm)))
+
+;; This is a non-Axe rule
+(defthm run-until-return-or-reach-pc-aux-opener
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (not (or (< call-stack-height 0)
+                         (memberp (reg *pc* arm) ; (pc arm)
+                                  stop-pcs))))
+           (equal (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arm)
+                  ;; todo: decoding is done here twice (in update-call-stack-height and step):
+                  (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm)))))
+
+;; todo: add "smart" if handling, like we do elsewhere
+(defthm run-until-return-or-reach-pc-aux-of-if-arg2
+  (equal (run-until-return-or-reach-pc-aux call-stack-height stop-pcs (if test arma armb))
+         (if test
+             (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arma)
+           (run-until-return-or-reach-pc-aux call-stack-height stop-pcs armb))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Run until we return from the current function.
+(defund run-until-return-or-reach-pc (stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (run-until-return-or-reach-pc-aux
+   0 ; initial call-stack-height
+   stop-pcs
+   arm))
