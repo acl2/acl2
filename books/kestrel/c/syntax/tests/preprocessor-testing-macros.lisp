@@ -57,6 +57,7 @@
                         include-dirs
                         full-expansion
                         (keep-comments 't)
+                        (trace-expansion 't)
                         std
                         gcc
                         clang
@@ -74,7 +75,8 @@
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
-                                  :keep-comments ,keep-comments))
+                                  :keep-comments ,keep-comments
+                                  :trace-expansion ,trace-expansion))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (preprocess files
                                              base-dir
@@ -101,6 +103,7 @@
                           include-dirs
                           full-expansion
                           (keep-comments 't)
+                          (trace-expansion 't)
                           std
                           gcc
                           clang)
@@ -109,6 +112,7 @@
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
+                 :trace-expansion ,trace-expansion
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang
@@ -123,6 +127,7 @@
                               include-dirs
                               full-expansion
                               (keep-comments 't)
+                              (trace-expansion 't)
                               std
                               gcc
                               clang)
@@ -139,7 +144,8 @@
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
-                                  :keep-comments ,keep-comments))
+                                  :keep-comments ,keep-comments
+                                  :trace-expansion ,trace-expansion))
          (ienv (change-ienv (ienv-default) :version version))
          ((mv erp fileset state) (preprocess files
                                              base-dir
@@ -164,6 +170,7 @@
                           include-dirs
                           full-expansion
                           (keep-comments 't)
+                          (trace-expansion 't)
                           std
                           gcc
                           clang)
@@ -172,6 +179,7 @@
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
+                 :trace-expansion ,trace-expansion
                  :std ,std
                  :gcc ,gcc
                  :clang ,clang))
@@ -219,6 +227,7 @@
                                 (base-dir '".")
                                 include-dirs
                                 (keep-comments 't)
+                                (trace-expansion 't)
                                 std
                                 gcc
                                 clang)
@@ -236,9 +245,11 @@
          (include-dirs ,include-dirs)
          (ienv (change-ienv (ienv-default) :version version))
          (options-preserve (make-ppoptions :full-expansion nil
-                                           :keep-comments ,keep-comments))
+                                           :keep-comments ,keep-comments
+                                           :trace-expansion ,trace-expansion))
          (options-expand (make-ppoptions :full-expansion t
-                                         :keep-comments ,keep-comments))
+                                         :keep-comments ,keep-comments
+                                         :trace-expansion nil))
          ((mv erp fileset state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
          ((when erp)

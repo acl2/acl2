@@ -45,12 +45,16 @@
      "The preprocessing directives should be fully expanded,
       as opposed to preserved under suitable conditions.")
     (xdoc::li
-     "Comments should be preserved or not."))
+     "Comments should be preserved or not.")
+    (xdoc::li
+     "Comments should be generated
+      to trace the expansion of @('#include') directives."))
    (xdoc::p
     "These options are explained in more detail in @(tsee input-files),
      which provides an interface to setting these options."))
   ((full-expansion bool)
-   (keep-comments bool))
+   (keep-comments bool)
+   (trace-expansion bool))
   :pred ppoptionsp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -58,4 +62,4 @@
 (defirrelevant irr-ppoptions
   :short "Irrelevant preprocessor options."
   :type ppoptionsp
-  :body (ppoptions nil nil))
+  :body (ppoptions nil nil nil))

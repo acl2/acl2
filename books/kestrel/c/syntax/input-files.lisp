@@ -216,7 +216,8 @@
   :short "Keyword options accepted by @(tsee input-files)
           for the @(':preprocess-options') input."
   (list :full-expansion
-        :keep-comments))
+        :keep-comments
+        :trace-expansion))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,9 +262,19 @@
        ((unless (booleanp keep-comments))
         (reterr (msg "The preprocessor option :KEEP-COMMENTS ~
                       must be T or NIL, but it is ~x0 instead."
-                     keep-comments))))
+                     keep-comments)))
+
+       (trace-expansion (b* ((kwd+val (assoc-eq :trace-expansion alist)))
+                          (if kwd+val
+                              (cdr kwd+val)
+                            t)))
+       ((unless (booleanp trace-expansion))
+        (reterr (msg "The preprocessor option :TRACE-EXPANSION ~
+                      must be T or NIL, but it ~x0 instead."
+                     trace-expansion))))
     (retok (make-ppoptions :full-expansion full-expansion
-                           :keep-comments keep-comments)))
+                           :keep-comments keep-comments
+                           :trace-expansion trace-expansion)))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::symbol-listp-of-strip-cars-when-symbol-alistp))))

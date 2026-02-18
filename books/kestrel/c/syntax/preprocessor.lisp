@@ -3630,9 +3630,9 @@
      that must be expanded in place.
      At the core, this just adds the lexemes of the included file
      to the list of lexemes of the including file.
-     To facilitate inspection, we surround them by two line comments,
-     indicating and delimiting the contents of the included file;
-     this feature could be made optional in the future.")
+     If the option to trace @('#include') expansions is set,
+     we surround the inserted lexemes with two line comments,
+     indicating and delimiting the contents of the included file.")
    (xdoc::p
     "With reference to @(tsee pproc-header-name), which calls this function,
      we ignore all the white space and comments in the @('#include') directive,
@@ -3647,23 +3647,25 @@
      In any case, it takes a whole number of lines.
      We replace those lines with the lexemes we generate in this function,
      which also take a whole number of lines."))
-  (b* ((header-codes (header-name-case
-                      header
-                      :angles (append (list (char-code #\<))
-                                      (h-char-list->code-list header.chars)
-                                      (list (char-code #\>)))
-                      :quotes (append (list (char-code #\"))
-                                      (q-char-list->code-list header.chars)
-                                      (list (char-code #\")))))
-       (include-codes (append (acl2::string=>nats " #include ") header-codes))
-       (opening-codes (append include-codes (acl2::string=>nats " >>>>>>>>>>")))
-       (closing-codes (append (acl2::string=>nats " <<<<<<<<<<") include-codes))
-       (ppstate (add-rev-lexeme (plexeme-line-comment opening-codes) ppstate))
-       (ppstate (add-rev-lexeme newline-at-end ppstate))
-       (ppstate (add-rev-rev-lexemes rev-included-file-lexemes ppstate))
-       (ppstate (add-rev-lexeme (plexeme-line-comment closing-codes) ppstate))
-       (ppstate (add-rev-lexeme newline-at-end ppstate)))
-    ppstate))
+  (if (ppoptions->trace-expansion (ppstate->options ppstate))
+      (b* ((header-codes (header-name-case
+                          header
+                          :angles (append (list (char-code #\<))
+                                          (h-char-list->code-list header.chars)
+                                          (list (char-code #\>)))
+                          :quotes (append (list (char-code #\"))
+                                          (q-char-list->code-list header.chars)
+                                          (list (char-code #\")))))
+           (include-codes (append (acl2::string=>nats " #include ") header-codes))
+           (opening-codes (append include-codes (acl2::string=>nats " >>>>>>>>>>")))
+           (closing-codes (append (acl2::string=>nats " <<<<<<<<<<") include-codes))
+           (ppstate (add-rev-lexeme (plexeme-line-comment opening-codes) ppstate))
+           (ppstate (add-rev-lexeme newline-at-end ppstate))
+           (ppstate (add-rev-rev-lexemes rev-included-file-lexemes ppstate))
+           (ppstate (add-rev-lexeme (plexeme-line-comment closing-codes) ppstate))
+           (ppstate (add-rev-lexeme newline-at-end ppstate)))
+        ppstate)
+    (add-rev-rev-lexemes rev-included-file-lexemes ppstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

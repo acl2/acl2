@@ -438,6 +438,34 @@ int x1 = 0;
               :base-dir "preproc-example2"
               :full-expansion t)
 
+; This is the same test but with full expansion and without tracing.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+
+
+void f() {}
+int x1 = 0;
+
+
+int x2 = 0;
+"
+                                    "gincluder2.c"
+                                    "
+
+
+void f() {}
+int x2 = 0;
+
+
+int x1 = 0;
+")
+              :base-dir "preproc-example2"
+              :full-expansion t
+              :trace-expansion nil)
+
 ; Check against full expansion.
 
 (test-preproc-fullexp '("gincluder1.c"
@@ -506,6 +534,52 @@ void f() {}
 #endif
 ")
               :base-dir "preproc-example2")
+
+; This is the same test but without tracing.
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+
+
+#ifndef GUARDED
+#define GUARDED
+void f1() {}
+#endif
+int x1 = 0;
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+
+
+#ifndef GUARDED
+#define GUARDED
+void f2() {}
+#endif
+int x2 = 0;
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED
+void f() {}
+#endif
+")
+              :base-dir "preproc-example2"
+              :trace-expansion nil)
 
 ; This is the same test but with full expansion.
 
