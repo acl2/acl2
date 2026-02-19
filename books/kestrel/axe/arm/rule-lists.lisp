@@ -92,7 +92,11 @@
             arm::push-encoding-a2-core
             arm::push-common
             arm::push-loop-base
-            arm::push-loop-unroll)))
+            arm::push-loop-unroll
+            arm::ldm-loop-base
+            arm::ldm-loop-unroll
+            arm::stm-loop-base
+            arm::stm-loop-unroll)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -180,6 +184,12 @@
      arm::apsr.v-of-set-reg
      arm::apsr.q-of-set-reg
 
+     arm::set-apsr.n-of-set-reg
+     arm::set-apsr.z-of-set-reg
+     arm::set-apsr.c-of-set-reg
+     arm::set-apsr.v-of-set-reg
+     arm::set-apsr.q-of-set-reg
+
      arm::error-of-set-apsr.n
      arm::error-of-set-apsr.z
      arm::error-of-set-apsr.c
@@ -229,7 +239,10 @@
 
      acl2::bvcount-constant-opener
      arm::integerp-of-reg
+     arm::unsigned-byte-p-32-of-reg
      arm::reg-of-write
+     ;; arm::write-byte-of-set-reg ; we always use write as the normal form
+     arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
      arm::error-of-write
@@ -237,6 +250,8 @@
      arm::isetstate-of-write
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
+     arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
+     arm::mv-nth-2-of-AddWithCarry-2-both ; todo: 32-bit only!
      arm::shift
      arm::lsl_c
      arm::iszerobit
@@ -427,8 +442,6 @@
 
      ;; read32-xreg-signed ; open to the unsigned one
 
-     ;; integerp-of-reg
-     ;; unsigned-byte-p-of-reg
      ;; reg-of-set-reg
      ;; set-reg-of-set-reg-same
      ;; set-reg-of-set-reg-diff
