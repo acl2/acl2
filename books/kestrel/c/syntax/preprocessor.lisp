@@ -3810,6 +3810,263 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines compare-pparts/conds
+  :short "Functions to compare
+          preprocessor group parts, and related entities,
+          for equivalence with respect to macro tables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee compare-pfiles) for motivation and overview."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define compare-pparts ((part1 ppartp)
+                          (part2 ppartp)
+                          (macros macro-tablep)
+                          (ienv ienvp))
+    :returns (yes/no booleanp)
+    :parents (preprocessor compare-pparts/conds)
+    :short "Compare two preprocessor group parts
+            for equivalence with respect to a macro table."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The two group parts must be of the same kind.
+       If they are of the @(':line') kind, they must be identical.
+       If they are of the @(':cond') kind,
+       they must have the same opening
+       @('#if') of @('#ifdef') or @('#ifndef') directive,
+       and then we use a seaparate function to compare the rest.
+       The separate function uses the same flags @('condp') and @('donep')
+       used by some of the @('pproc-...') functions
+       to select the branch of a conditional section.
+       The initial @('condp') is determined from
+       the initial @('#if') of @('#ifdef') or @('#ifndef') directive;
+       in the case of the @('#if'),
+       the evaluation of the expression should not return an error,
+       because when we get here the expression has been already evaluated,
+       in the @('pproc-...') functions."))
+    (ppart-case
+     part1
+     :line (ppart-equiv part1 part2)
+     :cond
+     (ppart-case
+      part2
+      :line nil
+      :cond
+      (and (equal part1.if part2.if)
+           (b* ((condp
+                 (pif-case
+                  part1.if
+                  :if (b* (((mv erp pval)
+                            (peval-expr part1.if.expr macros ienv))
+                           ((when erp)
+                            (raise "Internal error: ~
+                                    evaluation of ~x0 errors."
+                                   part1.if.expr)))
+                        (not (= (pvalue->integer pval) 0)))
+                  :ifdef (and (macro-lookup part1.if.name macros) t)
+                  :ifndef (not (macro-lookup part1.if.name macros)))))
+             (compare-if/ifdef/ifndef-rest condp
+                                           nil ; done
+                                           part1.parts
+                                           part2.parts
+                                           part1.elifs
+                                           part2.elifs
+                                           part1.else
+                                           part2.else
+                                           macros
+                                           ienv)))))
+    :no-function nil
+    :measure (ppart-count part1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define compare-ppart-lists ((parts1 ppart-listp)
+                               (parts2 ppart-listp)
+                               (macros macro-tablep)
+                               (ienv ienvp))
+    :returns (yes/no booleanp)
+    :parents (preprocessor compare-pparts/conds)
+    :short "Compare two lists of preprocessor group parts
+            for equivalence with respect to a macro table."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The two lists must have the same length
+       and their corresponding elements must compare equal."))
+    (if (endp parts1)
+        (endp parts2)
+      (and (consp parts2)
+           (compare-pparts (car parts1) (car parts2) macros ienv)
+           (compare-ppart-lists (cdr parts1) (cdr parts2) macros ienv)))
+    :measure (ppart-list-count parts1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define compare-if/ifdef/ifndef-rest ((condp booleanp)
+                                        (donep booleanp)
+                                        (prev-cond-body1 ppart-listp)
+                                        (prev-cond-body2 ppart-listp)
+                                        (elifs1 pelif-listp)
+                                        (elifs2 pelif-listp)
+                                        (else?1 pelse-optionp)
+                                        (else?2 pelse-optionp)
+                                        (macros macro-tablep)
+                                        (ienv ienvp))
+    :returns (yes/no booleanp)
+    :parents (preprocessor compare-pparts/conds)
+    :short "Compare the rest of two preprocessor conditional sections
+            for equivalence with respect to a macro table."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "First, we need to compare the group parts of the previous condition,
+       passed here as the @('prev-cond-body1') and @('prev-cond-body2') inputs.
+       Their comparison succeeds if they compare equal,
+       or if they are not selected.
+       Whether they are selected or not is determined
+       from the @('condp') and @('donep') boolean flags.")
+     (xdoc::p
+      "If that comparison succeeds,
+       we must look at the `elif' and `else' groups.
+       If the first list of `elif' groups is exhausted,
+       the second list must be exhausted as well,
+       and we compare the `else' groups.
+       The two `else' groups must be either both present or both absent.
+       If present, they must be equal, unless they are not selected;
+       they are not selected only if a previous branch was selected.")
+     (xdoc::p
+      "If the first list of `elif' groups is not exhausted,
+       the second one must not be exhausted either.
+       The starting `elif' groups of both lists must have the same expression,
+       and then we recursively call this function with the two bodies;
+       we update the @('condp') and @('donep') flags as needed.
+       Expression evaluation cannot fail,
+       for the same reasons noted in @(tsee compare-pparts).
+       If @('donep') is already @('t'),
+       there is no need to update @('condp')."))
+    (b* ((selectedp (and condp (not donep))))
+      (and (or (not selectedp)
+               (compare-ppart-lists prev-cond-body1
+                                    prev-cond-body2
+                                    macros
+                                    ienv))
+           (if (endp elifs1)
+               (and (endp elifs2)
+                    (if else?1
+                        (and else?2
+                             (b* ((selectedp (not donep)))
+                               (or (not selectedp)
+                                   (compare-ppart-lists (pelse->parts else?1)
+                                                        (pelse->parts else?2)
+                                                        macros
+                                                        ienv))))
+                      (not else?2)))
+             (and (not (endp elifs2))
+                  (b* (((pelif elif1) (car elifs1))
+                       ((pelif elif2) (car elifs2)))
+                    (and (equal elif1.expr elif2.expr)
+                         (if donep
+                             (compare-if/ifdef/ifndef-rest condp
+                                                           donep
+                                                           elif1.parts
+                                                           elif2.parts
+                                                           (cdr elifs1)
+                                                           (cdr elifs2)
+                                                           else?1
+                                                           else?2
+                                                           macros
+                                                           ienv)
+                           (b* (((mv erp pval)
+                                 (peval-expr elif1.expr macros ienv))
+                                ((when erp)
+                                 (raise "Internal error: ~
+                                         evaluation of ~x0 errors."
+                                        elif1.expr))
+                                (condp (not (= (pvalue->integer pval) 0))))
+                             (compare-if/ifdef/ifndef-rest condp
+                                                           donep
+                                                           elif1.parts
+                                                           elif2.parts
+                                                           (cdr elifs1)
+                                                           (cdr elifs2)
+                                                           else?1
+                                                           else?2
+                                                           macros
+                                                           ienv)))))))))
+    :no-function nil
+    :measure (+ (ppart-list-count prev-cond-body1)
+                (pelif-list-count elifs1)
+                (pelse-option-count else?1)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable fix
+                                     ppart-count
+                                     pelse-option-count
+                                     pelse-option-some->val)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ///
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual compare-pparts/conds))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define compare-pfiles ((pfile1 pfilep)
+                        (pfile2 pfilep)
+                        (macros macro-tablep)
+                        (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Compare two preprocessor files for equivalence
+          with respect to a macro table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This checks whether the two preprocessor files are equal,
+     modulo the elimination of conditional bodies
+     that are not selected according to the macro table.
+     Consider two conditional (i.e. `if') sections,
+     which have one or more conditions:
+     one is the @('#if') or @('#ifdef') or @('#ifndef'),
+     then zero or more @('#elif')s,
+     then an optional final @('#else').
+     Under each such condition, there is a body,
+     i.e. the group parts that are selected when the condition is selected.
+     Here `selected' does not just mean `true', because order matters:
+     the selected condition is the first true conditions;
+     subsequent conditions, whether true or false, are not selected.
+     In the @('pproc-...') functions for conditionals,
+     this selection is realized via the @('condp') and @('donep') flags.")
+   (xdoc::p
+    "Now consider two such conditional sections,
+     with the same shape, i.e. the same conditions,
+     but possibly some differences in the bodies of the conditions.
+     If the only differences in these bodies are in non-selected conditions,
+     then the two conditional sections are considered equivalent.")
+   (xdoc::p
+    "The motivation for this kind of comparison
+     is to support more "
+    (xdoc::seetopic "preservable-inclusions"
+                    "preservation of @('#include')s")
+    ". Currently files with header guards of a common but specific form
+     are treated specially,
+     but that is just a special case of the comparison
+     realized by this function.
+     We plan to replace that specific header guard handling
+     with the use of this comparison between preprocessor files."))
+  (compare-ppart-lists (pfile->parts pfile1)
+                       (pfile->parts pfile2)
+                       macros
+                       ienv))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines pproc-files/groups/etc
   :short "Preprocess files, groups, and some related entities."
   :long
@@ -4605,7 +4862,7 @@
                               (list (ppart-line closing-line))))
                   (pfile->parts pfile))))
             (retok pparts ppstate preprocessed state)))
-         ((erp & ; standalone-pfile
+         ((erp standalone-pfile
                standalone-file-rev-lexemes
                standalone-file-header-guard?
                preprocessed
@@ -4658,6 +4915,15 @@
                               standalone-file-header-guard?
                               file-rev-lexemes)))
               (equal standalone-file-rev-lexemes file-rev-lexemes)))
+         (new-preserve-include-p ; TODO: eventually just use this
+          (compare-pfiles pfile
+                          standalone-pfile
+                          (ppstate->macros ppstate)
+                          (ppstate->ienv ppstate)))
+         ((unless (equal preserve-include-p new-preserve-include-p))
+          (raise "Internal error: ~
+                  inconsistent #include preservation conditions.")
+          (reterr t))
          (ppstate (update-ppstate->macros
                    (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
