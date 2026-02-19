@@ -12,6 +12,7 @@
 
 (include-book "run-until-return")
 (include-book "../axe-syntax-functions")
+(include-book "../known-booleans")
 
 ;; These are all disabled, because they are for Axe, not the ACL2 rewriter.
 
@@ -46,3 +47,8 @@
            (equal (run-until-return-or-reach-pc-aux call-stack-height stop-pcs arm)
                   ;; todo: decoding is done here twice (in update-call-stack-height and step):
                   (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-known-boolean armp)
+(add-known-boolean arm::conditionpassed) ; not sure if needed
