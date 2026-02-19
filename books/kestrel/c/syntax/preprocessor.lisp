@@ -1484,23 +1484,24 @@
               (ident-listp params))
     :hints (("Goal" :in-theory (disable (:e ident))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-define-id ((name identp) (newline plexemep) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Generate a directive of the form @('#define N N')."
+(define rebuild-define-directive-id ((name identp) (newline-at-end plexemep))
+  :returns (lexemes plexeme-listp)
+  :short "Rebuild a @('#define') directive from its name,
+          defining it as an identity."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The rationale for this is explained in @(see preservable-inclusions)."))
-  (add-rev-lexemes (list (plexeme-punctuator "#")
-                         (plexeme-ident (ident "define"))
-                         (plexeme-spaces 1)
-                         (plexeme-ident name)
-                         (plexeme-spaces 1)
-                         (plexeme-ident name)
-                         newline)
-                   ppstate))
+    "The rationale for this identity definition
+     is explained in @(see preservable-inclusions)."))
+  (list (plexeme-punctuator "#")
+        (plexeme-ident (ident "define"))
+        (plexeme-spaces 1)
+        (plexeme-ident name)
+        (plexeme-spaces 1)
+        (plexeme-ident name)
+        (plexeme-fix newline-at-end)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1610,17 +1611,14 @@
                                       (hg-state-ifndef->name
                                        (ppstate->hg ppstate))))
                           ppstate
-                        (add-define-id name lexeme ppstate))))
+                        (add-rev-lexemes
+                         (rebuild-define-directive-id name lexeme)
+                         ppstate))))
            (ppstate (hg-trans-define name t ppstate))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
-                     (list (ppart-line (list (plexeme-punctuator "#")
-                                             (plexeme-ident (ident "define"))
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             lexeme))))))
+                     (list (ppart-line
+                            (rebuild-define-directive-id name lexeme))))))
         (retok pparts ppstate)))
      ((and lexeme
            (not (plexeme-token/newline-p lexeme))) ; # define name WSC
@@ -1633,16 +1631,12 @@
            (ppstate (hg-trans-define name (not replist) ppstate))
            (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
                         ppstate
-                      (add-define-id name newline ppstate)))
+                      (add-rev-lexemes
+                       (rebuild-define-directive-id name newline) ppstate)))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
-                     (list (ppart-line (list (plexeme-punctuator "#")
-                                             (plexeme-ident (ident "define"))
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             newline))))))
+                     (list (ppart-line
+                            (rebuild-define-directive-id name newline))))))
         (retok pparts ppstate)))
      ((and lexeme
            (plexeme-equiv lexeme (plexeme-punctuator "("))) ; # define (
@@ -1661,16 +1655,12 @@
            (ppstate (hg-trans-define name nil ppstate))
            (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
                         ppstate
-                      (add-define-id name newline ppstate)))
+                      (add-rev-lexemes
+                       (rebuild-define-directive-id name newline) ppstate)))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
-                     (list (ppart-line (list (plexeme-punctuator "#")
-                                             (plexeme-ident (ident "define"))
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             (plexeme-spaces 1)
-                                             (plexeme-ident name)
-                                             newline))))))
+                     (list (ppart-line
+                            (rebuild-define-directive-id name newline))))))
         (retok pparts ppstate)))
      (t ; # define EOF/other
       (reterr-msg :where (position-to-msg (span->start lexeme-span))
@@ -1686,6 +1676,17 @@
                            ((:e ident))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define rebuild-undef-directive ((name identp) (newline-at-end plexemep))
+  :returns (lexemes plexeme-listp)
+  :short "Rebuild a @('#undef') directive from its name."
+  (list (plexeme-punctuator "#")
+        (plexeme-ident (ident "undef"))
+        (plexeme-spaces 1)
+        (plexeme-ident name)
+        (plexeme-fix newline-at-end)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pproc-undef ((ppstate ppstatep))
   :returns (mv erp
@@ -1734,19 +1735,11 @@
        (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
        (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
                     ppstate
-                  (add-rev-lexemes (list (plexeme-punctuator "#")
-                                         (plexeme-ident (ident "undef"))
-                                         (plexeme-spaces 1)
-                                         (plexeme-ident name)
-                                         newline?)
+                  (add-rev-lexemes (rebuild-undef-directive name newline?)
                                    ppstate)))
        (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                    nil
-                 (list (ppart-line (list (plexeme-punctuator "#")
-                                         (plexeme-ident (ident "undef"))
-                                         (plexeme-spaces 1)
-                                         (plexeme-ident name)
-                                         newline?))))))
+                 (list (ppart-line (rebuild-undef-directive name newline?))))))
     (retok pparts ppstate))
   :no-function nil)
 
@@ -3729,7 +3722,7 @@
                                    (nontoknls-after-header plexeme-listp)
                                    (newline-at-end plexemep))
   :returns (lexemes plexeme-listp)
-  :short "Rebuild an include directive from its components."
+  :short "Rebuild a @('#include') directive from its components."
   :long
   (xdoc::topstring
    (xdoc::p
