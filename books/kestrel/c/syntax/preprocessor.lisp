@@ -3678,6 +3678,8 @@
           (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
           (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
           (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
+          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
+          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
           (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
           (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
           (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))

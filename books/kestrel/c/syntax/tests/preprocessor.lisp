@@ -386,7 +386,7 @@ int x2 = 0;
                                     "guarded.h"
                                     "
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f() {}
 #endif
 ")
@@ -491,7 +491,7 @@ int x1 = 0;
 // #include \"guarded.h\" >>>>>>>>>>
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f1() {}
 #endif
 // <<<<<<<<<< #include \"guarded.h\"
@@ -507,7 +507,7 @@ int x1 = 0;
 // #include \"guarded.h\" >>>>>>>>>>
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f2() {}
 #endif
 // <<<<<<<<<< #include \"guarded.h\"
@@ -528,7 +528,7 @@ int x2 = 0;
                                     "guarded.h"
                                     "
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f() {}
 #endif
 ")
@@ -544,7 +544,7 @@ void f() {}
 
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f1() {}
 #endif
 int x1 = 0;
@@ -556,7 +556,7 @@ int x1 = 0;
 
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f2() {}
 #endif
 int x2 = 0;
@@ -575,7 +575,7 @@ int x2 = 0;
                                     "guarded.h"
                                     "
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f() {}
 #endif
 ")
@@ -642,7 +642,7 @@ int x1 = 0;
 (test-preproc '("i.c" "j.c")
               :expected (fileset-of "f.c"
                                     "#ifndef F
-#define F
+#define F F
 x
 #endif
 "
@@ -705,7 +705,7 @@ z
 (test-preproc '("i.c" "j.c")
               :expected (fileset-of "f.c"
                                     "#ifndef F
-#define F
+#define F F
 x
 #endif
 "
@@ -713,7 +713,7 @@ x
                                     "#define x x
 // #include \"f.c\" >>>>>>>>>>
 #ifndef F
-#define F
+#define F F
 y
 #endif
 // <<<<<<<<<< #include \"f.c\"
@@ -776,7 +776,7 @@ z
 (test-preproc '("c.c")
               :expected (fileset-of "a.c"
                                     "#ifndef A
-#define A
+#define A A
 #define X X
 int a;
 #endif
@@ -820,7 +820,7 @@ void f();
 (test-preproc '("defguard.c")
               :expected (fileset-of "guarded.h"
                                     "#ifndef G
-#define G
+#define G G
 void g();
 #endif
 "
