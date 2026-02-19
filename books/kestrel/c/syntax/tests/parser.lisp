@@ -33,7 +33,10 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
+         (parstate (init-parstate (acl2::string=>nats ,input)
+                                  version
+                                  t
+                                  parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -59,7 +62,10 @@
     (b* ((version (if (eql ,std 23)
                       (if ,gcc (c::version-c23+gcc) (c::version-c23))
                     (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (parstate (init-parstate (acl2::string=>nats ,input) version parstate))
+         (parstate (init-parstate (acl2::string=>nats ,input)
+                                  version
+                                  t
+                                  parstate))
          (,(cond ((eq fn 'parse-*-external-declaration)
                   '(mv erp ?ast ?span ?eofpos parstate))
                  ((eq fn 'parse-translation-unit)
@@ -178,6 +184,67 @@
 (test-parse
  parse-unary-expression
  "sizeof(x)->m"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :memberp)))
+
+(test-parse-fail
+ parse-unary-expression
+ "_Alignof y")
+
+(test-parse
+ parse-unary-expression
+ "_Alignof y"
+ :gcc t
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof(int)"
+ :cond (expr-case ast :alignof))
+
+(test-parse-fail
+ parse-unary-expression
+ "__alignof(int)")
+
+(test-parse-fail
+ parse-unary-expression
+ "__alignof__(int)")
+
+(test-parse
+ parse-unary-expression
+ "_Alignof (x+y)"
+ :gcc t
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "__alignof__ (_Atomic(int))"
+ :gcc t
+ :cond (expr-case ast :alignof))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof (var_or_tydef)"
+ :gcc t
+ :cond (expr-case ast :alignof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "__alignof(also(ambig))"
+ :gcc t
+ :cond (expr-case ast :alignof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "__alignof__(x).m"
+ :gcc t
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :member)))
+
+(test-parse
+ parse-unary-expression
+ "_Alignof(x)->m"
+ :gcc t
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :memberp)))
 
@@ -828,6 +895,24 @@
                                (ident "lab2"))
                          (list (ident "lab3"))))))
 
+(test-parse
+ parse-statement
+ "__attribute__((fallthrough));"
+ :gcc t
+ :cond (stmt-case ast :null-attrib))
+
+(test-parse
+ parse-statement
+ "__attribute__((assume(x == 42)));"
+ :gcc t
+ :cond (stmt-case ast :null-attrib))
+
+(test-parse
+ parse-statement
+ "__attribute__((musttail)) return bar();"
+ :gcc t
+ :cond (stmt-case ast :return-attrib))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-block-item
@@ -836,6 +921,27 @@
  parse-block-item
  "idx = &((char*)session_peak())[i*BUFSIZE];")
 
+(test-parse
+ parse-block-item
+ "__attribute__((fallthrough));"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
+
+(test-parse
+ parse-block-item
+ "__attribute__((assume(x == 42)));"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :null-attrib)))
+
+(test-parse
+ parse-block-item
+ "__attribute__((musttail)) return bar();"
+ :gcc t
+ :cond (and (block-item-case ast :stmt)
+            (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-external-declaration
@@ -843,7 +949,7 @@
 (test-parse
  parse-external-declaration
  ";"
- :cond (extdecl-case ast :empty)
+ :cond (ext-declon-case ast :empty)
  :gcc t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1222,3 +1328,25 @@ error (int __status, int __errnum, const char *__format, ...)
   return x;
 }
 ")
+
+(test-parse
+ parse-translation-unit
+ "void f(int x) {
+ __alignof__ x;
+}
+"
+ :gcc t)
+
+(test-parse
+ parse-translation-unit
+ "int foo(int x) {
+  switch (x) {
+  case 0:
+    x++;
+    __attribute__((__fallthrough__));
+  default:
+    return x;
+  }
+}
+"
+ :gcc t)

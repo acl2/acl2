@@ -1,6 +1,6 @@
 ; Rule lists for use by the RISC-V Axe tools
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 
-(defun symbolic-execution-rules ()
+(defun symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
     run-until-return-aux-opener
@@ -35,7 +35,7 @@
     read-of-if-arg2
     read-of-if-arg3))
 
-(defun debug-rules ()
+(defun debug-rules32 ()
   (declare (xargs :guard t))
   '(step32-opener
     run-until-return-aux-opener
@@ -47,7 +47,7 @@
     ))
 
 ;; sophisticated scheme for removing inner, shadowed writes
-(defund shadowed-write-rules ()
+(defund shadowed-write-rules32 ()
   (declare (xargs :guard t))
   '(write-becomes-write-of-clear-extend-axe
     clear-extend-of-write-continue-axe
@@ -55,10 +55,10 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
-(defun lifter-rules ()
+(defun lifter-rules32 ()
   (declare (xargs :guard t))
   (append
-   (shadowed-write-rules)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
@@ -269,9 +269,9 @@
      set-reg-of-set-pc
      write-of-set-pc
 
-     stat32ip-of-set-reg
-     stat32ip-of-write
-     ;; stat32ip-of-set-pc ; uncomment?
+     stat32p-of-set-reg
+     stat32p-of-write
+     ;; stat32p-of-set-pc ; uncomment?
 
      ;; regiseter names (we expand these to REG):
      x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
@@ -292,7 +292,7 @@
      riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
 
 
-     riscv::feat-rv32im-le ; todo: use constant-openers more for these?
+     riscv32im-le::feat-rv32im-le ; todo: use constant-openers more for these?
 
      riscv::feat-endian-little
      riscv::feat-endian-fix$inline
@@ -345,7 +345,7 @@
      acl2::logapp-constant-opener
      common-lisp::ash-constant-opener ; todo: use acl2 package
      acl2::ash-becomes-logtail ; do better?
-     acl2::bvchop-of-ash
+     acl2::bvchop-of-ash-left-shift ; move
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
@@ -457,7 +457,7 @@
      exec32-mulhu
      exec32-op
      ;; exec32-op-imm
-     riscv::exec32-op-imm-base ; allows dispatch when it can be resolved
+     riscv32im-le::exec32-op-imm-base ; allows dispatch when it can be resolved
      exec32-op-imms ;; todo: restrict
      exec32-or
      exec32-ori
@@ -535,14 +535,13 @@
      acl2::integerp-of-bvplus
      acl2::integerp-of-logext
 
-     riscv::stat32i-fix-when-stat32ip
+     riscv32im-le::stat32-fix-when-stat32p
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
-
      )))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; try late
 (acl2::set-axe-rule-priority not-bvlt-when-not-in-region32p 1)

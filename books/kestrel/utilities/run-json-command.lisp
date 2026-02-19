@@ -1,6 +1,6 @@
 ; Support for running ACL2 from the command line on JSON arguments
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,12 +32,13 @@
            nil)
           ((eq :true val) t)
           ((eq :false val) nil)
-          ((eq :null val) nil) ; todo: think about this (could go to :null)
+          ((eq :null val) val)
           ((rationalp val) val)
           ((stringp val) val) ; todo: look for keywords
+          ;; A JSON array becomes an ACL2 list:
           ((parsed-json-arrayp val)
            (parsed-json-values-to-lisp-values (parsed-json-array->values val)))
-          ;; must be a json object
+          ;; must be a json object (becomes an ACL2 alist):
           (t
             (let* ((pairs (parsed-json-object->pairs val))
                    (keys (strip-cars pairs)) ;; strings, but we might someday convert some to symbols
@@ -61,6 +62,19 @@
          (len vals))
   :hints (("Goal" :expand (parsed-json-values-to-lisp-values vals)
            :induct (len vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp lisp-value).  Useful for testing.
+(defund lisp-value-from-json-string (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (erp parsed-value)
+    (parse-string-as-json str)
+    (if erp
+        (mv erp nil)
+      (mv nil (parsed-json-value-to-lisp-value parsed-value)))))
+
+;; example: (lisp-value-from-json-string "[{\"foo\": 1, \"bar\": true}]")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

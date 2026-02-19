@@ -13,7 +13,7 @@
 ;; This is for 32-bit only
 
 (include-book "kestrel/memory/memory-regions" :dir :system)
-(include-book "../../x86/parsers/elf-tools")
+(include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "read-and-write")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
@@ -159,8 +159,8 @@
                                           position-independentp
                                           nil))
        ((when erp) (mv erp nil))
-       (standard-assumptions '((not (error32p stat))
-                               ;; (stat32ip stat)
+       (standard-assumptions `((not (error32p ,state-var))
+                               ;; (stat32p ,state-var)
                                )) ; todo: what else?
        )
     (mv nil ; no error

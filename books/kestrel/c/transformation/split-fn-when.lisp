@@ -140,47 +140,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define extdecl-try-split-fn-when
-  ((extdecl extdeclp)
+(define ext-declon-try-split-fn-when
+  ((extdecl ext-declonp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (extdecls extdecl-listp))
+               (extdecls ext-declon-listp))
   (b* (((reterr) nil nil))
-    (extdecl-case
+    (ext-declon-case
       extdecl
       :fundef (b* (((erp fundef1 fundef2)
                     (fundef-try-split-fn-when
-                      extdecl.unwrap
+                      extdecl.fundef
                       triggers
                       transunits)))
                 (fundef-option-case
                   fundef2
-                  :some (retok t (list (extdecl-fundef fundef1)
-                                       (extdecl-fundef fundef2.val)))
-                  :none (retok nil (list (extdecl-fundef fundef1)))))
-      :otherwise (retok nil (list (extdecl-fix extdecl)))))
+                  :some (retok t (list (ext-declon-fundef fundef1)
+                                       (ext-declon-fundef fundef2.val)))
+                  :none (retok nil (list (ext-declon-fundef fundef1)))))
+      :otherwise (retok nil (list (ext-declon-fix extdecl)))))
   ///
   (more-returns
    (extdecls true-listp :rule-classes :type-prescription)))
 
-(define extdecl-list-try-split-fn-when
-  ((extdecls extdecl-listp)
+(define ext-declon-list-try-split-fn-when
+  ((extdecls ext-declon-listp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
   :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
-               (extdecls$ extdecl-listp))
+               (extdecls$ ext-declon-listp))
   (b* (((reterr) nil nil)
        ((when (endp extdecls))
         (retok nil nil))
        ((erp found extdecls1)
-        (extdecl-try-split-fn-when (first extdecls) triggers transunits))
+        (ext-declon-try-split-fn-when (first extdecls) triggers transunits))
        ((when found)
-        (retok t (append extdecls1 (extdecl-list-fix (rest extdecls)))))
+        (retok t (append extdecls1 (ext-declon-list-fix (rest extdecls)))))
        ((erp found extdecls2)
-        (extdecl-list-try-split-fn-when (rest extdecls) triggers transunits)))
+        (ext-declon-list-try-split-fn-when (rest extdecls) triggers transunits)))
     (retok found (append extdecls1 extdecls2)))
   ///
   (more-returns
@@ -195,10 +195,15 @@
                (tunit$ transunitp))
   (b* (((reterr) nil (c$::irr-transunit))
        ((transunit tunit) tunit)
+       ((when tunit.includes)
+        (retmsg$ "Unsupported #include directives."))
        ((erp found extdecls)
-        (extdecl-list-try-split-fn-when tunit.decls triggers transunits)))
+        (ext-declon-list-try-split-fn-when tunit.declons triggers transunits)))
     (retok found
-           (make-transunit :decls extdecls :info tunit.info))))
+           (make-transunit :comment nil
+                           :includes nil
+                           :declons extdecls
+                           :info tunit.info))))
 
 (define filepath-transunit-map-try-split-fn-when
   ((map filepath-transunit-mapp)
@@ -235,10 +240,10 @@
   (b* (((reterr) nil (irr-transunit-ensemble))
        ((transunit-ensemble tunits) tunits)
        ((erp found map)
-        (filepath-transunit-map-try-split-fn-when tunits.unwrap
+        (filepath-transunit-map-try-split-fn-when tunits.units
                                                   triggers
                                                   tunits)))
-    (retok found (transunit-ensemble map))))
+    (retok found (c$::make-transunit-ensemble :units map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,11 +302,7 @@
    triggers
    (wrld plist-worldp))
   :returns (mv (er? maybe-msgp)
-               (code (and (code-ensemblep code)
-                          (c$::transunit-ensemble-annop
-                           (code-ensemble->transunits code)))
-                     :hints (("Goal" :in-theory (enable irr-code-ensemble
-                                                        irr-transunit-ensemble))))
+               (code code-ensemblep)
                (const-new$ symbolp :rule-classes :type-prescription)
                (triggers string-listp))
   :short "Process the inputs."
@@ -311,8 +312,7 @@
        (code (acl2::constant-value const-old wrld))
        ((unless (code-ensemblep code))
         (retmsg$ "~x0 must be a code ensemble." const-old))
-       (tunits (code-ensemble->transunits code))
-       ((unless (c$::transunit-ensemble-annop tunits))
+       ((unless (code-ensemble-annop code))
         (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
         (retmsg$ "~x0 must be a symbol" const-new))
@@ -324,7 +324,12 @@
        ((when (endp triggers))
         (retmsg$ "~x0 must be a list with at least one element" triggers)))
     (retok code const-new triggers))
-  :guard-hints (("Goal" :in-theory (enable string-listp))))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  ///
+
+  (defret code-ensemble-annop-of-split-fn-when-process-inputs.code
+    (implies (not er?)
+             (code-ensemble-annop code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +351,7 @@
   ((code code-ensemblep)
    (const-new symbolp)
    (triggers string-listp))
-  :guard (c$::transunit-ensemble-annop (code-ensemble->transunits code))
+  :guard (code-ensemble-annop code)
   :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."

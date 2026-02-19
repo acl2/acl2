@@ -11,9 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "bvand")
-(include-book "getbit")
+(include-book "bvand-def")
+(include-book "getbit-def")
+(local (include-book "bvand"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "logand-b"))
 
 (defund bitand (x y)

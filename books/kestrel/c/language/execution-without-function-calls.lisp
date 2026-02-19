@@ -13,10 +13,7 @@
 
 (include-book "dynamic-semantics")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,7 +54,17 @@
                (equal (exec-expr e compst fenv limit)
                       (exec-expr e compst fenv1 limit)))
       :rule-classes nil
-      :flag exec-expr)
+      :flag exec-expr
+      :hints ('(:expand ((exec-expr e compst fenv limit)
+                         (exec-expr e compst fenv1 limit)))))
+    (defthm exec-expr-list-without-calls
+      (implies (expr-list-nocallsp es)
+               (equal (exec-expr-list es compst fenv limit)
+                      (exec-expr-list es compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-list
+      :hints ('(:expand ((exec-expr-list es compst fenv limit)
+                         (exec-expr-list es compst fenv1 limit)))))
     (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)

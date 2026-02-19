@@ -47,7 +47,12 @@
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvlt" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 
 ;; We have developed a connection between the ACL2 theorem prover, on which
 ;; most of our tools are based, and the STP SMT solver.  This allows us to take
@@ -1546,6 +1551,7 @@
                                 (variablep arg1)
                               (and (variablep arg1)
                                    (variablep arg2)))))))))
+        ;; TODO: What if it's some other known-boolean (could be mentioned in an BVIF or something)?:
         (otherwise nil)))))
 
 ;; Keeps terms that may possibly be useful for SMT.
@@ -1862,7 +1868,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Walk through the disjuncts, processing each one.  We strip the negation, if present, and analyze the core of the disjunct.  If the disjunct isn't a call of a known-boolean, we drop it.
+;; Walk through the disjuncts, deciding whether to drop, cut, or translate each one.  We strip the negation, if present, and analyze the core of the disjunct.  If the disjunct isn't a call of a known-boolean, we drop it.
 ;;otherwise, we process it top down.  for each node processed we can tell by looking at it what its type is (really?), and we have to decide whether to make a variable of that type, or translate the node (if the argument types are okay).
 ;; Returns (mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
 ;;TODO: Think about something like this: (prove-with-stp '(+ 1 x)).  Why is the query false instead of a single boolean var?  Because non-known-booleans get dropped here.  Is that necessary at the top level?
@@ -1874,7 +1880,7 @@
                                            handled-node-array ; tells us whether we've already processed (decided whether to cut or translate) each node
                                            dag-array dag-len dag-parent-array
                                            known-nodenum-type-alist
-                                           ;;these are accumulators:
+                                           ;; these are accumulators:
                                            disjuncts-to-include-in-query
                                            nodenums-to-translate
                                            cut-nodenum-type-alist)
@@ -1882,49 +1888,57 @@
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len)
                               (or (natp depth-limit)
                                   (null depth-limit))
+                              (if depth-limit (array1p 'depth-array depth-array) t) ; strengthen?
+                              (if depth-limit (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'depth-array depth-array)) t) ; use bounded-possibly-negated-nodenumsp?
+                              (array1p 'handled-node-array handled-node-array)
+                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'handled-node-array handled-node-array))
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
                               (nodenum-type-alistp known-nodenum-type-alist)
                               (possibly-negated-nodenumsp disjuncts-to-include-in-query)
                               (all-natp nodenums-to-translate)
-                              (nodenum-type-alistp cut-nodenum-type-alist)
-                              (array1p 'handled-node-array handled-node-array)
-                              (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'handled-node-array handled-node-array))
-                              (implies depth-limit (array1p 'depth-array depth-array))
-                              (if depth-limit (all-< (strip-nots-from-possibly-negated-nodenums disjuncts) (alen1 'depth-array depth-array)) t)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     (alen1 'dag-array dag-array))
-                              ;;todo: more?
-                              )
-                  :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                 :expand (;(possibly-negated-nodenumsp disjuncts)
-                                          (strip-nots-from-possibly-negated-nodenums disjuncts)
-                                          )))))
+                              (nodenum-type-alistp cut-nodenum-type-alist))
+                  :guard-hints (("Goal"
+                                 :in-theory (enable bounded-possibly-negated-nodenump strip-not-from-possibly-negated-nodenum)
+                                 :expand ((bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                                          (strip-nots-from-possibly-negated-nodenums disjuncts))))))
   (if (endp disjuncts)
       (mv (erp-nil) disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
-    (let* ((disjunct (first disjuncts))
-           (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum ; todo: what about a nodenum of a NOT?
-           (process-this-disjunctp
-             ;; todo: improve the messages here (about "possibly ..")
-            (let ((known-type-match (assoc disjunct-core known-nodenum-type-alist)))
-              (if known-type-match
-                  (let ((type (cdr known-type-match)))
-                    (if (boolean-typep type)
-                        t
-                      (prog2$ (cw "TYPE ERROR: Disjunct (~x0) is given a type other than BOOLEAN in the known-nodenum-type-alist (possibly after stripping a not).~%" disjunct-core)
-                              nil)))
-                ;;no type from the alist, so check the expr for an obvious type (todo: would it be faster to do this first?):
-                (let ((expr (aref1 'dag-array dag-array disjunct-core)))
-                  (if (atom expr) ;variable
-                      (prog2$ (cw "Dropping a disjunct that is a (possibly negated) variable: ~x0.~%" expr)
-                              nil)
-                    (if (call-of 'quote expr)
-                        (prog2$ (cw "Dropping a disjunct that is the constant ~x0.~%" expr) ; can this happen?
-                                nil)
-                      (if (boolean-typep (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
-                          t
-                        (prog2$ (cw "Dropping a disjunct (node ~x0, possibly after stripping a not) that is a call to ~x1 (not a known boolean).~%" disjunct-core (ffn-symb expr))
-                                nil)))))))))
-      (if process-this-disjunctp
+    (b* ((disjunct (first disjuncts))
+         ((mv negatedp disjunct-core) ; disjunct-core is a nodenum (we don't bother to check for double negation)
+          (if (consp disjunct) ; if not a nodenum, must be of the form (not <x>)
+              (mv t (farg1 disjunct))
+            (mv nil disjunct)))
+         (keep-this-disjunctp
+           ;; todo: improve the messages here (about "possibly ..")
+           (let ((known-type-match (assoc disjunct-core known-nodenum-type-alist)))
+             (if known-type-match
+                 (let ((type (cdr known-type-match)))
+                   (if (boolean-typep type)
+                       t ; keep the node (at worst it becomes a boolean variable) ; todo: look it up?  what if it's a variable?
+                     (prog2$ (cw "TYPE ERROR: For disjunct ~x0, node ~x1 has a type other than BOOLEAN in the known-nodenum-type-alist.~%" disjunct disjunct-core)
+                             nil ; todo: error?
+                             )))
+               ;;no type from the alist, so check the expr for an obvious type (todo: would it be faster to do this first?):
+               (let ((expr (aref1 'dag-array dag-array disjunct-core)))
+                 (if (atom expr) ;variable
+                     (prog2$ (if negatedp
+                                 (cw "Dropping a disjunct that is the negated variable ~x0.~%" expr)
+                               (cw "Dropping a disjunct that is the variable ~x0.~%" expr))
+                             nil)
+                   (if (call-of 'quote expr) ; rare ; todo: what if it proves the clause?
+                       (prog2$ (if negatedp
+                                   (cw "Dropping a disjunct that is the negated constant ~x0.~%" expr)
+                                 (cw "Dropping a disjunct that is the constant ~x0.~%" expr))
+                               nil)
+                     (if (boolean-typep (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
+                         t
+                       (prog2$ (if negatedp
+                                   (cw "Dropping a disjunct (node ~x0, after stripping a not) that is a call to ~x1 (not a known boolean).~%" disjunct-core (ffn-symb expr))
+                                 (cw "Dropping a disjunct (node ~x0) that is a call to ~x1 (not a known boolean).~%" disjunct-core (ffn-symb expr)))
+                               nil)))))))))
+      (if keep-this-disjunctp
           (b* (;; nodenums-to-translate and cut-nodenum-type-alist get extended, and more nodes are marked in the handled-node-array:
                ((mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)
                 (process-nodenums-for-translation (list disjunct-core)
@@ -1980,7 +1994,7 @@
              (all-< (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                  disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))
                     dag-len))
-    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums bounded-possibly-negated-nodenumsp bounded-possibly-negated-nodenump)))))
 
 (local
   (defthm bounded-possibly-negated-nodenumsp-of-mv-nth-1-of-process-disjuncts-for-translation
@@ -1991,7 +2005,7 @@
              (bounded-possibly-negated-nodenumsp (mv-nth 1 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                                               disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))
                                                  dag-len))
-    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums bounded-possibly-negated-nodenumsp bounded-possibly-negated-nodenump)))))
 
 (local
   (defthm nodenum-type-alistp-of-mv-nth-3-of-process-disjuncts-for-translation
@@ -2011,7 +2025,7 @@
              (all-< (strip-cars (mv-nth 3 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                              disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)))
                     dag-len))
-    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums bounded-possibly-negated-nodenumsp bounded-possibly-negated-nodenump)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2095,7 +2109,7 @@
              (bounded-stp-resultp (mv-nth 0 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
                                   dag-len))
     :otf-flg t
-    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
+    :hints (("Goal" :in-theory (e/d (prove-disjunction-with-stp-at-depth) (bounded-possibly-negated-nodenumsp-when-bounded-contextp))))))
 
 (local
   (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp-at-depth
@@ -2225,6 +2239,7 @@
                                                          myquotep-when-axe-disjunctionp
                                                          quotep-when-axe-disjunctionp)
                                                         (myquotep
+                                                         bounded-possibly-negated-nodenumsp-when-bounded-contextp
                                                          quotep))))))
   (b* (;; ((when (not (consp disjuncts))) ; not possible?
        ;;  (cw "(No disjuncts, so no point in calling STP.)~%")
@@ -2328,7 +2343,7 @@
                            (disjuncts (get-axe-disjunction-from-dag-items disjuncts 'dag-array
                                                                           dag-array dag-len))
                            (depth-limit nil))
-           :in-theory (e/d (prove-disjunction-with-stp stp-resultp) (stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
+           :in-theory (e/d (prove-disjunction-with-stp stp-resultp) (stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp
   (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -2345,14 +2360,14 @@
                            (disjuncts (get-axe-disjunction-from-dag-items disjuncts 'dag-array
                                                                           dag-array dag-len))
                            (depth-limit nil))
-           :in-theory (e/d (prove-disjunction-with-stp bounded-stp-resultp) (bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
+           :in-theory (e/d (prove-disjunction-with-stp bounded-stp-resultp) (bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm counterexamplep-of-cadr-of-mv-nth-0-of-prove-disjunction-with-stp
   (implies (and (equal :counterexample (car (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))))
                 (bounded-possibly-negated-nodenumsp disjuncts dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
            (counterexamplep (cadr (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))))
-  :hints (("Goal" :in-theory (enable prove-disjunction-with-stp))))
+  :hints (("Goal" :in-theory (e/d (prove-disjunction-with-stp) (bounded-possibly-negated-nodenumsp-when-bounded-contextp)))))
 
 (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp
   (equal (w (mv-nth 1 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))

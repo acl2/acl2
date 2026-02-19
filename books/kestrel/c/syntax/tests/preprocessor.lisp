@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,680 +10,828 @@
 
 (in-package "C$")
 
-(include-book "../preprocessor")
-
-(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-(include-book "std/testing/assert-bang-stobj" :dir :system)
+(include-book "preprocessor-testing-macros")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro init (input)
-  `(init-ppstate ,input (c::version-c23) ppstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro test-lex (fn input &key pos more-inputs std gcc cond)
-  ;; INPUT is an ACL2 term with the text to lex,
-  ;; where the term evaluates to a string or a list of bytes.
-  ;; Optional POS is the initial position for the preprocessing state.
-  ;; Optional MORE-INPUTS go just before preprocessing state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
-  ;; Optional COND may be over variables AST, POS/SPAN, PPSTATE.
-  `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (ppstate (init-ppstate (if (stringp ,input)
-                                    (acl2::string=>nats ,input)
-                                  ,input)
-                                version
-                                ppstate))
-         ,@(and pos
-                `((ppstate (update-ppstate->position ,pos ppstate))))
-         ((mv erp ?ast ?pos/span ppstate)
-          (,fn ,@more-inputs ppstate)))
-      (mv
-       (if erp
-           (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
-         ,(or cond t)) ; assertion passes if COND is absent or else holds
-       ppstate))
-    ppstate))
-
-(defmacro test-lex-fail (fn input &key pos more-inputs std gcc)
-  ;; INPUT is an ACL2 term with the text to lex,
-  ;; where the term evaluates to a string or a list of bytes.
-  ;; Optional POS is the initial position for the preprocessing state.
-  ;; Optional MORE-INPUTS go just before preproceessing state input.
-  ;; STD indicates the C standard version (17 or 23; default 17).
-  ;; GCC flag says whether GCC extensions are enabled (default NIL).
-  `(assert!-stobj
-    (b* ((version (if (eql ,std 23)
-                      (if ,gcc (c::version-c23+gcc) (c::version-c23))
-                    (if ,gcc (c::version-c17+gcc) (c::version-c17))))
-         (ppstate (init-ppstate (if (stringp ,input)
-                                    (acl2::string=>nats ,input)
-                                  ,input)
-                                version
-                                ppstate))
-         ,@(and pos
-                `((ppstate (update-ppstate->position ,pos ppstate))))
-         ((mv erp & & ppstate)
-          (,fn ,@more-inputs ppstate)))
-      (mv erp ppstate))
-    ppstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; pread-char
-
-(assert!-stobj ; empty file
- (b* ((ppstate (init nil))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (not char?)
-            (equal pos (position 1 0))) ; just past end of (empty) file
-       ppstate))
- ppstate)
-
-(assert!-stobj ; disallowed character 0
- (b* ((ppstate (init '(0)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; character 32
- (b* ((ppstate (init '(32 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 32)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; line feed
- (b* ((ppstate (init '(10 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 10)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; carriage return
- (b* ((ppstate (init '(13 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 13)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; carriage return + line feed
- (b* ((ppstate (init '(13 10 65)))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate))
-      ((mv erp3 char3 pos3 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char 13)
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 10)
-            (equal pos2 (position 1 0))
-            (not erp3)
-            (equal char3 65)
-            (equal pos3 (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; disallowed byte 255
- (b* ((ppstate (init '(255)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; ??=
- (b* ((ppstate (init (acl2::string=>nats "??=A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\#))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??(
- (b* ((ppstate (init (acl2::string=>nats "??(A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\[))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??/
- (b* ((ppstate (init (acl2::string=>nats "??/A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\\))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??)
- (b* ((ppstate (init (acl2::string=>nats "??)A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\]))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??'
- (b* ((ppstate (init (acl2::string=>nats "??'A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\^))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??<
- (b* ((ppstate (init (acl2::string=>nats "??<A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\{))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??!
- (b* ((ppstate (init (acl2::string=>nats "??!A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\|))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??>
- (b* ((ppstate (init (acl2::string=>nats "??>A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\}))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??-
- (b* ((ppstate (init (acl2::string=>nats "??-A")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\~))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 65)
-            (equal pos2 (position 1 3)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??a
- (b* ((ppstate (init (acl2::string=>nats "??a")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate))
-      ((mv erp3 char3 pos3 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\?))
-            (equal pos2 (position 1 1))
-            (not erp3)
-            (equal char3 (char-code #\a))
-            (equal pos3 (position 1 2)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ?a
- (b* ((ppstate (init (acl2::string=>nats "?a")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\a))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ??
- (b* ((ppstate (init (acl2::string=>nats "??")))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\?))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; ?
- (b* ((ppstate (init (acl2::string=>nats "?")))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\?))
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; \ at end of file
- (b* ((ppstate (init (list (char-code #\\))))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; \ LF at end of file
- (b* ((ppstate (init (list (char-code #\\) 10)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; \ LF a
- (b* ((ppstate (init (list (char-code #\\) 10 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; \ CR a
- (b* ((ppstate (init (list (char-code #\\) 13 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; \ CR LF a
- (b* ((ppstate (init (list (char-code #\\) 13 10 (char-code #\a))))
-      ((mv erp char pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\a))
-            (equal pos (position 2 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; \ n
- (b* ((ppstate (init (list (char-code #\\) (char-code #\n))))
-      ((mv erp char pos ppstate) (pread-char ppstate))
-      ((mv erp2 char2 pos2 ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char (char-code #\\))
-            (equal pos (position 1 0))
-            (not erp2)
-            (equal char2 (char-code #\n))
-            (equal pos2 (position 1 1)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; 2-byte UTF-8 encoding of Greek capital letter sigma
- (b* ((ppstate (init (acl2::string=>nats "Σ")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x03a3)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; invalid 2-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
- (b* ((ppstate (init (acl2::string=>nats "↺")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x21ba)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; disallowed 3-byte UTF-8 encoding
- (b* ((ppstate (init (list #b11100010 #b10000000 #b10101010))) ; 202Ah
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; invalid 3-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11100000 #b10000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; 4-byte UTF-8 encoding of musical symbol eighth note
- (b* ((ppstate (init (acl2::string=>nats "𝅘𝅥𝅮")))
-      ((mv erp char? pos ppstate) (pread-char ppstate)))
-   (mv (and (not erp)
-            (equal char? #x1d160)
-            (equal pos (position 1 0)))
-       ppstate))
- ppstate)
-
-(assert!-stobj ; invalid 4-byte UTF-8 encoding of 0
- (b* ((ppstate (init (list #b11110000 #b10000000 #b10000000 #b10000000)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-(assert!-stobj ; invalid 4-byte UTF-8 encoding of 1FFFFFh
- (b* ((ppstate (init (list #b11110111 #b10111111 #b10111111 #b10111111)))
-      ((mv erp & & ppstate) (pread-char ppstate))
-      (- (cw "~@0" erp)))
-   (mv erp ppstate))
- ppstate)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; plex-identifier
-
-(test-lex
- plex-identifier
- " abc"
- :pos (position 8 4)
- :more-inputs ((char-code #\w) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "w")))
-            (equal pos/span (span (position 8 3) (position 8 3)))))
-
-(test-lex
- plex-identifier
- "abc456"
- :pos (position 8 4)
- :more-inputs ((char-code #\u) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "uabc456")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
-
-(test-lex
- plex-identifier
- "tatic"
- :pos (position 8 4)
- :more-inputs ((char-code #\s) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "static")))
-            (equal pos/span (span (position 8 3) (position 8 8)))))
-
-(test-lex
- plex-identifier
- "nclude"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "include")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
-
-(test-lex
- plex-identifier
- "nclud_"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "includ_")))
-            (equal pos/span (span (position 8 3) (position 8 9)))))
-
-(test-lex
- plex-identifier
- "nclud+"
- :pos (position 8 4)
- :more-inputs ((char-code #\i) (position 8 3))
- :cond (and (equal ast (plexeme-ident (ident "includ")))
-            (equal pos/span (span (position 8 3) (position 8 8)))))
+; Single-file tests.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; plex-pp-number
+; (depends-on "preproc-examples/empty.c")
 
-(test-lex
- plex-pp-number
- ""
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number (pnumber-digit #\3))))
+(test-preproc-1 "empty.c"
+                ""
+                :base-dir "preproc-examples")
 
-(test-lex
- plex-pp-number
- "+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number (pnumber-digit #\3))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-lex
- plex-pp-number
- ""
- :more-inputs (t #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number (pnumber-dot-digit #\3))))
+; (depends-on "preproc-examples/whitespace.c")
 
-(test-lex
- plex-pp-number
- "+"
- :more-inputs (t #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number (pnumber-dot-digit #\3))))
+(test-preproc-1 "whitespace.c"
+                (list 10
+                      32 32 32 10 ; SP SP SP
+                      9 10 ; HT
+                      11 10 ; VT
+                      12 10) ; FF
+                :base-dir "preproc-examples")
 
-(test-lex
- plex-pp-number
- "4"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-digit (pnumber-digit #\3) #\4))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-lex
- plex-pp-number
- "4"
- :more-inputs (t #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-digit (pnumber-dot-digit #\3) #\4))))
+; (depends-on "preproc-examples/comments.c")
 
-(test-lex
- plex-pp-number
- "e+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-locase-e-sign (pnumber-digit #\3)
-                                             (sign-plus)))))
+(test-preproc-1 "comments.c"
+                "/* block
+ * comment
+ */
 
-(test-lex
- plex-pp-number
- "e-"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-locase-e-sign (pnumber-digit #\3)
-                                             (sign-minus)))))
+// line comment
+"
+                :base-dir "preproc-examples")
 
-(test-lex
- plex-pp-number
- "e*"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\e))))
+; This is the same test but dropping comments.
 
-(test-lex
- plex-pp-number
- "E+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-upcase-e-sign (pnumber-digit #\3)
-                                             (sign-plus)))))
+(test-preproc-1 "comments.c"
+                "
 
-(test-lex
- plex-pp-number
- "E-"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-upcase-e-sign (pnumber-digit #\3)
-                                             (sign-minus)))))
 
-(test-lex
- plex-pp-number
- "E/"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\E))))
+"
+                :base-dir "preproc-examples"
+                :keep-comments nil)
 
-(test-lex
- plex-pp-number
- "p+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-locase-p-sign (pnumber-digit #\3)
-                                             (sign-plus)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-lex
- plex-pp-number
- "p-"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-locase-p-sign (pnumber-digit #\3)
-                                             (sign-minus)))))
+; (depends-on "preproc-examples/text.c")
 
-(test-lex
- plex-pp-number
- "p*"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\p))))
+(test-preproc-1 "text.c"
+                "int x = 0;
 
-(test-lex
- plex-pp-number
- "P+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-upcase-p-sign (pnumber-digit #\3)
-                                             (sign-plus)))))
+void f(double y) {
+  y = 0.1;
+}
+"
+                :base-dir "preproc-examples")
 
-(test-lex
- plex-pp-number
- "P-"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-upcase-p-sign (pnumber-digit #\3)
-                                             (sign-minus)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-lex
- plex-pp-number
- "P/"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\P))))
+; (depends-on "preproc-examples/null-directive.c")
 
-(test-lex
- plex-pp-number
- "a"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+(test-preproc-1 "null-directive.c"
+                ""
+                :base-dir "preproc-examples")
 
-(test-lex
- plex-pp-number
- "a+"
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-lex
- plex-pp-number
- "."
- :more-inputs (nil #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-dot (pnumber-digit #\3)))))
+; (depends-on "preproc-examples/macros.c")
 
-(test-lex
- plex-pp-number
- "7abP-.x"
- :more-inputs (t #\3 (position 3 7))
- :cond (equal ast
-              (plexeme-number
-               (pnumber-number-nondigit
-                (pnumber-number-dot
-                 (pnumber-number-upcase-p-sign
-                  (pnumber-number-nondigit
-                   (pnumber-number-nondigit
-                    (pnumber-number-digit
-                     (pnumber-dot-digit #\3)
-                     #\7)
-                    #\a)
-                   #\b)
-                  (sign-minus)))
-                #\x))))
+(test-preproc-1 "macros.c"
+                "
+char[100] buffer;
+
+int x =  0;
+
+int y = 3;
+
+int z1 = (1, );
+int z2 = (1, i);
+int z3 = (1, a,b);
+int z4 = (1, a, b);
+int z5 = (1, a, b);
+int z6 = (1, (a,b));
+
++;
++3;
++5.7e88;
++x;
++ +uu;
++x+y;
++ +7;
+
+-;
+-3;
+-5.7e88;
+-x;
+-+uu;
+-x+y;
+-0;
+
+(a)+(b);
+(a * b)+(a / b);
+()+(78);
+(87)+();
+()+();
+(f(x,y))+(g(w));
+
+((a)*(b),);
+((a + b)*(a - b),);
+(()*(78),);
+((87)*(),);
+(()*(),);
+((f(x,y))*(g(w)),);
+((1)*(2),3);
+((1)*(2),3, 4);
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/stringize.c")
+
+(test-preproc-1 "stringize.c"
+                "
+\"\";
+\"id\";
+\"+=\";
+\"739.88e+78\";
+\"'a'\";
+\"'\\\\n'\";
+\"'\\\\002'\";
+\"L'a'\";
+\"U'a'\";
+\"u'a'\";
+\"\\\"abc\\\"\";
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/concatenate.c")
+
+(test-preproc-1 "concatenate.c"
+                "
+a b cd e;
+x334;
+6e+8P-;
+>>=;
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example-6.10.3.3.c")
+
+(test-preproc-1 "c17-std-example-6.10.3.3.c"
+                ""
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example-6.10.3.4.c")
+
+(test-preproc-1 "c17-std-example-6.10.3.4.c"
+                "
+2*9*g
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example1-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example1-6.10.3.5.c"
+                "
+int table[100];
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example2-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example2-6.10.3.5.c"
+                ""
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example3-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example3-6.10.3.5.c"
+                "
+f(2 * (y+1)) + f(2 * (f(2 * (z[0])))) % f(2 * (0)) + t(1);
+f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
+int i[] = { 1, 23, 4, 5,  };
+char c[2][6] = { \"hello\", \"\" };
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example4-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example4-6.10.3.5.c"
+                "
+printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
+fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
+include \"vers2.h\" // omit # in #include to avoid access
+\"hello\";
+\"hello\" \", world\"
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example5-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example5-6.10.3.5.c"
+                "
+int j[] = { 123, 45, 67, 89,
+           10, 11, 12,  };
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example6-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example6-6.10.3.5.c"
+                ""
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/c17-std-example7-6.10.3.5.c")
+
+(test-preproc-1 "c17-std-example7-6.10.3.5.c"
+                "
+fprintf(stderr, \"Flag\");
+fprintf(stderr, \"X = %d\\n\", x);
+puts(\"The first, second, and third items.\");
+((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-examples/conditional.c")
+
+(test-preproc-1 "conditional.c"
+                "M_is_not_defined
+
+
+M_is_defined
+"
+                :base-dir "preproc-examples"
+                :full-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Multi-file tests.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example1/including.c")
+; (depends-on "preproc-example1/included.h")
+; (depends-on "preproc-example1/subdir/included2.h")
+
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "#include \"included.h\"
+/* comment
+   on two lines */ #include \"subdir/included2.h\"
+#include \"included.h\" // comment
+   #include \"included.h\"
+"
+                                    "included.h"
+                                    "#include \"subdir/included2.h\"
+"
+                                    "subdir/included2.h"
+                                    "void f() {}
+")
+              :base-dir "preproc-example1")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("including.c")
+              :expected (fileset-of "including.c"
+                                    "// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+void f() {}
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+// #include \"subdir/included2.h\" >>>>>>>>>>
+void f() {}
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+void f() {}
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+// #include \"included.h\" >>>>>>>>>>
+// #include \"subdir/included2.h\" >>>>>>>>>>
+void f() {}
+// <<<<<<<<<< #include \"subdir/included2.h\"
+// <<<<<<<<<< #include \"included.h\"
+")
+              :base-dir "preproc-example1"
+              :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("including.c")
+                      :base-dir "preproc-example1")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example2/gincluder1.c")
+; (depends-on "preproc-example2/gincluder2.c")
+; (depends-on "preproc-example2/gincluder1.h")
+; (depends-on "preproc-example2/gincluder2.h")
+; (depends-on "preproc-example2/guarded.h")
+; (depends-on "preproc-example2/gincludermod1.c")
+; (depends-on "preproc-example2/gincludermod2.c")
+
+; In this test:
+; - gincluder1.c includes gincluder1.h and gincluder2.h in that order
+; - gincluder2.c includes gincluder2.h and gincluder1.h in that order
+; - gincluder1.h includes guarded.h and then introduces x1
+; - gincluder2.h includes guarded.h and then introduces x2
+; - guarded.h has a header guard, and introduces f
+; All the #include directives are preserved.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+#include \"gincluder1.h\"
+#include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "
+#include \"gincluder2.h\"
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f() {}
+#endif
+")
+              :base-dir "preproc-example2")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+"
+                                    "gincluder2.c"
+                                    "
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+")
+              :base-dir "preproc-example2"
+              :full-expansion t)
+
+; This is the same test but with full expansion and without tracing.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+
+
+void f() {}
+int x1 = 0;
+
+
+int x2 = 0;
+"
+                                    "gincluder2.c"
+                                    "
+
+
+void f() {}
+int x2 = 0;
+
+
+int x1 = 0;
+")
+              :base-dir "preproc-example2"
+              :full-expansion t
+              :trace-expansion nil)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincluder1.c"
+                        "gincluder2.c")
+                      :base-dir "preproc-example2")
+
+;;;;;;;;;;;;;;;;;;;;
+
+; This is a variant of the previous test in which
+; instead of gincluder1.c and gincluder2.c,
+; we have gincludermod1.c and gincludermod2.c,
+; which "modify" f by #define'ing it to be f1 and f2 respectively.
+; Thus:
+; - guarded.h and gincluder1.h are expanded in gincludermod1.c,
+;   but not ginluder2.h
+; - guarded.h and gincluder2.h are expanded in gincludermod2.c,
+;   but not ginluder1.h
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+#define f f
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f1() {}
+#endif
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+#define f f
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f2() {}
+#endif
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f() {}
+#endif
+")
+              :base-dir "preproc-example2")
+
+; This is the same test but without tracing.
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+#define f f
+
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f1() {}
+#endif
+int x1 = 0;
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+#define f f
+
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f2() {}
+#endif
+int x2 = 0;
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f() {}
+#endif
+")
+              :base-dir "preproc-example2"
+              :trace-expansion nil)
+
+; This is the same test but with full expansion.
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f1() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+// #include \"gincluder2.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+void f2() {}
+// <<<<<<<<<< #include \"guarded.h\"
+int x2 = 0;
+// <<<<<<<<<< #include \"gincluder2.h\"
+// #include \"gincluder1.h\" >>>>>>>>>>
+
+// #include \"guarded.h\" >>>>>>>>>>
+
+// <<<<<<<<<< #include \"guarded.h\"
+int x1 = 0;
+// <<<<<<<<<< #include \"gincluder1.h\"
+")
+              :base-dir "preproc-example2"
+              :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincludermod1.c"
+                        "gincludermod2.c")
+                      :base-dir "preproc-example2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example3/f.c")
+; (depends-on "preproc-example3/g.c")
+; (depends-on "preproc-example3/h.c")
+; (depends-on "preproc-example3/i.c")
+; (depends-on "preproc-example3/j.c")
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "f.c"
+                                    "#ifndef F
+#define F F
+x
+#endif
+"
+                                    "g.c"
+                                    "#include \"f.c\"
+z
+"
+                                    "h.c"
+                                    "#include \"f.c\"
+#include \"g.c\"
+"
+
+                                    "i.c"
+                                    "#include \"h.c\"
+"
+                                    "j.c"
+                                    "#include \"g.c\"
+")
+              :base-dir "preproc-example3")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "i.c"
+                                    "// #include \"h.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+// <<<<<<<<<< #include \"h.c\"
+"
+                                    "j.c"
+                                    "// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+")
+              :base-dir "preproc-example3"
+              :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example3")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example4/f.c")
+; (depends-on "preproc-example4/g.c")
+; (depends-on "preproc-example4/h.c")
+; (depends-on "preproc-example4/i.c")
+; (depends-on "preproc-example4/j.c")
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "f.c"
+                                    "#ifndef F
+#define F F
+x
+#endif
+"
+                                    "g.c"
+                                    "#define x x
+// #include \"f.c\" >>>>>>>>>>
+#ifndef F
+#define F F
+y
+#endif
+// <<<<<<<<<< #include \"f.c\"
+z
+"
+                                    "h.c"
+                                    "#include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+#define x x
+#include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+"
+
+                                    "i.c"
+                                    "#include \"h.c\"
+"
+                                    "j.c"
+                                    "#include \"g.c\"
+")
+              :base-dir "preproc-example4")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("i.c" "j.c")
+              :expected (fileset-of "i.c"
+                                    "// #include \"h.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+x
+// <<<<<<<<<< #include \"f.c\"
+// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+// <<<<<<<<<< #include \"h.c\"
+"
+                                    "j.c"
+                                    "// #include \"g.c\" >>>>>>>>>>
+// #include \"f.c\" >>>>>>>>>>
+y
+// <<<<<<<<<< #include \"f.c\"
+z
+// <<<<<<<<<< #include \"g.c\"
+")
+              :base-dir "preproc-example4"
+              :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example4")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example5/a.c")
+; (depends-on "preproc-example5/b.c")
+; (depends-on "preproc-example5/c.c")
+
+(test-preproc '("c.c")
+              :expected (fileset-of "a.c"
+                                    "#ifndef A
+#define A A
+#define X X
+int a;
+#endif
+"
+                                    "b.c"
+                                    "#include \"a.c\"
+void f();
+"
+                                    "c.c"
+                                    "#include \"a.c\"
+#include \"b.c\"
+")
+              :base-dir "preproc-example5")
+
+; This is the same test but with full expansion.
+
+(test-preproc '("c.c")
+              :expected (fileset-of "c.c"
+                                    "// #include \"a.c\" >>>>>>>>>>
+int a;
+// <<<<<<<<<< #include \"a.c\"
+// #include \"b.c\" >>>>>>>>>>
+// #include \"a.c\" >>>>>>>>>>
+// <<<<<<<<<< #include \"a.c\"
+void f();
+// <<<<<<<<<< #include \"b.c\"
+")
+              :base-dir "preproc-example5"
+              :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("c.c")
+                      :base-dir "preproc-example5")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example6/guarded.h")
+; (depends-on "preproc-example6/defguard.c")
+
+(test-preproc '("defguard.c")
+              :expected (fileset-of "guarded.h"
+                                    "#ifndef G
+#define G G
+void g();
+#endif
+"
+                                    "defguard.c"
+                                    "#define G G
+#include \"guarded.h\"
+int n = 10;
+")
+              :base-dir "preproc-example6")
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("defguard.c")
+                      :base-dir "preproc-example6")

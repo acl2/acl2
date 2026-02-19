@@ -28,13 +28,14 @@
               *new*
               :target "foo"
               :param "y"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 1)))))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -57,13 +58,14 @@
               *new*
               :target "foo"
               :param "z"
-              :const (expr-const
+              :const (make-expr-const
+                       :const
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec 42)))))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"

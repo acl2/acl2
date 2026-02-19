@@ -22,6 +22,8 @@
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "../../syntax/validator")
 
+(include-book "qualified-ident")
+
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -94,86 +96,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod qualified-ident
-  :short "Fixtype for fully qualified identifiers"
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This type tags an identifiers with an optional filepath for the
-       translation unit in which it was defined. This tagged identifier is
-       unique across a translation unit ensemble.")
-    (xdoc::p
-      "Only identifiers with internal linkage are tagged with a
-       filepath. External identifiers do not need qualification, as they are
-       already unique across the translation unit ensemble."))
-  ((filepath? c$::filepath-option)
-   (ident ident))
-  :pred qualified-identp)
-
-(fty::defoption qualified-ident-option
-  qualified-ident
-  :pred qualified-ident-optionp)
-
-(fty::defset qualified-ident-option-set
-  :elt-type qualified-ident-option
-  :elementp-of-nil t
-  :pred qualified-ident-option-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define qualified-ident-externalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-externalp ident))))
-  :parents (qualified-ident)
-  (not (qualified-ident->filepath? ident)))
-
-(define qualified-ident-internalp
-  ((ident qualified-identp))
-  (declare (xargs :type-prescription
-                  (booleanp (qualified-ident-internalp ident))))
-  :parents (qualified-ident)
-  (and (qualified-ident->filepath? ident) t))
-
-(defrule qualified-ident-internalp-becomes-not-qualified-ident-externalp
-  (equal (qualified-ident-internalp ident)
-         (not (qualified-ident-externalp ident)))
-  :enable (qualified-ident-internalp
-           qualified-ident-externalp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define external-ident
-  ((ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :ident ident))
-
-(defrule qualified-ident-externalp-of-external-ident
-  (qualified-ident-externalp (external-ident ident))
-  :enable (qualified-ident-externalp
-           external-ident))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define internal-ident
-  ((filepath filepathp)
-   (ident identp))
-  :returns (qualified-ident qualified-identp)
-  :parents (qualified-ident)
-  (make-qualified-ident
-   :filepath? (c$::filepath-fix filepath)
-   :ident ident))
-
-(defrule qualified-ident-internalp-of-internal-ident
-  (qualified-ident-internalp (internal-ident filepath ident))
-  :enable (qualified-ident-internalp
-           internal-ident)
-  :disable qualified-ident-internalp-becomes-not-qualified-ident-externalp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap call-graph
   :key-type qualified-ident
   :val-type qualified-ident-option-set
@@ -215,7 +137,7 @@
                                (c$::linkage-internal))
                 :otherwise nil))))
     (if is-internal
-        (internal-ident filepath ident)
+        (qualified-ident filepath ident)
       (external-ident ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -448,19 +370,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define call-graph-initdeclor
-  ((initdeclor initdeclorp)
+(define call-graph-init-declor
+  ((initdeclor init-declorp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (b* (((initdeclor initdeclor) initdeclor))
+  (b* (((init-declor initdeclor) initdeclor))
     ;; TODO: need to look at initdeclor.declor?
-    (call-graph-initer-option initdeclor.init? fn-name filepath valid-table call-graph)))
+    (call-graph-initer-option initdeclor.initer? fn-name filepath valid-table call-graph)))
 
-(define call-graph-initdeclor-list
-  ((initdeclors initdeclor-listp)
+(define call-graph-init-declor-list
+  ((initdeclors init-declor-listp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
@@ -468,12 +390,12 @@
   :returns (call-graph$ call-graphp)
   (if (endp initdeclors)
       (call-graph-fix call-graph)
-    (call-graph-initdeclor-list
+    (call-graph-init-declor-list
       (rest initdeclors)
       fn-name
       filepath
       valid-table
-      (call-graph-initdeclor (first initdeclors) fn-name filepath valid-table call-graph))))
+      (call-graph-init-declor (first initdeclors) fn-name filepath valid-table call-graph))))
 
 (define call-graph-statassert
   ((statassert statassertp)
@@ -485,19 +407,19 @@
   (b* (((statassert statassert) statassert))
     (call-graph-const-expr statassert.test fn-name filepath valid-table call-graph)))
 
-(define call-graph-decl
-  ((decl declp)
+(define call-graph-declon
+  ((declon declonp)
    (fn-name qualified-identp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (decl-case
-   decl
-   :decl (call-graph-initdeclor-list decl.init fn-name filepath valid-table call-graph)
+  (declon-case
+   declon
+   :declon (call-graph-init-declor-list declon.declors fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
-   :statassert (call-graph-statassert decl.unwrap fn-name filepath valid-table call-graph)))
+   :statassert (call-graph-statassert declon.statassert fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -570,30 +492,31 @@
                        filepath
                        valid-table
                        call-graph))))
-     :for-decl (call-graph-stmt
-                 stmt.body
-                 fn-name
-                 filepath
-                 valid-table
-                 (call-graph-expr-option
+     :for-declon (call-graph-stmt
+                  stmt.body
+                  fn-name
+                  filepath
+                  valid-table
+                  (call-graph-expr-option
                    stmt.next
                    fn-name
                    filepath
                    valid-table
                    (call-graph-expr-option
-                     stmt.test
+                    stmt.test
+                    fn-name
+                    filepath
+                    valid-table
+                    (call-graph-declon
+                     stmt.init
                      fn-name
                      filepath
                      valid-table
-                     (call-graph-decl
-                       stmt.init
-                       fn-name
-                       filepath
-                       valid-table
-                       call-graph))))
+                     call-graph))))
      ;; TODO: error on ambiguous constructs
      ;; :for-ambig
      :return (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
+     :return-attrib (call-graph-expr stmt.expr fn-name filepath valid-table call-graph)
      :otherwise (call-graph-fix call-graph))
     :measure (stmt-count stmt))
 
@@ -606,7 +529,7 @@
     :returns (call-graph$ call-graphp)
     (block-item-case
      item
-     :decl (call-graph-decl item.decl fn-name filepath valid-table call-graph)
+     :declon (call-graph-declon item.declon fn-name filepath valid-table call-graph)
      :stmt (call-graph-stmt item.stmt fn-name filepath valid-table call-graph)
      ;; TODO: error on ambiguous constructs
      :ambig (call-graph-fix call-graph))
@@ -677,32 +600,32 @@
                           call-graph))
       :otherwise (call-graph-fix call-graph))))
 
-(define call-graph-extdecl
-  ((extdecl extdeclp)
+(define call-graph-ext-declon
+  ((extdecl ext-declonp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
-  (extdecl-case
+  (ext-declon-case
    extdecl
-   :fundef (call-graph-fundef extdecl.unwrap filepath valid-table call-graph)
-   :decl (call-graph-fix call-graph)
+   :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
+   :declon (call-graph-fix call-graph)
    :empty (call-graph-fix call-graph)
    :asm (call-graph-fix call-graph)))
 
-(define call-graph-extdecl-list
-  ((extdecls extdecl-listp)
+(define call-graph-ext-declon-list
+  ((extdecls ext-declon-listp)
    (filepath filepathp)
    (valid-table c$::valid-tablep)
    (call-graph call-graphp))
   :returns (call-graph$ call-graphp)
   (if (endp extdecls)
       (call-graph-fix call-graph)
-    (call-graph-extdecl-list
+    (call-graph-ext-declon-list
       (rest extdecls)
       filepath
       valid-table
-      (call-graph-extdecl
+      (call-graph-ext-declon
         (first extdecls)
         filepath
         valid-table
@@ -716,9 +639,12 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
   (b* (((transunit transunit) transunit)
+       ((when transunit.includes)
+        (raise "Unsupported #include directives.")
+        (call-graph-fix call-graph))
        (info (c$::transunit-info-fix (c$::transunit->info transunit)))
        (valid-table (c$::transunit-info->table-end info)))
-    (call-graph-extdecl-list transunit.decls filepath valid-table call-graph))
+    (call-graph-ext-declon-list transunit.declons filepath valid-table call-graph))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
 
 (define call-graph-filepath-transunit-map
@@ -743,7 +669,7 @@
   :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit ensemble."
   (call-graph-filepath-transunit-map
-   (c$::transunit-ensemble->unwrap ensemble)
+   (c$::transunit-ensemble->units ensemble)
    nil)
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 

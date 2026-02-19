@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -337,10 +337,10 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the community books @('kestrel/c/atc/integers.lisp')
-    and @('kestrel/c/atc/integer-operations.lisp').
+    is in the community books @('kestrel/c/representation/integers.lisp')
+    and @('kestrel/c/representation/integer-operations.lisp').
     These are automatically included when ATC is included,
-    but one may want to include those file as part of an APT derivation
+    but one may want to include those files as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
     (see @(see atc-tutorial-approach)),
     and thus before including ATC itself,
@@ -434,7 +434,7 @@
     (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of nullary) @('int') operations.
     Our ACL2 representation in community book
-    @('kestrel/c/atc/integers.lisp') provides functions
+    @('kestrel/c/representation/integers.lisp') provides functions
     @(tsee sint-dec-const),
     @(tsee sint-oct-const), and
     @(tsee sint-hex-const)
@@ -570,7 +570,7 @@
     in the sense that they do not represent anything in the C code.
     However the functions @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
-    from the community book @('kestrel/c/atc/integers.lisp').")
+    from the community book @('kestrel/c/representation/integers.lisp').")
 
   (xdoc::p
    "In the envisioned use of ATC,
@@ -1060,7 +1060,7 @@
    "ATC generates a named constant whose value is
     the AST of the generated C program.
     More precisely, it is the AST of the generated C file,
-    which is a value of the fixtype @(tsee file) in "
+    which is a value of the fixtype @(tsee transunit-ensemble) in "
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". More precisely, it is the content of the generated file on disk:
     the AST is "
@@ -1093,7 +1093,7 @@
    "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-fileset) is applied
+    when @(tsee check-transunit-ensemble) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1104,7 +1104,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-fileset) is executable,
+    and @(tsee check-transunit-ensemble) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p
@@ -1233,7 +1233,7 @@
     no code is generated.
     The rationale is that, unless the code can be proved correct,
     it should not be generated.
-    Of course, this is easily defated by setting @(':proofs') to @('nil').
+    Of course, this is easily defeated by setting @(':proofs') to @('nil').
     Nonetheless, when @(':proofs') is @('t'),
     it seems appropriate to generate the code after the proofs.")
 
@@ -1490,10 +1490,10 @@
     Since @('nil') is different from the ACL2 model of any C scalar zero,
     and also @('t') is different from the ACL2 model of any C scalar non-zero,
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
-    The community book @('kestrel/c/atc/signed-ints.lisp'),
+    The community book @('kestrel/c/representation/integer-operations.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
     provides a function @(tsee boolean-from-sint)
-    the converts (the ACL2 representation of) a C @('int')
+    that converts (the ACL2 representation of) a C @('int')
     into an ACL2 boolean:
     it returns @('t') if the @('int') is not 0;
     it returns @('nil') if the @('int') is 0.

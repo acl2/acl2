@@ -59,6 +59,7 @@
           (:r15 `(r15 ,term))
           (:rsp `(rsp ,term))
           (:rbp `(rbp ,term))
+          (:rip `(rip ,term))
           ;; Extract a 32-bit register:
           (:eax (if 64-bitp
                     `(bvchop '32 (rax ,term))
@@ -161,26 +162,6 @@
   (if (eq :all output-indicator)
       term
     (wrap-in-normal-output-extractor output-indicator term 64-bitp wrld)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun get-x86-lifter-table (state)
-  (declare (xargs :stobjs state))
-  (table-alist 'x86-lifter-table (w state)))
-
-;TODO: Use the generic utility for redundancy checking
-;WHOLE-FORM is a call to the lifter
-(defun previous-lifter-result (whole-form state)
-  (declare (xargs :stobjs state))
-  (let* ((table-alist (get-x86-lifter-table state)))
-    (if (not (alistp table-alist))
-        (hard-error 'previous-lifter-result "Invalid table alist for x86-lifter-table: ~x0."
-                    (acons #\0 table-alist nil))
-      (let ((previous-result (acl2::lookup-equal whole-form table-alist)))
-        (if previous-result
-            (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
-                    previous-result)
-          nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

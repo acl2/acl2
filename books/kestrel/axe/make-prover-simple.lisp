@@ -1,7 +1,7 @@
 ; A tool to make an Axe Prover for a given purpose
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,7 +26,7 @@
 
 ;; TODO: use faster tests than equal in some places below?
 
-;; TODO: Consider making splitting just another tactic (but then a tactic must be able to produce a list of problems).
+;; TODO: Consider making splitting just another tactic (but then a tactic must be able to produce a list of problems [see tactic-resultp]).
 
 ;; TODO: Add a :cases tactic
 
@@ -74,7 +74,7 @@
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 ;(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 ;(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
-(include-book "make-assumption-array")
+(include-book "make-assumption-array") ; for maybe-replace-nodenum-using-assumption-array
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
@@ -525,25 +525,28 @@
            (not (member-equal (car x) y))))
 
 (mutual-recursion
- (defund simple-prover-tacticp (x)
-   (declare (xargs :guard t
-                   :ruler-extenders :all))
-   (or (eq x :rewrite)       ; rewrite all literals once
-       (eq x :rewrite-top)   ; rewrite all literals once, only lits whose top nodes match rules
-       (eq x :subst)         ; substitute vars
-       (eq x :elim)          ; eliminate tuples
-       (and (consp x) ; apply the given tactics in sequence
-            (eq :seq (car x))
-            (simple-prover-tactic-listp (fargs x)))
-       (and (consp x)
-            (eq :rep (car x)) ; repeatedly apply the given tactics in sequence, until nothing changes
-            (simple-prover-tactic-listp (fargs x)))))
- (defund simple-prover-tactic-listp (x)
-   (declare (xargs :guard t))
-   (if (atom x)
-       (null x)
-     (and (simple-prover-tacticp (first x))
-          (simple-prover-tactic-listp (rest x))))))
+  (defund simple-prover-tacticp (x)
+    (declare (xargs :guard t
+                    :ruler-extenders :all))
+    (or (eq x :rewrite)       ; rewrite all literals once
+        (eq x :rewrite-top)   ; rewrite all literals once, only lits whose top nodes match rules
+        (eq x :subst)         ; substitute vars
+        (eq x :elim)          ; eliminate tuples
+        ;; (:seq t1 t2 ... tn) applies tactics t1 through tn in sequence, stopping if any of them proves the goal.
+        (and (consp x)
+             (eq :seq (car x))
+             (simple-prover-tactic-listp (fargs x)))
+        ;; (:rep t1 t2 ... tn) repeatedly applies the whole sequence of tactics
+        ;; t1 through tn, until nothing changes, stopping if the goal is proved.
+        (and (consp x)
+             (eq :rep (car x))
+             (simple-prover-tactic-listp (fargs x)))))
+  (defund simple-prover-tactic-listp (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (null x)
+      (and (simple-prover-tacticp (first x))
+           (simple-prover-tactic-listp (rest x))))))
 
 (defthm simple-prover-tactic-listp-of-cdr-when-rep
   (implies (and (equal :rep (car tactic))
@@ -4335,7 +4338,7 @@
                  (mv :count-exceeded nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                ;; Apply the whole tactic-sequence:
                (b* ((- (and print (cw "(Iteration #~x0 for :rep tactic:~%" iteration-count)))
-                    ((mv start-time state) (get-cpu-time state))
+                    ((mv start-time state) (if print (get-cpu-time state) (mv nil state)))
                     ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                      (,apply-tactics-name tactic-sequence
                                           literal-nodenums
@@ -4346,14 +4349,15 @@
                                           hit-counts tries prover-depth known-booleans var-ordering options
                                           nil ; no change yet
                                           (+ -1 count) state))
-                    ((mv end-time state) (get-cpu-time state))
-                    (elapsed-time (let ((diff (- end-time start-time))) (if (<= 0 diff) diff 0)))
                     ((when erp)
                      (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
-                    (- (and print (progn$ (cw "End Iteration #~x0: " iteration-count)
-                                          (print-to-hundredths elapsed-time)
-                                          (cw "s.)~%") ; s for "seconds"
-                                          )))
+                    ((mv end-time state) (if print (get-cpu-time state) (mv nil state)))
+                    (- (and print (let* ((diff (- end-time start-time))
+                                         (elapsed-time (if (<= 0 diff) diff 0)))
+                                    (progn$ (cw "End Iteration #~x0: " iteration-count)
+                                            (print-to-hundredths elapsed-time)
+                                            (cw "s.)~%") ; s for "seconds"
+                                            ))))
                     ((when provedp)
                      (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))
                  (if changep
@@ -4365,7 +4369,7 @@
                                              interpreted-function-alist monitored-symbols
                                              case-designator print
                                              hit-counts tries prover-depth known-booleans var-ordering options (+ 1 iteration-count) (+ -1 count) state)
-                   ;; :rep tactic finished (no change this time):
+                   ;; Nothing changed, so we are done with the :rep tactic:
                    (mv (erp-nil)
                        nil ;provedp
                        nil ;changep
@@ -4409,7 +4413,7 @@
                        changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                  (b* ((tactic (first tactics))
                       (- (and print (cw "(Applying tactic ~x0:~%" tactic)))
-                      ((mv start-time state) (get-cpu-time state))
+                      ((mv start-time state) (if print (get-cpu-time state) (mv nil state)))
                       ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                        (,apply-tactic-name tactic
                                            literal-nodenums
@@ -4420,12 +4424,13 @@
                                            hit-counts tries prover-depth known-booleans var-ordering options (+ -1 count) state))
                       ((when erp)
                        (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
-                      ((mv end-time state) (get-cpu-time state))
-                      (elapsed-time (let ((diff (- end-time start-time))) (if (<= 0 diff) diff 0)))
-                      (- (and print (progn$ (cw "End tactic ~x0: " tactic)
-                                            (print-to-hundredths elapsed-time)
-                                            (cw "s.)~%") ; s for "seconds"
-                                            )))
+                      ((mv end-time state) (if print (get-cpu-time state) (mv nil state)))
+                      (- (and print (let* ((diff (- end-time start-time))
+                                           (elapsed-time (if (<= 0 diff) diff 0)))
+                                      (progn$ (cw "End tactic ~x0: " tactic)
+                                              (print-to-hundredths elapsed-time)
+                                              (cw "s.)~%") ; s for "seconds"
+                                              ))))
                       ((when provedp)
                        (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
                       ((when (not (consp literal-nodenums)))

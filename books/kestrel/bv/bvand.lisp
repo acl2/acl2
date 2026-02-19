@@ -1,4 +1,4 @@
-; Bitwise and
+; Rules about bitwise AND
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2025 Kestrel Institute
@@ -11,9 +11,10 @@
 
 (in-package "ACL2")
 
+(include-book "bvand-def")
 ;(include-book "logand-b") ; todo
 (include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -25,19 +26,7 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logand-b"))
 (local (include-book "slice"))
-
-(defund bvand (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (logand (bvchop size x)
-          (bvchop size y)))
-
-(defthm bvand-type
-  (and (integerp (bvand size x y))
-       (<= 0 (bvand size x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:type-prescription bvand))) ; bvand-type is at least as good
+(local (include-book "getbit"))
 
 ;disable?
 (defthm bvand-commutative
@@ -451,10 +440,9 @@
            (equal (logand x (bvchop m y))
                   (logand x y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
+           :in-theory (enable bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
                                    mod-expt-split FLOOR-WHEN-INTEGERP-OF-QUOTIENT
                                    )
-                           ())
            :expand ((LOGAND X (MOD Y (EXPT 2 M)))
                     (LOGAND X Y)
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))

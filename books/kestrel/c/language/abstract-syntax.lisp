@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,12 +13,11 @@
 
 (include-book "identifiers")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 ; to generate more typed list theorems in FTY::DEFLIST:
 (local (include-book "std/lists/append" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,8 +145,7 @@
    (unsignedp bool)
    (length iconst-length))
   :tag :iconst
-  :pred iconstp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,8 +299,7 @@
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspecseq-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyspecseq-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,7 +359,8 @@
   (:pointer ((decl obj-declor)))
   (:array ((decl obj-declor)
            (size iconst-option)))
-  :pred obj-declorp)
+  :pred obj-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,7 +393,8 @@
   (:pointer ((decl obj-adeclor)))
   (:array ((decl obj-adeclor)
            (size iconst-option)))
-  :pred obj-adeclorp)
+  :pred obj-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,8 +418,7 @@
   :elt-type tyname
   :true-listp t
   :elementp-of-nil nil
-  :pred tyname-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred tyname-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,8 +458,7 @@
   :elt-type unop
   :true-listp t
   :elementp-of-nil nil
-  :pred unop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred unop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,8 +525,7 @@
   :elt-type binop
   :true-listp t
   :elementp-of-nil nil
-  :pred binop-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred binop-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,11 +626,7 @@
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :pred expr-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -672,8 +664,7 @@
   :elt-type struct-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred struct-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred struct-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -732,7 +723,7 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-declon-listp
-  :prepwork ((local (in-theory (enable nfix))))
+
   ///
 
   (defruled cdr-of-param-declon-list-fix
@@ -762,7 +753,8 @@
   (:base ((name ident)
           (params param-declon-list)))
   (:pointer ((decl fun-declor)))
-  :pred fun-declorp)
+  :pred fun-declorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,7 +769,8 @@
      a function declarator without the name."))
   (:base ((params param-declon-list)))
   (:pointer ((decl fun-adeclor)))
-  :pred fun-adeclorp)
+  :pred fun-adeclorp
+  :prepwork ((set-induction-depth-limit 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -801,8 +794,7 @@
   :elt-type fun-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred fun-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fun-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -959,7 +951,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable acl2-count nfix)))))
+  :prepwork ((local (in-theory (enable acl2-count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1011,8 +1003,7 @@
   :elt-type fundef
   :true-listp t
   :elementp-of-nil nil
-  :pred fundef-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred fundef-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1039,8 +1030,7 @@
   :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-declon-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred ext-declon-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,6 +1051,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption transunit-option
+  transunit
+  :short "Fixtype of optional translation units."
+  :pred transunit-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult transunit-result
   :short "Fixtype of errors and translation units."
   :ok transunit
@@ -1068,64 +1065,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod file
-  :short "Fixtype of files."
+(fty::defprod transunit-ensemble
+  :short "Fixtype of translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in [C17] does not quite define files in the form we want here.
-     The closest things are
-     preprocessing files [C17:6.10/1]
-     and translation units [C17:6.9/1].
-     However, the grammar rule for preprocessing files
-     describes their content before preprocessing [C17:5.1.1.1/1] [C17:5.1.1.2/3],
-     and the grammar rule for translation units
-     describes their contents after preprocessing
-     (which may involve copying contents of included files).
-     As discussed in @(see abstract-syntax),
-     currently this abstract syntax captures construct
-     both before and after preprocessing
-     (although this will change, as explained in @(see abstract-syntax)).")
-   (xdoc::p
-    "We define a file as consisting of a list of external declarations.
-     This is actually the same as a translation unit (see @(tsee transunit)),
-     but we plan to extend and change this soon.
-     We put the list into a one-field product fixtype
-     so that in the future it may be easier to extend this fixtype.")
-   (xdoc::p
-    "Note that here by `file' we mean the content of a file,
-     not the file as a full entity of the file system,
-     which also includes a name and possibly other information.
-     We plan to formalize this additional information separately."))
-  ((declons ext-declon-list))
-  :tag :file
-  :pred filep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption file-option
-  file
-  :short "Fixtype of optional files."
-  :pred file-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod fileset
-  :short "Fixtype of file sets."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A file set is a collection of related files.
+    "A translation unit ensemble is a collection of related translation units.
      This is not an explicit notion in [C17],
      but it is a useful one in a language formalization:
      a program, or a portion of a program,
-     is contained in a set of related files.
+     consists of a collection of translation units.
      This notion is not quite the same as that of C program,
      which, according to [C17], is a complete executable application:
-     a library would not qualify as a program in this sense.")
+     a library, or a program without a library that it uses,
+     would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a file set consists of one or two files (see @(tsee file)),
-     namely an optional header and a source file,
+    "For now, a translation unit ensemble consists of
+     one or two translation units (see @(tsee transunit)),
+     one for an optional header and one for a source file,
      which have the same name except for the extension.
      (The preceding sentence uses the terminology in [C17:5.1.1/1],
      which appears to call `headers' the @('.h') files
@@ -1140,17 +1097,14 @@
      are (the contents of) the @('.h') and @('.c') files,
      where the first one is optional.")
    (xdoc::p
-    "In the future, we may extend this notion of file set
-     to be something like
-     a finite map from file system paths to (contents of) files.")
-   (xdoc::p
-    "The notion of file set defined here is related to
-     the one defined in @(tsee c$::fileset),
-     where it is actually part of
-     the concrete (not abstract) syntax for tools.
-     We plan to make the overall nomenclature more consistent at some point."))
+    "Technically, the (implicit) presence of the @('#include') directive
+     in the source file when the header is present
+     makes the translation unit for the source file
+     actually a preprocessing translation unit [C17:5.1.1.1/1],
+     but we take the term `translation unit', in this context,
+     to also encompass preprocessing translation units."))
   ((path-wo-ext string)
-   (dot-h file-option)
-   (dot-c file))
-  :tag :fileset
-  :pred filesetp)
+   (dot-h transunit-option)
+   (dot-c transunit))
+  :tag :transunit-ensemble
+  :pred transunit-ensemblep)

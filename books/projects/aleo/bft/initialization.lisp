@@ -16,6 +16,8 @@
 
 (include-book "std/util/define-sk" :dir :system)
 
+(local (include-book "std/omaps/top" :dir :system))
+
 (local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

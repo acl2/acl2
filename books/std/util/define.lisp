@@ -1622,11 +1622,10 @@ examples.</p>")
                 (let ((macro-args
                        (getprop macro 'macro-args nil
                                 'current-acl2-world world)))
-                  (and macro-args
-                       (mv-let (ok newargs)
-                         (untrans-macro-args (cdr term) macro-args nil)
-                         (and ok
-                              (cons macro newargs)))))))))
+                  (mv-let (ok newargs)
+                    (untrans-macro-args (cdr term) macro-args nil)
+                    (and ok
+                         (cons macro newargs))))))))
 
 
   (table user-defined-functions-table

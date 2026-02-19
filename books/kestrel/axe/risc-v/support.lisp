@@ -15,9 +15,10 @@
 (include-book "portcullis")
 (include-book "risc-v-rules") ; drop?
 ;(include-book "kestrel/risc-v/portcullis" :dir :system)
-(include-book "kestrel/risc-v/specialized/execution32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/execution" :dir :system)
 (include-book "kestrel/memory/memory32" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (include-book "kestrel/bv/bvcat2" :dir :system)
 
@@ -40,6 +41,7 @@
 (local (include-book "kestrel/bv-lists/bvchop-list" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 
 (local (in-theory (disable acl2::bvchop-plus-1-split))) ;todo
 
@@ -74,7 +76,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defopeners exec32-instr :hyps ((syntaxp (quotep riscv::instr))))
+(defopeners exec32-instr :hyps ((syntaxp (quotep riscv32im-le::instr))))
 
 (local (in-theory (disable update-nth)))
 
@@ -134,7 +136,8 @@
                                                  b3 stat)))
                     stat)))
   :hints (("Goal" :in-theory (enable write32-mem-ubyte32-lendian slice ubyte32-fix
-                                     ;logtail
+                                     ;;logtail
+                                     acl2::logand-becomes-bvand
                                      acl2::bvchop-of-logtail
                                      ash-when-<-becomes-floor
                                      acl2::floor-of-power-of-2-becomes-logtail))))
@@ -201,19 +204,19 @@
   (unsigned-byte-listp 32 (ubyte32-list-fix x))
   :hints (("Goal" :in-theory (enable ubyte32-list-fix ubyte32-fix))))
 
-(defthm unsigned-byte-listp-of-stat32i->xregs
-  (unsigned-byte-listp 32 (stat32i->xregs stat))
-  :hints (("Goal" :in-theory (enable stat32i->xregs xregs32i-fix))))
+(defthm unsigned-byte-listp-of-stat32->xregs
+  (unsigned-byte-listp 32 (stat32->xregs stat))
+  :hints (("Goal" :in-theory (enable stat32->xregs xregs-fix))))
 
 (defthmd write32-xreg-when-equal-of-read32-xreg-unsigned
   (implies (equal val (read32-xreg-unsigned reg stat))
            (equal (write32-xreg reg val stat)
-                  (stat32i-fix stat)))
+                  (stat32-fix stat)))
   :hints (("Goal" :in-theory (enable write32-xreg
                                      ubyte5-fix
-                                     xregs32i-fix
+                                     xregs-fix
                                      read32-xreg-unsigned
-                                     xregs32ip
+                                     xregsp
                                      ;ubyte32p
                                      ))))
 

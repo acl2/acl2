@@ -15,6 +15,7 @@
 (local (include-book "bvsx"))
 (local (include-book "bvshr"))
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))

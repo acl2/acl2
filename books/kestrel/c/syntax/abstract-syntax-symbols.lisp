@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -51,7 +51,7 @@
     constp
     const-fix
     const-case
-    const-int->unwrap
+    const-int->iconst
 
     typequal/attribspec-list-listp
 
@@ -68,11 +68,15 @@
     exprp
     expr-fix
     expr-count
+    expr-kind
     expr-case
     expr-ident
     make-expr-ident
     expr-ident->ident
+    expr-string
+    make-expr-string
     expr-const
+    make-expr-const
     expr-const->const
     expr-paren
     make-expr-gensel
@@ -81,15 +85,19 @@
     make-expr-member
     make-expr-memberp
     make-expr-complit
+    expr-unary
     make-expr-unary
     expr-sizeof
     expr-alignof
     make-expr-alignof
+    expr-cast
     make-expr-cast
+    expr-binary
     make-expr-binary
     expr-binary->op
     expr-binary->arg1
     expr-binary->arg2
+    expr-cond
     make-expr-cond
     make-expr-comma
     expr-stmt
@@ -106,6 +114,7 @@
     expr-option-fix
     expr-option-count
     expr-option-case
+    expr-option-some->val
 
     const-exprp
     const-expr-count
@@ -349,31 +358,32 @@
 
     attrib-spec-listp
 
-    initdeclorp
-    initdeclor-fix
-    initdeclor-count
-    initdeclor
-    make-initdeclor
-    initdeclor->declor
-    initdeclor->init?
+    init-declorp
+    init-declor-fix
+    init-declor-count
+    init-declor
+    make-init-declor
+    init-declor->declor
+    init-declor->initer?
 
-    initdeclor-listp
-    initdeclor-list-fix
-    initdeclor-list-count
+    init-declor-listp
+    init-declor-list-fix
+    init-declor-list-count
 
-    declp
-    decl
-    decl-fix
-    decl-count
-    decl-case
-    make-decl-decl
-    decl-decl->extension
-    decl-decl->specs
-    decl-decl->init
-    decl-statassert
+    declonp
+    declon
+    declon-fix
+    declon-count
+    declon-case
+    declon-declon
+    make-declon-declon
+    declon-declon->extension
+    declon-declon->specs
+    declon-declon->declors
+    declon-statassert
 
-    decl-listp
-    decl-list-count
+    declon-listp
+    declon-list-count
 
     labelp
     label-fix
@@ -391,22 +401,34 @@
     stmt-compound->stmt
     make-stmt-compound
     stmt-compound->items
+    stmt-expr
     make-stmt-expr
+    stmt-null-attrib
+    make-stmt-null-attrib
+    stmt-if
     make-stmt-if
+    stmt-ifelse
     make-stmt-ifelse
     make-stmt-switch
+    stmt-while
     make-stmt-while
+    stmt-dowhile
     make-stmt-dowhile
     make-stmt-for-expr
-    make-stmt-for-decl
+    make-stmt-for-declon
+    stmt-return
     make-stmt-return
+    stmt-return-attrib
+    make-stmt-return-attrib
     stmt-gotoe
 
     block-itemp
     block-item-fix
     block-item-count
     block-item-case
-    make-block-item-decl
+    block-item-declon
+    make-block-item-declon
+    block-item-stmt
     make-block-item-stmt
 
     block-item-listp
@@ -429,27 +451,29 @@
     fundef-optionp
     fundef-option-case
 
-    extdeclp
-    extdecl-fix
-    extdecl-case
-    extdecl-fundef
-    extdecl-fundef->unwrap
-    extdecl-decl
-    extdecl-empty
+    ext-declonp
+    ext-declon-fix
+    ext-declon-case
+    ext-declon-fundef
+    ext-declon-fundef->fundef
+    ext-declon-declon
+    ext-declon-empty
 
-    extdecl-listp
-    extdecl-list-fix
+    ext-declon-listp
+    ext-declon-list-fix
 
     transunitp
     transunit
     make-transunit
-    transunit->decls
+    transunit-fix
+    transunit->includes
+    transunit->declons
 
     filepath-transunit-mapp
 
     transunit-ensemblep
     transunit-ensemble
-    transunit-ensemble->unwrap
+    transunit-ensemble->units
 
     filepathp
     filepath
@@ -483,11 +507,12 @@
     irr-dirabsdeclor
     irr-param-declon
     irr-param-declor
-    irr-decl
+    irr-declon
     irr-stmt
     irr-comp-stmt
     irr-block-item
     irr-fundef
+    irr-transunit
     irr-transunit-ensemble
     irr-code-ensemble
 
@@ -534,18 +559,18 @@
     enumer-unambp
     enumer-list-unambp
     statassert-unambp
-    initdeclor-unambp
-    initdeclor-list-unambp
-    decl-unambp
-    decl-list-unambp
+    init-declor-unambp
+    init-declor-list-unambp
+    declon-unambp
+    declon-list-unambp
     label-unambp
     stmt-unambp
     comp-stmt-unambp
     block-item-unambp
     block-item-list-unambp
     fundef-unambp
-    extdecl-unambp
-    extdecl-list-unambp
+    ext-declon-unambp
+    ext-declon-list-unambp
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
@@ -602,18 +627,18 @@
     enumer-list-aidentp
     statassert-aidentp
     attrib-spec-list-aidentp
-    initdeclor-aidentp
-    initdeclor-list-aidentp
-    decl-aidentp
-    decl-list-aidentp
+    init-declor-aidentp
+    init-declor-list-aidentp
+    declon-aidentp
+    declon-list-aidentp
     label-aidentp
     stmt-aidentp
     comp-stmt-aidentp
     block-item-aidentp
     block-item-list-aidentp
     fundef-aidentp
-    extdecl-aidentp
-    extdecl-list-aidentp
+    ext-declon-aidentp
+    ext-declon-list-aidentp
     transunit-aidentp
     filepath-transunit-map-aidentp
     transunit-ensemble-aidentp
@@ -622,15 +647,21 @@
     ;; formalized subset:
 
     ident-formalp
-    expr-pure-formalp
-    expr-asg-formalp
+    const-formalp
+    type-spec-list-formalp
+    stor-spec-list-formalp
+    tyname-formalp
     expr-formalp
+    expr-option-formalp
     initer-formalp
     dirdeclor-block-formalp
     declor-block-formalp
-    initdeclor-block-formalp
-    decl-block-formalp
+    declor-fun-formalp
+    init-declor-block-formalp
+    init-declor-list-block-formalp
+    declon-block-formalp
     stmt-formalp
+    comp-stmt-formalp
     block-item-formalp
     block-item-list-formalp
     fundef-formalp
@@ -638,13 +669,14 @@
     ;; language mapping:
 
     ldm-ident
+    ldm-const
     ldm-tyname
     ldm-binop
     ldm-expr
     ldm-expr-option
     ldm-initer
     ldm-type-spec-list
-    ldm-decl-obj
+    ldm-declon-obj
     ldm-stmt
     ldm-comp-stmt
     ldm-block-item
@@ -679,6 +711,15 @@
     var-info-fix
     coerce-var-info
 
+    expr-const-infop
+    expr-const-info-fix
+
+    expr-string-infop
+
+    expr-arrsub-infop
+
+    expr-funcall-infop
+
     expr-unary-infop
 
     expr-binary-infop
@@ -689,9 +730,9 @@
     param-declor-nonabstract-info
     param-declor-nonabstract-info->type
 
-    initdeclor-info
-    initdeclor-info->type
-    initdeclor-info->typedefp
+    init-declor-info
+    init-declor-info->type
+    init-declor-info->typedefp
 
     fundef-info
     fundef-infop
@@ -761,18 +802,18 @@
     enumer-annop
     enumer-list-annop
     statassert-annop
-    initdeclor-annop
-    initdeclor-list-annop
-    decl-annop
-    decl-list-annop
+    init-declor-annop
+    init-declor-list-annop
+    declon-annop
+    declon-list-annop
     label-annop
     stmt-annop
     comp-stmt-annop
     block-item-annop
     block-item-list-annop
     fundef-annop
-    extdecl-annop
-    extdecl-list-annop
+    ext-declon-annop
+    ext-declon-list-annop
     transunit-annop
     filepath-transunit-map-annop
     transunit-ensemble-annop

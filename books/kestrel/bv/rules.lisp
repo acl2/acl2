@@ -33,7 +33,7 @@
 (include-book "bitxor")
 (include-book "bvmult")
 (include-book "bvmod")
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (include-book "bv-syntax")
 ;;(include-book "sbvrem")
@@ -63,6 +63,8 @@
 (local (include-book "logand-b"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "bvuminus"))
+(local (include-book "bvand"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -1369,8 +1371,8 @@
   (equal (bool-to-bit bool)
          (bvif 1 bool 1 0)))
 
-(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-of-1-and-0-becomes-bool-to-bit)))
-(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite acl2::bvif-0-1-becomes-bvnot-of-bool-to-bit)))
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite bvif-of-1-and-0-becomes-bool-to-bit)))
+(theory-invariant (incompatible (:rewrite bool-to-bit-becomes-bvif) (:rewrite bvif-0-1-becomes-bvnot-of-bool-to-bit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

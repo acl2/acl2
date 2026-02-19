@@ -2,12 +2,15 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; For background, see file README.txt.
+
 (in-package "ZF")
 
-; The goal in this book is to prove the goal (DEFGOAL EVAL_SUM_POLY_DISTRIB
-; ...) from eval-poly-thy.lisp, which is a file produced with a translator from
-; HOL to ACL2 written by Konrad Slind.  That goal is stated in the ZF package
-; as the final theorem, hol::HOL{EVAL_SUM_POLY_DISTRIB}, in the present book.
+; The goal in this book is to prove (DEFGOAL EVAL_SUM_POLY_DISTRIB ...) as
+; displayed in a comment at the end of eval-poly-thy.lisp.  That goal is stated
+; in the ZF package as the final theorem, HOL{EVAL_SUM_POLY_DISTRIB}, in the
+; present book; it is redundantly phrased in terms of DEFGOAL in
+; eval-poly-top.lisp.
 
 ; Actually, this is a theorem when the HP-IMPLIES call is replaced by its
 ; second argument, i.e., the HP= call.  That's what we'll prove as the
@@ -20,8 +23,10 @@
 ;  (include-book "eval-poly-thy")
 ;  (in-package "HOL")
 
-; And then, applying hol-pprint to the quotation of the HP= call in those
-; returns:
+; And then, applying hol-pprint to the quotation of the conclusion of the
+; IMPLIES in that theorem -- that is, evaluating
+;   (hol-pprint '(equal (hp= ...) (hp-true)))
+; --  returns:
 
 #|
 (EQUAL (= (EVAL_POLY (SUM_POLYS X Y) V)
@@ -31,8 +36,7 @@
 
 ; So what is our proof strategy?  First we include the following two books.
 
-; Define eval_poly in HOL, towards the main goal, to prove that it distributes
-; over sum.
+; Import the translator output into ACL2:
 (include-book "eval-poly-thy")
 
 ; Define eval-poly in ACL2 and prove that it distributes over sum.  That proof
@@ -53,10 +57,7 @@
 ; ACL2 eval-poly and sum-polys, to reduce the main goal to the one already
 ; proved for ACL2.
 
-(defconst *eval_poly-type*
-  (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                :NUM :NUM)))
-
+; We start with a convenient abbreviation:
 (defconst *sum_polys-type*
   (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
                 (:LIST (:HASH :NUM :NUM))
@@ -184,7 +185,9 @@
                 (force (equal (hp-type v) (typ :num)))
                 (force (hol::eval-poly$prop))
                 (equal xa (h2a x)))
-           (equal (hap* (hol::eval_poly *eval_poly-type*) x v)
+           (equal (hap* (hol::eval_poly (typ (:arrow* (:list (:hash :num :num))
+                                                      :num :num)))
+                        x v)
                   (make-hp (eval-poly xa (hp-value v))
                            :num)))
   :hints
@@ -241,6 +244,10 @@
   :hints (("Goal" :in-theory (enable hap hp-cons hpp hol-valuep hol-type-eval)))))
 
 (defthm sum_polys-type-properties-lemma-1
+
+; This follows from the rewrite rule hpp-hap.  It might be worth investigating
+; why the present lemma is necessary.
+
   (implies (and (hpp fn hta)
                 (equal (cdr fn)
                        *sum_polys-type*)
@@ -253,13 +260,12 @@
                 (force (hol::eval-poly$prop)))
            (hpp (hap* fn x y) hta)))
 
-(defthm hol::sum_polys$type-2-alt
-  (implies (force (hol::eval-poly$prop))
-           (equal (cdr (hol::sum_polys *sum_polys-type*))
-                  *sum_polys-type*))
-  :hints (("Goal" :use hol::sum_polys$type)))
-
 (defthm funp-apply-sum_polys
+
+; It seems possible that this lemma could be dropped by having suitable
+; general-purpose lemmas about domains based on the types of functions that
+; return lists.
+
   (implies (and (alist-subsetp (hol::eval-poly$hta) hta)
                 (hpp x hta)
                 (equal (cdr x)
@@ -276,6 +282,11 @@
                        ((hta hta) (rest '((:hash :num :num)))))))))
 
 (defthm natp-domain-apply-sum_polys
+
+; It seems possible that this lemma could be dropped by having suitable
+; general-purpose lemmas about domains based on the types of functions that
+; return lists.
+
   (implies (and (alist-subsetp (hol::eval-poly$hta) hta)
                 (hpp x hta)
                 (equal (cdr x)
@@ -340,38 +351,41 @@
                     Y V)))
     (HP-TRUE))))
 
-(defthm hol::HOL{EVAL_SUM_POLY_DISTRIB}
-  (IMPLIES
-   (AND (ALIST-SUBSETP (hol::EVAL-POLY$HTA) HTA)
-        (HPP X HTA)
-        (EQUAL (HP-TYPE X)
-               (TYP (:LIST (:HASH :NUM :NUM))))
-        (HPP Y HTA)
-        (EQUAL (HP-TYPE Y)
-               (TYP (:LIST (:HASH :NUM :NUM))))
-        (HPP V HTA)
-        (EQUAL (HP-TYPE V) (TYP :NUM))
-        (FORCE (hol::EVAL-POLY$PROP)))
-   (EQUAL
-    (HP-IMPLIES
-     (HP-AND (HAP* (hol::POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                             :BOOL)))
-                   X)
-             (HAP* (hol::POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                             :BOOL)))
-                   Y))
-     (HP= (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                              :NUM :NUM)))
-                (HAP* (hol::SUM_POLYS (TYP (:ARROW*
-                                            (:LIST (:HASH :NUM :NUM))
-                                            (:LIST (:HASH :NUM :NUM))
-                                            (:LIST (:HASH :NUM :NUM)))))
-                      X Y)
-                V)
-          (HP+ (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                                   :NUM :NUM)))
-                     X V)
-               (HAP* (hol::EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
-                                                   :NUM :NUM)))
-                     Y V))))
-    (HP-TRUE))))
+; The following is generated by the form
+;   (DEFGOAL EVAL_SUM_POLY_DISTRIB ...)
+; in the superior book, eval-poly-top.lisp.
+#!hol
+(DEFTHM HOL{EVAL_SUM_POLY_DISTRIB}
+ (IMPLIES
+  (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
+       (HPP X HTA)
+       (EQUAL (HP-TYPE X)
+              (TYP (:LIST (:HASH :NUM :NUM))))
+       (HPP Y HTA)
+       (EQUAL (HP-TYPE Y)
+              (TYP (:LIST (:HASH :NUM :NUM))))
+       (HPP V HTA)
+       (EQUAL (HP-TYPE V) (TYP :NUM))
+       (FORCE (EVAL-POLY$PROP)))
+  (EQUAL
+   (HP-IMPLIES
+       (HP-AND (HAP* (POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                          :BOOL)))
+                     X)
+               (HAP* (POLYP (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                          :BOOL)))
+                     Y))
+       (HP= (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                           :NUM :NUM)))
+                  (HAP* (SUM_POLYS (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                 (:LIST (:HASH :NUM :NUM))
+                                                 (:LIST (:HASH :NUM :NUM)))))
+                        X Y)
+                  V)
+            (HP+ (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                :NUM :NUM)))
+                       X V)
+                 (HAP* (EVAL_POLY (TYP (:ARROW* (:LIST (:HASH :NUM :NUM))
+                                                :NUM :NUM)))
+                       Y V))))
+   (HP-TRUE))))

@@ -240,11 +240,12 @@
 
   (defruled expr-ident-compustate-vars
     (b* ((expr (c::expr-ident var))
-         (result (c::exec-expr-pure expr compst))
-         (value (c::expr-value->value result)))
-      (implies (c::compustate-has-var-with-type-p var type compst)
-               (equal (c::type-of-value value) (c::type-fix type))))
-    :enable (c::exec-expr-pure
+         ((mv eval &) (c::exec-expr expr compst fenv limit))
+         (val (c::expr-value->value eval)))
+      (implies (and (not (c::errorp eval))
+                    (c::compustate-has-var-with-type-p var type compst))
+               (equal (c::type-of-value val) (c::type-fix type))))
+    :enable (c::exec-expr
              c::exec-ident
              c::compustate-has-var-with-type-p))
 
@@ -261,6 +262,18 @@
              c::not-errorp-when-valuep
              c::valuep-of-read-object-of-objdesign-of-var
              c::objdesign-kind-of-objdesign-of-var-is-auto/static/alloc))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-compustate-vars-multi
+    (b* (((mv eval compst1) (c::exec-expr expr compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp eval))
+                    (c::compustate-has-vars-with-types-p vartys compst))
+               (c::compustate-has-vars-with-types-p vartys compst1)))
+    :induct (c::compustate-has-vars-with-types-p vartys compst)
+    :enable (c::compustate-has-vars-with-types-p
+             expr-compustate-vars))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,7 +320,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-compustate-vars-old
+  (defruled declon-declon-compustate-vars-old
     (b* ((declor (c::obj-declon->declor declon))
          (var (c::obj-declor-ident->get declor))
          (initer (c::obj-declon->init? declon))
@@ -328,7 +341,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled decl-decl-compustate-vars-new
+  (defruled declon-declon-compustate-vars-new
     (b* ((declor (c::obj-declon->declor declon))
          (tyspecs (c::obj-declon->tyspec declon))
          (compst1 (c::exec-obj-declon declon compst fenv limit)))
@@ -361,7 +374,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruled block-item-decl-compustate-vars
+  (defruled block-item-declon-compustate-vars
     (b* ((declon (c::block-item-declon->get item))
          (compst0 (c::exec-obj-declon declon compst fenv (1- limit)))
          ((mv result compst1) (c::exec-block-item item compst fenv limit)))

@@ -132,7 +132,7 @@
                             acl2::bvcat-of-slice-and-slice-adjacent
                             acl2::rewrite-unsigned-byte-p-when-term-size-is-larger)))))
 
-(defthm bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
+(defthm bvsx-64-48-of-bvplus-48-when-unsigned-canonical-address-p
   (implies (and ;(canonical-regionp len base)
                 ;(in-region64p ad len base)
                 ;(in-region64p (bvplus 64 offset ad) len base)

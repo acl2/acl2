@@ -15,6 +15,7 @@
 ;; This book is intended to bring in all the rules that are in rule-lists.lisp.
 ;; See also rules-in-rule-lists-jvm.lisp.
 
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/arithmetic-light/mod2" :dir :system)
 (include-book "basic-rules")
 (include-book "if-rules")
@@ -57,6 +58,7 @@
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
 (include-book "kestrel/bv/std" :dir :system)
 (include-book "kestrel/bv/trim-elim-rules-bv" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)

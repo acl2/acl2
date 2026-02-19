@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; Prune irrelevant if-then-else branches in DAGs using rewriting and calls to STP.
+;; Prunes irrelevant if-then-else branches in DAGs using rewriting and calls to STP.
 
 (include-book "prune-term")
 (include-book "dag-size-fast")
@@ -133,7 +133,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Disabled to speed up later guard proofs
+;; A prune-precise-option can be t (prune), nil (don't prune), or a natural
+;; number (prune only if the size of the DAG, represented as a term, is less
+;; than that number).
+;; We name this and disable it to prevent case splits in later proofs.
 (defund prune-precise-optionp (p)
   (declare (xargs :guard t))
   (or (booleanp p)
@@ -174,7 +177,8 @@
         (mv nil dag state))
        ((when (and (natp prune-precise) ; it's a limit on the size
                    ;; todo: allow this to fail fast:
-                   (not (dag-or-quotep-size-less-thanp dag prune-precise))))
+                   (not (dag-or-quotep-size-less-thanp dag prune-precise)) ; todo: make this a <= test
+                   ))
         ;; todo: don't recompute the size here:
         (cw "(Note: Not pruning with precise contexts since DAG size (~x0) exceeds ~x1.)~%" (dag-or-quotep-size-fast dag) prune-precise)
         (mv nil dag state))

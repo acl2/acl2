@@ -237,7 +237,7 @@
 
  <h3>Book about formal floating-point hardware verification</h3>
 
- <p><a href='https://www.springer.com/gp/book/9783319955124'>Formal
+ <p><a href='https://link.springer.com/book/10.1007/978-3-030-87181-9'>Formal
    Verification of Floating-Point Hardware Design: A Mathematical
    Approach</a>, David
    M. Russinoff.  <a href='http://www.springer.com'>Springer</a>, 2019.
@@ -393,7 +393,7 @@
  href='http://www.cs.utexas.edu/users/hunt/FMCAD/FMCAD06/presentations/FMCAD-2006-Wednesday/Session2-Hunt.pdf'>here</a>.<br/>
  See also:  An Embedding of the ACL2 Logic in HOL, Michael J.C. Gordon, Warren
  A. Hunt, Jr., Matt Kaufmann, and James Reynolds.  In P. Manolios and M. Wilding
- (eds.), <a href='http://www.lulu.com/content/380599'>Proceedings</a> of the <a
+ (eds.), <a href='https://www.lulu.com/shop/matthew-wilding-and-panagiotis-manolios/proceedings-of-the-sixth-international-workshop-on-the-acl2-theorem-prover-and-its-applications/ebook/product-18npgw49.html'>Proceedings</a> of the <a
  href='http://www.ccs.neu.edu/home/pete/acl206/'>6th International
  Workshop on the ACL2 Theorem Prover and Its Applications (ACL2 2006)</a>,
  Seattle, WA, August 2006, pages 40-46.  Proceeding have also been <a
@@ -407,7 +407,7 @@
 
  <li><a href='https://www.ece.ufl.edu/wp-content/uploads/sites/119/publications/acl206.pdf'>Quantification
  in Tail-recursive Function Definitions</a>, Sandip Ray.  In P. Manolios and M. Wilding
- (eds.), <a href='http://www.lulu.com/content/380599'>Proceedings</a> of the <a
+ (eds.), <a href='https://www.lulu.com/shop/matthew-wilding-and-panagiotis-manolios/proceedings-of-the-sixth-international-workshop-on-the-acl2-theorem-prover-and-its-applications/ebook/product-18npgw49.html'>Proceedings</a> of the <a
  href='http://www.ccs.neu.edu/home/pete/acl206/'>6th International Workshop on
  the ACL2 Theorem Prover and Its Applications (ACL2 2006)</a>, Seattle, WA,
  August 2006, pages 95-98.  Proceeding have also been <a
@@ -488,7 +488,7 @@
 
  <li>Double Rewriting for Equivalential Reasoning in ACL2, Matt Kaufmann and J
  Strother Moore.  In P. Manolios and M. Wilding
- (eds.), <a href='http://www.lulu.com/content/380599'>Proceedings</a> of the <a
+ (eds.), <a href='https://www.lulu.com/shop/matthew-wilding-and-panagiotis-manolios/proceedings-of-the-sixth-international-workshop-on-the-acl2-theorem-prover-and-its-applications/ebook/product-18npgw49.html'>Proceedings</a> of the <a
  href='http://www.ccs.neu.edu/home/pete/acl206/'>6th International
  Workshop on the ACL2 Theorem Prover and Its Applications (ACL2 2006)</a>,
  Seattle, WA, August 2006, pages 103-106.  Proceeding have also been <a

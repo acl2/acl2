@@ -59,22 +59,22 @@
       :nonabstract (declor->ident paramdecl.declor.declor)
       :otherwise nil)))
 
-(define param-declon-to-decl
+(define param-declon-to-declon
   ((paramdecl param-declonp)
-   (init? initer-optionp))
+   (initer? initer-optionp))
   :short "Convert a parameter declaration to a regular declaration."
   :returns (mv (success booleanp)
-               (decl declp))
+               (declon declonp))
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
       :nonabstract
       (mv t
-          (make-decl-decl
+          (make-declon-declon
             :extension nil
             :specs paramdecl.specs
-            :init (list (initdeclor paramdecl.declor.declor nil nil init? nil))))
-      :otherwise (mv nil (irr-decl)))))
+            :declors (list (init-declor paramdecl.declor.declor nil nil initer? nil))))
+      :otherwise (mv nil (irr-declon)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,19 +131,19 @@
             :declor fundef.declor.direct.declor
             :params new-params
             :ellipsis fundef.declor.direct.ellipsis))
-          ((mv - decl)
-           (param-declon-to-decl removed-param (initer-single const))))
+          ((mv - declon)
+           (param-declon-to-declon removed-param (initer-single const))))
        (mv t
            (make-fundef
             :extension fundef.extension
-            :spec fundef.spec
+            :specs fundef.specs
             :declor (make-declor
                      :pointers fundef.declor.pointers
                      :direct dirdeclor-params)
-            :decls fundef.decls
+            :declons fundef.declons
             :body (make-comp-stmt
                    :labels (comp-stmt->labels fundef.body)
-                   :items (cons (make-block-item-decl :decl decl :info nil)
+                   :items (cons (make-block-item-declon :declon declon :info nil)
                                 (comp-stmt->items fundef.body)))
             :info fundef.info)))
      :otherwise
@@ -153,42 +153,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define specialize-extdecl
-  ((extdecl extdeclp)
+(define specialize-ext-declon
+  ((extdecl ext-declonp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform an external declaration."
   :returns (mv (found booleanp)
-               (new-extdecl extdeclp))
-  (extdecl-case
+               (new-extdecl ext-declonp))
+  (ext-declon-case
    extdecl
    :fundef (b* (((mv found fundef)
                  (specialize-fundef
-                   extdecl.unwrap
+                   extdecl.fundef
                    target-fn
                    target-param
                    const)))
-             (mv found (extdecl-fundef fundef)))
-   :decl (mv nil (extdecl-fix extdecl))
-   :empty (mv nil (extdecl-fix extdecl))
-   :asm (mv nil (extdecl-fix extdecl))))
+             (mv found (ext-declon-fundef fundef)))
+   :declon (mv nil (ext-declon-fix extdecl))
+   :empty (mv nil (ext-declon-fix extdecl))
+   :asm (mv nil (ext-declon-fix extdecl))))
 
-(define specialize-extdecl-list
-  ((extdecls extdecl-listp)
+(define specialize-ext-declon-list
+  ((extdecls ext-declon-listp)
    (target-fn identp)
    (target-param identp)
    (const exprp))
   :short "Transform a list of external declarations."
-  :returns (new-extdecls extdecl-listp)
+  :returns (new-extdecls ext-declon-listp)
   (b* (((when (endp extdecls))
         nil)
        ((mv found extdecl)
-        (specialize-extdecl (first extdecls) target-fn target-param const)))
+        (specialize-ext-declon (first extdecls) target-fn target-param const)))
     (cons extdecl
           (if found
-              (extdecl-list-fix (rest extdecls))
-            (specialize-extdecl-list (rest extdecls) target-fn target-param const)))))
+              (ext-declon-list-fix (rest extdecls))
+            (specialize-ext-declon-list (rest extdecls) target-fn target-param const)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,10 +199,15 @@
    (const exprp))
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
-  (b* (((transunit tunit) tunit))
+  (b* (((transunit tunit) tunit)
+       ((when tunit.includes)
+        (raise "Unsupported #include directives.")
+        (transunit-fix tunit)))
     (make-transunit
-     :decls (specialize-extdecl-list tunit.decls target-fn target-param const)
-     :info tunit.info)))
+     :comment nil
+     :declons (specialize-ext-declon-list tunit.declons target-fn target-param const)
+     :info tunit.info))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,11 +238,11 @@
   :short "Transform a translation unit ensemble."
   :returns (new-tunits transunit-ensemblep)
   (b* (((transunit-ensemble tunits) tunits))
-    (transunit-ensemble
-      (specialize-filepath-transunit-map tunits.unwrap
-                                         target-fn
-                                         target-param
-                                         const))))
+    (c$::make-transunit-ensemble
+      :units (specialize-filepath-transunit-map tunits.units
+                                                target-fn
+                                                target-param
+                                                const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

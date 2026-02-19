@@ -15,10 +15,7 @@
 
 (local (include-book "std/lists/len" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,8 +46,7 @@
   :returns (yes/no booleanp)
   :short "Check if a value is a structure with a flexible array member."
   (and (value-case val :struct)
-       (value-struct->flexiblep val))
-  :hooks (:fix))
+       (value-struct->flexiblep val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +91,7 @@
     (value-fix val))
   :guard-hints (("Goal" :in-theory (enable flexible-array-member-p
                                            butlast nfix len fix)))
-  :hooks (:fix)
+
   ///
 
   (defrule remove-flexible-array-member-when-absent

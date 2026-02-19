@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -2459,7 +2459,11 @@
                     #+:non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
-                                       (putprop fn 'constraint-lst (list term) wrld))
+                                       (putprop
+                                        fn 'constraint-lst-etc
+                                        (cons (list term)
+                                              (list (make-origin 'defun fn)))
+                                        wrld))
                             wrld)))
                 (mv-let
                  (wrld ttree)
@@ -4969,6 +4973,16 @@
                     new-wrld)))
              (maybe-remove-invariant-risk (cdr names) wrld new-wrld)))))
 
+(defun chk-otf-flg (otf-flg ctx state)
+  (declare (xargs :stobjs state
+                  :guard (error1-state-p state)))
+  (cond ((booleanp otf-flg)
+         (value otf-flg))
+        (t (er soft ctx
+               "The value of :OTF-FLG must be ~x0 or ~x1.  The value ~x2 is ~
+                thus illegal."
+               t nil otf-flg))))
+
 (defun verify-guards-fn1 (names hints otf-flg guard-debug
                                 guard-simplify ctx state)
 
@@ -5200,7 +5214,8 @@
   (let ((wrld (w state))
         (ens (ens state)))
     (er-let*
-     ((pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
+     ((otf-flg (chk-otf-flg otf-flg ctx state))
+      (pair (prove-guard-clauses names hints otf-flg guard-debug guard-simplify
                                  ctx ens wrld state)))
 
 ; Pair is of the form (col . ttree)
@@ -8460,7 +8475,7 @@
                   (book-name (car path)))
              (cond
               ((null book-name) "")
-              (t (msg "  Alteratively, include the book that introduces the ~
+              (t (msg "  Alternatively, include the book that introduces the ~
                        proposed redundant definition:~|~x0."
                       (cond
                        ((sysfile-p book-name)
@@ -8470,6 +8485,35 @@
                           :dir ,(sysfile-key book-name)))
                        (t `(include-book ,(remove-lisp-suffix book-name
                                                               t))))))))))))
+#-acl2-loop-only
+(defun update-hcomp-fn-ht-redundant-in-encapsulate (names localp)
+
+; Warning: Keep this in sync with the binding of the variable, skip-reason in
+; install-defs-for-add-trip.  Except, we don't do anything here when localp is
+; true, since the point here is to store symbol-functions in *hcomp-fn-ht* for
+; defuns that will be processed in pass 2, and if we encounter such a defun in
+; pass 2 then we will encounter it non-locally in pass 1.
+
+; This function is an analogue of install-defs-for-add-trip for the case of
+; redundant defuns during pass 1 of encapsulate.  Since these defuns are
+; redundant, we can skip the part of install-defs-for-add-trip that deals with
+; proclaiming (which presumably has already been done); and since we are
+; dealing with encapsulate pass 1, we can restrict the behavior of
+; install-defs-for-add-trip to that case.
+
+  (declare (special *hcomp-fn-ht*))
+  (when (and (not localp)
+             (eq *hcomp-status* 'encapsulate-pass-1))
+    (let ((hcomp-fn-ht *hcomp-fn-ht*))
+      (assert hcomp-fn-ht)
+      (loop for name in names
+            as *1*name = (*1*-symbol name)
+            do
+            (progn (assert (and (fboundp name) (fboundp *1*name)))
+                   (setf (gethash name hcomp-fn-ht)
+                         (symbol-function name))
+                   (setf (gethash *1*name hcomp-fn-ht)
+                         (symbol-function *1*name)))))))
 
 (defun chk-acceptable-defuns-redundancy (names defun-mode ctx wrld state)
 
@@ -8537,11 +8581,12 @@
 ; Note that we can avoid the restriction for local definitions, since those
 ; will be ignored in the compiled file.
 
-  (cond ((and (not (f-get-global 'in-local-flg state))
-              (not (global-val 'boot-strap-flg (w state)))
-              (not (f-get-global 'redundant-with-raw-code-okp state))
-              (let ((recp (getpropc (car names) 'recursivep nil wrld))
-                    (bad-fns
+  (let ((localp (f-get-global 'in-local-flg state)))
+    (cond ((and (not localp)
+                (not (global-val 'boot-strap-flg (w state)))
+                (not (f-get-global 'redundant-with-raw-code-okp state))
+                (let ((recp (getpropc (car names) 'recursivep nil wrld))
+                      (bad-fns
 
 ; The test below isn't right if a built-in function with raw Lisp code has been
 ; promoted to logic mode after assigning state global
@@ -8549,21 +8594,23 @@
 ; only be done with a trust tag, and the documentation warns that doing this
 ; promotion could be unsound.  So we don't worry about that case here.
 
-                     (if (eq (symbol-class (car names) wrld)
-                             :program)
+                       (if (eq (symbol-class (car names) wrld)
+                               :program)
+                           (f-get-global
+                            'program-fns-with-raw-code
+                            state)
                          (f-get-global
-                          'program-fns-with-raw-code
-                          state)
-                       (f-get-global
-                        'logic-fns-with-raw-code
-                        state))))
-                (if recp
-                    (intersectp-eq recp bad-fns)
-                  (member-eq (car names) bad-fns))))
-         (er soft ctx
-             "~@0"
-             (redundant-predefined-error-msg (car names) wrld)))
-        (t (value (cons 'redundant defun-mode)))))
+                          'logic-fns-with-raw-code
+                          state))))
+                  (if recp
+                      (intersectp-eq recp bad-fns)
+                    (member-eq (car names) bad-fns))))
+           (er soft ctx
+               "~@0"
+               (redundant-predefined-error-msg (car names) wrld)))
+          (t (progn$ #-acl2-loop-only
+                     (update-hcomp-fn-ht-redundant-in-encapsulate names localp)
+                     (value (cons 'redundant defun-mode)))))))
 
 (defun chk-acceptable-defuns-verify-guards-er (names ctx wrld state)
 
@@ -10495,6 +10542,7 @@
                       (value nil)
                     (get-unambiguous-xargs-flg :OTF-FLG
                                                fives t ctx state)))
+         (otf-flg (chk-otf-flg otf-flg ctx state))
          (guard-debug (get-unambiguous-xargs-flg :GUARD-DEBUG
                                                  fives
 
@@ -11759,7 +11807,7 @@
       (putprop
        fn 'pequivs nil
        (putprop
-        fn 'constrainedp t ; 'constraint-lst comes later
+        fn 'constrainedp t ; 'constraint-lst-etc handling comes later
         (putprop
          fn 'hereditarily-constrained-fnnames (list fn)
          (putprop
@@ -12189,8 +12237,24 @@
                   (warrant (find-warrant-function-name name wrld))
                   (constraint-msg
                    (mv-let
-                     (some-name constraint-lst)
+                     (some-name constraint-lst origins)
                      (constraint-info name wrld)
+                     (declare (ignore origins))
+
+; Historical Note: Most of the functions that ignore origins are doing so only
+; temporarily.  When origins were being added to constraint processing in
+; producing v8-7 we carried out the modifications in several steps.  The first
+; was to invent ``constraint-lst-etc pairs'' and use them to collect and store
+; origins with constraints during encapsulate and other places where
+; constraints were being created.  Once we could build that prototype version
+; of the system, we took the next step, which was to actually track the origins
+; when constraints were being used.  But to build that prototype version we had
+; to change all calls of constraint-info to receive 3 results instead of 2 and
+; to ignore the origins.  So generally speaking, ``(declare (ignore origins))''
+; was a marker meaning ``come back here and track origins properly.''  But this
+; occurrence of that declaration is meant to be permanent: we don't envision
+; the :args command printing the origins of the constraints it displays.
+
                      (cond ((unknown-constraints-p constraint-lst)
                             "[UNKNOWN-CONSTRAINTS]")
                            (t (let ((constraint

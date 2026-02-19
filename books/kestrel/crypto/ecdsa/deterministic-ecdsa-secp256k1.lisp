@@ -22,6 +22,8 @@
 
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp2" :dir :system))
 
 (local (in-theory (enable acl2::unsigned-byte-listp-rewrite)))
 

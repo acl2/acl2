@@ -129,7 +129,6 @@
              certificate->author
              certificate->round
              certificate->signers
-             omap::assoc-to-in-of-keys
              omap::lookup))
 
   (defruled dag-signer-quorum-p-of-accept-next

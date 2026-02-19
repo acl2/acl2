@@ -29,7 +29,10 @@
 (add-macro-alias mac2 g2)
 
 (defun g2 (x)
-  (declare (xargs :guard (g1 x)))
+  (declare (xargs :guard (g1 x)
+; Silly xargs to test elide-event:
+                  :guard-debug t
+                  :guard-hints (("Goal" :do-not '(preprocess)))))
   (mac2 x))
 
 (defun g3 (x)

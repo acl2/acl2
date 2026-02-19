@@ -18,10 +18,7 @@
 
 (local (include-book "std/basic/inductions" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -204,7 +201,7 @@
               not-errorp-of-write-object-of-peel-scopes
               objdesign-of-var-of-write-object)
      :disable objdesign-kind-of-objdesign-top
-     ::use objdesign-kind-of-objdesign-top)))
+     :use objdesign-kind-of-objdesign-top)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,7 +447,40 @@
       (b* (((mv result compst1) (exec-expr e compst fenv limit)))
         (implies (not (errorp result))
                  (var-visible-preservep compst compst1)))
-      :flag exec-expr)
+      :flag exec-expr
+      :hints ('(:expand (exec-expr e compst fenv limit)
+                :use (:instance
+                      var-visible-preservep-transitive
+                      (compst compst)
+                      (compst1
+                       (mv-nth 1 (exec-expr (expr-binary->arg1 e)
+                                            compst fenv (+ -1 limit))))
+                      (compst2
+                       (write-object
+                        (expr-value->object
+                         (apconvert-expr-value
+                          (mv-nth 0 (exec-expr
+                                     (expr-binary->arg1 e)
+                                     compst fenv (+ -1 limit)))))
+                        (expr-value->value
+                         (apconvert-expr-value
+                          (mv-nth 0 (exec-expr
+                                     (expr-binary->arg2 e)
+                                     (mv-nth 1 (exec-expr
+                                                (expr-binary->arg1 e)
+                                                compst fenv (+ -1 limit)))
+                                     fenv (+ -1 limit)))))
+                        (mv-nth 1 (exec-expr
+                                   (expr-binary->arg2 e)
+                                   (mv-nth 1 (exec-expr
+                                              (expr-binary->arg1 e)
+                                              compst fenv (+ -1 limit)))
+                                   fenv (+ -1 limit)))))))))
+    (defthm var-visible-preservep-of-exec-expr-list
+      (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+        (implies (not (errorp result))
+                 (var-visible-preservep compst compst1)))
+      :flag exec-expr-list)
     (defthm var-visible-preservep-of-exec-stmt
       (b* (((mv result compst1) (exec-stmt s compst fenv limit)))
         (implies (and (> (compustate-frames-number compst) 0)
@@ -498,6 +528,7 @@
              (enable
               exec-fun
               exec-expr
+              exec-expr-list
               exec-stmt
               exec-stmt-while
               exec-stmt-dowhile
@@ -514,6 +545,7 @@
 
   (in-theory (disable var-visible-preservep-of-exec-fun
                       var-visible-preservep-of-exec-expr
+                      var-visible-preservep-of-exec-expr-list
                       var-visible-preservep-of-exec-stmt
                       var-visible-preservep-of-exec-stmt-while
                       var-visible-preservep-of-exec-stmt-dowhile
@@ -551,6 +583,21 @@
                      (var (ident-fix var))
                      (compst1
                       (mv-nth 1 (exec-expr e compst fenv limit)))
+                     (n 0)
+                     (m 0)))
+    :enable (peel-frames
+             peel-scopes))
+
+  (defruled var-visible-of-exec-expr-list
+    (b* (((mv result compst1) (exec-expr-list es compst fenv limit)))
+      (implies (and (not (errorp result))
+                    (objdesign-of-var var compst))
+               (objdesign-of-var var compst1)))
+    :use (var-visible-preservep-of-exec-expr-list
+          (:instance var-visible-preservep-necc
+                     (var (ident-fix var))
+                     (compst1
+                      (mv-nth 1 (exec-expr-list es compst fenv limit)))
                      (n 0)
                      (m 0)))
     :enable (peel-frames

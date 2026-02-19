@@ -363,7 +363,12 @@
                   (and (,x.elt-type ,a)
                        (,x.pred (set::sfix ,x.xvar))))
            :induct t
-           :enable (set::insert set::emptyp set::head set::tail set::setp))
+           :enable (set::insert
+                    set::emptyp
+                    set::head
+                    set::tail
+                    set::setp
+                    set::sfix))
          (defrule ,elt-type-when-in-pred-binds-free-xvar
            (implies (and (set::in ,a ,x.xvar) ; binds free X
                          (,x.pred ,x.xvar))
@@ -379,7 +384,12 @@
                   (and (,x.pred (set::sfix ,x.xvar))
                        (,x.pred (set::sfix ,y))))
            :induct t
-           :enable (set::union set::emptyp set::setp set::head set::tail))
+           :enable (set::union
+                    set::emptyp
+                    set::setp
+                    set::head
+                    set::tail
+                    set::sfix))
          (defrule ,pred-of-intersect
            (implies (or (,x.pred ,x.xvar)
                         (,x.pred ,y))

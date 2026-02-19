@@ -1,6 +1,6 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,10 +15,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +32,10 @@
     "Since there are functions in @(see std/strings)
      that operate on @(tsee bin-digit-char-list*p),
      we provide a bridge theorem between the two recognizers,
-     which we can use to satisfy the guards of those functions."))
+     which we can use to satisfy the guards of those functions.")
+   (xdoc::p
+    "We also provide a (disabled) theorem to backchain without limit
+     from @(tsee character-listp) to this recognizer."))
   (bin-digit-char-p x)
   :true-listp t
   :elementp-of-nil nil
@@ -45,7 +46,12 @@
              (bin-digit-char-list*p x))
     :hints (("Goal"
              :induct t
-             :in-theory (enable bin-digit-char-list*p)))))
+             :in-theory (enable bin-digit-char-list*p))))
+
+  (defthmd character-listp-when-bin-digit-char-listp
+    (implies (bin-digit-char-listp x)
+             (character-listp x))
+    :hints (("Goal" :induct t :in-theory (enable character-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

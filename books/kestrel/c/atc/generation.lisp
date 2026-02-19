@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -410,16 +410,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (fileset filesetp)
+                            (tunits transunit-ensemblep)
                             (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. C file set)."
+          of the generated C code (i.e. translation unit ensemble)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This constant is not generated if @(':proofs') is @('nil')."))
-  (b* ((defconst-event `(defconst ,prog-const ',fileset))
+  (b* ((defconst-event `(defconst ,prog-const ',tunits))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant..."))))
@@ -447,26 +447,27 @@
   (xdoc::topstring
    (xdoc::p
     "The theorem asserts that
-     running the static semantics (i.e. @(tsee check-fileset))
+     running the static semantics (i.e. @(tsee check-transunit-ensemble))
      on the C code succeeds.
-     We also include an assertion that the C code is a fileset
-     (i.e. that it satisfies @(tsee filesetp));
-     this does not directly follow from @(tsee check-fileset),
-     which fixes its argument to be a file set.")
+     We also include an assertion that the C code is a translation unit ensemble
+     (i.e. that it satisfies @(tsee transunit-ensemblep));
+     this does not directly follow from @(tsee check-transunit-ensemble),
+     which fixes its argument to be a translation unit ensemble.")
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
      using just the executable counterparts
-     of @(tsee check-fileset) and @(tsee filesetp),
+     of @(tsee check-transunit-ensemble) and @(tsee transunit-ensemblep),
      which are executable functions."))
   (b* (((unless proofs) nil)
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(and (filesetp ,prog-const)
-                        (equal (check-fileset ,prog-const) :wellformed))
-         :hints '(("Goal" :in-theory '((:e check-fileset)
-                                       (:e filesetp))))
+         :formula `(and (transunit-ensemblep ,prog-const)
+                        (equal (check-transunit-ensemble ,prog-const)
+                               :wellformed))
+         :hints '(("Goal" :in-theory '((:e check-transunit-ensemble)
+                                       (:e transunit-ensemblep))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -486,7 +487,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (fileset filesetp))
+                                  (tunits transunit-ensemblep))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -495,12 +496,12 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-fileset)."))
+     is explained in @(tsee atc-gen-transunit-ensemble)."))
   (b* (((unless proofs) nil)
-       (tunit (preprocess fileset))
+       (tunit (preprocess tunits))
        ((when (reserrp tunit))
         (raise "Internal error: preprocessing of ~x0 fails with error ~x1."
-               fileset tunit))
+               tunits tunit))
        (fenv (init-fun-env tunit))
        ((when (errorp fenv))
         (raise "Internal error: ~
@@ -520,27 +521,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fileset ((targets symbol-listp)
-                         (path-wo-ext stringp)
-                         (proofs booleanp)
-                         (prog-const symbolp)
-                         (wf-thm symbolp)
-                         (fn-thms symbol-symbol-alistp)
-                         (header booleanp)
-                         (print evmac-input-print-p)
-                         (names-to-avoid symbol-listp)
-                         state)
+(define atc-gen-transunit-ensemble ((targets symbol-listp)
+                                    (path-wo-ext stringp)
+                                    (proofs booleanp)
+                                    (prog-const symbolp)
+                                    (wf-thm symbolp)
+                                    (fn-thms symbol-symbol-alistp)
+                                    (header booleanp)
+                                    (print evmac-input-print-p)
+                                    (names-to-avoid symbol-listp)
+                                    state)
   :returns (mv erp
-               (fileset filesetp)
+               (tunits transunit-ensemblep)
                (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a file set from the ATC targets, and accompanying events."
+  :short "Generate a translation unit ensemble from the ATC targets,
+          and accompanying events."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This does not generate actual files in the file system:
-     it generates an abstract syntactic C file set.")
    (xdoc::p
     "In order to speed up the proofs of
      the generated theorems for the function environment
@@ -548,7 +547,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated C file set),
+     (obtained by preprocessing the generated translation unit ensemble),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -560,7 +559,7 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((reterr) (irr-fileset) nil nil)
+  (b* (((reterr) (irr-transunit-ensemble) nil nil)
        (wrld (w state))
        ((mv appcond-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
@@ -587,38 +586,38 @@
                                   fn-thms fn-appconds appcond-thms
                                   header print
                                   names-to-avoid state))
-       (file-h (and header (make-file :declons exts-h)))
-       (file-c (make-file :declons exts-c))
-       (fileset (make-fileset :path-wo-ext path-wo-ext
-                              :dot-h file-h
-                              :dot-c file-c))
+       (tunit-h (and header (make-transunit :declons exts-h)))
+       (tunit-c (make-transunit :declons exts-c))
+       (tunits (make-transunit-ensemble :path-wo-ext path-wo-ext
+                                        :dot-h tunit-h
+                                        :dot-c tunit-c))
        (init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                       proofs
                                                       prog-const
-                                                      fileset))
+                                                      tunits))
        (const-events (and proofs
-                          (atc-gen-prog-const prog-const fileset print)))
+                          (atc-gen-prog-const prog-const tunits print)))
        (events (append appcond-events
                        const-events
                        wf-thm-events
                        init-fun-env-events
                        fn-thm-events)))
-    (retok fileset
+    (retok tunits
            events
            names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fileset-event ((fileset filesetp)
-                               (file-name stringp)
-                               (pretty-printing pprint-options-p)
-                               (print evmac-input-print-p))
+(define atc-gen-transunit-ensemble-event ((tunits transunit-ensemblep)
+                                          (file-name stringp)
+                                          (pretty-printing pprint-options-p)
+                                          (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee pprint-fileset)
+    "This serves to run @(tsee pprint-transunit-ensemble)
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -639,8 +638,8 @@
      so we use @(tsee value-triple) with @(':invisible'),
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
-     it is the execution of the @(tsee make-event) argument
-     that matters, because it writes the file set to the file system.
+     it is the execution of the @(tsee make-event) argument that matters,
+     because it writes the translation unit ensemble to the file system.
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.
@@ -654,7 +653,10 @@
        (file-gen-event
         `(make-event
           (b* (((er &)
-                (pprint-fileset ',fileset ,file-name ',pretty-printing state)))
+                (pprint-transunit-ensemble ',tunits
+                                           ,file-name
+                                           ',pretty-printing
+                                           state)))
             (acl2::value '(value-triple :invisible))))))
     `(progn ,@progress-start?
             ,file-gen-event
@@ -725,14 +727,14 @@
      the formals that are not affected then become ignored."))
   (b* (((reterr) '(_))
        (names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((erp fileset events &)
-        (atc-gen-fileset targets path-wo-ext proofs
-                         prog-const wf-thm fn-thms
-                         header print names-to-avoid state))
-       (fileset-gen-event (atc-gen-fileset-event fileset
-                                                 file-name
-                                                 pretty-printing
-                                                 print))
+       ((erp tunits events &)
+        (atc-gen-transunit-ensemble targets path-wo-ext proofs
+                                    prog-const wf-thm fn-thms
+                                    header print names-to-avoid state))
+       (tunits-gen-event (atc-gen-transunit-ensemble-event tunits
+                                                           file-name
+                                                           pretty-printing
+                                                           print))
        (assert-events (atc-gen-thm-assert-events wf-thm fn-thms proofs))
        (encapsulate
            `(encapsulate ()
@@ -741,7 +743,7 @@
               (set-ignore-ok t)
               ,@events
               ,@assert-events
-              ,fileset-gen-event))
+              ,tunits-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))

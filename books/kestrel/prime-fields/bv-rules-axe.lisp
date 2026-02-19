@@ -1,6 +1,6 @@
 ; Axe variants of the prime field + BV rules
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "bv-rules")
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system)
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 ;; restricts it the variables
 (defthm add-of-mul-and-mul-when-bitps-and-adjacent-coeffs-negated-start-axe

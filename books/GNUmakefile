@@ -556,31 +556,30 @@ endif
 # systems), and that we want to work around for the moment:
 BROKEN_BOOKS :=
 
-# The models/y86 books are a special case.  We prefer to include them
-# only with the "all" target, not the "regression" target, since they
-# have large memory requirements -- and then, only for certain host
+# The models/y86-old books are a special case.  We prefer, since they
+# have large memory requirements, to build them only for certain host
 # Lisps.  Originally we handled them in a custom way, using old-style
 # Makefiles based on Makefile-generic rather than cert.pl, but then we
 # did not get the benefit of the cert.pl dependency analysis; for
 # example, if arithmetic-5/top.cert was out of date then "make" would
-# not rebuild the models/y86/ books as it should.  So we no longer
+# not rebuild the models/y86-old/ books as it should.  So we no longer
 # exclude them in the "egrep -v" command above, instead allowing
 # cert.pl to do its thing.
 
 ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books, even for the "all" target.  In
+# skip the models/y86-old/ books, even for the "all" target.  In
 # particular, we exclude GCL: in one ANSI GCL ACL2 regression,
 # certification runs were still proceeding after more than 10 hours
-# for each of four books under models/y86/
+# for each of four books under models/y86-old/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
 # y86-two-level-abs/common/x86-state-concrete, and
 # y86-basic/py86/popcount), probably because of the demands of
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+BROKEN_BOOKS += $(filter models/y86-old/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
@@ -970,14 +969,16 @@ critpath.txt: $(OK_CERTS)
 # Targets for building whole directories of books.
 
 # basic is the default set of books to build, in the sense that "make"
-# is equivalent to "make basic".  Note that instructions on the
-# installation page recommend "make basic".  The quicklisp books are
+# is equivalent to "make basic".  Note that :doc installation-instructions
+# and :doc books-certification recommend "make basic".  The quicklisp books are
 # avoided here, since otherwise the first impression of ACL2 could be
 # frustration over issues with installing OpenSSL, as may be necessary
 # when certifying Quicklisp books.  Thus we include only subsets of
 # the xdoc and tools targets.
+# WARNING: If you change the basic target, consider updating the list
+# of its contents in :doc books-certification.
 .PHONY: basic
-basic: arithmetic arithmetic-3 arithmetic-5 ihs std xdoc/init.cert tools-without-quicklisp misc data-structures apply
+basic: arithmetic arithmetic-3 arithmetic-5 ihs std-without-some-tests xdoc/init.cert tools-without-quicklisp misc data-structures apply
 
 .PHONY: acl2s
 acl2s: $(filter acl2s/%, $(OK_CERTS))
@@ -1102,6 +1103,12 @@ tools: $(TOOLS_BOOKS)
 
 .PHONY: tools-without-quicklisp
 tools-without-quicklisp: $(filter-out tools/oracle-time%, $(TOOLS_BOOKS))
+
+# Because std/util/add-io-pairs-tests.lisp brings in some slow number theory
+# stuff that we don't want included in the basic target:
+.PHONY: std-without-some-tests
+STD_BOOKS := $(filter std/%, $(OK_CERTS))
+std-without-some-tests: $(filter-out std/util/add-io-pairs-tests%, $(STD_BOOKS))
 
 .PHONY: unicode
 unicode: $(filter unicode/%, $(OK_CERTS))

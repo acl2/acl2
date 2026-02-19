@@ -12,11 +12,12 @@
 (in-package "ACL2")
 
 (include-book "logext-def")
-(include-book "getbit")
+(include-book "getbit-def")
 (local (include-book "logapp"))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "getbit-rules"))
+(local (include-book "slice"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

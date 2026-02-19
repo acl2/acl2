@@ -13,10 +13,7 @@
 
 (include-book "real-operations")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,7 +42,6 @@
     (plus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 
@@ -73,7 +69,6 @@
     (minus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix)
 
   ///
 
@@ -107,7 +102,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -145,7 +139,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -183,7 +176,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -220,7 +212,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -257,7 +248,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -294,7 +284,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 
@@ -323,7 +312,6 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix)
 
   ///
 

@@ -29,15 +29,15 @@
 ;; todo: also characterize the rest of the state components
 (make-event
   `(defthm add-correct
-     (implies (and (equal (pc stat) #x101b0 ; this is the offset of "f" ; todo: shorter name afor read32-pc
-                          ;(bvplus 32  base-address) ; for position-independent mode (but see below)
+     (implies (and (equal (pc stat) 65976 ; this is the offset of "f"
+                          ;(bvplus 32 65976 base-address) ; for position-independent mode (but see below)
                           )
-                   (stat32ip stat)
+                   (stat32p stat)
                    ;; Generates the assumptions:
                    ,@(assumptions-elf32! *executable*
                                          10 ; stack-slots
                                          0 ; existing-stack-slots
-                                         nil ; t doesn't work because ACL2 doesn't want to substitute in the PC expression
+                                         nil ; t for position-independentp doesn't work because ACL2 doesn't want to substitute in the PC expression
                                          ))
               (equal (a0 (run-subroutine stat) ; btw, 14 steps seem needed
                          )

@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,8 +37,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/assumptions-new" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/x86/separate" :dir :system) ; todo: drop?
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rflags" :dir :system)
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/support-bv" :dir :system)
@@ -47,8 +46,8 @@
 (include-book "kestrel/x86/zmm" :dir :system)
 (include-book "rule-lists")
 ;(include-book "kestrel/x86/run-until-return" :dir :system)
-;(include-book "kestrel/x86/run-until-return4" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system) ; why?
+(include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../equivalent-dags")
@@ -64,8 +63,9 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
-(include-book "../evaluator") ; todo: this book has skip-proofs, for *axe-evaluator-functions* and to support making defuns
+(include-book "../evaluator-support") ; for *axe-evaluator-functions* and to support making defuns
 (include-book "rewriter-x86")
+(include-book "lifter-support")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
@@ -92,6 +92,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
@@ -100,19 +101,8 @@
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(ensure-rules-known (unroller-rules32))
-(ensure-rules-known (unroller-rules64))
-(ensure-rules-known (read-and-write-rules-bv))
-;; (ensure-rules-known (read-and-write-rules-non-bv))
-(ensure-rules-known (assumption-simplification-rules32))
-(ensure-rules-known (assumption-simplification-rules64))
-(ensure-rules-known (step-opener-rules32))
-(ensure-rules-known (step-opener-rules64))
-(ensure-rules-known (new-normal-form-rules-common))
-(ensure-rules-known (canonical-rules-bv))
-(ensure-rules-known (new-normal-form-rules64))
-(ensure-rules-known (unsigned-canonical-rules))
-;; todo: more?
+;; TODO: What about ones included only locally?
+(ensure-rules-known (all-unroller-rules))
 
 (local (defthm symbol-listp-of-unroller-rules32 (symbol-listp (unroller-rules32))))
 (local (defthm symbol-listp-of-unroller-rules64 (symbol-listp (unroller-rules64))))
@@ -211,7 +201,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp assumptions assumption-rules state)
+;; Returns (mv erp assumptions assumption-rules hits state)
 (defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
@@ -221,17 +211,17 @@
                   :stobjs state))
   (b* ((- (cw "(Simplifying ~x0 assumptions...~%" (len assumptions)))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       ;; todo: optimize):
+       ;; todo: optimize:
        (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32)))
        ;; Add the extra-assumption-rules:
        (assumption-rules (append extra-assumption-rules assumption-rules))
        ;; Remove the remove-assumption-rules:
-       (assumption-rules (set-difference-equal assumption-rules remove-assumption-rules))
+       (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (make-rule-alist assumption-rules (w state)))
-       ((when erp) (mv erp nil nil state))
+       ((when erp) (mv erp nil nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp assumptions)
+       ((mv erp assumptions hits)
         (simplify-conjunction-basic assumptions
                                     assumption-rule-alist
                                     (known-booleans (w state))
@@ -241,41 +231,40 @@
                                     count-hits
                                     t   ; todo: warn just once
                                     ))
-       ((when erp) (mv erp nil nil state))
+       ((when erp) (mv erp nil nil hits state))
        (assumptions (get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
        ((mv assumption-simp-elapsed state) (real-time-since assumption-simp-start-real-time state))
        (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
           (print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%")))
-    (mv nil assumptions assumption-rules state)))
+    (mv nil assumptions assumption-rules hits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; In 32-bit mode, the upper 32-bits of the 64-bit register in the model are
+;; In 32-bit mode, the upper 32-bits of the 64-bit registers in the model are
 ;; unused, so we can assume they are equal to 0, without loss of generality.
 ;; Note that WR32 zeros out the upper 32-bits of a register; these assumptions
 ;; let us show that that has no effect.
 (defund register-high-bit-assumptions ()
   (declare (xargs :guard t))
-  '((equal (rax-high x86) 0)
-    (equal (rbx-high x86) 0)
-    (equal (rcx-high x86) 0)
-    (equal (rdx-high x86) 0)
-    (equal (rsp-high x86) 0)
-    (equal (rbp-high x86) 0)))
-
+  '((equal (rax-high x86) '0)
+    (equal (rbx-high x86) '0)
+    (equal (rcx-high x86) '0)
+    (equal (rdx-high x86) '0)
+    (equal (rsp-high x86) '0)
+    (equal (rbp-high x86) '0)))
 
 ;; This simplifies the assumptions (if there are any extra-assumptions).
-;; Returns (mv erp assumptions untranslated-assumptions assumption-rules input-assumption-vars state).
-(defun assumptions-new (target
+;; Returns (mv erp assumptions assumption-rules input-assumption-vars hits state).
+(defund assumptions-new (target
                         parsed-executable
                         extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                         suppress-assumptions
                         inputs-disjoint-from
+                        assume-bytes
                         stack-slots
                         existing-stack-slots
-                        ;position-independent
                         inputs
                         type-assumptions-for-array-varsp
                         extra-assumption-rules ; todo: why "extra"?
@@ -283,123 +272,111 @@
                         count-hits
                         print
                         executable-type
-                        position-independentp
+                        position-independentp ; drop?
+                        feature-flags
                         state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
-                              (true-listp extra-assumptions) ; untranslated terms
+                              (pseudo-term-listp extra-assumptions)
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
-                              (or (natp existing-stack-slots)
-                                  (eq :auto existing-stack-slots))
-
+                              (natp existing-stack-slots)
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
-
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
-
                               (count-hits-argp count-hits)
                               (print-levelp print)
-                              ;todo: more
-                              )
-                  :mode :program ; because of translate-terms
+                              (equal executable-type (parsed-executable-type parsed-executable))
+                              (booleanp position-independentp)
+                              (feature-flagsp feature-flags))
                   :stobjs state))
   (if (eq :elf-64 executable-type)
       ;; New assumption generation behavior for ELF64:
-      (b* (;; These are untranslated (in general):
-           ((mv erp automatic-assumptions input-assumption-vars)
+      (b* (((mv erp automatic-assumptions input-assumption-vars)
             (if suppress-assumptions
                 (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
               (assumptions-elf64-new target
-                                     position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                     position-independentp
+                                     feature-flags
                                      stack-slots
                                      existing-stack-slots
                                      'x86
                                      inputs
                                      type-assumptions-for-array-varsp
                                      inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                     assume-bytes
                                      parsed-executable)))
            ((when erp) (mv erp nil nil nil nil state))
-           (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-           ;; Translate all the assumptions:
-           (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+           (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
            ;; Maybe simplify the assumptions:
-           ((mv erp assumptions assumption-rules state)
+           ((mv erp assumptions assumption-rules hits state)
             (if extra-assumptions
                 ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                 (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-              (mv nil assumptions nil state)))
+              (mv nil assumptions nil (empty-hits) state)))
            ((when erp) (mv erp nil nil nil nil state)))
-        (mv nil assumptions
-            untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
-            assumption-rules input-assumption-vars state))
+        (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
     (if (eq :mach-o-64 executable-type) ; todo: combine with the case above?
         ;; New assumption generation behavior for MACHO64:
-        (b* (;; These are untranslated (in general):
-             ((mv erp automatic-assumptions input-assumption-vars)
+        (b* (((mv erp automatic-assumptions input-assumption-vars)
               (if suppress-assumptions
                   (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                 (assumptions-macho64-new target
-                                         position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                         position-independentp
+                                         feature-flags
                                          stack-slots
                                          existing-stack-slots
                                          'x86
                                          inputs
                                          type-assumptions-for-array-varsp
                                          inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                         assume-bytes
                                          parsed-executable)))
              ((when erp) (mv erp nil nil nil nil state))
-             (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-             ;; Translate all the assumptions:
-             (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+             (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
              ;; Maybe simplify the assumptions:
-             ((mv erp assumptions assumption-rules state)
+             ((mv erp assumptions assumption-rules hits state)
               (if extra-assumptions
                   ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                   (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-                (mv nil assumptions nil state)))
+                (mv nil assumptions nil (empty-hits) state)))
              ((when erp) (mv erp nil nil nil nil state)))
-          (mv nil assumptions
-              untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
-              assumption-rules input-assumption-vars state))
+          (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
       (if (eq :pe-64 executable-type) ; todo: combine with the cases above?
           ;; New assumption generation behavior for PE64:
-          (b* (;; These are untranslated (in general):
-               ((mv erp automatic-assumptions input-assumption-vars)
+          (b* (((mv erp automatic-assumptions input-assumption-vars)
                 (if suppress-assumptions
                     (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                   (assumptions-pe64-new target
-                                        position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                        position-independentp
+                                        feature-flags
                                         stack-slots
                                         existing-stack-slots
                                         'x86
                                         inputs
                                         type-assumptions-for-array-varsp
                                         inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
+                                        assume-bytes
                                         parsed-executable)))
                ((when erp) (mv erp nil nil nil nil state))
-               (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
-               ;; Translate all the assumptions:
-               (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+               (assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                ;; Maybe simplify the assumptions:
-               ((mv erp assumptions assumption-rules state)
+               ((mv erp assumptions assumption-rules hits state)
                 (if extra-assumptions
                     ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
                     (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules t count-hits state)
-                  (mv nil assumptions nil state)))
+                  (mv nil assumptions nil (empty-hits) state)))
                ((when erp) (mv erp nil nil nil nil state)))
-            (mv nil assumptions
-                untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
-                assumption-rules input-assumption-vars state))
+            (mv (erp-nil) assumptions assumption-rules input-assumption-vars hits state))
 
         ;; (b* (((when (eq :entry-point target)) ; todo
-        ;;       (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+        ;;       (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
         ;;       (mv :bad-entry-point nil nil nil nil state))
         ;;      ((when (natp target)) ; todo
-        ;;       (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+        ;;       (er hard? 'assumptions-new "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
         ;;       (mv :bad-entry-point nil nil nil nil state))
         ;;      (text-section-bytes (acl2::get-mach-o-code parsed-executable)) ;all the code, not just the given subroutine
         ;;      (text-section-offset (acl2::get-mach-o-code-address parsed-executable))
@@ -536,7 +513,7 @@
         ;;         (mv nil nil)))
         ;;      (automatic-assumptions (append standard-assumptions input-assumptions))
         ;;      (untranslated-assumptions (append automatic-assumptions extra-assumptions))
-        ;;      (assumptions (translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+        ;;      (assumptions (translate-terms untranslated-assumptions 'assumptions-new (w state)))
         ;;      (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
         ;;                                                            (print-terms-elided assumptions
         ;;                                                                                '(;(standard-assumptions-elf-64 t nil t t t t)
@@ -564,11 +541,11 @@
         (b* (;;todo: finish adding support for :entry-point!
              ((when (and (eq :entry-point target)
                          (not (eq :pe-32 executable-type))))
-              (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
+              (er hard? 'assumptions-new "Starting from the :entry-point is currently only supported for PE32 executables and 64-bit executables.")
               (mv :bad-entry-point nil nil nil nil state))
              ((when (and (natp target)
                          (not (eq :pe-32 executable-type))))
-              (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
+              (er hard? 'assumptions-new "Starting from a numeric offset is currently only supported for PE32 executables and 64-bit executables.")
               (mv :bad-entry-point nil nil nil nil state))
              ;; (text-offset
              ;;   (and 64-bitp ; todo
@@ -582,7 +559,7 @@
              ;;                nil ; todo
              ;;              (if (eq :pe-32 executable-type)
              ;;                  nil ; todo
-             ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+             ;;                (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))))
              ;; (code-length
              ;;   (and 64-bitp ; todo
              ;;        (if (eq :pe-64 executable-type)
@@ -595,7 +572,7 @@
              ;;                nil ; todo
              ;;              (if (eq :pe-32 executable-type)
              ;;                  nil ; todo
-             ;;                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))';
+             ;;                (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))))';
              (standard-assumptions
                (if suppress-assumptions
                    ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -606,7 +583,7 @@
                        ;; todo: try without expanding this:
                        (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                      ;;todo: add support for :elf-32
-                     (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))
+                     (er hard? 'assumptions-new "Unsupported executable type: ~x0.~%" executable-type)))))
              ;; Add 32-bit-specific assumptions:
              (standard-assumptions (append (register-high-bit-assumptions)
                                            standard-assumptions))
@@ -632,8 +609,8 @@
               )
              (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
              (assumptions (append assumptions extra-assumptions))
-             (assumptions-to-return assumptions) ; untranslated?
-             (assumptions (translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+             ;; (assumptions-to-return assumptions)
+             ;; (assumptions (translate-terms assumptions 'assumptions-new (w state))) ; perhaps don't translate the automatic-assumptions?
              (- (and (print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                    (print-terms-elided assumptions
                                                                                        '(;; (standard-assumptions-elf-64 t nil t t t t)
@@ -648,10 +625,10 @@
              ;; attempted.  We need to assume some assumptions when simplifying the
              ;; others, because opening things like read64 involves testing
              ;; canonical-addressp (which we know from other assumptions is true):
-             ((mv erp assumptions assumption-rules state)
+             ((mv erp assumptions assumption-rules hits state)
               (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules nil count-hits state))
              ((when erp) (mv erp nil nil nil nil state)))
-          (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))))
+          (mv nil assumptions assumption-rules input-assumption-vars hits state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -662,8 +639,8 @@
     run-until-stack-shorter-than-or-reach-pc
     run-until-return-or-reach-pc ; drop?
     ;; new scheme:
-    run-until-rsp-is
-    run-until-rsp-is-or-reach-pc
+    ;; run-until-rsp-is
+    ;; run-until-rsp-is-or-reach-pc
     ;; newer scheme:
     run-until-rsp-is-above
     run-until-rsp-is-above-or-reach-pc
@@ -677,223 +654,16 @@
 (defconst *error-fns*
   '(set-ms set-fault))
 
-;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
-;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
-;; reduced to 0, or a loop or an unsupported instruction is detected.
-;; Returns (mv erp result-dag-or-quotep state).
-;; WARNING: Keep in sync with the risc-v version.
-(defun repeatedly-run (steps-done step-limit step-increment
-                                  dag ; the state may be wrapped in an output-extractor
-                                  rule-alist pruning-rule-alist
-                                  assumptions
-                                  step-opener-rule ; the rule that gets limited
-                                  rules-to-monitor
-                                  prune-precise prune-approx
-                                  normalize-xors count-hits print print-base untranslatep memoizep
-                                  ;; could pass in the stop-pcs, if any
-                                  state)
-  (declare (xargs :guard (and (natp steps-done)
-                              (natp step-limit)
-                              (step-incrementp step-increment)
-                              (pseudo-dagp dag)
-                              (rule-alistp rule-alist)
-                              (rule-alistp pruning-rule-alist)
-                              (pseudo-term-listp assumptions)
-                              (symbolp step-opener-rule)
-                              (symbol-listp rules-to-monitor)
-                              (or (eq nil prune-precise)
-                                  (eq t prune-precise)
-                                  (natp prune-precise))
-                              (or (eq nil prune-approx)
-                                  (eq t prune-approx)
-                                  (natp prune-approx))
-                              (normalize-xors-optionp normalize-xors)
-                              (count-hits-argp count-hits)
-                              (print-levelp print)
-                              (member print-base '(10 16))
-                              (booleanp untranslatep)
-                              (booleanp memoizep))
-                  :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
-                  :stobjs state
-                  :hints (("Goal" :in-theory (disable min)))
-                  :guard-hints (("Goal" :in-theory (disable min)))))
-  (if (or (not (mbt (and (natp steps-done)
-                         (natp step-limit))))
-          (<= step-limit steps-done))
-      (mv (erp-nil) dag state)
-    (b* (;; Decide how many steps to do this time:
-         (this-step-increment (this-step-increment step-increment steps-done))
-         (steps-for-this-iteration (min (- step-limit steps-done) this-step-increment))
-         ((when (not (posp steps-for-this-iteration))) ; use mbt?
-          (er hard? 'repeatedly-run "Temination problem.")
-          (mv :termination-problem nil state))
-         (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
-         ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-         (old-dag dag) ; so we can see if anything changed
-         ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
-         ;;                       (cw "~X01" dag nil)
-         ;;                       (cw ")~%"))))
-         ;; Limit the run to the given number of steps:
-         (limits nil) ; todo: call this empty-rule-limits?
-         (limits (add-limit-for-rules (list step-opener-rule)
-                                      steps-for-this-iteration
-                                      limits)) ; don't recompute for each small run?
-         ;; Do the run:
-         ((mv erp dag-or-constant limits state)
-          (acl2::simplify-dag-x86 dag
-                                  assumptions
-                                  rule-alist
-                                  nil ; interpreted-function-alist
-                                  (known-booleans (w state))
-                                  normalize-xors
-                                  limits
-                                  memoizep
-                                  count-hits
-                                  print
-                                  rules-to-monitor
-                                  *no-warn-ground-functions*
-                                  '(program-at) ; fns-to-elide ; todo: this is old
-                                  state))
-         ((when erp) (mv erp nil state))
-         ;; usually 0, unless we are done (can this ever be negative?):
-         (remaining-limit ;; todo: clean this up: there is only a single rule:
-           (limit-for-rule step-opener-rule
-                           limits))
-         (steps-done-this-time (- steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
-         ((mv elapsed state) (real-time-since start-real-time state))
-         (- (cw " (~x0 steps took " steps-done-this-time)
-            (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
-            (cw "s.)"))
-         (- (cw ")~%")) ; matches "(Running"
-         ((when (quotep dag-or-constant))
-          (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
-         ;; TODO: Consider not pruning if this increment didn't create any new branches:
-         ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
-         ((mv erp dag-or-constant state) (maybe-prune-dag-approximately prune-approx
-                                                                        dag
-                                                                        (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                        *no-warn-ground-functions*
-                                                                        print
-                                                                        60000 ; todo: pass in
-                                                                        state))
-         ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-constant))
-          (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
-         ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
-         ;;                       (cw "~X01" dag nil)
-         ;;                       (cw ")~%"))))
-         ;; Prune precisely if feasible:
-         ;; TODO: Maybe don't prune if the run has completed (but do simplify in that case)?
-         ((mv erp dag-or-constant state)
-          (maybe-prune-dag-precisely prune-precise ; if a natp, can help prevent explosion.
-                                     dag
-                                     ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
-                                     ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
-                                     ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
-                                     nil ; assumptions ; todo: include assumptions about canonical?
-                                     :none
-                                     pruning-rule-alist
-                                     nil ; interpreted-function-alist
-                                     rules-to-monitor
-                                     t ;call-stp
-                                     *no-warn-ground-functions*
-                                     print
-                                     state))
-         ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-constant))
-          (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-constant state))
-         (dag dag-or-constant) ; it wasn't a constant, so name it "dag"
-         (- (and print ;(print-level-at-least-tp print)
-                 (progn$ (cw "(DAG after this limited run:~%")
-                         (cw "~X01" dag nil)
-                         (cw ")~%"))))
-         ;; TODO: Error if dag too big (must be able to add it to old dag, or make a version of equivalent-dagsp that signals an error):
-         ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
-         ;;                       (cw "~X01" dag nil)
-         ;;                       (cw ")~%"))))
-         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
-         (dag-fns (dag-fns dag))
+(defund add-offsets-to-base-address (offsets base-address-var)
+  (declare (xargs :guard (and (nat-listp offsets)
+                              (symbolp base-address-var))))
+  (if (endp offsets)
+      nil
+    (let* ((offset (first offsets)))
+      (cons `(bvplus '64 ',offset ,base-address-var)
+            (add-offsets-to-base-address (rest offsets) base-address-var)))))
 
-         ;; TODO: Maybe don't prune if the run completed and there are no error branches?
-         (run-completedp (not (intersection-eq *incomplete-run-fns* dag-fns))) ; todo: call contains-anyp-eq
-         ((mv erp nothing-changedp) (if run-completedp
-                                        (mv nil nil) ; we know something changed since the run is now complete
-                                      (equivalent-dagsp2 dag old-dag))) ; todo: can we test equivalence up to xor nest normalization? ; todo: check using the returned limits whether any work was done (want if was simplification but not stepping?)?
-         ((when erp) (mv erp nil state))
-
-         ;; Stop if we hit an unimplemented instruction (it may be on an unreachable branch, but we've already pruned -- todo: prune harder?):
-         ;; ((when ..)
-         ;;  (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%") ; todo: print the name of the instruction
-         ;;          (cw "~%")
-         ;;          (mv :unimplemented-instruction dag state)))
-
-         ;; ((when nothing-changedp)
-         ;;  (cw "Note: Stopping the run because nothing changed.~%") ; todo: check if one of the *incomplete-run-fns* remains (but what if we hit one of the stop-pcs?)
-         ;;  ;; check how many steps used?
-         ;;  ;; todo: check for the error-fns here
-         ;;  (mv (erp-nil) dag state))
- ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         )
-      (if (or run-completedp nothing-changedp)
-          ;; stop if the run is done
-          ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
-          (b* ((- (if run-completedp
-                      (cw " The run completed normally.~%")
-                    (cw " The run completed abnormally (nothing changed).~%")))
-               (- (cw "(Doing final simplification:~%"))
-               ((mv erp dag-or-constant state) ; todo: check if it is a constant?
-                (mv-let (erp result limits state)
-                  (acl2::simplify-dag-x86 dag
-                                          assumptions
-                                          rule-alist
-                                          nil ; interpreted-function-alist
-                                          (known-booleans (w state))
-                                          normalize-xors
-                                          limits
-                                          memoizep
-                                          count-hits
-                                          print
-                                          rules-to-monitor
-                                          *no-warn-ground-functions*
-                                          '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                          state)
-                  (declare (ignore limits)) ; todo: use the limits?
-                  (mv erp result state)))
-               ((when erp) (mv erp nil state))
-               ;; todo: also prune here, if the simplfication does anything?
-               (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
-               ;; Check for error branches (TODO: What if we could prune them away with more work?):
-               (dag-fns (if (quotep dag-or-constant) nil (dag-fns dag-or-constant)))
-               (error-branch-functions (intersection-eq *error-fns* dag-fns))
-               (incomplete-run-functions (intersection-eq *incomplete-run-fns* dag-fns dag-fns))
-               ((when error-branch-functions)
-                (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
-                (er hard? 'repeatedly-run "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
-                (mv :unresolved-error-branches nil state))
-               ;; Check for an incomplete run (TODO: What if we could prune away such branches with more work?):
-               ((when incomplete-run-functions)
-                (cw "~%")
-                (print-dag-nicely dag) ; use the print-base?
-                (er hard? 'repeatedly-run " Incomplete run (see calls of ~&0 in the term or DAG above)." incomplete-run-functions)
-                (mv :incomplete-run nil state)))
-            (mv (erp-nil) dag-or-constant state))
-        ;; Continue the symbolic execution:
-        (b* ((steps-done (+ steps-for-this-iteration steps-done))
-             (- (cw "(Steps so far: ~x0.)~%" steps-done))
-             (state ;; Print as a term unless it would be huge:
-               (if (print-level-at-least-tp print)
-                   (print-dag-nicely-with-base dag (concatenate 'string "after " (nat-to-string steps-done) " steps") untranslatep print-base state)
-                 state)))
-          (repeatedly-run steps-done step-limit
-                          step-increment
-                          dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep
-                          state))))))
+(acl2::make-repeatedly-run-function repeatedly-run simplify-dag-x86)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -904,9 +674,11 @@
                              extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                              suppress-assumptions
                              inputs-disjoint-from
+                             assume-bytes
                              stack-slots
                              existing-stack-slots
                              position-independent
+                             feature-flags
                              inputs
                              type-assumptions-for-array-varsp
                              output-indicator
@@ -925,17 +697,20 @@
                              count-hits
                              print
                              print-base
+                             max-printed-term-size
                              untranslatep
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
-                              (true-listp extra-assumptions) ; untranslated terms
+                              (pseudo-term-listp extra-assumptions)
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
@@ -959,34 +734,30 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
-                              (booleanp untranslatep))
+                              (natp max-printed-term-size)
+                              (booleanp untranslatep)
+                              )
                   :stobjs state
-                  :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
+                  :mode :program ; because of wrap-in-output-extractor
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (widen-margins state))
        ;; Get and check the executable-type:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type *executable-types64*))
        (- (and (print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Make sure it's an x86 executable:
-       (- (acl2::ensure-x86 parsed-executable))
+       (- (ensure-x86 parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
-                                    (if (eq executable-type :elf-64)
-                                        (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
-                                          (prog2$ (cw "ELF type: ~x0.~%" elf-type)
-                                                  (if (acl2::parsed-elf-program-header-table parsed-executable)
-                                                      ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-                                                      (if (member-eq elf-type '(:rel :dyn)) t nil)
-                                                    ;; TODO: Get this to work:
-                                                    nil)))
+                                    (if (eq executable-type :elf-64) ; todo: allow ELF32 as well?
+                                        (elf-position-independentp parsed-executable)
                                       ;; TODO: Think about the other cases:
                                       t))
-                                ;; the user supplied a value for position-independent, so use it:
+                                ;; position-independent is t or nil, not :auto:
                                 position-independent))
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
@@ -995,7 +766,7 @@
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-       ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+       ;;                                  ;(parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
        ;;                                  ))
        ;; (new-canonicalp (or (eq :elf-64 executable-type)
        ;;                     (eq :mach-o-64 executable-type)
@@ -1003,8 +774,8 @@
        ;;                     ))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
-               (acl2::ensure-target-exists-in-executable target parsed-executable)))
-
+               (ensure-target-exists-in-executable target parsed-executable)))
+       ;; Handle an existing-stack-slots of :auto:
        (existing-stack-slots (if (eq :auto existing-stack-slots)
                                  (if (eq :pe-64 executable-type)
                                      5 ; 1 for the saved return address, and 4 for registers on the stack (todo: think more about this)
@@ -1012,15 +783,17 @@
                                    )
                                existing-stack-slots))
        ;; Generate assumptions:
-       ((mv erp assumptions untranslated-assumptions
+       ((mv erp assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             input-assumption-vars
+            hits
             state)
         (assumptions-new target
                          parsed-executable
                          extra-assumptions
                          suppress-assumptions
                          inputs-disjoint-from
+                         assume-bytes
                          stack-slots
                          existing-stack-slots
                          inputs
@@ -1031,29 +804,40 @@
                          print
                          executable-type
                          position-independentp
+                         feature-flags
                          state))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil nil nil state))
-       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions)) ; should we untranslate these?
-                             (if (print-level-at-least-tp print)
-                                 (print-list assumptions)
-                               (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
-                                                                 (equal t nil))))
+       (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
+                             (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
+                               (if (print-level-at-least-tp print)
+                                   (print-list assumptions)
+                                 (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge ; todo: program-at is deprecated
+                                                                   (equal t nil)))))
                              (cw ")~%"))))
+       ((when (not (term-listp assumptions (w state))))
+        (er hard? 'unroll-x86-code-core "Bad assumptions: ~X01." assumptions nil)
+        (mv :bad-assumptions nil nil nil nil nil nil state))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
-       (- (and stop-pcs
-               position-independentp ; todo: make this work!
-               (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
        (term-to-simulate (if stop-pcs
-                             (if 64-bitp
-                                 `(run-until-return-or-reach-pc3 ',stop-pcs x86)
-                               `(run-until-return-or-reach-pc4 ',stop-pcs x86))
+                             (let ((stop-pcs-term (if position-independentp
+                                                      (if 64-bitp
+                                                          (make-cons-nest (add-offsets-to-base-address stop-pcs 'base-address))
+                                                        (er hard? 'unroll-x86-code-core ":stop-pcs are not supported for position-independent 32-bit lifting."))
+                                                    ;; the stop-pcs are just numbers (addresses):
+                                                    `',stop-pcs)))
+                               (if 64-bitp
+                                   `(run-until-return-or-reach-pc64 ,stop-pcs-term x86)
+                                 `(run-until-return-or-reach-pc32 ,stop-pcs-term x86)))
                            (if 64-bitp
-                               '(run-until-return3 x86)
-                             '(run-until-return4 x86))))
+                               '(run-until-return64 x86)
+                             '(run-until-return32 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
+       ((when (not (termp term-to-simulate (w state))))
+        (er hard? 'unroll-x86-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
+        (mv :error-wrapping-in-output-extractor nil nil nil nil nil nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-simulate nil))
@@ -1094,18 +878,26 @@
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
-       ((mv erp result-dag-or-quotep state)
+       ((mv erp result-dag-or-quotep hits2 state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
                         (if 64-bitp
                             (first (step-opener-rules64))
                           (first (step-opener-rules32)))
-                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
+                        rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
+                        *no-warn-ground-functions*
+                        '(program-at code-segment-assumptions32-for-code) ; fns-to-elide, todo: program-at is no longer used.  todo: make these into whole patterns.
+                        *non-stp-assumption-functions*
+                        *incomplete-run-fns*
+                        *error-fns*
+                        untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
+       (hits (combine-hits hits hits2))
        (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Lifting took ")
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
+       (- (maybe-print-hits hits))
        ;; Print the result (todo: allow suppressing this):
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
@@ -1113,7 +905,7 @@
                     (print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
+    (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
@@ -1125,9 +917,11 @@
                         extra-assumptions
                         suppress-assumptions
                         inputs-disjoint-from
+                        assume-bytes
                         stack-slots
                         existing-stack-slots
                         position-independent
+                        feature-flags
                         type-assumptions-for-array-varsp
                         prune-precise
                         prune-approx
@@ -1144,6 +938,7 @@
                         count-hits
                         print
                         print-base
+                        max-printed-term-size
                         untranslatep
                         produce-function
                         non-executable
@@ -1159,10 +954,12 @@
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
+                              (member-eq assume-bytes '(:all :non-write))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
+                              (feature-flagsp feature-flags)
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
@@ -1186,6 +983,7 @@
                               (count-hits-argp count-hits)
                               (print-levelp print)
                               (member print-base '(10 16))
+                              (natp max-printed-term-size)
                               (booleanp untranslatep)
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
@@ -1197,36 +995,44 @@
                   :mode :program ; todo
                   ))
   (b* (;; Check whether this call to the lifter is redundant:
-       (previous-result (previous-lifter-result whole-form state))
-       ((when previous-result)
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
-       ;; Start timing:
-       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Record the start time:
+       ((mv start-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Check inputs:
+       ((when (eq :none executable))
+        (er hard? 'def-unrolled-fn "No :executable supplied.  This should usually be a string (file name/path).") ; todo: mention the parsed-executable option?
+        (mv (erp-t) nil state))
+       ((when (and produce-theorem (not produce-function)))
+        (er hard? 'def-unrolled-fn "When :produce-theorem is t, :produce-function must also be t.")
+        (mv (erp-t) nil state))
        ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable: ; todo: can we deprecate this case?  could be de-obfuscated
+            (parse-executable executable state)
+          ;; it's already a parsed-executable (rare):
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
+       ;; We do this here, outside unroll-x86-code-core so that function can be in :logic mode:
+       (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
+       ((mv erp result-dag-or-quotep assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots existing-stack-slots position-independent
-          inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+                              extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
+                              inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+                              step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
-       (result-dag-size (dag-or-quotep-size result-dag))
+       (result-dag-size (dag-or-quotep-size result-dag-or-quotep))
        (- (cw "Result DAG size: ~x0.~%" result-dag-size))
-       (result-dag-fns (dag-or-quotep-fns result-dag))
+       (result-dag-fns (dag-or-quotep-fns result-dag-or-quotep))
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (dag-or-quotep-vars result-dag))
+       (result-dag-vars (dag-or-quotep-vars result-dag-or-quotep))
        ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
@@ -1238,36 +1044,36 @@
        ((when (intersection-eq result-dag-fns *incomplete-run-fns*))
         (if (< result-dag-size 100000) ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag)))
+                    (cw "~X01" (let ((term (dag-or-quotep-to-term result-dag-or-quotep)))
                                  (if untranslatep
                                      (untranslate term nil (w state))
                                    term))
                         nil)
                     (cw ")~%"))
           (progn$ (cw "(DAG:~%")
-                  (cw "~X01" result-dag nil)
+                  (cw "~X01" result-dag-or-quotep nil)
                   (cw ")~%")))
         (er hard? 'def-unrolled-fn "Unroller error: The run did not finish.")
         (mv :incomplete-run nil state))
-       (termp (<= result-dag-size max-result-term-size)) ; todo: make customizable
+       (termp (<= result-dag-size max-result-term-size))
        ;; Not valid if too big:
        (maybe-result-term (and termp ; avoids exploding
-                               (dag-to-term result-dag)))
+                               (dag-to-term result-dag-or-quotep)))
        ;; Print the result:
        (- (and print
                (if termp
                    (cw "(Result: ~x0)~%" maybe-result-term)
                  (progn$ (cw "(Result:~%")
-                         (cw "~X01" result-dag nil)
+                         (cw "~X01" result-dag-or-quotep nil)
                          (cw ")~%")))))
 
        ;; Build the defconst that will contain the result DAG:
-       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag-or-quotep))
 
        ;; Possibly produce a defun:
 
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Build the defun that will contain the result of lifting:
        ;; Create the list of formals for the function:
@@ -1283,13 +1089,13 @@
        (expected-formals (intersection-eq common-formals result-dag-vars))
        (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
-       ((mv erp defuns) ; defuns is nil or a singleton list
+       ((mv erp events-for-defun)
         (if (not produce-function)
             (mv (erp-nil) nil)
           (b* (;;TODO: consider untranslating this, or otherwise cleaning it up:
                (function-body (if termp
                                   maybe-result-term
-                                `(dag-val-with-axe-evaluator ',result-dag ; can't be a constant (the size would be < max-result-term-size)
+                                `(dag-val-with-axe-evaluator ',result-dag-or-quotep ; can't be a constant (the size would be < max-result-term-size)
                                                              ,(make-acons-nest result-dag-vars)
                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list result-dag-fns *axe-evaluator-functions* (w state)) (w state))
                                                              '0 ;array depth (not very important)
@@ -1319,7 +1125,13 @@
                                       (and ignored-vars
                                            `((ignore ,@ignored-vars)))))
                          ,function-body-untranslated)))
-            (mv (erp-nil) (list defun)))))
+            (mv (erp-nil)
+                (append (if termp
+                            nil
+                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
+                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
+                          )
+                        (list defun))))))
        ((when erp) (mv erp nil state))
        (produce-theorem (and produce-theorem
                              (if (not produce-function)
@@ -1334,7 +1146,7 @@
                           nil)
                 t)
               (let* ((defthm `(defthm ,(pack$ lifted-name '-correct)
-                                (implies (and ,@assumptions)
+                                (implies (and ,@(untranslate$-list assumptions nil state))
                                          (equal ,term-to-simulate
                                                 (,lifted-name ,@fn-formals)))
                                 :hints ,(if restrict-theory
@@ -1346,12 +1158,12 @@
                                  defthm
                                `(skip-proofs ,defthm))))
                 (list defthm))))
-       (events (cons defconst-form (append defuns defthms)))
+       (events (cons defconst-form (append events-for-defun defthms)))
        (event-names (strip-cadrs events))
        (event `(progn ,@events))
-       (event (extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (extend-progn event (redundancy-table-event whole-form event)))
        (event (extend-progn event `(value-triple '(,@event-names))))
-       ((mv elapsed state) (real-time-since start-real-time state))
+       ((mv elapsed state) (real-time-since start-time state))
        (- (cw " (Unrolling ~x0 took " lifted-name)
           (print-to-hundredths elapsed)
           (cw "s, not including event submission.)~%")))
@@ -1361,120 +1173,140 @@
 ;bad name?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(defmacrodoc def-unrolled (&whole whole-form
-                                  lifted-name
-                                  executable
-                                  &key
-                                  (target ':entry-point)
-                                  (inputs ':skip)
-                                  (output ':all)
-                                  (extra-assumptions 'nil)
-                                  (suppress-assumptions 'nil)
-                                  (inputs-disjoint-from ':code)
-                                  (stack-slots '100)
-                                  (existing-stack-slots ':auto)
-                                  (position-independent ':auto)
-                                  (type-assumptions-for-array-vars 't)
-                                  (prune-precise '1000)
-                                  (prune-approx 't)
-                                  (extra-rules 'nil)
-                                  (remove-rules 'nil)
-                                  (extra-assumption-rules 'nil)
-                                  (remove-assumption-rules 'nil)
-                                  (step-limit '1000000)
-                                  (step-increment '100)
-                                  (stop-pcs 'nil)
-                                  (memoizep 't)
-                                  (monitor 'nil)
-                                  (normalize-xors 'nil)
-                                  (count-hits 'nil)
-                                  (print ':brief)             ;how much to print
-                                  (print-base '10)
-                                  (untranslatep 't)
-                                  (produce-function 't)
-                                  (non-executable ':auto)
-                                  (produce-theorem 'nil)
-                                  (prove-theorem 'nil)
-                                  (max-result-term-size '10000)
-                                  (restrict-theory 't)       ;todo: deprecate
-                                  )
-  `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
-    (def-unrolled-fn
-      ',lifted-name
-      ,target
-      ,executable ; gets evaluated
-      ',inputs
-      ',output
-      ,extra-assumptions
-      ',suppress-assumptions
-      ',inputs-disjoint-from
-      ',stack-slots
-      ',existing-stack-slots
-      ',position-independent
-      ',type-assumptions-for-array-vars
-      ',prune-precise
-      ',prune-approx
-      ,extra-rules ; gets evaluated since not quoted
-      ,remove-rules ; gets evaluated since not quoted
-      ,extra-assumption-rules ; gets evaluated since not quoted
-      ,remove-assumption-rules ; gets evaluated since not quoted
-      ',step-limit
-      ',step-increment
-      ,stop-pcs
-      ',memoizep
-      ,monitor ; gets evaluated since not quoted
-      ',normalize-xors
-      ',count-hits
-      ',print
-      ',print-base
-      ',untranslatep
-      ',produce-function
-      ',non-executable
-      ',produce-theorem
-      ',prove-theorem
-      ',max-result-term-size
-      ',restrict-theory
-      ',whole-form
-      state))
-  :parents (acl2::axe-x86 acl2::axe-lifters)
-  :short "A tool to lift x86 binary code into logic, unrolling loops as needed."
-  :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
-         (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
-         (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
-         (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
-         (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
-         (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
-         (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
-         (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
-         (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
-         (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
-         (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
-         (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
-;;         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
-         ;; todo: better name?  only for precise pruning:
-         (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
-         (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
-         ;; todo: how do these affect assumption simp:
-         (extra-rules "A symbol-list indicating rules to use, in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
-         (remove-rules "A symbol-list indicating rules to turn off.")
-         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
-         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
-         (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
-         (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
-         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
-         (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
-         (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
-         (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")
-         (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
-         (print "Verbosity level.") ; todo: values
-         (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
-         (untranslatep "Whether to untranslate terms when printing.")
-         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
-         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
-         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
-         (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
-         (max-result-term-size "Max size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
-         (restrict-theory "To be deprecated..."))
-  :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
-                "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
-                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
+(make-event
+ `(defmacrodoc def-unrolled (&whole whole-form
+                                    lifted-name
+                                    &key
+                                    (target ':entry-point)
+                                    (executable ':none)
+                                    (inputs ':skip)
+                                    (output ':all)
+                                    (extra-assumptions 'nil)
+                                    (suppress-assumptions 'nil)
+                                    (inputs-disjoint-from ':code)
+                                    (assume-bytes ':non-write)
+                                    (stack-slots '100)
+                                    (existing-stack-slots ':auto)
+                                    (position-independent ':auto)
+                                    (feature-flags ',*default-feature-flags*)
+                                    (type-assumptions-for-array-vars 't)
+                                    (prune-precise '1000)
+                                    (prune-approx 't)
+                                    (extra-rules 'nil)
+                                    (remove-rules 'nil)
+                                    (extra-assumption-rules 'nil)
+                                    (remove-assumption-rules 'nil)
+                                    (step-limit '1000000)
+                                    (step-increment '100)
+                                    (stop-pcs 'nil)
+                                    (memoizep 't)
+                                    (monitor 'nil)
+                                    (normalize-xors 'nil)
+                                    (count-hits 'nil)
+                                    (print ':brief) ;how much to print
+                                    (print-base '10)
+                                    (max-printed-term-size '10000)
+                                    (untranslatep 't)
+                                    (produce-function 't)
+                                    (non-executable ':auto)
+                                    (produce-theorem 'nil)
+                                    (prove-theorem 'nil)
+                                    (max-result-term-size '10000)
+                                    (restrict-theory 't) ;todo: deprecate
+                                    )
+    `(,(if (print-level-at-least-tp print) 'make-event 'make-event-quiet)
+       (acl2-unwind-protect ; enable cleanup on errors/interrupts
+        "acl2-unwind-protect for def-unrolled"
+        (def-unrolled-fn
+            ',lifted-name
+            ,target
+          ,executable ; gets evaluated
+          ',inputs
+          ',output
+          ,extra-assumptions
+          ',suppress-assumptions
+          ',inputs-disjoint-from
+          ',assume-bytes
+          ',stack-slots
+          ',existing-stack-slots
+          ',position-independent
+          ',feature-flags
+          ',type-assumptions-for-array-vars
+          ',prune-precise
+          ',prune-approx
+          ,extra-rules             ; gets evaluated since not quoted
+          ,remove-rules            ; gets evaluated since not quoted
+          ,extra-assumption-rules  ; gets evaluated since not quoted
+          ,remove-assumption-rules ; gets evaluated since not quoted
+          ',step-limit
+          ',step-increment
+          ,stop-pcs
+          ',memoizep
+          ,monitor ; gets evaluated since not quoted
+          ',normalize-xors
+          ',count-hits
+          ',print
+          ',print-base
+          ',max-printed-term-size
+          ',untranslatep
+          ',produce-function
+          ',non-executable
+          ',produce-theorem
+          ',prove-theorem
+          ',max-result-term-size
+          ',restrict-theory
+          ',whole-form
+          state)
+        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+        ;; Remove the temp-dir, if it exists:
+        (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)
+        ;; Normal exit (remove the temp-dir, if it exists):
+        (maybe-remove-temp-dir ; ,keep-temp-dir
+         state)))
+    :parents (acl2::axe-x86 acl2::axe-lifters)
+    :short "A tool to lift x86 binary code into logic, unrolling loops as needed."
+    :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
+           (executable "The x86 binary executable that contains the target function.  Usually this is a string representing the file name/path of the executable.  However, it can instead be a parsed executable (satisfying @('parsed-executablep')).") ; todo: mention defconst-x86?
+           (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
+           (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
+           (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
+           (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
+           (assume-bytes "Indication of which sections/segments to assume still have their original bytes, either @(':all') (meaning assume it for all sections/segments) or @(':non-write') (meaning assume it for only non-writeable sections/segments).  Note that global variables may be initialized to certain values but may have then been overwritten before the function being lifted is called, so it may not be appropriate to assume such variables still have their original values.")
+           (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
+           (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.") ; 4 or 8 bytes each?
+           (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
+           (feature-flags "A list of the CPU features to assume are supported.  Each feature is represented by a keyword.  By default, the value of the constant @('*default-feature-flags*') is used.")
+           (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
+           (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
+           (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
+           ;;         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
+           ;; todo: better name?  only for precise pruning:
+           (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+           (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
+           ;; todo: how do these affect assumption simp:
+           (extra-rules "A symbol-list indicating rules to use, in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
+           (remove-rules "A symbol-list indicating rules to turn off.")
+           (extra-assumption-rules "A symbol-list indicating extra rules to be used when simplifying assumptions, in addition to the standard rules.")
+           (remove-assumption-rules "A symbol-list indicating rules to be removed (from the standard rules) when simplifying assumptions.")
+           (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
+           (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+           (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
+           (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
+           (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+           (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")
+           (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
+           (print "Verbosity level.") ; todo: values
+           (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
+           (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
+           (untranslatep "Whether to untranslate terms when printing.")
+           (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
+           (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
+           (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
+           (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
+           (max-result-term-size "Max term-size of a result if it is to be represented as a term (when printing it, and in the generated function).  A larger result will be represented as a DAG, embedded in the function using an evaluator.")
+
+           (restrict-theory "To be deprecated..."))
+    :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
+                  "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
+                  "To inspect the resulting DAG, you can simply enter its name at the prompt to print it.")))

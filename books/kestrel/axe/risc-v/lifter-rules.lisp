@@ -20,7 +20,7 @@
 (add-known-boolean subregion32p)
 (add-known-boolean disjoint-regions32p)
 
-(add-known-boolean stat32ip)
+(add-known-boolean stat32p)
 
 (def-constant-opener in-region32p)
 (def-constant-opener subregion32p)
@@ -54,13 +54,6 @@
 (def-constant-opener riscv::get-fields-stype)
 (def-constant-opener riscv::feat->m$inline)
 
-(def-constant-opener logtail$inline)
-(def-constant-opener expt2$inline)
-(def-constant-opener ifloor$inline)
-(def-constant-opener logapp)
-(def-constant-opener binary-logand)
-(def-constant-opener ash)
-
 (def-constant-opener riscv::instr-op-imm)
 (def-constant-opener riscv::op-imm-funct-kind$inline)
 
@@ -72,13 +65,8 @@
 ;; (def-constant-opener list-to-bv-array)
 ;; (def-constant-opener list-to-bv-array-aux) ; too slow?
 
-(def-constant-opener bv-list-read-chunk-little)
-(def-constant-opener packbv-little)
-
-(def-constant-opener unsigned-byte-listp)
-
 ;todo: more
-(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv::funct))))
+(defopeners exec32-op-imm :hyps ((syntaxp (quotep riscv32im-le::funct))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

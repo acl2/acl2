@@ -95,6 +95,8 @@
    (expr :funcall nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -114,7 +116,7 @@
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (param-declon nil)
-   (decl nil)
+   (declon nil)
    (asm-stmt nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
@@ -125,5 +127,5 @@
    (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
                                 (amb-declor/absdeclor-fix
                                  amb-declor/absdeclor)))
-   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))))
+   (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                           (amb-declon/stmt-fix amb-declon/stmt)))))

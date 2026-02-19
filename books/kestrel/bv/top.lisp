@@ -62,10 +62,9 @@
 (include-book "bvcat2")
 (include-book "putbits")
 
-(include-book "bvequal")
-
 ;; Bit-wise operations:
 (include-book "bvnot")
+(include-book "bvand-def")
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
@@ -82,6 +81,7 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvminus-rules")
+(include-book "bvuminus-def")
 (include-book "bvuminus")
 (include-book "bvmult-def")
 (include-book "bvmult")
@@ -108,6 +108,7 @@
 
 ;; Comparison operations:
 (include-book "bvequal")
+(include-book "bvequal-rules")
 (include-book "bvlt")
 (include-book "sbvlt-def")
 (include-book "sbvlt")

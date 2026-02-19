@@ -32,7 +32,7 @@
     bvchop
     slice
     bvcat
-    ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - ffixme maybe we do want to trim reads of constant arrays?
+    ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - finally, trimming the read without trimming the array elements can cause the read to become ill-guarded ; todo: however, maybe we do want to trim reads of constant arrays (but that might lead to different-sized copies of the same array being generated)
     bvsx ;trying
     repeatbit))
 
@@ -147,6 +147,8 @@
         (bind-var-to-bv-term-size var-name term)
       nil)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund term-should-be-trimmed-helper (width term operators)
   (declare (xargs :guard (and (natp width)
                               (pseudo-termp term)
@@ -175,16 +177,26 @@
 ;TODO: Does this functionality already exist?
 ;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
-;; not used much
-(defund term-should-be-trimmed (quoted-width term operators)
-  (declare (xargs :guard (and (myquotep quoted-width)
-                              (natp (unquote quoted-width))
+;; not used much (yet)
+;; todo: rename to term-should-be-trimmedp
+(defund term-should-be-trimmed (width-term term operators)
+  (declare (xargs :guard (and (pseudo-termp width-term)
                               (pseudo-termp term)
                               (member-eq operators '(:all :non-arithmetic)))))
-  (if (not (quotep quoted-width)) ;check natp or posp?
+
+  ;; (if (not (member-eq operators '(:all :non-arithmetic)))
+  ;;     (prog2$ (cw "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators) ; calls to (er hard? ...) seem to be ignored, so we use CW
+  ;;             (exit 1))
+  ;; (er hard? 'term-should-be-trimmed "~%~%ERROR: Bad operators arg: ~x0.~%~%" operators)
+  (if (not (quotep width-term)) ;check natp or posp?
       nil                         ;; warning or error?
-    (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed-helper width term operators))))
+    (let ((width (unquote width-term)))
+      (and (natp width)
+           (term-should-be-trimmed-helper width term operators))))
+  ;; )
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; WARNING: Keep this in sync with the rules in trim-elim-rules-non-bv.lisp.
 (defconst *functions-convertible-to-bv*
@@ -197,4 +209,10 @@
     ;; logtail ; todo: uncomment?
     binary-+
     unary--
-    binary-*))
+    binary-*
+    ash))
+
+(defun convertible-to-bvp (term)
+  (declare (xargs :guard t)) ; could require pseudo-termp but that might take time to check
+  (and (consp term)
+       (member-eq (ffn-symb term) *functions-convertible-to-bv*)))

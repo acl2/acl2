@@ -68,8 +68,7 @@
   :elt-type uinteger-bit-role
   :true-listp t
   :elementp-of-nil nil
-  :pred uinteger-bit-role-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred uinteger-bit-role-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,8 +99,7 @@
   :elt-type sinteger-bit-role
   :true-listp t
   :elementp-of-nil nil
-  :pred sinteger-bit-role-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred sinteger-bit-role-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

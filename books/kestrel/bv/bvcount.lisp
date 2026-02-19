@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "bvplus")
 (include-book "bvcat-def")
 (local (include-book "unsigned-byte-p"))

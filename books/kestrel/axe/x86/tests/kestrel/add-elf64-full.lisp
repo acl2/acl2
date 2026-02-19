@@ -21,7 +21,7 @@
 
 ;; (depends-on "add.elf64")
 ;; Lift the add function into logic by unrolling:
-(def-unrolled add "add.elf64" :target "add")
+(def-unrolled add :executable "add.elf64" :target "add")
 
 ;;expected result:
 (must-be-redundant

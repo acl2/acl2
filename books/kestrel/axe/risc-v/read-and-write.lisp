@@ -16,7 +16,7 @@
 ;; Axe for x86 reasoning (except for the memory size).
 
 (include-book "portcullis")
-(include-book "kestrel/risc-v/specialized/states32" :dir :system)
+(include-book "kestrel/risc-v/specialized/rv32im-le/states" :dir :system)
 (include-book "kestrel/memory/memory32" :dir :system)
 (include-book "risc-v-rules")
 (include-book "support") ; for write32-mem-ubyte32-lendian-alt-def
@@ -38,8 +38,10 @@
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))
@@ -115,7 +117,7 @@
 ;; Reads the byte at address ADDR.
 (defund read-byte (addr stat)
   (declare (xargs :guard (and (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (read32-mem-ubyte8 addr stat))
 
 (defthm read-byte-when-not-integerp
@@ -210,9 +212,9 @@
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
 (defthm bvchop-of-+-of-bvimunus-arg3
-  (implies  (and (integerp x)
-                 (integerp y)
-                 (integerp z))
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
             (equal (bvchop 32 (+ x y (bvuminus 32 z)))
                    (bvchop 32 (+ x y (- z)))))
   :hints (("Goal" :in-theory (enable bvuminus))))
@@ -271,7 +273,7 @@
 (defund write-byte (addr byte stat)
   (declare (xargs :guard (and (unsigned-byte-p 32 addr)
                               (unsigned-byte-p 8 byte)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (write32-mem-ubyte8 addr byte stat))
 
 (defthm write-byte-when-not-integerp
@@ -285,9 +287,9 @@
          (write-byte addr val stat))
   :hints (("Goal" :in-theory (enable write-byte))))
 
-(defthm stat32ip-of-write-byte
-  (implies (stat32ip stat)
-           (stat32ip (write-byte addr byte stat)))
+(defthm stat32p-of-write-byte
+  (implies (stat32p stat)
+           (stat32p (write-byte addr byte stat)))
   :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthm error32p-of-write-byte
@@ -413,7 +415,7 @@
 (defund read-bytes (n addr stat)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (if (zp n)
       nil
     (cons (read-byte addr stat)
@@ -460,27 +462,27 @@
 
 ;; prove from nth-of-read-bytes?
 (defthm bv-array-read-of-read-bytes-helper
-  (implies (and (< ad1 len) ;(force (< ad1 len))
-                (natp ad1)
+  (implies (and (< index len) ;(force (< index len))
+                (natp index)
                 (natp len)
-                (integerp ad2))
-           (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
-                  (read-byte (bvplus 32 ad1 ad2) stat)))
-  :hints (("Goal" :induct (dec-dec-inc-induct len ad1 ad2) ; (read-bytes len ad2 stat)
-           :expand (read-bytes len ad2 stat)
-           ;(read-induct-two-sizes len ad1 ad2 stat)
+                (integerp ad))
+           (equal (bv-array-read 8 len index (read-bytes len ad stat))
+                  (read-byte (bvplus 32 index ad) stat)))
+  :hints (("Goal" :induct (dec-dec-inc-induct len index ad) ; (read-bytes len ad stat)
+           :expand (read-bytes len ad stat)
+           ;(read-induct-two-sizes len index ad stat)
            :in-theory (enable read-bytes read-byte-of-+
                               acl2::bvplus-of-+-arg2
                               acl2::bvplus-of-+-arg3))))
 
 ;;  ; todo: different from the version for x86
 ;; (defthm bv-array-read-of-read-bytes
-;;   (implies (and (natp ad1)
+;;   (implies (and (natp index)
 ;;                 (natp len)
-;;                 (integerp ad2))
-;;            (equal (bv-array-read 8 len ad1 (read-bytes len ad2 stat))
-;;                   (if (< ad1 len)
-;;                       (read-byte (bvplus 32 ad1 ad2) stat)
+;;                 (integerp ad))
+;;            (equal (bv-array-read 8 len index (read-bytes len ad stat))
+;;                   (if (< index len)
+;;                       (read-byte (bvplus 32 index ad) stat)
 ;;                     0)))
 ;;   :hints (("Goal" :use (:instance bv-array-read-of-read-bytes-helper)
 ;;            :in-theory (disable bv-array-read-of-read-bytes-helper))))
@@ -493,7 +495,7 @@
 (defund read (n addr stat)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (if (zp n)
       0
     (let ((addr (mbe :logic (ifix addr) :exec addr)) ; treats non-integer address as 0
@@ -886,7 +888,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 (defthm read-when-equal-of-read-bytes-and-subregion32p-alt
@@ -971,7 +972,6 @@
                             in-region32p-when-in-region32p-and-subregion32p
                             ;acl2::bound-lemma-for-adder
                             acl2::<-of-*-same-linear-special
-                            acl2::bv-array-read-chunk-little-unroll ; looped
                             )))))
 
 ;; flips the equality in hyp 1
@@ -1017,7 +1017,7 @@
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p (* 8 n) val)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (if (zp n)
       stat
     (let ((stat (write-byte addr (bvchop 8 val) stat)))
@@ -1088,9 +1088,9 @@
          (error32p stat))
   :hints (("Goal" :in-theory (enable write))))
 
-(defthm stat32ip-of-write
-  (implies (stat32ip stat)
-           (stat32ip (write n addr byte stat)))
+(defthm stat32p-of-write
+  (implies (stat32p stat)
+           (stat32p (write n addr byte stat)))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthmd write32-mem-ubyte32-lendian-becomes-write
@@ -1531,7 +1531,7 @@
                               (natp num-elems)
                               (natp index) ; usb32?
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat)
+                              (stat32p stat)
                               (bv-arrayp (* 8 bytes-per-element) num-elems array))
                   :measure (+ 1 (nfix (- num-elems index)))))
   (if (or (not (mbt (and (natp num-elems)
@@ -1548,7 +1548,7 @@
   (declare (xargs :guard (and (natp bytes-per-element)
                               (natp len)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (let ((array (array-of-zeros (* 8 bytes-per-element) len)))
     (read-array-aux bytes-per-element len 0 addr stat array)))
 
@@ -1559,7 +1559,7 @@
 (defund clear (n addr stat)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p 32 addr)
-                              (stat32ip stat))))
+                              (stat32p stat))))
   (write n addr 0 stat))
 
 ;drop hyps?

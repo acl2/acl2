@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -1770,7 +1770,7 @@
                  establish the constraint generated~/, provided we can ~
                  establish the ~n3 constraints generated~]"
                 seeds
-                (list "" "~s*" "~s* and " "~s*, " techs)
+                (list "" "~@*" "~@* and " "~@*, " techs)
                 (zero-one-or-more k)
                 k))
           (t
@@ -1781,7 +1781,7 @@
                  generated~/, provided we can establish the ~n5 constraints ~
                  generated~]"
                 seeds
-                (list "" "~s*" "~s* and " "~s*, " techs)
+                (list "" "~@*" "~@* and " "~@*, " techs)
 
 ; Recall that an event-name of 0 is really an indication that the event in
 ; question didn't actually have a name.  See install-event.

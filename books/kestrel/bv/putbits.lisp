@@ -1,7 +1,7 @@
 ; BV Library: putbits, putbit, and putbyte
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,8 @@
 (include-book "bvcat")
 (local (include-book "../library-wrappers/arithmetic-inequalities"))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "slice"))
+(local (include-book "getbit"))
 
 ;; Set bits HIGH down to LOW to VAL in BV, returning a value of width WIDTH.
 (defun putbits (width high low val bv)

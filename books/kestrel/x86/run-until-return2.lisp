@@ -22,6 +22,7 @@
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
 (include-book "readers-and-writers64") ; todo: make a separate version for 32-bit that uses eip
+(include-book "kestrel/lists-light/memberp" :dir :system)
 
 (defpun run-until-rsp-is (rsp x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
@@ -66,21 +67,21 @@
 (defpun run-until-rsp-is-or-reach-pc (rsp stop-pcs x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
   (if (or (equal rsp (xr :rgf *rsp* x86))
-          (member-equal (rip x86) stop-pcs))
+          (memberp (rip x86) stop-pcs))
       x86
     (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86))))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-or-reach-pc-base
   (implies (or (equal rsp (xr :rgf *rsp* x86))
-               (member-equal (rip x86) stop-pcs))
+               (memberp (rip x86) stop-pcs))
            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
                   x86)))
 
 ;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-rsp-is-or-reach-pc-opener
   (implies (and (not (equal rsp (xr :rgf *rsp* x86)))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
                   (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86)))))
 

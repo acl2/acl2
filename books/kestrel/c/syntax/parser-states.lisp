@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,11 +21,7 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/update-nth" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,14 +43,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>token</i> in the grammar in [C17:A.1.1] [C17:6.4].")
+    "This corresponds to the rule for tokens in the ABNF grammar.
+     By the time we run the parser,
+     preprocessing tokens (see the rule for them in the ABNF grammar)
+     have been turned into tokens.")
    (xdoc::p
-    "This is used by the parser.
-     It is not part of the abstract syntax in @(see abstract-syntax),
-     even though the ABNF grammar has a rule for @('token').
+    "This notion of token is used by the parser.
+     It is not part of the ASTs defined in @(see abstract-syntax-trees),
+     even though the ABNF grammar has rules
+     for @('token') and @('preprocessing-token').
      Our parser is structured in two levels, which is common:
-     (i) lexing/tokenization; and (ii) parsing proper.
-     Thus, it is useful to have an abstract-syntax-like type for tokens,
+     (i) lexing/tokenization; and (ii) parsing proper
+     (currently preprocessing precedes lexing/tokenization,
+     but in the future we may integrate them).
+     Thus, it is useful to have an AST-like type for tokens,
      which is what this fixtype is.")
    (xdoc::p
     "We represent a C keyword or punctuator as an ACL2 string,
@@ -64,18 +66,19 @@
      for keywords and punctuators instead,
      and use them here instead of strings.")
    (xdoc::p
-    "We use the identifiers, constants, and string literals
+    "We use the identifiers, constants, string literals, and header names
      from the abstract syntax
      to represent the corresponding tokens.
      However, note that the parser never generates enumeration constants,
      which overlap with identifiers,
      but need type checking to be distinguished from identifiers;
      the parser always classifies those as identifiers."))
-  (:keyword ((unwrap string)))
-  (:ident ((unwrap ident)))
-  (:const ((unwrap const)))
-  (:string ((unwrap stringlit)))
-  (:punctuator ((unwrap stringp)))
+  (:keyword ((keyword string)))
+  (:ident ((ident ident)))
+  (:const ((const const)))
+  (:string ((literal stringlit)))
+  (:punctuator ((punctuator stringp)))
+  (:header ((name header-name)))
   :pred tokenp
   :layout :fulltree)
 
@@ -122,10 +125,14 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :keyword)
-       (equal (the string (token-keyword->unwrap token))
+       (equal (the string (token-keyword->keyword token))
               (the string keyword)))
+  :hooks nil
 
   ///
+
+  (fty::deffixequiv token-keywordp
+    :args ((token token-optionp)))
 
   (defrule non-nil-when-token-keywordp
     (implies (token-keywordp token keyword)
@@ -144,10 +151,14 @@
      since we normally call this function on an optional token."))
   (and token
        (token-case token :punctuator)
-       (equal (the string (token-punctuator->unwrap token))
+       (equal (the string (token-punctuator->punctuator token))
               (the string punctuator)))
+  :hooks nil
 
   ///
+
+  (fty::deffixequiv token-punctuatorp
+    :args ((token token-optionp)))
 
   (defrule non-nil-when-token-punctuatorp
     (implies (token-punctuatorp token punctuator)
@@ -194,8 +205,7 @@
    (xdoc::p
     "This is at line 1 and column 0."))
   (make-position :line 1 :column 0)
-  :inline t
-  :no-function t)
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +219,12 @@
   (change-position pos :column (+ (the unsigned-byte (position->column pos))
                                   (the unsigned-byte columns)))
   :inline t
-  :no-function t)
+  :hooks nil
+
+  ///
+
+  (fty::deffixequiv position-inc-column
+    :args ((pos positionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,7 +239,12 @@
                           (the (integer 1 *) lines))
                  :column 0)
   :inline t
-  :no-function t)
+  :hooks nil
+
+  ///
+
+  (fty::deffixequiv position-inc-line
+    :args ((pos positionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,6 +308,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption span-option
+  span
+  :short "Fixtype of optional spans."
+  :pred span-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define span-join ((span1 spanp) (span2 spanp))
   :returns (span spanp)
   :short "Join two spans."
@@ -342,7 +369,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our parsing functions take and return parser states.")
+    "Our (lexing and) parsing functions take and return parser states.")
    (xdoc::p
     "The parser state is a stobj, which we turn into a fixtype
      by adding a fixer along with readers and writers
@@ -507,6 +534,21 @@
      but that transformation currently does not quite handle
      all of the parser's functions.")
    (xdoc::p
+    "The @('skip-control-lines') says whether control lines,
+     i.e. a subset of the preprocessing directives [C17:6.10],
+     should be skipped by the lexer like comments and white space.
+     As described in the documentation accompanying
+     the ABNF grammar rule for lexemes,
+     when using an external preprocessor,
+     certain (harmless) directives may survive preprocessing;
+     when the @('skip-control-lines') flag in this stobj is @('t'),
+     our lexer skips (i.e. ignores) such directives.
+     The flag must be set to @('nil') when instead we use our preprocessor,
+     which purposely preserves some directives
+     so that our (lexer and) parser can recognize them
+     and turn into ASTs;
+     our lexer does not skip control lines if this flag is @('nil').")
+   (xdoc::p
     "The definition of the stobj itself is straightforward,
      but we use a @(tsee make-event) so we can use
      richer terms for initial values.
@@ -596,6 +638,8 @@
                :initially ,(c::version-c23))
       (size :type (integer 0 *)
             :initially 0)
+      (skip-control-lines :type (satisfies booleanp)
+                          :initially nil)
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
@@ -607,6 +651,7 @@
                  (tokens-unreadp raw-parstate->tokens-unread-p)
                  (versionp raw-parstate->version-p)
                  (sizep raw-parstate->size-p)
+                 (skip-control-linesp raw-parstate->skip-control-lines-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
@@ -620,6 +665,7 @@
                  (tokens-unread raw-parstate->tokens-unread)
                  (version raw-parstate->version)
                  (size raw-parstate->size)
+                 (skip-control-lines raw-parstate->skip-control-lines)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
@@ -632,7 +678,9 @@
                  (update-tokens-read raw-update-parstate->tokens-read)
                  (update-tokens-unread raw-update-parstate->tokens-unread)
                  (update-version raw-update-parstate->version)
-                 (update-size raw-update-parstate->size))
+                 (update-size raw-update-parstate->size)
+                 (update-skip-control-lines
+                  raw-update-parstate->skip-control-lines))
       :inline t))
 
   ;; fixer:
@@ -641,10 +689,9 @@
     :returns (parstate parstatep)
     (mbe :logic (if (parstatep parstate)
                     parstate
-                  (create-parstate))
+                  (non-exec (create-parstate)))
          :exec parstate)
     :inline t
-    :no-function t
     ///
     (defrule parstate-fix-when-parstatep
       (implies (parstatep parstate)
@@ -689,8 +736,6 @@
                   nil)
          :exec (raw-parstate->bytes parstate))
     :inline t
-    :no-function t
-    :hooks (:fix)
     ///
     (more-returns
      (bytes true-listp :rule-classes :type-prescription)))
@@ -702,7 +747,7 @@
                   (irr-position))
          :exec (raw-parstate->position parstate))
     :inline t
-    :no-function t)
+    :hooks nil)
 
   (define parstate->chars-length (parstate)
     :returns (length natp)
@@ -710,9 +755,7 @@
                     (raw-parstate->chars-length parstate)
                   1)
          :exec (raw-parstate->chars-length parstate))
-    :inline t
-    :no-function t
-    :hooks (:fix))
+    :inline t)
 
   (define parstate->char ((i natp) parstate)
     :guard (< i (parstate->chars-length parstate))
@@ -725,9 +768,9 @@
                   (make-char+position :char 0
                                       :position (irr-position)))
          :exec (raw-parstate->char i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable nfix parstate->chars-length))))
+    :hooks nil)
 
   (define parstate->chars-read (parstate)
     :returns (chars-read natp :rule-classes (:rewrite :type-prescription))
@@ -736,8 +779,7 @@
                   0)
          :exec (raw-parstate->chars-read parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->chars-unread (parstate)
     :returns (chars-unread natp :rule-classes (:rewrite :type-prescription))
@@ -746,8 +788,7 @@
                   0)
          :exec (raw-parstate->chars-unread parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->tokens-length (parstate)
     :returns (length natp)
@@ -756,8 +797,7 @@
                   1)
          :exec (raw-parstate->tokens-length parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->token ((i natp) parstate)
     :guard (< i (parstate->tokens-length parstate))
@@ -770,9 +810,9 @@
                   (make-token+span :token (irr-token)
                                    :span (irr-position)))
          :exec (raw-parstate->token i parstate))
+    :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable nfix parstate->tokens-length))))
+    :hooks nil)
 
   (define parstate->tokens-read (parstate)
     :returns (tokens-read natp :rule-classes (:rewrite :type-prescription))
@@ -781,8 +821,7 @@
                   0)
          :exec (raw-parstate->tokens-read parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->tokens-unread (parstate)
     :returns (tokens-unread natp :rule-classes (:rewrite :type-prescription))
@@ -791,8 +830,7 @@
                   0)
          :exec (raw-parstate->tokens-unread parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->version (parstate)
     :returns (version c::versionp)
@@ -801,8 +839,7 @@
                   (c::version-c23))
          :exec (raw-parstate->version parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define parstate->size (parstate)
     :returns (size natp :rule-classes (:rewrite :type-prescription))
@@ -811,8 +848,16 @@
                   0)
          :exec (raw-parstate->size parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
+
+  (define parstate->skip-control-lines (parstate)
+    :returns (skip-control-lines booleanp)
+    (mbe :logic (if (parstatep parstate)
+                    (raw-parstate->skip-control-lines parstate)
+                  nil)
+         :exec (raw-parstate->skip-control-lines parstate))
+    :inline t
+    :hooks nil)
 
   ;; writers:
 
@@ -821,16 +866,14 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->bytes (byte-list-fix bytes) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->position ((position positionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->position (position-fix position) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->chars-length ((length natp) parstate)
     :returns (parstate parstatep
@@ -844,8 +887,7 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-length (nfix length) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->char ((i natp)
                                  (char+pos char+position-p)
@@ -865,25 +907,23 @@
                                                  parstate)
                     parstate)
            :exec (raw-update-parstate->char i char+pos parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable parstate->chars-length nfix))))
+    :hooks nil)
 
   (define update-parstate->chars-read ((chars-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-read (nfix chars-read) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->chars-unread ((chars-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->chars-unread (nfix chars-unread) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->tokens-length ((length natp) parstate)
     :returns (parstate parstatep
@@ -896,8 +936,7 @@
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-length (nfix length) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->token ((i natp)
                                   (token+span token+span-p)
@@ -917,41 +956,46 @@
                                                   parstate)
                     parstate)
            :exec (raw-update-parstate->token i token+span parstate)))
+    :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix)))
     :inline t
-    :no-function t
-    :guard-hints (("Goal" :in-theory (enable parstate->tokens-length nfix))))
+    :hooks nil)
 
   (define update-parstate->tokens-read ((tokens-read natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-read (nfix tokens-read) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->tokens-unread ((tokens-unread natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->tokens-unread (nfix tokens-unread) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->version ((version c::versionp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->version (c::version-fix version) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
 
   (define update-parstate->size ((size natp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
       (raw-update-parstate->size (lnfix size) parstate))
     :inline t
-    :no-function t
-    :hooks (:fix))
+    :hooks nil)
+
+  (define update-parstate->skip-control-lines ((skip-control-lines booleanp)
+                                               parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-update-parstate->skip-control-lines (bool-fix skip-control-lines)
+                                               parstate))
+    :inline t
+    :hooks nil)
 
   ;; readers over writers:
 
@@ -1022,6 +1066,17 @@
              parstate-fix
              length))
 
+  (defrule parstate->size-of-update-parstate->skip-control-lines
+    (equal (parstate->size
+            (update-parstate->skip-control-lines skip-control-lines parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             update-parstate->skip-control-lines
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
   ;; writers over readers:
 
   (defrule update-parstate->chars-read-of-parstate->chars-read
@@ -1054,15 +1109,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parstate->gcc ((parstate parstatep))
-  :returns (gcc booleanp)
-  :short "Flag saying whether GCC extensions are supported or not."
-  (c::version-gccp (parstate->version parstate))
-  :hooks (:fix))
+(define parstate->gcc/clang ((parstate parstatep))
+  :returns (gcc/clang booleanp)
+  :short "Flag saying whether GCC/Clang extensions are supported or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently, we have no need to distinguish
+     between GCC and Clang extensions during parsing,
+     beyond getting the appropriate keywords."))
+  (c::version-gcc/clangp (parstate->version parstate))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-parstate ((data byte-listp) (version c::versionp) parstate)
+(define init-parstate ((data byte-listp)
+                       (version c::versionp)
+                       (skip-control-lines booleanp)
+                       parstate)
   :returns (parstate parstatep)
   :short "Initialize the parser state."
   :long
@@ -1070,7 +1134,8 @@
    (xdoc::p
     "This is the state when we start parsing a file.
      Given (the data of) a file to parse,
-     and a C version,
+     a C version,
+     and a flag for skipping control lines or not,
      the initial parsing state consists of
      the data to parse,
      no read characters or tokens,
@@ -1093,9 +1158,11 @@
        (parstate (update-parstate->tokens-read 0 parstate))
        (parstate (update-parstate->tokens-unread 0 parstate))
        (parstate (update-parstate->version version parstate))
-       (parstate (update-parstate->size (len data) parstate)))
+       (parstate (update-parstate->size (len data) parstate))
+       (parstate
+        (update-parstate->skip-control-lines skip-control-lines parstate)))
     parstate)
-  :hooks (:fix))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1110,13 +1177,12 @@
      @(tsee parstate) was defined via @(tsee fty::defprod)."))
   (parstate->size parstate)
   :inline t
-  :no-function t
-  :hooks (:fix)
+  :hooks nil
 
   ///
 
   (defrule parsize-of-initparstate
-    (equal (parsize (init-parstate nil version parstate))
+    (equal (parsize (init-parstate nil version skip-control-lines parstate))
            0)
     :enable init-parstate))
 
@@ -1132,7 +1198,8 @@
    (chars-unread char+position-list)
    (tokens-read token+span-list)
    (tokens-unread token+span-list)
-   (version c::version))
+   (version c::version)
+   (skip-control-lines booleanp))
   :layout :fulltree)
 
 ; Convert PARSTATE stobj to fixtype value (useful for debugging and testing).
@@ -1150,7 +1217,9 @@
                                           parstate)
    :tokens-unread (to-parstate$-tokens-unread (parstate->tokens-unread parstate)
                                               parstate)
-   :version (parstate->version parstate))
+   :version (parstate->version parstate)
+   :skip-control-lines (parstate->skip-control-lines parstate))
+  :hooks nil
 
   :prepwork
 
@@ -1162,7 +1231,9 @@
            (raise "Internal error: chars-read index ~x0 out of bound ~x1."
                   i (parstate->chars-length parstate))))
        (cons (parstate->char i parstate)
-             (to-parstate$-chars-read (1- n) parstate))))
+             (to-parstate$-chars-read (1- n) parstate)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-chars-unread ((n natp) parstate)
      :returns (chars char+position-listp)
@@ -1178,7 +1249,9 @@
                   i (parstate->chars-length parstate))))
        (cons (parstate->char i parstate)
              (to-parstate$-chars-unread (1- n) parstate)))
-     :guard-hints (("Goal" :in-theory (enable natp zp))))
+     :guard-hints (("Goal" :in-theory (enable natp zp)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-tokens-read ((n natp) parstate)
      :returns (tokens token+span-listp)
@@ -1188,7 +1261,9 @@
            (raise "Internal error: tokens-read index ~x0 out of bound ~x1."
                   i (parstate->tokens-length parstate))))
        (cons (parstate->token i parstate)
-             (to-parstate$-tokens-read (1- n) parstate))))
+             (to-parstate$-tokens-read (1- n) parstate)))
+     :no-function nil
+     :hooks nil)
 
    (define to-parstate$-tokens-unread ((n natp) parstate)
      :returns (tokens token+span-listp)
@@ -1204,4 +1279,6 @@
                   i (parstate->tokens-length parstate))))
        (cons (parstate->token i parstate)
              (to-parstate$-tokens-unread (1- n) parstate)))
-     :guard-hints (("Goal" :in-theory (enable natp zp))))))
+     :guard-hints (("Goal" :in-theory (enable natp zp)))
+     :no-function nil
+     :hooks nil)))

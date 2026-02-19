@@ -29,6 +29,7 @@
 (include-book "choose-rules")
 ;(include-book "rules-in-rule-lists")
 ;; The rest of these include-books are to bring in everything included in def-simplified-rules below:
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "rules1") ; for BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-SAME
 (include-book "basic-rules") ;for equal-same
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
@@ -52,6 +53,8 @@
 (include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
+(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
@@ -129,14 +132,14 @@
                               (consp whole-form)
                               (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
+        (mv nil '(value-triple :redundant) state))
        ;; Choose which set of rules to use:
        (rule-list (choose-rules rules ;rule-lists
                                 extra-rules remove-rules (def-simplified-rules)))
        ((mv erp rule-alist)
         (make-rule-alist rule-list (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp dag)
+       ((mv erp dag &)
         (simplify-term-basic term
                              assumptions
                              rule-alist
@@ -164,9 +167,8 @@
         ;; constant, as usual:
         ;; TODO: Should the wrapper do this?
         `(progn (defconst ,defconst-name ',dag)
-                (table def-simplified-table ',whole-form ':fake)
-                (value-triple ',defconst-name) ;todo: use cw-event and then return :invisible here?
-                )
+                ,(redundancy-table-event whole-form ':fake)
+                (value-triple ',defconst-name))
         state)))
 
 ;; Returns an error triple, (mv erp event state).

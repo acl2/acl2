@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -1201,6 +1201,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (verify-termination-boot-strap formals) ; and guards
+(verify-termination-boot-strap constraint-lst-etc-p) ; and guards
+(verify-termination-boot-strap make-origin) ; and guards
 (verify-termination-boot-strap constraint-info) ; and guards
 (verify-termination-boot-strap unknown-constraints-p) ; and guards
 
@@ -1222,8 +1224,9 @@
   (let ((wrld (w state)))
     (or (getpropc name 'theorem nil wrld)
         (cond ((logicp name wrld)
-               (mv-let (flg prop)
+               (mv-let (flg prop origins)
                  (constraint-info name wrld)
+                 (declare (ignore origins)) ; Ignoring origins.
                  (cond ((unknown-constraints-p prop)
                         *t*)
                        (flg (ec-call (conjoin prop)))

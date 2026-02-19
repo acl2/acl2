@@ -13,13 +13,14 @@
 
 (include-book "sbvlt-def")
 (include-book "bvchop")
-(include-book "getbit")
+(include-book "getbit-def")
 (local (include-book "logext")) ;todo: include less?
 (include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "signed-byte-p"))
+(local (include-book "getbit"))
 
 (defthm not-sbvlt-same
   (not (sbvlt size x x))

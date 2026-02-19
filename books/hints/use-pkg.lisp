@@ -99,7 +99,10 @@
                               (plist-worldp wrld))))
   (or (getpropc name 'theorem nil wrld)
       (mv-let (flg prop)
-        (constraint-info name wrld)
+        ; Old Code:
+        ; (constraint-info name wrld)
+        ; New Code:
+        (pre-v8-7-constraint-info name wrld)
         (cond ((unknown-constraints-p prop)
                *t*)
               (flg (ec-call (conjoin prop)))

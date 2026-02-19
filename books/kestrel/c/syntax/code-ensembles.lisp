@@ -16,7 +16,6 @@
 
 (include-book "std/util/defirrelevant" :dir :system)
 
-(include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,4 +49,4 @@
   :type code-ensemblep
   :body (make-code-ensemble
          :transunits (irr-transunit-ensemble)
-         :ienv (ienv-default)))
+         :ienv (irr-ienv)))

@@ -30,7 +30,7 @@
 
 ;; This parser does not check that its input is valid UTF-8.  So characters,
 ;; and sequences of characters, that are not allowed in UTF-8 (such as any
-;; occurence of the character whose code is 255) are just passed through.
+;; occurrence of the character whose code is 255) are just passed through.
 
 ;; TODO: If whitespace is optional, what if it occurs between digits?
 
@@ -76,7 +76,7 @@
   :hints (("Goal" :in-theory (enable skip-json-whitespace))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the true literal
-;; true as the symbol :TRUE.
+;; as the symbol :TRUE.
 (defund parse-json-true-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\t #\r #\u #\e) chars) ; todo: consider a variant of prefixp that uses eql as the test
@@ -96,7 +96,7 @@
   :hints (("Goal" :in-theory (enable parse-json-true-literal))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the false literal
-;; true as the symbol :FALSE.
+;; as the symbol :FALSE.
 (defund parse-json-false-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\f #\a #\l #\s #\e) chars)
@@ -116,7 +116,7 @@
   :hints (("Goal" :in-theory (enable parse-json-false-literal))))
 
 ;; Returns (mv erp parsed-token remaining-chars).  We parse the null literal
-;; true as the symbol :NULL.
+;; as the symbol :NULL.
 (defund parse-json-null-literal (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (prefixp '(#\n #\u #\l #\l) chars)
@@ -1022,7 +1022,7 @@
 ;;; parse-json
 ;;;
 
-;; Returns (mv erp parsed-value), where ERP is nil iff no error occured and
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occurred and
 ;; PARSED-VALUE is a parsed-json-valuep.
 (defund parse-json (chars)
   (declare (xargs :guard (character-listp chars)))
@@ -1046,7 +1046,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp parsed-value), where ERP is nil iff no error occured.
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occurred.
 (defund parse-string-as-json (string)
   (declare (xargs :guard (stringp string)))
   (parse-json (coerce string 'list)))

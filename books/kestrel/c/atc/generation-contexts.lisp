@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,20 +12,18 @@
 (in-package "C")
 
 (include-book "test-star")
-
-(include-book "std/util/defirrelevant" :dir :system)
+(include-book "limits")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "std/system/formals-plus" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +40,7 @@
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
      We call these tests and bindings `premises',
      which is not ideal terminology because
-     it is essentially synonmous of `hypotheses',
+     it is essentially synonymous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
      we may find a better nomenclature in the future.")
@@ -98,8 +96,7 @@
   (:cvalues ((vars symbol-list)
              (term any)))
   (:test ((term any)))
-  :pred atc-premisep
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred atc-premisep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,8 +105,7 @@
   :elt-type atc-premise
   :true-listp t
   :elementp-of-nil nil
-  :pred atc-premise-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred atc-premise-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,9 +155,9 @@
                            (fn-guard? symbolp)
                            (compst-var? symbolp)
                            (limit-var? symbolp)
-                           (limit-bound? pseudo-termp)
+                           (limit-bound? limit-term-optionp)
                            (preamblep booleanp)
-                           (wrld plist-worldp))
+                           state)
   :returns (formula1 "An untranslated term.")
   :short "Put a formula into a context."
   :long
@@ -185,7 +181,7 @@
      "The fact that the limit variable is an integer.")
     (xdoc::li
      "The fact that the limit variable is greater than or equal to
-      a given bound (expressed as a term)."))
+      a given bound (expressed as a limit term)."))
    (xdoc::p
     "If @('preamblep') is @('nil'), we omit the preamble from the context.
      This is used to generate some claims within the ACL2 proof builder.")
@@ -206,7 +202,15 @@
      Some of the theorems we generate (e.g. for pure expressions)
      do not involve execution recursion limits.
      In this case, @('limit-bound?') must be @('nil') too."))
-  (b* ((skip-cs (not compst-var?))
+  (b* (((unless (iff fn? fn-guard?))
+        (raise "Internal error: ~
+                ~x0 and ~x1 are not either both NIL or both non-NIL."
+               fn? fn-guard?))
+       ((unless (iff limit-var? limit-bound?))
+        (raise "Internal error: ~
+                ~x0 and ~x1 are not either both NIL or both non-NIL."
+               limit-var? limit-bound?))
+       (skip-cs (not compst-var?))
        (formula (atc-contextualize-aux formula
                                        (atc-context->premises context)
                                        skip-cs))
@@ -215,18 +219,15 @@
                      (and preamblep
                           (atc-context->preamble context))
                      (and fn-guard?
-                          `((,fn-guard? ,@(formals+ fn? wrld))))
+                          `((,fn-guard? ,@(formals+ fn? (w state)))))
                      (and limit-var?
                           `((integerp ,limit-var?)
-                            (>= ,limit-var? ,limit-bound?)))))
-       ((when (and (not fn-guard?) fn?))
-        (raise "Internal error: FN-GUARD? is NIL but FN? is ~x0."
-               fn?))
-       ((when (and (not limit-var?) limit-bound?))
-        (raise "Internal error: LIMIT-VAR? is NIL but LIMIT-BOUND? is ~x0."
-               limit-bound?))
+                            (>= ,limit-var?
+                                ,(limit-term-to-term limit-bound? state))))))
        (formula `(implies (and ,@hyps) ,formula)))
     formula)
+  :no-function nil
+  :hooks nil
 
   :prepwork
   ((define atc-contextualize-aux ((formula "An untranslated term.")
@@ -301,6 +302,8 @@
                premises-start premises-end))
        (premises-diff (nthcdr (len premises-start) premises-end)))
     (atc-contextualize-compustate-aux compst-var premises-diff))
+  :no-function nil
+  :hooks nil
 
   :prepwork
   ((define atc-contextualize-compustate-aux ((compst-var symbolp)
@@ -321,4 +324,5 @@
                     ,(atc-contextualize-compustate-aux compst-var
                                                        (cdr premises)))
         :test (atc-contextualize-compustate-aux compst-var
-                                                (cdr premises)))))))
+                                                (cdr premises))))
+     :hooks nil)))

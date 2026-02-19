@@ -1,6 +1,6 @@
 ; Pruning irrelevant IF-branches in a DAG
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -110,43 +110,6 @@
 ;; numbering.  The calls to ID can be removed by a subsequent call of the
 ;; rewriter.  TODO: Do better?
 (defun id (x) x)
-
-;move
-(defund prune-dag-post-rewrite-rules ()
-  (declare (xargs :guard t))
-  (append
-  '(id
-    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
-    bool-fix-of-bool-fix
-    boolif-of-bool-fix-arg1
-    boolif-of-bool-fix-arg2
-    boolif-of-bool-fix-arg3
-    if-of-bool-fix-arg1
-    myif-of-bool-fix-arg1
-    bvif-of-bool-fix
-    not-of-bool-fix
-    boolor-of-bool-fix-arg1
-    boolor-of-bool-fix-arg2
-    booland-of-bool-fix-arg1
-    booland-of-bool-fix-arg2
-    booleanp-of-bool-fix-rewrite
-    if-same-branches
-    if-when-non-nil-constant
-    if-of-nil
-    ;; if-of-not ; maybe
-    if-of-t-and-nil-when-booleanp ; or bool-fix it
-    myif-same-branches
-    myif-of-nil
-    myif-of-constant-when-not-nil
-    myif-nil-t
-    myif-of-t-and-nil-when-booleanp
-    ;; todo: more rules?  try the bv-function-of-bvchop-rules?
-    bvchop-identity-axe
-    )
-  (unsigned-byte-p-forced-rules)
-  ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
-  ;; (bv-function-of-bvchop-rules) ;; hmmm, maybe we should pass in these rules?
-  ))
 
 (ensure-rules-known (prune-dag-post-rewrite-rules))
 
@@ -490,20 +453,21 @@
        ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules) ; todo: don't do this over and over!
                                              (w state)))
        ((when erp) (mv erp nil state))
-       ((mv erp result-dag-or-quotep &) (simplify-dag-basic dag
-                                                          nil ; assumptions
-                                                          rule-alist
-                                                          nil ; interpreted-function-alist
-                                                          (known-booleans (w state))
-                                                          nil ; normalize-xors
-                                                          nil ; limits
-                                                          nil ; memoize
-                                                          nil ; count-hits
-                                                          nil ; print
-                                                          nil ; monitored-symbols
-                                                          no-warn-ground-functions
-                                                          nil ; fns-to-elide
-                                                          ))
+       ((mv erp result-dag-or-quotep & &) ; use the hits?
+        (simplify-dag-basic dag
+                            nil ; assumptions
+                            rule-alist
+                            nil ; interpreted-function-alist
+                            (known-booleans (w state))
+                            nil                               ; normalize-xors
+                            nil                               ; limits
+                            nil                               ; memoize
+                            nil                               ; count-hits
+                            nil                               ; print
+                            nil ; monitored-symbols
+                            no-warn-ground-functions
+                            nil ; fns-to-elide
+                            ))
        ((when erp) (mv erp nil state))
        ((mv elapsed state) (real-time-since start-real-time state))
        (- (cw " (Pruning took ") ; todo: print for early exits above?

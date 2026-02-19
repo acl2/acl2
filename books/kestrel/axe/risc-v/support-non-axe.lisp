@@ -13,7 +13,7 @@
 ;; This book supports lifts that use the ACL2 rewriter.  Most lifts will
 ;; instead use the Axe Rewriter and should instead include unroll.lisp.
 
-(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
 (include-book "assumptions")
@@ -46,9 +46,9 @@
                  read32-xreg-signed
                  disjoint-regions32p-of-+-arg4
                  write32-xreg-when-equal-of-read32-xreg-unsigned
-                 (:e riscv::feat-rv32im-le) ; needed for code proofs
+                 (:e riscv32im-le::feat-rv32im-le) ; needed for code proofs
                  )
-                (equal-of-stat32i)))
+                (equal-of-stat32)))
 
 ;; Introduce new normal forms:
 (in-theory (enable read32-xreg-unsigned-becomes-reg

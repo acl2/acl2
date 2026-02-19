@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -1554,20 +1555,20 @@
 
 ; gen the 48
 (defthm write-of-bvchop-48
-  (implies (integerp addr)
-           (equal (write n (bvchop 48 addr) val x86)
-                  (write n addr val x86)))
+  (equal (write n (bvchop 48 addr) val x86)
+         (write n addr val x86))
   :hints (("Goal" :use (:instance write-when-bvchops-agree
                                   (addr2 (bvchop 48 addr))
                                   (addr addr)))))
 
+;; just drop the bvchop?
 (defthm write-of-bvchop-tighten
   (implies (and (syntaxp (quotep size))
                 (< 48 size)
                 (integerp size))
            (equal (write n (bvchop size addr) val x86)
                   (write n (bvchop 48 addr) val x86)))
-  :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
+  :hints (("Goal" :in-theory (e/d (write-when-bvchops-agree) (write-of-bvchop-48)))))
 
 (defthm write-of-+-bvchop-arg2
   (implies (and (integerp k)
@@ -3442,9 +3443,7 @@
                 (bvlt 48 (bvminus 48 ad1 ad2) n2) ; the start of the read is within the write
                 (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)) ; the end of the read is within the write (see subregion48p)
                 (unsigned-byte-p 48 n2) ; allow 2^48?
-                (integerp n1)
-                (integerp ad1)
-                (integerp ad2))
+                (integerp n1))
            (equal (read n1 ad1 (write n2 ad2 val x86))
                   (slice (+ -1 (* 8 (+ n1 (bvminus 48 ad1 ad2))))
                          (* 8 (bvminus 48 ad1 ad2))

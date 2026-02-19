@@ -17,7 +17,9 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
+(local (include-book "bvuminus"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
 (local (include-book "logext"))
@@ -76,16 +78,13 @@
 
 ;drop?
 (defthm bvsx-of-bvchop
-  (implies (and ;(posp old-size)
-                (natp new-size))
-           (equal (bvsx new-size old-size (bvchop old-size x))
-                  (bvsx new-size old-size x)))
+  (equal (bvsx new-size old-size (bvchop old-size x))
+         (bvsx new-size old-size x))
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvsx-of-bvchop-gen
   (implies (and (<= old-size size)
-                (integerp size)
-                (natp new-size))
+                (integerp size))
            (equal (bvsx new-size old-size (bvchop size x))
                   (bvsx new-size old-size x)))
   :hints (("Goal" :in-theory (enable bvsx))))

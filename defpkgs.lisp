@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -209,7 +209,9 @@
         COMPRESS21 COMPRESS211 CONCATENATE
         COND COND-CLAUSESP COND-MACRO
         CONJUGATE CONS CONS-EQUAL CONS-WITH-HINT CONSP
-        CONSP-ASSOC-EQUAL CONSTRAINT-INFO COROLLARY
+        CONSP-ASSOC-EQUAL CONSTRAINT-INFO
+        CONSTRAINT-TRACKING
+        COROLLARY
         COUNT-KEYS CPU-CORE-COUNT
         CTX CTXP
         CURRENT-PACKAGE CURRENT-THEORY
@@ -305,7 +307,8 @@
         FMX FMX!-CW FMX-CW
         FN-EQUAL
         FNCALL-TERM FORALL FORCE FORMULA FOURTH FUNCTION-SYMBOLP
-        FUNCTION-THEORY GAG-MODE GC$
+        FUNCTION-THEORY
+        GAG-MODE GC$
         GC-STRATEGY GC-VERBOSE GCS GENERALIZE
         GET-CHECK-INVARIANT-RISK GET-COMMAND-SEQUENCE GET-CPU-TIME
         GET-DEFUN-EVENT GET-DWP GET-ENFORCE-REDUNDANCY
@@ -539,7 +542,9 @@
         SET-CHECK-INVARIANT-RISK
         SET-CHECKPOINT-SUMMARY-LIMIT
         SET-COMPILE-FNS
-        SET-COMPILER-ENABLED SET-DEBUGGER-ENABLE
+        SET-COMPILER-ENABLED
+        SET-CONSTRAINT-TRACKING
+        SET-DEBUGGER-ENABLE
         SET-DEFAULT-BACKCHAIN-LIMIT
         SET-DEFAULT-HINTS SET-DEFAULT-HINTS!
         SET-DEFERRED-TTAG-NOTES

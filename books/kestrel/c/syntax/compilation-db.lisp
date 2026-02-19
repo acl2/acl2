@@ -31,15 +31,8 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "system/extend-pathname" :dir :system)
 
-(include-book "external-preprocessing")
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
-
-(local (in-theory (enable acons)))
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration :hooks nil)
 
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
@@ -47,8 +40,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::make-define-config
-  :no-function t)
+(local (in-theory (e/d (acons)
+                       ;; This slows down a couple of proofs with excessive
+                       ;; case splitting.
+                       (acl2::member-of-cons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,9 +181,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *cc-options-space-sep*
-  :short "C flags whose value follows after a whitespace separator."
+  :short "C flags whose value follows after a white-space separator."
   '("-o" "-include" "-idirafter" "-imacros" "-imultilib" "-iprefix" "-iquote"
-    "-isysroot" "-isystem" "-iwithprefix" "-iwithprefixbefore"))
+    "-isysroot" "-isystem" "-iwithprefix" "-iwithprefixbefore"
+    ;; NOTE: `-I` is accepted as both space-separated and a conventional short
+    ;;  argument. I.e., both `-I <dir>` and `-I<dir` are accepted.
+    "-I"))
 
 (defval *cc-options-equal-sep*
   :short "C flags whose value follows after an @('=') character."
@@ -676,6 +674,49 @@
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: support paths which are not contained within base
+;; (i.e., allow ".." to backtrack higher up the base path as necessary).
+(define relativize-path
+  ((path stringp)
+   (base stringp))
+  :returns (mv (erp booleanp)
+               (relative-path stringp))
+  (b* (((reterr) "")
+       (path (mbe :logic (acl2::str-fix path) :exec path))
+       (base (mbe :logic (acl2::str-fix base) :exec base))
+       ((unless (str::strprefixp base path))
+        (reterr t)))
+    (retok (subseq (the string path)
+                   (length (the string base))
+                   nil)))
+  :guard-hints (("Goal" :in-theory (enable length)))
+  :hooks (:fix))
+
+(define comp-db-relativize-keys
+  ((db comp-dbp)
+   (path stringp))
+  :returns (mv (er? maybe-msgp)
+               (db$ comp-dbp))
+  (b* ((db (comp-db-fix db))
+       ((reterr) db)
+       (path (mbe :logic (acl2::str-fix path) :exec path))
+       ((when (endp db))
+        (retok nil))
+       (file (car (first db)))
+       (entry (cdr (first db)))
+       ((erp file$)
+        (relativize-path file path)
+        :iferr (msg$ "Cannot make file path ~x0 relative to base path ~x1."
+                     file
+                     path))
+       ((erp rest-db)
+        (comp-db-relativize-keys (rest db) path)))
+    (retok (cons (cons file$ entry) rest-db)))
+  :measure (acl2-count (comp-db-fix db))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string-escape-for-shell
@@ -745,20 +786,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: take path and normalize key set
 (define to-preprocess-db
   ((db comp-dbp)
+   (path stringp)
    (drop-shared booleanp)
    state)
-  :returns (db$ comp-dbp)
+  :returns (mv (er? maybe-msgp)
+               (db$ comp-dbp))
   :short "Transform a @(see compilation-database) to prepare for use in
           preprocessing."
-  (b* ((db (comp-db-drop-non-c db))
+  (b* (((reterr) (comp-db-fix db))
+       (path (mbe :logic (acl2::str-fix path) :exec path))
+       (path$ (canonical-pathname path t state))
+       ((unless path$)
+        (retmsg$ "The specified path does not exist or is not a directory: ~x0"
+                 path))
+       (db (comp-db-drop-non-c db))
        (db (if drop-shared (comp-db-drop-shared db) db))
        (db (comp-db-keep-only-preprocessor-args db))
        (db (comp-db-absolute-dirs db state))
+       ((erp db) (comp-db-relativize-keys db path$))
        (db (comp-db-escape-for-shell db)))
-    db)
+    (retok db))
   :hooks (:fix))
 
 (define preprocess-db-to-map
@@ -779,14 +828,20 @@
 
 (define to-preprocess-map
   ((db comp-dbp)
+   (path stringp)
    (drop-shared booleanp)
    state)
-  :returns (map acl2::string-stringlist-mapp)
-  (preprocess-db-to-map (to-preprocess-db db drop-shared state))
+  :returns (mv (er? maybe-msgp)
+               (map acl2::string-stringlist-mapp))
+  (b* (((reterr) nil)
+       ((erp db$)
+        (to-preprocess-db db path drop-shared state)))
+    (retok (preprocess-db-to-map db$)))
   :hooks (:fix))
 
 (define preprocess-map-from-comp-file
   ((filename stringp)
+   (path stringp)
    (drop-shared booleanp)
    (warnings-onp booleanp)
    (warnings acl2::msg-listp)
@@ -799,8 +854,10 @@
                       :exec warnings))
        ((reterr) nil warnings state)
        ((erp db warnings state)
-        (parse-comp-db filename warnings-onp warnings state)))
-    (retok (to-preprocess-map db drop-shared state) warnings state)))
+        (parse-comp-db filename warnings-onp warnings state))
+       ((erp map)
+        (to-preprocess-map db path drop-shared state)))
+    (retok map warnings state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -814,12 +871,14 @@
 (define defpreprocess-map-fn
   ((const-name symbolp)
    (filename stringp)
+   (path stringp)
    (drop-shared booleanp)
    (show-warnings booleanp)
    state)
   :returns (mv erp event state)
   (b* (((mv erp map warnings state)
         (preprocess-map-from-comp-file filename
+                                       path
                                        drop-shared
                                        show-warnings
                                        nil
@@ -837,7 +896,9 @@
   (name
    &key
    file
+   (path '".")
    (drop-shared 'nil)
    (show-warnings 't))
   `(make-event
-     (defpreprocess-map-fn ',name ',file ',drop-shared ',show-warnings state)))
+     (defpreprocess-map-fn
+       ',name ',file ',path ',drop-shared ',show-warnings state)))

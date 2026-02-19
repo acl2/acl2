@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -89,8 +89,8 @@
           fun-spec
           exprs/decls/stmts
           fundef
-          extdecl
-          extdecl-list
+          ext-declon
+          ext-declon-list
           transunit
           filepath-transunit-map
           transunit-ensemble)
@@ -107,12 +107,17 @@
                          (type-qual-volatile->uscores type-qual) :none))
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
+   (expr :unary (and (expr-standardp (expr-unary->arg expr))
+                     (not (member-eq (expr-unary->op expr)
+                                     '(:alignof :real :imag)))))
    (expr :label-addr nil)
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :alignof (and (tyname-standardp (expr-alignof->type expr))
                        (keyword-uscores-case
                         (expr-alignof->uscores expr) :none)))
+   (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
+                               (expr-fix expr)))
    (expr :cond (and (expr-standardp (expr-cond->test expr))
                     (expr-option-case (expr-cond->then expr) :some)
                     (expr-standardp (expr-option-some->val
@@ -180,13 +185,15 @@
    (struct-declon :empty nil)
    (attrib nil)
    (attrib-spec nil)
-   (initdeclor (and (declor-standardp (initdeclor->declor initdeclor))
-                    (not (initdeclor->asm? initdeclor))
-                    (endp (initdeclor->attribs initdeclor))
-                    (initer-option-standardp (initdeclor->init? initdeclor))))
-   (decl :decl (and (not (decl-decl->extension decl))
-                    (decl-spec-list-standardp (decl-decl->specs decl))
-                    (initdeclor-list-standardp (decl-decl->init decl))))
+   (init-declor (and (declor-standardp (init-declor->declor init-declor))
+                     (not (init-declor->asm? init-declor))
+                     (endp (init-declor->attribs init-declor))
+                     (initer-option-standardp
+                      (init-declor->initer? init-declor))))
+   (declon :declon (and (not (declon-declon->extension declon))
+                        (decl-spec-list-standardp (declon-declon->specs declon))
+                        (init-declor-list-standardp
+                         (declon-declon->declors declon))))
    (label :name (endp (label-name->attribs label)))
    (label :casexpr (and (const-expr-standardp (label-casexpr->expr label))
                         (const-expr-option-case
@@ -194,9 +201,11 @@
    (asm-output nil)
    (asm-input nil)
    (asm-stmt nil)
+   (stmt :null-attrib nil)
    (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
                            (stmt-fix stmt)))
    (stmt :gotoe nil)
+   (stmt :return-attrib nil)
    (stmt :asm nil)
    (comp-stmt (and (endp (comp-stmt->labels comp-stmt))
                    (block-item-list-standardp (comp-stmt->items comp-stmt))))
@@ -207,15 +216,17 @@
    (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
                                 (amb-declor/absdeclor-fix
                                  amb-declor/absdeclor)))
-   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))
+   (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                           (amb-declon/stmt-fix amb-declon/stmt)))
    (fundef (and (not (fundef->extension fundef))
-                (decl-spec-list-standardp (fundef->spec fundef))
+                (decl-spec-list-standardp (fundef->specs fundef))
                 (declor-standardp (fundef->declor fundef))
                 (asm-name-spec-option-case (fundef->asm? fundef) :none)
                 (endp (fundef->attribs fundef))
-                (decl-list-standardp (fundef->decls fundef))
+                (declon-list-standardp (fundef->declons fundef))
                 (comp-stmt-standardp (fundef->body fundef))))
-   (extdecl :empty nil)
-   (extdecl :asm nil)
-   (transunit (consp (transunit->decls transunit)))))
+   (ext-declon :empty nil)
+   (ext-declon :asm nil)
+   (transunit (and (consp (transunit->declons transunit))
+                   (ext-declon-list-standardp
+                    (transunit->declons transunit))))))

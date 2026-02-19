@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -1302,6 +1302,8 @@
        (mv t rest (cons (list var t t val) tuples)))
       (((quote~ WITH) var . rest)
        (mv t rest (cons (list var t nil nil) tuples)))
+      (((quote~ DO) . &)
+       (mv t args tuples))
       (& (mv nil args tuples)))
     (cond
      ((and flg1
@@ -3418,11 +3420,10 @@
 ; during a proof; see :DOC live-stobj-in-proof.  In a proof, the latches
 ; argument will be nil, so we concern ourselves only with that case.
 
-; We use fn, which is the function being called, and stobjs-out only for error
-; reporting.  Val is the value that should not be a live stobj when stobjs-out
-; is a singleton.  Otherwise val is expected to be a true-list corresponding to
-; stobjs-out.  When latches is nil, we cause an error if any member of val is a
-; live stobj.
+; We use fn, which is the function being called only for error reporting.  Val
+; is the value that should not be a live stobj when stobjs-out is a singleton.
+; Otherwise val is expected to be a true-list corresponding to stobjs-out.
+; When latches is nil, we cause an error if any member of val is a live stobj.
 
 ; We considered causing a normal ACL2 "error" that can result in a call of
 ; hide, by way of function hide-with-comment, rather than terminating the proof
@@ -3444,6 +3445,28 @@
 ; the error message.
 
   (and (null latches)
+
+; The next conjunct was added to avoid a confusing raw Lisp error.  To
+; understand it, try running the following example after redefinining
+; chk-for-live-stobj (this function) in raw Lisp without that conjunct, and
+; then submitting in raw Lisp the defun of its caller, raw-ev-fncall, since
+; chk-for-live-stobj is inlined.  Then the loop$ below will signal a confusing
+; raw Lisp error.
+
+;   (include-book "projects/apply/top" :dir :system)
+;   (defstobj st fld)
+;   (defwarrant stp)
+;   (defwarrant update-fld)
+;   (loop$ with x = '(u v w)
+;          do
+;          :guard (stp st)
+;          :measure (len x)
+;          :values (st)
+;          (cond ((endp x)
+;                 (return st))
+;                (t (setq x (cdr x)))))
+
+       (not *inside-do$*)
        (let ((index (cond ((cdr stobjs-out)
 
 ; We could use (loop for x in val ...) instead.  But that would rely on
@@ -6986,10 +7009,10 @@
 ; generally in selecting the equiv relation to be used by rewrite.
 
 ; Note: The ``-fr'' suffix stands for ``failure-reason''.  If (one-way-unify1
-; pat term alist) fails, this function will attempt to find the the subterm of
-; pat that failed to unify.  This function is part of a tool the user may
-; invoke to find out why a monitored rule triggered a near-miss break.  Because
-; of the intended usage, this function does not try to explain why
+; pat term alist) fails, this function will attempt to find the subterm of pat
+; that failed to unify.  This function is part of a tool the user may invoke to
+; find out why a monitored rule triggered a near-miss break.  Because of the
+; intended usage, this function does not try to explain why
 ; one-way-unify1-term-alist failed.  (We'll wait until some user complains that
 ; rewrite didn't select an allowable equivalence relation!)  Ideally, all three
 ; cliques will be kept in sync.
@@ -14863,28 +14886,44 @@
                    (temp (cdr (assoc-eq binder *acceptable-dcls-alist*))))
                (cond
                 ((not (member-eq dcl temp))
-                 (er-cmp ctx
-                         "The only acceptable declaration~#0~[~/s~] at the ~
-                          top-level of ~#1~[an FLET binding~/a MACROLET ~
-                          binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
-                          declaration ~x4 is thus unacceptable here.  ~#5~[~/ ~
-                          It is never necessary to make IGNORE or IGNORABLE ~
-                          declarations in lambda$ expressions because lambda$ ~
-                          automatically adds an IGNORABLE declaration for all ~
-                          of the formals.~]  See :DOC declare."
-                         temp
-                         (cond ((eq binder 'flet) 0)
-                               ((eq binder 'macrolet) 1)
-                               (t 2))
-                         binder
-                         (tilde-*-conjunction-phrase temp
-                                                     *dcl-explanation-alist*)
-                         entry
-                         (cond ((and (eq binder 'lambda$)
-                                     (or (eq dcl 'ignore)
-                                         (eq dcl 'ignorable)))
-                                1)
-                               (t 0))))
+                 (let ((matching-sym
+                        (and (symbolp dcl)
+                             (car (member-symbol-name (symbol-name dcl)
+                                                      temp)))))
+
+; Note that "ACL2::~s8" below is always correct since the CDRs of elements of
+; *acceptable-dcls-alist* are always in the ACL2 package (either directly or by
+; being imported from the "COMMON-LISP" package).
+
+                   (er-cmp ctx
+                           "The only acceptable declaration~#0~[~/s~] at the ~
+                            top-level of ~#1~[an FLET binding~/a MACROLET ~
+                            binding~/a ~x2 form~] ~#0~[is~/are~] ~*3.  The ~
+                            declaration ~x4 is thus unacceptable here.~#5~[~/ ~
+                            It is never necessary to make IGNORE or IGNORABLE ~
+                            declarations in lambda$ expressions because ~
+                            lambda$ automatically adds an IGNORABLE ~
+                            declaration for all of the formals.~]~#6~[~/  ~
+                            Note: You used the symbol ~x7 in your declaration ~
+                            but you probably intended to use the symbol ~
+                            ACL2::~s8.~]  See :DOC declare."
+                           temp
+                           (cond ((eq binder 'flet) 0)
+                                 ((eq binder 'macrolet) 1)
+                                 (t 2))
+                           binder
+                           (tilde-*-conjunction-phrase temp
+                                                       *dcl-explanation-alist*)
+                           entry
+                           (cond ((and (eq binder 'lambda$)
+                                       (or (eq dcl 'ignore)
+                                           (eq dcl 'ignorable)))
+                                  1)
+                                 (t 0))
+                           (if matching-sym 1 0)
+                           dcl
+                           (and matching-sym
+                                (symbol-name matching-sym)))))
                 ((not (true-listp entry))
                  (er-cmp ctx
                          "Each element of a declaration must end in NIL but ~
@@ -15767,6 +15806,7 @@
     or and list
 ;   local
     with-live-state
+    swap-stobjs ; to get the check offered by swap-stobjs-check
     ))
 
 ; Historical Note: The following material -- chk-no-duplicate-defuns,
@@ -17693,15 +17733,6 @@
          (missing-known-stobjs (cdr stobjs-out) (cdr stobjs-out2) known-stobjs
                                (cons (car stobjs-out2) acc)))
         (t nil)))
-
-(defun deref-macro-name (macro-name macro-aliases)
-  (declare (xargs :guard (if (symbolp macro-name)
-                             (alistp macro-aliases)
-                           (symbol-alistp macro-aliases))))
-  (let ((entry (assoc-eq macro-name macro-aliases)))
-    (if entry
-        (cdr entry)
-      macro-name)))
 
 (defun corresponding-inline-fn (fn wrld)
   (let ((macro-body (getpropc fn 'macro-body t wrld)))
@@ -25164,11 +25195,12 @@
     (let ((s1 (cadr x))
           (s2 (caddr x)))
       (cond
-       ((eq stobjs-out :stobjs-out)
+       ((assoc-eq :stobjs-out bindings)
         (trans-er ctx
                   "The macro ~x0 must not be called directly in the ACL2 ~
-                   top-level loop, as opposed to being made inside a function ~
-                   definition.  The call ~x1 is thus illegal."
+                   top-level loop.  The call ~x1 is thus illegal.  Consider ~
+                   defining a function whose body includes this call.  See ~
+                   :DOC swap-stobjs."
                   'swap-stobjs
                   x))
        ((and (stobjp s1 known-stobjs wrld)
@@ -26037,7 +26069,7 @@
                             known-dfs flet-alist x ctx wrld state-vars)))))
    ((getpropc (car x) 'macro-body nil wrld)
     (cond
-     ((and (eq stobjs-out :stobjs-out)
+     ((and (assoc-eq :stobjs-out bindings)
            (member-eq (car x) '(pand por pargs plet))
            (eq (access state-vars state-vars :parallel-execution-enabled)
                t))
@@ -26084,6 +26116,16 @@
    ((eq (car x) 'flet) ; (flet bindings form)
     (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx wrld
                       state-vars))
+   ((and (not (eq stobjs-out t))
+         (null (cdr x)) ; optimization
+         (stobj-creatorp (car x) wrld))
+    (trans-er+ x ctx
+               "It is illegal to call ~x0 in this context because it is a ~
+                stobj creator.  Calls of stobj creators cannot appear in ~
+                top-level loop inputs or in function bodies (unless in the ~
+                scope of defun-nx or non-exec), although they may be called ~
+                in theorems."
+               (car x)))
    ((eq (car x) 'macrolet) ; (macrolet bindings form)
     (translate11-macrolet x stobjs-out bindings known-stobjs flet-alist ctx
                           wrld state-vars))
@@ -26483,7 +26525,7 @@
                                            *initial-return-last-table*))))))
                        (or (null val)
                            (and (consp val) ; see chk-return-last-entry
-                                (eq stobjs-out :stobjs-out)))))
+                                (assoc-eq :stobjs-out bindings)))))
 
 ; In an early implementation of return-last, we insisted that keyp be true.  But
 ; when we attempted to update the "GL" work of Sol Swords to use return-last,

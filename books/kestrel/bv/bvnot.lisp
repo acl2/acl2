@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "getbit")
+(include-book "getbit-def")
 (include-book "lognot")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "slice"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -89,8 +90,7 @@
 (defthm bvchop-lognot-bvchop
   (equal (bvchop n (lognot (bvchop n x)))
          (bvchop n (lognot x)))
-  :hints (("Goal" :in-theory (e/d (lognot)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable lognot))))
 
 (defthm bvnot-of-bvnot
   (equal (bvnot size (bvnot size x))

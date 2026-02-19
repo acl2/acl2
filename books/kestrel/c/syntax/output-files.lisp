@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -61,7 +61,7 @@
 (defval *output-files-allowed-options*
   :short "Keyword options accepted by @(tsee output-files)."
   (list :const
-        :path
+        :base-dir
         :printer-options)
   ///
   (assert-event (keyword-listp *output-files-allowed-options*))
@@ -120,13 +120,13 @@
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       contains non-all-ASCII identifiers."
                      code desc)))
-       ((unless (or (ienv->gcc (code-ensemble->ienv code))
+       ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
                     (transunit-ensemble-standardp
                      (code-ensemble->transunits code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
-                      uses non-standard syntax (i.e. GCC extensions), ~
+                      uses non-standard syntax (i.e. GCC/Clang extensions), ~
                       but the implementation environment indicates that ~
-                      GCC extensions are not enabled."
+                      GCC/Clang extensions are not enabled."
                      code desc))))
     (retok code))
 
@@ -151,28 +151,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define output-files-process-path ((options symbol-alistp))
-  :returns (mv erp (path stringp))
-  :short "Process the @(':path') input."
+(define output-files-process-base-dir ((options symbol-alistp))
+  :returns (mv erp (base-dir stringp))
+  :short "Process the @(':base-dir') input."
   (b* (((reterr) "")
-       (path-option (assoc-eq :path options))
-       (path (if path-option
-                 (cdr path-option)
-               "."))
-       ((unless (stringp path))
-        (reterr (msg "The :PATH input must be a string, ~
+       (base-dir-option (assoc-eq :base-dir options))
+       (base-dir (if base-dir-option
+                     (cdr base-dir-option)
+                   "."))
+       ((unless (stringp base-dir))
+        (reterr (msg "The :BASE-DIR input must be a string, ~
                       but it is ~x0 instead."
-                     path)))
-       (path-chars (str::explode path))
-       ((unless (consp path-chars))
-        (reterr (msg "The :PATH input must be not empty, ~
+                     base-dir)))
+       (base-dir-chars (str::explode base-dir))
+       ((unless (consp base-dir-chars))
+        (reterr (msg "The :BASE-DIR input must be not empty, ~
                       but it is the empty string instead.")))
-       (path-chars (if (and (consp (cdr path-chars))
-                            (eql (car (last path-chars)) #\/))
-                       (butlast path-chars 1)
-                     path-chars))
-       (path (str::implode path-chars)))
-    (retok path)))
+       (base-dir-chars (if (and (consp (cdr base-dir-chars))
+                                (eql (car (last base-dir-chars)) #\/))
+                           (butlast base-dir-chars 1)
+                         base-dir-chars))
+       (base-dir (str::implode base-dir-chars)))
+    (retok base-dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +248,7 @@
                   :in-theory
                   (enable
                    code-ensemblep-when-output-files-process-const/arg))))
-               (path stringp)
+               (base-dir stringp)
                (indent-size posp)
                (paren-nested-conds booleanp))
   :short "Process the inputs."
@@ -274,7 +274,7 @@
      The other results are the homonymous inputs
      (some are sub-inputs of the @(':printer-options') input).")
    (xdoc::p
-    "If the @(':path') string is not @('/') but ends with @('/'),
+    "If the @(':base-dir') string is not @('/') but ends with @('/'),
      we remove the ending @('/').
      This is for uniformity when concatenating this
      with the files specified in the @(':files') input."))
@@ -297,11 +297,11 @@
        ;; Process the inputs.
        ((erp code)
         (output-files-process-const/arg arg options progp wrld))
-       ((erp path) (output-files-process-path options))
+       ((erp base-dir) (output-files-process-base-dir options))
        ((erp indent-size paren-nested-conds)
         (output-files-process-printer-options options)))
     (retok code
-           path
+           base-dir
            indent-size
            paren-nested-conds))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp
@@ -329,7 +329,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define output-files-gen-files ((code code-ensemblep)
-                                (path stringp)
+                                (base-dir stringp)
                                 (indent-size posp)
                                 (paren-nested-conds booleanp)
                                 state)
@@ -344,15 +344,15 @@
        (tunits (code-ensemble->transunits code))
        (files (print-fileset tunits
                              options
-                             (ienv->gcc (code-ensemble->ienv code))))
+                             (ienv->version (code-ensemble->ienv code))))
        ;; Write the files to the file system.
        ((erp state)
-        (output-files-gen-files-loop (fileset->unwrap files) path state)))
+        (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))
     (retok state))
   :guard-hints (("Goal" :in-theory (enable code-ensemble-aidentp)))
   :prepwork
   ((define output-files-gen-files-loop ((map filepath-filedata-mapp)
-                                        (path stringp)
+                                        (base-dir stringp)
                                         state)
      :returns (mv erp state)
      :parents nil
@@ -364,14 +364,14 @@
            (reterr (msg "File path must contain a string, ~
                          but it contains ~x0 instead."
                         file-string)))
-          (path-to-write (str::cat path "/" file-string))
+          (path-to-write (str::cat base-dir "/" file-string))
           ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
                                                       path-to-write
                                                       'output-files
                                                       state))
           ((when erp)
            (reterr (msg "Writing ~x0 failed." path-to-write))))
-       (output-files-gen-files-loop (omap::tail map) path state)))))
+       (output-files-gen-files-loop (omap::tail map) base-dir state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,13 +384,13 @@
   :short "Process the inputs and generate the files."
   (b* (((reterr) state)
        ((erp tunits
-             path
+             base-dir
              indent-size
              paren-nested-conds)
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
-                                path
+                                base-dir
                                 indent-size
                                 paren-nested-conds
                                 state)))
@@ -431,7 +431,7 @@
      It has the form:")
    (xdoc::codeblock
     "(output-files-prog code"
-    "                   :path            ...  ; default \".\""
+    "                   :base-dir        ...  ; default \".\""
     "                   :printer-options ...  ; default nil"
     "  )")
    (xdoc::p

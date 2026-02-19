@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -160,10 +160,10 @@
             implies-opener ;; goes to boolor
             force-of-non-nil ;do we still need this?
             equal-nil-of-not
-            not-of-not ;BOZO what do we do with the resulting bool-fix?
+            not-of-not ; introduces bool-fix
             equal-same
             not-<-same
-            turn-equal-around-axe ; may be dangerous?
+            turn-equal-around-axe ; puts the constant first ; may be dangerous?
 
             ifix-when-integerp
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
@@ -189,9 +189,6 @@
             not-of-if
 
             fix-when-acl2-numberp
-            acl2-numberp-of-+
-            acl2-numberp-of-fix
-            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -202,8 +199,7 @@
 
             double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
-
-            not-stringp-of-cons)
+            )
           (mv-nth-rules)
           (boolean-rules-safe)
           (booleanp-rules)))
@@ -252,7 +248,24 @@
     integerp-of--
     integerp-of-+
 
-    integerp-when-unsigned-byte-p-free))
+    integerp-when-unsigned-byte-p-free
+
+    ;; todo: acl2-numberp-when-integerp
+    ;; todo: acl2-numberp-when-natp ?
+    acl2-numberp-of-fix
+    acl2-numberp-of-+
+    acl2-numberp-of-*
+    acl2-numberp-of-unary--
+    acl2-numberp-of-mod
+    acl2-numberp-of-floor
+
+    integerp-of-ifix
+    integerp-of-+
+    integerp-of-*
+    integerp-of-mod
+
+    not-stringp-of-cons
+    ))
 
 (defun safe-trim-rules ()
   (declare (xargs :guard t))
@@ -521,6 +534,8 @@
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
+    bvsx-convert-arg3-to-bv-axe
+
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
@@ -529,21 +544,23 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    trim-of-ash-left-shift-becomes-bvcat
+    trim-of-ash-right-shift-becomes-slice
 
     ;; uncomment these if we use trim to convert these functions:
     ;; trim-of-logtail-becomes-slice
     trim-of-logext-becomes-bvsx
     trim-of-if-becomes-bvif
 
-    ;; todo: replace these with the more general trim scheme:
+    ;; todo: replace these with the more general trim scheme (but see comment above about bvminus-convert-arg2-to-bv-axe):
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
     ;; These just unconditionally replace non-bv operators with bv operators:
-    bool->bit-becomes-bool-to-bit
+    bool->bit-becomes-bool-to-bit ; bool->bit is from std
     bit->bool-becomes-bit-to-bool
-    acl2::logbitp-to-getbit-equal-1 ;rename
+    logbitp-to-getbit-equal-1 ;rename
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -660,7 +677,8 @@
     bvif-trim-arg4-axe
     ;; bvif-trim-arg3-axe-all ; use instead?
     ;; bvif-trim-arg4-axe-all ; use instead?
-    leftrotate32-trim-arg1-axe-all))
+    leftrotate32-trim-arg1-axe-all
+    bvsx-trim-axe-all))
 
 ;; WARNING: Keep in sync with *trimmable-operators*
 (defun trim-helper-rules ()
@@ -733,7 +751,7 @@
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
 
-     ;; rightrotate32-trim-amt-axe ;move to trim rules? or drop since we go to leftrotate32
+     ;; rightrotate32-trim-arg1-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
      ;; LEFTROTATE32-open-when-constant-shift-amount
@@ -785,6 +803,8 @@
      ;; bvplus-of-0-arg3 ; in case we are not commuting constants forward ; todo: enable
      bvplus-of-ifix-arg2
      bvplus-of-ifix-arg3
+     equal-of-bvplus-constant-and-constant
+     equal-of-bvplus-constant-and-constant-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -832,6 +852,8 @@
 
      bitnot-of-bitnot
      bitnot-of-ifix
+     equal-of-0-and-bitnot
+     equal-of-1-and-bitnot
 
      bvand-of-myif-arg1
      bvand-of-myif-arg2
@@ -881,6 +903,7 @@
 
      not-equal-bvchop-when-not-equal-bvchop      ;tue feb  8 12:55:33 2011
      bvmod-of-0-arg2
+     ;; bvmod-of-power-of-2 ; introduces bvchop ; todo: this breaks a MUSE derivation
      slice-when-not-bvlt-free ;fri jan 28 18:39:08 2011
      slice-when-bvlt-gen      ;wed mar 16 00:47:10 2011 was in axe-rules
      equal-constant-when-not-slice-equal-constant ;was in axe prover rules
@@ -1105,6 +1128,7 @@
      bvsx-of-bvsx
      bvsx-of-bvchop
      bvsx-when-equal-of-getbit-and-0
+     equal-of-bvsx-and-constant
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -1220,7 +1244,7 @@
      bvdiv-of-1-arg3
      bvdiv-same
      sbvdiv-of-0-arg1
-     sbvdiv-of-0-arg2 ; unusual casae
+     sbvdiv-of-0-arg2 ; unusual case
      sbvdiv-of-1-arg3
      sbvdiv-same
 
@@ -1283,6 +1307,11 @@
 
      bvcat-equal-rewrite-constant ; previously caused problems for aes?
      bvcat-equal-rewrite-constant-alt
+
+     equal-of-0-and-bool-to-bit
+     equal-of-1-and-bool-to-bit
+     ;; equal-of-bool-to-bit-and-0 ; not needed if we turn equals around
+     ;; equal-of-bool-to-bit-and-1 ; not needed if we turn equals around
      )))
 
 ;todo combine this with core-rules-bv
@@ -2156,7 +2185,7 @@
 
             bvcat-trim-high-size-when-constant-1
             )
-          (boolean-rules)
+          (boolean-rules) ; not really BV rules
           (base-rules)
           (bv-array-rules) ;todo: drop?
           (type-rules)
@@ -2210,6 +2239,7 @@
 ;;normalize boolif nests that are really ands?
 
 ;; TODO: add many more rules to this?
+; not used?
 (defun arithmetic-rules ()
   (declare (xargs :guard t))
   '(fold-consts-in-+
@@ -2278,10 +2308,10 @@
     bvplus-of-unary-minus
     bvchop-of-+-becomes-bvplus
     ;move these to type-rules:
-    integerp-of-*
-    acl2-numberp-of-+
-    acl2-numberp-of-*
-    acl2-numberp-of-unary--
+    ;; integerp-of-*
+    ;; acl2-numberp-of-+
+    ;; acl2-numberp-of-*
+    ;; acl2-numberp-of-unary--
     fix
     integerp-of-+-when-integerp-1-cheap
     mod-becomes-bvchop-when-power-of-2p
@@ -2402,8 +2432,7 @@
 
      bvif-of-1-and-0-becomes-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
      bvif-0-1-becomes-bvnot-of-bool-to-bit ; not sure it's a good idea to introduce bool-to-bit since the STP translation doesn't know about it.
-     equal-of-0-and-bool-to-bit ; alt form needed?
-     equal-of-1-and-bool-to-bit ; alt form needed?
+
      getbit-0-of-bool-to-bit
      equal-of-bool-to-bit-split ; remove?
      unsigned-byte-p-of-bool-to-bit
@@ -2840,8 +2869,6 @@
      <-of-bv-and-non-positive-constant
      not-of-not
      equal-nil-of-not
-     ;;not-of-bool-fix ; just include boolean-rules-safe?
-     ;;bool-fix-when-booleanp ; just include boolean-rules-safe?
      equal-same
      not-<-same
      if-of-t
@@ -4147,6 +4174,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund prune-dag-post-rewrite-rules ()
+  (declare (xargs :guard t))
+  (append
+  '(id
+    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
+    bool-fix-of-bool-fix
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
+    if-of-bool-fix-arg1
+    myif-of-bool-fix-arg1
+    bvif-of-bool-fix
+    not-of-bool-fix
+    boolor-of-bool-fix-arg1
+    boolor-of-bool-fix-arg2
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
+    booleanp-of-bool-fix-rewrite
+    if-same-branches
+    if-when-non-nil-constant
+    if-of-nil
+    ;; if-of-not ; maybe
+    if-of-t-and-nil-when-booleanp ; or bool-fix it
+    myif-same-branches
+    myif-of-nil
+    myif-of-constant-when-not-nil
+    myif-nil-t
+    myif-of-t-and-nil-when-booleanp
+    ;; todo: more rules?  try the bv-function-of-bvchop-rules?
+    bvchop-identity-axe
+    )
+  (unsigned-byte-p-forced-rules)
+  ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
+  ;; (bv-function-of-bvchop-rules) ;; hmmm, maybe we should pass in these rules?
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
 ;; TODO: Use these whenever we translate to STP, not just in the tactic prover.
 ;; However, consider that these may not have been applied when we use STP to relieve a hyp during rewriting.
@@ -4209,6 +4274,8 @@
 ;; Want these to fire before commutativity:
 (set-axe-rule-priority booland-of-constant-arg1 -1)
 (set-axe-rule-priority booland-of-constant-arg2 -1)
+
+(set-axe-rule-priority read-when-equal-of-read-bytes-and-subregion48p-smt 1)
 
 ;try this before bv-array-read-of-bv-array-write-both-better-work-hard, since this one has only a single work-hard
 ;would like a way to NOT try the both version if this one fails

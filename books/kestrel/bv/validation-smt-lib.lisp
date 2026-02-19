@@ -1,6 +1,6 @@
 ; Theorems to validate the SMT-LIB translation of the BV operators
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,10 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "bvuminus")
+(include-book "bvuminus-def")
 (include-book "bvminus")
 (include-book "bvnot")
-(include-book "bvand")
+(include-book "bvand-def")
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "sbvdiv")
@@ -21,6 +21,8 @@
 (local (include-book "sbvdiv-rules"))
 (local (include-book "sbvlt-rules"))
 (local (include-book "bvcat"))
+(local (include-book "bvand"))
+(local (include-book "getbit"))
 (local (include-book "logand-b"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

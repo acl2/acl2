@@ -75,11 +75,11 @@
           type-spec-list
           expr/tyname
           declor/absdeclor
-          decl/stmt
+          declon/stmt
           fundef
           fundef-option
-          extdecl
-          extdecl-list
+          ext-declon
+          ext-declon-list
           transunit
           filepath-transunit-map
           transunit-ensemble
@@ -89,6 +89,7 @@
   :combine and
   :override
   ((expr :sizeof-ambig nil)
+   (expr :alignof-ambig nil)
    (expr :cast/call-ambig nil)
    (expr :cast/mul-ambig nil)
    (expr :cast/add-ambig nil)
@@ -107,7 +108,7 @@
    (block-item :ambig nil)
    (amb-expr/tyname nil)
    (amb-declor/absdeclor nil)
-   (amb-decl/stmt nil)))
+   (amb-declon/stmt nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,12 +201,17 @@
              (label-unambp label))
     :expand (label-unambp label))
 
-  (defruled stmt-unambp-of-when-goto
+  (defruled stmt-unambp-when-null-attrib
+    (implies (stmt-case stmt :null-attrib)
+             (stmt-unambp stmt))
+    :expand (stmt-unambp stmt))
+
+  (defruled stmt-unambp-when-goto
     (implies (stmt-case stmt :goto)
              (stmt-unambp stmt))
     :enable stmt-unambp)
 
-  (defruled stmt-unambp-of-when-asm
+  (defruled stmt-unambp-when-asm
     (implies (stmt-case stmt :asm)
              (stmt-unambp stmt))
     :expand (stmt-unambp stmt))
@@ -220,17 +226,23 @@
              (decl-spec-unambp decl-spec))
     :expand (decl-spec-unambp decl-spec))
 
-  (defruled extdecl-unambp-when-not-fundef/decl
-    (implies (and (not (extdecl-case extdecl :fundef))
-                  (not (extdecl-case extdecl :decl)))
-             (extdecl-unambp extdecl))
-    :enable extdecl-unambp)
+  (defruled ext-declon-unambp-when-not-fundef/declon
+    (implies (and (not (ext-declon-case ext-declon :fundef))
+                  (not (ext-declon-case ext-declon :declon)))
+             (ext-declon-unambp ext-declon))
+    :enable ext-declon-unambp)
 
   ;; The following theorems exclude certain cases from consideration.
 
   (defruled expr-not-sizeof-when-unambp
     (implies (expr-unambp expr)
              (not (equal (expr-kind expr) :sizeof-ambig)))
+    :rule-classes :forward-chaining
+    :enable expr-unambp)
+
+  (defruled expr-not-alignof-when-unambp
+    (implies (expr-unambp expr)
+             (not (equal (expr-kind expr) :alignof-ambig)))
     :rule-classes :forward-chaining
     :enable expr-unambp)
 
@@ -341,10 +353,12 @@
                     designor-unambp-when-dot
                     dirdeclor-unambp-when-ident
                     label-unambp-when-name
-                    stmt-unambp-of-when-goto
-                    stmt-unambp-of-when-asm
-                    extdecl-unambp-when-not-fundef/decl
+                    stmt-unambp-when-null-attrib
+                    stmt-unambp-when-goto
+                    stmt-unambp-when-asm
+                    ext-declon-unambp-when-not-fundef/declon
                     expr-not-sizeof-when-unambp
+                    expr-not-alignof-when-unambp
                     expr-not-cast/call-ambig-when-unambp
                     expr-not-cast/mul-ambig-when-unambp
                     expr-not-cast/add-ambig-when-unambp

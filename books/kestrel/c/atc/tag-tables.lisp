@@ -411,7 +411,7 @@
      For a structure type,
      the predicate is the recognizer of structures of that type.
      For a pointer to integer type,
-     the predicate is the recognizer of that referenced type.
+     the predicate is the recognizer of the referenced integer type.
      For a pointer to structure type,
      the predicate is the recognizer of structures of that type.
      For an array of integer type,

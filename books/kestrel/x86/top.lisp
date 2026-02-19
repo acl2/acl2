@@ -1,6 +1,6 @@
 ; Top-level book for Kestrel x86 library
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "portcullis")
-(include-book "parsers/top")
 (include-book "tools/top")
 
 ;; These could be added to books/projects/x86isa:
@@ -32,6 +31,7 @@
 (include-book "support-x86")
 (include-book "x86-changes")
 (include-book "support32")
+(include-book "support64")
 (include-book "memory32")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
@@ -51,9 +51,9 @@
 (include-book "assumptions64")
 (include-book "assumptions-new")
 
-(include-book "run-until-return")
-(include-book "run-until-return2")
-(include-book "run-until-return3")
-(include-book "run-until-return4")
+(include-book "run-until-return") ; drop?
+;(include-book "run-until-return2")
+(include-book "run-until-return32")
+(include-book "run-until-return64")
 (include-book "separate")
 (include-book "support")

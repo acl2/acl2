@@ -269,6 +269,7 @@
 (include-book "defthm-stp")
 
 ;; Legacy Axe utilities (many of these depend on skip-proofs):
+(include-book "evaluator-support")
 (include-book "evaluator")
 (include-book "instantiate-hyp")
 (include-book "dagify")
@@ -305,3 +306,6 @@
 
 ;; The r1cs-specific Axe tools:
 (include-book "r1cs/top")
+
+;; The ARM-specific Axe tools:
+(include-book "arm/top")

@@ -24,11 +24,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-limit-rules
-  :short "Rules about limits not being 0."
+  :short "Rules about limits."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These two rules serve to relieve the recurring hypothesis
+    "These first two rules are about limits not being 0.
+     These rules serve to relieve the recurring hypothesis
      that the limit is never 0 during the symbolic execution.
      Initially the limit is a variable, and the first rule applies;
      the hypothesis of this rule is easily discharged by
@@ -44,7 +45,12 @@
      giving the pattern @('(binary-+ \'<negative-integer> <limit-variable>)').
      This is the pattern in the second rule @('not-zp-of-limit-...'),
      whose hypothesis about the limit variable
-     is easily discharged via linear arithmetic."))
+     is easily discharged via linear arithmetic.")
+   (xdoc::p
+    "We also provide a theorems that is used in the proofs of loops.
+     Theis is not included in the constant with the rules
+     because it is not used in the general symbolic execution,
+     but only in loop theorems and in specific ways."))
 
   (defruled not-zp-of-limit-variable
     (implies (and (syntaxp (symbolp limit))
@@ -61,4 +67,12 @@
 
   (defval *atc-limit-rules*
     '(not-zp-of-limit-variable
-      not-zp-of-limit-minus-const)))
+      not-zp-of-limit-minus-const))
+
+  (defruled nfix-of-limit-minus-const
+    (implies (and (integerp -c)
+                  (integerp limit)
+                  (> limit (- -c)))
+             (equal (nfix (binary-+ -c limit))
+                    (binary-+ -c limit)))
+    :enable nfix))

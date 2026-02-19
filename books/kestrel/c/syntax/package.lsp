@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,9 +21,13 @@
 (defpkg "C$" (append
               (set-difference-eq *std-pkg-symbols*
                                  '(block
+                                   newline
                                    position
+                                   pprint-newline
+                                   read-byte
                                    read-char
                                    read-files
+                                   replace
                                    schar
                                    standardp
                                    type
@@ -37,6 +41,8 @@
                 byte-list
                 byte-listp
                 byte-list-fix
+                byte-list-listp
+                char-fix
                 character-list
                 defirrelevant
                 defmacro+
@@ -45,8 +51,10 @@
                 er-soft+
                 erp
                 impossible
+                int
                 keyword-listp
                 keyword-value-list-to-alist
+                lifix
                 lnfix
                 make-event-terse
                 maybe-msgp
@@ -55,6 +63,8 @@
                 nat-list
                 nat-list-fix
                 nat-optionp
+                nat-option-fix
+                nat-list-measure
                 nats=>string
                 packn-pos
                 pos
@@ -79,4 +89,6 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp)))
+                str::oct-digit-char-listp
+                str::str-fix
+                str::string-list-fix)))

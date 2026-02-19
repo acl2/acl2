@@ -13,7 +13,7 @@
 
 (include-book "proposed-author-self")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -119,7 +119,6 @@
     :enable (unequiv-proposed-p
              unequiv-proposed-p-necc
              validator-state->proposed-of-certify-next
-             omap::keys-of-delete
              prop-set-unequivp-of-delete
              proposal-setp-of-keys-when-proposal-address-set-mapp))
 

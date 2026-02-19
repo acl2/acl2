@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,10 +14,7 @@
 
 (include-book "std/util/defirrelevant" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,35 +70,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo-prefix
+(defirrelevant irr-dexprefix
   :short "An irrelevant decimal exponent prefix."
-  :type dec-expo-prefixp
-  :body (dec-expo-prefix-locase-e))
+  :type dexprefixp
+  :body (dexprefix-locase-e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo-prefix
+(defirrelevant irr-bexprefix
   :short "An irrelevant binary exponent prefix."
-  :type bin-expo-prefixp
-  :body (bin-expo-prefix-locase-p))
+  :type bexprefixp
+  :body (bexprefix-locase-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-dec-expo
+(defirrelevant irr-dexpo
   :short "An irrelevant decimal exponent."
-  :type dec-expop
-  :body (make-dec-expo :prefix (irr-dec-expo-prefix)
-                       :sign? nil
-                       :digits nil))
+  :type dexpop
+  :body (make-dexpo :prefix (irr-dexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-bin-expo
+(defirrelevant irr-bexpo
   :short "An irrelevant binary exponent."
-  :type bin-expop
-  :body (make-bin-expo :prefix (irr-bin-expo-prefix)
-                       :sign? nil
-                       :digits nil))
+  :type bexpop
+  :body (make-bexpo :prefix (irr-bexprefix)
+                    :sign? nil
+                    :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -355,14 +352,14 @@
 (defirrelevant irr-enum-spec
   :short "An irrelevant enumeration specifier."
   :type enum-specp
-  :body (make-enum-spec :name nil :list nil :final-comma nil))
+  :body (make-enum-spec :name? nil :enumers nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-enumer
   :short "An irrelevant enumerator."
   :type enumerp
-  :body (make-enumer :name (irr-ident) :value nil))
+  :body (make-enumer :name (irr-ident) :value? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +381,7 @@
 (defirrelevant irr-attrib
   :short "An irrelevant attribute."
   :type attribp
-  :body (attrib-name-only (irr-attrib-name)))
+  :body (attrib-name (irr-attrib-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,22 +392,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-initdeclor
+(defirrelevant irr-init-declor
   :short "An irrelevant initializer declarator."
-  :type initdeclorp
-  :body (make-initdeclor :declor (irr-declor)
-                         :asm? nil
-                         :attribs nil
-                         :init? nil))
+  :type init-declorp
+  :body (make-init-declor :declor (irr-declor)
+                          :asm? nil
+                          :attribs nil
+                          :initer? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl
+(defirrelevant irr-declon
   :short "An irrelevant declaration."
-  :type declp
-  :body (make-decl-decl :extension nil
-                        :specs nil
-                        :init nil))
+  :type declonp
+  :body (make-declon-declon :extension nil
+                            :specs nil
+                            :declors nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,14 +421,14 @@
 (defirrelevant irr-asm-output
   :short "An irrelevant assembler output operand."
   :type asm-outputp
-  :body (make-asm-output :name nil :constraint nil :lvalue (irr-expr)))
+  :body (make-asm-output :name? nil :constraint nil :lvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-asm-input
   :short "An irrelevant assembler input operand."
   :type asm-inputp
-  :body (make-asm-input :name nil :constraint nil :rvalue (irr-expr)))
+  :body (make-asm-input :name? nil :constraint nil :rvalue (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -484,10 +481,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-decl/stmt
+(defirrelevant irr-declon/stmt
   :short "An irrelevant declaration or statement."
-  :type decl/stmt-p
-  :body (decl/stmt-decl (irr-decl)))
+  :type declon/stmt-p
+  :body (declon/stmt-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -505,10 +502,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-amb?-decl/stmt
+(defirrelevant irr-amb?-declon/stmt
   :short "An irrelevant possibly ambiguous declaration or statement."
-  :type amb?-decl/stmt-p
-  :body (amb?-decl/stmt-stmt (irr-expr)))
+  :type amb?-declon/stmt-p
+  :body (amb?-declon/stmt-stmt (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -516,31 +513,35 @@
   :short "An irrelevant function definition."
   :type fundefp
   :body (make-fundef :extension nil
-                     :spec nil
+                     :specs nil
                      :declor (irr-declor)
                      :asm? nil
                      :attribs nil
-                     :decls nil
+                     :declons nil
                      :body (irr-comp-stmt)
                      :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-extdecl
+(defirrelevant irr-ext-declon
   :short "An irrelevant external declaration."
-  :type extdeclp
-  :body (extdecl-decl (irr-decl)))
+  :type ext-declonp
+  :body (ext-declon-declon (irr-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-transunit
   :short "An irrelevant translation unit."
   :type transunitp
-  :body (transunit nil nil))
+  :body (make-transunit :comment nil
+                        :includes nil
+                        :declons nil
+                        :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-transunit-ensemble
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
-  :body (transunit-ensemble nil))
+  :body (make-transunit-ensemble :units nil
+                                 :info nil))

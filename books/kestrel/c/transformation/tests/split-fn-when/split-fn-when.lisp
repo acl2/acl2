@@ -30,15 +30,17 @@
                  :triggers "bar")
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
     :content "void bar(int *);
+
 int foo_0(int *x, int *y) {
   bar(&(*y));
   return (*x) + (*y);
 }
+
 int foo(int y) {
   int x = 5;
   return foo_0(&x, &y);
@@ -58,25 +60,30 @@ int foo(int y) {
                  :triggers ("setuid" "fork"))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test2.c"
     :content "int setuid(int);
+
 int fork(void);
+
 int foo_0_0_0(int ***x, int ***y) {
   setuid((*(*(*x))));
   return (*(*(*x))) + (*(*(*y)));
 }
+
 int foo_0_0(int **x, int **y) {
   fork();
   return foo_0_0_0(&x, &y);
 }
+
 int foo_0(int *x, int *y) {
   setuid((*y));
   (*x) += 1;
   return foo_0_0(&x, &y);
 }
+
 int foo(int y) {
   int x = 5;
   return foo_0(&x, &y);
@@ -96,15 +103,17 @@ int foo(int y) {
                  :triggers "bar")
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test3.c"
     :content "void bar(int *);
+
 int foo_0(int *x, int *y) {
   bar(&(*y));
   return (*x) + (*y);
 }
+
 int foo() {
   int x = 5;
   int y = 0;

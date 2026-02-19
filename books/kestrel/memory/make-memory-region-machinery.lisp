@@ -58,9 +58,16 @@
          (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)) ; may be droppable with more bvminus rules
          (local (include-book "kestrel/bv/bvlt" :dir :system))
          (local (include-book "kestrel/bv/bvplus" :dir :system))
+         (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+         (local (include-book "kestrel/bv/bvuminus" :dir :system))
          (local (include-book "kestrel/bv/logext" :dir :system))
          (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvplus-of-logext rules
          (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
+         (local (in-theory (e/d (bvplus-commutative-smart
+                                 bvplus-commutative-2-smart)
+                                (bvplus-commutative
+                                 bvplus-commutative-2))))
 
          ;; Defines what it means for AD to be in the region of size LEN starting at
          ;; START-AD.  Note that the region may wrap around the end of the address
@@ -746,6 +753,15 @@
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-same-ads-same-lens)
            (,subregionp-name len ad len ad)
            :hints (("Goal" :in-theory (enable ,subregionp-name))))
+
+         (defthm ,(acl2::pack-in-package pkg subregionp-name '-forward-to-<=)
+           (implies (and (,subregionp-name n1 ad1 n2 ad2)
+                         (< n2 ,(expt 2 num-address-bits))
+                         (natp n1)
+                         (natp n2))
+                    (<= n1 n2))
+           :rule-classes :forward-chaining
+           :hints (("Goal" :in-theory (enable ,subregionp-name bvlt))))
 
          ;; A region of size 0 is a subregion of any region
          (defthm ,(acl2::pack-in-package pkg subregionp-name '-of-0-arg1)

@@ -13,6 +13,8 @@
 (include-book "variables-in-computation-states")
 (include-book "proof-generation")
 (include-book "proof-generation-theorems")
+(include-book "add-section-attr-doc")
+(include-book "add-section-attr")
 (include-book "constant-propagation")
 (include-book "copy-fn")
 (include-book "rename")
@@ -26,9 +28,11 @@
 (include-book "split-fn-when-doc")
 (include-book "split-all-gso")
 (include-book "split-all-gso-doc")
-(include-book "splitgso")
-(include-book "splitgso-doc")
+(include-book "split-gso")
+(include-book "split-gso-doc")
 (include-book "utilities/top")
+(include-book "wrap-fn")
+(include-book "wrap-fn-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

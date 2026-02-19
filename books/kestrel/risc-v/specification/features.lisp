@@ -44,7 +44,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum feat-base
-  :short "Fixtype of RISC-V feature choices for the base."
+  :short "Fixtype of feature choices for the base."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -59,7 +59,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum feat-endian
-  :short "Fixtype of RISC-V feature choices for endianness."
+  :short "Fixtype of feature choices for endianness."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -75,7 +75,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod feat
-  :short "Fixtype of RISC-V feature choices."
+  :short "Fixtype of feature choices."
   :long
   (xdoc::topstring
    (xdoc::p

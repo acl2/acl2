@@ -13,6 +13,9 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ file-paths
@@ -57,6 +60,15 @@
   filepath
   :short "Fixtype of optional file paths."
   :pred filepath-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist filepath-list
+  :short "Fixtype of lists of file paths."
+  :elt-type filepath
+  :true-listp t
+  :elementp-of-nil nil
+  :pred filepath-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

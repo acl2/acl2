@@ -12,10 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +31,9 @@
   (b* (((when (endp tyspecs1)) (endp tyspecs2))
        (tyspec (car tyspecs1))
        ((unless (member-equal tyspec tyspecs2)) nil))
-    (type-spec-list-permp (cdr tyspecs1) (remove1-equal tyspec tyspecs2))))
+    (type-spec-list-permp (cdr tyspecs1) (remove1-equal tyspec tyspecs2)))
+  :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
+  :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,8 +41,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('char')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-char)))
-  :hooks (:fix))
+         (list (type-spec-char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,8 +58,7 @@
                                   (type-spec-char)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-char))))
-  :hooks (:fix))
+                                  (type-spec-char)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,8 +68,7 @@
           @('unsigned char') or @('char unsigned')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
-                              (type-spec-char)))
-  :hooks (:fix))
+                              (type-spec-char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,8 +76,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('short')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-short)))
-  :hooks (:fix))
+         (list (type-spec-short))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,8 +93,7 @@
                                   (type-spec-short)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-short))))
-  :hooks (:fix))
+                                  (type-spec-short)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,8 +103,7 @@
           @('short int') or @('int short')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-short)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,8 +123,7 @@
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
                                   (type-spec-short)
-                                  (type-spec-int))))
-  :hooks (:fix))
+                                  (type-spec-int)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,8 +133,7 @@
           @('unsigned short') or @('short unsigned')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
-                              (type-spec-short)))
-  :hooks (:fix))
+                              (type-spec-short))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,8 +144,7 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
                               (type-spec-short)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,8 +152,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('int')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-int)))
-  :hooks (:fix))
+         (list (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,8 +165,7 @@
       (equal (type-spec-list-fix tyspecs)
              (list (type-spec-signed (keyword-uscores-start))))
       (equal (type-spec-list-fix tyspecs)
-             (list (type-spec-signed (keyword-uscores-both)))))
-  :hooks (:fix))
+             (list (type-spec-signed (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,8 +182,7 @@
                                   (type-spec-int)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int))))
-  :hooks (:fix))
+                                  (type-spec-int)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,8 +190,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('unsigned')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-unsigned)))
-  :hooks (:fix))
+         (list (type-spec-unsigned))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,8 +200,7 @@
           @('unsigned int') or @('int unsigned')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -223,8 +208,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('long')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-long)))
-  :hooks (:fix))
+         (list (type-spec-long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,8 +225,7 @@
                                   (type-spec-long)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-long))))
-  :hooks (:fix))
+                                  (type-spec-long)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,8 +235,7 @@
           @('long int') or @('int long')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-long)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,8 +255,7 @@
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
                                   (type-spec-long)
-                                  (type-spec-int))))
-  :hooks (:fix))
+                                  (type-spec-int)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -284,8 +265,7 @@
           @('unsigned long') or @('long unsigned')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
-                              (type-spec-long)))
-  :hooks (:fix))
+                              (type-spec-long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,8 +276,7 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
                               (type-spec-long)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -306,8 +285,7 @@
   :short "Check if a list of type specifiers has the form @('long long')."
   (equal (type-spec-list-fix tyspecs)
          (list (type-spec-long)
-               (type-spec-long)))
-  :hooks (:fix))
+               (type-spec-long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,8 +305,7 @@
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
                                   (type-spec-long)
-                                  (type-spec-long))))
-  :hooks (:fix))
+                                  (type-spec-long)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,8 +316,7 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-long)
                               (type-spec-long)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -363,8 +339,7 @@
                             (list (type-spec-signed (keyword-uscores-both))
                                   (type-spec-long)
                                   (type-spec-long)
-                                  (type-spec-int))))
-  :hooks (:fix))
+                                  (type-spec-int)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,8 +350,7 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-unsigned)
                               (type-spec-long)
-                              (type-spec-long)))
-  :hooks (:fix))
+                              (type-spec-long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,8 +362,7 @@
                         (list (type-spec-unsigned)
                               (type-spec-long)
                               (type-spec-long)
-                              (type-spec-int)))
-  :hooks (:fix))
+                              (type-spec-int))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -397,8 +370,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('float')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float)))
-  :hooks (:fix))
+         (list (type-spec-float))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,8 +378,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('double')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-double)))
-  :hooks (:fix))
+         (list (type-spec-double))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,8 +388,7 @@
           @('long double') or @('double long')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-long)
-                              (type-spec-double)))
-  :hooks (:fix))
+                              (type-spec-double))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,8 +396,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('__float80')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-locase-float80)))
-  :hooks (:fix))
+         (list (type-spec-locase-float80))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,8 +404,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('__float128')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-locase-float128)))
-  :hooks (:fix))
+         (list (type-spec-locase-float128))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -444,8 +412,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float16')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float16)))
-  :hooks (:fix))
+         (list (type-spec-float16))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -453,8 +420,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float16x')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float16x)))
-  :hooks (:fix))
+         (list (type-spec-float16x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;16
 
@@ -462,8 +428,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float32')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float32)))
-  :hooks (:fix))
+         (list (type-spec-float32))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,8 +436,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float32x')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float32x)))
-  :hooks (:fix))
+         (list (type-spec-float32x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,8 +444,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float64')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float64)))
-  :hooks (:fix))
+         (list (type-spec-float64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -489,8 +452,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float64x')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float64x)))
-  :hooks (:fix))
+         (list (type-spec-float64x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,8 +460,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float128')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float128)))
-  :hooks (:fix))
+         (list (type-spec-float128))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,8 +468,7 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('_Float128x')."
   (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-float128x)))
-  :hooks (:fix))
+         (list (type-spec-float128x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,8 +478,7 @@
           @('float _Complex') or @('_Complex float')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -529,8 +488,7 @@
           @('double _Complex') or @('_Complex double')."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-double)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -541,8 +499,7 @@
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-long)
                               (type-spec-double)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,8 +509,7 @@
           @('__float80 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-locase-float80)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,8 +519,7 @@
           @('__float128 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-locase-float128)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -574,8 +529,7 @@
           @('_Float16 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float16)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,8 +539,7 @@
           @('_Float16x _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float16x)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,8 +549,7 @@
           @('_Float32 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float32)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -607,8 +559,7 @@
           @('_Float32x _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float32x)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -618,8 +569,7 @@
           @('_Float64 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float64)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,8 +579,7 @@
           @('_Float64x _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float64x)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -640,8 +589,7 @@
           @('_Float128 _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float128)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -651,8 +599,7 @@
           @('_Float128x _Complex') or any permutation of it."
   (type-spec-list-permp (type-spec-list-fix tyspecs)
                         (list (type-spec-float128x)
-                              (type-spec-complex)))
-  :hooks (:fix))
+                              (type-spec-complex))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -663,8 +610,7 @@
   (or (equal (type-spec-list-fix tyspecs)
              (list (type-spec-int128 nil)))
       (equal (type-spec-list-fix tyspecs)
-             (list (type-spec-int128 t))))
-  :hooks (:fix))
+             (list (type-spec-int128 t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -678,8 +624,7 @@
                                   (type-spec-int128 nil)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-unsigned)
-                                  (type-spec-int128 t))))
-  :hooks (:fix))
+                                  (type-spec-int128 t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -706,5 +651,4 @@
                                   (type-spec-int128 t)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int128 t))))
-  :hooks (:fix))
+                                  (type-spec-int128 t)))))

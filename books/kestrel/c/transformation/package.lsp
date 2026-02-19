@@ -39,6 +39,7 @@
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
+                 msg$
                  pseudo-event-formp
                  pseudo-event-form-list
                  pseudo-event-form-listp

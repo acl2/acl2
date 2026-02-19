@@ -17,18 +17,21 @@
 
 (include-book "trim")
 (include-book "bvnot")
-(include-book "bvplus")
+(include-book "bvplus-def")
 (include-book "bvmult")
-(include-book "bvuminus")
-(include-book "bvand")
+(include-book "bvuminus-def")
+(include-book "bvand-def")
 (include-book "bvor")
 (include-book "bvxor")
-(include-book "bvsx")
+(include-book "bvsx-def")
 (include-book "bvif")
+(include-book "logext-def")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
 (local (include-book "logext"))
+(local (include-book "ash"))
+(local (include-book "bvsx"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; WARNING: Keep these in sync with *functions-convertible-to-bv*.
@@ -106,3 +109,21 @@
   (equal (trim size (if test x y))
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable trim))))
+
+;; or we could go to bvmult
+(defthm trim-of-ash-left-shift-becomes-bvcat
+  (implies (and (natp c) ; left shift
+                (natp size))
+           (equal (trim size (ash i c))
+                  (bvcat (- size c) i c 0)))
+  :hints (("Goal" :in-theory (e/d (trim) (ash)))))
+
+; todo: do I want slice or bvshr?
+(defthm trim-of-ash-right-shift-becomes-slice
+  (implies (and (< n 0) ; right shift
+                (natp size)
+                (integerp n))
+           (equal (trim size (ash x n))
+                  (slice (+ -1 size (- n)) (- n) x)))
+  :hints (("Goal" :in-theory (e/d (trim) (ash
+                                          bvchop-of-ash-when-negative-becomes-bvshr)))))

@@ -1470,8 +1470,9 @@ certification using @('make')."
 
 (acl2::defpointer uses-gcc-c17 cert_param)
 
-;; Added by Eric Smith
+;; Added by Eric Smith:
 (acl2::defpointer cert-flags custom-certify-book-commands)
+(acl2::defpointer depends-on raw-lisp-and-other-dependencies)
 
 (defxdoc acl2::ifdef
   :parents (cert.pl)

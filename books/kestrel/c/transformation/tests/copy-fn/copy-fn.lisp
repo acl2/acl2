@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
                            (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/test1.c"
@@ -40,9 +40,50 @@
   int x = 5;
   return x + y - z;
 }
+
 int bar(int y, int z) {
   int x = 5;
   return x + y - z;
+}
+")
+
+  :with-output-off nil)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This transformation shows
+
+(acl2::must-succeed*
+  (c$::input-files :files '("test2.c")
+                   :const *old*)
+
+  (defconst *new*
+    (copy-fn-code-ensemble *old*
+                           (c$::ident "foo")
+                           (c$::ident "bar")))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/test2.c"
+    :content "int foo(int x) {
+  if (x) {
+    return foo(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
+}
+
+int bar(int x) {
+  if (x) {
+    return bar(x - 1);
+  } else {
+    int (*foo)(int) = 0;
+    return foo(x);
+  }
 }
 ")
 
@@ -60,7 +101,7 @@ int bar(int y, int z) {
                            (c$::ident "fib")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/fib.c"
@@ -70,6 +111,7 @@ int bar(int y, int z) {
   }
   return fibonacci(x - 1) + fibonacci(x - 2);
 }
+
 int fib(int x) {
   if (x <= 1) {
     return x;
@@ -90,7 +132,7 @@ int fib(int x) {
 
 (acl2::must-succeed*
   (c$::input-files :files '("generic-selection.c")
-                   :gcc t
+                   :ienv (c$::ienv-default :extensions :gcc)
                    :const *old*)
 
   (defconst *new*
@@ -99,7 +141,7 @@ int fib(int x) {
                            (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :base-dir "new")
 
   (assert-file-contents
     :file "new/generic-selection.c"
@@ -112,6 +154,7 @@ int fib(int x) {
     foo;
   }));
 }
+
 int bar(int x) {
   if (x == 0) {
     return x;

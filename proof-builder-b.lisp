@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -937,7 +937,8 @@
 ; :bye objects in the tag-tree, there is no checking of the load mode, and the
 ; warning above.
 
-  (er-let* ((ttree
+  (er-let* ((otf-flg (chk-otf-flg otf-flg ctx state))
+            (ttree
              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
                                        state
                                        (splitter-output)

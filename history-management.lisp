@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -1613,7 +1613,7 @@
                  INDUCTION-MACHINE
                  JUSTIFICATION
                  UNNORMALIZED-BODY
-                 CONSTRAINT-LST
+                 CONSTRAINT-LST-ETC
                  RECURSIVEP
                  LOOP$-RECURSION
                  TYPE-PRESCRIPTIONS
@@ -2511,9 +2511,11 @@
                     :guard-theorem))
     nil)
    ((eq (car lmi) :instance)
-    (add-to-set-equal "instantiation" (lmi-techs (cadr lmi))))
+    (add-to-set-equal "in~-stan~-ti~-a~-tion"
+                      (lmi-techs (cadr lmi))))
    ((eq (car lmi) :functional-instance)
-    (add-to-set-equal "functional instantiation" (lmi-techs (cadr lmi))))
+    (add-to-set-equal "functional in~-stan~-ti~-a~-tion"
+                      (lmi-techs (cadr lmi))))
    (t nil)))
 
 (defun lmi-seed-lst (lmi-lst)
@@ -2909,7 +2911,8 @@
 ; Let's line up the attachment list with "Rules: ".
 
                         (fmt1 "Modified system attachments:~|       ~y0"
-                              (list (cons #\0 (alist-to-doublets pairs)))
+                              (list (cons #\0 (merge-sort-lexorder
+                                               (alist-to-doublets pairs))))
                               0 channel state nil)
                         (declare (ignore col))
                         state)))))))))))
@@ -5426,6 +5429,20 @@
            t))
     t)
    (t (in-encapsulatep (cdr embedded-event-lst) non-trivp))))
+
+(defun in-nested-encapsulatep1 (embedded-event-lst)
+  (cond
+   ((endp embedded-event-lst) nil)
+   ((eq (car (car embedded-event-lst)) 'encapsulate)
+    (in-encapsulatep (cdr embedded-event-lst) nil))
+   (t (in-nested-encapsulatep1 (cdr embedded-event-lst)))))
+
+(defun in-nested-encapsulatep (state)
+
+; Return true when the current world lies within nested encapsulate calls, else
+; nil.
+
+  (in-nested-encapsulatep1 (global-val 'embedded-event-lst (w state))))
 
 (defun store-cltl-command-for-redundant-def (state)
 
@@ -10774,6 +10791,184 @@
            (and (body fn nil wrld)
                 t))))
 
+; Essay on Constraint-lst-etc pairs
+
+; A ``Constraint-lst-etc'' is just a pair whose car denotes some constraints
+; and whose cdr denotes the origins of those constraints.  Grammatically, think
+; of ``constraint-lst-etc'' as a singular noun or as the name of a
+; data-structure.
+
+; In the non-trivial cases, the car of a constraint-lst-etc is a list of terms
+; that are actually theorems and thought of as implicitly conjoined.  (We say
+; non-trivial because there are some special cases discussed below.)  And, in
+; the non-trivial cases, the cdr is a list of tokens, as long as constraints,
+; intended to help the user understand where each constraint term came from.
+; For example, given (defthm name (prop (fn x))) in an encapsulate introducing
+; the constrained function fn, then (prop (fn x)) is a constraint and `(THEOREM
+; ,name) might be the origin.  (We're vague about this because origins have no
+; formal semantics, they're just intended to be helpful to user and we are free
+; to change them if we think that makes them more helpful.  The only critical
+; thing is that each origin token is understood to suggest the origin of the
+; corresponding constraint term, i.e., we can't drop one out or rearrange their
+; order without doing the same thing to both lists.)
+
+; Prior to V8-7, we stored constraints in a combination of several properties,
+; including 'UNNORMALIZED-BODY (for defined functions), 'DEFCHOOSE-AXIOM (for
+; fns introduced with defchoose), and 'CONSTRAINT-LST (for the constrained fns
+; introduced with encapsulate and partial-encapsulate.)  We still use the first
+; two properties as before.  But in v8-7 we replaced 'constraint-lst with the
+; 'constraint-lst-etc property.  The value of that property, when present, is a
+; cons of the form (x . origins), where x is EXACTLY what used to be found on
+; the 'CONSTRAINT-LST property, and origins is either NIL (and irrelevant) or a
+; list of origin tokens.
+
+; Rationale: We considered leaving the 'constraint-lst property as it was and
+; storing an origins property separately.  However, the function formerly
+; called constraints-introduced and now called constraint-lst-etc-introduced,
+; maps over the new property list triples added by encapsulate to gather up the
+; constraints and that function is easier to code if both the constraints and
+; origins of inner encapsulates are encountered at the same time.  Otherwise,
+; assuming we don't rely on the order in which properties are laid down, we
+; have to be prepared to encounter, say, 'constraint-lst first and then later
+; 'origins or vice versa.
+
+; When you access the 'constraint-lst-etc property do it this way:
+
+; (getpropc fn 'constraint-lst-etc '(t . nil) wrld)
+
+; because we don't store a 'constraint-lst-etc property on defun'd or
+; defchoose'd fns but need to know the difference between such constrained fns
+; and completely unconstrained fns.
+
+; Once a constraint-lst-etc pair, (x . origins), has been fetched as above,
+; here are the cases on x.  By the way, these are the EXACT SAME CASES as
+; considered for the value of the 'constraint-lst property before v8-7.
+
+; (a) t -  this means the fn was introduced either by DEFUN or DEFCHOOSE.  If
+;          the UNNORMALIZED-BODY property is non-nil, fn was defun'd and we use
+;          its definitional equation as the constraint and we manufacture its
+;          origin with `(DEFUN ,fn).  If there is no unnormalized-body
+;          property, fn was introduced with defchoose and we use (getpropc fn
+;          'defchoose-axiom nil wrld) as the constraint and we manufacture
+;          `(DEFCHOOSE ,fn) for the origin.  Thus, the cdr of the pair (which
+;          actually must have been the '(t . nil) default value supplied to
+;          getpropc) is irrelevant.
+
+; (b) gn - where gn is not t and not nil, this means gn is a function symbol
+;          and gn's 'constraint-lst-etc property is what we should use to
+;          recover the constraints on fn.  This illustrates that not every
+;          'constraint-lst-etc pair has a list in its car!  To get the
+;          constraints on a fn whose 'constraint-lst-etc property is (gn . ...)
+;          we do this:
+
+;          (getpropc gn 'constraint-lst-etc
+;                    '(:error "See constraint-info:  expected to find a ~
+;                              'constraint-lst-etc property where we did not.")
+;                    wrld)
+;          The cdr of the (gn . ...)-style pairs is irrelevant because each
+;          constraint term originates as described by the constraint-lst-etc
+;          pair fetched for gn.
+
+; (c) (unknown-constraints-p x) - fn has unknown constraints.  This case
+;          arises when fn was introduced with a partial-encapsulate.  In fact,
+;          in this case, x is of the form `(,*unknown-constraints*
+;          ,@supporters) indicating that the constraints cannot be determined
+;          but involve at most the indicated supporters (immediate ancestors).
+;          The origins component of such a pair is irrelevant.
+
+; (d) list of constraint terms.  The origins of such a pair is a list
+;          of origin tokens as long as x.
+
+; We call (d) an ``ordinary constraint-lst-etc pair''.  Cases (a), (b), and (c)
+; are ``special cases.''
+
+; Backwards Compatibility Equivalences
+
+; Below we offer some equivalences relating ``old code'' (possibly found in
+; books pre-dating v8-7) to ``new code'' for v8-7 onwards.
+
+; ---
+; Old Code (Note the default value of NIL):
+; (GETPROPC fn 'CONSTRAINT-LST NIL wrld)
+
+; Equivalent New code:
+; (pre-v8-7-GETPROPC-CONSTRAINT-LST-NIL fn wrld)
+
+; ---
+; Old Code:
+; (GETPROP fn 'CONSTRAINT-LST T 'CURRENT-ACL2-WORLD wrld)
+
+; Equivalent New Code:
+; (car (getprop fn 'constraint-lst-etc '(t . nil) 'current-acl2-world wrld))
+
+; ---
+; Old Code:
+; (CONSTRAINT-INFO fn wrld)
+
+; Equivalent New Code:
+; (pre-v8-7-constraint-info fn wrld)
+
+; End of Essay on Constraint-lst-etc pairs
+
+(defun constraint-lst-etc-p (x)
+  (declare (xargs :guard t))
+
+; X must be a cons.  Its car is always (i) a symbol, (ii) a list of terms, or
+; (iii) a list like (:UNKNOWN-CONSTRAINTS support-fn1 ... support-fnk).  When
+; the car of x is a symbol it is generally a function symbol.  But if the pair
+; is obtained via the recommended idiom for fetching the 'constraint-lst-etc
+; property, namely (getpropc fn 'constraint-lst-etc '(t . nil)), the car is t
+; if no such property is stored.  Such a pair is never stored under
+; 'constraint-lst-etc and hence there is some tension here: should (t . nil) be
+; considered a constraint-lst-etc pair or not?  This function says it is.  But
+; such a pair is never found as the value of the 'constraint-lst-etc property.
+; But the pseudo-good-worldp book uses this function to check the
+; 'constraint-lst-etc property of the world.  Perhaps when checking for good
+; worlds we ought to exclude this pair.  But, as of this writing, we do not.
+; In addition, we use pseudo-term-listp to check both (ii) and (iii), even
+; though (iii) is not formally a list of terms since keywords are not formal
+; variables.  The cdr of a constraint-lst-etc pair is always a true-listp and
+; is in fact as long as the list of formal terms in the car.  But we don't
+; check the length requirement.
+
+  (and (consp x)
+       (or (symbolp (car x))
+           (pseudo-term-listp (car x)))
+       (true-listp (cdr x))))
+
+(defmacro pre-v8-7-getpropc-constraint-lst-nil (fn wrld)
+
+; If you want to write system code that pretends the old 'constraint-lst
+; property is maintained, use this macro instead of
+; (getpropc fn 'constraint-lst nil wrld).
+
+  `(car (getpropc ,fn 'constraint-lst-etc nil ,wrld)))
+
+(defun make-origin (tag x)
+
+; Origins are tokens that suggest to the user where a constraint comes from.
+; Typical origins are (defun foo), (defchoose foo), (theorem foo), and
+; (corollary foo).  The last two have several possible event sources, including
+; defthm, defaxiom, and even defpkg.  In addition, :theorem hints generate
+; origins too, e.g., (:theorem term), which contain the entire alleged theorem
+; term (since it has no name).  Note this origin uses the keyword :theorem
+; rather than the standard acl2::theorem.  The only reason we've defined this
+; function is to make it possible to find every kind of origin token generated.
+
+  (declare (xargs :guard t))
+  (list tag x))
+
+(defmacro constraint-lst-etc (fn default wrld)
+
+; This macro produces a value that in practice is equal to (getpropc fn
+; 'constraint-lst-etc nil wrld).  But it does so in a way guaranteeing that
+; this value will be a consp.
+
+  `(let ((prop (getpropc ,fn 'constraint-lst-etc ,default ,wrld)))
+     (if (consp prop)
+         prop
+       '(t . nil))))
+
 (defun constraint-info (fn wrld)
 
 ; Warning: If fn is defined by mutual-recursion, this function returns only the
@@ -10785,35 +10980,35 @@
 ; formals with the unnormalized-body of fn, which probably is not sensible
 ; logically (but might be useful for finding ancestors, for example).
 
-; This function returns a pair (mv flg x).  In the simplest and perhaps most
-; common case, there is no 'constraint-lst property for fn, e.g., when fn is
-; defined by defun or defchoose and not in the scope of an encapsulate.  In
-; this case, flg is nil, and x is the defining axiom for fn.  In the other
-; case, flg is the name under which the actual constraint for fn is stored
-; (possibly name itself), and x is the list of constraints stored there or else
-; a value (*unknown-constraints* . supporters), indicating that the constraints
-; cannot be determined but involve at most the indicated supporters (immediate
-; ancestors).
+; This function returns a triple (mv flg x origins).  In the simplest and
+; perhaps most common case, there is no 'constraint-lst-etc property for fn,
+; e.g., when fn is defined by defun or defchoose and not in the scope of an
+; encapsulate.  In this case, flg is nil, and x is the defining axiom for fn,
+; and origins is an appropriate origin token, e.g., (DEFUN fn) or (DEFCHOOSE
+; fn).  In the other case, flg is the name under which the actual constraint
+; for fn is stored (possibly name itself), and x is the car of the
+; constraint-lst-etc pair stored there and origins is the cdr of that pair, or
+; else x is `(,*unknown-constraints* ,@supporters) and origins is nil,
+; indicating that the constraints cannot be determined but involve at most the
+; indicated supporters (immediate ancestors).
+
+; Repeating more succinctly: when flg is nil, x is a term and origins is a
+; single token.  When flg is non-nil it is a function name, and one of two
+; cases obtains.  First, x satisfies unknown-constraints-p and origins is nil,
+; or, second, x is a list of terms and origins is an equally long list of
+; origin tokens.
 
 ; We assume that if fn was introduced by a non-local defun or defchoose in the
 ; context of an encapsulate that introduced constraints, then the defining
-; axiom for fn is included in its 'constraint-lst property.  That is:  in that
-; case, we do not need to use the definitional axiom explicitly in order to
-; obtain the full list of constraints.
+; axiom for fn is included in its 'constraint-lst-etc property.  That is: in
+; that case, we do not need to use the definitional axiom explicitly in order
+; to obtain the full list of constraints.
 
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld))))
-  (let ((prop (getpropc fn 'constraint-lst
-
-; We want to distinguish between not finding a list of constraints, and finding
-; a list of constraints of nil.  Perhaps we only store non-nil constraints, but
-; even if so, there is no need to rely on that invariant, and future versions
-; of ACL2 may not respect it.
-
-                        t wrld)))
-
+  (let ((prop (constraint-lst-etc fn '(t . nil) wrld)))
     (cond
-     ((eq prop t)
+     ((eq (car prop) t)
       (let ((body ; (body fn nil wrld), but easier to guard-verify:
              (getpropc fn 'unnormalized-body nil wrld)))
         (cond (body
@@ -10826,31 +11021,47 @@
 ; clause-processor functions; see the remark about mbe in the Essay on
 ; Correctness of Meta Reasoning.
 
-               (mv nil (fcons-term* 'equal
-                                    (fcons-term fn (formals fn wrld))
-                                    body)))
+               (mv nil
+                   (fcons-term* 'equal
+                                (fcons-term fn (formals fn wrld))
+                                body)
+                   (make-origin 'defun fn)))
               (t
                (mv nil
                    (or (getpropc fn 'defchoose-axiom nil wrld)
 
 ; Then fn is a primitive, and has no constraint.
 
-                       *t*))))))
-     ((and (symbolp prop)
-           prop
+                       *t*)
+                   (make-origin 'defchoose fn))))))
+     ((and (symbolp (car prop))
+           (car prop)
 ; The following must be true since prop is a symbol:
-;          (not (unknown-constraints-p prop))
+;          (not (unknown-constraints-p (car prop)))
            )
 
-; Then prop is a name, and the constraints for fn are found under that name.
+; Then (car prop) is a name, and the constraints for fn are found under the
+; constraint-lst property of that name.
 
-      (mv prop
-          (getpropc prop 'constraint-lst
-                    '(:error "See constraint-info:  expected to find a ~
-                              'constraint-lst property where we did not.")
-                    wrld)))
-     (t ; includes the case of (unknown-constraints-p prop)
-      (mv fn prop)))))
+      (let ((pair (constraint-lst-etc (car prop)
+                                      '(:error "See constraint-info:  ~
+                                                expected to find a ~
+                                                'constraint-lst-etc property ~
+                                                where we did not.")
+                                      wrld)))
+        (mv (car prop)
+            (car pair)
+            (cdr pair))))
+     (t ; includes ordinary case and the case of (unknown-constraints-p (car prop))
+      (mv fn
+          (car prop)
+          (cdr prop))))))
+
+(defmacro pre-v8-7-constraint-info (fn wrld)
+  `(mv-let (x y z)
+     (constraint-info ,fn ,wrld)
+     (declare (ignore z))
+     (mv x y)))
 
 (defun@par chk-equal-arities (fn1 n1 fn2 n2 ctx state)
   (cond
@@ -11227,18 +11438,18 @@
 
 )
 
-(defun unknown-constraints-p (prop)
+(defun unknown-constraints-p (lst)
 
-; We recognize when prop could be the 'constraint-lst property for a function
-; symbol with unknown-constraints (typically, from a partial-encapsulate).
+; Lst is a list of terms or else an unknown constraint of the form
+; (,*unknown-constraints* . ,supporters).  We return t in the latter case.
 
   (declare (xargs :guard t))
-  (and (consp prop)
-       (eq (car prop) *unknown-constraints*)))
+  (and (consp lst)
+       (eq (car lst) *unknown-constraints*)))
 
-(defun unknown-constraints-supporters (prop)
-  (declare (xargs :guard (unknown-constraints-p prop)))
-  (cdr prop))
+(defun unknown-constraints-supporters (lst)
+  (declare (xargs :guard (unknown-constraints-p lst)))
+  (cdr lst))
 
 (defun collect-instantiablep1 (fns wrld ignore-fns)
 
@@ -11294,8 +11505,9 @@
 ; immediate-instantiable-ancestors is in ancestors, where fn is always in
 ; ignore-fns (whether fn is recursive or not).
 
-  (mv-let (name x)
+  (mv-let (name x origins)
           (constraint-info fn wrld)
+    (declare (ignore origins)) ; Ignoring origins.
     (cond
      ((unknown-constraints-p x)
       (let ((supporters (unknown-constraints-supporters x)))
@@ -11391,39 +11603,49 @@
         (t (cons (getpropc (car symbols) prop nil wrld)
                  (getprop-x-lst (cdr symbols) prop wrld)))))
 
-(defun filter-hitps (lst alist ans)
+(defun filter-hitps-with-origins (lst origins alist new-lst new-origins)
   (cond
-   ((endp lst) ans)
+   ((endp lst) (mv new-lst new-origins))
    ((hitp (car lst) alist)
-    (filter-hitps (cdr lst) alist (cons (car lst) ans)))
-   (t (filter-hitps (cdr lst) alist ans))))
+    (filter-hitps-with-origins (cdr lst) (cdr origins) alist
+                               (cons (car lst) new-lst)
+                               (cons (car origins) new-origins)))
+   (t (filter-hitps-with-origins (cdr lst) (cdr origins) alist
+                                 new-lst
+                                 new-origins))))
 
 (defun relevant-constraints1 (names alist proved-fnl-insts-alist constraints
-                                    event-names new-entries seen wrld)
+                                    event-names new-entries origins seen wrld)
 
 ; For context, see the Essay on the proved-functional-instances-alist.
 
 ; Names is a list of function symbols, each of which therefore has a constraint
-; formula.  We return three values, corresponding respectively to the following
-; three formals, which are initially nil:  constraints, event-names, and
-; new-entries.  The first value is the result of collecting those constraint
-; formulas that are hit by the translated functional substitution alist, except
-; for those that are known (via proved-fnl-insts-alist) to have already been
-; proved.  The second is a list of names of events responsible for the validity
-; of the omitted formulas.  The third is a list of pairs (cons name
-; restr-alist), where restr-alist is obtained by restricting the given alist to
-; the instantiable function symbols occurring in the constraint generated by
-; name (in the sense of constraint-info).
+; formula.  We return four values, corresponding respectively to the following
+; four formals: constraints, event-names, new-entries, and origins.  The first
+; three of these are initially nil; origins is initially either nil or t
+; indicating whether we should also return corresponding origin information for
+; each element of constraints.  (Once we're past the initial call, origins is
+; just a non-nil true-list accumulating origin information.)  Constraints is
+; the result of collecting those constraint formulas that are hit by the
+; translated functional substitution alist, except for those that are known
+; (via proved-fnl-insts-alist) to have already been proved.  The second is a
+; list of names of events responsible for the validity of the omitted formulas.
+; The third is a list of pairs (cons name restr-alist), where restr-alist is
+; obtained by restricting the given alist to the instantiable function symbols
+; occurring in the constraint generated by name (in the sense of
+; constraint-info).  And origins, if non-nil, is the list of origins
+; corresponding to constraints.
 
 ; Exception: We are free to return (mv u g nil), where (unknown-constraints-p
 ; u).  However, we only do so if the constraints cannot be determined because
 ; of the presence of unknown-constraints on some function g encountered.
 
 ; Seen is a list of names already processed.  Suppose that foo and bar are both
-; constrained by the same encapsulate, and that the 'constraint-lst property of
-; 'bar is 'foo.  Since both foo and bar generate the same constraint, we want
-; to be sure only to process that constraint once.  So, we put foo on the list
-; seen as soon as bar is processed, so that foo will not have to be processed.
+; constrained by the same encapsulate, and that the 'constraint-lst-etc
+; property of 'bar is 'foo.  Since both foo and bar generate the same
+; constraint, we want to be sure only to process that constraint once.  So, we
+; put foo on the list seen as soon as bar is processed, so that foo will not
+; have to be processed.
 
 ; Note that the current ttree is not available here.  If it were, we could
 ; choose to avoid proving constraints that were already generated in the
@@ -11434,85 +11656,88 @@
 ; See also relevant-constraints1-axioms, which is a similar function for
 ; collecting constraint information from defaxiom events.
 
-  (cond ((null names) (mv constraints event-names new-entries))
+  (cond ((null names) (mv constraints event-names new-entries origins))
         ((member-eq (car names) seen)
          (relevant-constraints1
           (cdr names) alist proved-fnl-insts-alist
-          constraints event-names new-entries seen wrld))
+          constraints event-names new-entries origins seen wrld))
         (t (mv-let
-            (name x)
-            (constraint-info (car names) wrld)
+             (name x xorigins)
+             (constraint-info (car names) wrld)
 
 ; Note that -- ignoring the case of unknown-constraints -- x is a single
 ; constraint if name is nil and otherwise x is a list of constraints.
 
-            (cond
-             ((unknown-constraints-p x)
+             (cond
+              ((unknown-constraints-p x)
 
 ; If there is a hit among the supporters, then we stop here, returning x to
-; indicate that there are unknown-constraints.  Otherwise, we recurs on (cdr
+; indicate that there are unknown-constraints.  Otherwise, we recur on (cdr
 ; names), just as we do in the normal case (known constraints) when there is no
 ; hit.
 
-              (let ((supporters (unknown-constraints-supporters x)))
-                (cond
-                 ((first-assoc-eq supporters alist)
-                  (mv x name nil))
-                 (t (relevant-constraints1
-                     (cdr names) alist proved-fnl-insts-alist
-                     constraints event-names new-entries
-                     seen
-                     wrld)))))
-             ((and name
-                   (not (eq name (car names)))
+               (let ((supporters (unknown-constraints-supporters x)))
+                 (cond
+                  ((first-assoc-eq supporters alist)
+                   (mv x name nil nil))
+                  (t (relevant-constraints1
+                      (cdr names) alist proved-fnl-insts-alist
+                      constraints event-names new-entries origins
+                      seen
+                      wrld)))))
+              ((and name
+                    (not (eq name (car names)))
 
 ; Minor point:  the test immediately above is subsumed by the one below, since
 ; we already know at this point that (not (member-eq (car names) seen)), but we
 ; keep it in for efficiency.
 
-                   (member-eq name seen))
-              (relevant-constraints1
-               (cdr names) alist proved-fnl-insts-alist
-               constraints event-names new-entries
-               (cons (car names) seen) wrld))
-             (t
-              (let* ((x (cond (name (filter-hitps x alist nil))
-                              ((hitp x alist) x)
+                    (member-eq name seen))
+               (relevant-constraints1
+                (cdr names) alist proved-fnl-insts-alist
+                constraints event-names new-entries origins
+                (cons (car names) seen) wrld))
+              (t
+               (mv-let (new-x new-xorigins)
+                 (cond (name
+                        (filter-hitps-with-origins x xorigins alist nil nil))
+                       ((hitp x alist)
+                        (mv x xorigins))
+                       (t (mv nil nil)))
 
-; We continue to treat x as a list of constraints or a single constraint,
+; We continue to treat new-x as a list of constraints or a single constraint,
 ; depending respectively on whether name is non-nil or nil; except, we will
 ; use nil for x when there are no constraints even when name is nil.
 
-                              (t nil)))
-                     (instantiable-fns
-                      (and x ; optimization
-                           (cond (name (instantiable-ffn-symbs-lst
-                                        x wrld nil nil))
-                                 (t (instantiable-ffn-symbs
-                                     x wrld nil nil))))))
-                (let* ((constraint-alist
-                        (and x ; optimization
-                             (restrict-alist instantiable-fns alist)))
-                       (ev
-                        (and x ; optimization: ev unused when (null x) below
-                             (event-responsible-for-proved-constraint
-                              (or name (car names))
-                              constraint-alist
-                              proved-fnl-insts-alist)))
-                       (seen (cons (car names)
-                                   (if (and name (not (eq name (car names))))
-                                       (cons name seen)
-                                     seen))))
-                  (cond
-                   ((null x)
-                    (relevant-constraints1
-                     (cdr names) alist proved-fnl-insts-alist
-                     constraints event-names new-entries
-                     seen
-                     wrld))
-                   (ev (relevant-constraints1
+                 (let* ((instantiable-fns
+                         (and new-x ; optimization
+                              (cond (name (instantiable-ffn-symbs-lst
+                                           new-x wrld nil nil))
+                                    (t (instantiable-ffn-symbs
+                                        new-x wrld nil nil))))))
+                   (let* ((constraint-alist
+                           (and new-x ; optimization
+                                (restrict-alist instantiable-fns alist)))
+                          (ev
+                           (and new-x ; optimization: ev unused when (null x) below
+                                (event-responsible-for-proved-constraint
+                                 (or name (car names))
+                                 constraint-alist
+                                 proved-fnl-insts-alist)))
+                          (seen (cons (car names)
+                                      (if (and name (not (eq name (car names))))
+                                          (cons name seen)
+                                          seen))))
+                     (cond
+                      ((null new-x)
+                       (relevant-constraints1
                         (cdr names) alist proved-fnl-insts-alist
-                        constraints
+                        constraints event-names new-entries origins
+                        seen
+                        wrld))
+                      (ev (relevant-constraints1
+                           (cdr names) alist proved-fnl-insts-alist
+                           constraints
 
 ; Notice that ev could be 0; see event-responsible-for-proved-constraint.
 ; Where do we handle such an "event name"?  Here is an inverted call stack:
@@ -11532,38 +11757,52 @@
 ; We might want to construct an example that illustrates this "0 handling" by
 ; way of providing a :functional-instance lemma-instance in a verify-guards.
 
-                        (add-to-set ev event-names)
-                        new-entries
-                        seen
-                        wrld))
-                   (t (relevant-constraints1
-                       (cdr names) alist proved-fnl-insts-alist
-                       (if name
-                           (append x constraints)
-                         (cons x constraints))
-                       event-names
+                           (add-to-set ev event-names)
+                           new-entries
+                           origins
+                           seen
+                           wrld))
+                      (t (relevant-constraints1
+                          (cdr names) alist proved-fnl-insts-alist
+                          (if name
+                              (append new-x constraints)
+                              (cons new-x constraints))
+                          event-names
 
 ; On which name's behalf do we note the constraint-alist?  If name is not nil,
 ; then it is a "canonical" name for which constraint-info returns the
 ; constraints we are using, in the sense that its constraint-lst is a list.
 ; Otherwise, (car names) is the name used to obtain constraint-info.
 
-                       (cons (make proved-functional-instances-alist-entry
-                                   :constraint-event-name (or name
-                                                              (car names))
-                                   :restricted-alist constraint-alist
-                                   :behalf-of-event-name
+                          (cons (make proved-functional-instances-alist-entry
+                                      :constraint-event-name (or name
+                                                                 (car names))
+                                      :restricted-alist constraint-alist
+                                      :behalf-of-event-name
 
 ; Eventually, the ``nil'' below may be filled in with the event name on behalf
 ; of which we are carrying out the current proof.
 
-                                   nil)
-                             new-entries)
-                       seen
-                       wrld)))))))))))
+                                      nil)
+                                new-entries)
+                          (if origins
+                              (if name
+                                  (append
+                                   (pairlis-x2 new-xorigins
+                                               (list (alist-to-doublets
+                                                      constraint-alist)))
+                                   (if (eq origins t) nil origins))
+                                  (cons (list new-xorigins
+                                              (alist-to-doublets
+                                               constraint-alist))
+                                        (if (eq origins t) nil origins)))
+                              nil)
+                          seen
+                          wrld))))))))))))
 
 (defun relevant-constraints1-axioms (names alist proved-fnl-insts-alist
                                            constraints event-names new-entries
+                                           origins
                                            wrld)
 
 ; For context, see the Essay on the proved-functional-instances-alist.
@@ -11573,7 +11812,8 @@
 ; list of distinct axiom names rather than function names.  See
 ; relevant-constraints1 for comments.
 
-  (cond ((null names) (mv constraints event-names new-entries))
+  (cond ((null names) (mv constraints event-names new-entries
+                          (if (eq origins t) nil origins)))
         (t (let* ((constraint
                    (getpropc (car names)
                              'theorem
@@ -11595,7 +11835,7 @@
                             (cdr names) alist proved-fnl-insts-alist
                             constraints
                             (add-to-set ev event-names)
-                            new-entries
+                            new-entries origins
                             wrld))
                        (t (relevant-constraints1-axioms
                            (cdr names) alist proved-fnl-insts-alist
@@ -11606,26 +11846,32 @@
                                        :restricted-alist constraint-alist
                                        :behalf-of-event-name nil)
                                  new-entries)
+                           (if origins
+                               (cons `(defaxiom ,(car names))
+                                     (if (eq origins t) nil origins))
+                               nil)
                            wrld)))))
                    (t (relevant-constraints1-axioms
                        (cdr names) alist proved-fnl-insts-alist
-                       constraints event-names new-entries
+                       constraints event-names new-entries origins
                        wrld)))))))
 
-(defun relevant-constraints (thm alist proved-fnl-insts-alist wrld)
+(defun relevant-constraints (thm alist proved-fnl-insts-alist origins-flg wrld)
 
 ; For context, see the Essay on the proved-functional-instances-alist.
 
 ; Thm is a term and alist is a translated functional substitution.  We return
-; three values.  The first value is the list of the constraints that must be
+; four values.  The first value is the list of the constraints that must be
 ; instantiated with alist and proved in order to justify the functional
 ; instantiation of thm.  The second value is a list of names of events on whose
 ; behalf proof obligations were not generated that would otherwise have been,
 ; because those proof obligations were proved during processing of those
 ; events.  (In such cases we do not include these constraints in our first
-; value.)  Our third and final value is a list of new entries to add to the
-; world global 'proved-functional-instances-alist, as described in the comment
-; for event-responsible-for-proved-constraint.
+; value.)  The third value is a list of new entries to add to the world global
+; 'proved-functional-instances-alist, as described in the comment for
+; event-responsible-for-proved-constraint.  The fourth and final value is nil
+; if the input origins-flg is nil and otherwise is the list of origins
+; corresponding to the constraints listed.
 
 ; Keep the following comment in sync with the corresponding comment in
 ; defaxiom-supporters.
@@ -11644,11 +11890,16 @@
   (let ((nonconstructive-axiom-names
          (global-val 'nonconstructive-axiom-names wrld)))
     (mv-let
-     (constraints event-names new-entries)
+     (constraints event-names new-entries origins)
      (relevant-constraints1-axioms
       nonconstructive-axiom-names alist proved-fnl-insts-alist
-      nil nil nil
+      nil nil nil origins-flg
       wrld)
+
+; Note: It is possible that origins-flg = t but origins = nil, for example if
+; there are no nonconstructive-axiom-names.  So we are careful to restore
+; origins to t in the call below.
+
      (assert$
       (not (unknown-constraints-p constraints))
       (let* ((instantiable-fns
@@ -11658,7 +11909,12 @@
                wrld nil nil))
              (ancestors (instantiable-ancestors instantiable-fns wrld nil)))
         (relevant-constraints1 ancestors alist proved-fnl-insts-alist
-                               constraints event-names new-entries nil
+                               constraints event-names new-entries
+                               (if (and (eq origins-flg t)
+                                        (null origins))
+                                   t
+                                   origins)
+                               nil
                                wrld))))))
 
 (mutual-recursion
@@ -11724,8 +11980,8 @@
                          (t :failed)))))))))
 
 (defun@par translate-lmi/instance (formula constraints event-names new-entries
-                                           extra-bindings-ok substn ctx wrld
-                                           state)
+                                           origins extra-bindings-ok substn ctx
+                                           wrld state)
 
 ; Formula is some term, obtained by previous instantiations.  Constraints
 ; are the constraints generated by those instantiations -- i.e., if the
@@ -11735,8 +11991,8 @@
 ; Provided substn indeed denotes a substitution that is ok to apply to formula,
 ; we create the instance of formula.  We return a list whose car is the
 ; instantiated formula and whose cdr is the incoming constraints, event-names
-; and new-entries, which all pass through unchanged.  Otherwise, we cause an
-; error.
+; new-entries and origins, which all pass through unchanged.  Otherwise, we
+; cause an error.
 
   (er-let*@par
    ((alist (translate-substitution@par substn ctx wrld state)))
@@ -11766,7 +12022,8 @@
       (t (value@par (list (sublis-var alist formula)
                           constraints
                           event-names
-                          new-entries)))))))
+                          new-entries
+                          origins)))))))
 
 (defun fn-subst-free-vars (alist)
   (cond ((endp alist) nil)
@@ -11802,6 +12059,11 @@
 ; whose functional substitution is alist.  We return a possibly-modified
 ; version of new-constraints in order to avoid a kind of variable capture, as
 ; explained below.
+
+; Warning: The length and ordering of the possibly-modified new-constraints
+; must be the same as those of the original new-constraints (in order to
+; preserve the correspondence of constraints to origins in
+; translate-lmi/functional-instance).
 
 ; In Version_3.0.2 we removed a "draconian restriction to avoid capture" that
 ; had been too aggressive in avoiding this problem, but total removal was also
@@ -11863,7 +12125,7 @@
      (t (mv nil new-constraints)))))
 
 (defun@par translate-lmi/functional-instance (formula constraints event-names
-                                                      new-entries substn
+                                                      new-entries origins substn
                                                       proved-fnl-insts-alist
                                                       ctx wrld state)
 
@@ -11871,28 +12133,38 @@
 
 ; Formula is some term, obtained by previous instantiations.  Constraints are
 ; the constraints generated by those instantiations -- i.e., if the constraints
-; are theorems then formula is a theorem.  Substn is an untranslated object
-; alleged to be a functional substitution.
+; are theorems then formula is a theorem.  Event-names is a list of names of
+; events on whose behalf proof obligations were not generated that would
+; otherwise have been, because those proof obligations were proved during
+; processing of those events.  (In such cases we do not include these
+; constraints in our first value.)  New-entries is a list of new entries to add
+; to the world global 'proved-functional-instances-alist, as described in the
+; comment for event-responsible-for-proved-constraint.  Origins either nil (if
+; we're not collecting origin information) or a list as long as constraints
+; giving the origin of corresponding elements of constraints.  Substn is an
+; untranslated object alleged to be a functional substitution.
 
 ; Provided substn indeed denotes a functional substitution that is ok to apply
 ; to both formula and the new constraints imposed, we create the functional
-; instance of formula and the new constraints to prove.  We return a pair whose
-; car is the instantiated formula and whose cdr is the incoming constraints
-; appended to the new ones added by this functional instantiation.  Otherwise,
-; we cause an error.
+; instance of formula and the new constraints to prove.  We return a 5-tuple
+; containing the instantiated formula, and the accumulated constraints,
+; event-names, new-entries, and origins.  Otherwise, we cause an error.
 
-  (er-let*@par
-   ((alist (translate-functional-substitution@par substn ctx wrld state)))
-   (mv-let (new-constraints new-event-names new-new-entries)
-     (relevant-constraints formula alist proved-fnl-insts-alist wrld)
-     (cond
-      ((unknown-constraints-p new-constraints)
-       (er@par soft ctx
-         "Functional instantiation is disallowed in this context, because the ~
+  (let ((constraint-tracking-flg (constraint-tracking wrld)))
+    (er-let*@par
+     ((alist (translate-functional-substitution@par substn ctx wrld state)))
+     (mv-let (new-constraints new-event-names new-new-entries new-origins)
+       (relevant-constraints formula alist proved-fnl-insts-alist
+                             constraint-tracking-flg
+                             wrld)
+       (cond
+        ((unknown-constraints-p new-constraints)
+         (er@par soft ctx
+           "Functional instantiation is disallowed in this context, because the ~
           function ~x0 has unknown-constraints.  See :DOC partial-encapsulate."
-         new-event-names))
-      (t
-       (mv-let (bad-vars-alist new-constraints)
+           new-event-names))
+        (t
+         (mv-let (bad-vars-alist new-constraints)
 
 ; For many versions through 7.3, we called sublis-fn-rec-lst below without
 ; possibly modifying new constraints with this call of
@@ -11902,31 +12174,38 @@
 ; could first rename free variables in formula to avoid alist, then after
 ; applying alist to formula, map each renamed variable back to the original.
 
-         (remove-capture-in-constraint-lst alist new-constraints)
-         (pprogn@par
-          (cond (bad-vars-alist (warning$@par ctx "Capture"
-                                  "In order to avoid variable capture, ~
-                                   functional instantiation is generating a ~
-                                   version of the constraints in which free ~
-                                   variables are renamed by the following ~
-                                   alist:~|~x0"
-                                  bad-vars-alist))
-                (t (state-mac@par)))
-          (let ((allow-freevars-p
-                 #-:non-standard-analysis
-                 t
-                 #+:non-standard-analysis
-                 (classical-fn-list-p (all-fnnames formula) wrld)))
-            (mv-let
-              (erp0 formula0)
-              (sublis-fn-rec alist formula nil allow-freevars-p)
+           (remove-capture-in-constraint-lst alist new-constraints)
+
+; Note: remove-capture-in-constraint-lst preserves the length and ordering of
+; new-constraints, so new-origins still corresponds appropriately.
+
+           (pprogn@par
+            (cond (bad-vars-alist (warning$@par ctx "Capture"
+                                    "In order to avoid variable capture, ~
+                                     functional instantiation is generating a ~
+                                     version of the constraints in which free ~
+                                     variables are renamed by the following ~
+                                     alist:~|~x0"
+                                    bad-vars-alist))
+                  (t (state-mac@par)))
+            (let ((allow-freevars-p
+                   #-:non-standard-analysis
+                   t
+                   #+:non-standard-analysis
+                   (classical-fn-list-p (all-fnnames formula) wrld)))
               (mv-let
-                (erp new-constraints0)
-                (cond (erp0 (mv erp0 formula0))
-                      (t (sublis-fn-rec-lst alist new-constraints nil
-                                            allow-freevars-p)))
-                (cond
-                 (erp
+                (erp0 formula0)
+                (sublis-fn-rec alist formula nil allow-freevars-p)
+                (mv-let
+                  (erp new-constraints0)
+                  (cond (erp0 (mv erp0 formula0))
+                        (t (sublis-fn-rec-lst alist new-constraints nil
+                                              allow-freevars-p)))
+; Unless erp is set, new-constraints0 has the same length and ordering as
+; new-constraints, so new-origins still corresponds.
+
+                  (cond
+                   (erp
 
 ; The following message is surprising in a situation where a variable is
 ; captured by a binding to itself, since for example (let ((x x)) ...)
@@ -11935,50 +12214,58 @@
 ; simple and simply expect and hope that such a misleading message is never
 ; actually seen by a user.
 
-                  (er@par soft ctx
-                    (if allow-freevars-p
-                        "Your functional substitution contains one or more ~
-                         free occurrences of the variable~#0~[~/s~] ~&0 in ~
-                         its range. ~ Alas, ~#1~[this variable occurrence ~
-                         is~/these variables occurrences are~] bound in a LET ~
-                         or MV-LET expression of ~#2~[the formula you wish to ~
-                         functionally instantiate, ~p3.~|~/the constraints ~
-                         that must be relieved.  ~]You must therefore change ~
-                         your functional substitution so that it avoids such ~
-                         ``capture.''  It will suffice for your functional ~
-                         substitution to stay clear of all the variables ~
-                         bound by a LET or MV-LET expression that are used in ~
-                         the target formula or in the corresponding ~
-                         constraints.  Thus it will suffice for your ~
-                         substitution not to contain free occurrences of ~v4 ~
-                         in its range, by using fresh variables instead.  ~
-                         Once you have fixed this problem, you can :use an ~
-                         :instance of your :functional-instance to bind the ~
-                         fresh variables to ~&4."
+                    (er@par soft ctx
+                      (if allow-freevars-p
+                          "Your functional substitution contains one or more ~
+                           free occurrences of the variable~#0~[~/s~] ~&0 in ~
+                           its range. ~ Alas, ~#1~[this variable occurrence ~
+                           is~/these variables occurrences are~] bound in a ~
+                           LET or MV-LET expression of ~#2~[the formula you ~
+                           wish to functionally instantiate, ~p3.~|~/the ~
+                           constraints that must be relieved.  ~]You must ~
+                           therefore change your functional substitution so ~
+                           that it avoids such ``capture.''  It will suffice ~
+                           for your functional substitution to stay clear of ~
+                           all the variables bound by a LET or MV-LET ~
+                           expression that are used in the target formula or ~
+                           in the corresponding constraints.  Thus it will ~
+                           suffice for your substitution not to contain free ~
+                           occurrences of ~v4 in its range, by using fresh ~
+                           variables instead.  Once you have fixed this ~
+                           problem, you can :use an :instance of your ~
+                           :functional-instance to bind the fresh variables ~
+                           to ~&4."
 
 ; With allow-freevars-p = nil, it is impossible for free variables to be
 ; captured, since no free variables are allowed.
 
-                      "Your functional substitution contains one or more free ~
-                       occurrences of the variable~#0~[~/s~] ~&0 in its ~
-                       range. Alas, the formula you wish to functionally ~
-                       instantiate is not a classical formula, ~p3.  Free ~
-                       variables in lambda expressions are only allowed when ~
-                       the formula to be instantiated is classical, since ~
-                       these variables may admit non-standard values, for ~
-                       which the theorem may be false.")
-                    (merge-sort-symbol< erp)
-                    erp
-                    (if erp0 0 1)
-                    (untranslate formula t wrld)
-                    (bound-vars-lst (cons formula new-constraints)
-                                    nil)))
-                 (t (value@par
-                     (list formula0
-                           (append constraints new-constraints0)
-                           (union-equal new-event-names event-names)
-                           (union-equal new-new-entries
-                                        new-entries)))))))))))))))
+                          "Your functional substitution contains one or more ~
+                           free occurrences of the variable~#0~[~/s~] ~&0 in ~
+                           its range. Alas, the formula you wish to ~
+                           functionally instantiate is not a classical ~
+                           formula, ~p3.  Free variables in lambda ~
+                           expressions are only allowed when the formula to ~
+                           be instantiated is classical, since these ~
+                           variables may admit non-standard values, for which ~
+                           the theorem may be false.")
+                      (merge-sort-symbol< erp)
+                      erp
+                      (if erp0 0 1)
+                      (untranslate formula t wrld)
+                      (bound-vars-lst (cons formula new-constraints)
+                                      nil)))
+                   (t (value@par
+                       (list formula0
+                             (append constraints new-constraints0)
+                             (union-equal new-event-names event-names)
+                             (union-equal new-new-entries
+                                          new-entries)
+                             (if constraint-tracking-flg
+                                 (append origins
+                                         (if (eq new-origins t)
+                                             nil
+                                             new-origins))
+                                 nil))))))))))))))))
 
 (defun all-calls-alist (names alist ans)
 
@@ -12882,26 +13169,22 @@
                         (add-literals (cdr cl1) cl2)
                         nil))))
 
-(defun special-conjectures (clause term wrld newvar ttree)
+(defun special-conjectures (clause term wrld newvar)
 
-; Clause is an evolving clause governing an occurrence of term with derivation
-; ttree.  Term may or may not be a call of a special loop$ scionp.  If it is
-; and newvar is non-nil, we generate and return the list of special loop$ guard
-; clauses appropriate for term, together with ttree, (mv clauses ttree').  Else
-; we return (mv nil ttree).  Newvar is the new variable used in the special for
-; loop$ guard clauses.  Newvar is only non-nil when this function is called on
-; functions or lambdas being defined.  Newvar is nil when we're generating
-; guards for theorems and ordinary terms.
-
-; Note: As of this writing, ttree is just passed through and returned; it is
-; not used or modified.
+; Clause is an evolving clause governing an occurrence of term.  Term may or
+; may not be a call of a special loop$ scionp.  If it is and newvar is non-nil,
+; we generate and return the list of special loop$ guard clauses appropriate
+; for term.  Else we return nil.  Newvar is the new variable used in the
+; special for loop$ guard clauses.  Newvar is only non-nil when this function
+; is called on functions or lambdas being defined.  Newvar is nil when we're
+; generating guards for theorems and ordinary terms.
 
 ; See the Essay on Loop$ for an explanation of Special Conjectures (a) and (b)
 ; (and discussion of the now-obsolete (c)) for FOR loop$s and (d), (e), (f),
 ; and (g) for DO loop$s.
 
   (cond
-   ((null newvar) (mv nil ttree))
+   ((null newvar) nil)
    ((special-loop$-scion-callp term wrld)
     (let* ((style (loop$-scion-style (ffn-symb term)))
 ; We need both the warrants hypotheses as a clause by itself and we need its
@@ -13014,13 +13297,12 @@
                    alist)
                  warrant-hyps
                  t)))
-          (mv (append (if (equal special-conjecture-d *true-clause*)
-                          nil
-                          (list special-conjecture-d))
-                      (if (equal special-conjecture-e-f-g *true-clause*)
-                          nil
-                          (list special-conjecture-e-f-g)))
-              ttree)))
+          (append (if (equal special-conjecture-d *true-clause*)
+                      nil
+                    (list special-conjecture-d))
+                  (if (equal special-conjecture-e-f-g *true-clause*)
+                      nil
+                    (list special-conjecture-e-f-g)))))
        (t ; style = :plain or :fancy
         (let* ((test-b (loop$-scion-restriction (ffn-symb term)))
 
@@ -13074,14 +13356,13 @@
                       t)
                      t)
                     *true-clause*)))
-          (mv (append (if (equal special-conjecture-a *true-clause*)
-                          nil
-                          (list special-conjecture-a))
-                      (if (equal special-conjecture-b *true-clause*)
-                          nil
-                          (list special-conjecture-b)))
-              ttree))))))
-   (t (mv nil ttree))))
+          (append (if (equal special-conjecture-a *true-clause*)
+                      nil
+                    (list special-conjecture-a))
+                  (if (equal special-conjecture-b *true-clause*)
+                      nil
+                    (list special-conjecture-b))))))))
+   (t nil)))
 
 (defun make-lambda-application+ (formals body actuals)
   (let ((term (make-lambda-application formals body actuals)))
@@ -13151,7 +13432,7 @@
 
 (mutual-recursion
 
-(defun guard-clauses (term debug-info stobj-optp clause wrld ttree newvar)
+(defun guard-clauses (term debug-info stobj-optp clause wrld newvar)
 
 ; Warning: Keep this function in sync with the other functions listed in the
 ; Essay on the Wormhole Implementation Nexus in axioms.lisp.
@@ -13159,17 +13440,15 @@
 ; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
 ; ground subexpressions.
 
-; We return three results.  The first is a set of clauses whose conjunction
+; We return two results.  The first is a set of clauses whose conjunction
 ; establishes that all of the guards in term are satisfied.  We discuss the
-; second result in the next paragraph.  The third result is a ttree justifying
-; the simplification we do and extending ttree.  Stobj-optp indicates whether
-; we are to optimize away stobj recognizers and dfp calls.  Call this with
-; stobj-optp = t only when it is known that the term in question has been
-; translated with full enforcement of the stobj rules (which include df
-; restrictions).  Clause is the list of accumulated, negated tests passed so
-; far on this branch, possibly enhanced by facts known about evaluation as
-; discussed in the next paragraph.  Clause is maintained in reverse order, but
-; reversed before we return it.
+; second result in the next paragraph.  Stobj-optp indicates whether we are to
+; optimize away stobj recognizers and dfp calls.  Call this with stobj-optp = t
+; only when it is known that the term in question has been translated with full
+; enforcement of the stobj rules (which include df restrictions).  Clause is
+; the list of accumulated, negated tests passed so far on this branch, possibly
+; enhanced by facts known about evaluation as discussed in the next paragraph.
+; Clause is maintained in reverse order, but reversed before we return it.
 
 ; The second result is a list of terms, which we think of as an "environment"
 ; or "env" for short.  To understand the environment result, consider what we
@@ -13196,10 +13475,10 @@
 ; access -- for example, when the goal is (implies (and (integer-listp x)
 ; (consp x)) (rationalp (car x))).
 
-; We do not add the definition rune for *extra-info-fn* in ttree.  The caller
-; should be content with failing to report that rune.  Prove-guard-clauses is
-; ultimately the caller, and is happy not to burden the user with mention of
-; that rune.
+; We do not note the definition rune for *extra-info-fn* in a ttree.  The
+; caller should be content with failing to report that rune.
+; Prove-guard-clauses is ultimately the caller, and is happy not to burden the
+; user with mention of that rune.
 
 ; In addition, if term is one of the special loop$ scions, e.g., sum, applied
 ; to a quoted well-formed function object, we generate the special loop$
@@ -13210,15 +13489,14 @@
 ; carry the guard generation process into lambdas.
 
   (cond
-   ((variablep term) (mv nil nil ttree))
-   ((fquotep term) (mv nil nil ttree))
+   ((variablep term) (mv nil nil))
+   ((fquotep term) (mv nil nil))
    ((flambda-applicationp term)
     (mv-let
-      (cl-set1 env1 ttree)
-      (guard-clauses-lst (fargs term) debug-info stobj-optp clause wrld
-                         ttree newvar)
+      (cl-set1 env1)
+      (guard-clauses-lst (fargs term) debug-info stobj-optp clause wrld newvar)
       (mv-let
-        (cl-set2 env2 ttree)
+        (cl-set2 env2)
         (guard-clauses (lambda-body (ffn-symb term))
                        debug-info
                        stobj-optp
@@ -13227,7 +13505,7 @@
 ; wrapping up the lambda term that we are about to create.
 
                        nil
-                       wrld ttree newvar)
+                       wrld newvar)
         (let* ((formals (lambda-formals (ffn-symb term)))
                (args (remove-guard-holders-lst (fargs term) wrld))
                (term1 (make-lambda-application+
@@ -13264,20 +13542,18 @@
 ; something useful!
 
           (mv (add-env-to-clause-set env cl-set3)
-              env
-              ttree)))))
+              env)))))
    ((eq (ffn-symb term) 'if)
     (let ((test (remove-guard-holders (fargn term 1) wrld)))
       (mv-let
-        (cl-set1 env1 ttree)
+        (cl-set1 env1)
 
 ; Note:  We generate guards from the original test, not the one with guard
 ; holders removed!
 
-        (guard-clauses (fargn term 1) debug-info stobj-optp clause wrld
-                       ttree newvar)
+        (guard-clauses (fargn term 1) debug-info stobj-optp clause wrld newvar)
         (mv-let
-          (cl-set2 env2 ttree)
+          (cl-set2 env2)
           (guard-clauses (fargn term 2)
                          debug-info
                          stobj-optp
@@ -13288,14 +13564,14 @@
                          (add-literal-smart (dumb-negate-lit test)
                                             clause
                                             nil)
-                         wrld ttree newvar)
+                         wrld newvar)
           (mv-let
-            (cl-set3 env3 ttree)
+            (cl-set3 env3)
             (guard-clauses (fargn term 3)
                            debug-info
                            stobj-optp
                            (add-literal-smart test clause nil)
-                           wrld ttree newvar)
+                           wrld newvar)
             (mv (conjoin-clause-sets+
                  debug-info
                  cl-set1
@@ -13321,8 +13597,7 @@
                          env1)))
                      (t ; as sets, env2 = env3 = env23 != {}
                       (union$ env1 env23 :test 'equal)))))
-                 (t env1))
-                ttree))))))
+                 (t env1))))))))
    ((eq (ffn-symb term) 'wormhole-eval)
 
 ; Because of translate, term is necessarily of the form
@@ -13392,8 +13667,8 @@
                       wormhole-eval!  Please inform the ACL2 developers of ~
                       this error message and we'll fix it!"
                      (fargn term 1))
-                 nil nil))
-            (new-var (mv-let (cl-set env ttree)
+                 nil))
+            (new-var (mv-let (cl-set env)
 
 ; In this case we discard env if new-var occurs in it.  To see why, imagine
 ; that we have an expression (foo (wormhole-eval ...) (wormhole-eval ...)).
@@ -13405,13 +13680,12 @@
 ; the parent term.
 
                        (guard-clauses new-body debug-info stobj-optp clause
-                                      wrld ttree newvar)
+                                      wrld newvar)
                        (mv cl-set
                            (cond ((dumb-occur-var-lst new-var env) nil)
-                                 (t env))
-                           ttree)))
+                                 (t env)))))
             (t (guard-clauses new-body debug-info stobj-optp clause
-                              wrld ttree newvar)))))
+                              wrld newvar)))))
    ((throw-nonexec-error-p term :non-exec nil)
 
 ; It would be sound to replace the test above by (throw-nonexec-error-p term
@@ -13425,7 +13699,7 @@
 ; generation, not targ3.
 
     (guard-clauses (fargn term 2) debug-info stobj-optp clause
-                   wrld ttree newvar))
+                   wrld newvar))
 
 ; At one time we optimized away the guards on (nth 'n MV) if n is an integerp
 ; and MV is bound in (former parameter) alist to a call of a multi-valued
@@ -13489,7 +13763,7 @@
 
                                           (sr-limit wrld))))
       (mv-let
-        (cl-set1 env1 ttree)
+        (cl-set1 env1)
         (guard-clauses-lst
          (cond
           ((and (eq (ffn-symb term) 'return-last)
@@ -13527,48 +13801,45 @@
 
               (fargs term))))
           (t (fargs term)))
-         debug-info stobj-optp clause wrld ttree newvar)
-        (mv-let (cl-set2 ttree)
-          (special-conjectures clause term wrld newvar ttree)
-          (let ((env2 (if env-term
-                          (add-to-set-equal env-term env1)
-                        env1)))
-            (let* ((guard-concl-segments-1
-                    (add-each-literal-lst
-                     (and guard-concl-segments ; optimization (nil for ec-call)
-                          (sublis-var-lst-lst
-                           (pairlis$
-                            (formals (ffn-symb term) wrld)
-                            (remove-guard-holders-lst (fargs term) wrld))
-                           guard-concl-segments))))
-                   (cl-set
-                    (conjoin-clause-sets+
-                     debug-info
-                     (conjoin-clause-sets+
-                      debug-info
-                      cl-set1
-                      (add-env-to-clause-set
-                       env2
-                       (add-segments-to-clause
-                        (maybe-add-extra-info-lit debug-info term
-                                                  (reverse clause) wrld)
-                        guard-concl-segments-1)))
-                     (add-env-to-clause-set env2 cl-set2))))
-              (mv cl-set env2 ttree)))))))))
+         debug-info stobj-optp clause wrld newvar)
+        (let* ((cl-set2 (special-conjectures clause term wrld newvar))
+               (env2 (if env-term
+                         (add-to-set-equal env-term env1)
+                       env1))
+               (guard-concl-segments-1
+                (add-each-literal-lst
+                 (and guard-concl-segments ; optimization (nil for ec-call)
+                      (sublis-var-lst-lst
+                       (pairlis$
+                        (formals (ffn-symb term) wrld)
+                        (remove-guard-holders-lst (fargs term) wrld))
+                       guard-concl-segments))))
+               (cl-set
+                (conjoin-clause-sets+
+                 debug-info
+                 (conjoin-clause-sets+
+                  debug-info
+                  cl-set1
+                  (add-env-to-clause-set
+                   env2
+                   (add-segments-to-clause
+                    (maybe-add-extra-info-lit debug-info term
+                                              (reverse clause) wrld)
+                    guard-concl-segments-1)))
+                 (add-env-to-clause-set env2 cl-set2))))
+          (mv cl-set env2)))))))
 
-(defun guard-clauses-lst (lst debug-info stobj-optp clause wrld ttree newvar)
-  (cond ((null lst) (mv nil nil ttree))
+(defun guard-clauses-lst (lst debug-info stobj-optp clause wrld newvar)
+  (cond ((null lst) (mv nil nil))
         (t (mv-let
-             (cl-set1 env1 ttree)
-             (guard-clauses (car lst) debug-info stobj-optp clause
-                            wrld ttree newvar)
+             (cl-set1 env1)
+             (guard-clauses (car lst) debug-info stobj-optp clause wrld newvar)
              (mv-let
-               (cl-set2 env2 ttree)
-               (guard-clauses-lst (cdr lst) debug-info stobj-optp clause
-                                  wrld ttree newvar)
+               (cl-set2 env2)
+               (guard-clauses-lst (cdr lst) debug-info stobj-optp clause wrld
+                                  newvar)
                (mv (conjoin-clause-sets+ debug-info cl-set1 cl-set2)
-                   (union-equal env1 env2)
-                   ttree))))))
+                   (union-equal env1 env2)))))))
 
 )
 
@@ -13578,8 +13849,8 @@
 ; Ens may have the special value :do-not-simplify, in which case no
 ; simplification will take place in producing the guard clauses.
 
-  (mv-let (clause-lst0 env0 ttree)
-    (guard-clauses term debug-info stobj-optp clause wrld ttree newvar)
+  (mv-let (clause-lst0 env0)
+    (guard-clauses term debug-info stobj-optp clause wrld newvar)
     (declare (ignore env0))
     (cond ((eq ens :DO-NOT-SIMPLIFY)
            (mv clause-lst0 ttree))
@@ -14201,7 +14472,7 @@
 ; causes an error or returns (as the value result of an error/value/state
 ; producing function) a list
 
-; (thm constraints event-names new-entries)
+; (thm constraints event-names new-entries origins)
 
 ; where:
 
@@ -14216,6 +14487,9 @@
 ; new-entries is the list of new entries for the world global
 ; 'proved-functional-instances-alist, which we will place in a tag-tree and
 ; eventually using the name of the event currently being proved (if any).
+
+; origins is a list as long as constraints giving the origin of each
+; constraint.
 
 ; A lemma instance is (following :doc lemma-instance)
 
@@ -14249,7 +14523,7 @@
      ((atom lmi)
       (cond ((symbolp lmi)
              (let ((term (formula lmi normalizep wrld)))
-               (cond (term (value@par (list term nil nil nil)))
+               (cond (term (value@par (list term nil nil nil nil)))
                      (t (er@par soft ctx str
                           lmi
                           (msg "there is no formula associated with the name ~
@@ -14277,7 +14551,8 @@
        ((term (translate@par (cadr lmi) t t t ctx wrld state))
         (term (value@par (remove-guard-holders term wrld))))
 ; known-stobjs = t (stobjs-out = t)
-       (value@par (list term (list term) nil nil))))
+       (value@par (list term (list term) nil nil
+                        (list (make-origin :theorem (cadr lmi)))))))
      ((or (eq (car lmi) :instance)
           (eq (car lmi) :functional-instance))
       (cond
@@ -14289,6 +14564,7 @@
                (constraints (cadr lst))
                (event-names (caddr lst))
                (new-entries (cadddr lst))
+               (origins (car (cddddr lst)))
                (substn (cddr lmi)))
            (cond
             ((eq (car lmi) :instance)
@@ -14298,10 +14574,11 @@
                       (mv t (cdr substn)))
                      (t (mv nil substn)))
                (translate-lmi/instance@par formula constraints event-names
-                                           new-entries extra-bindings-ok substn
-                                           ctx wrld state)))
+                                           new-entries origins
+                                           extra-bindings-ok substn ctx wrld
+                                           state)))
             (t (translate-lmi/functional-instance@par
-                formula constraints event-names new-entries substn
+                formula constraints event-names new-entries origins substn
                 (global-val 'proved-functional-instances-alist wrld)
                 ctx wrld state))))))
        (t (er@par soft ctx str lmi
@@ -14336,7 +14613,7 @@
                                               :limited
                                             (caddr lmi))
                                           nil wrld state)))
-                 (value@par (list term nil nil nil)))))))
+                 (value@par (list term nil nil nil nil)))))))
      ((member-eq (car lmi) '(:termination-theorem :termination-theorem!))
       (let ((fn (cadr lmi)))
         (cond ((not (and (symbolp fn)
@@ -14357,7 +14634,7 @@
                                   ~@1"
                                  fn
                                  (cdr term))))
-                         (t (value@par (list *t* nil nil nil)))))
+                         (t (value@par (list *t* nil nil nil nil)))))
                   ((and (cddr lmi)
                         (not (symbol-doublet-listp (caddr lmi))))
                    (er@par soft ctx str lmi
@@ -14371,7 +14648,7 @@
                      ((subsetp-eq (strip-cars alist)
                                   (getpropc fn 'recursivep nil wrld))
                       (value@par (list (sublis-fn-simple alist term)
-                                       nil nil nil)))
+                                       nil nil nil nil)))
                      (t (er@par soft ctx str lmi
                           "its functional substitution is illegal: the ~
                            function symbol~#1~[ ~&1 is~/s ~&1 are~] not ~
@@ -14385,11 +14662,11 @@
                             (term (cond
                                    (alist (sublis-fn-simple alist term))
                                    (t term))))
-                       (value@par (list term nil nil nil))))))))))
+                       (value@par (list term nil nil nil nil))))))))))
      ((runep lmi wrld)
       (let ((term (and (not (eq (car lmi) :INDUCTION))
                        (corollary lmi wrld))))
-        (cond (term (value@par (list term nil nil nil)))
+        (cond (term (value@par (list term nil nil nil nil)))
               (t (er@par soft ctx str lmi
                    "there is no known formula associated with this rune")))))
      (t (er@par soft ctx str lmi
@@ -14406,7 +14683,7 @@
 ; be proved.
 
   (cond ((atom arg)
-         (cond ((null arg) (value@par '(nil nil nil nil)))
+         (cond ((null arg) (value@par '(nil nil nil nil nil)))
                (t (er@par soft ctx
                     "The value of the :use hint must be a true list but your ~
                      list ends in ~x0.  See the :use discussion in :DOC hints."
@@ -14414,10 +14691,45 @@
         (t (er-let*@par
             ((lst1 (translate-lmi@par (car arg) t ctx wrld state))
              (lst2 (translate-use-hint1@par (cdr arg) ctx wrld state)))
-            (value@par (list (cons (car lst1) (car lst2))
-                             (append (cadr lst1) (cadr lst2))
-                             (union-eq (caddr lst1) (caddr lst2))
-                             (union-equal (cadddr lst1) (cadddr lst2))))))))
+            (value@par
+             (list (cons (car lst1) (car lst2))                   ; hyps
+                   (append (cadr lst1) (cadr lst2))               ; constraints
+                   (union-eq (caddr lst1) (caddr lst2))           ; event-names
+                   (union-equal (cadddr lst1) (cadddr lst2))      ; new-entries
+                   (append (car (cddddr lst1)) (car (cddddr lst2))) ; origins
+                   ))))))
+
+(defun add-extra-info-hyp-lst (terms origins)
+
+; We add an extra-info hypothesis to each term in terms, citing the
+; corresponding element of origins.  However, if that element of origins is
+; nil, we don't add the hypothesis.  Thus, this function allows the terms (t1
+; t2 t3) to have a non-nil origins like (o1 nil o3), meaning we don't know the
+; origin of the t2.  See maybe-add-extra-info-hyp-lst which handles the special
+; case that we don't know any origins, coded as origins = nil.
+
+  (cond
+   ((endp terms) nil)
+   (t (cons (if (car origins)
+                (fcons-term* 'implies
+                             `(extra-info (quote :constraint)
+                                          (quote ,(car origins)))
+                             (car terms))
+                (car terms))
+            (add-extra-info-hyp-lst (cdr terms) (cdr origins))))))
+
+(defun maybe-add-extra-info-hyp-lst (terms origins wrld)
+
+; If origins is non-nil and constraint-tracking is t, we check that terms and
+; origins are of equal length.  Then we add the corresponding origin hyp to
+; each term in terms.
+
+
+  (if (and origins
+           (constraint-tracking wrld))
+      (assert$ (equal (length terms) (length origins))
+               (add-extra-info-hyp-lst terms origins))
+      terms))
 
 (defun@par translate-use-hint (arg ctx wrld state)
 
@@ -14528,12 +14840,20 @@
 ; (lmi-lst (hyp1 ... hypn) constraint-cl k event-names new-entries)
 ; where constraint-cl is a clause that is equivalent to the constraints.
 
-         (value@par (list lmi-lst
-                          (car lst)
-                          (add-literal (conjoin (cadr lst)) nil nil)
-                          (length (cadr lst))
-                          (caddr lst)
-                          (cadddr lst))))))))
+         (let ((constraints (cadr lst))
+               (origins (car (cddddr lst))))
+           (value@par
+            (list lmi-lst      ; list of lmi
+                  (car lst)    ; hyps
+                  (add-literal ; conjoined constraints as clause
+                   (conjoin
+                    (maybe-add-extra-info-hyp-lst constraints
+                                                  origins
+                                                  wrld))
+                   nil nil)
+                  (length (cadr lst))  ; k
+                  (caddr lst)          ; event-names
+                  (cadddr lst))))))))) ; new-entries
 
 (defun convert-name-tree-to-new-name1 (name-tree char-lst sym)
   (cond ((atom name-tree)
@@ -18331,10 +18651,10 @@
 
 (defun chk-table-guards (name alist ctx wrld ens state)
 
-; At one time we performed a check here to enforce the the following
-; prohibition: do not allow a transition from a non-nil (ttag wrld) to a nil
-; (ttag wrld) at the top level.  However, we see no reason to make such a
-; prohibition, so in Fall 2022 we removed that check.
+; At one time we performed a check here to enforce the following prohibition:
+; do not allow a transition from a non-nil (ttag wrld) to a nil (ttag wrld) at
+; the top level.  However, we see no reason to make such a prohibition, so in
+; Fall 2022 we removed that check.
 
   (chk-table-guards-rec name alist ctx nil wrld ens state))
 

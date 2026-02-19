@@ -14,7 +14,7 @@
 (include-book "initialization")
 (include-book "transitions")
 
-(local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "std/omaps/delete" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

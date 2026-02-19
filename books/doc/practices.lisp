@@ -87,15 +87,13 @@
                "(let ((x foo)"
                "      ;; (y bar))"
                "      )"
-               "  baz"
-               "  )")
+               "  baz)")
               "do this:"
               (xdoc::codeblock
                "(let ((x foo)"
                "      ;; (y bar)"
                "      )"
-               "  baz"
-               "  )"))
+               "  baz)"))
     (xdoc::li "Consider whether comments would be more appropriate as "
               (xdoc::seetopic "xdoc" "XDOC")
               " documentation."))
@@ -120,13 +118,26 @@
               " instead."))
    (xdoc::h3 "Naming Conventions")
    (xdoc::ul
-    (xdoc::li "Consider ending predicates with ``p'' (or ``-p,'' especially if
-               needed for clarity). This is a convention inherited from Common
-               Lisp.")
     (xdoc::li "For ordinary identifiers, avoid uppercase and use hyphens to
                delimit words (a style sometimes called ``dash-case'',
                ``kebab-case'', or ``lisp-case''). E.g., ``my cool function''
                would be rendered @('my-cool-function').")
+    (xdoc::li "Names of predicates (i.e., function returning a
+               @(tsee booleanp)) should typically end with either @('p') or
+               @('-p'). This naming scheme is consistent with many Common Lisp
+               and ACL2 primitives (e.g., @(tsee lower-case-p), @(tsee consp),
+               @(tsee symbol-alistp)). There is no broad consensus on when to
+               use @('p') versus @('-p'). Some authors prefer one to the other.
+               One approach, advocated by "
+              (xdoc::ahref
+                "https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node69.html#SECTION001000000000000000000"
+                "Common Lisp the Language, 2nd Edition")
+              ", is to use @('-p') when there are already hyphens in the base
+               name (as in @(tsee lower-case-p)), and to use @('p') when the
+               base does not have hyphens (as in @(tsee consp)). As an
+               exception, if the name is created by adding a prefix to an
+               existing predicate, do not insert or remove the hyphen (as in
+               @(tsee symbol-alistp)).")
     (xdoc::li "See @(see naming-rewrite-rules) for recommendations regarding
                the naming of rewrite rules."))
    (xdoc::h3 "Formatting")

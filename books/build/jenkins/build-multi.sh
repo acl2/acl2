@@ -13,7 +13,7 @@
 
 # Cause the script to exit immediately upon failure
 set -e
-echo "acl2dir is $ACL2DIR"
+
 echo "Starting build-multi.sh"
 echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
@@ -25,8 +25,6 @@ echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can 
 echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
 
 source $JENKINS_HOME/env.sh
-
-ACL2DIR=`pwd`
 
 if [ -z "$STARTJOB" ]; then
   echo "Setting STARTJOB to bash";
@@ -54,7 +52,8 @@ echo "Using STARTJOB = $STARTJOB"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
-echo "Using MAKEOPTS = $MAKEOPTS"
+echo "Using MAKEACL2OPTS = $MAKEACL2OPTS" # for building ACL2 itself.  Do not include LISP, ACL2_PAR, or ACL2_REAL.
+echo "Using MAKEOPTS = $MAKEOPTS" # for building books
 
 if [ "${LISP:0:3}" == "gcl" ]; then
   USE_QUICKLISP="";
@@ -85,7 +84,7 @@ esac
 echo "Using ACL2_SUFFIX = $ACL2_SUFFIX"
 
 echo "Making ACL2(${ACL2_SUFFIX})"
-$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP"
+$STARTJOB -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP ${MAKEACL2OPTS}"
 
 echo "Building the books."
 cd books

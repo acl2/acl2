@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,8 +12,22 @@
 
 (include-book "file-paths")
 
+(include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
+
+(local (include-book "std/typed-lists/string-listp" :dir :system))
+
+(acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel all-bytep-when-byte-listp
+  (implies (byte-listp x)
+           (acl2::all-bytep x))
+  :induct t
+  :enable (byte-listp bytep unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,16 +37,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in @(see grammar) represents the required structure
-     of the content of a translation unit,
-     which corresponds to the content of a file
-     after it has been subjected to preprocessing
-     (which may add content from @('#include')d headers).
-     Recall that for now we only represent C code after preprocessing,
-     so the correspondence between translation units and file contents
-     is exact for now (but we will relax this eventually).
-     The content of a file can be represented as a list of bytes,
-     which must be parsed into a translation unit.")
+    "This is currently part of the ACL2 library for C,
+     but it is more general, and should be moved to a new library.")
    (xdoc::p
     "Often a C program, or a C library, or other meaningful C code component,
      consists of multiple translation units, more in general multiple files,
@@ -55,6 +61,13 @@
      We wrap that into this fixtype for separation and extensibility."))
   ((unwrap byte-list))
   :pred filedatap)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-filedata
+  :short "An irrelevant file data value."
+  :type filedatap
+  :body (filedata nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,8 +120,7 @@
    (xdoc::p
     "Together with @(tsee file-at-path),
      it can be used as an API to inspect a file set."))
-  (omap::keys (fileset->unwrap files))
-  :hooks (:fix))
+  (omap::keys (fileset->unwrap files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,6 +140,39 @@
     "Together with @(tsee fileset-paths),
      it can be used an as API to inspect a file set."))
   (filedata-fix (omap::lookup (filepath-fix path) (fileset->unwrap files)))
-  :guard-hints (("Goal" :in-theory (enable omap::assoc-to-in-of-keys
-                                           fileset-paths)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable fileset-paths))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-fileset ((fileset filesetp) (base-dir stringp) state)
+  :returns (mv erp state)
+  :short "Write a file set to the file system."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The file paths in the file set are interpreted
+     relative to the base directory passed as input."))
+  (write-fileset-loop (fileset->unwrap fileset) base-dir state)
+  :prepwork
+  ((define write-fileset-loop ((filemap filepath-filedata-mapp)
+                               (base-dir stringp)
+                               state)
+     :returns (mv erp state)
+     :parents nil
+     (b* (((reterr) state)
+          ((when (omap::emptyp (filepath-filedata-map-fix filemap)))
+           (retok state))
+          ((mv filepath data) (omap::head filemap))
+          (file-string (filepath->unwrap filepath))
+          ((unless (stringp file-string))
+           (reterr (msg "File path must contain a string, ~
+                         but it contains ~x0 instead."
+                        file-string)))
+          (path-to-write (str::cat (str-fix base-dir) "/" file-string))
+          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
+                                                      path-to-write
+                                                      'output-files
+                                                      state))
+          ((when erp)
+           (reterr (msg "Writing ~x0 failed." path-to-write))))
+       (write-fileset-loop (omap::tail filemap) base-dir state)))))

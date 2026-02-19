@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,11 +22,13 @@
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
-(include-book "kestrel/x86/run-until-return" :dir :system)
-(include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
-(include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
-(include-book "kestrel/x86/run-until-return4" :dir :system) ; newer scheme, 32-bit
+(include-book "kestrel/x86/run-until-return" :dir :system) ; drop?
+;(include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
+(include-book "kestrel/x86/run-until-return32" :dir :system) ; newer scheme
+(include-book "kestrel/x86/run-until-return64" :dir :system) ; newer scheme
 (include-book "kestrel/x86/floats" :dir :system)
+(include-book "kestrel/x86/read-and-write2" :dir :system)
+(include-book "kestrel/x86/support64" :dir :system)
 (include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
@@ -448,7 +450,7 @@
 ;; For use by Axe.
 ;; todo: package
 (defthmd x86isa::idiv-spec-64-trim-arg1-axe-all
-  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x :all dag-array))
            (equal (idiv-spec-64 x y)
                   (idiv-spec-64 (trim 128 x) y)))
   :hints (("Goal" :in-theory (enable trim idiv-spec-64))))
@@ -483,7 +485,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (stack-shorter-thanp old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-base))))
@@ -494,60 +496,60 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-opener))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; new scheme (deprecate in favor of newer scheme below):
+;; ;; new scheme (deprecate in favor of newer scheme below):
 
-;; For use by Axe.
-;; Only fires when x86 is not an IF/MYIF (to save time).
-(defthmd run-until-rsp-is-base-axe
-  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (equal rsp (xr :rgf *rsp* x86)))
-           (equal (run-until-rsp-is rsp x86)
-                  x86))
-  :hints (("Goal" :in-theory (enable run-until-rsp-is-base))))
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (to save time).
+;; (defthmd run-until-rsp-is-base-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (equal rsp (xr :rgf *rsp* x86)))
+;;            (equal (run-until-rsp-is rsp x86)
+;;                   x86))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-base))))
 
-;; For use by Axe.
-;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
-(defthmd run-until-rsp-is-opener-axe
-  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (not (equal rsp (xr :rgf *rsp* x86))))
-           (equal (run-until-rsp-is rsp x86)
-                  (run-until-rsp-is rsp (x86-fetch-decode-execute x86))))
-  :hints (("Goal" :in-theory (enable run-until-rsp-is-opener))))
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+;; (defthmd run-until-rsp-is-opener-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (not (equal rsp (xr :rgf *rsp* x86))))
+;;            (equal (run-until-rsp-is rsp x86)
+;;                   (run-until-rsp-is rsp (x86-fetch-decode-execute x86))))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-opener))))
 
-;; For use by Axe.
-;; Only fires when x86 is not an IF/MYIF (to save time).
-(defthmd run-until-rsp-is-or-reach-pc-base-axe
-  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (or (equal rsp (xr :rgf *rsp* x86))
-                    (member-equal (rip x86) stop-pcs)))
-           (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
-                  x86))
-  :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-base))))
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (to save time).
+;; (defthmd run-until-rsp-is-or-reach-pc-base-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (or (equal rsp (xr :rgf *rsp* x86))
+;;                     (memberp (rip x86) stop-pcs)))
+;;            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
+;;                   x86))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-base))))
 
-;; For use by Axe.
-;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
-(defthmd run-until-rsp-is-or-reach-pc-opener-axe
-  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (not (equal rsp (xr :rgf *rsp* x86)))
-                (not (member-equal (rip x86) stop-pcs)))
-           (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
-                  (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86))))
-  :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-opener))))
+;; ;; For use by Axe.
+;; ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+;; (defthmd run-until-rsp-is-or-reach-pc-opener-axe
+;;   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+;;                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+;;                 (not (equal rsp (xr :rgf *rsp* x86)))
+;;                 (not (memberp (rip x86) stop-pcs)))
+;;            (equal (run-until-rsp-is-or-reach-pc rsp stop-pcs x86)
+;;                   (run-until-rsp-is-or-reach-pc rsp stop-pcs (x86-fetch-decode-execute x86))))
+;;   :hints (("Goal" :in-theory (enable run-until-rsp-is-or-reach-pc-opener))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; newer scheme:
+;; newer scheme, 64-bit:
 
 ;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (to save time).
@@ -575,7 +577,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (rsp-is-abovep old-rsp x86)
-                    (member-equal (rip x86) stop-pcs)))
+                    (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-base))))
@@ -586,7 +588,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (rsp-is-abovep old-rsp x86))
-                (not (member-equal (rip x86) stop-pcs)))
+                (not (memberp (rip x86) stop-pcs)))
            (equal (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs x86)
                   (run-until-rsp-is-above-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-rsp-is-above-or-reach-pc-opener))))
@@ -619,7 +621,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (or (esp-is-abovep old-esp x86)
-                    (member-equal (eip x86) stop-pcs)))
+                    (memberp (eip x86) stop-pcs)))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-base))))
@@ -630,7 +632,7 @@
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (esp-is-abovep old-esp x86))
-                (not (member-equal (eip x86) stop-pcs)))
+                (not (memberp (eip x86) stop-pcs)))
            (equal (run-until-esp-is-above-or-reach-pc old-esp stop-pcs x86)
                   (run-until-esp-is-above-or-reach-pc old-esp stop-pcs (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-esp-is-above-or-reach-pc-opener))))
@@ -838,8 +840,6 @@
   :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
                                      x86-operation-mode))))
 
-(defopeners bv-array-read-chunk-little) ; restrict?
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A scheme for removing shadowed writes
@@ -1012,7 +1012,71 @@
            (equal (read n1 addr1 (write n2 addr2 val x86))
                   (read n1 addr1 x86)))
   :hints (("Goal" :use (:instance read-of-write-irrel-gen)
-           :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+                  :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+
+;; Good for subregions of corresponding, larger disjoint regions.
+(defthm read-of-write-when-disjoint-regions48p-gen-smt
+  (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+;; Alt version of the rule just above (disjoint-regions48p hyp commuted)
+(defthm read-of-write-when-disjoint-regions48p-gen-smt-alt
+  (implies (and (disjoint-regions48p len2 start2 len1 start1) ; todo: rename vars
+
+                ;; opened form of (subregion48p n1 ad1 len1 start1):
+                (not (zp len1))
+                (< len1 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad1 start1) len1)) ; (in-region48p ad1 len1 start1)
+                (bvle 48 n1 len1)
+                (axe-smt (bvle 48 (bvminus 48 ad1 start1) (bvminus 48 len1 n1)))
+
+                ;; opened form of (subregion48p n2 ad2 len2 start2):
+                (not (zp len2))
+                (< len2 281474976710656 ;(expt 2 48)
+                   )
+                (axe-smt (bvlt 48 (bvminus 48 ad2 start2) len2)) ; (in-region48p ad2 len2 start2)
+                (bvle 48 n2 len2)
+                (axe-smt (bvle 48 (bvminus 48 ad2 start2) (bvminus 48 len2 n2)))
+
+                (integerp ad1)
+                (integerp ad2)
+                (integerp start1)
+                (integerp start2)
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 ad1 (write n2 ad2 val x86))
+                  (read n1 ad1 x86)))
+  :hints (("Goal" :use read-of-write-when-disjoint-regions48p-gen
+                  :in-theory (e/d (subregion48p in-region48p) (read-of-write-when-disjoint-regions48p-gen)))))
+
+
 
 ;; ;; drop?
 ;; (defthmd canonical-address-p-when-bvlt-of-bvplus-axe-smt
@@ -1093,3 +1157,44 @@
 (defthm integerp-of-!rflagsbits->res1 (integerp (!rflagsbits->res1 res1 rflags)))
 (defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
 (defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))
+
+;; Uses the SMT solver to try to show that an address is canonical.
+(defthm unsigned-canonical-address-p-smt
+  (implies (axe-smt (bvlt 64 (bvminus 64 ad *base-of-canonical*) *len-of-canonical*)) ; just the def
+           (unsigned-canonical-address-p ad))
+  :hints (("Goal" :in-theory (enable unsigned-canonical-address-p))))
+
+(defthm read-when-equal-of-read-bytes-and-subregion48p-smt
+  (implies (and (equal bytes (read-bytes n2 ad2 x86))
+
+                ;; expanded version of (subregion48p n1 ad1 n2 ad2):
+                (not (zp n1))
+                (axe-smt (bvlt 48 (bvminus 48 ad1 ad2) n2)) ; (in-region48p ad1 n2 ad2)
+                (bvle 48 n1 n2)
+                (axe-smt (bvle 48 (bvminus 48 ad1 ad2) (bvminus 48 n2 n1)))
+
+
+                (natp n1)
+                (< n1 (expt 2 48))
+                (unsigned-byte-p 48 n2)
+                (integerp ad1)
+                (integerp ad2))
+           (equal (read n1 ad1 x86)
+                  (bv-array-read-chunk-little n1 8 (len bytes)
+                                              (bvminus 48 ad1 ad2)
+                                              bytes)))
+  :hints (("Goal" :use read-when-equal-of-read-bytes-and-subregion48p
+                  :in-theory (e/d (subregion48p in-region48p) (read-when-equal-of-read-bytes-and-subregion48p)))))
+
+(defthm set-rip-of-bv-array-read-split-cases-smt
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len)))
+                (< len 20) ; todo: how many cases do we want to allow?
+                ;; (unsigned-byte-p (ceiling-of-lg len) index)
+                (axe-smt (bvle (ceiling-of-lg len) index (+ -1 len))) ; todo?
+                (posp len)
+                (natp index))
+           (equal (set-rip (bv-array-read size len index data) x86)
+                  ;; bv-array-read-cases here will then get unrolled:
+                  (set-rip (bv-array-read-cases (+ -1 len) size len index data) x86)))
+  :hints (("Goal" :in-theory (enable acl2::bv-array-read-becomes-bv-array-read-cases))))

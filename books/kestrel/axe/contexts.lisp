@@ -680,7 +680,8 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp bound))
            (bounded-contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len) bound))
-  :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
+  :hints (("Goal" :cases ((equal ':false (get-axe-disjunction-from-dag-item nodenum dag-array-name dag-array dag-len)))
+           :in-theory (enable contextp context-representing-negation-of-node))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,7 +1,7 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2025, Regents of the University of Texas
+; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -250,6 +250,22 @@ implementations.")
       excl::*load-xref-info* nil
       excl::*record-source-file-info* nil
       excl::*load-source-file-info* nil)
+
+; The following was contributed by Jim White, who used Copilot on 1/8/2026 to
+; suggest the following addition to prevent raw Lisp errors when certifying the
+; following with SBCL 2.9.11 on ARM64 (Ubuntu 24.04.3 LTS running in Docker
+; container): demos/congruent-stobjs-book, demos/brr-test-book,
+; demos/refinement-failure-test-book, demos/brr-free-variables-book, and
+; workshops/2023/kaufmann-moore/brr-book.  Now that SBCL bug #2137765
+; (https://bugs.launchpad.net/sbcl/+bug/2137765) has been fixed (starting with
+; SBCL 2.6.1), we could remove this change, at least conditioned on the
+; lisp-implementation-version showing at least 2.6.1.  But we're not aware of
+; any reason to need xref recording, so we simply leave it disabled for now.
+;
+; Disable xref recording in SBCL to avoid overflow errors in
+; SB-C::PACK-XREF-DATA when line numbers exceed (UNSIGNED-BYTE 32).
+#+sbcl
+(declaim (optimize (sb-c::store-xref-data 0)))
 
 ; Create the packages we use.
 
@@ -949,7 +965,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
    "~% + ~a~72t+"
    "~% +   built ~a.~72t+"
    (acl2-snapshot-info)
-   "~% + Copyright (C) 2025, Regents of the University of Texas.~72t+"
+   "~% + Copyright (C) 2026, Regents of the University of Texas.~72t+"
    "~% + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and~72t+"
    "~% + you are welcome to redistribute it under certain conditions.  For~72t+"
    "~% + details, see the LICENSE file distributed with ACL2.~72t+"

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "types")
+(include-book "uid")
 (include-book "unambiguity")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -20,11 +21,8 @@
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(local (in-theory (disable (:e tau-system))))
-(set-induction-depth-limit 0)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,8 +65,7 @@
    :unknown t
    :pointer (or (type-case type.to :void)
                 (type-case type.to :unknown))
-   :otherwise (type-integerp type))
-  :hooks (:fix))
+   :otherwise (type-integerp type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,57 +78,7 @@
    (xdoc::p
     "See @(tsee expr-null-pointer-constp)."))
   (b* (((const-expr const-expr) const-expr))
-    (expr-null-pointer-constp const-expr.expr type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod uid
-  :short "Fixtype of unique identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are numerical identifiers which are intended
-     to be unique to a given variable, function, type name, etc.
-     E.g., there may be many variables throughout a program
-     with the name @('x'), but all such distinct variables
-     will have distinct unique identifiers.")
-   (xdoc::p
-    "Unique identifiers are assigned during validation
-     to aid subsequent analysis.
-     By annotating identifiers with their unique alias,
-     disambiguation of variables becomes trivial."))
-  ((uid nat))
-  :pred uidp)
-
-(defirrelevant irr-uid
-  :short "An irrelevant unique identifier."
-  :type uidp
-  :body (uid 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption uid-option
-  uid
-  :short "Fixtype of optional unique identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Unique identifiers are defined in @(tsee uid)."))
-  :pred uid-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uid-increment ((uid uidp))
-  :returns (new-uid uidp)
-  :short "Create a fresh unique identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This simply increments the numerical value of the unique identifier."))
-  (b* (((uid uid) uid))
-    (uid (1+ uid.uid)))
-  :hooks (:fix))
+    (expr-null-pointer-constp const-expr.expr type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,6 +243,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum tag-kind
+  :short "Fixtype of the different kinds of tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now, we include cases for just @(':struct') and @(':union').
+     We omit @(':enum'), whose tags are not yet being tracked."))
+  (:struct ())
+  (:union ())
+  :pred tag-kind)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod valid-tag-info
+  :short "Fixtype of validation information about tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Tags [C17:6.2.3/1] identify a structure, union, or enumeration type.
+     Tags form their own name space,
+     disambiguated by the @('struct'), @('union'), or @('enum') keywords.")
+   (xdoc::p
+    "We store the @(tsee tag-kind)
+     and the @(see UID) associated with the tag
+     in the current scope.
+     The @(see UID) can be used to lookup the completion
+     under a separate @(tsee type-completions) map."))
+  ((kind tag-kind)
+   (uid uid))
+  :pred valid-tag-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption valid-tag-info-option
+  valid-tag-info
+  :short "Fixtype of optional validation information about tags."
+  :pred valid-tag-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist valid-tag-scope
+  :short "Fixtype of validation scopes of tags."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The same tag may refer to different types in different scopes.
+     Therefore, we use an alist from identifiers
+     to the validation information for tags
+     to track the meaning of tags in each scope."))
+  :key-type ident
+  :val-type valid-tag-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred valid-tag-scopep
+  :prepwork ((set-induction-depth-limit 1))
+  ///
+
+  (defrule valid-tag-infop-of-cdr-assoc-when-valid-tag-scopep
+    (implies (and (valid-tag-scopep scope)
+                  (assoc-equal ident scope))
+             (valid-tag-infop (cdr (assoc-equal ident scope))))
+    :induct t
+    :enable (valid-tag-scopep assoc-equal)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod valid-scope
   :short "Fixtype of validation scopes."
   :long
@@ -303,16 +317,20 @@
    (xdoc::p
     "Identifiers have scopes [C17:6.2.1], which the validator tracks.
      This fixtype contains all the information about a scope,
-     which currently only considers the name space of ordinary identifiers.
-     We will extend this fixtype to contain additional information,
-     particularly about tag of structure, union, and enumeration types."))
-  ((ord valid-ord-scope))
+     which considers the name space of ordinary identifiers
+     and the name space of tags."))
+  ((ord valid-ord-scope)
+   (tag valid-tag-scope))
   :pred valid-scopep
   ///
 
   (defrule alistp-of-valid-scope->ord
     (alistp (valid-scope->ord x))
-    :enable alistp-when-valid-ord-scopep-rewrite))
+    :enable alistp-when-valid-ord-scopep-rewrite)
+
+  (defrule alistp-of-valid-scope->tag
+    (alistp (valid-scope->tag x))
+    :enable alistp-when-valid-tag-scopep-rewrite))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -349,9 +367,9 @@
      with both internal and external linkage in the same translation unit
      [C17:6.2.2/7].")
    (xdoc::p
-     "Finally, we store a "
-     (xdoc::seetopic "uid" "unique identifier")
-     " for the object.
+    "Finally, we store a "
+    (xdoc::seetopic "uid" "unique identifier")
+    " for the object.
       All identifiers of the same name with external linkage
       refer to the same object and therefore possess
       the same unique identifier.")
@@ -419,12 +437,17 @@
      This information accumulates
      as we validate each translation unit in the ensemble.")
    (xdoc::p
+    "The @('completions') field is a map of @(see type-completions).
+     This maps @(see UID)s corresponding to struct and union types
+     to their list of named members.")
+   (xdoc::p
     "The @('next-uid') field stores the next unused "
     (xdoc::seetopic "uid" "unique identifier")
     "."))
   ((filepath filepath)
    (scopes valid-scope-list)
    (externals valid-externals)
+   (completions type-completions)
    (next-uid uidp))
   :pred valid-tablep)
 
@@ -433,7 +456,7 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil nil (irr-uid)))
+  :body (valid-table (irr-filepath) nil nil nil (irr-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,6 +464,30 @@
   valid-table
   :short "Fixtype of optional validation tables."
   :pred valid-table-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-composite-with-table ((x typep)
+                                   (y typep)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+  :returns (mv (composite typep)
+               (new-table valid-tablep))
+  :short "Construct a composite @(see type) with a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This wraps @(tsee type-composite),
+     extracting the @('completions') @('next-uid') from the validation table,
+     and updating the values accordingly."))
+  (b* (((valid-table table) table)
+       ((mv composite completions next-uid)
+        (type-composite x y table.completions table.next-uid ienv)))
+    (mv composite
+        (change-valid-table
+          table
+          :completions completions
+          :next-uid next-uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,7 +548,64 @@
   (if (var-infop x)
       x
     (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
-            (irr-var-info))))
+            (irr-var-info)))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-const-info
+  :short "Fixtype of validation information for constant expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to constant expressions,
+     i.e. the @('const') case of @(tsee expr).
+     The information for a constant consists of the type."))
+  ((type type))
+  :pred expr-const-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-string-info
+  :short "Fixtype of validation information for string literal expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to string literal expressions,
+     i.e. the @('string') case of @(tsee expr).
+     The information for a string literal consists of the type."))
+  ((type type))
+  :pred expr-string-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-arrsub-info
+  :short "Fixtype of validation information for array subscript expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to array subscript expressions,
+     i.e. the @('arrsub') case of @(tsee expr).
+     The information for an array subscript consists of the type."))
+  ((type type))
+  :pred expr-arrsub-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-funcall-info
+  :short "Fixtype of validation information for function call expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations
+     that the validator adds to function call expressions,
+     i.e. the @('funcall') case of @(tsee expr).
+     The information for a function call consists of the type."))
+  ((type type))
+  :pred expr-funcall-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,14 +669,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod initdeclor-info
+(fty::defprod init-declor-info
   :short "Fixtype of validation information for initializer declarators."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the type of the annotations that
      the validator adds to initializer declarators,
-     i.e. the @(tsee initdeclor) fixtype.")
+     i.e. the @(tsee init-declor) fixtype.")
    (xdoc::p
     "The information for an initializer declarator consists of
      the type of (or denoted by) the declared identifier,
@@ -589,7 +693,7 @@
   ((type type)
    (typedefp bool)
    (uid? uid-option))
-  :pred initdeclor-infop)
+  :pred init-declor-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -625,120 +729,153 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce annop
-  :short "Definition of the predicates that check whether
-          the abstract syntax is annotated with validation information."
+(fty::defprod transunit-ensemble-info
+  :short "Fixtype of validation information for translation unit ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
-   (xdoc::p
-    "The @(':default') value is @('t'),
-     meaning that there are no constraints by default.")
-   (xdoc::p
-    "The @(':combine') operator is @(tsee and),
-     because we need to check all the constructs, recursively.")
-   (xdoc::p
-    "We override the predicate for
-     the constructs for which the validator adds information.")
-   (xdoc::p
-    "Since for now the validator accepts GCC attribute and other extensions
-     without actually checking them and their constituents,
-     we also have the annotation predicates accept those constructs,
-     by overriding those cases to return @('t').")
-   (xdoc::p
-    "The validator operates on unambiguous abstract syntax,
-     which satisfies the @(see unambiguity) predicates.
-     Ideally, the annotation predicates should use
-     the unambiguity predicates as guards,
-     but @(tsee fty::deffold-reduce) does not support that feature yet.
-     Thus, for now we add run-time checks, in the form of @(tsee raise),
-     for the cases in which the unambiguity predicates do not hold;
-     note that @(tsee raise) is logically @('nil'),
-     so the annotation predicates are false on ambiguous constructs."))
-  :types (ident
-          ident-list
-          ident-option
-          iconst
-          iconst-option
-          const
-          const-option
-          attrib-name
-          exprs/decls/stmts
-          fundef
-          extdecl
-          extdecl-list
-          transunit
-          filepath-transunit-map
-          transunit-ensemble
-          code-ensemble)
-  :result booleanp
-  :default t
-  :combine and
-  :override
-  ((iconst (iconst-infop (iconst->info iconst)))
-   (expr :ident (var-infop expr.info))
-   (expr :unary (and (expr-annop expr.arg)
-                     (expr-unary-infop expr.info)))
-   (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
-                              (expr-fix expr)))
-   (expr :binary (and (expr-annop expr.arg1)
-                      (expr-annop expr.arg2)
-                      (expr-binary-infop expr.info)))
-   (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
+    "This is the type of the annotations that
+     the validator adds to translation unit ensembles.
+     The information consists of
+     the final validation table for the translation unit ensemble."))
+  ((table-end valid-table))
+  :pred transunit-ensemble-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+  ()
+  (std::make-define-config :no-function nil)
+
+  (fty::deffold-reduce annop
+    :short "Definition of the predicates that check whether
+            the abstract syntax is annotated with validation information."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
+     (xdoc::p
+      "The @(':default') value is @('t'),
+       meaning that there are no constraints by default.")
+     (xdoc::p
+      "The @(':combine') operator is @(tsee and),
+       because we need to check all the constructs, recursively.")
+     (xdoc::p
+      "We override the predicate for
+       the constructs for which the validator adds information.")
+     (xdoc::p
+      "Since for now the validator accepts GCC attribute and other extensions
+       without actually checking them and their constituents,
+       we also have the annotation predicates accept those constructs,
+       by overriding those cases to return @('t').")
+     (xdoc::p
+      "The validator operates on unambiguous abstract syntax,
+       which satisfies the @(see unambiguity) predicates.
+       Ideally, the annotation predicates should use
+       the unambiguity predicates as guards,
+       but @(tsee fty::deffold-reduce) does not support that feature yet.
+       Thus, for now we add run-time checks, in the form of @(tsee raise),
+       for the cases in which the unambiguity predicates do not hold;
+       note that @(tsee raise) is logically @('nil'),
+       so the annotation predicates are false on ambiguous constructs."))
+    :types (ident
+            ident-list
+            ident-option
+            iconst
+            iconst-option
+            const
+            const-option
+            attrib-name
+            exprs/decls/stmts
+            fundef
+            ext-declon
+            ext-declon-list
+            transunit
+            filepath-transunit-map
+            transunit-ensemble
+            code-ensemble)
+    :result booleanp
+    :default t
+    :combine and
+    :override
+    ((iconst (iconst-infop (iconst->info iconst)))
+     (expr :ident (var-infop expr.info))
+     (expr :const (and (const-annop expr.const)
+                       (expr-const-infop expr.info)))
+     (expr :string (expr-string-infop expr.info))
+     (expr :arrsub (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-arrsub-infop expr.info)))
+     (expr :funcall (and (expr-annop expr.fun)
+                         (expr-list-annop expr.args)
+                         (expr-funcall-infop expr.info)))
+     (expr :unary (and (expr-annop expr.arg)
+                       (expr-unary-infop expr.info)))
+     (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+     (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
-   (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
-                                (expr-fix expr)))
-   (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+     (expr :binary (and (expr-annop expr.arg1)
+                        (expr-annop expr.arg2)
+                        (expr-binary-infop expr.info)))
+     (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                    (expr-fix expr)))
-   (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
-                                   (type-spec-fix type-spec)))
-   (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
-                                     (align-spec-fix align-spec)))
-   (dirabsdeclor :dummy-base (raise "Internal error: ~
-                                     dummy base case of ~
-                                     direct abstract declarator."))
-   (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                (absdeclor-option-annop (tyname->declor? tyname))
-                (tyname-infop (tyname->info tyname))))
-   (param-declor :nonabstract (and (declor-annop
-                                    (param-declor-nonabstract->declor
-                                     param-declor))
-                                   (param-declor-nonabstract-infop
-                                    (param-declor-nonabstract->info
-                                     param-declor))))
-   (attrib t)
-   (attrib-spec t)
-   (initdeclor (and (declor-annop (initdeclor->declor initdeclor))
-                    (initer-option-annop (initdeclor->init? initdeclor))
-                    (initdeclor-infop (initdeclor->info initdeclor))))
-   (asm-output t)
-   (asm-input t)
-   (asm-stmt t)
-   (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
-                           (stmt-fix stmt)))
-   (block-item :ambig (raise "Internal error: ambiguous ~x0."
-                             (block-item-fix block-item)))
-   (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
-                           (amb-expr/tyname-fix amb-expr/tyname)))
-   (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
-                                (amb-declor/absdeclor-fix
-                                 amb-declor/absdeclor)))
-   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))
-   (fundef (and (decl-spec-list-annop (fundef->spec fundef))
-                (declor-annop (fundef->declor fundef))
-                (decl-list-annop (fundef->decls fundef))
-                (comp-stmt-annop (fundef->body fundef))
-                (fundef-infop (fundef->info fundef))))
-   (transunit (and (extdecl-list-annop (transunit->decls transunit))
-                   (transunit-infop (transunit->info transunit))))))
+     (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
+                                  (expr-fix expr)))
+     (expr :cast/logand-ambig (raise "Internal error: ambiguous ~x0."
+                                     (expr-fix expr)))
+     (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
+                                     (type-spec-fix type-spec)))
+     (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
+                                       (align-spec-fix align-spec)))
+     (dirabsdeclor :dummy-base (raise "Internal error: ~
+                                       dummy base case of ~
+                                       direct abstract declarator."))
+     (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                  (absdeclor-option-annop (tyname->declor? tyname))
+                  (tyname-infop (tyname->info tyname))))
+     (param-declor :nonabstract (and (declor-annop
+                                      (param-declor-nonabstract->declor
+                                       param-declor))
+                                     (param-declor-nonabstract-infop
+                                      (param-declor-nonabstract->info
+                                       param-declor))))
+     (attrib t)
+     (attrib-spec t)
+     (init-declor (and (declor-annop (init-declor->declor init-declor))
+                       (initer-option-annop (init-declor->initer? init-declor))
+                       (init-declor-infop (init-declor->info init-declor))))
+     (asm-output t)
+     (asm-input t)
+     (asm-stmt t)
+     (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
+                             (stmt-fix stmt)))
+     (block-item :ambig (raise "Internal error: ambiguous ~x0."
+                               (block-item-fix block-item)))
+     (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
+                             (amb-expr/tyname-fix amb-expr/tyname)))
+     (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
+                                  (amb-declor/absdeclor-fix
+                                   amb-declor/absdeclor)))
+     (amb-declon/stmt (raise "Internal error: ambiguous ~x0."
+                             (amb-declon/stmt-fix amb-declon/stmt)))
+     (fundef (and (decl-spec-list-annop (fundef->specs fundef))
+                  (declor-annop (fundef->declor fundef))
+                  (declon-list-annop (fundef->declons fundef))
+                  (comp-stmt-annop (fundef->body fundef))
+                  (fundef-infop (fundef->info fundef))))
+     (transunit (and (ext-declon-list-annop (transunit->declons transunit))
+                     (transunit-infop (transunit->info transunit))))
+     (transunit-ensemble (and (filepath-transunit-map-annop
+                                (transunit-ensemble->units transunit-ensemble))
+                              (transunit-ensemble-infop
+                                (transunit-ensemble->info transunit-ensemble)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -768,6 +905,33 @@
     (equal (expr-annop (expr-ident ident info))
            (var-infop info))
     :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-const
+    (equal (expr-annop (expr-const const info))
+           (and (const-annop const)
+                (expr-const-infop info)))
+    :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-string
+    (equal (expr-annop (expr-string strings info))
+           (expr-string-infop info))
+    :enable (expr-annop identity))
+
+  (defruled expr-annop-of-expr-arrsub
+    (equal (expr-annop (expr-arrsub arg1 arg2 info))
+           (and (expr-annop arg1)
+                (expr-annop arg2)
+                (expr-arrsub-infop info)))
+    :expand (expr-annop (expr-arrsub arg1 arg2 info))
+    :enable identity)
+
+  (defruled expr-annop-of-expr-funcall
+    (equal (expr-annop (expr-funcall fun args info))
+           (and (expr-annop fun)
+                (expr-list-annop args)
+                (expr-funcall-infop info)))
+    :expand (expr-annop (expr-funcall fun args info))
+    :enable identity)
 
   (defruled expr-annop-of-expr-unary
     (equal (expr-annop (expr-unary op arg info))
@@ -799,31 +963,38 @@
     :expand (param-declor-annop (param-declor-nonabstract declor info))
     :enable identity)
 
-  (defruled initdeclor-annop-of-initdeclor
-    (equal (initdeclor-annop (initdeclor declor asm? attribs init? info))
+  (defruled init-declor-annop-of-init-declor
+    (equal (init-declor-annop (init-declor declor asm? attribs initer? info))
            (and (declor-annop declor)
-                (initer-option-annop init?)
-                (initdeclor-infop info)))
-    :expand (initdeclor-annop (initdeclor declor asm? attribs init? info))
+                (initer-option-annop initer?)
+                (init-declor-infop info)))
+    :expand (init-declor-annop (init-declor declor asm? attribs initer? info))
     :enable identity)
 
   (defruled fundef-annop-of-fundef
     (equal (fundef-annop
-            (fundef extension spec declor asm? attribs decls body info))
-           (and (decl-spec-list-annop spec)
+            (fundef extension specs declor asm? attribs declons body info))
+           (and (decl-spec-list-annop specs)
                 (declor-annop declor)
-                (decl-list-annop decls)
+                (declon-list-annop declons)
                 (comp-stmt-annop body)
                 (fundef-infop info)))
     :expand (fundef-annop
-             (fundef extension spec declor asm? attribs decls body info))
+             (fundef extension specs declor asm? attribs declons body info))
     :enable identity)
 
   (defruled transunit-annop-of-transunit
-    (equal (transunit-annop (transunit decls info))
-           (and (extdecl-list-annop decls)
+    (equal (transunit-annop (transunit comment includes declons info))
+           (and (ext-declon-list-annop declons)
                 (transunit-infop info)))
-    :expand (transunit-annop (transunit decls info))
+    :expand (transunit-annop (transunit comment includes declons info))
+    :enable identity)
+
+  (defruled transunit-ensemble-annop-of-transunit-ensemble
+    (equal (transunit-ensemble-annop (transunit-ensemble units info))
+           (and (filepath-transunit-map-annop units)
+                (transunit-ensemble-infop info)))
+    :expand (transunit-ensemble-annop (transunit-ensemble units info))
     :enable identity)
 
   ;; theorems about accessors:
@@ -837,6 +1008,60 @@
     (implies (and (expr-annop expr)
                   (expr-case expr :ident))
              (var-infop (expr-ident->info expr)))
+    :enable expr-annop)
+
+  (defruled const-annop-of-expr-const->const
+    (implies (and (expr-annop expr)
+                  (expr-case expr :const))
+             (const-annop (expr-const->const expr)))
+    :enable expr-annop)
+
+  (defruled expr-const-infop-of-expr-const->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :const))
+             (expr-const-infop (expr-const->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-string-infop-of-expr-string->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :string))
+             (expr-string-infop (expr-string->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-arrsub->arg1
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-annop (expr-arrsub->arg1 expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-arrsub->arg2
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-annop (expr-arrsub->arg2 expr)))
+    :enable expr-annop)
+
+  (defruled expr-arrsub-infop-of-expr-arrsub->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :arrsub))
+             (expr-arrsub-infop (expr-arrsub->info expr)))
+    :enable expr-annop)
+
+  (defruled expr-annop-of-expr-funcall->fun
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-annop (expr-funcall->fun expr)))
+    :enable expr-annop)
+
+  (defruled expr-list-annop-of-expr-funcall->args
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-list-annop (expr-funcall->args expr)))
+    :enable expr-annop)
+
+  (defruled expr-funcall-infop-of-expr-funcall->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :funcall))
+             (expr-funcall-infop (expr-funcall->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-unary->arg
@@ -869,20 +1094,20 @@
              (expr-binary-infop (expr-binary->info expr)))
     :enable expr-annop)
 
-  (defruled declor-annop-of-initdeclor->declor
-    (implies (initdeclor-annop initdeclor)
-             (declor-annop (initdeclor->declor initdeclor)))
-    :enable initdeclor-annop)
+  (defruled declor-annop-of-init-declor->declor
+    (implies (init-declor-annop init-declor)
+             (declor-annop (init-declor->declor init-declor)))
+    :enable init-declor-annop)
 
-  (defruled initer-option-annop-of-initdeclor->init?
-    (implies (initdeclor-annop initdeclor)
-             (initer-option-annop (initdeclor->init? initdeclor)))
-    :enable initdeclor-annop)
+  (defruled initer-option-annop-of-init-declor->initer?
+    (implies (init-declor-annop init-declor)
+             (initer-option-annop (init-declor->initer? init-declor)))
+    :enable init-declor-annop)
 
-  (defruled initdeclor-infop-of-initdeclor->info
-    (implies (initdeclor-annop initdeclor)
-             (initdeclor-infop (initdeclor->info initdeclor)))
-    :enable initdeclor-annop)
+  (defruled init-declor-infop-of-init-declor->info
+    (implies (init-declor-annop init-declor)
+             (init-declor-infop (init-declor->info init-declor)))
+    :enable init-declor-annop)
 
   (defruled spec/qual-list-annop-of-tyname->specquals
     (implies (tyname-annop tyname)
@@ -912,9 +1137,9 @@
               (param-declor-nonabstract->info param-declor)))
     :enable param-declor-annop)
 
-  (defruled decl-spec-list-annop-of-fundef->spec
+  (defruled decl-spec-list-annop-of-fundef->specs
     (implies (fundef-annop fundef)
-             (decl-spec-list-annop (fundef->spec fundef)))
+             (decl-spec-list-annop (fundef->specs fundef)))
     :enable fundef-annop)
 
   (defruled declor-annop-of-fundef->declor
@@ -922,9 +1147,9 @@
              (declor-annop (fundef->declor fundef)))
     :enable fundef-annop)
 
-  (defruled decl-list-annop-of-fundef->decls
+  (defruled declon-list-annop-of-fundef->declons
     (implies (fundef-annop fundef)
-             (decl-list-annop (fundef->decls fundef)))
+             (declon-list-annop (fundef->declons fundef)))
     :enable fundef-annop)
 
   (defruled comp-stmt-annop-of-fundef->body
@@ -937,15 +1162,34 @@
              (fundef-infop (fundef->info fundef)))
     :enable fundef-annop)
 
-  (defruled extdecl-list-annop-of-transunit->decls
+  (defruled ext-declon-list-annop-of-transunit->declons
     (implies (transunit-annop transunit)
-             (extdecl-list-annop (transunit->decls transunit)))
+             (ext-declon-list-annop (transunit->declons transunit)))
     :enable transunit-annop)
+
+  (defruled transunit-annop-of-cdr-assoc
+    (implies (and (filepath-transunit-map-annop map)
+                  (filepath-transunit-mapp map)
+                  (omap::assoc filepath map))
+             (transunit-annop (cdr (omap::assoc filepath map))))
+    :induct t
+    :enable (omap::assoc
+             filepath-transunit-map-annop))
 
   (defruled transunit-infop-of-transunit->info
     (implies (transunit-annop transunit)
              (transunit-infop (transunit->info transunit)))
     :enable transunit-annop)
+
+  (defruled filepath-transunit-map-annop-of-transunit-ensemble->units
+    (implies (transunit-ensemble-annop ensemble)
+             (filepath-transunit-map-annop (transunit-ensemble->units ensemble)))
+    :enable transunit-ensemble-annop)
+
+  (defruled transunit-ensemble-infop-of-transunit-ensemble->info
+    (implies (transunit-ensemble-annop ensemble)
+             (transunit-ensemble-infop (transunit-ensemble->info ensemble)))
+    :enable transunit-ensemble-annop)
 
   ;; Add the above theorems to the rule set.
 
@@ -953,35 +1197,52 @@
    abstract-syntax-annop-rules
    '(iconst-annop-of-iconst
      expr-annop-of-expr-ident
+     expr-annop-of-expr-const
+     expr-annop-of-expr-string
+     expr-annop-of-expr-arrsub
+     expr-annop-of-expr-funcall
      expr-annop-of-expr-unary
      expr-annop-of-expr-binary
      tyname-annop-of-tyname
      param-declor-annop-of-param-declor-nonabstract
      param-declor-nonabstract-infop-of-param-declor-nonabstract->info
-     initdeclor-annop-of-initdeclor
+     init-declor-annop-of-init-declor
      fundef-annop-of-fundef
      transunit-annop-of-transunit
+     transunit-ensemble-annop-of-transunit-ensemble
      iconst-infop-of-iconst->info
      var-infop-of-expr-ident->info
+     const-annop-of-expr-const->const
+     expr-const-infop-of-expr-const->info
+     expr-string-infop-of-expr-string->info
+     expr-annop-of-expr-arrsub->arg1
+     expr-annop-of-expr-arrsub->arg2
+     expr-arrsub-infop-of-expr-arrsub->info
+     expr-annop-of-expr-funcall->fun
+     expr-list-annop-of-expr-funcall->args
+     expr-funcall-infop-of-expr-funcall->info
      expr-annop-of-expr-unary->arg
      expr-unary-infop-of-expr-unary->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      expr-binary-infop-of-expr-binary->info
-     declor-annop-of-initdeclor->declor
-     initer-option-annop-of-initdeclor->init?
-     initdeclor-infop-of-initdeclor->info
+     declor-annop-of-init-declor->declor
+     initer-option-annop-of-init-declor->initer?
+     init-declor-infop-of-init-declor->info
      spec/qual-list-annop-of-tyname->specquals
      absdeclor-option-annop-of-tyname->declor?
      tyname-infop-of-tyname->info
      declor-annop-of-param-declor-nonabstract->declor
-     decl-spec-list-annop-of-fundef->spec
+     decl-spec-list-annop-of-fundef->specs
      declor-annop-of-fundef->declor
-     decl-list-annop-of-fundef->decls
+     declon-list-annop-of-fundef->declons
      comp-stmt-annop-of-fundef->body
      fundef-infop-of-fundef->info
-     extdecl-list-annop-of-transunit->decls
-     transunit-infop-of-transunit->info)))
+     ext-declon-list-annop-of-transunit->declons
+     transunit-annop-of-cdr-assoc
+     transunit-infop-of-transunit->info
+     filepath-transunit-map-annop-of-transunit-ensemble->units
+     transunit-ensemble-infop-of-transunit-ensemble->info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1012,16 +1273,12 @@
   (expr-case
    expr
    :ident (var-info->type expr.info)
-   :const (if (const-case expr.const :int)
-              (iconst-info->type
-               (iconst->info
-                (const-int->unwrap expr.const)))
-            (type-unknown))
-   :string (type-unknown)
+   :const (expr-const-info->type expr.info)
+   :string (expr-string-info->type expr.info)
    :paren (expr-type expr.inner)
    :gensel (type-unknown)
-   :arrsub (type-unknown)
-   :funcall (type-unknown)
+   :arrsub (expr-arrsub-info->type expr.info)
+   :funcall (expr-funcall-info->type expr.info)
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
@@ -1046,8 +1303,7 @@
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (type-unknown)))
   :measure (expr-count expr)
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1066,8 +1322,7 @@
    initer
    :single (expr-type initer.expr)
    :list (type-unknown))
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1102,6 +1357,7 @@
      :labeled (stmt-types stmt.stmt)
      :compound (comp-stmt-types stmt.stmt)
      :expr (set::insert nil nil)
+     :null-attrib (set::insert nil nil)
      :if (set::insert nil (stmt-types stmt.then))
      :ifelse (set::union (stmt-types stmt.then)
                          (stmt-types stmt.else))
@@ -1109,7 +1365,7 @@
      :while (set::insert nil (stmt-types stmt.body))
      :dowhile (set::insert nil (stmt-types stmt.body))
      :for-expr nil
-     :for-decl nil
+     :for-declon nil
      :for-ambig (impossible)
      :goto nil
      :gotoe nil
@@ -1119,6 +1375,7 @@
               stmt.expr?
               :some (set::insert (expr-type stmt.expr?.val) nil)
               :none (set::insert (type-void) nil))
+     :return-attrib (set::insert (expr-type stmt.expr) nil)
      :asm nil)
     :measure (stmt-count stmt))
 
@@ -1144,7 +1401,7 @@
        see the documentation of that function for a rationale."))
     (block-item-case
      item
-     :decl (set::insert nil nil)
+     :declon (set::insert nil nil)
      :stmt (stmt-types item.stmt)
      :ambig (impossible))
     :measure (block-item-count item))
@@ -1226,5 +1483,4 @@
                   (set::insert (type-void) (set::delete nil types))
                 types)))
     types)
-  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))

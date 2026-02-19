@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,10 +28,17 @@
       New values are generally added on demand as they are encountered in real
       code.")
    (xdoc::p
-     "See the GCC manual, "
+     "See the GCC manual, ``Built-in Functions Provided by GCC'' "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Built-in-Functions.html"
-                  "``Built-in Functions Provided by GCC''")
-     "."))
+                  "[GCCM:7]")
+     ".")
+   (xdoc::p
+     "Currently, we do not differentiate between GCC and Clang built-ins.
+      If either GCC or Clang language extensions are enabled,
+      we consider all the @(see gcc-builtins) to be defined
+      for the purpose of validation.
+      In the future, it may become necessary to differentiate
+      the built-ins recognized by Clang as opposed to GCC."))
   :order-subtopics t
   :default-parent t)
 
@@ -177,11 +184,15 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This list consists of variables corresponding to certain x86 registers.
+      "This list contains variables corresponding to certain x86 registers.
        We could not find mention of these variables in the GCC manual,
-       but they have been observed in practical code.")
+       but they have been observed in practical code.
+       See @(tsee dimb-transunit) for further discussion of these variables.")
     (xdoc::p
-      "See @(tsee dimb-transunit) for further discussion of these variables."))
+      "We also include @('latent_entropy').
+       This variable was observed in the preprocessed output
+       of a kernel module
+       This is presumably introduced by the ``latent entropy'' GCC plugin."))
   (list (ident "__eax")
         (ident "__ebp")
         (ident "__ebx")
@@ -189,7 +200,8 @@
         (ident "__edi")
         (ident "__edx")
         (ident "__esi")
-        (ident "__esp"))
+        (ident "__esp")
+        (ident "latent_entropy"))
   ///
   (assert-event (ident-listp *gcc-builtin-vars*))
   (assert-event (no-duplicatesp-equal *gcc-builtin-vars*)))

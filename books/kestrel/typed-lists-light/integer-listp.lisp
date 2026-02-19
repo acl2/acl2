@@ -74,3 +74,15 @@
          (and (integer-listp (true-list-fix x))
               (integer-listp y)))
   :hints (("Goal" :in-theory (enable integer-listp revappend))))
+
+; name conflict with books/std/typed-lists/integer-listp.lisp
+(defthm integer-listp-of-nthcdr-2
+  (implies (integer-listp lst)
+           (integer-listp (nthcdr n lst)))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm integer-listp-of-append-2
+  (equal (integer-listp (append x y))
+         (and (integer-listp (true-list-fix x))
+              (integer-listp y)))
+  :hints (("Goal" :in-theory (enable integer-listp append))))

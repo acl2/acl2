@@ -12,10 +12,18 @@
 
 (in-package "ACL2")
 
+;; These functions are used in the various Axe evaluators, which need to be
+;; able to evaluate functions on all arguments, even those that fail to satisfy
+;; the functions' guards.
+
+;; For each function foo covered by this book, we provide a variant,
+;; foo-unguarded, with a guard of T.  We then prove equivalence of
+;; foo-unguarded and foo.
+
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
@@ -26,16 +34,16 @@
 (include-book "kestrel/bv/bitor" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitand" :dir :system)
-(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
-(include-book "kestrel/bv/bvminus" :dir :system)
+(include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
@@ -44,14 +52,14 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)
+(include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
-(include-book "kestrel/lists-light/subrange" :dir :system)
+;(include-book "kestrel/lists-light/subrange-def" :dir :system) ; comes in via defforall
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -59,7 +67,13 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
@@ -218,7 +232,7 @@
   (declare (xargs :guard t))
   (let* ((len (nfix len))
          (index (ifix index))
-         (numbits (ceiling-of-lg len))
+         (numbits (if (equal 0 len) 0 (ceiling-of-lg len)))
          (index (bvchop numbits index)))
     (if (< index len)
         (bvchop (nfix element-size) (ifix (nth-unguarded-aux index data)))
@@ -242,11 +256,13 @@
            (natp element-size)
            (true-listp data))
       (bv-array-write element-size len index val data)
-    (bv-array-write (nfix element-size)
-                    (nfix len)
-                    (BVCHOP (CEILING-OF-LG (nfix LEN)) (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
-                    val
-                    (true-list-fix data))))
+    (let* ((len (nfix len))
+           (numbits (if (equal 0 len) 0 (ceiling-of-lg len))))
+      (bv-array-write (nfix element-size)
+                      len
+                      (BVCHOP numbits (IFIX INDEX)) ;(nfix index) ;todo: conside treatment of negative indices
+                      val
+                      (true-list-fix data)))))
 
 ;move
 (local
@@ -350,7 +366,7 @@
 (defund map-ifix (x)
   (declare (xargs :guard t))
   (if (atom x)
-      x
+      nil
     (cons (ifix (first x))
           (map-ifix (rest x)))))
 
@@ -616,9 +632,7 @@
 
 (defund ceiling-of-lg-unguarded (x)
   (declare (xargs :guard t))
-  (if (integerp x)
-      (ceiling-of-lg x)
-    0))
+  (integer-length-unguarded (binary-+-unguarded -1 x)))
 
 (defthm ceiling-of-lg-unguarded-correct
   (equal (ceiling-of-lg-unguarded x)
