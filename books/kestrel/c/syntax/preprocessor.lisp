@@ -3727,27 +3727,21 @@
                                    (nontoknls-before-header plexeme-listp)
                                    (header header-namep)
                                    (nontoknls-after-header plexeme-listp)
-                                   (newline-at-end plexemep)
-                                   (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
+                                   (newline-at-end plexemep))
+  :returns (lexemes plexeme-listp)
   :short "Rebuild an include directive from its components."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is factored into a separate function
-     because it is sufficiently long
-     and it is called twice in @(tsee pproc-header-name).
-     This is called when a @('#include') directive can be left unexpanded."))
-  (b* ((ppstate (add-rev-lexemes nontoknls-before-hash ppstate))
-       (ppstate (add-rev-lexeme (plexeme-punctuator "#") ppstate))
-       (ppstate (add-rev-lexemes nontoknls-after-hash ppstate))
-       (ppstate (add-rev-lexeme (plexeme-ident (ident "include"))
-                                ppstate))
-       (ppstate (add-rev-lexemes nontoknls-before-header ppstate))
-       (ppstate (add-rev-lexeme (plexeme-header header) ppstate))
-       (ppstate (add-rev-lexemes nontoknls-after-header ppstate))
-       (ppstate (add-rev-lexeme newline-at-end ppstate)))
-    ppstate))
+    "We return the directive as a list of lexemes."))
+  (append (plexeme-list-fix nontoknls-before-hash)
+          (list (plexeme-punctuator "#"))
+          (plexeme-list-fix nontoknls-after-hash)
+          (list (plexeme-ident (ident "include")))
+          (plexeme-list-fix nontoknls-before-header)
+          (list (plexeme-header header))
+          (plexeme-list-fix nontoknls-after-header)
+          (list (plexeme-fix newline-at-end))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4675,13 +4669,14 @@
                    (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
          (ppstate (if preserve-include-p
-                      (rebuild-include-directive nontoknls-before-hash
-                                                 nontoknls-after-hash
-                                                 nontoknls-before-header
-                                                 header
-                                                 nontoknls-after-header
-                                                 newline-at-end
-                                                 ppstate)
+                      (add-rev-lexemes
+                       (rebuild-include-directive nontoknls-before-hash
+                                                  nontoknls-after-hash
+                                                  nontoknls-before-header
+                                                  header
+                                                  nontoknls-after-header
+                                                  newline-at-end)
+                       ppstate)
                     (expand-include-in-place header
                                              newline-at-end
                                              file-rev-lexemes
@@ -4689,14 +4684,12 @@
          (pparts (if preserve-include-p
                      (list
                       (ppart-line
-                       (append nontoknls-before-hash
-                               (list (plexeme-punctuator "#"))
-                               nontoknls-after-hash
-                               (list (plexeme-ident (ident "include")))
-                               nontoknls-before-header
-                               (list (plexeme-header header))
-                               nontoknls-after-header
-                               (list newline-at-end))))
+                       (rebuild-include-directive nontoknls-before-hash
+                                                  nontoknls-after-hash
+                                                  nontoknls-before-header
+                                                  header
+                                                  nontoknls-after-header
+                                                  newline-at-end)))
                    (if (ppoptions->trace-expansion (ppstate->options ppstate))
                        (b* (((mv opening-line closing-line)
                              (expanded-include-comment-lines header
