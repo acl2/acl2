@@ -13,6 +13,7 @@
 (include-book "implementation-environments")
 (include-book "preprocessor-messages")
 (include-book "abstract-syntax-irrelevants")
+(include-book "preprocessor-files")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -43,11 +44,6 @@
      are ignored (i.e. skipped over) in this evaluation process:
      only tokens are relevant.")
    (xdoc::p
-    "By the time we reach the evaluator.
-     the occurrences of the @('defined') operator
-     have already been evaluated, as part of macro replacement.
-     They have been replaced by @('0') or @('1').")
-   (xdoc::p
     "The details of character constants evaluation
      are implementation-defined [C17:6.4.4.4].
      Our preprocessor evaluates them to Unicode code points,
@@ -63,130 +59,6 @@
      see @(tsee uaconvert-pvalues)."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum pexpr
-  :short "Fixtype of preprocessor expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We define ASTs for the constant expressions
-     in @('#if') and @('#elif') directives [C17:6.10.1].
-     These are similar to @(tsee expr) in our full abstract syntax:
-     see that fixtype along with this one.
-     We represent integer constant expressions [C17:6.6/6],
-     with modifications motivated by the fact that we are preprocessing.
-     [C17:6.6/6] does not give a completely precise definition;
-     we discuss and motivate our choices below.")
-   (xdoc::p
-    "We represent integer constants as preprocessing numbers:
-     we elaborate preprocessing numbers into integer constants
-     (if they can be elaborated as such)
-     during evaluation, after parsing.")
-   (xdoc::p
-    "Although [C17:6.6/6] allows floating constants
-     as immediate operands of casts (to integer types, presumably),
-     this does not seem to apply to the preprocessor.
-     The preprocessor does not really know about types and casts.
-     Indeed, both GCC and Clang fail when attempting to use
-     a cast of a floating constant, or any cast in fact,
-     as the expression of a conditional.
-     Thus, we exclude floating constants.")
-   (xdoc::p
-    "We have a separate fixtype summand for character constants.
-     These are explicitly called for in [C17:6.10.1/4], see footnote 171.")
-   (xdoc::p
-    "Unlike @(tsee expr), there are no enumeration constants here:
-     they are just identifiers at this point,
-     which are turned into @('0') [C17:6.10.1/4] during parsing.")
-   (xdoc::p
-    "We include no string literals, since they do not have integer types.")
-   (xdoc::p
-    "We include no parenthesized expressions,
-     because for now we use these preprocessor expressions only transitorily,
-     in order to evaluate them after parsing them,
-     and parentheses are not relevant to that in ASTs.")
-   (xdoc::p
-    "Since the only allowed operands are numbers and characters [C17:6.6/6],
-     it seems reasonable to exclude operations that require
-     lvalues or pointer values or aggregate values.
-     This excludes compound literals,
-     array subscript operations,
-     and structure/union member access;
-     among the unary operators, it excludes @('&') and @('*');
-     among the binary operators, it excludes all forms of assignment.
-     Instead of using subtypes of @(tsee unop) and @(tsee binop),
-     we spell out the allowed unary and binary operators
-     as separate fixtype summands.")
-   (xdoc::p
-    "Perhaps somewhat inconsistently with [C17:6.6/6],
-     [C17:6.6/3] allows for certain kinds of expressions
-     to occur only in sub-expressions that are not evaluated.
-     We omit them completely for now, to keep things simpler;
-     we will add support for them later if needed.
-     These are the unary operators that take lvalues (increment and decrement),
-     the assignment operators (simple and compound),
-     function calls,
-     and comma expressions.")
-   (xdoc::p
-    "Note also that the comma operator is excluded at the top level
-     by the fact the grammar rule for constant expressions says that
-     they are conditional expressions [C17:6.6/1].")
-   (xdoc::p
-    "Although [C17:6.6/6] explictly calls out @('sizeof') and @('_Alignof'),
-     both GCC and Clang reject them,
-     which makes sense because the preprocessor
-     does not really know about types.")
-   (xdoc::p
-    "Although [C17:6.6/6] explicitly calls out casts,
-     both GCC and Clang reject them, as mentioned earlier.")
-   (xdoc::p
-    "Neither [C17:6.10.1] nor [C17:6.6/6] mention generic selections.
-     Both GCC and Clang reject them.
-     This makes sense because the preprocessor
-     does not really know about types.")
-   (xdoc::p
-    "We avoid any GCC or Clang extensions for now.")
-   (xdoc::p
-    "Unlike @(tsee expr), there is no need to include ambiguous expressions.
-     Those only arise when certain identifiers
-     may ambiguously denote variables or types,
-     but there are no identifiers here."))
-  (:number ((number pnumber)))
-  (:char ((char cconst)))
-  (:plus ((arg pexpr)))
-  (:minus ((arg pexpr)))
-  (:bitnot ((arg pexpr)))
-  (:lognot ((arg pexpr)))
-  (:mul ((arg1 pexpr) (arg2 pexpr)))
-  (:div ((arg1 pexpr) (arg2 pexpr)))
-  (:rem ((arg1 pexpr) (arg2 pexpr)))
-  (:add ((arg1 pexpr) (arg2 pexpr)))
-  (:sub ((arg1 pexpr) (arg2 pexpr)))
-  (:shl ((arg1 pexpr) (arg2 pexpr)))
-  (:shr ((arg1 pexpr) (arg2 pexpr)))
-  (:lt ((arg1 pexpr) (arg2 pexpr)))
-  (:gt ((arg1 pexpr) (arg2 pexpr)))
-  (:le ((arg1 pexpr) (arg2 pexpr)))
-  (:ge ((arg1 pexpr) (arg2 pexpr)))
-  (:eq ((arg1 pexpr) (arg2 pexpr)))
-  (:ne ((arg1 pexpr) (arg2 pexpr)))
-  (:bitand ((arg1 pexpr) (arg2 pexpr)))
-  (:bitxor ((arg1 pexpr) (arg2 pexpr)))
-  (:bitior ((arg1 pexpr) (arg2 pexpr)))
-  (:logand ((arg1 pexpr) (arg2 pexpr)))
-  (:logor ((arg1 pexpr) (arg2 pexpr)))
-  (:cond ((test pexpr) (then pexpr) (else pexpr)))
-  :pred pexprp
-  :prepwork ((set-induction-depth-limit 1)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-pexpr
-  :short "An irrelevant preprocessor expression."
-  :type pexprp
-  :body (pexpr-number (irr-pnumber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1080,11 +952,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define peval-expr ((expr pexprp) (ienv ienvp))
+(define peval-expr ((expr pexprp) (macros macro-tablep) (ienv ienvp))
   :returns (mv erp (pval pvaluep))
   :short "Evaluate an expression during preprocessing."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "Since expressions may contain the @('defined') operator,
+     we need the macro table.
+     We do not use the actual macro definitions,
+     but just whether macros are defined or not.")
    (xdoc::p
     "Since all these expressions are pure,
      the order of evaluation does not matter.
@@ -1094,80 +971,84 @@
      expr
      :number (peval-pnumber expr.number ienv)
      :char (peval-cconst expr.char)
-     :plus (b* (((erp arg) (peval-expr expr.arg ienv)))
+     :plus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
              (retok (peval-plus arg)))
-     :minus (b* (((erp arg) (peval-expr expr.arg ienv)))
+     :minus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
               (peval-minus arg ienv))
-     :bitnot (b* (((erp arg) (peval-expr expr.arg ienv)))
+     :bitnot (b* (((erp arg) (peval-expr expr.arg macros ienv)))
                (peval-bitnot arg ienv))
-     :lognot (b* (((erp arg) (peval-expr expr.arg ienv)))
+     :lognot (b* (((erp arg) (peval-expr expr.arg macros ienv)))
                (retok (peval-lognot arg)))
-     :mul (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :mul (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-mul arg1 arg2 ienv))
-     :div (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :div (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-div arg1 arg2 ienv))
-     :rem (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :rem (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-rem arg1 arg2 ienv))
-     :add (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :add (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-add arg1 arg2 ienv))
-     :sub (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :sub (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-sub arg1 arg2 ienv))
-     :shl (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :shl (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-shl arg1 arg2 ienv))
-     :shr (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-               ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :shr (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+               ((erp arg2) (peval-expr expr.arg2 macros ienv)))
             (peval-shr arg1 arg2 ienv))
-     :lt (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :lt (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-lt arg1 arg2 ienv)))
-     :gt (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :gt (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-gt arg1 arg2 ienv)))
-     :le (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :le (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-le arg1 arg2 ienv)))
-     :ge (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :ge (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-ge arg1 arg2 ienv)))
-     :eq (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :eq (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-eq arg1 arg2 ienv)))
-     :ne (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-              ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :ne (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+              ((erp arg2) (peval-expr expr.arg2 macros ienv)))
            (retok (peval-ne arg1 arg2 ienv)))
-     :bitand (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-                  ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :bitand (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+                  ((erp arg2) (peval-expr expr.arg2 macros ienv)))
                (peval-bitand arg1 arg2 ienv))
-     :bitxor (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-                  ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :bitxor (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+                  ((erp arg2) (peval-expr expr.arg2 macros ienv)))
                (peval-bitxor arg1 arg2 ienv))
-     :bitior (b* (((erp arg1) (peval-expr expr.arg1 ienv))
-                  ((erp arg2) (peval-expr expr.arg2 ienv)))
+     :bitior (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
+                  ((erp arg2) (peval-expr expr.arg2 macros ienv)))
                (peval-bitior arg1 arg2 ienv))
-     :logand (b* (((erp arg1) (peval-expr expr.arg1 ienv))
+     :logand (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
                   ((when (= (pvalue->integer arg1) 0))
                    (retok (pvalue-signed 0)))
-                  ((erp arg2) (peval-expr expr.arg2 ienv)))
+                  ((erp arg2) (peval-expr expr.arg2 macros ienv)))
                (if (= (pvalue->integer arg2) 0)
                    (retok (pvalue-signed 0))
                  (retok (pvalue-signed 1))))
-     :logor (b* (((erp arg1) (peval-expr expr.arg1 ienv))
+     :logor (b* (((erp arg1) (peval-expr expr.arg1 macros ienv))
                  ((when (/= (pvalue->integer arg1) 0))
                   (retok (pvalue-signed 1)))
-                 ((erp arg2) (peval-expr expr.arg2 ienv)))
+                 ((erp arg2) (peval-expr expr.arg2 macros ienv)))
               (if (= (pvalue->integer arg2) 0)
                   (retok (pvalue-signed 0))
                 (retok (pvalue-signed 1))))
-     :cond (b* (((erp test) (peval-expr expr.test ienv)))
+     :cond (b* (((erp test) (peval-expr expr.test macros ienv)))
              (if (= (pvalue->integer test) 0)
-                 (peval-expr expr.else ienv)
-               (peval-expr expr.then ienv)))))
+                 (peval-expr expr.else macros ienv)
+               (peval-expr expr.then macros ienv)))
+     :defined (b* ((info? (macro-lookup expr.name macros)))
+                (if info?
+                    (retok (pvalue-signed 1))
+                  (retok (pvalue-signed 0))))))
   :measure (pexpr-count expr)
   :verify-guards :after-returns)
 
@@ -1745,7 +1626,42 @@
        ((plexeme-case token :char) ; char
         (retok (pexpr-char (plexeme-char->const token)) lexemes))
        ((plexeme-case token :ident) ; ident
-        (retok (pexpr-number (pnumber-digit #\0)) lexemes))
+        (cond
+         ((equal (ident->unwrap (plexeme-ident->ident token))
+                 "defined") ; defined
+          (b* (((mv token2 lexemes) (find-first-token lexemes)))
+            (cond
+             ((not token2) ; defined END
+              (reterr (msg "Expected an identifier or an open parenthesis; ~
+                            found nothing instead.")))
+             ((plexeme-case token2 :ident) ; defined ident
+              (retok (pexpr-defined (plexeme-ident->ident token2)) lexemes))
+             ((plexeme-punctuatorp token2 "(") ; defined (
+              (b* (((mv token3 lexemes) (find-first-token lexemes))
+                   ((unless token3)
+                    (reterr (msg "Expected an identifier; ~
+                                  found nothing instead.")))
+                   ((unless (plexeme-case token3 :ident)) ; defined ( ident
+                    (reterr (msg "Expected an identifier; ~
+                                  found ~x0 instead."
+                                 token3)))
+                   (name (plexeme-ident->ident token3))
+                   ((mv token4 lexemes) (find-first-token lexemes))
+                   ((unless token4)
+                    (reterr (msg "Expected a closed parenthesis; ~
+                                  found nothing instead.")))
+                   ((unless (plexeme-punctuatorp token4 ")"))
+                    ;; defined ( ident )
+                    (reterr (msg "Expected a closed parenthesis; ~
+                                  found ~x0 instead."
+                                 token4))))
+                (retok (pexpr-defined name) lexemes)))
+             (t ; defined other
+              (reterr (msg "Expected an open parenthesis or an identifier; ~
+                            found ~x0 instead."
+                           token2))))))
+         (t ; otherident
+          (retok (pexpr-number (pnumber-digit #\0)) lexemes))))
        ((plexeme-punctuatorp token "(") ; (
         (b* (((erp expr lexemes) (pparse-expression lexemes)) ; ( expr
              ((mv token lexemes) (find-first-token lexemes))
@@ -2007,22 +1923,20 @@
 
   (fty::deffixequiv-mutual pparse-expressions))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pparseval-const-expr ((lexemes plexeme-listp) (ienv ienvp))
-  :returns (mv erp (pval pvaluep))
-  :short "Parse and evaluate a constant expression during preprocessing."
+(define pparse-const-expr ((lexemes plexeme-listp))
+  :returns (mv erp (expr pexprp))
+  :short "Parse the constant expression in a @('#if') or @('#elif') directive."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used for the expressions in @('#if') and @('#elif') directives.
-     We parse the expression, obtaining an AST,
-     and ensuring that there are no tokens left after the expression.
-     Then we evaluate the AST, obtaining a preprocessor value."))
-  (b* (((reterr) (irr-pvalue))
+    "We parse the expression and we ensure that
+     there are no tokens left after the expression."))
+  (b* (((reterr) (irr-pexpr))
        ((erp expr lexemes) (pparse-expression lexemes))
        ((mv token lexemes) (find-first-token lexemes))
        ((when token)
         (reterr (msg "Found extra lexemes with tokens ~x0."
                      (cons token lexemes)))))
-    (peval-expr expr ienv)))
+    (retok expr)))

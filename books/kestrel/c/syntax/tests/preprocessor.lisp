@@ -77,24 +77,8 @@ void f(double y) {
 ; (depends-on "preproc-examples/null-directive.c")
 
 (test-preproc-1 "null-directive.c"
-                "/*#*/
-/* comment */ /*#*/
-/*#*/ // comment
-/* comment */ /*#*/ // comment
-    /*#*/
-"
+                ""
                 :base-dir "preproc-examples")
-
-; This is the same test but dropping comments.
-
-(test-preproc-1 "null-directive.c"
-                (list 10
-                      32 10 ; SP
-                      32 10 ; SP
-                      32 32 10 ; SP SP
-                      32 32 32 32 10) ; SP SP SP SP
-                :base-dir "preproc-examples"
-                :keep-comments nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,7 +131,8 @@ int z6 = (1, (a,b));
 ((1)*(2),3);
 ((1)*(2),3, 4);
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +152,8 @@ int z6 = (1, (a,b));
 \"u'a'\";
 \"\\\"abc\\\"\";
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +166,8 @@ x334;
 6e+8P-;
 >>=;
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +175,8 @@ x334;
 
 (test-preproc-1 "c17-std-example-6.10.3.3.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,7 +186,8 @@ x334;
                 "
 2*9*g
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -208,7 +197,8 @@ x334;
                 "
 int table[100];
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +206,8 @@ int table[100];
 
 (test-preproc-1 "c17-std-example2-6.10.3.5.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -229,7 +220,8 @@ f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
 int i[] = { 1, 23, 4, 5,  };
 char c[2][6] = { \"hello\", \"\" };
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +235,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 \"hello\";
 \"hello\" \", world\"
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,7 +247,8 @@ include \"vers2.h\" // omit # in #include to avoid access
 int j[] = { 123, 45, 67, 89,
            10, 11, 12,  };
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +256,8 @@ int j[] = { 123, 45, 67, 89,
 
 (test-preproc-1 "c17-std-example6-6.10.3.5.c"
                 ""
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +270,8 @@ fprintf(stderr, \"X = %d\\n\", x);
 puts(\"The first, second, and third items.\");
 ((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,7 +283,8 @@ puts(\"The first, second, and third items.\");
 
 M_is_defined
 "
-                :base-dir "preproc-examples")
+                :base-dir "preproc-examples"
+                :full-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,33 +308,40 @@ M_is_defined
                                     "#include \"subdir/included2.h\"
 "
                                     "subdir/included2.h"
-                                    "/*#*/ // null directive
+                                    "void f() {}
 ")
               :base-dir "preproc-example1")
+
+; This is the same test but with full expansion.
 
 (test-preproc '("including.c")
               :expected (fileset-of "including.c"
                                     "// #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 // #include \"included.h\" >>>>>>>>>>
 // #include \"subdir/included2.h\" >>>>>>>>>>
-/*#*/ // null directive
+void f() {}
 // <<<<<<<<<< #include \"subdir/included2.h\"
 // <<<<<<<<<< #include \"included.h\"
 ")
               :base-dir "preproc-example1"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("including.c")
+                      :base-dir "preproc-example1")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,7 +386,7 @@ int x2 = 0;
                                     "guarded.h"
                                     "
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f() {}
 #endif
 ")
@@ -431,6 +435,40 @@ int x1 = 0;
               :base-dir "preproc-example2"
               :full-expansion t)
 
+; This is the same test but with full expansion and without tracing.
+
+(test-preproc '("gincluder1.c"
+                "gincluder2.c")
+              :expected (fileset-of "gincluder1.c"
+                                    "
+
+
+void f() {}
+int x1 = 0;
+
+
+int x2 = 0;
+"
+                                    "gincluder2.c"
+                                    "
+
+
+void f() {}
+int x2 = 0;
+
+
+int x1 = 0;
+")
+              :base-dir "preproc-example2"
+              :full-expansion t
+              :trace-expansion nil)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincluder1.c"
+                        "gincluder2.c")
+                      :base-dir "preproc-example2")
+
 ;;;;;;;;;;;;;;;;;;;;
 
 ; This is a variant of the previous test in which
@@ -447,12 +485,13 @@ int x1 = 0;
                 "gincludermod2.c")
               :expected (fileset-of "gincludermod1.c"
                                     "
+#define f f
 // #include \"gincluder1.h\" >>>>>>>>>>
 
 // #include \"guarded.h\" >>>>>>>>>>
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f1() {}
 #endif
 // <<<<<<<<<< #include \"guarded.h\"
@@ -462,12 +501,13 @@ int x1 = 0;
 "
                                     "gincludermod2.c"
                                     "
+#define f f
 // #include \"gincluder2.h\" >>>>>>>>>>
 
 // #include \"guarded.h\" >>>>>>>>>>
 
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f2() {}
 #endif
 // <<<<<<<<<< #include \"guarded.h\"
@@ -488,11 +528,59 @@ int x2 = 0;
                                     "guarded.h"
                                     "
 #ifndef GUARDED
-#define GUARDED
+#define GUARDED GUARDED
 void f() {}
 #endif
 ")
               :base-dir "preproc-example2")
+
+; This is the same test but without tracing.
+
+(test-preproc '("gincludermod1.c"
+                "gincludermod2.c")
+              :expected (fileset-of "gincludermod1.c"
+                                    "
+#define f f
+
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f1() {}
+#endif
+int x1 = 0;
+#include \"gincluder2.h\"
+"
+                                    "gincludermod2.c"
+                                    "
+#define f f
+
+
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f2() {}
+#endif
+int x2 = 0;
+#include \"gincluder1.h\"
+"
+                                    "gincluder1.h"
+                                    "
+#include \"guarded.h\"
+int x1 = 0;
+"
+                                    "gincluder2.h"
+                                    "
+#include \"guarded.h\"
+int x2 = 0;
+"
+                                    "guarded.h"
+                                    "
+#ifndef GUARDED
+#define GUARDED GUARDED
+void f() {}
+#endif
+")
+              :base-dir "preproc-example2"
+              :trace-expansion nil)
 
 ; This is the same test but with full expansion.
 
@@ -537,6 +625,12 @@ int x1 = 0;
               :base-dir "preproc-example2"
               :full-expansion t)
 
+; Check against full expansion.
+
+(test-preproc-fullexp '("gincludermod1.c"
+                        "gincludermod2.c")
+                      :base-dir "preproc-example2")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example3/f.c")
@@ -548,7 +642,7 @@ int x1 = 0;
 (test-preproc '("i.c" "j.c")
               :expected (fileset-of "f.c"
                                     "#ifndef F
-#define F
+#define F F
 x
 #endif
 "
@@ -595,6 +689,11 @@ z
               :base-dir "preproc-example3"
               :full-expansion t)
 
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example3")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example4/f.c")
@@ -606,14 +705,15 @@ z
 (test-preproc '("i.c" "j.c")
               :expected (fileset-of "f.c"
                                     "#ifndef F
-#define F
+#define F F
 x
 #endif
 "
                                     "g.c"
-                                    "// #include \"f.c\" >>>>>>>>>>
+                                    "#define x x
+// #include \"f.c\" >>>>>>>>>>
 #ifndef F
-#define F
+#define F F
 y
 #endif
 // <<<<<<<<<< #include \"f.c\"
@@ -622,6 +722,7 @@ z
                                     "h.c"
                                     "#include \"f.c\"
 // #include \"g.c\" >>>>>>>>>>
+#define x x
 #include \"f.c\"
 z
 // <<<<<<<<<< #include \"g.c\"
@@ -661,41 +762,76 @@ z
               :base-dir "preproc-example4"
               :full-expansion t)
 
+; Check against full expansion.
+
+(test-preproc-fullexp '("i.c" "j.c")
+                      :base-dir "preproc-example4")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "preproc-example5/a.c")
 ; (depends-on "preproc-example5/b.c")
 ; (depends-on "preproc-example5/c.c")
 
-(test-preproc '("b.c")
+(test-preproc '("c.c")
               :expected (fileset-of "a.c"
                                     "#ifndef A
-#define A
+#define A A
+#define X X
 int a;
 #endif
 "
                                     "b.c"
                                     "#include \"a.c\"
-#include \"c.c\"
+void f();
 "
                                     "c.c"
                                     "#include \"a.c\"
-void f();
+#include \"b.c\"
 ")
               :base-dir "preproc-example5")
 
 ; This is the same test but with full expansion.
 
-(test-preproc '("b.c")
-              :expected (fileset-of "b.c"
+(test-preproc '("c.c")
+              :expected (fileset-of "c.c"
                                     "// #include \"a.c\" >>>>>>>>>>
 int a;
 // <<<<<<<<<< #include \"a.c\"
-// #include \"c.c\" >>>>>>>>>>
+// #include \"b.c\" >>>>>>>>>>
 // #include \"a.c\" >>>>>>>>>>
 // <<<<<<<<<< #include \"a.c\"
 void f();
-// <<<<<<<<<< #include \"c.c\"
+// <<<<<<<<<< #include \"b.c\"
 ")
               :base-dir "preproc-example5"
               :full-expansion t)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("c.c")
+                      :base-dir "preproc-example5")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (depends-on "preproc-example6/guarded.h")
+; (depends-on "preproc-example6/defguard.c")
+
+(test-preproc '("defguard.c")
+              :expected (fileset-of "guarded.h"
+                                    "#ifndef G
+#define G G
+void g();
+#endif
+"
+                                    "defguard.c"
+                                    "#define G G
+#include \"guarded.h\"
+int n = 10;
+")
+              :base-dir "preproc-example6")
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("defguard.c")
+                      :base-dir "preproc-example6")

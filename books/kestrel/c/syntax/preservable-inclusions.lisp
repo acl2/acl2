@@ -271,7 +271,49 @@
      but we need to handle things correctly in all possible cases.
      Thus, in general we need to preserve information about
      all the @('#define')s and @('#undef')s that may affect header guards.
-     We are not quite doing that yet, but we plan to.
-     We also need to extend our ASTs and @(see parser)
-     to accept these additional directives
-     (currently they only accept @('#include')s at the start of a file.")))
+     Our approach is the following.")
+   (xdoc::p
+    "We preserve @('#undef') directives as they are.
+     But preserving @('#define') directives as they are can cause problems.
+     For example, in the code fragment")
+   (xdoc::codeblock
+    "#define x -x"
+    "int y = x;")
+   (xdoc::p
+    "leaving the @('#define') as is after preprocessing the rest would yield")
+   (xdoc::codeblock
+    "#define x -x"
+    "int y = -x;")
+   (xdoc::p
+    "where the @('x') in the initializer of @('y')
+     has been appropriately replaced with @('-x'),
+     with the @('x') in @('-x') not further replaced
+     thanks to the preprocessor mechanism to prevent recursion.
+     But if we were now to fully preprocess the resulting code,
+     we would obtain")
+   (xdoc::codeblock
+    "int y = - -x;")
+   (xdoc::p
+    "which is different from the code that we would obtain
+     by fully preprocessing the original code, i.e.")
+   (xdoc::codeblock
+    "int y = -x;")
+   (xdoc::p
+    "This violates the correctness criterion outlined in @(tsee preprocessor)
+     for the preservation of preprocessing constructs.")
+   (xdoc::p
+    "One can imagine more complicated examples, with indirect recursion.
+     The point is that, in general, leaving a @('#define') as is,
+     after preprocessing subsequent code and already performing replacements,
+     can lead to unwanted further replacements.")
+   (xdoc::p
+    "Given that header guards (the kind we recognize and support)
+     only care whether a symbol is defined,
+     but not its particular definition,
+     we preserve @('#define') directive in modified form,
+     namely by defining the symbol to be itself, e.g.")
+   (xdoc::codeblock
+    "#define x x")
+   (xdoc::p
+    "This way, any further replacement would be a no-op,
+     but the definedness or not of the symbol is preserved.")))

@@ -39,17 +39,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support the following options:")
+    "We support options to specify whether:")
    (xdoc::ul
     (xdoc::li
-     "One to specify whether
-      the preprocessing directives should be fully expanded,
-      as typical C preprocessors do,
+     "The preprocessing directives should be fully expanded,
       as opposed to preserved under suitable conditions.")
     (xdoc::li
-     "One to specify whether comments should be preserved or not.")))
+     "Comments should be preserved or not.")
+    (xdoc::li
+     "Comments should be generated
+      to trace the expansion of @('#include') directives.")
+    (xdoc::li
+     "The @('#error') and @('#warning') directives should be ignored,
+      in the sense of not causing actual errors or warnings."))
+   (xdoc::p
+    "These options, except the last one,
+     are explained in more detail in @(tsee input-files),
+     which provides an interface to setting these options.
+     The last option is for internal preprocessor use,
+     not accessible via @(tsee input-files)."))
   ((full-expansion bool)
-   (keep-comments bool))
+   (keep-comments bool)
+   (trace-expansion bool)
+   (no-errors/warnings bool))
   :pred ppoptionsp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -57,4 +69,4 @@
 (defirrelevant irr-ppoptions
   :short "Irrelevant preprocessor options."
   :type ppoptionsp
-  :body (ppoptions nil nil))
+  :body (ppoptions nil nil nil nil))

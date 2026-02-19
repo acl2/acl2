@@ -31,9 +31,10 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-init (c::version-c17))
-                                nil ; ignore-err/warn
                                 (make-ppoptions :full-expansion nil
-                                                :keep-comments t)
+                                                :keep-comments t
+                                                :trace-expansion t
+                                                :no-errors/warnings nil)
                                 (ienv-default :std std
                                               :extensions ,extensions)
                                 ppstate))
@@ -63,9 +64,10 @@
                                     (acl2::string=>nats ,input)
                                   ,input)
                                 (macro-init (c::version-c17))
-                                nil ; ignore-err/warn
                                 (make-ppoptions :full-expansion nil
-                                                :keep-comments t)
+                                                :keep-comments t
+                                                :trace-expansion t
+                                                :no-errors/warnings nil)
                                 (ienv-default :std std :extensions ,extensions)
                                 ppstate))
          ,@(and pos
