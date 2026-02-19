@@ -469,14 +469,28 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
+;; warning: this can cause problems since the SMT solver doesn't know that
+;; there is a connection between two reads from the same address but with
+;; different sizes.
 (defthm bvchop-of-read
-  (implies (and (equal 0 (mod numbits 8))
+  (implies (and (equal 0 (mod numbits 8)) ; move
                 (natp numbits)
                 (natp numbytes))
            (equal (bvchop numbits (read numbytes addr arm))
                   (if (< numbits (* 8 numbytes))
                       (read (/ numbits 8) addr arm)
                     (read numbytes addr arm))))
+  :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
+           :expand (read numbytes addr arm)
+           :in-theory (enable READ read-of-+))))
+
+(defthm bvchop-of-read-safe
+  (implies (and (<= (* 8 numbytes) numbits)
+                ;(equal 0 (mod numbits 8))
+                (natp numbits)
+                (natp numbytes))
+           (equal (bvchop numbits (read numbytes addr arm))
+                  (read numbytes addr arm)))
   :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
            :expand (read numbytes addr arm)
            :in-theory (enable READ read-of-+))))
@@ -915,6 +929,11 @@
          (reg reg arm))
   :hints (("Goal" :in-theory (enable write-byte reg))))
 
+(defthm write-byte-of-set-reg
+  (equal (write-byte addr byte (set-reg reg val arm))
+         (set-reg reg val (write-byte addr byte arm)))
+  :hints (("Goal" :in-theory (enable write-byte set-reg))))
+
 (defthm error-of-write-byte
   (equal (error (write-byte addr byte arm))
          (error arm))
@@ -929,6 +948,18 @@
   (equal (isetstate (write-byte addr byte arm))
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write-byte isetstate))))
+
+(defthm apsr.n-of-write-byte (equal (apsr.n (write-byte addr byte arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n write-byte))))
+(defthm apsr.z-of-write-byte (equal (apsr.z (write-byte addr byte arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z write-byte))))
+(defthm apsr.c-of-write-byte (equal (apsr.c (write-byte addr byte arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable apsr.c write-byte))))
+(defthm apsr.v-of-write-byte (equal (apsr.v (write-byte addr byte arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable apsr.v write-byte))))
+(defthm apsr.q-of-write-byte (equal (apsr.q (write-byte addr byte arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q write-byte))))
+
+(defthm set-apsr.n-of-write-byte (equal (set-apsr.n bit (write-byte addr byte arm)) (write-byte addr byte (set-apsr.n bit arm))) :hints (("Goal" :in-theory (enable set-apsr.n write-byte))))
+(defthm set-apsr.z-of-write-byte (equal (set-apsr.z bit (write-byte addr byte arm)) (write-byte addr byte (set-apsr.z bit arm))) :hints (("Goal" :in-theory (enable set-apsr.z write-byte))))
+(defthm set-apsr.c-of-write-byte (equal (set-apsr.c bit (write-byte addr byte arm)) (write-byte addr byte (set-apsr.c bit arm))) :hints (("Goal" :in-theory (enable set-apsr.c write-byte))))
+(defthm set-apsr.q-of-write-byte (equal (set-apsr.q bit (write-byte addr byte arm)) (write-byte addr byte (set-apsr.q bit arm))) :hints (("Goal" :in-theory (enable set-apsr.q write-byte))))
+(defthm set-apsr.v-of-write-byte (equal (set-apsr.v bit (write-byte addr byte arm)) (write-byte addr byte (set-apsr.v bit arm))) :hints (("Goal" :in-theory (enable set-apsr.v write-byte))))
 
 (defthm update-memoryi-when-not-integerp
   (implies (not (integerp addr))
@@ -1133,19 +1164,32 @@
 (theory-invariant (incompatible (:rewrite write-byte-becomes-write) (:rewrite write-of-1-becomes-write-byte)))
 
 (defthm error-of-write
-  (equal (error (write n addr byte arm))
+  (equal (error (write n addr val arm))
          (error arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthm arch-version-of-write
-  (equal (arch-version (write n addr byte arm))
+  (equal (arch-version (write n addr val arm))
          (arch-version arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthm isetstate-of-write
-  (equal (isetstate (write n addr byte arm))
+  (equal (isetstate (write n addr val arm))
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write))))
+
+(defthm apsr.n-of-write (equal (apsr.n (write n addr val arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable write))))
+(defthm apsr.z-of-write (equal (apsr.z (write n addr val arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable write))))
+(defthm apsr.c-of-write (equal (apsr.c (write n addr val arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable write))))
+(defthm apsr.v-of-write (equal (apsr.v (write n addr val arm)) (apsr.v arm)) :hints (("Goal" :in-theory (enable write))))
+(defthm apsr.q-of-write (equal (apsr.q (write n addr val arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable write))))
+
+(defthm set-apsr.n-of-write (equal (set-apsr.n bit (write n addr val arm)) (write n addr val (set-apsr.n bit arm))) :hints (("Goal" :in-theory (enable write))))
+(defthm set-apsr.z-of-write (equal (set-apsr.z bit (write n addr val arm)) (write n addr val (set-apsr.z bit arm))) :hints (("Goal" :in-theory (enable write))))
+(defthm set-apsr.c-of-write (equal (set-apsr.c bit (write n addr val arm)) (write n addr val (set-apsr.c bit arm))) :hints (("Goal" :in-theory (enable write))))
+(defthm set-apsr.q-of-write (equal (set-apsr.q bit (write n addr val arm)) (write n addr val (set-apsr.q bit arm))) :hints (("Goal" :in-theory (enable write))))
+(defthm set-apsr.v-of-write (equal (set-apsr.v bit (write n addr val arm)) (write n addr val (set-apsr.v bit arm))) :hints (("Goal" :in-theory (enable write))))
+
 
 (defthmd write-of-+
   (implies (and (integerp x)
@@ -1368,6 +1412,11 @@
          (reg reg arm))
   :hints (("Goal" :in-theory (enable write))))
 
+(defthm write-of-set-reg
+  (equal (write n addr val1 (set-reg reg val2 arm))
+         (set-reg reg val2 (write n addr val1 arm)))
+  :hints (("Goal" :in-theory (enable write))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Handle alignment and privileges
@@ -1416,11 +1465,15 @@
 (defthm read-byte-of-set-apsr.v (equal (read-byte addr (set-apsr.v bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.v read-byte))))
 (defthm read-byte-of-set-apsr.q (equal (read-byte addr (set-apsr.q bit arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable set-apsr.q read-byte))))
 
+(defthm read-byte-of-update-isetstate (equal (read-byte addr (update-isetstate v arm)) (read-byte addr arm)) :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm read-of-set-apsr.n (equal (read n addr (set-apsr.n bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 (defthm read-of-set-apsr.z (equal (read n addr (set-apsr.z bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 (defthm read-of-set-apsr.c (equal (read n addr (set-apsr.c bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 (defthm read-of-set-apsr.v (equal (read n addr (set-apsr.v bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 (defthm read-of-set-apsr.q (equal (read n addr (set-apsr.q bit arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
+
+(defthm read-of-update-isetstate (equal (read n addr (update-isetstate v arm)) (read n addr arm)) :hints (("Goal" :in-theory (enable read))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
