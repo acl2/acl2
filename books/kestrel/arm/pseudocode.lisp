@@ -608,7 +608,7 @@
 ;; TODO: Is there a nicer way to do this?
 ;; If carry_in=0, this reduces to mv-nth-2-of-AddWithCarry-carry-0.
 ;; If carry_in=1, this reduces to mv-nth-2-of-AddWithCarry-carry-1.
-(defthm mv-nth-2-of-AddWithCarry-2-both
+(defthm mv-nth-2-of-AddWithCarry
   (implies (and (posp n)
                 (unsigned-byte-p n x)
                 (unsigned-byte-p n y)

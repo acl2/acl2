@@ -251,7 +251,7 @@
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
-     arm::mv-nth-2-of-AddWithCarry-2-both ; todo: 32-bit only!
+     arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::shift
      arm::lsl_c
      arm::iszerobit
