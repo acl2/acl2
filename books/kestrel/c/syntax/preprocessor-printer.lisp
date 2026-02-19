@@ -10,9 +10,10 @@
 
 (in-package "C$")
 
-(include-book "preprocessor-states")
+(include-book "preprocessor-lexemes")
 (include-book "grammar-characters")
 
+(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
