@@ -77,10 +77,10 @@
    (xdoc::p
     "We include no string literals, since they do not have integer types.")
    (xdoc::p
-    "We include no parenthesized expressions,
-     because for now we use these preprocessor expressions only transitorily,
-     in order to evaluate them after parsing them,
-     and parentheses are not relevant to that in ASTs.")
+    "Although parenthesized expressions are not needed for evaluation,
+     we include them to facilitate their subsequent printing to files:
+     since we do not modify the expressions after parsing,
+     re-printing them inclusive of parentheses does not disrupt precedences.")
    (xdoc::p
     "Since the only allowed operands are numbers and characters [C17:6.6/6],
      it seems reasonable to exclude operations that require
@@ -129,9 +129,14 @@
      but there are no identifiers here.")
    (xdoc::p
     "There is an additional kind of expression here, not found in @(tsee expr),
-     namely the @('defined') operator [C17:6.10.1/1]."))
+     namely the @('defined') operator [C17:6.10.1/1].")
+   (xdoc::p
+    "Unlike other parts of preprocessing file ASTs,
+     we do not include any comments or white space here,
+     but we may do that at some point."))
   (:number ((number pnumber)))
   (:char ((char cconst)))
+  (:paren ((inner pexpr)))
   (:plus ((arg pexpr)))
   (:minus ((arg pexpr)))
   (:bitnot ((arg pexpr)))

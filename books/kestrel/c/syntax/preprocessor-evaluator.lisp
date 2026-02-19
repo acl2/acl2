@@ -971,6 +971,7 @@
      expr
      :number (peval-pnumber expr.number ienv)
      :char (peval-cconst expr.char)
+     :paren (peval-expr expr.inner macros ienv)
      :plus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
              (retok (peval-plus arg)))
      :minus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
@@ -1672,7 +1673,7 @@
               (reterr (msg "Expected a closed parenthesis; ~
                             found ~@0 instead."
                            (plexeme-to-msg token)))))
-          (retok expr lexemes)))
+          (retok (pexpr-paren expr) lexemes)))
        (t ; OTHER
         (reterr (msg "Expected a number ~
                       or a character constant ~
