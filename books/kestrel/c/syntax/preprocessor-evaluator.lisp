@@ -1940,20 +1940,3 @@
         (reterr (msg "Found extra lexemes with tokens ~x0."
                      (cons token lexemes)))))
     (retok expr)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pparseval-const-expr ((lexemes plexeme-listp)
-                              (macros macro-tablep)
-                              (ienv ienvp))
-  :returns (mv erp (pval pvaluep))
-  :short "Parse and evaluate a constant expression during preprocessing."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used for the expressions in @('#if') and @('#elif') directives.
-     We parse the expression, obtaining an AST.
-     Then we evaluate the AST, obtaining a preprocessor value."))
-  (b* (((reterr) (irr-pvalue))
-       ((erp expr) (pparse-const-expr lexemes)))
-    (peval-expr expr macros ienv)))
