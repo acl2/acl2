@@ -190,7 +190,10 @@
      the list of lexemes that forms the file after preprocessing
      (which can be printed to bytes into a file in the file system),
      and an optional identifier that identifies a header guard
-     (see @(tsee hg-state)) if the file has that structure."))
+     (see @(tsee hg-state)) if the file has that structure.
+     We also have a @(tsee pfile) component,
+     which currently is essentially redundant,
+     but eventually it will replace @(tsee ppfile) itself."))
   ((lexemes plexeme-listp)
    (header-guard? ident-option)
    (pfile pfile))
