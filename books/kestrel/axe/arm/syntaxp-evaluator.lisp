@@ -12,6 +12,7 @@
 
 (in-package "ACL2") ; todo: package
 
+(include-book "../axe-syntax-functions")
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
 (include-book "../make-axe-syntaxp-evaluator")

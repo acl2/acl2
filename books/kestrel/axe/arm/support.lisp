@@ -86,6 +86,10 @@
 
 (defopeners arm::push-loop)
 
+(defopeners arm::ldm-loop)
+
+(defopeners arm::stm-loop)
+
 (def-constant-opener bvcount)
 
 ;replace the other

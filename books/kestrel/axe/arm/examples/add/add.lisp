@@ -13,7 +13,6 @@
 ;; STATUS: COMPLETE, needs cleaning up
 
 (include-book "kestrel/axe/arm/unroller" :dir :system)
-(include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +37,6 @@
     :executable "add.elf32-musl-static"
     ;; extract the return value (the sum), which by convention is in register a0:
     :output :r0
-    :extra-rules '(acl2::getbit-when-equal-of-constant-and-bvchop-constant-version) ; todo: build in
     :extra-assumptions '((unsigned-byte-p '32 base-address)  ; todo: automate
                          (integerp base-address)             ; todo: automate
                          (equal '0 (bvchop 2 (reg '14 arm))) ; todo: automate
@@ -46,6 +44,9 @@
                          (equal (reg 0 arm) x)
                          (equal (reg 1 arm) y)))
 
+;; WARNING: Do not move this include-book upward (we want to ensure the
+;; def-unrolled command above works without it).
+(include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ;; Prove that the lifted code is correct:
 (prove-equal-with-axe

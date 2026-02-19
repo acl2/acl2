@@ -1200,6 +1200,7 @@
      ;; getbit-0-of-bvxor-eric
      ;; getbit-of-bvxor-eric-2
      getbit-identity-axe
+     getbit-when-equal-of-constant-and-bvchop-constant-version
      ;; getbit-0-of-getbit ; not needed if we have getbit-identity-axe
      getbit-of-bitxor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant

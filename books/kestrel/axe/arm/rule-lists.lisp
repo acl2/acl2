@@ -92,7 +92,12 @@
             arm::push-encoding-a2-core
             arm::push-common
             arm::push-loop-base
-            arm::push-loop-unroll)))
+            arm::push-loop-unroll
+            arm::ldm-loop-base
+            arm::ldm-loop-unroll
+            arm::ldm-core
+            arm::stm-loop-base
+            arm::stm-loop-unroll)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -130,19 +135,66 @@
      arm::memu
      arm::advance-pc
      arm::pc ; should we open this? if so, do it in the assumptions too
-     arm::reg-of-set-reg
+
      arm::register-numberp
      arm::add-to-address
-     arm::read-of-set-reg
-     arm::error-of-set-reg
-     arm::arch-version-of-set-reg
-     arm::isetstate-of-set-reg
 
+     ;; read-of-write rules:
+
+     arm::armp-of-set-reg
+     arm::armp-of-set-apsr.n
+     arm::armp-of-set-apsr.z
+     arm::armp-of-set-apsr.c
+     arm::armp-of-set-apsr.v
+     arm::armp-of-set-apsr.q
+     arm::armp-of-write
+
+     arm::reg-of-set-reg
+     arm::reg-of-update-isetstate
+     arm::reg-of-set-apsr.n
+     arm::reg-of-set-apsr.z
+     arm::reg-of-set-apsr.c
+     arm::reg-of-set-apsr.v
+     arm::reg-of-set-apsr.q
+     arm::reg-of-write
+
+     acl2::error-of-update-itstate ; todo: package for these defstobj+ rules
+     acl2::error-of-update-isetstate
+     arm::error-of-set-reg
+     arm::error-of-set-apsr.n
+     arm::error-of-set-apsr.z
+     arm::error-of-set-apsr.c
+     arm::error-of-set-apsr.v
+     arm::error-of-set-apsr.q
+     arm::error-of-write
+
+     arm::read-of-set-reg
+     arm::read-of-update-isetstate
+     arm::read-of-set-apsr.n
+     arm::read-of-set-apsr.z
+     arm::read-of-set-apsr.c
+     arm::read-of-set-apsr.v
+     arm::read-of-set-apsr.q
+
+     arm::arch-version-of-set-reg
+     arm::arch-version-of-set-apsr.n
+     arm::arch-version-of-set-apsr.z
+     arm::arch-version-of-set-apsr.c
+     arm::arch-version-of-set-apsr.v
+     arm::arch-version-of-set-apsr.q
+     arm::arch-version-of-write
+
+     arm::isetstate-of-set-reg
+     acl2::isetstate-of-update-isetstate
      arm::isetstate-of-set-apsr.n
      arm::isetstate-of-set-apsr.z
      arm::isetstate-of-set-apsr.c
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
+
+
+
+     ;;;
 
      arm::apsr.n-of-set-apsr.n
      arm::apsr.n-of-set-apsr.z
@@ -180,29 +232,30 @@
      arm::apsr.v-of-set-reg
      arm::apsr.q-of-set-reg
 
-     arm::error-of-set-apsr.n
-     arm::error-of-set-apsr.z
-     arm::error-of-set-apsr.c
-     arm::error-of-set-apsr.v
-     arm::error-of-set-apsr.q
+     ;;;
 
-     arm::arch-version-of-set-apsr.n
-     arm::arch-version-of-set-apsr.z
-     arm::arch-version-of-set-apsr.c
-     arm::arch-version-of-set-apsr.v
-     arm::arch-version-of-set-apsr.q
+     arm::set-apsr.n-of-set-reg
+     arm::set-apsr.z-of-set-reg
+     arm::set-apsr.c-of-set-reg
+     arm::set-apsr.v-of-set-reg
+     arm::set-apsr.q-of-set-reg
 
-     arm::read-of-set-apsr.n
-     arm::read-of-set-apsr.z
-     arm::read-of-set-apsr.c
-     arm::read-of-set-apsr.v
-     arm::read-of-set-apsr.q
+     arm::set-apsr.n-of-set-apsr.n ;same flag
+     arm::set-apsr.z-of-set-apsr.z
+     arm::set-apsr.c-of-set-apsr.c
+     arm::set-apsr.v-of-set-apsr.v
+     arm::set-apsr.q-of-set-apsr.q
 
-     arm::reg-of-set-apsr.n
-     arm::reg-of-set-apsr.z
-     arm::reg-of-set-apsr.c
-     arm::reg-of-set-apsr.v
-     arm::reg-of-set-apsr.q
+     arm::set-apsr.z-of-set-apsr.n ; different flags
+     arm::set-apsr.c-of-set-apsr.n
+     arm::set-apsr.v-of-set-apsr.n
+     arm::set-apsr.q-of-set-apsr.n
+     arm::set-apsr.c-of-set-apsr.z
+     arm::set-apsr.v-of-set-apsr.z
+     arm::set-apsr.q-of-set-apsr.z
+     arm::set-apsr.v-of-set-apsr.c
+     arm::set-apsr.q-of-set-apsr.c
+     arm::set-apsr.q-of-set-apsr.v
 
      arm::branchto
      arm::pcstorevalue
@@ -229,14 +282,17 @@
 
      acl2::bvcount-constant-opener
      arm::integerp-of-reg
-     arm::reg-of-write
+     arm::unsigned-byte-p-32-of-reg
+     ;; arm::write-byte-of-set-reg ; we always use write as the normal form
+     arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
-     arm::error-of-write
-     arm::arch-version-of-write
+
      arm::isetstate-of-write
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
+     arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
+     arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::shift
      arm::lsl_c
      arm::iszerobit
@@ -427,12 +483,8 @@
 
      ;; read32-xreg-signed ; open to the unsigned one
 
-     ;; integerp-of-reg
-     ;; unsigned-byte-p-of-reg
-     ;; reg-of-set-reg
      ;; set-reg-of-set-reg-same
      ;; set-reg-of-set-reg-diff
-     ;; reg-of-write
      ;; ;; reg-of-write-byte
      ;; reg-of-set-pc
      ;; reg-of-if
