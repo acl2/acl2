@@ -3751,6 +3751,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expanded-include-comment-lines ((header header-namep)
+                                        (newline-at-end plexemep))
+  :returns (mv (opening-line plexeme-listp)
+               (closing-line plexeme-listp))
+  :short "Opening and closing comment lines for expanded @('#include')s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used when tracing the expansion of @('#include') directives.
+     The expanded material is surrounded by
+     an opening comment line and a closing comment line."))
+  (b* ((header-codes (header-name-case
+                      header
+                      :angles (append (list (char-code #\<))
+                                      (h-char-list->code-list header.chars)
+                                      (list (char-code #\>)))
+                      :quotes (append (list (char-code #\"))
+                                      (q-char-list->code-list header.chars)
+                                      (list (char-code #\")))))
+       (include-codes (append (acl2::string=>nats " #include ") header-codes))
+       (opening-codes (append include-codes (acl2::string=>nats " >>>>>>>>>>")))
+       (closing-codes (append (acl2::string=>nats " <<<<<<<<<<") include-codes))
+       (opening-line (list (plexeme-line-comment opening-codes)
+                           (plexeme-fix newline-at-end)))
+       (closing-line (list (plexeme-line-comment closing-codes)
+                           (plexeme-fix newline-at-end))))
+    (mv opening-line closing-line)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expand-include-in-place ((header header-namep)
                                  (newline-at-end plexemep)
                                  (rev-included-file-lexemes plexeme-listp)
@@ -3783,22 +3813,11 @@
      We replace those lines with the lexemes we generate in this function,
      which also take a whole number of lines."))
   (if (ppoptions->trace-expansion (ppstate->options ppstate))
-      (b* ((header-codes (header-name-case
-                          header
-                          :angles (append (list (char-code #\<))
-                                          (h-char-list->code-list header.chars)
-                                          (list (char-code #\>)))
-                          :quotes (append (list (char-code #\"))
-                                          (q-char-list->code-list header.chars)
-                                          (list (char-code #\")))))
-           (include-codes (append (acl2::string=>nats " #include ") header-codes))
-           (opening-codes (append include-codes (acl2::string=>nats " >>>>>>>>>>")))
-           (closing-codes (append (acl2::string=>nats " <<<<<<<<<<") include-codes))
-           (ppstate (add-rev-lexeme (plexeme-line-comment opening-codes) ppstate))
-           (ppstate (add-rev-lexeme newline-at-end ppstate))
+      (b* (((mv opening-line closing-line)
+            (expanded-include-comment-lines header newline-at-end))
+           (ppstate (add-rev-lexemes opening-line ppstate))
            (ppstate (add-rev-rev-lexemes rev-included-file-lexemes ppstate))
-           (ppstate (add-rev-lexeme (plexeme-line-comment closing-codes) ppstate))
-           (ppstate (add-rev-lexeme newline-at-end ppstate)))
+           (ppstate (add-rev-lexemes closing-line ppstate)))
         ppstate)
     (add-rev-rev-lexemes rev-included-file-lexemes ppstate)))
 
@@ -4591,30 +4610,9 @@
                                                  ppstate))
                (pparts
                 (if (ppoptions->trace-expansion (ppstate->options ppstate))
-                    (b* ((header-codes
-                          (header-name-case
-                           header
-                           :angles (append (list (char-code #\<))
-                                           (h-char-list->code-list header.chars)
-                                           (list (char-code #\>)))
-                           :quotes (append (list (char-code #\"))
-                                           (q-char-list->code-list header.chars)
-                                           (list (char-code #\")))))
-                         (include-codes
-                          (append (acl2::string=>nats " #include ")
-                                  header-codes))
-                         (opening-codes
-                          (append include-codes
-                                  (acl2::string=>nats " >>>>>>>>>>")))
-                         (closing-codes
-                          (append (acl2::string=>nats " <<<<<<<<<<")
-                                  include-codes))
-                         (opening-line
-                          (list (plexeme-line-comment opening-codes)
-                                newline-at-end))
-                         (closing-line
-                          (list (plexeme-line-comment closing-codes)
-                                newline-at-end)))
+                    (b* (((mv opening-line closing-line)
+                          (expanded-include-comment-lines header
+                                                          newline-at-end)))
                       (append (list (ppart-line opening-line))
                               (pfile->parts pfile)
                               (list (ppart-line closing-line))))
@@ -4700,32 +4698,9 @@
                                nontoknls-after-header
                                (list newline-at-end))))
                    (if (ppoptions->trace-expansion (ppstate->options ppstate))
-                       (b* ((header-codes
-                             (header-name-case
-                              header
-                              :angles (append (list (char-code #\<))
-                                              (h-char-list->code-list
-                                               header.chars)
-                                              (list (char-code #\>)))
-                              :quotes (append (list (char-code #\"))
-                                              (q-char-list->code-list
-                                               header.chars)
-                                              (list (char-code #\")))))
-                            (include-codes
-                             (append (acl2::string=>nats " #include ")
-                                     header-codes))
-                            (opening-codes
-                             (append include-codes
-                                     (acl2::string=>nats " >>>>>>>>>>")))
-                            (closing-codes
-                             (append (acl2::string=>nats " <<<<<<<<<<")
-                                     include-codes))
-                            (opening-line
-                             (list (plexeme-line-comment opening-codes)
-                                   newline-at-end))
-                            (closing-line
-                             (list (plexeme-line-comment closing-codes)
-                                   newline-at-end)))
+                       (b* (((mv opening-line closing-line)
+                             (expanded-include-comment-lines header
+                                                             newline-at-end)))
                          (append (list (ppart-line opening-line))
                                  (pfile->parts pfile)
                                  (list (ppart-line closing-line))))
