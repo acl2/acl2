@@ -3971,3 +3971,19 @@
              (>= (BitCount 16 register_list) 2))
         (push-encoding-a1-core register_list inst-address arm)
       (stmdb-core w rn register_list inst-address arm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :uxtb
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg m arm) rotation))
+         (arm (set-reg d (ZeroExtend (slice 7 0 rotated) 32) arm))
+         (arm (advance-pc arm)))
+      arm))
