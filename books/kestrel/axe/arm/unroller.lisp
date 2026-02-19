@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
+(include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "kestrel/bv/intro" :dir :system) ; reduce?
@@ -33,6 +34,12 @@
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/ash" :dir :system)
+(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
 (include-book "support")
@@ -47,6 +54,9 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../bv-array-rules-axe") ;reduce?
 (include-book "../logops-rules-axe")
+(include-book "../boolean-rules-axe")
+(include-book "../list-rules-axe")
+(include-book "../rules3") ; for equal-of-bvplus-and-bvplus-reduce-constants
 (include-book "assumptions")
 (include-book "run-until-return")
 ;(include-book "pc")
@@ -59,6 +69,8 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
+(include-book "kestrel/arithmetic-light/less-than" :dir :system)
+(include-book "kestrel/arithmetic-light/ifix" :dir :system)
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
@@ -71,7 +83,7 @@
 ;; The presence of any of these function in the term/DAG indicates that the
 ;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
-                                 ;run-until-sp-is-above
+                                 run-until-return-or-reach-pc-aux
                                  step32))
 
 ;; The presence of any of these functions in the term/DAG indicates an error state
@@ -106,6 +118,8 @@
         (case output-indicator
           ;; Extract a register:
           (:r0 `(r0 ,term)) ; todo: support r0/r1 together holding a 64-bit value
+          (:r15 `(r15 ,term)) ; todo: support r0/r1 together holding a 64-bit value
+          (:pc `(pc ,term)) ; todo: support r0/r1 together holding a 64-bit value
           ;; (:x1 `(x1 ,term))
           ;; ;; todo: more
           ;; (:a0 `(a0 ,term)) ; return value 0
@@ -428,6 +442,7 @@
        (symbolic-execution-rules (if stop-pcs (symbolic-execution-rules-with-stop-pcs32) (symbolic-execution-rules32)))
        (lifter-rules (append symbolic-execution-rules lifter-rules))
        ;; Add any extra-rules:
+       ;; (- (cw "Using ~x0 extra-rules: ~X12.~%" (len extra-rules) extra-rules nil))
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
                  (cw "Warning: The extra-rules include these rules that are already present: ~X01.~%" intersection nil))))
@@ -455,12 +470,10 @@
                     )
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
+       (rule-to-limit (if stop-pcs 'run-until-return-or-reach-pc-aux-opener-axe 'run-until-return-aux-opener-axe))
        ((mv erp result-dag-or-quotep hits state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
-                        'run-until-return-aux-opener ;arm::step-opener
-                        ;; (if 64-bitp
-                        ;;     (first (step-opener-rules64))
-                        ;;   (first (step-opener-rules32)))
+                        rule-to-limit
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
                         nil ; no-warn-ground-functions
                         nil ; fns-to-elide

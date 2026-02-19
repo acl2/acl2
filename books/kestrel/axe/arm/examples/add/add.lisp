@@ -13,7 +13,6 @@
 ;; STATUS: COMPLETE, needs cleaning up
 
 (include-book "kestrel/axe/arm/unroller" :dir :system)
-(include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,6 +44,9 @@
                          (equal (reg 0 arm) x)
                          (equal (reg 1 arm) y)))
 
+;; WARNING: Do not move this include-book upward (we want to ensure the
+;; def-unrolled command above works without it).
+(include-book "kestrel/axe/equivalence-checker" :dir :system)
 
 ;; Prove that the lifted code is correct:
 (prove-equal-with-axe
