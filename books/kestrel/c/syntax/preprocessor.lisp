@@ -4863,8 +4863,8 @@
                   (pfile->parts pfile))))
             (retok pparts ppstate preprocessed state)))
          ((erp standalone-pfile
-               standalone-file-rev-lexemes
-               standalone-file-header-guard?
+               & ; standalone-file-rev-lexemes
+               & ; standalone-file-header-guard?
                preprocessed
                state)
           (b* (((reterr) (irr-pfile) nil nil nil state)
@@ -4904,26 +4904,10 @@
                        preprocessed
                        state)))))
          (preserve-include-p
-          (or (and standalone-file-header-guard?
-                   (b* ((info? (macro-lookup standalone-file-header-guard?
-                                             (ppstate->macros ppstate))))
-                     info?)
-                   (or (plexeme-list-not-tokenp file-rev-lexemes)
-                       (raise "Internal error: ~
-                               header guard ~x0 is defined ~
-                               but file has tokens ~x1."
-                              standalone-file-header-guard?
-                              file-rev-lexemes)))
-              (equal standalone-file-rev-lexemes file-rev-lexemes)))
-         (new-preserve-include-p ; TODO: eventually just use this
           (compare-pfiles pfile
                           standalone-pfile
                           (ppstate->macros ppstate)
                           (ppstate->ienv ppstate)))
-         ((unless (equal preserve-include-p new-preserve-include-p))
-          (raise "Internal error: ~
-                  inconsistent #include preservation conditions.")
-          (reterr t))
          (ppstate (update-ppstate->macros
                    (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
