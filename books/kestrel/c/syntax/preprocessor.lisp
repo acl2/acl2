@@ -4883,7 +4883,9 @@
                                       state
                                       (1- limit)))
          (pcond (make-ppart-cond
-                 :if (pif-ifdef ident)
+                 :if (if ifdefp
+                         (pif-ifdef ident)
+                       (pif-ifndef ident))
                  :parts pparts
                  :elifs pelifs
                  :else pelse?))
