@@ -12,6 +12,8 @@
 
 (include-book "preprocessor-lexemes")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -268,11 +270,7 @@
     pelse
     :short "Fixtype of optional `else' groups."
     :pred pelse-optionp
-    :measure (two-nats-measure (acl2-count x) 2))
-
-;;;;;;;;;;;;;;;;;;;;
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :measure (two-nats-measure (acl2-count x) 2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
