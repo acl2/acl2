@@ -4128,7 +4128,6 @@
                       (limit natp))
     :returns (mv erp
                  (pfile pfilep)
-                 (file-rev-lexemes plexeme-listp)
                  (file-macros ident-macro-info-option-alistp)
                  (file-header-guard? ident-optionp)
                  (new-preprocessed string-pfile-alistp)
@@ -4174,7 +4173,7 @@
        we set the header guard state to @(':not'),
        because for full expansion we do not need
        to recognize the header guard form."))
-    (b* (((reterr) (irr-pfile) nil nil nil nil state)
+    (b* (((reterr) (irr-pfile) nil nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -4184,7 +4183,6 @@
          (preprocessing (cons file preprocessing))
          ((erp pfile
                groupend
-               file-rev-lexemes
                file-macros
                file-header-guard?
                preprocessed
@@ -4194,7 +4192,6 @@
             (mv-let (erp
                      pfile
                      groupend
-                     file-rev-lexemes
                      file-macro-table
                      file-header-guard?
                      ppstate
@@ -4226,7 +4223,6 @@
                   (mv erp
                       (make-pfile :parts pparts)
                       groupend
-                      (all-rev-lexemes ppstate)
                       (ppstate->macros ppstate)
                       (file-header-guard ppstate)
                       ppstate
@@ -4235,7 +4231,6 @@
               (mv erp
                   pfile
                   groupend
-                  file-rev-lexemes
                   (macro-table->dynamic file-macro-table)
                   file-header-guard?
                   preprocessed
@@ -4250,7 +4245,6 @@
                         :else "#else"
                         :endif "#endif")))))
       (retok pfile
-             file-rev-lexemes
              file-macros
              file-header-guard?
              preprocessed
@@ -4806,7 +4800,6 @@
          (ienv (ppstate->ienv ppstate))
          (options (ppstate->options ppstate))
          ((erp pfile
-               file-rev-lexemes
                file-macros
                & ; file-header-guard?
                preprocessed
@@ -4828,7 +4821,7 @@
                          ppstate))
                (ppstate (expand-include-in-place header
                                                  newline-at-end
-                                                 file-rev-lexemes
+                                                 nil ; file-rev-lexemes
                                                  ppstate))
                (pparts
                 (if (ppoptions->trace-expansion (ppstate->options ppstate))
@@ -4841,20 +4834,14 @@
                   (pfile->parts pfile))))
             (retok pparts ppstate preprocessed state)))
          ((erp standalone-pfile
-               & ; standalone-file-rev-lexemes
                & ; standalone-file-header-guard?
                preprocessed
                state)
-          (b* (((reterr) (irr-pfile) nil nil nil state)
+          (b* (((reterr) (irr-pfile) nil nil state)
                (name+pfile (assoc-equal resolved-file preprocessed)))
             (if name+pfile
-                (retok (cdr name+pfile)
-                       nil
-                       nil
-                       preprocessed
-                       state)
+                (retok (cdr name+pfile) nil preprocessed state)
               (b* (((erp pfile
-                         file-rev-lexemes
                          & ; file-macros
                          file-header-guard?
                          preprocessed
@@ -4873,7 +4860,6 @@
                                 (1- limit)))
                    (preprocessed (acons resolved-file pfile preprocessed)))
                 (retok pfile
-                       file-rev-lexemes
                        file-header-guard?
                        preprocessed
                        state)))))
@@ -4896,7 +4882,7 @@
                        ppstate)
                     (expand-include-in-place header
                                              newline-at-end
-                                             file-rev-lexemes
+                                             nil ; file-rev-lexemes
                                              ppstate)))
          (pparts (if preserve-include-p
                      (list
@@ -5368,7 +5354,6 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
-                & ; file-rev-lexemes
                 & ; file-macros
                 & ; file-header-guard?
                 preprocessed
