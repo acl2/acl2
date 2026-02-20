@@ -225,9 +225,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
+    "We start with just a few macros from [C17:6.10.8].
+     We should add all of them."))
   (list (cons (ident "__STDC__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -257,9 +256,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
+    "These are similar to @(tsee predefined-macros-c17).
+     See [C23:6.10.10]."))
   (list (cons (ident "__STDC__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -283,100 +281,106 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros-c17+gcc ()
+(define predefined-macros-gcc ()
   :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C17 with GCC extensions."
+  :short "Predefined macros for GCC extensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
-  (predefined-macros-c17)
+    "These are in addition to the standard ones.
+     We have none for now,
+     because we have only tested standard and Clang code for now.
+     But we should add them, in a systematic way."))
+  nil
 
   ///
 
-  (defret no-duplicatesp-equal-of-predefined-macros-c17+gcc
+  (defret no-duplicatesp-equal-of-predefined-macros-gcc
     (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros-c23+gcc ()
+(define predefined-macros-clang ()
   :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C23 with GCC extensions."
+  :short "Predefined macros for Clang extensions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more."))
-  (predefined-macros-c23)
-
-  ///
-
-  (defret no-duplicatesp-equal-of-predefined-macros-c23+gcc
-    (no-duplicatesp-equal (strip-cars macros))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define predefined-macros-c17+clang ()
-  :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C17 with Clang extensions."
-  :long
-  (xdoc::topstring
+    "These are in addition to the standard ones.
+     We start with just a few macros that come up in tests,
+     and without which we cannot successfully preprocess
+     Clang's system headers.
+     We should add more, in a systematic way.")
    (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more.")
-   (xdoc::p
-    "The @('__arm64__') is more specific than Clang,
+    "The @('__arm64__') macro is more specific than Clang,
      so we may want to introduce and use further parameterization;
-     but this should work fine on (relatively) new Mac machines."))
-  (append (predefined-macros-c17)
-          (list (cons (ident "__arm64__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\1)))))
-                (cons (ident "__GNUC__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4)))))
-                (cons (ident "__GNUC_MINOR__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2)))))))
+     but this should work fine on sufficiently new Mac machines.
+     Without this, or one of a few other alternatives,
+     @('sys/cdefs.h') fails with an error
+     indicating an unsupported architecture.")
+   (xdoc::p
+    "without a definitino for the @('__GNUC__') macro,
+     we get an error when preprocessing the Clang system files.
+     We also add the @('__GNUC_MINOR__') macro, since it is related.")
+   (xdoc::p
+    "The @('__has_feature') macro is actually a function-like macro,
+     documented in "
+    (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
+    ", for which we need to add proper support.
+     For now we define it to be just @('0'),
+     consistently with the following code in @('sys/cdefs.h'):")
+   (xdoc::codeblock
+    "#ifndef __has_feature"
+    "#define __has_feature(x) 0"
+    "#endif")
+   (xdoc::p
+    "If this macro is not defined at all,
+     the following code in @('sys/_types/_ptrdiff.h'),
+     and probably in other files as well,
+     fails:")
+   (xdoc::codeblock
+    "#if defined(__has_feature) && __has_feature(modules)")
+   (xdoc::p
+    "Although the test looks sensible,
+     before it is evaluated,
+     it has to be macro-expanded and parsed.
+     After the @('&&'), if @('__has_feature') is not defined,
+     it gets replaced with @('0') [C17:6.10.1/4],
+     which then leaves an extra @('(modules)') after the @('0'),
+     which does not form an expression.
+     Indeed, both Clang and GCC fail on a line")
+   (xdoc::codeblock
+    "#if defined(F) && F(...)")
+   (xdoc::p
+    "when @('F') is not defined.
+     The error that both Clang and GCC give is that
+     the function-like macro F has no definition,
+     which is not unreasonable,
+     although [C17] may actually require that,
+     if @('F') is not a function-like macro,
+     it is left as is, even when an open parenthesis follows.
+     Our preprocessor does that, but fails when parsing the expression,
+     because of the extra tokens after the @('F'),
+     or after the @('__has_feature') before we predefine it here."))
+  (list (cons (ident "__arm64__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\1)))))
+        (cons (ident "__GNUC__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\4)))))
+        (cons (ident "__GNUC_MINOR__")
+              (macro-info-object
+               (list (plexeme-number (pnumber-digit #\2)))))
+        (cons (ident "__has_feature")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil)))
 
   ///
 
-  (defret no-duplicatesp-equal-of-predefined-macros-c17+clang
-    (no-duplicatesp-equal (strip-cars macros))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define predefined-macros-c23+clang ()
-  :returns (macros ident-macro-info-alistp)
-  :short "Predefined macros for C23 with Clang extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is work in progress:
-     we start with a few macros,
-     but we need to systematically add more.")
-   (xdoc::p
-    "The @('__arm64__') is more specific than Clang,
-     so we may want to introduce and use further parameterization;
-     but this should work fine on (relatively) new Mac machines."))
-  (append (predefined-macros-c23)
-          (list (cons (ident "__arm64__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\1)))))
-                (cons (ident "__GNUC__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\4)))))
-                (cons (ident "__GNUC_MINOR__")
-                      (macro-info-object
-                       (list (plexeme-number (pnumber-digit #\2)))))))
-
-  ///
-
-  (defret no-duplicatesp-equal-of-predefined-macros-c23+clang
+  (defret no-duplicatesp-equal-of-predefined-macros-clang
     (no-duplicatesp-equal (strip-cars macros))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,17 +391,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is work in progress.
-     We start with some initial macros,
-     but we need to systematically add more."))
+    "We compose the macros according to the version."))
   (c::version-case
    version
    :c17 (predefined-macros-c17)
    :c23 (predefined-macros-c23)
-   :c17+gcc (predefined-macros-c17+gcc)
-   :c23+gcc (predefined-macros-c23+gcc)
-   :c17+clang (predefined-macros-c17+clang)
-   :c23+clang (predefined-macros-c23+clang))
+   :c17+gcc (append (predefined-macros-c17)
+                    (predefined-macros-gcc))
+   :c23+gcc (append (predefined-macros-c23)
+                    (predefined-macros-gcc))
+   :c17+clang (append (predefined-macros-c17)
+                      (predefined-macros-clang))
+   :c23+clang (append (predefined-macros-c23)
+                      (predefined-macros-clang)))
 
   ///
 
