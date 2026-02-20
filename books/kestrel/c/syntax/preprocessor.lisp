@@ -1572,7 +1572,6 @@
            (info (make-macro-info-object :replist nil))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (hg-trans-define name t ppstate))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
@@ -1586,7 +1585,6 @@
            (info (make-macro-info-object :replist replist))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (hg-trans-define name (not replist) ppstate))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
@@ -1606,7 +1604,6 @@
                                            :hash-params hash-params))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (hg-trans-define name nil ppstate))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
@@ -1682,7 +1679,6 @@
        (macros (ppstate->macros ppstate))
        ((erp new-macros) (macro-undefine name macros))
        (ppstate (update-ppstate->macros new-macros ppstate))
-       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
        (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                    nil
                  (list (ppart-line (rebuild-undef-directive name newline?))))))
@@ -3526,7 +3522,6 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
-       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
        ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
         (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
@@ -3571,7 +3566,6 @@
         (reterr (msg "#warning directive disallowed in ~
                       C17 without GCC or Clang extensions.")))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate))
-       (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
        ((when (ppoptions->no-errors/warnings (ppstate->options ppstate)))
         (retok ppstate))
        (bytes (plexemes-to-bytes lexemes))
@@ -3958,9 +3952,6 @@
      followed by the size of the preprocessing state.
      We plan to flesh out the termination proof at some point.")
    (xdoc::p
-    "These functions handle the state machine described in @(tsee hg-state),
-     via the @('hg-trans-...') functions defined on the preprocessor state.")
-   (xdoc::p
     "Some of the functions also take as input
      indicating the level of nesting of conditionals.
      It is 0 at the top level,
@@ -4256,12 +4247,11 @@
             (reterr-msg :where (position-to-msg (span->start span))
                         :expected "new line"
                         :found (plexeme-to-msg toknl))
-          (b* ((ppstate (hg-trans-eof ppstate)))
-            (retok nil ; no group parts
-                   (groupend-eof)
-                   ppstate
-                   (string-pfile-alist-fix preprocessed)
-                   state))))
+          (retok nil ; no group parts
+                 (groupend-eof)
+                 ppstate
+                 (string-pfile-alist-fix preprocessed)
+                 state)))
        ((plexeme-hashp toknl) ; #
         (b* ((nontoknls-before-hash nontoknls)
              ((erp nontoknls-after-hash toknl2 span2 ppstate)
@@ -4434,9 +4424,6 @@
               (raise "Internal error: ~x0 contains markers.")
               (reterr t))
              (rev-lexemes-to-add (lexmark-list-to-lexeme-list rev-lexmarks))
-             (ppstate (if (plexeme-list-not-tokenp rev-lexemes-to-add)
-                          ppstate
-                        (hg-trans-non-ifndef/elif/else/define ppstate)))
              (lexemes (append nontoknls (rev rev-lexemes-to-add)))
              (lexemes (if (ppoptions->keep-comments
                            (ppstate->options ppstate))
@@ -4639,7 +4626,6 @@
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
          (ienv (ppstate->ienv ppstate))
@@ -4768,7 +4754,6 @@
          ((reterr) nil ppstate nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp pexpr condp ppstate) (pproc-const-expr ppstate))
-         (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
          ((erp pparts
                pelifs
                pelse?
@@ -4859,9 +4844,6 @@
          (condp (if ifdefp
                     (and info? t)
                   (not info?)))
-         (ppstate (if ifdefp
-                      (hg-trans-non-ifndef/elif/else/define ppstate)
-                    (hg-trans-ifndef ident ppstate)))
          ((erp pparts
                pelifs
                pelse?
@@ -4998,7 +4980,6 @@
                         :found "end of file")
        :elif (b* (((erp pexpr condp ppstate) ; #elif constexpr EOL
                    (pproc-const-expr ppstate))
-                  (ppstate (hg-trans-elif/else cond-level ppstate))
                   ((erp pparts
                         pelifs
                         pelse?
@@ -5030,7 +5011,6 @@
                    (reterr-msg :where (position-to-msg (span->start span))
                                :expected "a new line"
                                :found (plexeme-to-msg toknl)))
-                  (ppstate (hg-trans-elif/else cond-level ppstate))
                   ((erp pparts groupend ppstate preprocessed state)
                    (b* (((reterr) nil (irr-groupend) ppstate nil state))
                      (if (not donep)
@@ -5071,8 +5051,7 @@
                                  (plexeme-case toknl :newline)))
                     (reterr-msg :where (position-to-msg (span->start span))
                                 :expected "a new line"
-                                :found (plexeme-to-msg toknl)))
-                   (ppstate (hg-trans-endif cond-level ppstate)))
+                                :found (plexeme-to-msg toknl))))
                 (retok first-pparts
                        nil ; pelifs
                        nil ; pelse?
