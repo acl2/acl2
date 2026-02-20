@@ -4625,8 +4625,12 @@
                           ppstate
                         (hg-trans-non-ifndef/elif/else/define ppstate)))
              (ppstate (add-rev-rev-lexemes rev-lexemes-to-add ppstate))
-             (rev-lexemes (append nontoknls (rev rev-lexemes-to-add))))
-          (retok (list (ppart-line rev-lexemes))
+             (lexemes (append nontoknls (rev rev-lexemes-to-add)))
+             (lexemes (if (ppoptions->keep-comments
+                           (ppstate->options ppstate))
+                          lexemes
+                        (plexemes-without-comments lexemes))))
+          (retok (list (ppart-line lexemes))
                  nil ; no group ending
                  ppstate
                  preprocessed
