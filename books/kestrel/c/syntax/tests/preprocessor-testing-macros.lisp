@@ -154,8 +154,7 @@
                                              include-dirs
                                              options
                                              ienv
-                                             state
-                                             1000000000))
+                                             state))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
