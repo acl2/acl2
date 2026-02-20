@@ -677,8 +677,7 @@
      There are no read or unread characters,
      and no lexmarks pending.
      We resize the arrays of characters to the number of bytes,
-     which suffices because there are never more characters than bytes.
-     We set the header guard state to be the initial one."))
+     which suffices because there are never more characters than bytes."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
