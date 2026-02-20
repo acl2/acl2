@@ -3964,8 +3964,8 @@
                       (limit natp))
     :returns (mv erp
                  (pfile pfilep)
-                 (new-macros macro-tablep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-macros macro-tablep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a file."
@@ -4008,7 +4008,7 @@
        we set the header guard state to @(':not'),
        because for full expansion we do not need
        to recognize the header guard form."))
-    (b* (((reterr) (irr-pfile) (irr-macro-table) nil state)
+    (b* (((reterr) (irr-pfile) nil (irr-macro-table) state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -4018,29 +4018,20 @@
          (preprocessing (cons file preprocessing))
          ((erp pfile
                groupend
-               macros
                preprocessed
+               macros
                state)
           (with-local-stobj
             ppstate
             (mv-let (erp
                      pfile
                      groupend
+                     preprocessed
                      macros
                      ppstate
-                     preprocessed
                      state)
-                (b* ((ppstate (init-ppstate bytes
-                                            macros
-                                            options
-                                            ienv
-                                            ppstate))
-                     ((mv erp
-                          pparts
-                          groupend
-                          ppstate
-                          preprocessed
-                          state)
+                (b* ((ppstate (init-ppstate bytes macros options ienv ppstate))
+                     ((mv erp pparts groupend preprocessed ppstate state)
                       (pproc-*-group-part file
                                           base-dir
                                           include-dirs
@@ -4052,15 +4043,15 @@
                   (mv erp
                       (make-pfile :parts pparts)
                       groupend
+                      preprocessed
                       (ppstate->macros ppstate)
                       ppstate
-                      preprocessed
                       state))
               (mv erp
                   pfile
                   groupend
-                  macros
                   preprocessed
+                  macros
                   state))))
          ((unless (groupend-case groupend :eof))
           (reterr (msg "Found directive ~s0 ~
@@ -4071,10 +4062,7 @@
                         :elif "#elif"
                         :else "#else"
                         :endif "#endif")))))
-      (retok pfile
-             macros
-             preprocessed
-             state))
+      (retok pfile preprocessed macros state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4091,8 +4079,8 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend groupendp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess zero or more group parts."
@@ -4107,9 +4095,9 @@
        if it is @('nil'), there was a group part;
        otherwise, there was no group part, and we pass up the group ending."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil (irr-groupend) ppstate nil state)
+         ((reterr) nil (irr-groupend) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp pparts groupend? ppstate preprocessed state)
+         ((erp pparts groupend? preprocessed ppstate state)
           (pproc-?-group-part file
                               base-dir
                               include-dirs
@@ -4119,8 +4107,8 @@
                               state
                               (1- limit)))
          ((when groupend?)
-          (retok pparts groupend? ppstate preprocessed state))
-         ((erp more-pparts groupend ppstate preprocessed state)
+          (retok pparts groupend? preprocessed ppstate state))
+         ((erp more-pparts groupend preprocessed ppstate state)
           (pproc-*-group-part file
                               base-dir
                               include-dirs
@@ -4129,7 +4117,7 @@
                               ppstate
                               state
                               (1- limit))))
-      (retok (append pparts more-pparts) groupend ppstate preprocessed state))
+      (retok (append pparts more-pparts) groupend preprocessed ppstate state))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4145,8 +4133,8 @@
     :returns (mv erp
                  (pparts ppart-listp)
                  (groupend? groupend-optionp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a group part, if present."
@@ -4222,7 +4210,7 @@
        Thus, we can accept all white space and comments in a directive,
        as @(tsee read-token/newline) does."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil ppstate nil state)
+         ((reterr) nil nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
       (cond
@@ -4233,8 +4221,8 @@
                         :found (plexeme-to-msg toknl))
           (retok nil ; no group parts
                  (groupend-eof)
-                 ppstate
                  (string-pfile-alist-fix preprocessed)
+                 ppstate
                  state)))
        ((plexeme-hashp toknl) ; #
         (b* ((nontoknls-before-hash nontoknls)
@@ -4248,8 +4236,8 @@
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ; no group parts
                    nil ; no group ending
-                   ppstate
                    (string-pfile-alist-fix preprocessed)
+                   ppstate
                    state))
            ((plexeme-case toknl2 :ident) ; # ident
             (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
@@ -4257,23 +4245,23 @@
                ((equal directive "elif") ; # elif
                 (retok nil ; no group parts
                        (groupend-elif)
-                       ppstate
                        (string-pfile-alist-fix preprocessed)
+                       ppstate
                        state))
                ((equal directive "else") ; # else
                 (retok nil ; no group parts
                        (groupend-else)
-                       ppstate
                        (string-pfile-alist-fix preprocessed)
+                       ppstate
                        state))
                ((equal directive "endif") ; # endif
                 (retok nil ; no group parts
                        (groupend-endif)
-                       ppstate
                        (string-pfile-alist-fix preprocessed)
+                       ppstate
                        state))
                ((equal directive "if") ; # if
-                (b* (((erp pparts ppstate preprocessed state)
+                (b* (((erp pparts preprocessed ppstate state)
                       (pproc-if file
                                 base-dir
                                 include-dirs
@@ -4284,11 +4272,11 @@
                                 (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          preprocessed
+                         ppstate
                          state)))
                ((equal directive "ifdef") ; # ifdef
-                (b* (((erp pparts ppstate preprocessed state)
+                (b* (((erp pparts preprocessed ppstate state)
                       (pproc-ifdef/ifndef t
                                           file
                                           base-dir
@@ -4300,11 +4288,11 @@
                                           (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          preprocessed
+                         ppstate
                          state)))
                ((equal directive "ifndef") ; # ifndef
-                (b* (((erp pparts ppstate preprocessed state)
+                (b* (((erp pparts preprocessed ppstate state)
                       (pproc-ifdef/ifndef nil
                                           file
                                           base-dir
@@ -4316,11 +4304,11 @@
                                           (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          preprocessed
+                         ppstate
                          state)))
                ((equal directive "include") ; # include
-                (b* (((erp pparts ppstate preprocessed state)
+                (b* (((erp pparts preprocessed ppstate state)
                       (pproc-include nontoknls-before-hash
                                      nontoknls-after-hash
                                      file
@@ -4333,22 +4321,22 @@
                                      (1- limit))))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          preprocessed
+                         ppstate
                          state)))
                ((equal directive "define") ; # define
                 (b* (((erp pparts ppstate) (pproc-define ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          (string-pfile-alist-fix preprocessed)
+                         ppstate
                          state)))
                ((equal directive "undef") ; # undef
                 (b* (((erp pparts ppstate) (pproc-undef ppstate)))
                   (retok pparts
                          nil ; no group ending
-                         ppstate
                          (string-pfile-alist-fix preprocessed)
+                         ppstate
                          state)))
                ((equal directive "line") ; # line
                 (reterr (msg "#line directive not yet supported."))) ; TODO
@@ -4356,15 +4344,15 @@
                 (b* (((erp ppstate) (pproc-error ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         ppstate
                          (string-pfile-alist-fix preprocessed)
+                         ppstate
                          state)))
                ((equal directive "warning") ; # warning
                 (b* (((erp ppstate) (pproc-warning ppstate)))
                   (retok nil ; no group parts
                          nil ; no group ending
-                         ppstate
                          (string-pfile-alist-fix preprocessed)
+                         ppstate
                          state)))
                ((equal directive "pragma") ; # pragma
                 (reterr (msg "#pragma directive not yet supported."))) ; TODO
@@ -4412,8 +4400,8 @@
                         (plexemes-without-comments lexemes))))
           (retok (list (ppart-line lexemes))
                  nil ; no group ending
-                 ppstate
                  preprocessed
+                 ppstate
                  state)))))
     :no-function nil
     :measure (nfix limit))
@@ -4432,8 +4420,8 @@
                          (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a @('#include') directive."
@@ -4479,7 +4467,7 @@
        we do not perform header guard transitions here,
        but we do in @(tsee pproc-header-name)."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
+         ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp nontoknls-before-header toknl span ppstate)
           (read-token/newline-after-include ppstate)))
@@ -4500,7 +4488,7 @@
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
-             ((erp pparts ppstate preprocessed state)
+             ((erp pparts preprocessed ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
                                  nontoknls-before-header
@@ -4516,8 +4504,8 @@
                                  state
                                  (1- limit))))
           (retok pparts
-                 ppstate
                  (string-pfile-alist-fix preprocessed)
+                 ppstate
                  state)))
        (t ; # include not-headername
         (b* ((ppstate (unread-lexeme toknl span ppstate))
@@ -4537,7 +4525,7 @@
              (header-name-lexemes (lexmark-list-to-lexeme-list lexmarks))
              ((erp header nontoknls-after-header newline)
               (indirect-header-name header-name-lexemes))
-             ((erp pparts ppstate preprocessed state)
+             ((erp pparts preprocessed ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
                                  nontoknls-before-header
@@ -4552,7 +4540,7 @@
                                  ppstate
                                  state
                                  (1- limit))))
-          (retok pparts ppstate preprocessed state)))))
+          (retok pparts preprocessed ppstate state)))))
     :no-function nil
     :measure (nfix limit))
 
@@ -4574,8 +4562,8 @@
                              (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a @('#include') directive."
@@ -4605,15 +4593,15 @@
        we do not re-preprocess the file,
        and we always expand it in place."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
+         ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp resolved-file bytes state)
           (resolve-included-file file header base-dir include-dirs state))
          (ienv (ppstate->ienv ppstate))
          (options (ppstate->options ppstate))
          ((erp pfile
-               macros
                preprocessed
+               macros
                state)
           (pproc-file bytes
                       resolved-file
@@ -4637,17 +4625,15 @@
                               (pfile->parts pfile)
                               (list (ppart-line closing-line))))
                   (pfile->parts pfile))))
-            (retok pparts ppstate preprocessed state)))
-         ((erp standalone-pfile
-               preprocessed
-               state)
+            (retok pparts preprocessed ppstate state)))
+         ((erp standalone-pfile preprocessed state)
           (b* (((reterr) (irr-pfile) nil state)
                (name+pfile (assoc-equal resolved-file preprocessed)))
             (if name+pfile
                 (retok (cdr name+pfile) preprocessed state)
               (b* (((erp pfile
-                         & ; macros
                          preprocessed
+                         & ; macros
                          state)
                     (pproc-file bytes
                                 resolved-file
@@ -4662,9 +4648,7 @@
                                 state
                                 (1- limit)))
                    (preprocessed (acons resolved-file pfile preprocessed)))
-                (retok pfile
-                       preprocessed
-                       state)))))
+                (retok pfile preprocessed state)))))
          (preserve-include-p
           (compare-pfiles pfile
                           standalone-pfile
@@ -4688,7 +4672,7 @@
                                  (pfile->parts pfile)
                                  (list (ppart-line closing-line))))
                      (pfile->parts pfile)))))
-      (retok pparts ppstate preprocessed state))
+      (retok pparts preprocessed ppstate state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4704,8 +4688,8 @@
                     (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a @('#if') section."
@@ -4727,15 +4711,10 @@
        just before preprocessing the rest of the section,
        just after preprocessing the condition."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
+         ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp pexpr condp ppstate) (pproc-const-expr ppstate))
-         ((erp pparts
-               pelifs
-               pelse?
-               ppstate
-               preprocessed
-               state)
+         ((erp pparts pelifs pelse? preprocessed ppstate state)
           (pproc-if/ifdef/ifndef-rest condp
                                       nil ; donep
                                       file
@@ -4754,7 +4733,7 @@
          (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                      (concatenate-cond-bodies pparts pelifs pelse?)
                    (list pcond))))
-      (retok pparts ppstate preprocessed state))
+      (retok pparts preprocessed ppstate state))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4770,8 +4749,8 @@
                               (limit natp))
     :returns (mv erp
                  (pparts ppart-listp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess a @('#ifdef') or @('#ifndef') section."
@@ -4799,7 +4778,7 @@
        to @(tsee pproc-if/ifdef/ifndef-rest),
        which preprocesses the rest of the @('if-section')."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil ppstate nil state)
+         ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp & ident? span ppstate) (read-token/newline ppstate))
          ((unless (and ident? ; #ifdef/#ifndef ident
@@ -4818,12 +4797,7 @@
          (condp (if ifdefp
                     (and info? t)
                   (not info?)))
-         ((erp pparts
-               pelifs
-               pelse?
-               ppstate
-               preprocessed
-               state)
+         ((erp pparts pelifs pelse? preprocessed ppstate state)
           (pproc-if/ifdef/ifndef-rest condp
                                       nil ; donep
                                       file
@@ -4844,7 +4818,7 @@
          (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                      (concatenate-cond-bodies pparts pelifs pelse?)
                    (list pcond))))
-      (retok pparts ppstate preprocessed state))
+      (retok pparts preprocessed ppstate state))
     :no-function nil
     :measure (nfix limit))
 
@@ -4864,8 +4838,8 @@
                  (pparts ppart-listp)
                  (pelifs pelif-listp)
                  (pelse? pelse-optionp)
-                 (new-ppstate ppstatep)
                  (new-preprocessed string-pfile-alistp)
+                 (new-ppstate ppstatep)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
     :short "Preprocess the rest of
@@ -4922,10 +4896,10 @@
        Finally, if the group instead with @('#endif'),
        we ensure there is just a new line after that."))
     (b* ((ppstate (ppstate-fix ppstate))
-         ((reterr) nil nil nil ppstate nil state)
+         ((reterr) nil nil nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
-         ((erp first-pparts groupend ppstate preprocessed state)
-          (b* (((reterr) nil (irr-groupend) ppstate nil state))
+         ((erp first-pparts groupend preprocessed ppstate state)
+          (b* (((reterr) nil (irr-groupend) nil ppstate state))
             (if (and condp
                      (not donep))
                 (pproc-*-group-part file
@@ -4940,8 +4914,8 @@
                     (pproc-*-group-part-skipped ppstate)))
                 (retok nil ; no group parts
                        groupend
-                       ppstate
                        (string-pfile-alist-fix preprocessed)
+                       ppstate
                        state)))))
          (donep (and condp (not donep))))
       (groupend-case
@@ -4951,12 +4925,7 @@
                         :found "end of file")
        :elif (b* (((erp pexpr condp ppstate) ; #elif constexpr EOL
                    (pproc-const-expr ppstate))
-                  ((erp pparts
-                        pelifs
-                        pelse?
-                        ppstate
-                        preprocessed
-                        state)
+                  ((erp pparts pelifs pelse? preprocessed ppstate state)
                    (pproc-if/ifdef/ifndef-rest condp
                                                donep
                                                file
@@ -4972,8 +4941,8 @@
                                         :parts pparts)
                             pelifs)
                       pelse?
-                      ppstate
                       preprocessed
+                      ppstate
                       state))
        :else (b* (((erp & toknl span ppstate) (read-token/newline ppstate))
                   ((unless (and toknl ; #else EOL
@@ -4981,8 +4950,8 @@
                    (reterr-msg :where (position-to-msg (span->start span))
                                :expected "a new line"
                                :found (plexeme-to-msg toknl)))
-                  ((erp pparts groupend ppstate preprocessed state)
-                   (b* (((reterr) nil (irr-groupend) ppstate nil state))
+                  ((erp pparts groupend preprocessed ppstate state)
+                   (b* (((reterr) nil (irr-groupend) nil ppstate state))
                      (if (not donep)
                          (pproc-*-group-part file
                                              base-dir
@@ -4994,7 +4963,7 @@
                                              (1- limit))
                        (b* (((erp groupend ppstate)
                              (pproc-*-group-part-skipped ppstate)))
-                         (retok nil groupend ppstate preprocessed state)))))
+                         (retok nil groupend preprocessed ppstate state)))))
                   ((unless (groupend-case groupend :endif)) ; #endif
                    (reterr-msg :where (position-to-msg
                                        (ppstate->position ppstate))
@@ -5012,8 +4981,8 @@
                (retok first-pparts
                       nil ; pelifs
                       (pelse pparts)
-                      ppstate
                       preprocessed
+                      ppstate
                       state))
        :endif (b* (((erp & toknl span ppstate) (read-token/newline ppstate))
                    ((unless (and toknl ; #endif EOL
@@ -5024,8 +4993,8 @@
                 (retok first-pparts
                        nil ; pelifs
                        nil ; pelse?
-                       ppstate
                        preprocessed
+                       ppstate
                        state))))
     :no-function nil
     :measure (nfix limit))
@@ -5126,8 +5095,8 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
-                & ; macros
                 preprocessed
+                & ; macros
                 state)
            (pproc-file bytes
                        (car files)
