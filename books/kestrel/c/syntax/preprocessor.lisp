@@ -4129,7 +4129,6 @@
     :returns (mv erp
                  (pfile pfilep)
                  (file-macros ident-macro-info-option-alistp)
-                 (file-header-guard? ident-optionp)
                  (new-preprocessed string-pfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4173,7 +4172,7 @@
        we set the header guard state to @(':not'),
        because for full expansion we do not need
        to recognize the header guard form."))
-    (b* (((reterr) (irr-pfile) nil nil nil state)
+    (b* (((reterr) (irr-pfile) nil nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -4184,7 +4183,6 @@
          ((erp pfile
                groupend
                file-macros
-               file-header-guard?
                preprocessed
                state)
           (with-local-stobj
@@ -4193,7 +4191,6 @@
                      pfile
                      groupend
                      file-macro-table
-                     file-header-guard?
                      ppstate
                      preprocessed
                      state)
@@ -4224,7 +4221,6 @@
                       (make-pfile :parts pparts)
                       groupend
                       (ppstate->macros ppstate)
-                      (file-header-guard ppstate)
                       ppstate
                       preprocessed
                       state))
@@ -4232,7 +4228,6 @@
                   pfile
                   groupend
                   (macro-table->dynamic file-macro-table)
-                  file-header-guard?
                   preprocessed
                   state))))
          ((unless (groupend-case groupend :eof))
@@ -4246,7 +4241,6 @@
                         :endif "#endif")))))
       (retok pfile
              file-macros
-             file-header-guard?
              preprocessed
              state))
     :no-function nil
@@ -4801,7 +4795,6 @@
          (options (ppstate->options ppstate))
          ((erp pfile
                file-macros
-               & ; file-header-guard?
                preprocessed
                state)
           (pproc-file bytes
@@ -4834,16 +4827,14 @@
                   (pfile->parts pfile))))
             (retok pparts ppstate preprocessed state)))
          ((erp standalone-pfile
-               & ; standalone-file-header-guard?
                preprocessed
                state)
-          (b* (((reterr) (irr-pfile) nil nil state)
+          (b* (((reterr) (irr-pfile) nil state)
                (name+pfile (assoc-equal resolved-file preprocessed)))
             (if name+pfile
-                (retok (cdr name+pfile) nil preprocessed state)
+                (retok (cdr name+pfile) preprocessed state)
               (b* (((erp pfile
                          & ; file-macros
-                         file-header-guard?
                          preprocessed
                          state)
                     (pproc-file bytes
@@ -4860,7 +4851,6 @@
                                 (1- limit)))
                    (preprocessed (acons resolved-file pfile preprocessed)))
                 (retok pfile
-                       file-header-guard?
                        preprocessed
                        state)))))
          (preserve-include-p
@@ -5355,7 +5345,6 @@
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
                 & ; file-macros
-                & ; file-header-guard?
                 preprocessed
                 state)
            (pproc-file bytes
