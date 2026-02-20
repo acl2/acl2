@@ -946,7 +946,7 @@
                             (let ((vars-to-bind (cddr hyp)))
                               (if (not (axe-bind-free-result-okayp result vars-to-bind (get-dag-len rewrite-stobj2)))
                                   (mv (erp-t)
-                                      (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
+                                      (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this does not satisfy axe-bind-free-result-okayp for exactly the vars ~x3." hyp rule-symbol result vars-to-bind)
                                       alist rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                                 ;; this hyp counts as relieved:
                                 (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)

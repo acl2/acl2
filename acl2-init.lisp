@@ -1497,9 +1497,27 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
            (t (format nil "+ (a development snapshot based on ~a)"
                       *copy-of-acl2-version*)))))
 
+(defvar *wsl*
+
+; This variable is intended to be non-nil when running in Windows Subsystem for
+; Linux.  We set it when ACL2 starts up; see acl2-default-restart.  We use it
+; in the implementation of certify-book to prevent an issue with
+; file-write-dates, as noted in a comment where this variable is accessed.
+
+  nil)
+
 (defun acl2-default-restart (&optional called-by-lp)
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
+  (setq *wsl*
+
+; This code is courtesy of hints from Eric McCarthy and perplexity.com.
+; The value is true when we are running under Windows Subsystem for
+; Linux.
+
+        (ignore-errors
+          (with-open-file (s "/proc/version")
+            (search "microsoft" (string-downcase (read-line s nil ""))))))
   #+cmu
   (when *print-startup-banner*
     (extensions::print-herald t))

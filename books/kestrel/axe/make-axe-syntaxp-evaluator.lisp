@@ -1,7 +1,7 @@
 ; A tool to make an axe-syntaxp evaluator for given functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,12 +14,16 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-def" :dir :system) ; mentioned by make-axe-syntaxp-evaluator-cases-for-arities ; todo: move to the generated result (also in make-axe-bind-free-evaluator)
 (include-book "kestrel/utilities/world" :dir :system) ; for fn-formals, todo: move that to world-light
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
-(include-book "axe-syntax-functions") ;for axe-quotep, since we treat it specially here
-(include-book "axe-rules") ;for list-of-variables-and-constantsp, todo: reduce?
+;(include-book "axe-syntax-functions") ;for axe-quotep, since we treat it specially here
+(include-book "darg-listp")
+(include-book "dag-arrays") ; since pseudo-dag-arrayp gets put in ; todo: move to the generated result (also in make-axe-bind-free-evaluator)
+(include-book "largest-non-quotep")
+(include-book "axe-rules") ;for list-of-variables-and-constantsp and axe-quotep, todo: reduce?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -261,6 +265,7 @@
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+       (local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 
        (local (in-theory (enable assoc-equal-iff-two
                                  natp-of-lookup-equal-when-darg-listp-of-strip-cdrs-when-member-equal

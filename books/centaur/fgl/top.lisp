@@ -49,6 +49,7 @@
 (include-book "annotation")
 (include-book "backtrace")
 (include-book "supertrace")
+(include-book "reduce-alist")
 
 (local (in-theory (disable w)))
 

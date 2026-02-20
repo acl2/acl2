@@ -306,7 +306,15 @@
   ;;                              (iff* (gobj-bfr-eval (bfr-var n) env logicman)
   ;;                                    (fgl-object-eval (get-bvar->term$c n bvar-db) env logicman)))))))
   (local (in-theory (disable interp-st-bvar-db-ok-necc)))
-
+  (local
+   (defthm fgl-object-eval-of-normalize-equal-order
+     (equal (fgl-object-eval (normalize-equal-order x) env)
+            (fgl-object-eval x env))
+     :hints(("Goal" :in-theory (enable normalize-equal-order
+                                       fgl-apply)
+             :expand ((fgl-objectlist-eval (g-apply->args x) env)
+                      (fgl-objectlist-eval (cdr (g-apply->args x)) env))))))
+  
   (local (defret eval-of-interp-st-add-term-bvar-unique
            (implies (and (interp-st-bvar-db-ok new-interp-st env)
                          (lbfr-listp (fgl-object-bfrlist x)
@@ -315,7 +323,8 @@
                           (fgl-object-eval x env (interp-st->logicman interp-st))))
            :hints(("Goal" :in-theory (enable <fn>)
                    :use ((:instance interp-st-bvar-db-ok-necc
-                          (n (get-term->bvar$c x (interp-st->bvar-db interp-st)))
+                          (n (get-term->bvar$c (normalize-equal-order x)
+                                               (interp-st->bvar-db interp-st)))
                           (interp-st new-interp-st))
                          (:instance interp-st-bvar-db-ok-necc
                           (n (next-bvar$c (interp-st->bvar-db interp-st)))

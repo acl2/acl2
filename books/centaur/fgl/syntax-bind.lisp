@@ -134,17 +134,29 @@ state.</p>")
   :enabled t
   nil)
 
-(define assume (test val)
+(define assume (test val &key on-unreachable)
   :ignore-ok t
   :irrelevant-formals-ok t
   :enabled t
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to assume some condition while interpreting a term."
-  :long "<p>Logically, @('(assume test val)') just returns VAL.  When it is
-encountered by the FGL interpreter under an @('unequiv') congruence, it
-causes the interpreter to assume that @('test') is true while interpreting
-@('val'), returning the symbolic result from @('val').</p>
-"
+  :long "<p>See also @(see conditionalize), a @(see binder) function which can be used
+outside of the @('unequiv') congruence.</p>
+
+<p>Logically, @('(assume test val)') just returns VAL.  When it is
+encountered by the FGL interpreter under an @('unequiv') congruence, it causes
+the interpreter to assume that @('test') is true while interpreting @('val'),
+returning the symbolic result from @('val'). If it is determined that @('cond')
+is unsatisfiable under the current path condition, then the optional keyword
+argument @('on-unreachable') is interpreted instead (without assuming
+@('cond')) and returned.</p>
+
+<p>Note @('cond') isn't automatically checked for unsatisfiability. It is
+shallowly checked for contradictions with the current path condition in the
+process of assuming it. If it is desirable to check for unsatisfiability, it
+can be wrapped in an @('fgl-sat-check') form or a @('(fgl-sat-check config t)')
+call can be used to check for unsatisfiability of the path condition within
+@('x').</p>"
   val)
 
 (define narrow-equiv (equiv val)
@@ -220,7 +232,9 @@ interpreted normally and returned.</p>"
   (defcong unequiv equal (fgl-prog2 x y) 1))
 
 (defmacro fgl-progn (&rest args)
-  (xxxjoin 'fgl-prog2 args))
+  (cond ((null args) nil)
+        ((null (cdr args)) (car args))
+        (t (xxxjoin 'fgl-prog2 args))))
 
 (define fgl-interp-obj (term)
   :ignore-ok t
@@ -326,6 +340,80 @@ rule.</p>")
 test of the IF should not be included in the path condition while rewriting the
  branch."
   x)
+
+(define left-to-right (x)
+  :parents (fgl-rewrite-rule)
+  :short "Identity function that directs replacements due to an equivalence to prefer replacing the left-hand side with the right-hand side."
+  :long "<p>When this identity function is wrapped around an equivalence term, then when
+that term is assumed true (as in a hypothesis or path condition element), the symbolic object resulting from the first argument of the equivalence will be replaced by that resulting from the second argument whenever it occurs under a matching equivalence context.</p>
+
+<p>In other cases, replacement might still occur, but whether left by right or
+right by left will be governed according to heuristics.</p>
+
+<p>Example:</p>
+@({
+ (fgl::def-fgl-rewrite signed-byte-assumption-to-logext
+    (iff (signed-byte-p n x)
+         (and (posp n)
+              ;; Causes x to be replaced with the result of rewriting (logext n x)
+              ;; when this assumption is in the path condition.
+              (left-to-right (equal x (logext n x))))))
+ })
+
+<p>Note that if the inner term does not evaluate to an equivalence, or if the
+left- and right-hand-sides are switched due to some rewrite rule, then
+left-to-right may not have the desired effect. It functions as follows:</p>
+
+<p>If:</p>
+<ul>
+<li>we are rewriting a term in a Boolean context (under IFF equivalence),</li>
+<li>the original term is a call of @('left-to-right'),</li>
+<li>the rewritten object is a call of an equivalence relation (known by ACL2 --
+see @(see acl2::equivalence)),</li>
+</ul>
+
+<p>then the object will be added to the equivalence database such that the
+first argument of the rewritten object will be replaced with the second
+argument when under the equivalence.</p>"
+  x)
+
+
+
+(define conditionalize (ans cond x
+                            &key
+                            on-unreachable)
+  :short "FGL binder that returns a value equal to x when cond holds, otherwise undetermined."
+  :long "<p>When a binder form @('(conditionalize free-var cond x :on-unreachable
+on-unreachable)') is encountered in a rewrite rule, FGL rewrites @('x') under
+the assumption that cond holds and returns the result. If @('cond') is found to
+be unsatisfiable under the current path condition, then FGL rewrites
+@('on-unreachable') (without assuming @('cond'), and under the @('unequiv')
+equivalence context, i.e. without any logical constraints on unsound rewriting)
+and returns that instead. This is all permissible since the answer is only
+guaranteed to equal x in the case where cond holds.</p>
+
+<p>Note @('cond') isn't automatically checked for unsatisfiability. It is
+shallowly checked for contradictions with the current path condition in the
+process of assuming it. If it is desirable to check for unsatisfiability, it
+can be wrapped in an @('fgl-sat-check') form or a @('(fgl-sat-check config t)')
+call can be used to check for unsatisfiability of the path condition within
+@('x').</p>
+
+<p>The (regular, non-binder) function @(see assume) has similar functionality,
+but can only be used under the @('unequiv') equivalence context, i.e. when
+there is no soundness requirements on the correctness of the evaluation.</p>"
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  (if cond x ans)
+  ///
+  (defthm conditionalize-equals-x
+    (implies cond
+             (equal (conditionalize ans cond x :on-unreachable on-unreachable) x)))
+
+  (defmacro conditionalize! (&rest args)
+    `(binder (conditionalize! . ,args))))
+
+
 
 ;; (defevaluator synbind-ev synbind-ev-list ((syntax-bind-fn x y z)) :namedp t)
 

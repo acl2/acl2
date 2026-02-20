@@ -1383,7 +1383,11 @@
     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
     acl2::bvmod-of-power-of-2 ; replaces bvmod with bvchop
-    ))
+
+    acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
+    acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
+    acl2::cancel-bvplus-arg-left
+    acl2::cancel-bvplus-arg-right))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()

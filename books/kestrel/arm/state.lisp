@@ -25,6 +25,7 @@
 (include-book "kestrel/bv/bvplus-def" :dir :system)
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 ;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 ;(include-book "std/util/bstar" :dir :system)
@@ -89,6 +90,13 @@
                   :stobjs arm))
   (registersi n arm))
 
+(local ;move
+ (defthm unsigned-byte-p-when-<=-and-unsigned-byte-p
+   (implies (and (<= free size)
+                 (unsigned-byte-p free x))
+            (equal (unsigned-byte-p size x)
+                   (natp size)))))
+
 (defthm unsigned-byte-p-32-of-reg
   (implies (and (< n 16)
                 (natp n)
@@ -96,11 +104,29 @@
            (unsigned-byte-p 32 (reg n arm)))
   :hints (("Goal" :in-theory (enable reg))))
 
+(defthm unsigned-byte-p-of-reg
+  (implies (and (<= 32 size)
+                (< n 16)
+                (natp n)
+                (armp arm))
+           (equal (unsigned-byte-p size (reg n arm))
+                  (natp size))))
+
 (defthm integerp-of-reg
   (implies (and (register-numberp n)
                 (armp arm))
            (integerp (reg n arm)))
   :hints (("Goal" :in-theory (enable reg unsigned-byte-p))))
+
+(defthm bvchop-of-reg
+  (implies (and (<= 32 size)
+                (integerp size)
+                (< n 16)
+                (natp n)
+                (armp arm))
+           (equal (bvchop size (reg n arm))
+                  (reg n arm)))
+  :hints (("Goal" :in-theory (enable))))
 
 (defthm reg-of-if-arg2
   (equal (reg n (if test arm1 arm2))
@@ -266,6 +292,15 @@
 (defthm apsr.q-of-set-apsr.v (equal (apsr.q (set-apsr.v bit arm)) (apsr.q arm)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.v))))
 (defthm apsr.q-of-set-apsr.q (equal (apsr.q (set-apsr.q bit arm)) (bvchop 1 bit)) :hints (("Goal" :in-theory (enable apsr.q set-apsr.q))))
 
+;;; strengthen?
+;(defthm armp-of-update-apsr (implies (and (unsigned-byte-p 32 v) (armp arm)) (armp (update-apsr v arm))) :hints (("Goal" :in-theory (enable update-apsr))))
+
+(defthm armp-of-set-apsr.n (implies (armp arm) (armp (set-apsr.n bit arm))) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm armp-of-set-apsr.z (implies (armp arm) (armp (set-apsr.z bit arm))) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm armp-of-set-apsr.c (implies (armp arm) (armp (set-apsr.c bit arm))) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm armp-of-set-apsr.v (implies (armp arm) (armp (set-apsr.v bit arm))) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm armp-of-set-apsr.q (implies (armp arm) (armp (set-apsr.q bit arm))) :hints (("Goal" :in-theory (enable set-apsr.q))))
+
 (defthm error-of-set-reg
   (equal (error (set-reg n val arm))
          (error arm))
@@ -281,6 +316,8 @@
 (defthm reg-of-set-apsr.c (equal (reg n (set-apsr.c bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.c reg))))
 (defthm reg-of-set-apsr.v (equal (reg n (set-apsr.v bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.v reg))))
 (defthm reg-of-set-apsr.q (equal (reg n (set-apsr.q bit arm)) (reg n arm)) :hints (("Goal" :in-theory (enable set-apsr.q reg))))
+
+(defthm reg-of-update-isetstate (equal (reg n (update-isetstate v arm)) (reg n arm)) :hints (("Goal" :in-theory (enable reg))))
 
 (defthm error-of-set-apsr.n (equal (error (set-apsr.n bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.n reg))))
 (defthm error-of-set-apsr.z (equal (error (set-apsr.z bit arm)) (error arm)) :hints (("Goal" :in-theory (enable set-apsr.z reg))))
@@ -329,3 +366,15 @@
 (defthm set-apsr.q-of-set-apsr.v (equal (set-apsr.q bit1 (set-apsr.v bit2 arm)) (set-apsr.v bit2 (set-apsr.q bit1 arm))) :hints (("Goal" :in-theory (enable set-apsr.v set-apsr.q))))
 
 ;todo: more
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: have defstobj+ do these:
+
+(local (include-book "kestrel/lists-light/update-nth" :dir :system))
+(defthm update-isetstate-when-equal-of-isetstate
+  (implies (and (equal v (isetstate arm))
+                (armp arm))
+           (equal (update-isetstate v arm)
+                  arm))
+  :hints (("Goal" :in-theory (enable update-isetstate isetstate armp))))
