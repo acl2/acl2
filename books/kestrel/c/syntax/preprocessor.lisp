@@ -273,7 +273,7 @@
      as explained in @(tsee string-ppfile-alist)."))
   (b* (((when (endp alist)) nil)
        ((cons string ppfile) (car (string-ppfile-alist-fix alist)))
-       (bytes (plexemes-to-bytes (ppfile->lexemes ppfile)))
+       (bytes (pprint-pfile (ppfile->pfile ppfile)))
        (filepath (filepath string))
        (filedata (filedata bytes))
        (map (string-ppfile-alist-to-filepath-filedata-map (cdr alist))))
