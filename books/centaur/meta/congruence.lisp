@@ -31,6 +31,7 @@
 (in-package "CMR")
 
 (include-book "equivalence")
+(include-book "pseudo-term-var-list")
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (include-book "centaur/misc/nth-equiv" :dir :system)
@@ -1239,20 +1240,6 @@
                    (ctx contexts)))))))
 
 
-(define pseudo-term-var-listp ((x pseudo-term-listp))
-  (if (atom x)
-      t
-    (and (pseudo-term-case (car x) :var)
-         (pseudo-term-var-listp (cdr x))))
-  ///
-  (defthm pseudo-term-var-listp-of-cons
-    (equal (pseudo-term-var-listp (cons a b))
-           (and (pseudo-term-case a :var)
-                (pseudo-term-var-listp b))))
-  (defthm pseudo-term-var-listp-of-append
-    (equal (pseudo-term-var-listp (append a b))
-           (and (pseudo-term-var-listp a)
-                (pseudo-term-var-listp b)))))
 
 (local (defthm pseudo-term-list-fix-of-append
          (equal (pseudo-term-list-fix (append a b))
@@ -1287,22 +1274,8 @@
 ;;                            (congruence-var-list-check-aux (1- n) (cdr vars1) (cdr vars2) var2))))))
 
 
-(define pseudo-term-var-list->names ((x pseudo-term-listp))
-  :guard (pseudo-term-var-listp x)
-  :returns (vars pseudo-var-list-p)
-  :prepwork ((local (in-theory (enable pseudo-term-var-listp))))
-  (if (atom x)
-      nil
-    (cons (pseudo-term-var->name (car x))
-          (pseudo-term-var-list->names (cdr x))))
-  ///
-  (defthm pseudo-term-var-list->names-when-pseudo-term-listp
-    (implies (and (pseudo-term-listp x)
-                  (pseudo-term-var-listp x))
-             (equal (pseudo-term-var-list->names x) x))
-    :hints(("Goal" :in-theory (enable pseudo-termp
-                                      pseudo-term-kind
-                                      pseudo-term-var->name))))
+
+(encapsulate nil
 
   (local (defthm equiv-ev-list-of-acons-non-member
            (implies (and (pseudo-term-var-listp vars)
@@ -1321,20 +1294,9 @@
                   (no-duplicatesp (pseudo-term-var-list->names vars)))
              (equal (equiv-ev-list vars (pairlis$ (pseudo-term-var-list->names vars) vals))
                     (take (len vars) vals)))
-    :hints(("Goal" :in-theory (enable pseudo-term-var-listp)
-            :induct (pairlis$ vars vals))))
-
-  (local (in-theory (enable pseudo-term-list-fix)))
-
-
-  (defthm pseudo-term-var-list->names-of-cons
-    (equal (pseudo-term-var-list->names (cons a b))
-           (cons (pseudo-term-var->name a)
-                (pseudo-term-var-list->names b))))
-  (defthm pseudo-term-var-list->names-of-append
-    (equal (pseudo-term-var-list->names (append a b))
-           (append (pseudo-term-var-list->names a)
-                   (pseudo-term-var-list->names b)))))
+    :hints(("Goal" :in-theory (enable pseudo-term-var-listp
+                                      pseudo-term-var-list->names)
+            :induct (pairlis$ vars vals)))))
 
 
 

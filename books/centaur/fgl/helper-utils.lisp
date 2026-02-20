@@ -44,6 +44,11 @@
 (local (in-theory (disable w)))
 
 
+(fancy-ev-add-primitive interp-st-prof-reset t)
+(fancy-ev-add-primitive interp-st-prof-report t)
+(fancy-ev-add-primitive interp-st-prof-print-report t)
+(fancy-ev-add-primitive interp-st-stack-frames$inline t)
+
 (fancy-ev-add-primitive interp-st-prev-bindings
                         (< 1 (interp-st-stack-frames interp-st)))
 

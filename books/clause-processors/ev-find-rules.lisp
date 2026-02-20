@@ -48,7 +48,14 @@
 ;; find the ev-lst function given the ev function or vice versa.  Should be its
 ;; only sibling.
 (defun find-ev-counterpart (ev world)
-  (car (remove ev (fgetprop ev 'siblings nil world))))
+  (let ((siblings (fgetprop ev 'siblings nil world)))
+    (if siblings
+        ;; This is the usual case for defevaluator -- a constrained function.
+        (car (remove ev siblings))
+      ;; Centaur/meta/fixed-evaluator provides support for creating a "fixed"
+      ;; (not constrained) "evaluator" -- we want to support this too.  In that
+      ;; case we look for a mutually recursive function.
+      (car (remove ev (fgetprop ev 'recursivep nil world))))))
 
 
 ;; Rewrite-rule fields are:

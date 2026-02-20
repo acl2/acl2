@@ -880,6 +880,7 @@
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep hits2 state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
+                        ;; same rule regardless of :stop-pcs:
                         (if 64-bitp
                             (first (step-opener-rules64))
                           (first (step-opener-rules32)))

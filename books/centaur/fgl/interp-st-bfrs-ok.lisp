@@ -233,7 +233,7 @@
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar
     (implies (and (interp-st-bfrs-ok interp-st)
                   (interp-st-bfr-listp (fgl-object-bfrlist x)))
-             (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar x interp-st state))))
+             (interp-st-bfrs-ok (mv-nth 1 (interp-st-add-term-bvar l2r x interp-st state))))
     :hints(("Goal" :in-theory (enable interp-st-add-term-bvar))))
 
   (defthm interp-st-bfrs-ok-of-interp-st-add-term-bvar-unique

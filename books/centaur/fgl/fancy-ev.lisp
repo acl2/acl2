@@ -923,7 +923,8 @@ objects, and many other complications.</p>"
                  (:rewrite-rules  . (alistp rewrite-rules))
                  (:binder-rules   . (alistp binder-rules))
                  (:branch-merge-rules . (alistp branch-merge-rules))
-                 (:congruence-rules . (true-listp congruence-rules))))))
+                 (:congruence-rules . (true-listp congruence-rules))
+                 (:id-congruence-rules . (true-listp id-congruence-rules))))))
 
 
 

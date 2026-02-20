@@ -315,3 +315,21 @@ its symbolic bits.</p>"
     (acl2::sub-alistp (alist-const-pairs ans x) x)
     :hints(("Goal" :in-theory (enable acl2::sub-alistp
                                       acl2::alists-agree)))))
+
+(define check-memberp (ans k (x true-listp))
+  :short "FGL binder that checks whether k is syntactically known to be a member of x."
+  (and (member-equal k x)
+       ans
+       t)
+  ///
+  (defthm check-memberp-implies-member
+    (implies (check-memberp ans k x)
+             (member-equal k x))
+    :rule-classes :forward-chaining)
+
+  (defmacro check-memberp! (&rest args)
+    `(binder (check-memberp . ,args))))
+
+
+
+

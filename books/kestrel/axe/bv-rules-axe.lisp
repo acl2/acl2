@@ -2009,3 +2009,38 @@
                   (bvchop size k)))
   :hints (("Goal" :use (:instance bvchop-subst-constant (free free) (size size))
            :in-theory (disable bvchop-subst-constant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Cancel X from the BVPLUS nest rooted at Y
+(defund cancel-bvplus-arg (path size x y)
+  (declare (ignore path))
+  (bvminus size y x))
+
+(defthmd cancel-bvplus-arg-of-nil
+  (equal (cancel-bvplus-arg nil size x x)
+         0)
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-left
+  (implies (and (consp path)
+                (equal :l (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+(defthmd cancel-bvplus-arg-right
+  (implies (and (consp path)
+                (equal :r (car path)))
+           (equal (cancel-bvplus-arg path size x (bvplus size y z))
+                  (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+
+;; Searches for Y in the nest rooted at X.
+(defthmd bvminus-cancel-axe
+  (implies (and (syntaxp (quotep size))
+                ;; finds the path where Y occurs in X:
+                (axe-bind-free (bind-path-in-bvplus-nest y size x dag-array) '(path)))
+           (equal (bvminus size x y)
+                  (cancel-bvplus-arg path size y x)))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))

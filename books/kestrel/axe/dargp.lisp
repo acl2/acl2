@@ -1,7 +1,7 @@
-; Arguments in DAG exprs that are function calls
+; Function arguments in DAG exprs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,15 +12,18 @@
 
 (in-package "ACL2")
 
+;; TODO: Rename to dargs.lisp?
+
 (include-book "kestrel/utilities/quote" :dir :system)
 
-;; Recognizes a function argument that appears in a DAG. For a DAG node that is
-;; a function call, each argument of the call should satisfy dargp.  Each such
+;; Recognizes a function argument that appears in a DAG.  For a DAG node that is
+;; a function call, each argument of the call satisfies dargp.  Each such
 ;; argument is either a quoted constant or a node number.
 (defund dargp (item)
   (declare (xargs :guard t))
-  (or (myquotep item)
-      (natp item)))
+  (or (myquotep item) ; quoted constant
+      (natp item) ; nodenum
+      ))
 
 (defthm dargp-when-myquotep-cheap
   (implies (myquotep item)
@@ -149,3 +152,10 @@
   (implies (dargp x)
            (not (equal (len x) 1)))
   :hints (("Goal" :in-theory (enable dargp myquotep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Checks that a darg is a quoted constant, not a nodenum
+(defund-inline darg-quotep (darg)
+  (declare (xargs :guard (dargp darg)))
+  (consp darg))

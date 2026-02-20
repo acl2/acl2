@@ -127,6 +127,7 @@
       (binder-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (branch-merge-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
+      (id-congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
 
       ;; backing arrays for fgarray primitives -- see fgarrays.lisp
       (fgarrays :type (array fgarray (0)) :resizable t :pred fgarray-alistp)
@@ -214,6 +215,7 @@
                              (interp-st (update-interp-st->binder-rules nil interp-st))
                              (interp-st (update-interp-st->branch-merge-rules nil interp-st))
                              (interp-st (update-interp-st->congruence-rules nil interp-st))
+                             (interp-st (update-interp-st->id-congruence-rules nil interp-st))
                              (interp-st (resize-interp-st->fgarrays 0 interp-st))
                              (interp-st (update-interp-st->next-fgarray 0 interp-st))
                              (- (fast-alist-free (interp-st->cgraph interp-st))
@@ -799,14 +801,40 @@
                           (m (get-term->bvar$c x bvar-db))))
             :in-theory (disable subsetp-bfrlist-of-bvar-db-bfrlist)))))
 
+
+(define normalize-equal-order ((x fgl-object-p))
+  :returns (new-x fgl-object-p)
+  (fgl-object-case x
+    :g-apply (if (and (equal x.fn 'equal)
+                      (eql (len x.args) 2))
+                 (g-apply 'equal
+                          (if (acl2::<< (first x.args) (second x.args))
+                              (list (first x.args) (second x.args))
+                            (list (second x.args) (first x.args))))
+               (fgl-object-fix x))
+    :otherwise (fgl-object-fix x))
+  ///
+  (local (include-book "arithmetic/top" :Dir :system))
+  (local (defthm len-equal-0
+           (equal (equal (len x) 0)
+                  (not (consp x)))))
+  (defret fgl-object-bfrlist-of-<fn>
+    (set-equiv (fgl-object-bfrlist new-x)
+               (fgl-object-bfrlist x))
+    :hints ((and stable-under-simplificationp
+                 '(:expand ((fgl-object-bfrlist x)
+                            (fgl-objectlist-bfrlist (g-apply->args x))
+                            (fgl-objectlist-bfrlist (cdr (g-apply->args x)))))))))
+
 (define interp-st-get-term->bvar ((x fgl-object-p) interp-st)
   :returns (bvar acl2::maybe-natp :rule-classes :type-prescription)
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
              (bvar)
-             (get-term->bvar x bvar-db)
+             (get-term->bvar (normalize-equal-order x) bvar-db)
              bvar))
 
-(define interp-st-add-term-bvar ((x fgl-object-p) interp-st state)
+
+(define interp-st-add-term-bvar (left-to-rightp (x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
   :guard-hints (("goal" :in-theory (enable interp-st-get-term->bvar)))
@@ -815,8 +843,8 @@
               (logicman (interp-st->logicman interp-st)))
              (bfr bvar-db logicman)
              (b* ((nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (fgl-object-fix x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term (fgl-object-fix x) nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term left-to-rightp (fgl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
@@ -865,12 +893,12 @@
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
              (bfr bvar-db logicman)
-             (b* ((var (get-term->bvar x bvar-db))
+             (b* ((var (get-term->bvar (normalize-equal-order x) bvar-db))
                   ((when var)
                    (mv (bfr-var var logicman) bvar-db logicman))
                   (nextvar (next-bvar bvar-db))
-                  (bvar-db (add-term-bvar (fgl-object-fix x) bvar-db))
-                  (bvar-db (maybe-add-equiv-term (fgl-object-fix x) nextvar bvar-db state))
+                  (bvar-db (add-term-bvar (normalize-equal-order x) bvar-db))
+                  (bvar-db (maybe-add-equiv-term nil (fgl-object-fix x) nextvar bvar-db state))
                   (logicman (logicman-add-var logicman))
                   (bfr (bfr-var nextvar logicman)))
                (mv bfr bvar-db logicman))
@@ -904,7 +932,9 @@
   (defret bvar-db-bfrlist-of-<fn>
     (acl2::set-equiv (bvar-db-bfrlist (interp-st->bvar-db new-interp-st))
                      (append (fgl-object-bfrlist x)
-                             (bvar-db-bfrlist (interp-st->bvar-db interp-st)))))
+                             (bvar-db-bfrlist (interp-st->bvar-db interp-st))))
+    :hints (("goal" :use ((:instance fgl-object-bfrlist-of-normalize-equal-order))
+             :in-theory (disable fgl-object-bfrlist-of-normalize-equal-order))))
 
   (defret logicman-get-of-<fn>
     (implies (not (equal (logicman-field-fix key) :aignet))
