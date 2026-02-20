@@ -1549,12 +1549,7 @@
     "Unless full expansion is required in the options,
      we add to the output a @('#define N N'),
      where @('N') is the name of the macro.
-     The rationale is explained in @(see preservable-inclusions).
-     But we omit the generation of this @('#define N N')
-     if this directive is the one for the header guard,
-     i.e. the one that changes the @(tsee hg-state)
-     from (':ifndef') to @(':define'),
-     because it is already generated in @(tsee all-rev-lexemes)."))
+     The rationale is explained in @(see preservable-inclusions)."))
   (b* ((ppstate (ppstate-fix ppstate)) ; # define
        ((reterr) nil ppstate)
        ((erp & name name-span ppstate) (read-token/newline ppstate))
@@ -3585,63 +3580,6 @@
     (retok ppstate))
   :guard-hints
   (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite-byte-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define all-rev-lexemes ((ppstate ppstatep))
-  :returns (rev-lexemes plexeme-listp)
-  :short "Extract all the reverse output lexemes from the preprocessor state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As explained in @(tsee add-rev-lexeme),
-     the output lexemes are organized in four lists in @(tsee ppstate).
-     After finishing the preprocessing of a file,
-     we call this function to obtain the final list of lexemes.
-     The header guard state must be a final one (it should be an invariant).
-     Based on that, we combine the lexemes,
-     either interposing the directives or not.")
-   (xdoc::p
-    "When interposing the directives,
-     currently we only have information about the macro name.
-     We plan to improve this by keeping track of more details,
-     such as the exact new lines (for now we just use LF)."))
-  (b* ((hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :eof
-     (b* ((rev-lexemes nil)
-          (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "ifndef")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "define")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-          (rev-lexemes (cons (plexeme-spaces 1) rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident hg.name) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-          (rev-lexemes (cons (plexeme-punctuator "#") rev-lexemes))
-          (rev-lexemes (cons (plexeme-ident (ident "endif")) rev-lexemes))
-          (rev-lexemes (cons (plexeme-newline (newline-lf)) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-       rev-lexemes)
-     :not
-     (b* ((rev-lexemes nil)
-          (rev-lexemes (append (ppstate->rev-lexemes1 ppstate) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes2 ppstate) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes3 ppstate) rev-lexemes))
-          (rev-lexemes (append (ppstate->rev-lexemes4 ppstate) rev-lexemes)))
-       rev-lexemes)
-     :otherwise
-     (raise "Internal error: non-final header guard state ~x0." hg)))
-  :no-function nil
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
