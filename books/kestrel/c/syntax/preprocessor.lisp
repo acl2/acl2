@@ -4046,7 +4046,6 @@
                                           include-dirs
                                           preprocessed
                                           preprocessing
-                                          0 ; cond-level
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4086,7 +4085,6 @@
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
                               (preprocessing string-listp)
-                              (cond-level natp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4117,7 +4115,6 @@
                               include-dirs
                               preprocessed
                               preprocessing
-                              cond-level
                               ppstate
                               state
                               (1- limit)))
@@ -4129,7 +4126,6 @@
                               include-dirs
                               preprocessed
                               preprocessing
-                              cond-level
                               ppstate
                               state
                               (1- limit))))
@@ -4143,7 +4139,6 @@
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
                               (preprocessing string-listp)
-                              (cond-level natp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4284,7 +4279,6 @@
                                 include-dirs
                                 preprocessed
                                 preprocessing
-                                (1+ (lnfix cond-level))
                                 ppstate
                                 state
                                 (1- limit))))
@@ -4301,7 +4295,6 @@
                                           include-dirs
                                           preprocessed
                                           preprocessing
-                                          (1+ (lnfix cond-level))
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4318,7 +4311,6 @@
                                           include-dirs
                                           preprocessed
                                           preprocessing
-                                          (1+ (lnfix cond-level))
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4711,7 +4703,6 @@
                     (include-dirs string-listp)
                     (preprocessed string-pfile-alistp)
                     (preprocessing string-listp)
-                    (cond-level natp)
                     (ppstate ppstatep)
                     state
                     (limit natp))
@@ -4756,7 +4747,6 @@
                                       include-dirs
                                       preprocessed
                                       preprocessing
-                                      cond-level
                                       ppstate
                                       state
                                       (1- limit)))
@@ -4779,7 +4769,6 @@
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
                               (preprocessing string-listp)
-                              (cond-level natp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4846,7 +4835,6 @@
                                       include-dirs
                                       preprocessed
                                       preprocessing
-                                      cond-level
                                       ppstate
                                       state
                                       (1- limit)))
@@ -4873,7 +4861,6 @@
                                       (include-dirs string-listp)
                                       (preprocessed string-pfile-alistp)
                                       (preprocessing string-listp)
-                                      (cond-level natp)
                                       (ppstate ppstatep)
                                       state
                                       (limit natp))
@@ -4950,7 +4937,6 @@
                                     include-dirs
                                     preprocessed
                                     preprocessing
-                                    cond-level
                                     ppstate
                                     state
                                     (1- limit))
@@ -4982,7 +4968,6 @@
                                                include-dirs
                                                preprocessed
                                                preprocessing
-                                               cond-level
                                                ppstate
                                                state
                                                (1- limit))))
@@ -5008,7 +4993,6 @@
                                              include-dirs
                                              preprocessed
                                              preprocessing
-                                             cond-level
                                              ppstate
                                              state
                                              (1- limit))
