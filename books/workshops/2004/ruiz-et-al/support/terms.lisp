@@ -939,7 +939,7 @@
        (disjointp (variables nil (co-domain S)) (domain S))))
 
 ;;; REMARK: In the literature, idempotent substitutions are defined as
-;;; substitutions sigma such that sigma穝igma = sigma. But this
+;;; substitutions sigma such that sigma路sigma = sigma. But this
 ;;; definition involves functional equality. We will see that the above
 ;;; definition implies this property (see main-property-mgs in the book
 ;;; unification-definition.lisp) Nevertheless, the definition does not
@@ -949,9 +949,9 @@
 ;;; functionally equivalent idempotent (in our sense) substitution, ((x
 ;;; . y)) in this case.
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 3.3.1 The main property of idempotent substitutions.
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 ;;; .... PROOF PLAN:
 
@@ -1103,9 +1103,9 @@
 ;;; 4.2 Some results concerning the tree structure of a term
 ;;; ----------------------------------------------------------------------------
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 4.2.1 Concatenation of positions
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 (defthm position-p-append
   (implies (position-p p1 term)
@@ -1128,9 +1128,9 @@
 					      q x)))))
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 4.2.2 Substitutions and positions
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 (defthm nth-apply-subst
   (implies (and (integerp i)
@@ -1165,9 +1165,9 @@
 	    (instance (replace-term term pos t1) sigma))))
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 4.2.3 Prefix positions
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 (local
  (defthm equal-len-replace-list
@@ -1202,9 +1202,9 @@
 
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 4.2.4 Disjoint positions
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 (local
  (defun induct-position-p-disjoint (pos1 pos2 term)
@@ -1267,9 +1267,9 @@
 			   (position-p (cons i pos) (cons fn args)))))))
 
 
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 ;;; 4.2.5 Disabling the theory
-;;; 贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩贩
+;;; 路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路路
 
 (defconst *tree-structure-of-terms*
   '(position-p-append occurrence-append replace-term-append
