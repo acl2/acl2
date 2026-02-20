@@ -47,7 +47,7 @@
      and generates a file set with the files after preprocessing;
      see @(see preprocessor).
      The preprocessing of the files results in
-     preprocessor files (i.e. values of type @(pfile)),
+     preprocessor files (i.e. values of type @(tsee pfile)),
      which we turn into bytes via this printer.")
    (xdoc::p
     "Since the AST structure of preprocess files is relative simple,
