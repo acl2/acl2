@@ -3964,7 +3964,7 @@
                       (limit natp))
     :returns (mv erp
                  (pfile pfilep)
-                 (file-macros ident-macro-info-option-alistp)
+                 (new-macros macro-tablep)
                  (new-preprocessed string-pfile-alistp)
                  state)
     :parents (preprocessor pproc-files/groups/etc)
@@ -4008,7 +4008,7 @@
        we set the header guard state to @(':not'),
        because for full expansion we do not need
        to recognize the header guard form."))
-    (b* (((reterr) (irr-pfile) nil nil state)
+    (b* (((reterr) (irr-pfile) (irr-macro-table) nil state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
          (preprocessing (string-list-fix preprocessing))
@@ -4018,7 +4018,7 @@
          (preprocessing (cons file preprocessing))
          ((erp pfile
                groupend
-               file-macros
+               macros
                preprocessed
                state)
           (with-local-stobj
@@ -4026,7 +4026,7 @@
             (mv-let (erp
                      pfile
                      groupend
-                     file-macro-table
+                     macros
                      ppstate
                      preprocessed
                      state)
@@ -4059,7 +4059,7 @@
               (mv erp
                   pfile
                   groupend
-                  (macro-table->dynamic file-macro-table)
+                  macros
                   preprocessed
                   state))))
          ((unless (groupend-case groupend :eof))
@@ -4072,7 +4072,7 @@
                         :else "#else"
                         :endif "#endif")))))
       (retok pfile
-             file-macros
+             macros
              preprocessed
              state))
     :no-function nil
@@ -4612,7 +4612,7 @@
          (ienv (ppstate->ienv ppstate))
          (options (ppstate->options ppstate))
          ((erp pfile
-               file-macros
+               macros
                preprocessed
                state)
           (pproc-file bytes
@@ -4627,9 +4627,7 @@
                       state
                       (1- limit)))
          ((when (ppoptions->full-expansion options))
-          (b* ((ppstate (update-ppstate->macros
-                         (macro-extend file-macros (ppstate->macros ppstate))
-                         ppstate))
+          (b* ((ppstate (update-ppstate->macros macros ppstate))
                (pparts
                 (if (ppoptions->trace-expansion (ppstate->options ppstate))
                     (b* (((mv opening-line closing-line)
@@ -4648,7 +4646,7 @@
             (if name+pfile
                 (retok (cdr name+pfile) preprocessed state)
               (b* (((erp pfile
-                         & ; file-macros
+                         & ; macros
                          preprocessed
                          state)
                     (pproc-file bytes
@@ -4672,9 +4670,7 @@
                           standalone-pfile
                           (ppstate->macros ppstate)
                           (ppstate->ienv ppstate)))
-         (ppstate (update-ppstate->macros
-                   (macro-extend file-macros (ppstate->macros ppstate))
-                   ppstate))
+         (ppstate (update-ppstate->macros macros ppstate))
          (pparts (if preserve-include-p
                      (list
                       (ppart-line
@@ -5130,7 +5126,7 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
-                & ; file-macros
+                & ; macros
                 preprocessed
                 state)
            (pproc-file bytes
