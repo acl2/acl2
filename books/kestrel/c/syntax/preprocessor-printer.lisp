@@ -855,7 +855,7 @@
                  (bytes (pprint-ident if.name bytes))
                  (bytes (pprint-newline (newline-lf) bytes)))
               bytes)
-     :ifndef (b* ((bytes (pprint-astring "ifndef" bytes))
+     :ifndef (b* ((bytes (pprint-astring "ifndef " bytes))
                   (bytes (pprint-ident if.name bytes))
                   (bytes (pprint-newline (newline-lf) bytes)))
                bytes))))
