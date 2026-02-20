@@ -201,6 +201,20 @@
 (defun fileset-drop-absolute-paths (fileset)
   (fileset (filemap-drop-absolute-paths (fileset->unwrap fileset))))
 
+(defun ppart-to-tokens (part)
+  (ppart-case
+   part
+   :line (plexemes-without-nontokens part.lexemes)
+   :cond (er hard? 'ppart-to-tokens "Found conditional section ~x0." part)))
+
+(defun ppart-list-to-tokens (parts)
+  (cond ((endp parts) nil)
+        (t (append (ppart-to-tokens (car parts))
+                   (ppart-list-to-tokens (cdr parts))))))
+
+(defun pfile-to-tokens (file)
+  (ppart-list-to-tokens (pfile->parts file)))
+
 (defun compare-ppfiles (original transformed)
   (b* (((when (endp original))
         (if (endp transformed)
@@ -216,9 +230,9 @@
         (cw "Transformed files miss element ~x0." name))
        (ppfile-transformed (cdr name+ppfile))
        (tokens-original
-        (plexemes-without-nontokens (ppfile->lexemes ppfile-original)))
+        (pfile-to-tokens (ppfile->pfile ppfile-original)))
        (tokens-transformed
-        (plexemes-without-nontokens (ppfile->lexemes ppfile-transformed))))
+        (pfile-to-tokens (ppfile->pfile ppfile-transformed))))
     (if (equal tokens-original tokens-transformed)
         t
       (cw "Original tokens ~x0 differ from transformed tokens ~x1."
