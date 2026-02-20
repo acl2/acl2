@@ -194,8 +194,7 @@
      We also have a @(tsee pfile) component,
      which currently is essentially redundant,
      but eventually it will replace @(tsee ppfile) itself."))
-  ((header-guard? ident-option)
-   (pfile pfile))
+  ((pfile pfile))
   :pred ppfilep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -203,7 +202,7 @@
 (defirrelevant irr-ppfile
   :short "An irrelevant preprocessed file."
   :type ppfilep
-  :body (ppfile nil (irr-pfile)))
+  :body (ppfile (irr-pfile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4877,7 +4876,7 @@
                 (b* (((ppfile ppfile) (cdr name+ppfile)))
                   (retok ppfile.pfile
                          nil
-                         ppfile.header-guard?
+                         nil ; ppfile.header-guard?
                          preprocessed
                          state))
               (b* (((erp pfile
@@ -4898,8 +4897,7 @@
                                 ienv
                                 state
                                 (1- limit)))
-                   (ppfile (make-ppfile :header-guard? file-header-guard?
-                                        :pfile pfile))
+                   (ppfile (make-ppfile :pfile pfile))
                    (preprocessed (acons resolved-file ppfile preprocessed)))
                 (retok pfile
                        file-rev-lexemes
@@ -5399,7 +5397,7 @@
           ((erp pfile
                 & ; file-rev-lexemes
                 & ; file-macros
-                file-header-guard?
+                & ; file-header-guard?
                 preprocessed
                 state)
            (pproc-file bytes
@@ -5417,8 +5415,7 @@
           (preprocessed (if (assoc-equal file preprocessed)
                             preprocessed
                           (acons file
-                                 (make-ppfile :header-guard? file-header-guard?
-                                              :pfile pfile)
+                                 (make-ppfile :pfile pfile)
                                  preprocessed))))
        (pproc-files-loop (cdr files)
                          base-dir
