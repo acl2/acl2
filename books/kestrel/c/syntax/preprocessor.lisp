@@ -3880,7 +3880,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines pproc-files/groups/etc
-  :short "Preprocess files, groups, and some related entities."
+  :short "Preprocess files, groups, and related entities."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3942,12 +3942,7 @@
     ". So we could perhaps use a lexicographic measure consisting of
      the number of recursive files remaining
      followed by the size of the preprocessing state.
-     We plan to flesh out the termination proof at some point.")
-   (xdoc::p
-    "Some of the functions also take as input
-     indicating the level of nesting of conditionals.
-     It is 0 at the top level,
-     and it is incremented by 1 when entering an @('if-section')."))
+     We plan to flesh out the termination proof at some point."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3955,10 +3950,10 @@
                       (file stringp)
                       (base-dir stringp)
                       (include-dirs string-listp)
-                      (options ppoptionsp)
                       (preprocessed string-pfile-alistp)
                       (preprocessing string-listp)
                       (macros macro-tablep)
+                      (options ppoptionsp)
                       (ienv ienvp)
                       state
                       (limit natp))
@@ -4619,10 +4614,10 @@
                       resolved-file
                       base-dir
                       include-dirs
-                      options
                       preprocessed
                       preprocessing
                       (ppstate->macros ppstate)
+                      options
                       ienv
                       state
                       (1- limit)))
@@ -4653,11 +4648,11 @@
                                 resolved-file
                                 base-dir
                                 include-dirs
-                                (change-ppoptions options
-                                                  :no-errors/warnings t)
                                 preprocessed
                                 preprocessing
                                 (macro-init (ienv->version ienv))
+                                (change-ppoptions options
+                                                  :no-errors/warnings t)
                                 ienv
                                 state
                                 (1- limit)))
@@ -5133,10 +5128,10 @@
                        (car files)
                        base-dir
                        include-dirs
-                       options
                        preprocessed
                        preprocessing
                        (macro-init (ienv->version ienv))
+                       options
                        ienv
                        state
                        recursion-limit))
