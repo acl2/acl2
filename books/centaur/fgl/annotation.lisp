@@ -115,6 +115,20 @@ find the nesting depth to use for the tracing:</p>
              (< maybe-index (interp-st-full-scratch-len interp-st)))
     :rule-classes :linear))
 
+(define interp-st-debug-stack ((count natp) (n natp) interp-st)
+  :guard (<= n (interp-st-full-scratch-len interp-st))
+  :measure (nfix count)
+  :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
+                                           stack$a-nth-scratch)))
+  (if (or (zp count)
+          (mbe :logic (zp (- (interp-st-full-scratch-len interp-st) (nfix n)))
+               :exec (eql n (interp-st-full-scratch-len interp-st))))
+      nil
+    (cons (let ((kind (interp-st-nth-scratch-kind n interp-st)))
+            (cons kind (and (eq kind :fnsym)
+                            (interp-st-nth-scratch-fnsym n interp-st))))
+          (interp-st-debug-stack (1- count) (1+ (lnfix n)) interp-st))))
+
 (define interp-st-scan-for-nth-fnsym-occ ((idx natp) (n natp) (fn pseudo-fnsym-p) interp-st)
   :guard (<= idx (interp-st-full-scratch-len interp-st))
   :measure (nfix n)
@@ -188,6 +202,9 @@ find the nesting depth to use for the tracing:</p>
                         (and (natp idx) (natp n) (pseudo-fnsym-p fn)
                              (<= idx (interp-st-full-scratch-len interp-st))))
 
+(fancy-ev-add-primitive interp-st-debug-stack
+                        (and (natp count) (natp n)
+                             (<= n (interp-st-full-scratch-len interp-st))))
 
 (defmacro bind-fn-annotation (varname fn)
   `(fgl-prog2 (bind-var ,varname (syntax-interp (interp-st-fn-annotation ,fn 'interp-st))) t))
