@@ -964,8 +964,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level function of our printer.
+    "This is used for certain chunks of lexemes.
      The reversed list of bytes is initialized to empty,
-     and we call the top-level printing function,
-     reversing the final byte list."))
+     we convert the lexemes to reversed bytes,
+     and we reverse the bytes to the proper order."))
   (rev (pprint-lexeme-list lexemes nil)))
