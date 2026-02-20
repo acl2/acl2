@@ -4624,8 +4624,9 @@
              (ppstate (if (plexeme-list-not-tokenp rev-lexemes-to-add)
                           ppstate
                         (hg-trans-non-ifndef/elif/else/define ppstate)))
-             (ppstate (add-rev-rev-lexemes rev-lexemes-to-add ppstate)))
-          (retok (list (ppart-line (rev rev-lexemes-to-add)))
+             (ppstate (add-rev-rev-lexemes rev-lexemes-to-add ppstate))
+             (rev-lexemes (append nontoknls (rev rev-lexemes-to-add))))
+          (retok (list (ppart-line rev-lexemes))
                  nil ; no group ending
                  ppstate
                  preprocessed
