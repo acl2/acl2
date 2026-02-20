@@ -3667,27 +3667,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define file-header-guard ((ppstate ppstatep))
-  :returns (header-guard? ident-optionp)
-  :short "Extract the header guard of the file from the preprocessor state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called after finishing the preprocessing of the file.
-     We look at the header guard state,
-     which must be a final one (i.e. either @(':eof') or @(':not')),
-     and we extract the name of the header guard if the state is @(':eof'),
-     otherwise there is no header guard and we return @('nil')."))
-  (b* ((hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :eof hg.name
-     :not nil
-     :otherwise (raise "Internal error: non-final header guard state ~x0." hg)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define rebuild-include-directive ((nontoknls-before-hash plexeme-listp)
                                    (nontoknls-after-hash plexeme-listp)
                                    (nontoknls-before-header plexeme-listp)
