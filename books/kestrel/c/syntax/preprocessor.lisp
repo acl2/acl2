@@ -3892,7 +3892,7 @@
     "The functions in the clique have certain common inputs and outputs:")
    (xdoc::ul
     (xdoc::li
-     "All the functions take
+     "All the functions take as input
       the path @('file') of the file being preprocessed,
       along with the base directory @('base-dir')
       and the inclusion directories @('include-dirs').
@@ -3900,6 +3900,11 @@
       come from @(tsee pproc-files) and never change.
       The @('file') path comes from the list @('files') in @(tsee pproc-files),
       as well as from the resolution of @('#include') directives.")
+    (xdoc::li
+     "All the functions return as output
+      a preprocessor file or some components thereof.
+      These are the ASTs resulting from the preprocessing
+      operated by the functions.")
     (xdoc::li
      "All the functions take and return
       the alist @('preprocessed'), which contain (the results of)
