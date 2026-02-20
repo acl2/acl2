@@ -194,8 +194,7 @@
      We also have a @(tsee pfile) component,
      which currently is essentially redundant,
      but eventually it will replace @(tsee ppfile) itself."))
-  ((lexemes plexeme-listp)
-   (header-guard? ident-option)
+  ((header-guard? ident-option)
    (pfile pfile))
   :pred ppfilep)
 
@@ -204,7 +203,7 @@
 (defirrelevant irr-ppfile
   :short "An irrelevant preprocessed file."
   :type ppfilep
-  :body (ppfile nil nil (irr-pfile)))
+  :body (ppfile nil (irr-pfile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4877,7 +4876,7 @@
             (if name+ppfile
                 (b* (((ppfile ppfile) (cdr name+ppfile)))
                   (retok ppfile.pfile
-                         (rev ppfile.lexemes)
+                         nil
                          ppfile.header-guard?
                          preprocessed
                          state))
@@ -4899,8 +4898,7 @@
                                 ienv
                                 state
                                 (1- limit)))
-                   (ppfile (make-ppfile :lexemes (rev file-rev-lexemes)
-                                        :header-guard? file-header-guard?
+                   (ppfile (make-ppfile :header-guard? file-header-guard?
                                         :pfile pfile))
                    (preprocessed (acons resolved-file ppfile preprocessed)))
                 (retok pfile
@@ -5399,7 +5397,7 @@
           ((when erp)
            (reterr (msg "Cannot read file ~x0." path-to-read)))
           ((erp pfile
-                file-rev-lexemes
+                & ; file-rev-lexemes
                 & ; file-macros
                 file-header-guard?
                 preprocessed
@@ -5419,8 +5417,7 @@
           (preprocessed (if (assoc-equal file preprocessed)
                             preprocessed
                           (acons file
-                                 (make-ppfile :lexemes (rev file-rev-lexemes)
-                                              :header-guard? file-header-guard?
+                                 (make-ppfile :header-guard? file-header-guard?
                                               :pfile pfile)
                                  preprocessed))))
        (pproc-files-loop (cdr files)
