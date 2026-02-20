@@ -303,12 +303,6 @@
      "The preprocessor state also contains a header guard state:
       see @(tsee hg-state).")
     (xdoc::li
-     "The preprocessor state also contains a list of the lexemes
-      that are being produced as the output of preprocessing.
-      These are in reverse order, for more efficient extension.
-      These lexemes are split into four chunks,
-      as explained in @(tsee add-rev-lexeme).")
-    (xdoc::li
      "The preprocessor state also contains a flag saying whether
       @('#error') and @('#warning') directives should be ignored,
       i.e. treated as no-ops.
@@ -345,14 +339,6 @@
               :initially ,(macro-table nil nil))
       (hg :type (satisfies hg-statep)
           :initially ,(hg-state-initial))
-      (rev-lexemes1 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes2 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes3 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes4 :type (satisfies plexeme-listp)
-                    :initially nil)
       (options :type (satisfies ppoptionsp)
                :initially ,(irr-ppoptions))
       (ienv :type (satisfies ienvp)
@@ -367,10 +353,6 @@
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
                  (hgp raw-ppstate->hg-p)
-                 (rev-lexemes1p raw-ppstate->rev-lexemes1-p)
-                 (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
-                 (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
-                 (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
                  (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
@@ -384,10 +366,6 @@
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
                  (hg raw-ppstate->hg)
-                 (rev-lexemes1 raw-ppstate->rev-lexemes1)
-                 (rev-lexemes2 raw-ppstate->rev-lexemes2)
-                 (rev-lexemes3 raw-ppstate->rev-lexemes3)
-                 (rev-lexemes4 raw-ppstate->rev-lexemes4)
                  (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
@@ -401,10 +379,6 @@
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
                  (update-hg raw-update-ppstate->hg)
-                 (update-rev-lexemes1 raw-update-ppstate->rev-lexemes1)
-                 (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
-                 (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
-                 (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
                  (update-options raw-update-ppstate->options)
                  (update-ienv raw-update-ppstate->ienv))))
 
@@ -523,30 +497,6 @@
          :exec (raw-ppstate->hg ppstate))
     :inline t)
 
-  (define ppstate->rev-lexemes1 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes1 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes1 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes2 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes2 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes2 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes3 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes3 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes3 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes4 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes4 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes4 ppstate))
-    :inline t)
-
   (define ppstate->options (ppstate)
     :returns (options ppoptionsp)
     (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
@@ -640,38 +590,6 @@
     (mbe :logic (non-exec (raw-update-ppstate->hg (hg-state-fix hg)
                                                   (ppstate-fix ppstate)))
          :exec (raw-update-ppstate->hg hg ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes1 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes1
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes1 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes2 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes2
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes2 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes3 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes3
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes3 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes4 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes4
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
     :inline t)
 
   (define update-ppstate->options ((options ppoptionsp) ppstate)
@@ -860,8 +778,7 @@
      and no lexmarks pending.
      We resize the arrays of characters to the number of bytes,
      which suffices because there are never more characters than bytes.
-     We set the header guard state to be the initial one.
-     We set the list of output reversed lexemes to empty."))
+     We set the header guard state to be the initial one."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -871,10 +788,6 @@
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
        (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
-       (ppstate (update-ppstate->rev-lexemes1 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
        (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
