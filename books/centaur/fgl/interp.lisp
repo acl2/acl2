@@ -5663,6 +5663,7 @@
               (fgl-interp-error
                :msg (fgl-msg "The recursion limit ran out.")))
              (interp-st (interp-st-push-scratch-fgl-obj xobj interp-st))
+             (interp-st (interp-st-push-scratch-fnsym xobj.fn interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
@@ -5672,7 +5673,7 @@
                                          fn-mode.dont-rewrite-under-if-test
                                          (interp-flags->hide (interp-st->flags interp-st)))
                                    interp-st state)))
-             
+             (interp-st (interp-st-pop-scratch interp-st))
              ((mv xobj interp-st) (interp-st-pop-scratch-fgl-obj interp-st))
              ;; ((when err)
              ;;  (mv nil interp-st state))
