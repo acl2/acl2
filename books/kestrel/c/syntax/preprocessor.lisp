@@ -3991,6 +3991,7 @@
       "We create a local preprocessing state stobj from
        the bytes of the file,
        the macro table,
+       the preprocessor options,
        and the implementation environment.
        The preprocessing of this file may involve
        the recursive preprocessing of more files,
@@ -4000,14 +4001,9 @@
        because we are at the top level,
        not inside a conditional directive.
        If there are no errors, we return
-       the lexemes of the file (in reverse order),
-       the macros contributed by the file,
-       and the header guard symbol (if the file has the header guard form).")
-     (xdoc::p
-      "If full expansion is required,
-       we set the header guard state to @(':not'),
-       because for full expansion we do not need
-       to recognize the header guard form."))
+       a preprocessor file AST,
+       and the macro table extended with
+       the macro definitions and undefinitions contributed by the file."))
     (b* (((reterr) (irr-pfile) nil (irr-macro-table) state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
@@ -4093,7 +4089,10 @@
        based on the optional group ending
        returned by @(tsee pproc-?-group-part):
        if it is @('nil'), there was a group part;
-       otherwise, there was no group part, and we pass up the group ending."))
+       otherwise, there was no group part, and we pass up the group ending.")
+     (xdoc::p
+      "If successful, we return a list of zero or more group part ASTs,
+       for the zero or more group parts that we have preprocessed."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil (irr-groupend) nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4141,12 +4140,18 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "If successful, we return a list of zero or one group part AST.")
+     (xdoc::p
       "If we find a group part, we preprocess it,
        and we return @('nil') as the optional group ending,
-       because the group has not ended yet.
+       because the group has not ended yet;
+       we return a singleton list of the group part AST,
+       except in the case of a null directive (described below),
+       for which we return the empty list of group part ASTs.
        If instead we find no group part,
        we return the group ending that we encounter
-       (if we did not encounter a group ending, we would have a group part).")
+       (if we did not encounter a group ending, we would have a group part);
+       we return the empty list of group part ASTs in this case.")
      (xdoc::p
       "We read the next token or new line,
        skipping over white space and comments.")
@@ -4154,18 +4159,19 @@
       "If we find no token or new line, there are two cases.
        If we found some white space or comments, it is an error,
        because non-empty files must end with new lines [C17:5.2.1.2/2].
-       Otherwise, we return the end-of-file group ending,
-       and we update the header guard according to end of file.")
+       Otherwise, we return the end-of-file group ending.")
      (xdoc::p
       "If we find a hash, we have a directive.
        We read the next token or new line.
        If we find none, it is an error,
        beacuse the file cannot end without a new line [C17:5.2.1.2/2].
        If we find a new line, we have a null directive [C17:6.10.7]:
-       we eliminate the line, since it does nothing.
+       we eliminate the line, since it does nothing,
+       by returning the empty list of group part ASTs.
        If we find an identifier, we dispatch based on the identifier:
        for @('#elif'), @('#else'), and @('#endif'),
-       we return the corresponding group ending;
+       we return the corresponding group ending,
+       and no group part ASTs;
        for other directives, we call separate functions.
        If the identifier is not a directive name,
        or if we do not find an identifier,
@@ -4176,22 +4182,14 @@
        We allow the @('#warning') directive
        if the C standard is C23 [C23:6.10.1]
        or the GCC or Clang extensions are enabled;
-       this is handled in a separate function.
-       For @('#elif'), @('#else'), and @('#endif'),
-       we do not udpate the header guard state,
-       because, in a valid file, we would not encounter them
-       as part of preprocessing the top-level list of group parts,
-       but only in the course of
-       recursive preprocessing of lists of group parts;
-       for other directives, any updates to the guard header state
-       are performed in separate functions.")
+       this is handled in a separate function.")
      (xdoc::p
       "If we do not find a hash, we have a text line.
-       We add any preceding white space and comments to the growing lexemes,
-       and we call a separate function to handle the rest of the line,
+       We call a separate function to handle macro replacement,
        after putting the non-hash lexeme back.
        In fact, this may preprocess several lines,
-       if the line breaks occur within macro arguments.")
+       if the line breaks occur within macro arguments.
+       We return a singleton list of group part ASTs.")
      (xdoc::p
       "[C17:6.10.3/5] only allows space and horizontal tab in a directive
        (from just after the @('#') to just before the new line).
@@ -4462,10 +4460,8 @@
        We try to turn those lexemes into a header name,
        and then we use a separate function to preprocess it.")
      (xdoc::p
-      "Since the only ways in which this function does not return an error
-       is by first calling @(tsee pproc-header-name),
-       we do not perform header guard transitions here,
-       but we do in @(tsee pproc-header-name)."))
+      "The list of group part ASTs returned by this
+       is the one returnd by @(tsee pproc-header-name)."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4577,21 +4573,30 @@
       "To see whether we can avoid expanding the @('#include'),
        we re-preprocess the included file in a fresh context,
        unless we have already done that,
-       in which case we use the previous results,
-       which are part of the @('preprocessed') alist;
-       after re-processing the file afresh,
+       in which case we use the previous result,
+       which is part of the @('preprocessed') alist;
+       if we need to re-process the file afresh,
        we add it to the @('preprocessed') alist.")
      (xdoc::p
-      "There are two cases in which we can preserve the @('#include').
-       The normal case is when we obtain identical results
-       when we preprocess the included file in context vs. stand-alone.
-       The special case is when the file has a header guard structure,
-       and the header guard is defined in the context of the including file:
-       see @(see preservable-inclusions).")
+      "We use the approach detailed in @(see preservable-inclusions)
+       to decide whether we can preserve the @('#include'):
+       we compare the result of preprocessing the included file in context
+       with the result of preprocessing it stand-alone;
+       if they are equivalent modulo the current macro context.
+       If the @('#include') can be preserved,
+       we return a singleton list with one group part AST,
+       for the @('#include') directive itself.")
      (xdoc::p
       "However, if the options indicate full expansion,
        we do not re-preprocess the file,
-       and we always expand it in place."))
+       and we always expand it in place.")
+     (xdoc::p
+      "If the included in file is expanded in place
+       (because full expansion is required,
+       or because the @('#include') cannot be preserved),
+       we return the list of group part ASTs that form the file,
+       optionally surrounded by two line comments
+       that mark and delimit the expansion."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4707,9 +4712,19 @@
        is passed to @(tsee pproc-if/ifdef/ifndef-rest),
        which preprocesses the rest of the @('if-section').")
      (xdoc::p
-      "We perform a header guard transition
-       just before preprocessing the rest of the section,
-       just after preprocessing the condition."))
+      "From @(tsee pproc-if/ifdef/ifndef-rest) we obtain
+       the group parts that form body of the @('#if'),
+       the @('#elif') branches,
+       and the optional @('#else') branch.
+       Unless full expansion is required,
+       we reconstruct the conditional section AST
+       from these components and from the @('#if');
+       that is how we preserve the scaffolding of the conditional sections,
+       as discussed in @(see preservable-inclusions).
+       If full expansion is required,
+       we concatenate all the bodies,
+       of which at most one is non-empty,
+       thus in effect eliminating the scaffolding."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4767,16 +4782,8 @@
        the @('ifdef') or @('ifndef') identifier
        of the @('#ifdef') or @('#ifndef').")
      (xdoc::p
-      "Thus, it remains to consume the identifier that follows,
-       which must form the whole of the rest of the line.
-       We look up the identifier in the macro table:
-       if it is defined or not defined
-       (i.e. we find information for it in the table),
-       then the condition evaluates to true or false;
-       otherwise, the condition evaluates to false or true.
-       We pass the result of the condition
-       to @(tsee pproc-if/ifdef/ifndef-rest),
-       which preprocesses the rest of the @('if-section')."))
+      "This function is very similar to @(tsee pproc-if):
+       see that function's documentation."))
     (b* ((ppstate (ppstate-fix ppstate))
          ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
@@ -4847,7 +4854,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after preprocessing
+      "This is called, at the first recursion, after preprocessing
        the first line of an @('if-section'), as defined by the grammar,
        i.e. after preprocessing the directive line with
        the @('#if'), @('#ifdef'), or @('#ifndef').
@@ -4860,7 +4867,10 @@
        we are done preprocessing the part of the @('if-section')
        corresponding to a true condition;
        this is initially @('nil'),
-       but it may become @('t') in recursive calls of this function.")
+       but it may become @('t') in recursive calls of this function.
+       The @('condp') and @('donep') together
+       track which branch of the conditional should be selected;
+       see @(see preservable-inclusions).")
      (xdoc::p
       "The recursive structure of this function
        matches the recursive structure of
@@ -4868,7 +4878,7 @@
      (xdoc::p
       "We preprocess zero or more group parts,
        via @(tsee pproc-*-group-part) or @(tsee pproc-*-group-part-skipped)
-       based on whether this is the code to include or not:
+       based on whether the code is in the selected branch or not;
        if the condition is true,
        and we have not already included the code,
        then we use @(tsee pproc-*-group-part);
@@ -5065,9 +5075,9 @@
   (pproc-files-loop files
                     base-dir
                     include-dirs
-                    options
                     nil ; preprocessed
                     nil ; preprocessing
+                    options
                     ienv
                     state
                     recursion-limit)
@@ -5077,9 +5087,9 @@
   ((define pproc-files-loop ((files string-listp)
                              (base-dir stringp)
                              (include-dirs string-listp)
-                             (options ppoptionsp)
                              (preprocessed string-pfile-alistp)
                              (preprocessing string-listp)
+                             (options ppoptionsp)
                              (ienv ienvp)
                              state
                              (recursion-limit natp))
@@ -5116,9 +5126,9 @@
        (pproc-files-loop (cdr files)
                          base-dir
                          include-dirs
-                         options
                          preprocessed
                          preprocessing
+                         options
                          ienv
                          state
                          recursion-limit))
