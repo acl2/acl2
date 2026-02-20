@@ -34,10 +34,20 @@ displayed without disrupting the REPL.
 - ~acl2_bridge.AsyncClient~ :: Asynchronous bindings
 
 ** Setup
-1. Start ACL2 in a shell
-2. Run ~(ld "demo.lsp")~ in ACL2
-3. Run ~python demo.py~ (or ~python async_demo.py~) in another shell
-4. Use ~^D~ to exit
+1. Make sure the ACL2 Bridge book is certified:
+  `cert.pl $ACL2_SYSTEM_BOOKS/centaur/bridge/top`
+2. Start ACL2 in a shell
+3. Run ~(ld "demo.lsp")~ in ACL2
+4. Run ~python demo.py~ (or ~python async_demo.py~) in another shell
+5. Use ~^D~ to exit
+6. The Bridge server will continue for other clients.  Stop with ~^C~ or run ~python demo.py --stop~ (or ~python async_demo.py --stop~) to have the client send a (BRIDGE::STOP) command to stop the server.
+
+** Manual Stop
+You can also stop the bridge server (or send any s-expression) from the CLI:
+```bash
+sudo apt install netcat-openbsd
+echo -e 'LISP 14\n(bridge::stop)' | nc -U demo-bridge
+```
 
 * Notes
 - See the demo(s) and docstrings for usage.
