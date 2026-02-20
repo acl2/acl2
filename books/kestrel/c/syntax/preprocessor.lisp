@@ -231,7 +231,7 @@
 (define string-pfile-alist-to-filepath-filedata-map
   ((alist string-pfile-alistp))
   :returns (map filepath-filedata-mapp)
-  :short "Turn (1) an alist from string to preprocessed files
+  :short "Turn (1) an alist from string to preprocessor files
           into (2) a map from file paths to file data."
   :long
   (xdoc::topstring
