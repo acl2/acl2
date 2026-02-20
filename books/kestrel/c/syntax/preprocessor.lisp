@@ -3871,15 +3871,7 @@
      then the two conditional sections are considered equivalent.")
    (xdoc::p
     "The motivation for this kind of comparison
-     is to support more "
-    (xdoc::seetopic "preservable-inclusions"
-                    "preservation of @('#include')s")
-    ". Currently files with header guards of a common but specific form
-     are treated specially,
-     but that is just a special case of the comparison
-     realized by this function.
-     We plan to replace that specific header guard handling
-     with the use of this comparison between preprocessor files."))
+     is explained in @(see preservable-inclusions)."))
   (compare-ppart-lists (pfile->parts pfile1)
                        (pfile->parts pfile2)
                        macros
