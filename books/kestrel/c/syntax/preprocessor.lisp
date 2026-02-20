@@ -4043,9 +4043,6 @@
                                             options
                                             ienv
                                             ppstate))
-                     (ppstate (if (ppoptions->full-expansion options)
-                                  (update-ppstate->hg (hg-state-not) ppstate)
-                                ppstate))
                      ((mv erp
                           pparts
                           groupend
