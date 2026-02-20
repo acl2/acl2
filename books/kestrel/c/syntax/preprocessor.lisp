@@ -1577,16 +1577,6 @@
            (info (make-macro-info-object :replist nil))
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
-           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
-                        ppstate
-                      (if (and (hg-state-case (ppstate->hg ppstate) :ifndef)
-                               (equal name
-                                      (hg-state-ifndef->name
-                                       (ppstate->hg ppstate))))
-                          ppstate
-                        (add-rev-lexemes
-                         (rebuild-define-directive-id name lexeme)
-                         ppstate))))
            (ppstate (hg-trans-define name t ppstate))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
@@ -1602,10 +1592,6 @@
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
            (ppstate (hg-trans-define name (not replist) ppstate))
-           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
-                        ppstate
-                      (add-rev-lexemes
-                       (rebuild-define-directive-id name newline) ppstate)))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
@@ -1626,10 +1612,6 @@
            ((erp new-macros) (macro-define name info macros))
            (ppstate (update-ppstate->macros new-macros ppstate))
            (ppstate (hg-trans-define name nil ppstate))
-           (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
-                        ppstate
-                      (add-rev-lexemes
-                       (rebuild-define-directive-id name newline) ppstate)))
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
@@ -1706,10 +1688,6 @@
        ((erp new-macros) (macro-undefine name macros))
        (ppstate (update-ppstate->macros new-macros ppstate))
        (ppstate (hg-trans-non-ifndef/elif/else/define ppstate))
-       (ppstate (if (ppoptions->full-expansion (ppstate->options ppstate))
-                    ppstate
-                  (add-rev-lexemes (rebuild-undef-directive name newline?)
-                                   ppstate)))
        (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                    nil
                  (list (ppart-line (rebuild-undef-directive name newline?))))))
@@ -3720,48 +3698,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expand-include-in-place ((header header-namep)
-                                 (newline-at-end plexemep)
-                                 (rev-included-file-lexemes plexeme-listp)
-                                 (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Expand an included file in place."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when, while preprocessing an including file,
-     we find a @('#include') of a file (the included file)
-     that must be expanded in place.
-     At the core, this just adds the lexemes of the included file
-     to the list of lexemes of the including file.
-     If the option to trace @('#include') expansions is set,
-     we surround the inserted lexemes with two line comments,
-     indicating and delimiting the contents of the included file.")
-   (xdoc::p
-    "With reference to @(tsee pproc-header-name), which calls this function,
-     we ignore all the white space and comments in the @('#include') directive,
-     except for the final new line, which we pass to this function,
-     so we can use it to end the delimiting line comments that we generate.")
-   (xdoc::p
-    "A @('#include') directive takes one or more lines.
-     Conceptually it is just one line,
-     but it could contain block comments that take multiple lines;
-     it is a single line when those block comments are regarded as single spaces
-     [C17:5.1.1.2/3].
-     In any case, it takes a whole number of lines.
-     We replace those lines with the lexemes we generate in this function,
-     which also take a whole number of lines."))
-  (if (ppoptions->trace-expansion (ppstate->options ppstate))
-      (b* (((mv opening-line closing-line)
-            (expanded-include-comment-lines header newline-at-end))
-           (ppstate (add-rev-lexemes opening-line ppstate))
-           (ppstate (add-rev-rev-lexemes rev-included-file-lexemes ppstate))
-           (ppstate (add-rev-lexemes closing-line ppstate)))
-        ppstate)
-    (add-rev-rev-lexemes rev-included-file-lexemes ppstate)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines compare-pparts/conds
   :short "Functions to compare
           preprocessor group parts, and related entities,
@@ -4545,8 +4481,7 @@
                         :expected "an identifier"
                         :found (plexeme-to-msg toknl2))))))
        (t ; non-# -- text line
-        (b* ((ppstate (add-rev-lexemes nontoknls ppstate))
-             (ppstate (unread-lexeme toknl span ppstate))
+        (b* ((ppstate (unread-lexeme toknl span ppstate))
              (preprocessed (string-pfile-alist-fix preprocessed))
              ((erp rev-lexmarks ppstate)
               (pproc-lexemes (macrep-mode-line)
@@ -4564,7 +4499,6 @@
              (ppstate (if (plexeme-list-not-tokenp rev-lexemes-to-add)
                           ppstate
                         (hg-trans-non-ifndef/elif/else/define ppstate)))
-             (ppstate (add-rev-rev-lexemes rev-lexemes-to-add ppstate))
              (lexemes (append nontoknls (rev rev-lexemes-to-add)))
              (lexemes (if (ppoptions->keep-comments
                            (ppstate->options ppstate))
@@ -4791,10 +4725,6 @@
           (b* ((ppstate (update-ppstate->macros
                          (macro-extend file-macros (ppstate->macros ppstate))
                          ppstate))
-               (ppstate (expand-include-in-place header
-                                                 newline-at-end
-                                                 nil ; file-rev-lexemes
-                                                 ppstate))
                (pparts
                 (if (ppoptions->trace-expansion (ppstate->options ppstate))
                     (b* (((mv opening-line closing-line)
@@ -4840,19 +4770,6 @@
          (ppstate (update-ppstate->macros
                    (macro-extend file-macros (ppstate->macros ppstate))
                    ppstate))
-         (ppstate (if preserve-include-p
-                      (add-rev-lexemes
-                       (rebuild-include-directive nontoknls-before-hash
-                                                  nontoknls-after-hash
-                                                  nontoknls-before-header
-                                                  header
-                                                  nontoknls-after-header
-                                                  newline-at-end)
-                       ppstate)
-                    (expand-include-in-place header
-                                             newline-at-end
-                                             nil ; file-rev-lexemes
-                                             ppstate)))
          (pparts (if preserve-include-p
                      (list
                       (ppart-line
