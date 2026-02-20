@@ -182,16 +182,9 @@
     "It may seem strange to handle macro undefinition
      by adding an entry with @('nil') to the dynamic alist,
      instead of just removing the entry from the alist.
-     The reason is to facilitate the handling of
-     @('#include') directives that we do not expand.
-     When one such directive is encountered,
-     although it is not expanded in place,
-     we need to preprocess the rest of the including file
-     as if the included file were expanded,
-     and in particular its @('#define') and @('#undef').
-     Thus, we can simply append the macros contributed by the included file
-     to the front of the (dynamic) alist of the including file:
-     see @(tsee macro-extend).")
+     But this approach makes it faster
+     both to undefine a macro,
+     and to find out if a macro was undefined in a lookup.")
    (xdoc::p
     "The dynamic alist of macros does not necessarily have unique keys.
      This is intentional,
