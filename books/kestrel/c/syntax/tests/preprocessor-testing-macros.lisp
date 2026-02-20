@@ -215,7 +215,7 @@
 (defun pfile-to-tokens (file)
   (ppart-list-to-tokens (pfile->parts file)))
 
-(defun compare-ppfiles (original transformed)
+(defun compare-expanded-pfiles (original transformed)
   (b* (((when (endp original))
         (if (endp transformed)
             t
@@ -224,15 +224,13 @@
        ((when (endp transformed))
         (cw "Transformed files miss elements ~x0."
             (strip-cars original)))
-       ((cons name ppfile-original) (car original))
-       (name+ppfile (assoc-equal name transformed))
-       ((unless name+ppfile)
+       ((cons name pfile-original) (car original))
+       (name+pfile (assoc-equal name transformed))
+       ((unless name+pfile)
         (cw "Transformed files miss element ~x0." name))
-       (ppfile-transformed (cdr name+ppfile))
-       (tokens-original
-        (pfile-to-tokens (ppfile->pfile ppfile-original)))
-       (tokens-transformed
-        (pfile-to-tokens (ppfile->pfile ppfile-transformed))))
+       (pfile-transformed (cdr name+pfile))
+       (tokens-original (pfile-to-tokens pfile-original))
+       (tokens-transformed (pfile-to-tokens pfile-transformed)))
     (if (equal tokens-original tokens-transformed)
         t
       (cw "Original tokens ~x0 differ from transformed tokens ~x1."
@@ -277,19 +275,19 @@
          ((mv erp state) (write-fileset fileset tmp-dir state))
          ((when erp)
           (mv (cw "File set writing fails: ~x0" erp) state))
-         ((mv erp ppfiles-original state)
+         ((mv erp pfiles-original state)
           (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
           (mv (cw "Full-expansion preprocessing of original files fails: ~@0"
                   erp)
               state))
-         ((mv erp ppfiles-transformed state)
+         ((mv erp pfiles-transformed state)
           (pproc-files files tmp-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
           (mv (cw "Full-expansion preprocessing of transformed files fails: ~@0"
                   erp)
               state)))
-      (mv (compare-ppfiles ppfiles-original ppfiles-transformed) state))
+      (mv (compare-expanded-pfiles pfiles-original pfiles-transformed) state))
     state))
