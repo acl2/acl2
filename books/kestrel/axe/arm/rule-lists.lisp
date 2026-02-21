@@ -139,23 +139,38 @@
      arm::register-numberp
      arm::add-to-address
 
-     ;; read-of-write rules:
+     arm::archversion ; exposes the stobj accessor
+     arm::currentinstrset ; exposes the stobj accessor
 
+     ;; Read-of-write rules (some commented-out rules are not currently
+     ;; needed due to our current choice of normal forms):
+
+     ;; acl2::armp-of-update-registersi ; todo: change the package of rules like this
      arm::armp-of-set-reg
+     ;; acl2::armp-of-update-apsr
      arm::armp-of-set-apsr.n
      arm::armp-of-set-apsr.z
      arm::armp-of-set-apsr.c
      arm::armp-of-set-apsr.v
      arm::armp-of-set-apsr.q
+     ;; acl2::armp-of-update-memoryi
+     ;; arm::armp-of-write-byte
      arm::armp-of-write
+     acl2::armp-of-update-arch-version
+     ;; acl2::armp-of-update-error
+     acl2::armp-of-update-endianstate
+     acl2::armp-of-update-itstate
+     acl2::armp-of-update-isetstate
 
      arm::reg-of-set-reg
+     arm::reg-of-update-itstate
      arm::reg-of-update-isetstate
      arm::reg-of-set-apsr.n
      arm::reg-of-set-apsr.z
      arm::reg-of-set-apsr.c
      arm::reg-of-set-apsr.v
      arm::reg-of-set-apsr.q
+     ;; arm::reg-of-write-byte
      arm::reg-of-write
 
      acl2::error-of-update-itstate ; todo: package for these defstobj+ rules
@@ -168,20 +183,30 @@
      arm::error-of-set-apsr.q
      arm::error-of-write
 
-     arm::read-of-set-reg
+     arm::read-of-update-itstate
      arm::read-of-update-isetstate
+     arm::read-of-set-reg
      arm::read-of-set-apsr.n
      arm::read-of-set-apsr.z
      arm::read-of-set-apsr.c
      arm::read-of-set-apsr.v
      arm::read-of-set-apsr.q
 
+     acl2::arch-version-of-update-arch-version
+     acl2::arch-version-of-update-endianstate
+     acl2::arch-version-of-update-itstate
+     acl2::arch-version-of-update-isetstate
+     ;; acl2::arch-version-of-update-error
+     ;; acl2::arch-version-of-update-registersi
      arm::arch-version-of-set-reg
+     ;; acl2::arch-version-of-update-apsr
      arm::arch-version-of-set-apsr.n
      arm::arch-version-of-set-apsr.z
      arm::arch-version-of-set-apsr.c
      arm::arch-version-of-set-apsr.v
      arm::arch-version-of-set-apsr.q
+     ;; arm::arch-version-of-write-byte
+     ;; acl2::arch-version-of-update-memoryi
      arm::arch-version-of-write
 
      arm::isetstate-of-set-reg
@@ -191,8 +216,7 @@
      arm::isetstate-of-set-apsr.c
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
-
-
+     arm::isetstate-of-write
 
      ;;;
 
@@ -232,6 +256,12 @@
      arm::apsr.v-of-set-reg
      arm::apsr.q-of-set-reg
 
+     arm::apsr.n-of-write
+     arm::apsr.z-of-write
+     arm::apsr.c-of-write
+     arm::apsr.v-of-write
+     arm::apsr.q-of-write
+
      ;;;
 
      arm::set-apsr.n-of-set-reg
@@ -257,6 +287,13 @@
      arm::set-apsr.q-of-set-apsr.c
      arm::set-apsr.q-of-set-apsr.v
 
+     arm::set-apsr.n-of-write
+     arm::set-apsr.z-of-write
+     arm::set-apsr.c-of-write
+     arm::set-apsr.v-of-write
+     arm::set-apsr.q-of-write
+
+
      arm::branchto
      arm::pcstorevalue
      arm::loadwritepc
@@ -276,8 +313,6 @@
      arm::!=$inline
      arm::zeros
 
-     arm::archversion
-     arm::currentinstrset
      arm::unalignedsupport ; why?
 
      acl2::bvcount-constant-opener
@@ -288,7 +323,6 @@
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
 
-     arm::isetstate-of-write
      arm::decodeimmshift
      arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
      arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
@@ -322,7 +356,7 @@
      arm::natp-of-read
      arm::unsigned-byte-p-of-read
      arm::read-of-bvchop-32 ; todo: say which arg
-     arm::read-of-+
+     arm::read-of-+ ; needed?
 
      ;; UNCOMMENT:
      ;; bvchop-of-read
@@ -380,7 +414,6 @@
      acl2::unsigned-byte-listp-constant-opener
 
      ;;bv-array-read-shorten-8
-     acl2::bv-array-read-of-bvplus-of-constant-no-wrap
      acl2::not-equal-of-constant-and-bv-term-axe
      acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
@@ -465,7 +498,7 @@
      acl2::boolif-of-nil-and-t
      acl2::not-of-not
 
-     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but nore for giant nests of crypto ops.  so limit the size of the nests?
+     acl2::bvplus-commute-constant ; hope these are ok -- want it for addresses but not for giant nests of crypto ops.  so limit the size of the nests?
      acl2::bvplus-commute-constant2
 
      acl2::equal-of-bvif-safe ; add to core-rules-bv
@@ -493,9 +526,7 @@
      ;; set-reg-does-nothing
      ;; set-reg-of-0 ; setting register 0 has no effect!
 
-     ;; pc-of-set-pc
      ;; set-pc-of-set-pc
-     ;; pc-of-set-reg
      ;; pc-of-write
      ;; write-of-set-reg
 
@@ -510,7 +541,7 @@
      ;; stat32p-of-write
      ;; stat32p-of-set-pc ; uncomment?
 
-     ;; regiseter names (we expand these to REG):
+     ;; register names (we expand these to REG):
 ;     x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
      ;; register aliases:
      ;; zero
