@@ -67,6 +67,7 @@
     dag-size
 
     ensure-rules-known
+    ensure-rules-known-fn
     widen-margins
     unwiden-margins
 
