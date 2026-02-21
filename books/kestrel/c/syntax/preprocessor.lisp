@@ -148,6 +148,16 @@
      and some preserved comments may no longer apply to preprocessed code
      (e.g. comments talking about macros).")
    (xdoc::p
+    "Although phase 3 in [C23:5.2.1.2] requires files to end with new lines,
+     GCC relaxes that requirement "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
+                 "[CPPM:1.2]")
+    ", and so do we, if GCC extensions are enabled,
+     or also if Clang extensions are enabled,
+     since Clang expressly aims at being compatible with GCC when possible.
+     Indeed, running Clang confirms that
+     it allows files not ending with new line.")
+   (xdoc::p
     "Currently some of this preprocessor's code duplicates, at some level,
      some of the code in the @(see parser)
      (including the @(see lexer) and the @(see reader)).
@@ -1148,7 +1158,7 @@
 (define read-macro-object-replist ((name identp) (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
-               (newline plexemep)
+               (newline? plexeme-optionp)
                (new-ppstate ppstatep))
   :short "Read the replacement list of an object-like macro."
   :long
@@ -1163,47 +1173,49 @@
      which are not part of the replacement list [C17:6.10.3/7].
      We ensure that @('##') does not occur
      at the start or end of the replacement list [C17:6.10.3.3/1].
-     We also return the final new line lexeme."))
+     We also return the final new line lexeme, if present."))
   (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) nil (irr-plexeme) ppstate)
-       ((erp replist newline ppstate)
+       ((reterr) nil nil ppstate)
+       ((erp replist newline? ppstate)
         (read-macro-object-replist-loop t ppstate))
        ((when (and (consp replist)
                    (or (plexeme-hashhashp (car replist))
                        (plexeme-hashhashp (car (last replist))))))
         (reterr (msg "The replacement list of ~x0 starts or ends with ##."
                      (ident-fix name)))))
-    (retok replist newline ppstate))
+    (retok replist newline? ppstate))
 
   :prepwork
   ((define read-macro-object-replist-loop ((startp booleanp) (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
-                  (newline plexemep)
+                  (newline? plexeme-optionp)
                   (new-ppstate ppstatep))
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
-          ((reterr) nil (irr-plexeme) ppstate)
+          ((reterr) nil nil ppstate)
           ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
        (cond
         ((not toknl) ; EOF
-         (reterr-msg :where (position-to-msg (span->start span))
-                     :expected "a token or ~
-                                a comment or ~
-                                a new line or ~
-                                other white space"
-                     :found (plexeme-to-msg toknl)))
+         (if (ppstate->gcc/clang ppstate)
+             (retok nil nil ppstate)
+           (reterr-msg :where (position-to-msg (span->start span))
+                       :expected "a token or ~
+                                  a comment or ~
+                                  a new line or ~
+                                  other white space"
+                       :found (plexeme-to-msg toknl))))
         ((plexeme-case toknl :newline) ; EOL
          (retok nil toknl ppstate))
         (t ; token
-         (b* (((erp replist newline ppstate) ; token replist
+         (b* (((erp replist newline? ppstate) ; token replist
                (read-macro-object-replist-loop nil ppstate))
               (replist (cons toknl replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline ppstate)))))
+           (retok replist newline? ppstate)))))
      :no-function nil
      :measure (ppstate->size ppstate)
 
@@ -1221,8 +1233,9 @@
         '(:use plexeme-token/newline-p-of-read-token/newline)))
 
      (defret plexeme-newline-of-read-macro-object-replist-loop
-       (implies (not erp)
-                (equal (plexeme-kind newline) :newline))
+       (implies (and (not erp)
+                     newline?)
+                (equal (plexeme-kind newline?) :newline))
        :hints (("Goal" :induct t)))))
 
   ///
@@ -1231,8 +1244,9 @@
     (plexeme-list-token/space-p replist))
 
   (defret plexeme-newline-of-read-macro-object-replist
-    (implies (not erp)
-             (equal (plexeme-kind newline) :newline))))
+    (implies (and (not erp)
+                  newline?)
+             (equal (plexeme-kind newline?) :newline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1242,7 +1256,7 @@
                                      (ppstate ppstatep))
   :returns (mv erp
                (replist plexeme-listp)
-               (newline plexemep)
+               (newline? plexeme-optionp)
                (hash-params ident-listp)
                (new-ppstate ppstatep))
   :short "Read the replacement list of a function-like macro."
@@ -1278,7 +1292,7 @@
     "We also ensure that @('__VA_ARGS__') occurs in the replacement list
      only if the macro has ellipsis.")
    (xdoc::p
-    "We also return the final new line lexeme."))
+    "We also return the final new line lexeme, if present."))
   (read-macro-function-replist-loop name nil params ellipsis ppstate)
 
   :prepwork
@@ -1289,21 +1303,33 @@
                                              (ppstate ppstatep))
      :returns (mv erp
                   (replist plexeme-listp)
-                  (newline plexemep)
+                  (newline? plexeme-optionp)
                   (hash-params ident-listp)
                   (new-ppstate ppstatep))
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
-          ((reterr) nil (irr-plexeme) nil ppstate)
+          ((reterr) nil nil nil ppstate)
           ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
        (cond
         ((not toknl) ; EOF
-         (reterr-msg :where (position-to-msg (span->start span))
-                     :expected "a token or ~
-                                a comment or ~
-                                a new line or ~
-                                other white space"
-                     :found (plexeme-to-msg toknl)))
+         (if (ppstate->gcc/clang ppstate)
+             (b* (((when (and previous
+                              (plexeme-hashp previous))) ; # EOF
+                   (reterr (msg "The replacement list of ~x0 ~
+                                 must not end with #."
+                                (ident-fix name))))
+                  ((when (and previous
+                              (plexeme-hashhashp previous))) ; ## EOF
+                   (reterr (msg "The replacement list of ~x0 ~
+                                 must not end with ##."
+                                (ident-fix name)))))
+               (retok nil nil nil ppstate))
+           (reterr-msg :where (position-to-msg (span->start span))
+                       :expected "a token or ~
+                                  a comment or ~
+                                  a new line or ~
+                                  other white space"
+                       :found (plexeme-to-msg toknl))))
         ((plexeme-case toknl :newline) ; EOL
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # EOL
@@ -1332,7 +1358,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist newline hash-params ppstate)
+              ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1349,7 +1375,7 @@
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline hash-params ppstate)))
+           (retok replist newline? hash-params ppstate)))
         ((plexeme-hashhashp toknl) ; ##
          (b* (((when (not previous)) ; nothing ##
                (reterr
@@ -1361,7 +1387,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist newline hash-params ppstate)
+              ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1380,7 +1406,7 @@
               (replist (if nontoknls
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline hash-params ppstate)))
+           (retok replist newline? hash-params ppstate)))
         (t ; other token
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # token
@@ -1388,7 +1414,7 @@
                              must not contain a # ~
                              not immediately followed by a parameter."
                             (ident-fix name))))
-              ((erp replist newline hash-params ppstate)
+              ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
                                                  toknl
                                                  params
@@ -1398,7 +1424,7 @@
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline hash-params ppstate)))))
+           (retok replist newline? hash-params ppstate)))))
      :no-function nil
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
@@ -1418,8 +1444,9 @@
         '(:use plexeme-token/newline-p-of-read-token/newline)))
 
      (defret plexeme-newline-of-read-macro-function-replist-loop
-       (implies (not erp)
-                (equal (plexeme-kind newline) :newline))
+       (implies (and (not erp)
+                     newline?)
+                (equal (plexeme-kind newline?) :newline))
        :hints (("Goal" :induct t)))
 
      (defret read-macro-function-replist-loop-subsetp-when-ellipsis
@@ -1441,8 +1468,9 @@
     (plexeme-list-token/space-p replist))
 
   (defret plexeme-newline-of-read-macro-function-replist
-    (implies (not erp)
-             (equal (plexeme-kind newline) :newline)))
+    (implies (and (not erp)
+                  newline?)
+             (equal (plexeme-kind newline?) :newline)))
 
   (defret read-macro-replist-subsetp-when-ellipsis
     (subsetp-equal hash-params
@@ -1459,7 +1487,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rebuild-define-directive-id ((name identp) (newline-at-end plexemep))
+(define rebuild-define-directive-id ((name identp)
+                                     (newline-at-end? plexeme-optionp))
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#define') directive from its name,
           defining it as an identity."
@@ -1468,13 +1497,13 @@
    (xdoc::p
     "The rationale for this identity definition
      is explained in @(see preservable-inclusions)."))
-  (list (plexeme-punctuator "#")
-        (plexeme-ident (ident "define"))
-        (plexeme-spaces 1)
-        (plexeme-ident name)
-        (plexeme-spaces 1)
-        (plexeme-ident name)
-        (plexeme-fix newline-at-end)))
+  `(,(plexeme-punctuator "#")
+    ,(plexeme-ident (ident "define"))
+    ,(plexeme-spaces 1)
+    ,(plexeme-ident name)
+    ,(plexeme-spaces 1)
+    ,(plexeme-ident name)
+    ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1566,8 +1595,10 @@
                      (ident->unwrap name))))
        ((erp lexeme lexeme-span ppstate) (read-lexeme nil ppstate)))
     (cond
-     ((and lexeme
-           (plexeme-case lexeme :newline)) ; # define name EOL
+     ((or (and lexeme
+               (plexeme-case lexeme :newline)) ; # define name EOL
+          (and (not lexeme) ; # define name EOF
+               (ppstate->gcc/clang ppstate)))
       (b* ((macros (ppstate->macros ppstate))
            (info (make-macro-info-object :replist nil))
            ((erp new-macros) (macro-define name info macros))
@@ -1624,14 +1655,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rebuild-undef-directive ((name identp) (newline-at-end plexemep))
+(define rebuild-undef-directive ((name identp)
+                                 (newline-at-end? plexeme-optionp))
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#undef') directive from its name."
-  (list (plexeme-punctuator "#")
-        (plexeme-ident (ident "undef"))
-        (plexeme-spaces 1)
-        (plexeme-ident name)
-        (plexeme-fix newline-at-end)))
+  `(,(plexeme-punctuator "#")
+    ,(plexeme-ident (ident "undef"))
+    ,(plexeme-spaces 1)
+    ,(plexeme-ident name)
+    ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1671,8 +1703,10 @@
        ((when (equal name (ident "defined")))
         (reterr (msg "Cannot undefine macro with name 'defined'.")))
        ((erp & newline? newline?-span ppstate) (read-token/newline ppstate))
-       ((unless (and newline?
-                     (plexeme-case newline? :newline))) ; # undef name EOL
+       ((unless (or (and newline?
+                         (plexeme-case newline? :newline)) ; # undef name EOL
+                    (and (not newline?) ; # undef name EOF
+                         (ppstate->gcc/clang ppstate))))
         (reterr-msg :where (position-to-msg (span->start newline?-span))
                     :expected "a new line"
                     :found (plexeme-to-msg newline?)))
@@ -2545,9 +2579,21 @@
          ((erp lexmark ppstate) (read-lexmark ppstate)))
       (cond
        ((not lexmark) ; EOF
-        (reterr-msg :where (position-to-msg (ppstate->position ppstate))
-                    :expected "a lexmark"
-                    :found "end of file"))
+        (if (ppstate->gcc/clang ppstate)
+            (case (macrep-mode-kind mode)
+              ((:line :expr)
+               (retok (lexmark-list-fix rev-lexmarks) ppstate))
+              ((:arg-nonlast :arg-last :arg-dots)
+               (if directivep
+                   (reterr-msg :where (position-to-msg
+                                       (ppstate->position ppstate))
+                               :expected "the completion of a macro call"
+                               :found "end of line (which ends the directive)")
+                 (retok (lexmark-list-fix rev-lexmarks) ppstate)))
+              (t (prog2$ (impossible) (reterr :impossible))))
+          (reterr-msg :where (position-to-msg (ppstate->position ppstate))
+                      :expected "a lexmark"
+                      :found "end of file")))
        ((lexmark-case lexmark :start) ; start(M)
         (b* ((name (lexmark-start->macro lexmark))
              (disabled (cons name (ident-list-fix disabled))))
@@ -3011,11 +3057,14 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
        ((erp lexeme span ppstate) (read-lexeme nil ppstate))
-       ((unless lexeme)
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a lexeme"
-                    :found "end of file"))
-       ((when (plexeme-case lexeme :newline)) (retok ppstate)))
+       ((when (not lexeme))
+        (if (ppstate->gcc/clang ppstate)
+            (retok ppstate)
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "a lexeme"
+                      :found "end of file")))
+       ((when (plexeme-case lexeme :newline))
+        (retok ppstate)))
     (skip-to-end-of-line ppstate))
   :no-function nil
   :measure (ppstate->size ppstate)
@@ -3025,13 +3074,6 @@
   (defret ppstate->size-of-skip-to-end-of-line-uncond
     (<= (ppstate->size new-ppstate)
         (ppstate->size ppstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t)))
-
-  (defret ppstate->size-of-skip-to-end-of-line-cond
-    (implies (not erp)
-             (<= (ppstate->size new-ppstate)
-                 (1- (ppstate->size ppstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
 
@@ -3123,19 +3165,22 @@
          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
       (cond
        ((not toknl) ; EOF
-        (if nontoknls
-            (reterr-msg :where (position-to-msg (span->start span))
-                        :expected "new line"
-                        :found (plexeme-to-msg toknl))
-          (retok (groupend-eof) ppstate)))
+        (if (or (ppstate->gcc/clang ppstate)
+                (not nontoknls))
+            (retok (groupend-eof) ppstate)
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "new line"
+                      :found (plexeme-to-msg toknl))))
        ((plexeme-hashp toknl) ; #
         (b* (((erp & toknl2 span2 ppstate) (read-token/newline ppstate)))
           (cond
            ((not toknl2) ; # EOF
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "a token or new line"
-                        :found (plexeme-to-msg toknl2)))
-           ((plexeme-case toknl2 :newline) ; # EOF -- null directive
+            (if (ppstate->gcc/clang ppstate)
+                (retok (groupend-eof) ppstate)
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a token or new line"
+                          :found (plexeme-to-msg toknl2))))
+           ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ppstate))
            ((plexeme-case toknl2 :ident) ; # ident
             (b* ((directive (ident->unwrap (plexeme-ident->ident toknl2))))
@@ -3370,11 +3415,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define indirect-header-name ((lexemes plexeme-listp))
+(define indirect-header-name ((lexemes plexeme-listp) (ppstate ppstatep))
   :returns (mv erp
                (header header-namep)
                (wsc-after plexeme-listp)
-               (newline plexemep))
+               (newline? plexeme-optionp))
   :short "Obtain a header name from a list of lexemes, if possible."
   :long
   (xdoc::topstring
@@ -3419,7 +3464,7 @@
    (xdoc::p
     "In all other cases, we return an error.
      We will extend our approach, if needed."))
-  (b* (((reterr) (irr-header-name) nil (irr-plexeme))
+  (b* (((reterr) (irr-header-name) nil nil)
        ((when (endp lexemes))
         (raise "Internal error: no lexemes.")
         (reterr t))
@@ -3436,44 +3481,72 @@
              ((unless (plexeme-list-not-tokenp lexemes-rest))
               (reterr (msg "Extra tokens in ~x0 after header name."
                            lexemes-rest)))
-             ((unless (consp lexemes-rest))
-              (raise "Internal error: ~
-                      indirect #include line does not end with new line.")
-              (reterr t))
              (lexemes-rest (plexeme-list-fix lexemes-rest))
-             (wsc-after (butlast lexemes-rest 1))
-             (newline (car (last lexemes-rest)))
-             ((unless (plexeme-case newline :newline))
-              (raise "Internal error: ~
-                      indirect #include line does not end with new line.")
-              (reterr t)))
-          (retok header wsc-after newline)))
+             ((mv wsc-after newline?)
+              (b* (((when (endp lexemes-rest))
+                    (if (ppstate->gcc/clang ppstate)
+                        (mv nil nil)
+                      (prog2$
+                       (raise "Internal error: ~
+                               indirect #include line ~
+                               does not end with new line, ~
+                               but GCC or Clang extensions are not enabled.")
+                       (mv nil nil))))
+                   (last-lexeme (car (last lexemes-rest))))
+                (if (plexeme-case last-lexeme :newline)
+                    (mv (butlast lexemes-rest 1) last-lexeme)
+                  (if (ppstate->gcc/clang ppstate)
+                      (mv lexemes-rest nil)
+                    (prog2$
+                     (raise "Internal error: ~
+                             indirect #include line ~
+                             does not end with new line, ~
+                             but GCC or Clang extensions are not enabled.")
+                     (mv nil nil)))))))
+          (retok header wsc-after newline?)))
        ((when (plexeme-punctuatorp lexeme "<"))
         (b* (((erp lexemes-before lexemes-after)
               (find-closing-angle-bracket (cdr lexemes)))
              (schars (stringize-lexeme-list lexemes-before))
              ((erp hchars) (s-char-list-to-h-char-list schars))
              (header (header-name-angles hchars))
+             (lexemes-rest lexemes-after)
              ((unless (plexeme-list-not-tokenp lexemes-after))
               (reterr (msg "Extra tokens in ~x0 after header name."
                            lexemes-after)))
-             ((unless (consp lexemes-after))
-              (raise "Internal error: ~
-                      indirect #include line does not end with new line.")
-              (reterr t))
-             (lexemes-after (plexeme-list-fix lexemes-after))
-             (wsc-after (butlast lexemes-after 1))
-             (newline (car (last lexemes-after)))
-             ((unless (plexeme-case newline :newline))
-              (raise "Internal error: ~
-                      indirect #include line does not end with new line.")
-              (reterr t)))
-          (retok header wsc-after newline))))
+             (lexemes-rest (plexeme-list-fix lexemes-rest))
+             ((mv wsc-after newline?)
+              (b* (((when (endp lexemes-rest))
+                    (if (ppstate->gcc/clang ppstate)
+                        (mv nil nil)
+                      (prog2$
+                       (raise "Internal error: ~
+                               indirect #include line ~
+                               does not end with new line, ~
+                               but GCC or Clang extensions are not enabled.")
+                       (mv nil nil))))
+                   (last-lexeme (car (last lexemes-rest))))
+                (if (plexeme-case last-lexeme :newline)
+                    (mv (butlast lexemes-rest 1) last-lexeme)
+                  (if (ppstate->gcc/clang ppstate)
+                      (mv lexemes-rest nil)
+                    (prog2$
+                     (raise "Internal error: ~
+                             indirect #include line ~
+                             does not end with new line, ~
+                             but GCC or Clang extensions are not enabled.")
+                     (mv nil nil)))))))
+          (retok header wsc-after newline?))))
     (reterr (msg "Cannot convert ~x0 to a header name."
                  (plexeme-list-fix lexemes))))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp)))
-  :hooks nil)
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-plexeme-listp
+                                           listp)))
+  :hooks nil
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (true-listp x)
+              (iff (consp x) x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3490,9 +3563,11 @@
        ((reterr) nil ppstate)
        ((erp lexeme span ppstate) (read-lexeme nil ppstate))
        ((when (not lexeme)) ; EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a lexeme"
-                    :found "end of file"))
+        (if (ppstate->gcc/clang ppstate)
+            (retok nil ppstate)
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "a lexeme"
+                      :found "end of file")))
        ((when (plexeme-case lexeme :newline)) ; EOL
         (retok (list lexeme) ppstate))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
@@ -3582,26 +3657,26 @@
                                    (nontoknls-before-header plexeme-listp)
                                    (header header-namep)
                                    (nontoknls-after-header plexeme-listp)
-                                   (newline-at-end plexemep))
+                                   (newline-at-end? plexeme-optionp))
   :returns (lexemes plexeme-listp)
   :short "Rebuild a @('#include') directive from its components."
   :long
   (xdoc::topstring
    (xdoc::p
     "We return the directive as a list of lexemes."))
-  (append (plexeme-list-fix nontoknls-before-hash)
-          (list (plexeme-punctuator "#"))
-          (plexeme-list-fix nontoknls-after-hash)
-          (list (plexeme-ident (ident "include")))
-          (plexeme-list-fix nontoknls-before-header)
-          (list (plexeme-header header))
-          (plexeme-list-fix nontoknls-after-header)
-          (list (plexeme-fix newline-at-end))))
+  `(,@(plexeme-list-fix nontoknls-before-hash)
+    ,(plexeme-punctuator "#")
+    ,@(plexeme-list-fix nontoknls-after-hash)
+    ,(plexeme-ident (ident "include"))
+    ,@(plexeme-list-fix nontoknls-before-header)
+    ,(plexeme-header header)
+    ,@(plexeme-list-fix nontoknls-after-header)
+    ,@(and newline-at-end? (list (plexeme-option-fix newline-at-end?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expanded-include-comment-lines ((header header-namep)
-                                        (newline-at-end plexemep))
+                                        (newline-at-end? plexeme-optionp))
   :returns (mv (opening-line plexeme-listp)
                (closing-line plexeme-listp))
   :short "Opening and closing comment lines for expanded @('#include')s."
@@ -3611,7 +3686,9 @@
     "This is used when tracing the expansion of @('#include') directives.
      The expanded material is surrounded by
      an opening comment line and a closing comment line."))
-  (b* ((header-codes (header-name-case
+  (b* ((newline-at-end (or (plexeme-option-fix newline-at-end?)
+                           (plexeme-newline (newline-lf))))
+       (header-codes (header-name-case
                       header
                       :angles (append (list (char-code #\<))
                                       (h-char-list->code-list header.chars)
@@ -4213,24 +4290,31 @@
          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
       (cond
        ((not toknl) ; EOF
-        (if nontoknls
-            (reterr-msg :where (position-to-msg (span->start span))
-                        :expected "new line"
-                        :found (plexeme-to-msg toknl))
-          (retok nil ; no group parts
-                 (groupend-eof)
-                 (string-pfile-alist-fix preprocessed)
-                 ppstate
-                 state)))
+        (if (or (ppstate->gcc/clang ppstate)
+                (not nontoknls))
+            (retok nil ; no group parts
+                   (groupend-eof)
+                   (string-pfile-alist-fix preprocessed)
+                   ppstate
+                   state)
+          (reterr-msg :where (position-to-msg (span->start span))
+                      :expected "new line"
+                      :found (plexeme-to-msg toknl))))
        ((plexeme-hashp toknl) ; #
         (b* ((nontoknls-before-hash nontoknls)
              ((erp nontoknls-after-hash toknl2 span2 ppstate)
               (read-token/newline ppstate)))
           (cond
-           ((not toknl2) ; # EOF
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "a token or new line"
-                        :found (plexeme-to-msg toknl2)))
+           ((not toknl2) ; # EOF -- null directive with GCC/Clang extensions
+            (if (ppstate->gcc/clang ppstate)
+                (retok nil ; no group parts
+                       nil ; no group ending
+                       (string-pfile-alist-fix preprocessed)
+                       ppstate
+                       state)
+              (reterr-msg :where (position-to-msg (span->start span2))
+                          :expected "a token or new line"
+                          :found (plexeme-to-msg toknl2))))
            ((plexeme-case toknl2 :newline) ; # EOL -- null directive
             (retok nil ; no group parts
                    nil ; no group ending
@@ -4479,8 +4563,10 @@
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (read-token/newline ppstate))
-             ((unless (and toknl2 ; # include headername EOL
-                           (plexeme-case toknl2 :newline)))
+             ((unless (or (and (not toknl2)
+                               (ppstate->gcc/clang ppstate))
+                          (and toknl2 ; # include headername EOL
+                               (plexeme-case toknl2 :newline))))
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
@@ -4490,7 +4576,7 @@
                                  nontoknls-before-header
                                  (plexeme-header->name toknl)
                                  nontoknls-after-header
-                                 toknl2 ; new line
+                                 toknl2 ; new line or NIL
                                  file
                                  base-dir
                                  include-dirs
@@ -4519,15 +4605,15 @@
               (raise "Internal error: ~x0 contains markers." lexmarks)
               (reterr t))
              (header-name-lexemes (lexmark-list-to-lexeme-list lexmarks))
-             ((erp header nontoknls-after-header newline)
-              (indirect-header-name header-name-lexemes))
+             ((erp header nontoknls-after-header newline?)
+              (indirect-header-name header-name-lexemes ppstate))
              ((erp pparts preprocessed ppstate state)
               (pproc-header-name nontoknls-before-hash
                                  nontoknls-after-hash
                                  nontoknls-before-header
                                  header
                                  nontoknls-after-header
-                                 newline
+                                 newline?
                                  file
                                  base-dir
                                  include-dirs
@@ -4547,7 +4633,7 @@
                              (nontoknls-before-header plexeme-listp)
                              (header header-namep)
                              (nontoknls-after-header plexeme-listp)
-                             (newline-at-end plexemep)
+                             (newline-at-end? plexeme-optionp)
                              (file stringp)
                              (base-dir stringp)
                              (include-dirs string-listp)
@@ -4625,7 +4711,7 @@
                 (if (ppoptions->trace-expansion (ppstate->options ppstate))
                     (b* (((mv opening-line closing-line)
                           (expanded-include-comment-lines header
-                                                          newline-at-end)))
+                                                          newline-at-end?)))
                       (append (list (ppart-line opening-line))
                               (pfile->parts pfile)
                               (list (ppart-line closing-line))))
@@ -4668,11 +4754,11 @@
                                                   nontoknls-before-header
                                                   header
                                                   nontoknls-after-header
-                                                  newline-at-end)))
+                                                  newline-at-end?)))
                    (if (ppoptions->trace-expansion (ppstate->options ppstate))
                        (b* (((mv opening-line closing-line)
                              (expanded-include-comment-lines header
-                                                             newline-at-end)))
+                                                             newline-at-end?)))
                          (append (list (ppart-line opening-line))
                                  (pfile->parts pfile)
                                  (list (ppart-line closing-line))))
@@ -4983,8 +5069,10 @@
                                         (:elif "a #elif")
                                         (:else "a #else"))))
                   ((erp & toknl span ppstate) (read-token/newline ppstate))
-                  ((unless (and toknl ; #endif EOL
-                                (plexeme-case toknl :newline)))
+                  ((unless (or (and (not toknl) ; #endif EOF
+                                    (ppstate->gcc/clang ppstate))
+                               (and toknl ; #endif EOL
+                                    (plexeme-case toknl :newline))))
                    (reterr-msg :where (position-to-msg (span->start span))
                                :expected "a new line"
                                :found (plexeme-to-msg toknl))))
@@ -4995,8 +5083,10 @@
                       ppstate
                       state))
        :endif (b* (((erp & toknl span ppstate) (read-token/newline ppstate))
-                   ((unless (and toknl ; #endif EOL
-                                 (plexeme-case toknl :newline)))
+                   ((unless (or (and (not toknl) ; #endif EOF
+                                     (ppstate->gcc/clang ppstate))
+                                (and toknl ; #endif EOL
+                                     (plexeme-case toknl :newline))))
                     (reterr-msg :where (position-to-msg (span->start span))
                                 :expected "a new line"
                                 :found (plexeme-to-msg toknl))))
@@ -5020,6 +5110,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :guard-debug t ; TODO: remove
 
   :guard-hints
   (("Goal" :in-theory (enable alistp-when-string-pfile-alistp-rewrite
