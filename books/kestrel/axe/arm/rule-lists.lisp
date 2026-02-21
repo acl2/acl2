@@ -51,11 +51,10 @@
     run-until-return-aux-opener-axe
     run-until-return-or-reach-pc-aux-opener-axe
     ;;run-until-sp-is-above-opener
-    read-when-equal-of-read-bytes-and-subregion32p
-    read-when-equal-of-read-bytes-and-subregion32p-alt
-    read-when-equal-of-read-bytes
-    read-when-equal-of-read-bytes-alt
-    ))
+    arm::read-when-equal-of-read-bytes-and-subregion32p
+    arm::read-when-equal-of-read-bytes-and-subregion32p-alt
+    arm::read-when-equal-of-read-bytes
+    arm::read-when-equal-of-read-bytes-alt))
 
 ;; ;; sophisticated scheme for removing inner, shadowed writes
 ;; (defund shadowed-write-rules32 ()

@@ -78,6 +78,11 @@
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
+(ensure-rules-known (lifter-rules32))
+(ensure-rules-known (symbolic-execution-rules32))
+(ensure-rules-known (symbolic-execution-rules-with-stop-pcs32))
+(ensure-rules-known (debug-rules32))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The presence of any of these function in the term/DAG indicates that the
