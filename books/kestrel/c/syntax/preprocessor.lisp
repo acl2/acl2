@@ -1194,28 +1194,26 @@
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
           ((reterr) nil nil ppstate)
-          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
+          ((erp nontoknls toknl? span ppstate) (read-token/newline ppstate)))
        (cond
-        ((not toknl) ; EOF
-         (if (ppstate->gcc/clang ppstate)
-             (retok nil nil ppstate)
-           (reterr-msg :where (position-to-msg (span->start span))
-                       :expected "a token or ~
-                                  a comment or ~
-                                  a new line or ~
-                                  other white space"
-                       :found (plexeme-to-msg toknl))))
-        ((plexeme-case toknl :newline) ; EOL
-         (retok nil toknl ppstate))
-        (t ; token
+        ((plexeme?-endlinep toknl? (ppstate->gcc/clang ppstate)) ; EOL
+         (retok nil toknl? ppstate))
+        ((and toknl? (plexeme-tokenp toknl?)) ; token
          (b* (((erp replist newline? ppstate) ; token replist
                (read-macro-object-replist-loop nil ppstate))
-              (replist (cons toknl replist))
+              (replist (cons toknl? replist))
               (replist (if (and nontoknls
                                 (not startp))
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline? ppstate)))))
+           (retok replist newline? ppstate)))
+        (t ; EOF without GCC/Clang extensions
+         (reterr-msg :where (position-to-msg (span->start span))
+                     :expected "a token or ~
+                                a comment or ~
+                                a new line or ~
+                                other white space"
+                     :found (plexeme-to-msg toknl?)))))
      :no-function nil
      :measure (ppstate->size ppstate)
 
@@ -1236,7 +1234,9 @@
        (implies (and (not erp)
                      newline?)
                 (equal (plexeme-kind newline?) :newline))
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable plexeme?-endlinep))))))
 
   ///
 
@@ -1309,28 +1309,9 @@
      :parents nil
      (b* ((ppstate (ppstate-fix ppstate))
           ((reterr) nil nil nil ppstate)
-          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
+          ((erp nontoknls toknl? span ppstate) (read-token/newline ppstate)))
        (cond
-        ((not toknl) ; EOF
-         (if (ppstate->gcc/clang ppstate)
-             (b* (((when (and previous
-                              (plexeme-hashp previous))) ; # EOF
-                   (reterr (msg "The replacement list of ~x0 ~
-                                 must not end with #."
-                                (ident-fix name))))
-                  ((when (and previous
-                              (plexeme-hashhashp previous))) ; ## EOF
-                   (reterr (msg "The replacement list of ~x0 ~
-                                 must not end with ##."
-                                (ident-fix name)))))
-               (retok nil nil nil ppstate))
-           (reterr-msg :where (position-to-msg (span->start span))
-                       :expected "a token or ~
-                                  a comment or ~
-                                  a new line or ~
-                                  other white space"
-                       :found (plexeme-to-msg toknl))))
-        ((plexeme-case toknl :newline) ; EOL
+        ((plexeme?-endlinep toknl? (ppstate->gcc/clang ppstate))
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # EOL
                (reterr (msg "The replacement list of ~x0 must not end with #."
@@ -1339,9 +1320,9 @@
                           (plexeme-hashhashp previous))) ; ## EOL
                (reterr (msg "The replacement list of ~x0 must not end with ##."
                             (ident-fix name)))))
-           (retok nil toknl nil ppstate)))
-        ((plexeme-case toknl :ident) ; ident
-         (b* ((ident (plexeme-ident->ident toknl))
+           (retok nil toknl? nil ppstate)))
+        ((and toknl? (plexeme-case toknl? :ident)) ; ident
+         (b* ((ident (plexeme-ident->ident toknl?))
               ((when (and (equal ident (ident "__VA_ARGS__"))
                           (not ellipsis)))
                (reterr (msg "The replacement list of ~x0 ~
@@ -1360,7 +1341,7 @@
                             (ident-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
-                                                 toknl
+                                                 toknl?
                                                  params
                                                  ellipsis
                                                  ppstate))
@@ -1371,12 +1352,12 @@
                                  paramp)))
                    (add-to-set-equal ident hash-params)
                  hash-params))
-              (replist (cons toknl replist))
+              (replist (cons toknl? replist))
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
            (retok replist newline? hash-params ppstate)))
-        ((plexeme-hashhashp toknl) ; ##
+        ((and toknl? (plexeme-hashhashp toknl?)) ; ##
          (b* (((when (not previous)) ; nothing ##
                (reterr
                 (msg "The replacement list of ~x0 must not start with ##."
@@ -1389,7 +1370,7 @@
                             (ident-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
-                                                 toknl
+                                                 toknl?
                                                  params
                                                  ellipsis
                                                  ppstate))
@@ -1402,12 +1383,12 @@
                          (add-to-set-equal ident hash-params)
                        hash-params))
                  hash-params))
-              (replist (cons toknl replist))
+              (replist (cons toknl? replist))
               (replist (if nontoknls
                            (cons (plexeme-spaces 1) replist)
                          replist)))
            (retok replist newline? hash-params ppstate)))
-        (t ; other token
+        (toknl? ; other token
          (b* (((when (and previous
                           (plexeme-hashp previous))) ; # token
                (reterr (msg "The replacement list of ~x0 ~
@@ -1416,15 +1397,22 @@
                             (ident-fix name))))
               ((erp replist newline? hash-params ppstate)
                (read-macro-function-replist-loop name
-                                                 toknl
+                                                 toknl?
                                                  params
                                                  ellipsis
                                                  ppstate))
-              (replist (cons toknl replist))
+              (replist (cons toknl? replist))
               (replist (if (and previous nontoknls)
                            (cons (plexeme-spaces 1) replist)
                          replist)))
-           (retok replist newline? hash-params ppstate)))))
+           (retok replist newline? hash-params ppstate)))
+        (t ; EOF without GCC/Clang extensions
+         (reterr-msg :where (position-to-msg (span->start span))
+                     :expected "a token or ~
+                                a comment or ~
+                                a new line or ~
+                                other white space"
+                     :found (plexeme-to-msg toknl?)))))
      :no-function nil
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
@@ -1439,7 +1427,8 @@
          :induct t
          :in-theory (e/d (plexeme-token/space-p
                           plexeme-tokenp
-                          plexeme-token/newline-p)
+                          plexeme-token/newline-p
+                          plexeme?-endlinep)
                          (plexeme-token/newline-p-of-read-token/newline)))
         '(:use plexeme-token/newline-p-of-read-token/newline)))
 
@@ -1447,7 +1436,9 @@
        (implies (and (not erp)
                      newline?)
                 (equal (plexeme-kind newline?) :newline))
-       :hints (("Goal" :induct t)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable plexeme?-endlinep))))
 
      (defret read-macro-function-replist-loop-subsetp-when-ellipsis
        (subsetp-equal hash-params
@@ -1593,12 +1584,10 @@
                            (macro-table->predefined (ppstate->macros ppstate))))
         (reterr (msg "Cannot define macro with predefined name '~s0'."
                      (ident->unwrap name))))
-       ((erp lexeme lexeme-span ppstate) (read-lexeme nil ppstate)))
+       ((erp lexeme? lexeme-span ppstate) (read-lexeme nil ppstate)))
     (cond
-     ((or (and lexeme
-               (plexeme-case lexeme :newline)) ; # define name EOL
-          (and (not lexeme) ; # define name EOF
-               (ppstate->gcc/clang ppstate)))
+     ((plexeme?-endlinep lexeme? (ppstate->gcc/clang ppstate))
+      ;; # define name EOL
       (b* ((macros (ppstate->macros ppstate))
            (info (make-macro-info-object :replist nil))
            ((erp new-macros) (macro-define name info macros))
@@ -1606,10 +1595,10 @@
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
-                            (rebuild-define-directive-id name lexeme))))))
+                            (rebuild-define-directive-id name lexeme?))))))
         (retok pparts ppstate)))
-     ((and lexeme
-           (not (plexeme-token/newline-p lexeme))) ; # define name WSC
+     ((and lexeme?
+           (not (plexeme-token/newline-p lexeme?))) ; # define name WSC
       (b* (((erp replist newline ppstate) ; # define name WSC REPLIST EOL
             (read-macro-object-replist name ppstate))
            (macros (ppstate->macros ppstate))
@@ -1621,11 +1610,11 @@
                      (list (ppart-line
                             (rebuild-define-directive-id name newline))))))
         (retok pparts ppstate)))
-     ((and lexeme
-           (plexeme-equiv lexeme (plexeme-punctuator "("))) ; # define (
+     ((and lexeme?
+           (plexeme-punctuatorp lexeme? "(")) ; # define (
       (b* (((erp params ellipsis ppstate) ; # define ( params )
             (read-macro-params ppstate))
-           ((erp replist newline hash-params ppstate)
+           ((erp replist newline? hash-params ppstate)
             ;; # define ( params ) replist EOL
             (read-macro-function-replist name params ellipsis ppstate))
            (macros (ppstate->macros ppstate))
@@ -1638,15 +1627,15 @@
            (pparts (if (ppoptions->full-expansion (ppstate->options ppstate))
                        nil
                      (list (ppart-line
-                            (rebuild-define-directive-id name newline))))))
+                            (rebuild-define-directive-id name newline?))))))
         (retok pparts ppstate)))
-     (t ; # define EOF/other
+     (t ; # define other
       (reterr-msg :where (position-to-msg (span->start lexeme-span))
                   :expected "a left parenthesis or ~
                              a comment or ~
                              a new line or ~
                              other white space"
-                  :found (plexeme-to-msg lexeme)))))
+                  :found (plexeme-to-msg lexeme?)))))
   :no-function nil
   :guard-simplify :limited ; to stop (:E IDENT)
   :guard-hints
@@ -1703,10 +1692,8 @@
        ((when (equal name (ident "defined")))
         (reterr (msg "Cannot undefine macro with name 'defined'.")))
        ((erp & newline? newline?-span ppstate) (read-token/newline ppstate))
-       ((unless (or (and newline?
-                         (plexeme-case newline? :newline)) ; # undef name EOL
-                    (and (not newline?) ; # undef name EOF
-                         (ppstate->gcc/clang ppstate))))
+       ((unless (plexeme?-endlinep newline? (ppstate->gcc/clang ppstate)))
+        ;; # undef name EOL
         (reterr-msg :where (position-to-msg (span->start newline?-span))
                     :expected "a new line"
                     :found (plexeme-to-msg newline?)))
@@ -3056,15 +3043,13 @@
      lexemes immediately following a @('#include') are handled elsewhere."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) ppstate)
-       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
-       ((when (not lexeme))
-        (if (ppstate->gcc/clang ppstate)
-            (retok ppstate)
-          (reterr-msg :where (position-to-msg (span->start span))
-                      :expected "a lexeme"
-                      :found "end of file")))
-       ((when (plexeme-case lexeme :newline))
-        (retok ppstate)))
+       ((erp lexeme? span ppstate) (read-lexeme nil ppstate))
+       ((when (plexeme?-endlinep lexeme? (ppstate->gcc/clang ppstate)))
+        (retok ppstate))
+       ((when (not lexeme?))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a lexeme"
+                    :found "end of file")))
     (skip-to-end-of-line ppstate))
   :no-function nil
   :measure (ppstate->size ppstate)
@@ -3171,7 +3156,7 @@
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "new line"
                       :found (plexeme-to-msg toknl))))
-       ((plexeme-hashp toknl) ; #
+       ((and toknl (plexeme-hashp toknl)) ; #
         (b* (((erp & toknl2 span2 ppstate) (read-token/newline ppstate)))
           (cond
            ((not toknl2) ; # EOF
@@ -3561,17 +3546,15 @@
     "We return the lexemes, in the order they appear."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil ppstate)
-       ((erp lexeme span ppstate) (read-lexeme nil ppstate))
-       ((when (not lexeme)) ; EOF
-        (if (ppstate->gcc/clang ppstate)
-            (retok nil ppstate)
-          (reterr-msg :where (position-to-msg (span->start span))
-                      :expected "a lexeme"
-                      :found "end of file")))
-       ((when (plexeme-case lexeme :newline)) ; EOL
-        (retok (list lexeme) ppstate))
+       ((erp lexeme? span ppstate) (read-lexeme nil ppstate))
+       ((when (plexeme?-endlinep lexeme? (ppstate->gcc/clang ppstate)))
+        (retok (and lexeme? (list lexeme?)) ppstate))
+       ((when (not lexeme?))
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "a lexeme"
+                    :found "end of file"))
        ((erp lexemes ppstate) (read-to-end-of-line ppstate)))
-    (retok (cons lexeme lexemes) ppstate))
+    (retok (cons lexeme? lexemes) ppstate))
   :no-function nil
   :measure (ppstate->size ppstate))
 
@@ -4552,11 +4535,8 @@
          ((erp nontoknls-before-header toknl span ppstate)
           (read-token/newline-after-include ppstate)))
       (cond
-       ((not toknl) ; # include EOF
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "a token"
-                    :found (plexeme-to-msg toknl)))
-       ((plexeme-case toknl :newline) ; # include EOL
+       ((or (not toknl) ; # include EOF
+            (plexeme-case toknl :newline)) ; # include EOL
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a token"
                     :found (plexeme-to-msg toknl)))
@@ -4589,7 +4569,7 @@
                  (string-pfile-alist-fix preprocessed)
                  ppstate
                  state)))
-       (t ; # include not-headername
+       (t ; # include token
         (b* ((ppstate (unread-lexeme toknl span ppstate))
              ((erp rev-lexmarks ppstate)
               (pproc-lexemes (macrep-mode-line)
