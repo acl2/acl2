@@ -364,7 +364,16 @@
      it is left as is, even when an open parenthesis follows.
      Our preprocessor does that, but fails when parsing the expression,
      because of the extra tokens after the @('F'),
-     or after the @('__has_feature') before we predefine it here."))
+     or after the @('__has_feature') before we predefine it here.")
+   (xdoc::p
+    "The @('__has_inclue_next') macro is also a function-like macro,
+     documented in "
+    (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
+    ", for which we need to add proper support.
+     For now we give it a definition similar to @('__has_include'),
+     although this definition, unlike @('__has_include'),
+     is not found in @('<sys/cdefs.h>'),
+     or in other files that we have searched."))
   (list (cons (ident "__arm64__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -381,6 +390,12 @@
                :replist (list (plexeme-number (pnumber-digit #\0)))
                :hash-params nil))
         (cons (ident "__has_include")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_include_next")
               (make-macro-info-function
                :params (list (ident "x"))
                :ellipsis nil
