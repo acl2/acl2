@@ -4927,7 +4927,7 @@
                        (string-pfile-alist-fix preprocessed)
                        ppstate
                        state)))))
-         (donep (and condp (not donep))))
+         (donep (or donep condp)))
       (groupend-case
        groupend
        :eof (reterr-msg :where (position-to-msg (ppstate->position ppstate))
