@@ -30,7 +30,13 @@
      but also comments and white space (including new lines).")
    (xdoc::p
     "We introduce fixtypes for lexemes,
-     along with operations on them."))
+     along with operations on them.")
+   (xdoc::p
+    "Some of the predicates that we define are on optional lexemes,
+     rather than on lexemes.
+     This makes certain checks more convenient,
+     because the functions to read lexemes return optional lexemes,
+     with @('nil') representing no lexeme, i.e. end of file."))
   :order-subtopics t
   :default-parent t)
 
@@ -303,6 +309,33 @@
   ///
   (fty::deffixequiv plexeme-list-not-token/newline-p
     :args ((x plexeme-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-endlinep ((lexeme? plexeme-optionp) (gcc/clang booleanp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional lexeme is an end of line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The boolean flag passed as input says whether
+     GCC or Clang extensions are enabled or not.
+     If these extensions are not enabled,
+     the C standard requires files to end with new line,
+     i.e. a line cannot be ended by the end of file:
+     see phase 3 in [C17:5.2.1.2].
+     However, GCC relaxes this requirement "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
+                 "[CPPM:1.2]")
+    ", and Clang expressly aims to be compatible with GCC as much as possible.
+     Thus, if GCC or Clang extensions are enabled,
+     we regard both new line and end of file (i.e. @('nil'))
+     as line endings;
+     if the extensions are not enabled, only new line."))
+  (or (and lexeme?
+           (plexeme-case lexeme? :newline))
+      (and gcc/clang
+           (not lexeme?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
