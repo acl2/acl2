@@ -323,7 +323,8 @@
      we get an error when preprocessing the Clang system files.
      We also add the @('__GNUC_MINOR__') macro, since it is related.")
    (xdoc::p
-    "The @('__has_feature') macro is actually a function-like macro,
+    "The @('__has_feature') and @('__has_include') macros
+     are actually function-like macros,
      documented in "
     (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
     ", for which we need to add proper support.
@@ -332,12 +333,14 @@
    (xdoc::codeblock
     "#ifndef __has_feature"
     "#define __has_feature(x) 0"
+    "#endif"
+    ""
+    "#ifndef __has_include"
+    "#define __has_include(x) 0"
     "#endif")
    (xdoc::p
-    "If this macro is not defined at all,
-     the following code in @('sys/_types/_ptrdiff.h'),
-     and probably in other files as well,
-     fails:")
+    "If these macros are not defined at all,
+     code like the following, found in some system headers, fails:")
    (xdoc::codeblock
     "#if defined(__has_feature) && __has_feature(modules)")
    (xdoc::p
@@ -348,7 +351,7 @@
      it gets replaced with @('0') [C17:6.10.1/4],
      which then leaves an extra @('(modules)') after the @('0'),
      which does not form an expression.
-     Indeed, both Clang and GCC fail on a line")
+     Indeed, both Clang and GCC fail on a line of the form")
    (xdoc::codeblock
     "#if defined(F) && F(...)")
    (xdoc::p
@@ -372,6 +375,12 @@
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\2)))))
         (cons (ident "__has_feature")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_include")
               (make-macro-info-function
                :params (list (ident "x"))
                :ellipsis nil
