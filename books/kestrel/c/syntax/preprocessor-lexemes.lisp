@@ -271,6 +271,15 @@
   (fty::deffixequiv plexeme-list-not-tokenp
     :args ((x plexeme-listp))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-tokenp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a token."
+  (and lexeme?
+       (plexeme-tokenp lexeme?))
+  :inline t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-token/newline-p ((lexeme plexemep))
@@ -314,7 +323,7 @@
 
 (define plexeme?-endlinep ((lexeme? plexeme-optionp) (gcc/clang booleanp))
   :returns (yes/no booleanp)
-  :short "Check if an optional lexeme is an end of line."
+  :short "Check if an optional preprocessing lexeme is an end of line."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -367,23 +376,41 @@
 
 (define plexeme-commentp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a (block or line) comment."
+  :short "Check if a preprocessing lexeme is a (block or line) comment."
   (and (member-eq (plexeme-kind lexeme) '(:block-comment :line-comment)) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-identp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is an identifier."
+  (and lexeme?
+       (plexeme-case lexeme? :ident))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-punctuatorp ((lexeme plexemep) (punctuator stringp))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a given punctuator."
+  :short "Check if a preprocessing lexeme is a given punctuator."
   (and (plexeme-case lexeme :punctuator)
        (equal (plexeme-punctuator->punctuator lexeme)
               (str-fix punctuator))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-punctuatorp ((lexeme? plexeme-optionp) (punctuator stringp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a specific punctuator."
+  (and lexeme?
+       (plexeme-punctuatorp lexeme? punctuator))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-hashp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a hash @('#')."
+  :short "Check if a preprocessing lexeme is a hash."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -394,11 +421,20 @@
          (or (equal string "#")
              (equal string "%:")))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-hashp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a hash."
+  (and lexeme?
+       (plexeme-hashp lexeme?))
+  :inline t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-hashhashp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a double hash @('##')."
+  :short "Check if a preprocessing lexeme is a double hash."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -408,6 +444,15 @@
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
          (or (equal string "##")
              (equal string "%:%:")))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-hashhashp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a double hash."
+  (and lexeme?
+       (plexeme-hashhashp lexeme?))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

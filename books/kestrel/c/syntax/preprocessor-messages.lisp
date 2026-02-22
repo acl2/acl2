@@ -51,7 +51,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pchar-to-msg ((char nat-optionp))
+(define pchar?-to-msg ((char nat-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp character-alistp))))
   :short "Represent an optional character as a message,
@@ -67,7 +67,7 @@
   (b* ((char (nat-option-fix char)))
     (cond ((not char) "end of file")
           ((< char 32) (msg "the ~s0 character (ASCII code ~x1)"
-                            (nth char *pchar-to-msg-ascii-control-char-names*)
+                            (nth char *pchar?-to-msg-ascii-control-char-names*)
                             char))
           ((utf8-= char 32) "the SP (space) character (ASCII code 32)")
           ((and (utf8-<= 33 char) (utf8-<= char 126))
@@ -79,7 +79,7 @@
                                            nat-optionp)))
 
   :prepwork
-  ((defconst *pchar-to-msg-ascii-control-char-names*
+  ((defconst *pchar?-to-msg-ascii-control-char-names*
      '("NUL"
        "SOH"
        "STX"
@@ -115,20 +115,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plexeme-to-msg ((lexeme plexeme-optionp))
+(define plexeme?-to-msg ((lexeme? plexeme-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a preprocessing lexeme as a message."
+  :short "Represent an optional preprocessing lexeme as a message."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used in preprocessor error messages.
      It is similar to @(tsee token-to-msg) for the parser."))
-  (if lexeme
+  (if lexeme?
       (plexeme-case
-       lexeme
+       lexeme?
        :header "a header name"
-       :ident (msg "the identifier ~x0" (ident->unwrap lexeme.ident))
+       :ident (msg "the identifier ~x0" (ident->unwrap lexeme?.ident))
        :number "a preprocessing number"
        :char "a character constant"
        :string "a string literal"
