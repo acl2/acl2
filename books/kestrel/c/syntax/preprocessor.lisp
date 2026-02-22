@@ -1066,14 +1066,11 @@
        ((reterr) nil nil ppstate)
        ((erp & token span ppstate) (read-token/newline ppstate)))
     (cond
-     ((and token ; # define name ( )
-           (plexeme-punctuatorp token ")"))
+     ((plexeme?-punctuatorp token ")") ; # define name ( )
       (retok nil nil ppstate))
-     ((and token ; # define name ( ...
-           (plexeme-punctuatorp token "..."))
+     ((plexeme?-punctuatorp token "...") ; # define name ( ...
       (b* (((erp & token2 span2 ppstate) (read-token/newline ppstate))
-           ((unless (and token2 ; # define name ( ... )
-                         (plexeme-punctuatorp token2 ")")))
+           ((unless (plexeme?-punctuatorp token2 ")")) ; # define name ( ... )
             (reterr-msg :where (position-to-msg (span->start span2))
                         :expected "a right parenthesis"
                         :found (plexeme-to-msg token2))))
@@ -1110,15 +1107,13 @@
           ((reterr) nil nil ppstate)
           ((erp & token span ppstate) (read-token/newline ppstate)))
        (cond
-        ((and token ; # define name ( 1stparam ,
-              (plexeme-punctuatorp token ","))
+        ((plexeme?-punctuatorp token ",") ; # define name ( 1stparam ,
          (b* (((erp & token2 span2 ppstate) (read-token/newline ppstate)))
            (cond
-            ((and token2 ; # define name ( 1stparam , ...
-                  (plexeme-punctuatorp token2 "..."))
+            ((plexeme?-punctuatorp token2 "...") ; # define name ( 1stparam , ...
              (b* (((erp & token3 span3 ppstate) (read-token/newline ppstate))
-                  ((unless (and token3 ; # define name ( 1stparam , ... )
-                                (plexeme-punctuatorp token3 ")")))
+                  ((unless (plexeme?-punctuatorp token3 ")"))
+                   ;; # define name ( 1stparam , ... )
                    (reterr-msg :where (position-to-msg (span->start span3))
                                :expected "a right parenthesis"
                                :found (plexeme-to-msg token2))))
@@ -1141,8 +1136,7 @@
              (reterr-msg :where (position-to-msg (span->start span2))
                          :expected "an ellipsis or an identifier"
                          :found (plexeme-to-msg token2))))))
-        ((and token ; # define name ( 1stparam )
-              (plexeme-punctuatorp token ")"))
+        ((plexeme?-punctuatorp token ")") ; # define name ( 1stparam )
          (retok nil nil ppstate))
         (t ; # define name ( 1stparam EOF/other
          (reterr-msg :where (position-to-msg (span->start span))
@@ -1610,8 +1604,7 @@
                      (list (ppart-line
                             (rebuild-define-directive-id name newline))))))
         (retok pparts ppstate)))
-     ((and lexeme?
-           (plexeme-punctuatorp lexeme? "(")) ; # define (
+     ((plexeme?-punctuatorp lexeme? "(") ; # define (
       (b* (((erp params ellipsis ppstate) ; # define ( params )
             (read-macro-params ppstate))
            ((erp replist newline? hash-params ppstate)
@@ -2195,8 +2188,7 @@
           ;; and also the list of lexmarks and placemarker unchanged;
           ;; and also the markers found so far unchanged.
           ((unless (and foundp
-                        triplehash?
-                        (plexeme-punctuatorp triplehash? "###")))
+                        (plexeme?-punctuatorp triplehash? "###")))
            (retok (plexeme-option-fix token/placemarker)
                   (lexmark-list-fix markers)
                   (lexmark-option-list-fix lexmarks/placemarkers)))
@@ -2807,8 +2799,7 @@
                :function
                (b* (((erp toknl ppstate)
                      (peek-token/newline directivep ppstate))
-                    ((unless (and toknl
-                                  (plexeme-punctuatorp toknl "(")))
+                    ((unless (plexeme?-punctuatorp toknl "("))
                      (pproc-lexemes mode
                                     (cons lexmark rev-lexmarks)
                                     paren-level
