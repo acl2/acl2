@@ -115,20 +115,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plexeme?-to-msg ((lexeme plexeme-optionp))
+(define plexeme?-to-msg ((lexeme? plexeme-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp character-alistp))))
-  :short "Represent a preprocessing lexeme as a message."
+  :short "Represent an optional preprocessing lexeme as a message."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used in preprocessor error messages.
      It is similar to @(tsee token-to-msg) for the parser."))
-  (if lexeme
+  (if lexeme?
       (plexeme-case
-       lexeme
+       lexeme?
        :header "a header name"
-       :ident (msg "the identifier ~x0" (ident->unwrap lexeme.ident))
+       :ident (msg "the identifier ~x0" (ident->unwrap lexeme?.ident))
        :number "a preprocessing number"
        :char "a character constant"
        :string "a string literal"
