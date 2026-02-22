@@ -1075,8 +1075,7 @@
                         :expected "a right parenthesis"
                         :found (plexeme-to-msg token2))))
         (retok nil t ppstate)))
-     ((and token
-           (plexeme-case token :ident)) ; # define name ( param
+     ((plexeme?-identp token) ; # define name ( param
       (b* ((param (plexeme-ident->ident token))
            ((when (equal param (ident "__VA_ARGS__")))
             (reterr (msg "Disallowed macro parameter '__VA_ARGS__' at ~x0."
@@ -1094,7 +1093,8 @@
                              an identifer"
                   :found (plexeme-to-msg token)))))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp)))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp
+                                           plexeme?-identp)))
 
   :prepwork
   ((define read-macro-params-rest ((ppstate ppstatep))
@@ -1118,8 +1118,7 @@
                                :expected "a right parenthesis"
                                :found (plexeme-to-msg token2))))
                (retok nil t ppstate)))
-            ((and token2 ; # define name ( 1stparam , param
-                  (plexeme-case token2 :ident))
+            ((plexeme?-identp token2) ; # define name ( 1stparam , param
              (b* ((param (plexeme-ident->ident token2))
                   ((when (equal param (ident "__VA_ARGS__")))
                    (reterr (msg "Disallowed macro parameter ~
@@ -1144,8 +1143,10 @@
                      :found (plexeme-to-msg token)))))
      :no-function nil
      :measure (ppstate->size ppstate)
+     :hints (("Goal" :in-theory (enable plexeme?-identp)))
      :verify-guards :after-returns
-     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp))))))
+     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp
+                                              plexeme?-identp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1192,7 +1193,7 @@
        (cond
         ((plexeme?-endlinep toknl? (ppstate->gcc/clang ppstate)) ; EOL
          (retok nil toknl? ppstate))
-        ((and toknl? (plexeme-tokenp toknl?)) ; token
+        ((plexeme?-tokenp toknl?) ; token
          (b* (((erp replist newline? ppstate) ; token replist
                (read-macro-object-replist-loop nil ppstate))
               (replist (cons toknl? replist))
@@ -1210,6 +1211,7 @@
                      :found (plexeme-to-msg toknl?)))))
      :no-function nil
      :measure (ppstate->size ppstate)
+     :prepwork ((local (in-theory (enable plexeme?-tokenp))))
 
      ///
 
@@ -1315,7 +1317,7 @@
                (reterr (msg "The replacement list of ~x0 must not end with ##."
                             (ident-fix name)))))
            (retok nil toknl? nil ppstate)))
-        ((and toknl? (plexeme-case toknl? :ident)) ; ident
+        ((plexeme?-identp toknl?) ; ident
          (b* ((ident (plexeme-ident->ident toknl?))
               ((when (and (equal ident (ident "__VA_ARGS__"))
                           (not ellipsis)))
@@ -1411,6 +1413,7 @@
      :measure (ppstate->size ppstate)
      :verify-guards :after-returns
      :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp)))
+     :prepwork ((local (in-theory (enable plexeme?-identp))))
 
      ///
 
@@ -1567,7 +1570,7 @@
   (b* ((ppstate (ppstate-fix ppstate)) ; # define
        ((reterr) nil ppstate)
        ((erp & name name-span ppstate) (read-token/newline ppstate))
-       ((unless (and name (plexeme-case name :ident))) ; # define name
+       ((unless (plexeme?-identp name)) ; # define name
         (reterr-msg :where (position-to-msg (span->start name-span))
                     :expected "an identifier"
                     :found (plexeme-to-msg name)))
@@ -1632,7 +1635,8 @@
   :no-function nil
   :guard-simplify :limited ; to stop (:E IDENT)
   :guard-hints
-  (("Goal" :in-theory (e/d (alistp-when-ident-macro-info-alistp-rewrite)
+  (("Goal" :in-theory (e/d (alistp-when-ident-macro-info-alistp-rewrite
+                            plexeme?-identp)
                            ((:e ident))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1676,8 +1680,7 @@
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) nil ppstate)
        ((erp & name? name?-span ppstate) (read-token/newline ppstate))
-       ((unless (and name?
-                     (plexeme-case name? :ident))) ; # undef name
+       ((unless (plexeme?-identp name?)) ; # undef name
         (reterr-msg :where (position-to-msg (span->start name?-span))
                     :expected "an identifier"
                     :found (plexeme-to-msg name?)))
@@ -1697,7 +1700,8 @@
                    nil
                  (list (ppart-line (rebuild-undef-directive name newline?))))))
     (retok pparts ppstate))
-  :no-function nil)
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable plexeme?-identp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4845,8 +4849,7 @@
          ((reterr) nil nil ppstate state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          ((erp & ident? span ppstate) (read-token/newline ppstate))
-         ((unless (and ident? ; #ifdef/#ifndef ident
-                       (plexeme-case ident? :ident)))
+         ((unless (plexeme?-identp ident?)) ; #ifdef/#ifndef ident
           (reterr-msg :where (position-to-msg (span->start span))
                       :expected "an identifier"
                       :found (plexeme-to-msg ident?)))
@@ -5087,7 +5090,8 @@
   :guard-hints
   (("Goal" :in-theory (enable alistp-when-string-pfile-alistp-rewrite
                               true-listp-when-plexeme-listp
-                              true-listp-when-ppart-listp))))
+                              true-listp-when-ppart-listp
+                              plexeme?-identp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
