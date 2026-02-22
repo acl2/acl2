@@ -30,7 +30,13 @@
      but also comments and white space (including new lines).")
    (xdoc::p
     "We introduce fixtypes for lexemes,
-     along with operations on them."))
+     along with operations on them.")
+   (xdoc::p
+    "Some of the predicates that we define are on optional lexemes,
+     rather than on lexemes.
+     This makes certain checks more convenient,
+     because the functions to read lexemes return optional lexemes,
+     with @('nil') representing no lexeme, i.e. end of file."))
   :order-subtopics t
   :default-parent t)
 
@@ -265,6 +271,15 @@
   (fty::deffixequiv plexeme-list-not-tokenp
     :args ((x plexeme-listp))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-tokenp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a token."
+  (and lexeme?
+       (plexeme-tokenp lexeme?))
+  :inline t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-token/newline-p ((lexeme plexemep))
@@ -306,6 +321,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define plexeme?-endlinep ((lexeme? plexeme-optionp) (gcc/clang booleanp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is an end of line."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The boolean flag passed as input says whether
+     GCC or Clang extensions are enabled or not.
+     If these extensions are not enabled,
+     the C standard requires files to end with new line,
+     i.e. a line cannot be ended by the end of file:
+     see phase 3 in [C17:5.2.1.2].
+     However, GCC relaxes this requirement "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
+                 "[CPPM:1.2]")
+    ", and Clang expressly aims to be compatible with GCC as much as possible.
+     Thus, if GCC or Clang extensions are enabled,
+     we regard both new line and end of file (i.e. @('nil'))
+     as line endings;
+     if the extensions are not enabled, only new line."))
+  (or (and lexeme?
+           (plexeme-case lexeme? :newline))
+      (and gcc/clang
+           (not lexeme?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define plexeme-token/space-p ((lexeme plexemep))
   :returns (yes/no booleanp)
   :short "Check if a preprocessing lexeme is a token or a (single) space."
@@ -334,23 +376,41 @@
 
 (define plexeme-commentp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a (block or line) comment."
+  :short "Check if a preprocessing lexeme is a (block or line) comment."
   (and (member-eq (plexeme-kind lexeme) '(:block-comment :line-comment)) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-identp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is an identifier."
+  (and lexeme?
+       (plexeme-case lexeme? :ident))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-punctuatorp ((lexeme plexemep) (punctuator stringp))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a given punctuator."
+  :short "Check if a preprocessing lexeme is a given punctuator."
   (and (plexeme-case lexeme :punctuator)
        (equal (plexeme-punctuator->punctuator lexeme)
               (str-fix punctuator))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-punctuatorp ((lexeme? plexeme-optionp) (punctuator stringp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a specific punctuator."
+  (and lexeme?
+       (plexeme-punctuatorp lexeme? punctuator))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-hashp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a hash @('#')."
+  :short "Check if a preprocessing lexeme is a hash."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -361,11 +421,20 @@
          (or (equal string "#")
              (equal string "%:")))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-hashp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a hash."
+  (and lexeme?
+       (plexeme-hashp lexeme?))
+  :inline t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plexeme-hashhashp ((lexeme plexemep))
   :returns (yes/no booleanp)
-  :short "Check if a lexeme is a double hash @('##')."
+  :short "Check if a preprocessing lexeme is a double hash."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -375,6 +444,15 @@
        (b* ((string (plexeme-punctuator->punctuator lexeme)))
          (or (equal string "##")
              (equal string "%:%:")))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define plexeme?-hashhashp ((lexeme? plexeme-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional preprocessing lexeme is a double hash."
+  (and lexeme?
+       (plexeme-hashhashp lexeme?))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

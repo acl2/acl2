@@ -55,7 +55,7 @@
      Thus, the result of preprocessing @('FILE')
      should be normally independent from where it occurs,
      and should always result in the same replacement
-     (but we discuss include guards below).
+     (but we discuss header guards below).
      In this case, we can avoid expanding the @('#include'),
      and separately preprocess @('FILE'),
      leaving the @('#include') as a reference to @('FILE');
@@ -107,7 +107,7 @@
     "Header guards deserve some special consideration.
      Header guards are a well-known approach
      to avoid including the same file multiple times.
-     The files to include have a form like")
+     A file with a header guard has a form like")
    (xdoc::codeblock
     "+-F.h-----------+"
     "| #ifndef F     |"
@@ -144,7 +144,7 @@
      We get the same result for @('F.h')
      whether we preprocess it from @('A.c') or stand-alone:")
    (xdoc::codeblock
-    "+-F.h preprocessed from G.h----+"
+    "+-F.h preprocessed from A.c----+"
     "| ...F stuff preprocessed...   |"
     "+------------------------------+"
     ""
@@ -166,7 +166,7 @@
    (xdoc::p
     "This differs from @('F.h') preprocessed stand-alone (see above),
      and so we need to expand the @('#include F.h') in @('G.h'),
-     which amounts to removing the @('#include F.h') from @('g.h'):")
+     which amounts to removing the @('#include F.h') from @('G.h'):")
    (xdoc::codeblock
     "+-G.h preprocessed from A.c--+"
     "| ...G stuff preprocessed... |"
@@ -204,15 +204,93 @@
      The file inclusion pattern above is very common,
      e.g. when @('F.h') and @('G.h') are library headers.")
    (xdoc::p
-    "Thus, we treat files with header guards specially.
-     First, when we preprocess a file, we recognize whether
-     it has the header guard form, i.e. the form of @('F.h') and @('G.h') above.
-     Currently we only accept exactly the form with @('#ifndef ...'),
-     and not the equivalent @('#if !defined(...)'),
-     but we plan to extend this.
-     Thus, when an included file has the header guard form
-     and its header guard symbol is defined,
-     we leave its @('#include') in place:")
+    "The header guard form shown above is not the only possible one.
+     An equivalent form (perhaps legacy) is")
+   (xdoc::codeblock
+    "+-F.h-------------+"
+    "| #if !defined(F) |"
+    "| #define F       |"
+    "| ...F stuff...   |"
+    "| #endif          |"
+    "+-----------------+")
+   (xdoc::p
+    "or also (although contrived)")
+   (xdoc::codeblock
+    "+-F.h-----------+"
+    "| #ifdef F      |"
+    "| #else         |"
+    "| #define F     |"
+    "| ...F stuff... |"
+    "| #endif        |"
+    "+---------------+")
+   (xdoc::p
+    "and so on.
+     Instead of attempting to recognize all the possible various forms,
+     we use a more general mechanism,
+     which applies to all conditional sections
+     (i.e. the constructs captured by @('if-section') in the ABNF grammar).")
+   (xdoc::p
+    "When we preprocess a conditional section,
+     as in any other C preprocessor,
+     we need to find which branch is selected,
+     i.e. its condition is true and no previous condition is true.
+     Our preprocessor preserves the scaffolding of the conditional section,
+     namely its @('#if'), @('#ifdef'), @('#ifndef'),
+     @('#elif'), @('#else'), and @('#endif') directives,
+     but only keeps the code in the selected branch,
+     leaving all the other branches empty
+     (in fact, this code is skipped as described in [C17:6.10.1/6]).
+     Thus, the result of our preprocessing a conditional section
+     is a conditional section with at most one branch non-empty.
+     This applies to nested conditional sections as well.")
+   (xdoc::p
+    "The branch selected in a conditional varies with on the current macros.
+     Preprocessing the same file in different contexts
+     may select different branches.
+     For instance, consider the first example @('F.h') above,
+     the one that starts with @('#ifndef'),
+     and the additional example files @('G.h') and @('A.c') above.
+     The result of preprocessing @('F.h'), stand-alone or from @('A.c'),
+     is the same in both case, i.e. the following:")
+   (xdoc::codeblock
+    "+-F.h preprocessed stand-alone-+"
+    "| #ifndef F                    |"
+    "| #define F                    |"
+    "| ...F stuff preprocessed...   |"
+    "| #endif                       |"
+    "+------------------------------+"
+    ""
+    "+-F.h preprocessed from A.c----+"
+    "| #ifndef F                    |"
+    "| #define F                    |"
+    "| ...F stuff preprocessed...   |"
+    "| #endif                       |"
+    "+------------------------------+")
+   (xdoc::p
+    "The scaffolding is preserved,
+     and since @('F') is not defined when @('F.h') is preprocessed
+     stand-alone or from @('A.c'),
+     the (only branch) is selected, and its code is kept.")
+   (xdoc::p
+    "When instead we preprocess @('F.h') from @('G.h') from @('A.c'),
+     the macro @('F') is defined, and thus no branch in @('F.h') is selected,
+     producing the following result:")
+   (xdoc::codeblock
+    "+-F.h preprocessed from G.h from A.c-+"
+    "| #ifndef F                          |"
+    "| #endif                             |"
+    "+------------------------------------+")
+   (xdoc::p
+    "In this case, the (only) branch is not selected, and thus it is empty.")
+   (xdoc::p
+    "Although this differs from the result when @('F') is defined,
+     the two results do not differ
+     if we take into account the definedness of @('F').
+     The two results have identical scaffoldings,
+     and, under the assumption of @('F') being defined,
+     they are actually equivalent.
+     Thus, we can preserve the @('#include F.h') in @('G.h')
+     when the latter is preprocessed from @('A.c'):")
    (xdoc::codeblock
     "+-G.h preprocessed from A.c--+"
     "| #include F.h               |"
@@ -228,50 +306,26 @@
     "| ...A stuff preprocessed... |"
     "+----------------------------+")
    (xdoc::p
-    "However, if we leave the @('#include F.h') in @('G.h'),
-     we need to retain somehow the information about the fact that
-     @('F.h') should not duplicated.
-     If we were to fully preprocess the resulting files,
+    "The mechanism works not only for scaffolding of the form in @('F.h') above,
+     but in general for any kind of conditional section.")
+   (xdoc::p
+    "The preservation of the conditional section scaffolding
+     is critical to this mechanism.
+     Without it, if we were to fully preprocess
+     the files resulting from our preserving preprocessing,
      expanding all @('#include')s,
-     we would get two copies of the @('F') stuff in @('A.c').
-     Thus, we also need to preserve
-     the @('#ifndef') and @('#define') directives for the header guards:")
-   (xdoc::codeblock
-    "+-F.h preprocessed-----------+"
-    "| #ifndef F                  |"
-    "| #define F                  |"
-    "| ...F stuff preprocessed... |"
-    "| #endif                     |"
-    "+----------------------------+"
-    ""
-    "+-G.h preprocessed-------------+"
-    "| #ifndef G                    |"
-    "| #define G                    |"
-    "| #include F.h                 |"
-    "| ...G stuff preprocessed...   |"
-    "| #endif                       |"
-    "+------------------------------+"
-    ""
-    "+-A.c preprocessed-----------+"
-    "| #include F.h               |"
-    "| ...G stuff preprocessed... |"
-    "| ...A stuff preprocessed... |"
-    "+----------------------------+")
+     we would get two copies of the @('F') stuff in @('A.c').")
    (xdoc::p
-    "This way, we preserve the information about
-     conditional inclusion with respect to the header guard symbols,
-     and their definitions.")
-   (xdoc::p
-    "In fact, nothing prevents the presence of @('#define')s
-     for the header guards outside the normal place,
-     i.e. not just after the @('#ifndef'),
-     but instead in any random place;
-     as well as the presence of random @('#undef')s for the same symbols.
-     This should only occur in contrived code,
-     but we need to handle things correctly in all possible cases.
-     Thus, in general we need to preserve information about
-     all the @('#define')s and @('#undef')s that may affect header guards.
-     Our approach is the following.")
+    "It is also critical to preserve information about
+     the definedness status of macros, which affects whether
+     the code in a conditional branch of an included file
+     is actually retained in the including file.
+     This is the case not just for @('#ifdef') and @('#ifndef'),
+     but also for the expressions in @('#if') and @('#elif').
+     These expressions consist of some constants, some regular operators,
+     and the preprocessor-specifie operator @('defined').
+     The latter is the only one that can in fact vary,
+     in the expressions of the conditional scaffoldings.")
    (xdoc::p
     "We preserve @('#undef') directives as they are.
      But preserving @('#define') directives as they are can cause problems.
@@ -307,8 +361,8 @@
      after preprocessing subsequent code and already performing replacements,
      can lead to unwanted further replacements.")
    (xdoc::p
-    "Given that header guards (the kind we recognize and support)
-     only care whether a symbol is defined,
+    "Given that the @('defined') operator
+     only cares about whether a symbol is defined,
      but not its particular definition,
      we preserve @('#define') directive in modified form,
      namely by defining the symbol to be itself, e.g.")
@@ -316,4 +370,14 @@
     "#define x x")
    (xdoc::p
     "This way, any further replacement would be a no-op,
-     but the definedness or not of the symbol is preserved.")))
+     but the definedness or not of the symbol is preserved.")
+   (xdoc::p
+    "In fact, in the example @('F.h') above,
+     the actual form of the result of preprocessing that file is:")
+   (xdoc::codeblock
+    "+-F.h preprocessed-----------+"
+    "| #ifndef F                  |"
+    "| #define F F                |"
+    "| ...F stuff preprocessed... |"
+    "| #endif                     |"
+    "+----------------------------+")))

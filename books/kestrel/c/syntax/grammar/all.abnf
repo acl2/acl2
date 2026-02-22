@@ -149,7 +149,7 @@ character = basic-character
 ; Given that we commit to ASCII/Unicode,
 ; it seems reasonable to define a new-line character as
 ; line feed, or carriage return, or carriage return and line feed;
-; this is the same definition as in Java.
+; this is consistent with GCC [CPPM:1.2].
 ; Note that this is not necessarily a single character,
 ; but it follows the nomenclature of 'new-line character' in [C17].
 

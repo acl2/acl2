@@ -35,7 +35,7 @@
   (declare (xargs :guard (symbolp name)))
   (hons-assoc-equal name hta))
 
-(defun hol-typep (type hta groundp)
+(defun hol-typep (type hta)
 
 ; This function defines our representation of hol type expressions.  When
 ; groundp is nil, variables (non-keyword symbols) are allowed; otherwise they
@@ -43,21 +43,19 @@
 
   (declare (xargs :guard t))
   (cond
-   ((keywordp type)
-    (and (assoc-hta type hta)
-         t))
    ((atom type)
-    (and (not groundp)
-         (symbolp type)))
+    (and (keywordp type)
+         (assoc-hta type hta)
+         t))
    ((true-listp type)
     (case (car type)
       ((:arrow :hash)
        (and (= (length type) 3)
-            (and (hol-typep (nth 1 type) hta groundp)
-                 (hol-typep (nth 2 type) hta groundp))))
+            (and (hol-typep (nth 1 type) hta)
+                 (hol-typep (nth 2 type) hta))))
       ((:list :option)
        (and (= (length type) 2)
-            (hol-typep (nth 1 type) hta groundp)))
+            (hol-typep (nth 1 type) hta)))
       (otherwise nil)))
    (t nil)))
 
@@ -73,9 +71,9 @@
 ; function by returning the empty set, 0, if type is ill-formed with respect to
 ; hta.
 
-  (declare (xargs :guard (hol-typep type hta t)))
+  (declare (xargs :guard (hol-typep type hta)))
   (cond
-   ((not (mbt (hol-typep type hta t)))
+   ((not (mbt (hol-typep type hta)))
     0)
    ((atom type) ; (keywordp type)
     (let ((pair (assoc-hta type hta)))
@@ -117,7 +115,7 @@
 ; This function recognizes when x is a hol value of the given hol ground type
 ; with respect to a give association of atomic type names with sets.
 
-  (declare (xargs :guard (hol-typep type hta t)))
+  (declare (xargs :guard (hol-typep type hta)))
   (in x (hol-type-eval type hta)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,7 +128,7 @@
 (defun hpp (p hta)
   (declare (xargs :guard t))
   (and (consp p)
-       (hol-typep (cdr p) hta t)
+       (hol-typep (cdr p) hta)
        (hol-valuep (car p) (cdr p) hta)))
 
 (defmacro make-hp (value type)
@@ -142,21 +140,19 @@
         (t (and (hpp (car x) hta)
                 (hp-listp (cdr x) hta)))))
 
-(defun weak-hol-typep (type groundp)
+(defun weak-hol-typep (type)
   (declare (xargs :guard t))
   (cond ((atom type)
-         (or (keywordp type)
-             (and (not groundp)
-                  (symbolp type))))
+         (keywordp type))
         ((true-listp type)
          (case (car type)
            ((:arrow :hash)
             (and (= (length type) 3)
-                 (and (weak-hol-typep (nth 1 type) groundp)
-                      (weak-hol-typep (nth 2 type) groundp))))
+                 (and (weak-hol-typep (nth 1 type))
+                      (weak-hol-typep (nth 2 type)))))
            ((:list :option)
             (and (= (length type) 2)
-                 (weak-hol-typep (nth 1 type) groundp)))
+                 (weak-hol-typep (nth 1 type))))
            (otherwise nil)))
         (t nil)))
 
@@ -171,15 +167,15 @@
         ((consp (car bindings))
          (and (symbolp (caar bindings))
               (not (keywordp (caar bindings)))
-              (weak-hol-typep (cdar bindings) t)
+              (weak-hol-typep (cdar bindings))
               (weak-hol-type-alistp (cdr bindings))))
         (t nil)))
 
-(defun weak-hol-type-listp (x groundp)
+(defun weak-hol-type-listp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
-        (t (and (weak-hol-typep (car x) groundp)
-                (weak-hol-type-listp (cdr x) groundp)))))
+        (t (and (weak-hol-typep (car x))
+                (weak-hol-type-listp (cdr x))))))
 
 ; Some of the lemmas below may have been developed in support of the admission
 ; of type-match and lemmas about it.  But they are reasonable lemmas, so we
@@ -192,12 +188,12 @@
 
 (defthm weak-hol-typep-impliest-weak-hol-type-listp-cdr
 ; This speeds up (verify-guards type-match ...) tremendously.
-  (implies (and (weak-hol-typep x groundp)
+  (implies (and (weak-hol-typep x)
                 (not (keywordp x)))
-           (weak-hol-type-listp (cdr x) groundp)))
+           (weak-hol-type-listp (cdr x))))
 
 (defthm weak-hol-type-listp-forward-to-true-listp
-  (implies (weak-hol-type-listp x groundp)
+  (implies (weak-hol-type-listp x)
            (true-listp x))
   :rule-classes :forward-chaining)
 
@@ -206,14 +202,14 @@
                 (len x))))
 
 (defthm hol-typep-forward-to-weak-hol-typep
-  (implies (hol-typep x hta groundp)
-           (weak-hol-typep x groundp))
+  (implies (hol-typep x hta)
+           (weak-hol-typep x))
   :rule-classes :forward-chaining)
 
 (defun weak-hpp (x)
   (declare (xargs :guard t))
   (and (consp x)
-       (weak-hol-typep (cdr x) t)))
+       (weak-hol-typep (cdr x))))
 
 (defun hp-value (p)
 ; Hp-value is a function instead of macro so that it can be disabled.
@@ -309,7 +305,7 @@
            (list :hash (hp-type x) (hp-type y))))
 
 (defun hp-none (type)
-  (declare (xargs :guard (weak-hol-typep type t)))
+  (declare (xargs :guard (weak-hol-typep type)))
   (make-hp :none
            (list :option type)))
 
@@ -323,7 +319,7 @@
            (list :option (hp-type x))))
 
 (defun hp-nil (type)
-  (declare (xargs :guard (weak-hol-typep type t)))
+  (declare (xargs :guard (weak-hol-typep type)))
   (make-hp 0 ; The empty list is the empty function.
            (list :list type)))
 
@@ -401,11 +397,25 @@
   (make-hp (not (hp-value p))
            :bool))
 
-(defun predicate-typep (typ)
-  (declare (xargs :guard t))
+(defun function-typep (typ)
+  (declare (xargs :guard (weak-hol-typep typ)))
   (and (consp typ)
-       (eq (car typ) :arrow)
-       (eq (cdr typ) :bool)))
+       (eq (car typ) :arrow)))
+
+(defun hp-dom (typ)
+  (declare (xargs :guard (and (weak-hol-typep typ)
+                              (function-typep typ))))
+  (nth 1 typ))
+
+(defun hp-ran (typ)
+  (declare (xargs :guard (and (weak-hol-typep typ)
+                              (function-typep typ))))
+  (nth 2 typ))
+
+(defun predicate-typep (typ)
+  (declare (xargs :guard (weak-hol-typep typ)))
+  (and (function-typep typ)
+       (eq (hp-ran typ) :bool)))
 
 (defun hp-forall (p)
   (declare (xargs :guard (and (weak-hpp p)
@@ -433,7 +443,7 @@
 
 (defun hol-list-typep (x)
   (declare (xargs :guard t))
-  (and (weak-hol-typep x t)
+  (and (weak-hol-typep x)
        (consp x)
        (eq (car x) :list)))
 
@@ -558,7 +568,7 @@
            (hp-list-p (hp-cons x y))))
 
 (defthm hp-list-p-hp-nil
-  (implies (force (weak-hol-typep type t))
+  (implies (force (weak-hol-typep type))
            (hp-list-p (hp-nil type))))
 
 (defun hp-cons-p (x)
@@ -578,8 +588,8 @@
                 (not (equal (hp-list-cdr x)
                             (hp-nil (hol-list-element-type (hp-type x))))))
            (hp-cons-p (hp-list-cdr x)))
-  :hints (("Goal" :expand ((weak-hol-typep (cdr x) t)
-                           (weak-hol-typep (caddr x) t))))
+  :hints (("Goal" :expand ((weak-hol-typep (cdr x))
+                           (weak-hol-typep (caddr x)))))
   :props (zfc restrict$prop diff$prop domain$prop))
 
 (local
@@ -644,7 +654,7 @@
 
 (defun hol-hash-typep (x)
   (declare (xargs :guard t))
-  (and (weak-hol-typep x t)
+  (and (weak-hol-typep x)
        (consp x)
        (eq (car x) :hash)))
 
@@ -690,7 +700,7 @@
            (equal (hp-comma (hp-hash-car x)
                             (hp-hash-cdr x))
                   x))
-  :hints (("Goal" :expand ((weak-hol-typep (cdr x) t)))))
+  :hints (("Goal" :expand ((weak-hol-typep (cdr x))))))
 
 ; We leave hp-comma-p enabled to support proofs in ../examples/.
 (in-theory (disable hp-comma hp-hash-car hp-hash-cdr))
