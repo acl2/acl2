@@ -541,7 +541,7 @@
 
 (defthmz in-hol-type-eval-v-omega*2
   (implies (and (in hta (v-omega*2))
-                (hol-typep type hta t))
+                (hol-typep type hta))
            (in (hol-type-eval type hta) (v-omega*2)))
   :props (zfc v-omega+$prop v$prop
               inverse$prop prod2$prop domain$prop fun-space$prop
@@ -550,7 +550,7 @@
 
 (defthmz hol-valuep-implies-in-v-omega*2
   (implies (and (in hta (v-omega*2))
-                (hol-typep type hta t)
+                (hol-typep type hta)
                 (hol-valuep x type hta))
            (in x (v-omega*2)))
   :props (zfc v-omega+$prop v$prop
@@ -592,7 +592,7 @@
 
 (defthmz hol-typep-in-v-omega*2
   (implies (and (alistp hta)
-                (hol-typep typ hta t)
+                (hol-typep typ hta)
                 (cdrs-in-set hta (v-omega*2)))
            (in typ (v-omega*2)))
   :props (zfc v-omega+$prop v$prop inverse$prop prod2$prop domain$prop))

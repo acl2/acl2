@@ -40,7 +40,7 @@
            :in-theory (enable hpp hap hp-type hol-valuep hol-type-eval))))
 
 (defthmz hp-type-hap
-  (implies (and (force (weak-hol-typep (hp-type f) t))
+  (implies (and (force (weak-hol-typep (hp-type f)))
                 (force (arrow-typep (hp-type f)))
                 (force (equal (hp-type x) (arrow-domain (hp-type f)))))
            (equal (hp-type (hap f x))
@@ -51,14 +51,14 @@
 
 (defthm hol-typep-monotone-for-alist-subsetp
   (implies (and (alist-subsetp hta1 hta2)
-                (hol-typep type hta1 groundp))
-           (hol-typep type hta2 groundp)))
+                (hol-typep type hta1))
+           (hol-typep type hta2)))
 
 (defthmd hol-type-eval-monotone-for-alist-subsetp
 ; Let's keep this disabled until it's clear what form the rule could usefully
 ; take in general.
   (implies (and (alist-subsetp hta1 hta2)
-                (hol-typep type hta1 groundp))
+                (hol-typep type hta1))
            (equal (hol-type-eval type hta1)
                   (hol-type-eval type hta2)))
   :hints (("Goal" :in-theory (enable hol-type-eval))))
@@ -283,7 +283,7 @@
            (equal (cdr (hp-list-cdr x))
                   (cdr x)))
   :hints (("Goal"
-           :expand ((hol-typep (cdr x) hta t))
+           :expand ((hol-typep (cdr x) hta))
            :in-theory (enable hpp hol-type-eval hol-valuep hp-list-cdr)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
@@ -293,7 +293,7 @@
                 (force (hpp y hta)))
            (hpp (hp-list-car y) hta))
   :hints (("Goal"
-           :expand ((HOL-TYPEP (CDR Y) HTA T))
+           :expand ((HOL-TYPEP (CDR Y) HTA))
            :in-theory (enable hpp hol-valuep hol-type-eval hp-list-car)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
 
@@ -337,8 +337,8 @@
                   (force (hpp x hta)))
              (hp-comma-p (hp-list-car x))))
   :hints (("Goal"
-           :expand ((hol-typep (cdr x) hta t)
-                    (HOL-TYPEP (CADDR X) HTA T))
+           :expand ((hol-typep (cdr x) hta)
+                    (HOL-TYPEP (CADDR X) HTA))
            :in-theory (enable hpp hol-type-eval hol-valuep hp-comma-p
                               WEAK-HOL-TYPEP HP-LIST-CAR)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
@@ -533,9 +533,9 @@
 
 (local (defthmz hpp-hp-cons-lemma
          (implies (and (equal y-typ (list :list x-typ))
-                       (hol-typep x-typ hta t)
+                       (hol-typep x-typ hta)
                        (in x-val (hol-type-eval x-typ hta))
-                       (hol-typep y-typ hta t)
+                       (hol-typep y-typ hta)
                        (in y-val (hol-type-eval y-typ hta)))
                   (in (union2 y-val
                               (pair (cons (domain y-val) x-val)
@@ -675,7 +675,7 @@
                 (not (equal (car x) 0)))
            (natp (1- (domain (car x)))))
   :hints (("Goal"
-           :expand ((hol-typep (cdr x) hta t))
+           :expand ((hol-typep (cdr x) hta))
            :in-theory (enable hpp hol-valuep hol-typep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 

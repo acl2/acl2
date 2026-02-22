@@ -198,6 +198,28 @@
 ; funp-union2.  This example highlighted the possibility that there's a
 ; lot more basic work for me to do on basic library lemmas.
 
+(defthmz domain-preserves-subset
+  (implies (subset r1 r2)
+           (subset (domain r1)
+                   (domain r2)))
+  :props (zfc domain$prop)
+  :hints
+  (("Goal"
+    :use
+    ((:instance in-domain-rewrite
+                (x (subset-witness (domain r1)
+                                   (domain r2)))
+                (r r1)))
+    :restrict
+    ((in-car-domain-alt
+      ((p (cons (subset-witness (domain r1)
+                                (domain r2))
+                (apply r1
+                       (subset-witness (domain r1)
+                                       (domain r2))))))))
+    :expand
+    ((subset (domain r1) (domain r2))))))
+
 (encapsulate
   ()
 
@@ -208,28 +230,6 @@
      :props (zfc domain$prop)
      :hints (("Goal" :in-theory (e/d (subset in-domain-rewrite)
                                      (in-cons-apply))))))
-
-  (local (defthmz domain-union2-2-1
-           (implies (subset r1 r2)
-                    (subset (domain r1)
-                            (domain r2)))
-           :props (zfc domain$prop)
-           :hints
-           (("Goal"
-             :use
-             ((:instance in-domain-rewrite
-                         (x (subset-witness (domain r1)
-                                            (domain r2)))
-                         (r r1)))
-             :restrict
-             ((in-car-domain-alt
-               ((p (cons (subset-witness (domain r1)
-                                         (domain r2))
-                         (apply r1
-                                (subset-witness (domain r1)
-                                                (domain r2))))))))
-             :expand
-             ((subset (domain r1) (domain r2)))))))
 
   (local
    (defthmz domain-union2-2
