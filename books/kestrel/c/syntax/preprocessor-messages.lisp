@@ -115,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define plexeme-to-msg ((lexeme plexeme-optionp))
+(define plexeme?-to-msg ((lexeme plexeme-optionp))
   :returns (msg msgp
                 :hints (("Goal" :in-theory (enable msgp character-alistp))))
   :short "Represent a preprocessing lexeme as a message."
