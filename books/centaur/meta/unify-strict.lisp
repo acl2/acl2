@@ -214,7 +214,7 @@
       :hints ('(:expand (<call>)))      
       :fn termlist-unify-strict))
 
-  (defret-mutual <fn>-preserves-pairs
+  (defret-mutual <fn>-binds-pat-vars
     (defret <fn>-binds-pat-vars
       (implies (and (member k (term-vars pat)) ok)
                (hons-assoc-equal k new-alist))
@@ -225,6 +225,25 @@
     (defret <fn>-binds-pat-vars
       (implies (and (member k (termlist-vars pat)) ok)
                (hons-assoc-equal k new-alist))
+      :hints ('(:expand (<call>
+                         (termlist-vars pat))))
+      :fn termlist-unify-strict))
+
+  (defret-mutual <fn>-lookup-under-iff
+    (defret <fn>-lookup-under-iff
+      (implies ok
+               (iff (hons-assoc-equal k new-alist)
+                    (or (hons-assoc-equal k (pseudo-term-subst-fix alist))
+                        (member k (term-vars pat)))))
+      :hints ('(:expand (<call>
+                         (term-vars pat))))
+      :fn term-unify-strict)
+
+    (defret <fn>-lookup-under-iff
+      (implies ok
+               (iff (hons-assoc-equal k new-alist)
+                    (or (hons-assoc-equal k (pseudo-term-subst-fix alist))
+                        (member k (termlist-vars pat)))))
       :hints ('(:expand (<call>
                          (termlist-vars pat))))
       :fn termlist-unify-strict))

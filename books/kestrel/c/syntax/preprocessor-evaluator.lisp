@@ -971,6 +971,7 @@
      expr
      :number (peval-pnumber expr.number ienv)
      :char (peval-cconst expr.char)
+     :paren (peval-expr expr.inner macros ienv)
      :plus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
              (retok (peval-plus arg)))
      :minus (b* (((erp arg) (peval-expr expr.arg macros ienv)))
@@ -1172,7 +1173,7 @@
                        (plexeme-punctuatorp token ":"))) ; expr ? expr :
           (reterr (msg "Expected colon, found ~@0."
                        (if token
-                           (plexeme-to-msg token)
+                           (plexeme?-to-msg token)
                          "no token"))))
          ((erp expr3 lexemes) ; expr ? expr : expr
           (pparse-conditional-expression lexemes)))
@@ -1671,15 +1672,15 @@
              ((unless (plexeme-punctuatorp token ")")) ; ( expr )
               (reterr (msg "Expected a closed parenthesis; ~
                             found ~@0 instead."
-                           (plexeme-to-msg token)))))
-          (retok expr lexemes)))
+                           (plexeme?-to-msg token)))))
+          (retok (pexpr-paren expr) lexemes)))
        (t ; OTHER
         (reterr (msg "Expected a number ~
                       or a character constant ~
                       or an identifier ~
                       or an open parenthesis; ~
                       found ~@0 instead."
-                     (plexeme-to-msg token))))))
+                     (plexeme?-to-msg token))))))
     :measure (two-nats-measure (len lexemes) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
