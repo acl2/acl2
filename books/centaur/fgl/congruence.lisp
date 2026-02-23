@@ -43,7 +43,8 @@
                 (equal w (w state))
                 (not errmsg))
            (fgl-ev-congruence-rule-correct-p rule))
-  :hints(("Goal" :in-theory (enable <fn>)))
+  :hints(("Goal" :in-theory (enable <fn>
+                                    fgl-ev-meta-extract-formula-theoremp)))
   :fn congruence-rule-from-rune)
 
 (defret fgl-ev-congruence-rulelist-correct-p-of-<fn>
@@ -251,13 +252,14 @@
   (implies (and (fgl-ev-theoremp x)
                 fnname)
            (is-fgl-ev-identity-function fnname))
-  :hints (("goal" :use ((:instance fgl-ev-falsify
+  :hints (("goal" :use ((:instance fgl-ev-theoremp-implies
                          (x x)
                          (a `((,(pseudo-term-var->name (second (pseudo-term-call->args x)))
                                . ,(is-fgl-ev-identity-function-witness
                                    (parse-id-congruence-rule x)))))))
-           :in-theory (enable fgl-ev-of-fncall-args
-                              fty::equal-of-len)
+           :in-theory (e/d (fgl-ev-of-fncall-args
+                            fty::equal-of-len)
+                           (fgl-ev-theoremp-implies))
            :expand (<call>
                     (:free (x) (is-fgl-ev-identity-function x)))))
   :fn parse-id-congruence-rule)
@@ -268,7 +270,8 @@
                 (not errmsg))
            (is-fgl-ev-identity-function fnname))
   :hints(("Goal" :in-theory (enable parse-id-congruence-rule-correct
-                                    check-id-congruence-rune)))
+                                    check-id-congruence-rune
+                                    fgl-ev-meta-extract-formula-theoremp)))
   :fn check-id-congruence-rune)
            
 

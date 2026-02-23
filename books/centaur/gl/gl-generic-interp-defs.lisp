@@ -603,7 +603,9 @@ The definition body, ~x1, is not a pseudo-term."
                           (:instance glcp-generic-geval-ev-falsify
                            (x (third term))
                            (a (glcp-generic-geval-ev-falsify term))))
-             :in-theory (disable pseudo-termp pseudo-term-listp))))
+             :in-theory (e/d (glcp-generic-geval-ev-theoremp)
+                             (pseudo-termp pseudo-term-listp
+                                           glcp-generic-geval-ev-theoremp-implies)))))
 
   (local (in-theory (enable glcp-generic-geval-ev-theoremp-of-conjunction)))
 
@@ -741,7 +743,8 @@ The definition body, ~x1, is not a pseudo-term."
                   (equal w (w state))
                   (symbolp e) (not (eq e 'quote)))
              (glcp-generic-equiv-relp e))
-    :hints(("Goal" :in-theory (e/d (check-equiv-rule)
+    :hints(("Goal" :in-theory (e/d (check-equiv-rule
+                                    glcp-generic-geval-ev-meta-extract-formula-theoremp)
                                    (pseudo-termp)))))
 
   (local (in-theory (enable check-equiv-rule-correct)))

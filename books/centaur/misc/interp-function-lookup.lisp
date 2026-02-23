@@ -427,16 +427,22 @@
            (iff (ifl-ev-theoremp (disjoin (cons lit clause)))
                 (ifl-ev-theoremp (disjoin clause))))
   :hints (("Goal" :use
-           ((:instance ifl-ev-falsify
+           ((:instance ifl-ev-theoremp-implies
                        (x (disjoin clause))
                        (a (ifl-ev-falsify (disjoin (cons lit clause)))))
-            (:instance ifl-ev-falsify
+            (:instance ifl-ev-theoremp-implies
                        (x (list 'not lit))
                        (a (ifl-ev-falsify (disjoin clause))))
-            (:instance ifl-ev-falsify
+            (:instance ifl-ev-theoremp-implies
                        (x (disjoin (cons lit clause)))
                        (a (ifl-ev-falsify (disjoin clause)))))
-           :in-theory (enable ifl-ev-disjoin-cons)))
+           :in-theory (e/d (ifl-ev-disjoin-cons)
+                           (ifl-ev-theoremp-implies)))
+          (and stable-under-simplificationp
+               (let ((lit (assoc 'ifl-ev-theoremp clause)))
+                 (and lit
+                      `(:computed-hint-replacement t
+                        :expand (,lit))))))
   :otf-flg t)
 
 
@@ -464,6 +470,10 @@
 
 
 
+(local
+ (defthm ifl-ev-theoremp-of-not-not-use-by-hint
+   (ifl-ev-theoremp `(not (not (use-by-hint ',x))))
+   :hints(("Goal" :in-theory (enable ifl-ev-theoremp use-by-hint)))))
 
 
 (defthm hons-assoc-equal-ifl-ev-defs-alist-equality
@@ -478,14 +488,15 @@
                      (ifl-ev (caddr entry) a))
               t)))
   :hints(("goal" :in-theory
-          (enable interp-defs-alistp use-by-hint))
+          (enable interp-defs-alistp))
          ("Subgoal *1/2"
           :use ((:instance
-                 ifl-ev-falsify
+                 ifl-ev-theoremp-implies
                  (x (disjoin
                      `((equal (,fn . ,(cadar defs))
-                              ,(caddar defs))))))))))
-
+                              ,(caddar defs)))))))
+          :in-theory (e/d () (ifl-ev-theoremp-implies)))))
+              
 
 
 
@@ -642,12 +653,15 @@
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
       (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-theoremp foo-ev-theoremp)
       (ifl-ev-meta-extract-global-badguy
        foo-ev-meta-extract-global-badguy))
      :hints ((and stable-under-simplificationp
                   '(:use (foo-ev-constraint-0
                           foo-ev-falsify
-                          foo-ev-meta-extract-global-badguy)))))
+                          foo-ev-meta-extract-global-badguy)))
+             (and stable-under-simplificationp
+                  '(:in-theory (enable foo-ev-theoremp)))))
 
    (def-functional-instance
      interp-function-lookup-correct-2-for-foo-ev
@@ -655,6 +669,7 @@
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
       (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-theoremp foo-ev-theoremp)
       (ifl-ev-meta-extract-global-badguy
        foo-ev-meta-extract-global-badguy)))
 
@@ -664,6 +679,7 @@
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
       (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-theoremp foo-ev-theoremp)
       (ifl-ev-meta-extract-global-badguy
        foo-ev-meta-extract-global-badguy)))
 
@@ -673,6 +689,7 @@
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
       (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-theoremp foo-ev-theoremp)
       (ifl-ev-meta-extract-global-badguy
        foo-ev-meta-extract-global-badguy)))
 
@@ -682,6 +699,7 @@
      ((ifl-ev foo-ev)
       (ifl-ev-lst foo-ev-lst)
       (ifl-ev-falsify foo-ev-falsify)
+      (ifl-ev-theoremp foo-ev-theoremp)
       (ifl-ev-meta-extract-global-badguy
        foo-ev-meta-extract-global-badguy)))))
 

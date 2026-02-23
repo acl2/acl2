@@ -1694,6 +1694,17 @@
                  :induct (equiv-ev-context-equiv-list-of-update-nth-ind n x y)))))
 
 
+(local (fty::deffixcong pseudo-term-equiv iff (equiv-ev-theoremp x) x
+         :hints ((and stable-under-simplificationp
+                      (b* ((lit (assoc 'equiv-ev-theoremp clause))
+                           ((unless lit) nil)
+                           (x (cadr lit))
+                           (other (if (eq x 'x) '(pseudo-term-fix x) 'x)))
+                        `(:expand (,lit)
+                          :use ((:instance equiv-ev-theoremp-implies
+                                 (x ,other) (a (equiv-ev-falsify ,x))))
+                          :in-theory (disable equiv-ev-theoremp-implies)))))))
+
 
 (define parse-congruence-rule ((x pseudo-termp) (w plist-worldp))
   :returns (mv errmsg
@@ -1729,13 +1740,13 @@
                                   :arg-contexts (update-nth index (list equiv-new) nil)
                                   :arity (len args1))))
   ///
-  (local (defund equiv-ev-theoremp-fn (x)
-           (equiv-ev-theoremp x)))
-  (local (defthmd equiv-ev-theoremp-fn-implies
-           (implies (equiv-ev-theoremp-fn x)
-                    (equiv-ev x a))
-           :hints(("Goal" :in-theory (enable equiv-ev-theoremp-fn)
-                   :use equiv-ev-falsify))))
+  ;; (local (defund equiv-ev-theoremp-fn (x)
+  ;;          (equiv-ev-theoremp x)))
+  ;; (local (defthmd equiv-ev-theoremp-fn-implies
+  ;;          (implies (equiv-ev-theoremp-fn x)
+  ;;                   (equiv-ev x a))
+  ;;          :hints(("Goal" :in-theory (enable equiv-ev-theoremp-fn)
+  ;;                  :use equiv-ev-falsify))))
 
   (local (defthm equiv-ev-when-pseudo-term-equiv
            (implies (and (equal (pseudo-term-fix x) (pseudo-term-fncall fn args))
@@ -1776,9 +1787,16 @@
            (implies (equal (len x) (len y))
                     (equal (equal (len (cdr x)) (len (cdr y))) t))))
 
+  (local (defthm equiv-rel-term-theoremp
+           (implies (and (equiv-ev-meta-extract-global-facts)
+                         (ensure-equiv-relationp e (w state)))
+                    (equiv-ev-theoremp (equiv-rel-term e)))
+           :hints(("Goal" :in-theory (enable equiv-ev-theoremp
+                                             ensure-equiv-relationp-correct)))))
+  
 
   (local (defret equiv-ev-congruence-rule-correct-p-of-<fn>-lemma
-           (implies (and (equiv-ev-theoremp-fn x)
+           (implies (and (equiv-ev-theoremp x)
                          (equiv-ev-meta-extract-global-facts)
                          (equal w (w state))
                          (not errmsg))
@@ -1791,8 +1809,9 @@
                                            equiv-ev-context-equiv-when-singleton
                                            list-equiv)
                                           (equiv-ev-when-pseudo-term-fncall
-                                           len kwote-lst-redef))
-                   :use ((:instance equiv-ev-theoremp-fn-implies
+                                           equiv-ev-theoremp-implies
+                                           len kwote-lst-redef w))
+                   :use ((:instance equiv-ev-theoremp-implies
                           (a (b* (((congruence-rule r) rule))
                                (congruence-var-list-alist
                                 (cdr (assoc 'args1 (parse-congruence-rule-shape x)))
@@ -1815,4 +1834,4 @@
                   (not errmsg))
              (equiv-ev-congruence-rule-correct-p rule))
     :hints(("Goal" :use equiv-ev-congruence-rule-correct-p-of-<fn>-lemma
-            :in-theory (enable equiv-ev-theoremp-fn)))))
+            :in-theory (enable equiv-ev-theoremp)))))
