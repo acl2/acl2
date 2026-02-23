@@ -43,7 +43,8 @@
                 (equal w (w state))
                 (not errmsg))
            (fgl-ev-congruence-rule-correct-p rule))
-  :hints(("Goal" :in-theory (enable <fn>)))
+  :hints(("Goal" :in-theory (enable <fn>
+                                    fgl-ev-meta-extract-formula-theoremp)))
   :fn congruence-rule-from-rune)
 
 (defret fgl-ev-congruence-rulelist-correct-p-of-<fn>
@@ -319,7 +320,8 @@
                 (not errmsg))
            (fgl-id-congruence-rule-correct rule))
   :hints(("Goal" :in-theory (enable parse-id-congruence-rule-correct
-                                    check-id-congruence-rune)))
+                                    check-id-congruence-rune
+                                    fgl-ev-meta-extract-formula-theoremp)))
   :fn check-id-congruence-rune)
            
 
