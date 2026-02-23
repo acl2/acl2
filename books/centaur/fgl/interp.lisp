@@ -8290,8 +8290,9 @@
                           nil))
              (equal (fgl-ev-context-fix contexts lhs)
                     (fgl-ev-context-fix contexts rhs)))
-    :hints(("Goal" :in-theory (enable fgl-interp-equiv-refinementp
-                                      fgl-ev-context-fix-equal-by-eval))))))
+    :hints(("Goal" :in-theory (e/d (fgl-interp-equiv-refinementp
+                                    fgl-ev-context-fix-equal-by-eval)
+                                   (cmr::pseudo-fnsym-p-when-member-equal-of-equiv-contextsp)))))))
 
 
 (local (acl2::use-trivial-ancestors-check))

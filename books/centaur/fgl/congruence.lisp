@@ -77,6 +77,7 @@
         arg-ctxs)
        ((unless (eq rule.fn (pseudo-fnsym-fix fn))) arg-ctxs)
        ((unless (eql rule.arity (lnfix arity))) arg-ctxs))
+    
     (cmr::join-equiv-contextslists rule.arg-contexts arg-ctxs))
   ///
   (local (defthm equal-of-pseudo-fnsym-fix
@@ -226,65 +227,120 @@
 
 
 
-(defsection is-fgl-ev-identity-function
-  (defun-sk is-fgl-ev-identity-function (fn)
-    (forall arg
-            (equal (fgl-ev (list (pseudo-fnsym-fix fn) (kwote arg)) nil)
-                   arg))
+(defsection fgl-id-congruence-rule-correct
+  (defun-sk fgl-id-congruence-rule-correct (rule)
+    (forall args
+            (b* (((fgl-id-congruence-rule rule)))
+              (implies (equal (len args) rule.arity)
+                       (equal (fgl-ev (cons rule.fn (kwote-lst args)) nil)
+                              (nth rule.id-index args)))))
     :rewrite :direct)
 
-  (in-theory (disable is-fgl-ev-identity-function
-                      is-fgl-ev-identity-function-necc))
+  (in-theory (disable fgl-id-congruence-rule-correct
+                      fgl-id-congruence-rule-correct-necc))
 
-  (fty::deffixcong pseudo-fnsym-equiv equal (is-fgl-ev-identity-function fn) fn
+  (fty::deffixcong fgl-id-congruence-rule-equiv equal (fgl-id-congruence-rule-correct rule) rule
     :hints ((and stable-under-simplificationp
-                 (let* ((lit (assoc 'is-fgl-ev-identity-function clause))
+                 (let* ((lit (assoc 'fgl-id-congruence-rule-correct clause))
                         (arg (cadr lit))
-                        (other (if (eq arg 'fn) '(pseudo-fnsym-fix fn) 'fn)))
+                        (other (if (eq arg 'rule) '(fgl-id-congruence-rule-fix rule) 'rule)))
                    `(:expand (,lit)
-                     :use ((:instance is-fgl-ev-identity-function-necc
-                            (fn ,other)
-                            (arg (is-fgl-ev-identity-function-witness ,arg))))))))))
+                     :use ((:instance fgl-id-congruence-rule-correct-necc
+                            (rule ,other)
+                            (args (fgl-id-congruence-rule-correct-witness ,arg))))))))))
 
+(defsection parse-id-congruence-rule-correct
+  (local (in-theory (disable cmr::pseudo-term-var-list->names-when-pseudo-term-listp)))
 
-(defret parse-id-congruence-rule-correct
-  (implies (and (fgl-ev-theoremp x)
-                fnname)
-           (is-fgl-ev-identity-function fnname))
-  :hints (("goal" :use ((:instance fgl-ev-falsify
-                         (x x)
-                         (a `((,(pseudo-term-var->name (second (pseudo-term-call->args x)))
-                               . ,(is-fgl-ev-identity-function-witness
-                                   (parse-id-congruence-rule x)))))))
-           :in-theory (enable fgl-ev-of-fncall-args
-                              fty::equal-of-len)
-           :expand (<call>
-                    (:free (x) (is-fgl-ev-identity-function x)))))
-  :fn parse-id-congruence-rule)
+  (local (defthm nonnil-when-pseudo-term-var
+           (implies (pseudo-term-case x :var)
+                    x)
+           :rule-classes :forward-chaining))
+  
+  (local (defun lookup-keys (x a)
+           (if (atom x)
+               nil
+             (cons (cdr (assoc (car x) a))
+                   (lookup-keys (cdr x) a)))))
+
+  (local (defthm lookup-keys-in-pairlis$
+           (implies (no-duplicatesp keys)
+                    (equal (lookup-keys keys (pairlis$ keys vals))
+                           (take (len keys) vals)))
+           :hints(("Goal" :in-theory (enable no-duplicatesp pairlis$ take)))))
+  
+  (local (defthm fgl-ev-list-of-pseudo-term-var-list
+           (implies (cmr::pseudo-term-var-listp x)
+                    (equal (fgl-ev-list x a)
+                           (lookup-keys (cmr::pseudo-term-var-list->names x) a)))
+           :hints(("Goal" :in-theory (enable lookup-keys
+                                             cmr::pseudo-term-var-list->names
+                                             cmr::pseudo-term-var-listp)))))
+
+  (local (defthm assoc-member-in-pairlis$
+           (implies (member-equal k keys)
+                    (equal (cdr (assoc-equal k (pairlis$ keys vals)))
+                           (nth (acl2::index-of k keys) vals)))
+           :hints(("Goal" :in-theory (enable acl2::index-of pairlis$ assoc-equal)))))
+
+  (local (defthm kwote-lst-of-true-list-fix
+           (equal (kwote-lst (true-list-fix x)) (kwote-lst x))
+           :hints(("Goal" :in-theory (enable kwote-lst)))))
+
+  (local (defthm assoc-pairlis$-when-not-member
+           (implies (case-split (not (member-equal k keys)))
+                    (equal (assoc-equal k (pairlis$ keys vals)) nil))
+           :hints(("Goal" :in-theory (enable pairlis$ assoc-equal)))))
+
+  (local (defthm nth-of-fgl-ev-list
+           (equal (nth n (fgl-ev-list x a))
+                  (fgl-ev (nth n x) a))
+           :hints(("Goal" :in-theory (enable nth)))))
+
+  (local (in-theory (disable len nth)))
+  
+  (defret parse-id-congruence-rule-correct
+    (implies (and (fgl-ev-theoremp x)
+                  rule)
+             (fgl-id-congruence-rule-correct rule))
+    :hints (("goal" :use ((:instance fgl-ev-falsify
+                           (x x)
+                           (a (pairlis$ (cmr::pseudo-term-var-list->names
+                                         (pseudo-term-call->args (first (pseudo-term-call->args x))))
+                                        (fgl-id-congruence-rule-correct-witness (parse-id-congruence-rule x))))))
+             :in-theory (enable fgl-ev-of-fncall-args)
+             :expand (<call>
+                      (:free (rule) (fgl-id-congruence-rule-correct rule)))))
+    :fn parse-id-congruence-rule))
 
 (defret check-id-congruence-rune-correct
   (implies (and (fgl-ev-meta-extract-global-facts)
                 (equal w (w state))
                 (not errmsg))
-           (is-fgl-ev-identity-function fnname))
+           (fgl-id-congruence-rule-correct rule))
   :hints(("Goal" :in-theory (enable parse-id-congruence-rule-correct
                                     check-id-congruence-rune)))
   :fn check-id-congruence-rune)
            
 
-(defretd id-congruence-table-from-runes-correct
-  (implies (and (hons-assoc-equal (pseudo-fnsym-fix fnname) table)
-                (fgl-ev-meta-extract-global-facts)
-                (equal w (w state)))
-           (is-fgl-ev-identity-function fnname))
+(defret id-congruence-table-from-runes-correct-fnsym
+  (implies (hons-assoc-equal fnname table)
+           (equal (fgl-id-congruence-rule->fn (cdr (hons-assoc-equal fnname table)))
+                  fnname))
   :hints(("Goal" :induct <call>
           :in-theory (enable <fn>
-                             (:i <fn>)))
-         (and stable-under-simplificationp
-              '(:use ((:instance check-id-congruence-rune-correct
-                       (rune (car runes))
-                       (w (w state))))
-                :in-theory (disable check-id-congruence-rune-correct))))
+                             (:i <fn>))))
+  :fn id-congruence-table-from-runes)
+
+(defretd id-congruence-table-from-runes-correct
+  (implies (and (hons-assoc-equal fnname table)
+                (fgl-ev-meta-extract-global-facts)
+                (equal w (w state)))
+           (fgl-id-congruence-rule-correct (cdr (hons-assoc-equal fnname table))))
+  :hints(("Goal" :induct <call>
+          :in-theory (enable <fn>
+                             check-id-congruence-rune-correct
+                             (:i <fn>))))
   :fn id-congruence-table-from-runes)
            
 
@@ -298,15 +354,65 @@
     table)
   ///
   (defretd <fn>-correct
-    (implies (and (hons-assoc-equal (pseudo-fnsym-fix fnname) table)
+    (implies (and (hons-assoc-equal fnname table)
                   (fgl-ev-meta-extract-global-facts)
                   (equal w (w state)))
-             (is-fgl-ev-identity-function fnname))
+             (fgl-id-congruence-rule-correct (cdr (hons-assoc-equal fnname table))))
     :hints(("Goal" :in-theory (enable id-congruence-table-from-runes-correct))))
 
+  (defret <fn>-fnsym
+    (implies (hons-assoc-equal fnname table)
+             (equal (fgl-id-congruence-rule->fn (cdr (hons-assoc-equal fnname table)))
+                    fnname)))
+  
   (memoize 'fgl-id-congruence-rules))
 
 
+(define fgl-id-congruence-rule-equiv-contexts ((contexts equiv-contextsp)
+                                               (rule fgl-id-congruence-rule-p))
+  :returns (arg-ctxs equiv-contextslist-p)
+  :prepwork ((local (defthm equiv-contextslist-p-of-update-nth
+                      (implies (and (equiv-contextsp v)
+                                    (equiv-contextslist-p x))
+                               (equiv-contextslist-p (update-nth n v x)))
+                      :hints(("Goal" :in-theory (enable update-nth))))))
+  (b* (((fgl-id-congruence-rule rule)))
+    (and (< rule.id-index rule.arity)
+         (update-nth rule.id-index (equiv-contexts-fix contexts) nil)))
+  ///
+
+  (defret len-of-<fn>
+    (<= (len arg-ctxs) (fgl-id-congruence-rule->arity rule))
+    :rule-classes :linear)
+  
+  (local (defthm fgl-ev-context-equiv-list-of-update-nth-implies-context-equiv-nth
+           (implies (fgl-ev-context-equiv-list
+                     (update-nth n (equiv-contexts-fix contexts) nil) a b)
+                    (fgl-ev-context-equiv contexts (nth n a) (nth n b)))
+           :hints(("Goal" :in-theory (enable fgl-ev-context-equiv-list)))))
+
+  (defret fgl-ev-congruence-correct-of-<fn>
+    (b* (((fgl-id-congruence-rule rule)))
+      (implies (and (fgl-id-congruence-rule-correct rule)
+                    (equal (pseudo-fnsym-fix fn) rule.fn)
+                    (equal (nfix arity) rule.arity))
+               (fgl-ev-congruence-correct-p
+                contexts fn arg-ctxs arity)))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (e/d (fgl-ev-congruence-correct-p)
+                                  (fgl-id-congruence-rule-correct-necc))
+                  :use ((:instance fgl-id-congruence-rule-correct-necc
+                         (args (b* (((fgl-id-congruence-rule rule)))
+                                 (mv-nth 0 (fgl-ev-congruence-correct-p-witness
+                                            contexts fn
+                                            (fgl-id-congruence-rule-equiv-contexts contexts rule)
+                                            rule.arity)))))
+                        (:instance fgl-id-congruence-rule-correct-necc
+                         (args (b* (((fgl-id-congruence-rule rule)))
+                                 (mv-nth 1 (fgl-ev-congruence-correct-p-witness
+                                            contexts fn
+                                            (fgl-id-congruence-rule-equiv-contexts contexts rule)
+                                            rule.arity)))))))))))
 
 
 (define fgl-interp-arglist-equiv-contexts ((contexts equiv-contextsp)
@@ -317,10 +423,13 @@
                                            (w plist-worldp))
   :returns (new-contexts equiv-argcontexts-p)
   (b* (((when (member-eq 'unequiv (equiv-contexts-fix contexts))) t)
-       ((when (and (eql arity 1) (hons-get (pseudo-fnsym-fix fn) (fgl-id-congruence-rules id-runes w))))
-        (list (equiv-contexts-fix contexts)))
-       (rules (cdr (hons-get (pseudo-fnsym-fix fn) (fgl-congruence-rules runes w)))))
-    (apply-congruence-rules rules fn contexts arity nil))
+       (id-lookup (hons-get (pseudo-fnsym-fix fn) (fgl-id-congruence-rules id-runes w)))
+       (rules (cdr (hons-get (pseudo-fnsym-fix fn) (fgl-congruence-rules runes w))))
+       (id-contexts (if (and id-lookup
+                             (equal (fgl-id-congruence-rule->arity (cdr id-lookup)) (lnfix arity)))
+                        (fgl-id-congruence-rule-equiv-contexts contexts (cdr id-lookup))
+                      nil)))
+    (apply-congruence-rules rules fn contexts arity id-contexts))
   ///
   (local (defthm nth-equiv-when-equal-length
            (implies (equal (len x) (len y))
@@ -353,27 +462,11 @@
                                         fgl-ev-context-equiv-base
                                         fgl-ev-of-fncall-args)))))
 
-  (local (defthm fgl-ev-congruence-correct-p-for-identity
-           (implies (is-fgl-ev-identity-function fn)
-                    (fgl-ev-congruence-correct-p contexts fn (list contexts) 1))
-           :hints(("Goal" :in-theory (e/d (fgl-ev-congruence-correct-p
-                                           fgl-ev-context-equiv-list
-                                           is-fgl-ev-identity-function-necc
-                                           fty::equal-of-len)
-                                          (len-of-fgl-ev-congruence-correct-p-witness
-                                           kwote))
-                   :use ((:instance len-of-fgl-ev-congruence-correct-p-witness
-                          (ctx contexts) (arg-ctxs (list contexts)) (arity 1)))))))
-
   (defret <fn>-correct
     (implies (and (fgl-ev-meta-extract-global-facts)
                   (equal w (w state)))
              (fgl-ev-argcontext-congruence-correct-p contexts fn new-contexts arity))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable fgl-ev-argcontext-congruence-correct-p
-                                      fgl-id-congruence-rules-correct))))))
-
-
-
-
-       
+                                      fgl-id-congruence-rules-correct
+                                      ))))))

@@ -1,4 +1,4 @@
-; FGL - A Symbolic Simulation Framework for ACL2
+;; FGL - A Symbolic Simulation Framework for ACL2
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
 ;; 
@@ -34,6 +34,7 @@
 (in-package "FGL")
 
 (include-book "fancy-ev")
+(include-book "congruence-rules")
 
 (define annotate (arg x)
   (declare (ignore arg))
@@ -137,10 +138,11 @@ proper checking of the annotation in the hypothesis:</p>
    (implies (and (fgl::bind-fn-annotation annot 'my-pred :ignore-fns '(if))
                  (not annot))
             (equal (my-pred x y)
-                   (let ((res (and (fgl::annotate '(:annotated) (my-pred x y)) t)))
+                   (let ((res (fgl::annotate '(:annotated) (my-pred x y)) t))
                      (fgl::fgl-prog2
                       (fgl::syntax-interp (cw \"my-pred: ~x0~%\" res))
-                      res)))))
+                      (and res t))))))
+ })
 
 <p>This is because a second pass of rewriting is applied to an @('if') test
 before it is entered into the Boolean variable database (see @(see
@@ -157,23 +159,25 @@ side pattern).</li>
 
 <li>After that rewrite is finished, the @('annotate') call is rewritten with
 the definition of @('annotate') (i.e. returning its second argument), so this
-also produces the LHS unchanged.</li>
+also produces the LHS unchanged. This is bound to the variable @('res').</li>
 
-<li>Because of the second pass of rewriting applied to IF tests (recalling that
-@('(and x t)') expands to @('(if x t nil)'), rewriting is again applied to the
-top level of the resulting LHS term. Since we are now outside the call of
-@('annotate'), the hyps of @('annotate-my-pred-bad') are again satisfied and it
-can be applied again, completing the loop.</li>
+<li>When rewriting gets to the final @('(and res t)') term, rewriting is
+applied to the top level of @('res') again because of the second pass of
+rewriting applied to IF tests (recalling that @('(and x t)') expands to @('(if
+x t nil)'). Since we are now outside the call of @('annotate'), the hyps of
+@('annotate-my-pred-bad') are again satisfied and it can be applied again,
+completing the loop.</li>
 </ol>
 
-<p>To avoid such a loop, it is recommended to formulate such a rule like
-@('annotate-my-pred'), i.e. with the @('annotate') call not in an @('iff')
-congruence context. This can be accomplished by binding it in a
-@('let'). Congruences needed for rewriting the inner call should be established
-inside the @('annotate') call using fixing functions.</p>
+<p>To avoid such a loop, it is recommended to avoid using the result from the
+annotated call in an @('if') test context. Rules may be formulated similar to
+@('annotate-my-pred') above, inserting the @('if') terms into the
+annotation.</p>
 
 "
-  x)
+  x
+  ///
+  (add-fgl-id-congruence annotate))
 
 (define interp-st-scan-for-fnsym ((n natp) (fn pseudo-fnsym-p) interp-st)
   :guard (<= n (interp-st-full-scratch-len interp-st))
@@ -194,7 +198,7 @@ inside the @('annotate') call using fixing functions.</p>
              (< maybe-index (interp-st-full-scratch-len interp-st)))
     :rule-classes :linear))
 
-(define interp-st-debug-stack ((count natp) (n natp) interp-st)
+(define interp-st-debug-scratch ((count natp) (n natp) interp-st)
   :guard (<= n (interp-st-full-scratch-len interp-st))
   :measure (nfix count)
   :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
@@ -206,7 +210,7 @@ inside the @('annotate') call using fixing functions.</p>
     (cons (let ((kind (interp-st-nth-scratch-kind n interp-st)))
             (cons kind (and (eq kind :fnsym)
                             (interp-st-nth-scratch-fnsym n interp-st))))
-          (interp-st-debug-stack (1- count) (1+ (lnfix n)) interp-st))))
+          (interp-st-debug-scratch (1- count) (1+ (lnfix n)) interp-st))))
 
 (define interp-st-scan-for-nth-fnsym-occ ((idx natp) (n natp) (fn pseudo-fnsym-p) interp-st)
   :guard (<= idx (interp-st-full-scratch-len interp-st))
@@ -356,7 +360,7 @@ inside the @('annotate') call using fixing functions.</p>
                         (and (natp idx) (natp n) (pseudo-fnsym-p fn)
                              (<= idx (interp-st-full-scratch-len interp-st))))
 
-(fancy-ev-add-primitive interp-st-debug-stack
+(fancy-ev-add-primitive interp-st-debug-scratch
                         (and (natp count) (natp n)
                              (<= n (interp-st-full-scratch-len interp-st))))
 

@@ -54,8 +54,11 @@
 
 (fty::deflist fgl-id-congruence-runelist :elt-type fgl-id-congruence-rune :true-listp t)
 
-(local (in-theory (disable w)))
-
+(defprod fgl-id-congruence-rule
+  ((fn pseudo-fnsym-p)
+   (id-index natp :rule-classes :type-prescription)
+   (arity natp :rule-classes :type-prescription))
+  :layout :list)
 
 
 
@@ -102,44 +105,72 @@
 (fty::defmap congruence-rule-table :key-type pseudo-fnsym :val-type congruence-rulelist
   :true-listp t)
 
-(fty::defmap id-congruence-rule-table :key-type pseudo-fnsym :true-listp t)
+(fty::defmap id-congruence-rule-table :key-type pseudo-fnsym :val-type fgl-id-congruence-rule :true-listp t)
 
 
 (define parse-id-congruence-rule ((x pseudo-termp))
-  :returns (fnname pseudo-fnsym-p)
+  :returns (rule (iff (fgl-id-congruence-rule-p rule) rule))
+  :prepwork ((local (in-theory (disable cmr::pseudo-term-var-list->names-when-pseudo-term-listp)))
+             (local (defthm symbol-listp-when-pseudo-var-list-p
+                      (implies (pseudo-var-list-p x)
+                               (symbol-listp x))))
+             (local (defthm consp-assoc-equal-when-key
+                      (implies k
+                               (iff (consp (Assoc-equal k x)) (assoc-equal k x))))))
   (pseudo-term-case x
     :fncall (and (eq x.fn 'equal)
                  (eql (len x.args) 2)
-                 (pseudo-term-case (second x.args) :var)
-                 (let ((arg1 (first x.args)))
+                 (b* ((arg2 (second x.args))
+                      (arg2-var
+                       (pseudo-term-case arg2
+                         :var arg2.name
+                         :lambda
+                         (pseudo-term-case arg2.body
+                           :var (and (equal arg2.body
+                                            (cdr (assoc arg2.body.name
+                                                        (pairlis$ arg2.formals
+                                                                  arg2.args))))
+                                     arg2.body.name)
+                           :otherwise nil)
+                         :otherwise nil))
+                      ((unless arg2-var) nil)
+                   ;; (let ((arg2 (second x.args)))
+                   ;;   (pseudo-term-case 
+                   ;;   (or (pseudo-term-case (second x.args) :var)
+                   ;;     (pseudo-term-case (second x.args) :var)
+                      (arg1 (first x.args)))
                    (pseudo-term-case arg1
-                     :fncall (and (eql (len arg1.args) 1)
-                                  (equal (first arg1.args) (second x.args))
-                                  arg1.fn)
+                     :fncall (and (cmr::pseudo-term-var-listp arg1.args)
+                                  (b* ((vars (cmr::pseudo-term-var-list->names arg1.args)))
+                                    (and (no-duplicatesp-eq vars)
+                                         (b* ((idx (acl2::index-of arg2-var vars)))
+                                           (and idx
+                                                (fgl-id-congruence-rule arg1.fn idx (len vars)))))))
                      :otherwise nil)))
     :otherwise nil))
 
 (define check-id-congruence-rune ((rune fgl-id-congruence-rune-p)
                                   (w plist-worldp))
-  :returns (mv errmsg (fnname pseudo-fnsym-p))
+  :returns (mv errmsg (rule (implies (not errmsg) (fgl-id-congruence-rule-p rule))))
   (b* ((rune (fgl-id-congruence-rune-fix rune))
        (name (fgl-id-congruence-rune->name rune))
        (formula (acl2::meta-extract-formula-w name w))
        ((unless (pseudo-termp formula))
         (mv (msg "Formula not pseudo-termp: ~x0" rune) nil))
-       (fn (parse-id-congruence-rule formula))
-       ((unless fn) (mv (msg "Incorrect form for an identity congruence rule: ~x0" rune) nil)))
-    (mv nil fn)))
+       (rule (parse-id-congruence-rule formula))
+       ((unless rule) (mv (msg "Incorrect form for an identity congruence rule: ~x0" rune) nil)))
+    (mv nil rule)))
 
 (define id-congruence-table-from-runes ((runes fgl-id-congruence-runelist-p)
                                         (w plist-worldp))
   :returns (mv errmsg (table id-congruence-rule-table-p))
   (b* (((when (atom runes)) (mv nil nil))
-       ((mv errmsg fnname) (check-id-congruence-rune (car runes) w))
+       ((mv errmsg rule) (check-id-congruence-rune (car runes) w))
        ((when errmsg) (mv errmsg nil))
        ((mv errmsg rest) (id-congruence-table-from-runes (cdr runes) w))
-       ((when errmsg) (mv errmsg nil)))
-    (mv nil (hons-acons fnname t rest))))
+       ((when errmsg) (mv errmsg nil))
+       ((fgl-id-congruence-rule rule)))
+    (mv nil (hons-acons rule.fn rule rest))))
        
 
 
