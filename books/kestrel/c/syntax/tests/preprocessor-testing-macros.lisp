@@ -189,17 +189,6 @@
 
 ; Check directive-preserving expansion against full expansion.
 
-(defun filemap-drop-absolute-paths (filemap)
-  (b* (((when (omap::emptyp filemap)) nil)
-       ((mv path data) (omap::head filemap))
-       (new-filemap-tail (filemap-drop-absolute-paths (omap::tail filemap))))
-    (if (path-absolutep (filepath->unwrap path))
-        new-filemap-tail
-      (omap::update path data new-filemap-tail))))
-
-(defun fileset-drop-absolute-paths (fileset)
-  (fileset (filemap-drop-absolute-paths (fileset->unwrap fileset))))
-
 (defun ppart-to-tokens (part)
   (ppart-case
    part
@@ -232,18 +221,127 @@
        (tokens-transformed (pfile-to-tokens pfile-transformed)))
     (if (equal tokens-original tokens-transformed)
         t
-      (cw "Original tokens ~x0 differ from transformed tokens ~x1."
-          tokens-original tokens-transformed))))
+      (cw "File ~x0 fails." name))))
+
+(defun filemap-relativize-absolute-paths (filemap)
+  (b* (((when (omap::emptyp filemap)) nil)
+       ((mv path data) (omap::head filemap))
+       (new-path (if (path-absolutep (filepath->unwrap path))
+                     (filepath (subseq (filepath->unwrap path) 1 nil))
+                   path))
+       (new-filemap-tail
+        (filemap-relativize-absolute-paths (omap::tail filemap))))
+    (omap::update new-path data new-filemap-tail)))
+
+(defun fileset-relativize-absolute-paths (fileset)
+  (fileset (filemap-relativize-absolute-paths (fileset->unwrap fileset))))
+
+(defun relativize-include-dirs (dirs dir)
+  (cond ((endp dirs) nil)
+        (t (cons (str::cat dir (car dirs))
+                 (relativize-include-dirs (cdr dirs) dir)))))
 
 (defmacro test-preproc-fullexp (files
                                 &key
                                 (base-dir '".")
                                 include-dirs
+                                (out-dir-prefix '"tmp") ; relative to base-dir
                                 (keep-comments 't)
                                 (trace-expansion 't)
                                 std
                                 gcc
                                 clang)
+  `(assert!-stobj
+    (b* (;; Setup.
+         (version (if (or (not ,std)
+                          (= ,std 17))
+                      (cond (,gcc (c::version-c17+gcc))
+                            (,clang (c::version-c17+clang))
+                            (t (c::version-c17)))
+                    (cond (,gcc (c::version-c23+gcc))
+                          (,clang (c::version-c23+clang))
+                          (t (c::version-c23)))))
+         (files ,files)
+         (base-dir ,base-dir)
+         (include-dirs ,include-dirs)
+         (out-dir-prefix ,out-dir-prefix)
+         (out-dir-initial (str::cat base-dir "/" out-dir-prefix "-initial"))
+         (out-dir-original (str::cat base-dir "/" out-dir-prefix "-original"))
+         (out-dir-transformed (str::cat base-dir "/" out-dir-prefix "-transformed"))
+         (ienv (change-ienv (ienv-default) :version version))
+         (options-preserve (make-ppoptions :full-expansion nil
+                                           :keep-comments ,keep-comments
+                                           :trace-expansion ,trace-expansion
+                                           :no-errors/warnings nil))
+         (options-expand (make-ppoptions :full-expansion t
+                                         :keep-comments ,keep-comments
+                                         :trace-expansion nil
+                                         :no-errors/warnings nil))
+         ;; Initial preprocessing.
+         ((mv erp fileset-initial state)
+          (preprocess files base-dir include-dirs options-preserve ienv state))
+         ((when erp)
+          (mv (cw "Initial preprocessing fails: ~@0" erp) state))
+         (fileset-initial
+          (fileset-relativize-absolute-paths fileset-initial))
+         ((mv erp state)
+          (write-fileset fileset-initial out-dir-initial state))
+         ((when erp)
+          (mv (cw "Initial file set writing fails: ~x0" erp) state))
+         (include-dirs-initial
+          (relativize-include-dirs include-dirs out-dir-initial))
+         ;; Full-expansion preprocessing of original files.
+         ((mv erp pfiles-original state)
+          (pproc-files files base-dir include-dirs-initial
+                       options-expand ienv state 1000000000))
+         ((when erp)
+          (mv (cw "Full-expansion preprocessing of original files fails: ~@0"
+                  erp)
+              state))
+         (fileset-original
+          (fileset
+           (string-pfile-alist-to-filepath-filedata-map pfiles-original)))
+         (fileset-original
+          (fileset-relativize-absolute-paths fileset-original))
+         ((mv erp state)
+          (write-fileset fileset-original out-dir-original state))
+         ((when erp)
+          (mv (cw "Original file set writing fails: ~x0" erp) state))
+         ;; Full-expansion preprocessing of transformed files.
+         ((mv erp pfiles-transformed state)
+          (pproc-files files out-dir-initial include-dirs-initial
+                       options-expand ienv state 1000000000))
+         ((when erp)
+          (mv (cw "Full-expansion preprocessing of transformed files fails: ~@0"
+                  erp)
+              state))
+         (fileset-transformed
+          (fileset
+           (string-pfile-alist-to-filepath-filedata-map pfiles-transformed)))
+         (fileset-transformed
+          (fileset-relativize-absolute-paths fileset-transformed))
+         ((mv erp state)
+          (write-fileset fileset-transformed out-dir-transformed state))
+         ((when erp)
+          (mv (cw "Transformed file set writing fails: ~x0" erp) state)))
+      ;; Comparison.
+      (mv (compare-expanded-pfiles pfiles-original pfiles-transformed)
+          state))
+    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro write-preproc (files
+                         &key
+                         (base-dir '".")
+                         include-dirs
+                         (out-dir '"./preproc-out")
+                         (keep-comments 't)
+                         (trace-expansion 't)
+                         (full-expansion 'nil)
+                         std
+                         gcc
+                         clang)
   `(assert!-stobj
     (b* ((version (if (or (not ,std)
                           (= ,std 17))
@@ -256,37 +354,21 @@
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
+         (out-dir ,out-dir)
+         (options (make-ppoptions :full-expansion ,full-expansion
+                                  :keep-comments ,keep-comments
+                                  :trace-expansion ,trace-expansion
+                                  :no-errors/warnings nil))
          (ienv (change-ienv (ienv-default) :version version))
-         (options-preserve (make-ppoptions :full-expansion nil
-                                           :keep-comments ,keep-comments
-                                           :trace-expansion ,trace-expansion
-                                           :no-errors/warnings nil))
-         (options-expand (make-ppoptions :full-expansion t
-                                         :keep-comments ,keep-comments
-                                         :trace-expansion nil
-                                         :no-errors/warnings nil))
-         ((mv erp fileset state)
-          (preprocess files base-dir include-dirs options-preserve ienv state))
-         ((when erp)
-          (mv (cw "Initial preprocessing fails: ~@0" erp) state))
-         (tmp-dir (str::cat base-dir "/tmp"))
-         (fileset (fileset-drop-absolute-paths fileset))
-         ((mv erp state) (write-fileset fileset tmp-dir state))
-         ((when erp)
-          (mv (cw "File set writing fails: ~x0" erp) state))
-         ((mv erp pfiles-original state)
-          (pproc-files files base-dir include-dirs
-                       options-expand ienv state 1000000000))
-         ((when erp)
-          (mv (cw "Full-expansion preprocessing of original files fails: ~@0"
-                  erp)
-              state))
-         ((mv erp pfiles-transformed state)
-          (pproc-files files tmp-dir include-dirs
-                       options-expand ienv state 1000000000))
-         ((when erp)
-          (mv (cw "Full-expansion preprocessing of transformed files fails: ~@0"
-                  erp)
-              state)))
-      (mv (compare-expanded-pfiles pfiles-original pfiles-transformed) state))
+         ((mv erp fileset state) (preprocess files
+                                             base-dir
+                                             include-dirs
+                                             options
+                                             ienv
+                                             state))
+         ((when erp) (mv (cw "Preprocessing fails: ~@0" erp) state))
+         ;; (fileset (fileset-drop-absolute-paths fileset))
+         ((mv erp state) (write-fileset fileset out-dir state))
+         ((when erp) (mv (cw "File set writing fails: ~x0" erp) state)))
+      (mv t state))
     state))
