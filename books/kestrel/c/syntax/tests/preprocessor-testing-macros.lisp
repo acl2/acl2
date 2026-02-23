@@ -288,11 +288,9 @@
           (write-fileset fileset-initial out-dir-initial state))
          ((when erp)
           (mv (cw "Initial file set writing fails: ~x0" erp) state))
-         (include-dirs-initial
-          (relativize-include-dirs include-dirs out-dir-initial))
          ;; Full-expansion preprocessing of original files.
          ((mv erp pfiles-original state)
-          (pproc-files files base-dir include-dirs-initial
+          (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
           (mv (cw "Full-expansion preprocessing of original files fails: ~@0"
@@ -308,6 +306,8 @@
          ((when erp)
           (mv (cw "Original file set writing fails: ~x0" erp) state))
          ;; Full-expansion preprocessing of transformed files.
+         (include-dirs-initial
+          (relativize-include-dirs include-dirs out-dir-initial))
          ((mv erp pfiles-transformed state)
           (pproc-files files out-dir-initial include-dirs-initial
                        options-expand ienv state 1000000000))
@@ -367,7 +367,7 @@
                                              ienv
                                              state))
          ((when erp) (mv (cw "Preprocessing fails: ~@0" erp) state))
-         ;; (fileset (fileset-drop-absolute-paths fileset))
+         (fileset (fileset-relativize-absolute-paths fileset))
          ((mv erp state) (write-fileset fileset out-dir state))
          ((when erp) (mv (cw "File set writing fails: ~x0" erp) state)))
       (mv t state))
