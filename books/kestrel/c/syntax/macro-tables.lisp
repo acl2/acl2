@@ -307,9 +307,9 @@
   (xdoc::topstring
    (xdoc::p
     "These are in addition to the standard ones.
-     We start with just a few macros that come up in tests,
-     and without which we cannot successfully preprocess
-     Clang's system headers.
+     We start with just a few macros that come up in tests.
+     Without some of these,
+     we cannot successfully preprocess Clang's system headers.
      We should add more, in a systematic way.")
    (xdoc::p
     "The @('__arm64__') macro is more specific than Clang,
@@ -319,24 +319,29 @@
      @('sys/cdefs.h') fails with an error
      indicating an unsupported architecture.")
    (xdoc::p
-    "without a definitino for the @('__GNUC__') macro,
+    "Without a definition for the @('__GNUC__') macro,
      we get an error when preprocessing the Clang system files.
      We also add the @('__GNUC_MINOR__') macro, since it is related.")
    (xdoc::p
-    "The @('__has_feature') and @('__has_include') macros
+    "The
+     @('__has_attribute'),
+     @('__has_builtin'),
+     @('__has_c_attribute'),
+     @('__has_cpp_attribute'),
+     @('__has_extension'),
+     @('__has_feature'),
+     @('__has_include'), and
+     @('__has_include_next')
+     macros
      are actually function-like macros,
      documented in "
     (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
     ", for which we need to add proper support.
      For now we define it to be just @('0'),
-     consistently with the following code in @('sys/cdefs.h'):")
+     consistently with code like the following in @('sys/cdefs.h'):")
    (xdoc::codeblock
     "#ifndef __has_feature"
     "#define __has_feature(x) 0"
-    "#endif"
-    ""
-    "#ifndef __has_include"
-    "#define __has_include(x) 0"
     "#endif")
    (xdoc::p
     "If these macros are not defined at all,
@@ -364,16 +369,7 @@
      it is left as is, even when an open parenthesis follows.
      Our preprocessor does that, but fails when parsing the expression,
      because of the extra tokens after the @('F'),
-     or after the @('__has_feature') before we predefine it here.")
-   (xdoc::p
-    "The @('__has_inclue_next') macro is also a function-like macro,
-     documented in "
-    (xdoc::ahref "https://clang.llvm.org/docs/LanguageExtensions.html" "[CLE]")
-    ", for which we need to add proper support.
-     For now we give it a definition similar to @('__has_include'),
-     although this definition, unlike @('__has_include'),
-     is not found in @('<sys/cdefs.h>'),
-     or in other files that we have searched."))
+     or after the @('__has_feature') before we predefine it here."))
   (list (cons (ident "__arm64__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\1)))))
@@ -383,6 +379,36 @@
         (cons (ident "__GNUC_MINOR__")
               (macro-info-object
                (list (plexeme-number (pnumber-digit #\2)))))
+        (cons (ident "__has_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_builtin")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_c_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_cpp_attribute")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
+        (cons (ident "__has_extension")
+              (make-macro-info-function
+               :params (list (ident "x"))
+               :ellipsis nil
+               :replist (list (plexeme-number (pnumber-digit #\0)))
+               :hash-params nil))
         (cons (ident "__has_feature")
               (make-macro-info-function
                :params (list (ident "x"))
