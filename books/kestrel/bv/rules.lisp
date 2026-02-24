@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -6123,7 +6123,7 @@
   :hints (("Goal" :in-theory (enable bvuminus bvnot lognot))))
 
 ;; See bvuminus-becomes-bvplus-of-bvnot-and-1.
-(defthmd bvnot-becomes-bvminus-of-bvnot-and-1
+(defthmd bvnot-becomes-bvminus-of-bvuminus-and-1
   (equal (bvnot size x)
          (bvminus size (bvuminus size x) 1))
   :hints (("Goal" :use bvuminus-becomes-bvplus-of-bvnot-and-1)))
