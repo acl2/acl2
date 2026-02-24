@@ -95,4 +95,13 @@
   :elt-type uchar
   :true-listp t
   :elementp-of-nil nil
-  :pred uchar-listp)
+  :pred uchar-listp
+
+  ///
+
+  (defruled uchar-listp-of-resize-list
+    (implies (and (uchar-listp chars)
+                  (ucharp default))
+             (uchar-listp (resize-list chars length default)))
+    :induct t
+    :enable resize-list))
