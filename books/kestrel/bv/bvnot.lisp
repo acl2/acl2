@@ -1,7 +1,7 @@
 ; Logical negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -226,3 +226,15 @@
   (equal (bvnot size (ifix x))
          (bvnot size x))
   :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm equal-of-bvnot-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)
+                              (not (quotep x)) ; prevents loops
+                              ))
+                (natp size))
+           (equal (equal (bvnot size x) k)
+                  (and (unsigned-byte-p size k)
+                       (equal (bvchop size x) (bvnot size k)))))
+  :hints (("Goal" :in-theory (enable bvnot lognot acl2::bvchop-of-sum-cases
+                                     unsigned-byte-p))))
