@@ -13,6 +13,8 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
