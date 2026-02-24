@@ -80,7 +80,19 @@
 
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
-  (append (semantic-functions-for-mnemonics)
+  (append (set-difference-eq (semantic-functions-for-mnemonics)
+                             '(arm::execute-cmp-immediate
+                               arm::execute-cmp-register
+                               arm::execute-cmp-register-shifted-register
+                               arm::execute-cmn-immediate
+                               arm::execute-cmn-register
+                               arm::execute-cmn-register-shifted-register))
+          '(arm::execute-cmp-immediate-alt
+            arm::execute-cmp-register-alt
+            arm::execute-cmp-register-shifted-register-alt
+            arm::execute-cmn-immediate-alt
+            arm::execute-cmn-register-alt
+            arm::execute-cmn-register-shifted-register-alt)
           '(arm::mov-common
             arm::mov-register-core
             arm::pop-encoding-a2-core
