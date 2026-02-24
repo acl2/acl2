@@ -19,6 +19,7 @@
 (include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/overflow-and-underflow" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
@@ -250,6 +251,12 @@
                   1))
   :hints (("Goal" :in-theory (enable decodeimmshift))))
 
+(defthm unsigned-byte-p-32-of-mv-nth-1-of-DecodeImmShift
+  (implies (and (unsigned-byte-p 2 type)
+                (unsigned-byte-p 5 imm5))
+           (unsigned-byte-p 32 (mv-nth 1 (DecodeImmShift type imm5))))
+  :hints (("Goal" :in-theory (enable DecodeImmShift))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -377,8 +384,7 @@
                 (SRTypep type)
                 (integerp amount) ; restrict?
                 (<= 0 amount) ; for the guard of lsl_c
-                (bitp carry_in)
-        )
+                (bitp carry_in))
            (unsigned-byte-p n (mv-nth 0 (shift_c n value type amount carry_in))))
   :hints (("Goal" :in-theory (enable shift_c srtypep))))
 
@@ -452,8 +458,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; returns (mv result carry_out overflow)
+;; Returns (mv result carry_out overflow).
 ;; todo: chop inputs to improve the rules below?
 (defund AddWithCarry (n x y carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
@@ -604,6 +609,25 @@
    :hints (("Goal" :in-theory (enable acl2::sbvlt-rewrite)))
    ))
 
+;; todo: can this be simplified?
+(defund addwithcarry-overflow (n x y carry_in)
+  (declare (xargs :guard (and (unsigned-byte-p n x)
+                              (unsigned-byte-p n y)
+                              (posp n) ; so there is a sign bit
+                              (bitp carry_in))))
+  (bool-to-bit (or ;; see signed-addition-overflowsp:
+                (and (sbvle n (bvminus n 1 carry_in) x)
+                     (sbvlt n (bvminus n (bvminus n (- (expt 2 (- n 1)) 1) x) carry_in) y))
+                ;; see signed-addition-underflowsp:
+                (and (sbvlt n x 0)
+                     (sbvlt n y (bvminus n (bvminus n (- (expt 2 (- n 1))) x) carry_in))))))
+
+(defthm unsigned-byte-p-of-addwithcarry-overflow
+  (implies (and (<= n size)
+                (posp size))
+           (unsigned-byte-p size (addwithcarry-overflow n x y carry_in)))
+  :hints (("Goal" :in-theory (enable addwithcarry-overflow))))
+
 ;; Expresses the signed overflow bit in terms of BV ops
 ;; TODO: Is there a nicer way to do this?
 ;; If carry_in=0, this reduces to mv-nth-2-of-AddWithCarry-carry-0.
@@ -616,13 +640,9 @@
                 (bitp carry_in)
                 )
            (equal (mv-nth 2 (AddWithCarry n x y carry_in))
-                  (bool-to-bit (or ;; see signed-addition-overflowsp:
-                                (and (sbvle n (bvminus n 1 carry_in) x)
-                                     (sbvlt n (bvminus n (bvminus n (- (expt 2 (- n 1)) 1) x) carry_in) y))
-                                ;; see signed-addition-underflowsp:
-                                (and (sbvlt n x 0)
-                                     (sbvlt n y (bvminus n (bvminus n (- (expt 2 (- n 1))) x) carry_in)))))))
+                  (addwithcarry-overflow n x y carry_in)))
   :hints (("Goal" :in-theory (e/d (AddWithCarry
+                                   addwithcarry-overflow
                                    bvplus
                                    acl2::bvchop-of-sum-cases sbvlt bvlt
                                    acl2::logext-cases
@@ -668,6 +688,16 @@
                 (bitp carry_in))
            (unsigned-byte-p 1 (mv-nth 2 (AddWithCarry n x y carry_in))))
   :hints (("Goal" :in-theory (enable AddWithCarry))))
+
+;; (thm
+;;  (implies (unsigned-byte-p 32 y)
+;;           (equal (addwithcarry 32 x (bvnot 32 y) 1)
+;;                  (addwithcarry 32 x (bvuminus 32 y) 0)))
+;;  :hints (("Goal" :in-theory (enable addwithcarry uint bvuminus-becomes-bvplus-of-bvnot-and-1
+;;                                     acl2::bvchop-of-sum-cases
+;;                                     bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund BitCount (n x)
   (declare (xargs :guard (unsigned-byte-p n x)))
