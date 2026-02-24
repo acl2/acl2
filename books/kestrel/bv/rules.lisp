@@ -6113,3 +6113,17 @@
                         (bvcat highsize highval lowsize lowval1)
                         (bvcat highsize highval lowsize lowval2))))
   :hints (("Goal" :in-theory (enable bvif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Negating is the same as flipping the bits and adding 1.
+(defthmd bvuminus-becomes-bvplus-of-bvnot-and-1
+  (equal (bvuminus size x)
+         (bvplus size (bvnot size x) 1))
+  :hints (("Goal" :in-theory (enable bvuminus bvnot lognot))))
+
+;; See bvuminus-becomes-bvplus-of-bvnot-and-1.
+(defthmd bvnot-becomes-bvminus-of-bvnot-and-1
+  (equal (bvnot size x)
+         (bvminus size (bvuminus size x) 1))
+  :hints (("Goal" :use bvuminus-becomes-bvplus-of-bvnot-and-1)))
