@@ -202,7 +202,24 @@
   :elt-type position
   :true-listp t
   :elementp-of-nil nil
-  :pred position-listp)
+  :pred position-listp
+
+  ///
+
+  (defruled position-listp-of-resize-list
+    (implies (and (position-listp poss)
+                  (positionp default))
+             (position-listp (resize-list poss length default)))
+    :induct t
+    :enable resize-list)
+
+  (defruled position-listp-of-update-nth-strong
+    (implies (position-listp poss)
+             (equal (position-listp (update-nth i pos poss))
+                    (and (positionp pos)
+                         (<= (nfix i) (len poss)))))
+    :induct t
+    :enable (update-nth nfix zp len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
