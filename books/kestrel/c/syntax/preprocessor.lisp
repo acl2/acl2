@@ -3971,7 +3971,8 @@
       as well as zero or more referenced in preserved @('#include')s.")
     (xdoc::li
      "All the functions take
-      the list @('preprocessing') of the files being preprocessed.
+      the list @('pending') of the files being preprocessed,
+      i.e. whose preprocessing is pending.
       This is used to detect circularities.")
     (xdoc::li
      "All the functions except @(tsee pproc-file) take and return
@@ -4011,7 +4012,7 @@
                       (base-dir stringp)
                       (include-dirs string-listp)
                       (preprocessed string-pfile-alistp)
-                      (preprocessing string-listp)
+                      (pending string-listp)
                       (macros macro-tablep)
                       (options ppoptionsp)
                       (ienv ienvp)
@@ -4043,7 +4044,7 @@
        that results in this call of @(tsee pproc-file),
        called by @(tsee pproc-header-name), called by @(tsee pproc-include).")
      (xdoc::p
-      "We create a local preprocessing state stobj from
+      "We create a local preprocessor state stobj from
        the bytes of the file,
        the macro table,
        the preprocessor options,
@@ -4062,11 +4063,11 @@
     (b* (((reterr) (irr-pfile) nil (irr-macro-table) state)
          ((when (zp limit)) (reterr (msg "Exhausted recursion limit.")))
          (file (str-fix file))
-         (preprocessing (string-list-fix preprocessing))
-         ((when (member-equal file preprocessing))
+         (pending (string-list-fix pending))
+         ((when (member-equal file pending))
           (reterr (msg "Circular file dependencies involving ~&0."
-                       preprocessing)))
-         (preprocessing (cons file preprocessing))
+                       pending)))
+         (pending (cons file pending))
          ((erp pfile
                groupend
                preprocessed
@@ -4087,7 +4088,7 @@
                                           base-dir
                                           include-dirs
                                           preprocessed
-                                          preprocessing
+                                          pending
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4123,7 +4124,7 @@
                               (base-dir stringp)
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
-                              (preprocessing string-listp)
+                              (pending string-listp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4156,7 +4157,7 @@
                               base-dir
                               include-dirs
                               preprocessed
-                              preprocessing
+                              pending
                               ppstate
                               state
                               (1- limit)))
@@ -4167,7 +4168,7 @@
                               base-dir
                               include-dirs
                               preprocessed
-                              preprocessing
+                              pending
                               ppstate
                               state
                               (1- limit))))
@@ -4180,7 +4181,7 @@
                               (base-dir stringp)
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
-                              (preprocessing string-listp)
+                              (pending string-listp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4326,7 +4327,7 @@
                                 base-dir
                                 include-dirs
                                 preprocessed
-                                preprocessing
+                                pending
                                 ppstate
                                 state
                                 (1- limit))))
@@ -4342,7 +4343,7 @@
                                           base-dir
                                           include-dirs
                                           preprocessed
-                                          preprocessing
+                                          pending
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4358,7 +4359,7 @@
                                           base-dir
                                           include-dirs
                                           preprocessed
-                                          preprocessing
+                                          pending
                                           ppstate
                                           state
                                           (1- limit))))
@@ -4375,7 +4376,7 @@
                                      base-dir
                                      include-dirs
                                      preprocessed
-                                     preprocessing
+                                     pending
                                      ppstate
                                      state
                                      (1- limit))))
@@ -4474,7 +4475,7 @@
                          (base-dir stringp)
                          (include-dirs string-listp)
                          (preprocessed string-pfile-alistp)
-                         (preprocessing string-listp)
+                         (pending string-listp)
                          (ppstate ppstatep)
                          state
                          (limit natp))
@@ -4556,7 +4557,7 @@
                                  base-dir
                                  include-dirs
                                  preprocessed
-                                 preprocessing
+                                 pending
                                  ppstate
                                  state
                                  (1- limit))))
@@ -4593,7 +4594,7 @@
                                  base-dir
                                  include-dirs
                                  preprocessed
-                                 preprocessing
+                                 pending
                                  ppstate
                                  state
                                  (1- limit))))
@@ -4613,7 +4614,7 @@
                              (base-dir stringp)
                              (include-dirs string-listp)
                              (preprocessed string-pfile-alistp)
-                             (preprocessing string-listp)
+                             (pending string-listp)
                              (ppstate ppstatep)
                              state
                              (limit natp))
@@ -4674,7 +4675,7 @@
                       base-dir
                       include-dirs
                       preprocessed
-                      preprocessing
+                      pending
                       (ppstate->macros ppstate)
                       options
                       ienv
@@ -4706,7 +4707,7 @@
                                 base-dir
                                 include-dirs
                                 preprocessed
-                                preprocessing
+                                pending
                                 (macro-init (ienv->version ienv))
                                 (change-ppoptions options
                                                   :no-errors/warnings t)
@@ -4748,7 +4749,7 @@
                     (base-dir stringp)
                     (include-dirs string-listp)
                     (preprocessed string-pfile-alistp)
-                    (preprocessing string-listp)
+                    (pending string-listp)
                     (ppstate ppstatep)
                     state
                     (limit natp))
@@ -4797,7 +4798,7 @@
                                       base-dir
                                       include-dirs
                                       preprocessed
-                                      preprocessing
+                                      pending
                                       ppstate
                                       state
                                       (1- limit)))
@@ -4819,7 +4820,7 @@
                               (base-dir stringp)
                               (include-dirs string-listp)
                               (preprocessed string-pfile-alistp)
-                              (preprocessing string-listp)
+                              (pending string-listp)
                               (ppstate ppstatep)
                               state
                               (limit natp))
@@ -4871,7 +4872,7 @@
                                       base-dir
                                       include-dirs
                                       preprocessed
-                                      preprocessing
+                                      pending
                                       ppstate
                                       state
                                       (1- limit)))
@@ -4897,7 +4898,7 @@
                                       (base-dir stringp)
                                       (include-dirs string-listp)
                                       (preprocessed string-pfile-alistp)
-                                      (preprocessing string-listp)
+                                      (pending string-listp)
                                       (ppstate ppstatep)
                                       state
                                       (limit natp))
@@ -4976,7 +4977,7 @@
                                     base-dir
                                     include-dirs
                                     preprocessed
-                                    preprocessing
+                                    pending
                                     ppstate
                                     state
                                     (1- limit))
@@ -5002,7 +5003,7 @@
                                                base-dir
                                                include-dirs
                                                preprocessed
-                                               preprocessing
+                                               pending
                                                ppstate
                                                state
                                                (1- limit))))
@@ -5027,7 +5028,7 @@
                                              base-dir
                                              include-dirs
                                              preprocessed
-                                             preprocessing
+                                             pending
                                              ppstate
                                              state
                                              (1- limit))
@@ -5143,7 +5144,7 @@
                     base-dir
                     include-dirs
                     nil ; preprocessed
-                    nil ; preprocessing
+                    nil ; pending
                     options
                     ienv
                     state
@@ -5155,7 +5156,7 @@
                              (base-dir stringp)
                              (include-dirs string-listp)
                              (preprocessed string-pfile-alistp)
-                             (preprocessing string-listp)
+                             (pending string-listp)
                              (options ppoptionsp)
                              (ienv ienvp)
                              state
@@ -5180,7 +5181,7 @@
                        base-dir
                        include-dirs
                        preprocessed
-                       preprocessing
+                       pending
                        (macro-init (ienv->version ienv))
                        options
                        ienv
@@ -5194,7 +5195,7 @@
                          base-dir
                          include-dirs
                          preprocessed
-                         preprocessing
+                         pending
                          options
                          ienv
                          state
