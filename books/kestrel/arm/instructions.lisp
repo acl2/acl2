@@ -786,7 +786,7 @@
                                               cmp-overflow
                                               ;addwithcarry-overflow
                                               ;addwithcarry
-                                              uint bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
+                                              uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                               acl2::trim-of-+-becomes-bvplus
                                               acl2::bvplus-convert-arg3-to-bv
                                               )
@@ -827,7 +827,7 @@
                                             cmp-overflow
                                             ;;addwithcarry-overflow
                                             ;;addwithcarry
-                                            uint bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
+                                            uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
                                             )
@@ -880,7 +880,7 @@
                                             cmp-overflow
                                             ;;addwithcarry-overflow
                                             ;;addwithcarry
-                                            uint bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
+                                            uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
                                             )
