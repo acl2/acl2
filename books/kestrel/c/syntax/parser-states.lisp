@@ -197,6 +197,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist position-list
+  :short "Fixtype of lists of positions."
+  :elt-type position
+  :true-listp t
+  :elementp-of-nil nil
+  :pred position-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define position-init ()
   :returns (pos positionp)
   :short "Initial position in a file."
