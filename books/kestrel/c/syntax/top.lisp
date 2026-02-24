@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "implementation-environments")
+(include-book "unicode-characters")
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "preprocessing")
@@ -207,6 +208,7 @@
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (implementation-environments
+                    unicode-characters
                     concrete-syntax
                     abstract-syntax
                     preprocessing

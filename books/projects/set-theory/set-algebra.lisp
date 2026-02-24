@@ -284,7 +284,10 @@
            (equal (apply (union2 f g) x)
                   (apply f x)))
   :props (zfc domain$prop diff$prop)
-  :hints (("Goal" :in-theory (enable apply-intro))))
+  :hints (("Goal" :in-theory (e/d (apply-intro)
+; The following breaks a rewrite loop that appears when not paying attention to
+; useless-runes.
+                                  (subset-preserves-in-1)))))
 
 (defthmz apply-union2-second
   (implies (and (funp f)

@@ -18,6 +18,7 @@
 (include-book "character-sets")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "decimal-0-to-octal-0")
 (include-book "errors")
 (include-book "types")
 (include-book "portable-ascii-identifiers")
